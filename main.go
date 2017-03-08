@@ -74,13 +74,13 @@ type Editor struct {
 	close        chan bool
 }
 
-func initWindow(width, height int) *ui.Window {
+func initWindow(area *ui.Area, width, height int) *ui.Window {
 	window := ui.NewWindow("Hello", width, height, false)
+	window.SetChild(area)
 	window.OnClosing(func(*ui.Window) bool {
 		ui.Quit()
 		return true
 	})
-
 	window.Show()
 	return window
 }
@@ -124,9 +124,8 @@ func newEditor() error {
 	}
 	width := 800
 	height := 600
-	window := initWindow(width, height)
 	ah := initArea()
-	window.SetChild(ah.area)
+	window := initWindow(ah.area, width, height)
 	font := initFont()
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
@@ -389,6 +388,9 @@ func (ah *AreaHandler) scroll(args []interface{}) {
 
 // Draw is
 func (ah *AreaHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
+	if editor == nil {
+		return
+	}
 	if !editor.nvimAttached {
 		return
 	}
