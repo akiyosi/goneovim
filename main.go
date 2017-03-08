@@ -23,6 +23,8 @@ type AreaHandler struct {
 	lastCursor   []int
 	content      [][]*Char
 	scrollRegion []int
+	width        int
+	height       int
 }
 
 // Highlight is
@@ -45,12 +47,19 @@ type Char struct {
 	highlight Highlight
 }
 
+// Font is
+type Font struct {
+	font       *ui.Font
+	width      int
+	height     int
+	lineHeight int
+}
+
 // Editor is the editor
 type Editor struct {
 	nvim         *nvim.Nvim
 	nvimAttached bool
 	mode         string
-	redrawEvent  chan interface{}
 	font         *ui.Font
 	rows         int
 	cols         int
@@ -65,18 +74,29 @@ type Editor struct {
 	close        chan bool
 }
 
-func newEditor() error {
-	if editor != nil {
-		return nil
-	}
-
-	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
-		Args: []string{"/tmp/test.go"},
+func initWindow(width, height int) *ui.Window {
+	window := ui.NewWindow("Hello", width, height, false)
+	window.OnClosing(func(*ui.Window) bool {
+		ui.Quit()
+		return true
 	})
-	if err != nil {
-		return err
-	}
 
+	window.Show()
+	return window
+}
+
+func initArea() *AreaHandler {
+	ah := &AreaHandler{
+		cursor:       []int{0, 0},
+		lastCursor:   []int{0, 0},
+		scrollRegion: []int{0, 0, 0, 0},
+	}
+	area := ui.NewArea(ah)
+	ah.area = area
+	return ah
+}
+
+func initFont() *Font {
 	fontDesc := &ui.FontDescriptor{
 		Family:  "InconsolataforPowerline Nerd Font",
 		Size:    14,
@@ -87,44 +107,55 @@ func newEditor() error {
 	font := ui.LoadClosestFont(fontDesc)
 	textLayout := ui.NewTextLayout("a", font, -1)
 	w, h := textLayout.Extents()
-	fontWidth := int(math.Ceil(w))
+	width := int(math.Ceil(w))
+	height := int(math.Ceil(h))
 	lineHeight := int(math.Ceil(h * 1.5))
+	return &Font{
+		font:       font,
+		width:      width,
+		height:     height,
+		lineHeight: lineHeight,
+	}
+}
 
-	rows := 57
-	cols := 365
+func newEditor() error {
+	if editor != nil {
+		return nil
+	}
+	width := 800
+	height := 600
+	window := initWindow(width, height)
+	ah := initArea()
+	window.SetChild(ah.area)
+	font := initFont()
+
+	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
+		Args: []string{"/tmp/test.go"},
+	})
+	if err != nil {
+		return err
+	}
+
+	cols := int(width / font.width)
+	rows := int(height / font.lineHeight)
 
 	content := make([][]*Char, rows)
 	for i := 0; i < rows; i++ {
 		content[i] = make([]*Char, cols)
 	}
-	ah := &AreaHandler{
-		cursor:       []int{0, 0},
-		lastCursor:   []int{0, 0},
-		content:      content,
-		scrollRegion: []int{0, 0, 0, 0},
-	}
-	// area := ui.NewScrollingArea(ah, int(w*200), int(h*1.5*20))
-	area := ui.NewArea(ah)
-	window := ui.NewWindow("Hello", fontWidth*cols, lineHeight*rows, false)
-	window.SetChild(area)
-	window.OnClosing(func(*ui.Window) bool {
-		ui.Quit()
-		return true
-	})
 
 	editor = &Editor{
 		nvim:         neovim,
 		nvimAttached: false,
-		font:         font,
-		fontWidth:    int(math.Ceil(w)),
-		fontHeight:   int(math.Ceil(h)),
+		font:         font.font,
+		fontWidth:    font.width,
+		fontHeight:   font.height,
 		rows:         rows,
 		cols:         cols,
-		LineHeight:   lineHeight,
+		LineHeight:   font.lineHeight,
 		window:       window,
-		area:         area,
+		area:         ah.area,
 		areaHandler:  ah,
-		redrawEvent:  make(chan interface{}),
 		mode:         "normal",
 		close:        make(chan bool),
 	}
@@ -138,8 +169,6 @@ func newEditor() error {
 	o := make(map[string]interface{})
 	o["rgb"] = true
 	editor.nvim.AttachUI(cols, rows, o)
-
-	window.Show()
 
 	go func() {
 		<-editor.close
@@ -171,6 +200,8 @@ func (e *Editor) handleRedraw() {
 				ah.eolClear(args)
 			case "clear":
 				ah.clear(args)
+			case "resize":
+				ah.resize(args)
 			case "highlight_set":
 				ah.highlightSet(args)
 			case "set_scroll_region":
@@ -248,6 +279,16 @@ func (ah *AreaHandler) put(args []interface{}) {
 		ah.cursor[1] = col
 	}
 	areaQueueRedraw(x, y, numChars, 1)
+}
+
+func (ah *AreaHandler) resize(args []interface{}) {
+	ah.content = make([][]*Char, editor.rows)
+	for i := 0; i < editor.rows; i++ {
+		ah.content[i] = make([]*Char, editor.cols)
+	}
+	ui.QueueMain(func() {
+		editor.area.QueueRedrawAll()
+	})
 }
 
 func (ah *AreaHandler) clear(args []interface{}) {
@@ -348,9 +389,27 @@ func (ah *AreaHandler) scroll(args []interface{}) {
 
 // Draw is
 func (ah *AreaHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
-	ah.area = a
 	if !editor.nvimAttached {
 		return
+	}
+	width := int(dp.AreaWidth)
+	height := int(dp.AreaHeight)
+	if ah.width != 0 && ah.height != 0 {
+		if ah.width != width || ah.height != height {
+			ah.width = width
+			ah.height = height
+
+			cols := width / editor.fontWidth
+			rows := height / editor.LineHeight
+			if editor.cols != cols || editor.rows != rows {
+				editor.cols = cols
+				editor.rows = rows
+				editor.nvim.TryResizeUI(cols, rows)
+			}
+		}
+	} else {
+		ah.width = width
+		ah.height = height
 	}
 
 	row := int(math.Ceil(dp.ClipY / float64(editor.LineHeight)))
@@ -649,18 +708,6 @@ func (ah *AreaHandler) KeyEvent(a *ui.Area, key *ui.AreaKeyEvent) (handled bool)
 	return true
 }
 
-func main() {
-	go func() {
-		http.ListenAndServe("0.0.0.0:6060", nil)
-	}()
-	err := ui.Main(func() {
-		newEditor()
-	})
-	if err != nil {
-		panic(err)
-	}
-}
-
 func calcColor(c int) RGBA {
 	b := float64(c&255) / 255
 	g := float64((c>>8)&255) / 255
@@ -710,4 +757,16 @@ func reflectToInt(iface interface{}) int {
 		return int(o)
 	}
 	return int(iface.(uint64))
+}
+
+func main() {
+	go func() {
+		http.ListenAndServe("0.0.0.0:6060", nil)
+	}()
+	err := ui.Main(func() {
+		newEditor()
+	})
+	if err != nil {
+		panic(err)
+	}
 }
