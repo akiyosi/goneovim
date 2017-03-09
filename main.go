@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"math"
+	"os"
 	"strings"
+	"sync"
 
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
@@ -74,9 +76,9 @@ type Editor struct {
 	close        chan bool
 }
 
-func initWindow(area *ui.Area, width, height int) *ui.Window {
+func initWindow(box *ui.Box, width, height int) *ui.Window {
 	window := ui.NewWindow("Hello", width, height, false)
-	window.SetChild(area)
+	window.SetChild(box)
 	window.OnClosing(func(*ui.Window) bool {
 		ui.Quit()
 		return true
@@ -125,11 +127,16 @@ func newEditor() error {
 	width := 800
 	height := 600
 	ah := initArea()
-	window := initWindow(ah.area, width, height)
+	box := ui.NewVerticalBox()
+	// cursor := ui.NewArea(&AreaHandler{})
+	// cursor := ui.NewEntry()
+	// box.Append(cursor, false)
+	box.Append(ah.area, true)
+	window := initWindow(box, width, height)
 	font := initFont()
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
-		Args: []string{"/tmp/test.go"},
+		Args: os.Args[1:],
 	})
 	if err != nil {
 		return err
@@ -179,7 +186,9 @@ func newEditor() error {
 
 func (e *Editor) handleRedraw() {
 	ah := e.areaHandler
+	mutext := &sync.Mutex{}
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
+		mutext.Lock()
 		for _, update := range updates {
 			event := update[0].(string)
 			args := update[1:]
@@ -191,6 +200,15 @@ func (e *Editor) handleRedraw() {
 				args := update[1].([]interface{})
 				bg := calcColor(reflectToInt(args[0]))
 				editor.Background = bg
+				// ui.QueueMain(func() {
+				// 	editor.area.SetBackground(&ui.Brush{
+				// 		Type: ui.Solid,
+				// 		R:    bg.R,
+				// 		G:    bg.G,
+				// 		B:    bg.B,
+				// 		A:    bg.A,
+				// 	})
+				// })
 			case "cursor_goto":
 				ah.cursorGoto(args)
 			case "put":
@@ -213,6 +231,7 @@ func (e *Editor) handleRedraw() {
 				fmt.Println("Unhandle event", event)
 			}
 		}
+		mutext.Unlock()
 		if !e.nvimAttached {
 			e.nvimAttached = true
 		}
@@ -351,7 +370,8 @@ func (ah *AreaHandler) scroll(args []interface{}) {
 	left := ah.scrollRegion[2]
 	right := ah.scrollRegion[3]
 
-	areaScrollRect(left, top, (right - left + 1), (bot - top + 1), 0, -count)
+	//areaScrollRect(left, top, (right - left + 1), (bot - top + 1), 0, -count)
+	areaQueueRedraw(left, top, (right - left + 1), (bot - top + 1))
 
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
@@ -360,7 +380,7 @@ func (ah *AreaHandler) scroll(args []interface{}) {
 			}
 		}
 		for row := bot - count + 1; row <= bot; row++ {
-			for col := left; col < right; col++ {
+			for col := left; col <= right; col++ {
 				ah.content[row][col] = nil
 			}
 		}
@@ -370,12 +390,12 @@ func (ah *AreaHandler) scroll(args []interface{}) {
 		}
 	} else {
 		for row := bot; row >= top-count; row-- {
-			for col := left; col < right; col++ {
+			for col := left; col <= right; col++ {
 				ah.content[row][col] = ah.content[row+count][col]
 			}
 		}
-		for row := top - count; row >= top; row-- {
-			for col := left; col < right; col++ {
+		for row := top; row < top-count; row++ {
+			for col := left; col <= right; col++ {
 				ah.content[row][col] = nil
 			}
 		}
@@ -430,8 +450,9 @@ func (ah *AreaHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 		R:    bg.R,
 		G:    bg.G,
 		B:    bg.B,
-		A:    bg.A,
+		A:    1,
 	})
+	p.Free()
 
 	for y := row; y < row+rows; y++ {
 		if y >= editor.rows {
@@ -465,6 +486,7 @@ func (ah *AreaHandler) drawCursor(dp *ui.AreaDrawParams) {
 			B:    1,
 			A:    0.5,
 		})
+		p.Free()
 	} else if mode == "insert" {
 		p := ui.NewPath(ui.Winding)
 		p.AddRectangle(
@@ -481,19 +503,23 @@ func (ah *AreaHandler) drawCursor(dp *ui.AreaDrawParams) {
 			B:    1,
 			A:    0.9,
 		})
+		p.Free()
 	} else {
 		fmt.Println(mode)
 	}
 }
 
 func (ah *AreaHandler) drawText(dp *ui.AreaDrawParams, y int, col int, cols int) {
+	if y >= len(ah.content) {
+		return
+	}
 	line := ah.content[y]
 	text := ""
 	var specialChars []int
 	start := -1
 	end := col
 	for x := col; x < col+cols; x++ {
-		if x >= editor.cols {
+		if x >= len(line) {
 			continue
 		}
 		char := line[x]
@@ -538,6 +564,7 @@ func (ah *AreaHandler) drawText(dp *ui.AreaDrawParams, y int, col int, cols int)
 		textLayout.SetColor(x-start, x-start+1, fg.R, fg.G, fg.B, fg.A)
 	}
 	dp.Context.Text(float64(start*editor.fontWidth), float64(y*editor.LineHeight+3), textLayout)
+	textLayout.Free()
 
 	for _, x := range specialChars {
 		char := line[x]
@@ -551,17 +578,21 @@ func (ah *AreaHandler) drawText(dp *ui.AreaDrawParams, y int, col int, cols int)
 		textLayout := ui.NewTextLayout(char.char, editor.font, -1)
 		textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
 		dp.Context.Text(float64(x*editor.fontWidth), float64(y*editor.LineHeight+3), textLayout)
+		textLayout.Free()
 	}
 }
 
 func (ah *AreaHandler) fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int) {
+	if y >= len(ah.content) {
+		return
+	}
 	line := ah.content[y]
 	start := -1
 	end := -1
 	var lastBg *RGBA
 	var bg *RGBA
 	for x := col; x < col+cols; x++ {
-		if x >= editor.cols {
+		if x >= len(line) {
 			continue
 		}
 		char := line[x]
@@ -593,6 +624,7 @@ func (ah *AreaHandler) fillHightlight(dp *ui.AreaDrawParams, y int, col int, col
 						B:    lastBg.B,
 						A:    lastBg.A,
 					})
+					p.Free()
 
 					// start a new one
 					start = x
@@ -617,6 +649,7 @@ func (ah *AreaHandler) fillHightlight(dp *ui.AreaDrawParams, y int, col int, col
 					B:    lastBg.B,
 					A:    lastBg.A,
 				})
+				p.Free()
 
 				// start a new one
 				start = x
@@ -642,6 +675,7 @@ func (ah *AreaHandler) fillHightlight(dp *ui.AreaDrawParams, y int, col int, col
 			B:    lastBg.B,
 			A:    lastBg.A,
 		})
+		p.Free()
 	}
 }
 
