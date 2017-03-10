@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"unsafe"
 
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
@@ -65,6 +66,7 @@ type Editor struct {
 	font         *ui.Font
 	rows         int
 	cols         int
+	cursor       *ui.Area
 	fontWidth    int
 	fontHeight   int
 	LineHeight   int
@@ -77,10 +79,22 @@ type Editor struct {
 }
 
 func initWindow(box *ui.Box, width, height int) *ui.Window {
-	window := ui.NewWindow("Hello", width, height, false)
+	window := ui.NewWindow("Gonvim", width, height, false)
 	window.SetChild(box)
 	window.OnClosing(func(*ui.Window) bool {
 		ui.Quit()
+		return true
+	})
+	window.OnContentSizeChanged(func(w *ui.Window, data unsafe.Pointer) bool {
+		width, height = window.ContentSize()
+		editor.area.SetSize(width, height)
+		cols := width / editor.fontWidth
+		rows := height / editor.LineHeight
+		if editor.cols != cols || editor.rows != rows {
+			editor.cols = cols
+			editor.rows = rows
+			editor.nvim.TryResizeUI(cols, rows)
+		}
 		return true
 	})
 	window.Show()
@@ -128,10 +142,12 @@ func newEditor() error {
 	height := 600
 	ah := initArea()
 	box := ui.NewVerticalBox()
-	// cursor := ui.NewArea(&AreaHandler{})
-	// cursor := ui.NewEntry()
-	// box.Append(cursor, false)
-	box.Append(ah.area, true)
+	box.Append(ah.area, false)
+	cursor := ui.NewArea(&AreaHandler{})
+
+	box.Append(cursor, false)
+	ah.area.SetSize(width, height)
+	ah.area.SetPosition(0, 0)
 	window := initWindow(box, width, height)
 	font := initFont()
 
@@ -164,6 +180,7 @@ func newEditor() error {
 		areaHandler:  ah,
 		mode:         "normal",
 		close:        make(chan bool),
+		cursor:       cursor,
 	}
 
 	editor.handleRedraw()
@@ -235,12 +252,7 @@ func (e *Editor) handleRedraw() {
 		if !e.nvimAttached {
 			e.nvimAttached = true
 		}
-		row := ah.cursor[0]
-		col := ah.cursor[1]
-		areaQueueRedraw(col, row, 1, 1)
-		row = ah.lastCursor[0]
-		col = ah.lastCursor[1]
-		areaQueueRedraw(col, row, 1, 1)
+		drawCursor()
 	})
 }
 
@@ -278,11 +290,11 @@ func (ah *AreaHandler) put(args []interface{}) {
 	numChars := 0
 	x := ah.cursor[1]
 	y := ah.cursor[0]
+	row := ah.cursor[0]
+	col := ah.cursor[1]
+	line := ah.content[row]
 	for _, arg := range args {
 		chars := arg.([]interface{})
-		row := ah.cursor[0]
-		col := ah.cursor[1]
-		line := ah.content[row]
 		for _, c := range chars {
 			char := line[col]
 			if char == nil {
@@ -294,12 +306,15 @@ func (ah *AreaHandler) put(args []interface{}) {
 			col++
 			numChars++
 		}
-		ah.cursor[1] = col
 	}
-	areaQueueRedraw(x, y, numChars, 1)
+	ah.cursor[1] = col
+	// we redraw one character more than the chars put for double width characters
+	areaQueueRedraw(x, y, numChars+1, 1)
 }
 
 func (ah *AreaHandler) resize(args []interface{}) {
+	ah.cursor[0] = 0
+	ah.cursor[1] = 0
 	ah.content = make([][]*Char, editor.rows)
 	for i := 0; i < editor.rows; i++ {
 		ah.content[i] = make([]*Char, editor.cols)
@@ -310,6 +325,8 @@ func (ah *AreaHandler) resize(args []interface{}) {
 }
 
 func (ah *AreaHandler) clear(args []interface{}) {
+	ah.cursor[0] = 0
+	ah.cursor[1] = 0
 	ah.content = make([][]*Char, editor.rows)
 	for i := 0; i < editor.rows; i++ {
 		ah.content[i] = make([]*Char, editor.cols)
@@ -408,30 +425,14 @@ func (ah *AreaHandler) scroll(args []interface{}) {
 
 // Draw is
 func (ah *AreaHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
+	if ah.area == nil {
+		return
+	}
 	if editor == nil {
 		return
 	}
 	if !editor.nvimAttached {
 		return
-	}
-	width := int(dp.AreaWidth)
-	height := int(dp.AreaHeight)
-	if ah.width != 0 && ah.height != 0 {
-		if ah.width != width || ah.height != height {
-			ah.width = width
-			ah.height = height
-
-			cols := width / editor.fontWidth
-			rows := height / editor.LineHeight
-			if editor.cols != cols || editor.rows != rows {
-				editor.cols = cols
-				editor.rows = rows
-				editor.nvim.TryResizeUI(cols, rows)
-			}
-		}
-	} else {
-		ah.width = width
-		ah.height = height
 	}
 
 	row := int(math.Ceil(dp.ClipY / float64(editor.LineHeight)))
@@ -461,51 +462,38 @@ func (ah *AreaHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 		ah.fillHightlight(dp, y, col, cols)
 		ah.drawText(dp, y, col, cols)
 	}
-	ah.drawCursor(dp)
 }
 
-func (ah *AreaHandler) drawCursor(dp *ui.AreaDrawParams) {
-	row := ah.cursor[0]
-	col := ah.cursor[1]
-	ah.lastCursor = []int{row, col}
-	mode := editor.mode
+func drawCursor() {
+	row := editor.areaHandler.cursor[0]
+	col := editor.areaHandler.cursor[1]
+	ui.QueueMain(func() {
+		editor.cursor.SetPosition(col*editor.fontWidth, row*editor.LineHeight)
+	})
 
+	mode := editor.mode
 	if mode == "normal" {
-		p := ui.NewPath(ui.Winding)
-		p.AddRectangle(
-			float64(col*editor.fontWidth),
-			float64(row*editor.LineHeight),
-			float64(editor.fontWidth),
-			float64(editor.LineHeight),
-		)
-		p.End()
-		dp.Context.Fill(p, &ui.Brush{
-			Type: ui.Solid,
-			R:    1,
-			G:    1,
-			B:    1,
-			A:    0.5,
+		ui.QueueMain(func() {
+			editor.cursor.SetSize(editor.fontWidth, editor.LineHeight)
+			editor.cursor.SetBackground(&ui.Brush{
+				Type: ui.Solid,
+				R:    1,
+				G:    1,
+				B:    1,
+				A:    0.5,
+			})
 		})
-		p.Free()
 	} else if mode == "insert" {
-		p := ui.NewPath(ui.Winding)
-		p.AddRectangle(
-			float64(col*editor.fontWidth),
-			float64(row*editor.LineHeight),
-			1,
-			float64(editor.LineHeight),
-		)
-		p.End()
-		dp.Context.Fill(p, &ui.Brush{
-			Type: ui.Solid,
-			R:    1,
-			G:    1,
-			B:    1,
-			A:    0.9,
+		ui.QueueMain(func() {
+			editor.cursor.SetSize(1, editor.LineHeight)
+			editor.cursor.SetBackground(&ui.Brush{
+				Type: ui.Solid,
+				R:    1,
+				G:    1,
+				B:    1,
+				A:    0.9,
+			})
 		})
-		p.Free()
-	} else {
-		fmt.Println(mode)
 	}
 }
 
@@ -598,6 +586,8 @@ func (ah *AreaHandler) fillHightlight(dp *ui.AreaDrawParams, y int, col int, col
 		char := line[x]
 		if char != nil {
 			bg = char.highlight.background
+		} else {
+			bg = nil
 		}
 		if bg != nil {
 			if lastBg == nil {
@@ -654,7 +644,7 @@ func (ah *AreaHandler) fillHightlight(dp *ui.AreaDrawParams, y int, col int, col
 				// start a new one
 				start = x
 				end = x
-				lastBg = bg
+				lastBg = nil
 			}
 		}
 	}
@@ -718,6 +708,14 @@ func (ah *AreaHandler) KeyEvent(a *ui.Area, key *ui.AreaKeyEvent) (handled bool)
 		namedKey = "Insert"
 	case ui.Delete:
 		namedKey = "Del"
+	case ui.Left:
+		namedKey = "Left"
+	case ui.Right:
+		namedKey = "Right"
+	case ui.Down:
+		namedKey = "Down"
+	case ui.Up:
+		namedKey = "Up"
 	}
 
 	char := ""
