@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"unsafe"
@@ -28,6 +29,20 @@ type AreaHandler struct {
 	scrollRegion []int
 	width        int
 	height       int
+	span         *ui.Area
+}
+
+// SpanHandler is
+type SpanHandler struct {
+	AreaHandler
+	text          string
+	bg            *RGBA
+	color         *RGBA
+	font          *ui.Font
+	paddingLeft   int
+	paddingRight  int
+	paddingTop    int
+	paddingBottom int
 }
 
 // Highlight is
@@ -58,24 +73,33 @@ type Font struct {
 	lineHeight int
 }
 
+// PopupItem is
+type PopupItem struct {
+	kind *SpanHandler
+	menu *SpanHandler
+}
+
 // Editor is the editor
 type Editor struct {
-	nvim         *nvim.Nvim
-	nvimAttached bool
-	mode         string
-	font         *ui.Font
-	rows         int
-	cols         int
-	cursor       *ui.Area
-	fontWidth    int
-	fontHeight   int
-	LineHeight   int
-	Foreground   RGBA
-	Background   RGBA
-	window       *ui.Window
-	area         *ui.Area
-	areaHandler  *AreaHandler
-	close        chan bool
+	nvim            *nvim.Nvim
+	nvimAttached    bool
+	mode            string
+	font            *ui.Font
+	rows            int
+	cols            int
+	cursor          *ui.Area
+	fontWidth       int
+	fontHeight      int
+	LineHeight      int
+	Foreground      RGBA
+	Background      RGBA
+	window          *ui.Window
+	area            *ui.Area
+	areaHandler     *AreaHandler
+	close           chan bool
+	popup           *ui.Box
+	popupItems      []*PopupItem
+	totalPopupItems int
 }
 
 func initWindow(box *ui.Box, width, height int) *ui.Window {
@@ -141,13 +165,38 @@ func newEditor() error {
 	width := 800
 	height := 600
 	ah := initArea()
-	box := ui.NewVerticalBox()
-	box.Append(ah.area, false)
 	cursor := ui.NewArea(&AreaHandler{})
+	popup := ui.NewHorizontalBox()
+	var popupItems []*PopupItem
+	totalPopupItems := 10
+	for i := 0; i < totalPopupItems; i++ {
+		kindSpanHandler := &SpanHandler{}
+		kindSpan := ui.NewArea(kindSpanHandler)
+		kindSpanHandler.span = kindSpan
 
+		menuSpanHandler := &SpanHandler{}
+		menuSpan := ui.NewArea(menuSpanHandler)
+		menuSpanHandler.span = menuSpan
+
+		popupItem := &PopupItem{
+			kind: kindSpanHandler,
+			menu: menuSpanHandler,
+		}
+
+		popupItems = append(popupItems, popupItem)
+		popup.Append(kindSpan, false)
+		popup.Append(menuSpan, false)
+	}
+	popup.SetSize(1000, 500)
+	// popup.Hide()
+
+	box := ui.NewHorizontalBox()
+	box.Append(ah.area, false)
 	box.Append(cursor, false)
+	box.Append(popup, false)
+
 	ah.area.SetSize(width, height)
-	ah.area.SetPosition(0, 0)
+	// ah.area.SetPosition(100, 100)
 	window := initWindow(box, width, height)
 	font := initFont()
 
@@ -167,20 +216,23 @@ func newEditor() error {
 	}
 
 	editor = &Editor{
-		nvim:         neovim,
-		nvimAttached: false,
-		font:         font.font,
-		fontWidth:    font.width,
-		fontHeight:   font.height,
-		rows:         rows,
-		cols:         cols,
-		LineHeight:   font.lineHeight,
-		window:       window,
-		area:         ah.area,
-		areaHandler:  ah,
-		mode:         "normal",
-		close:        make(chan bool),
-		cursor:       cursor,
+		nvim:            neovim,
+		nvimAttached:    false,
+		font:            font.font,
+		fontWidth:       font.width,
+		fontHeight:      font.height,
+		rows:            rows,
+		cols:            cols,
+		LineHeight:      font.lineHeight,
+		window:          window,
+		area:            ah.area,
+		areaHandler:     ah,
+		mode:            "normal",
+		close:           make(chan bool),
+		cursor:          cursor,
+		popup:           popup,
+		popupItems:      popupItems,
+		totalPopupItems: totalPopupItems,
 	}
 
 	editor.handleRedraw()
@@ -191,6 +243,7 @@ func newEditor() error {
 
 	o := make(map[string]interface{})
 	o["rgb"] = true
+	o["popupmenu_external"] = true
 	editor.nvim.AttachUI(cols, rows, o)
 
 	go func() {
@@ -244,6 +297,12 @@ func (e *Editor) handleRedraw() {
 				ah.scroll(args)
 			case "mode_change":
 				ah.modeChange(args)
+			case "popupmenu_show":
+				ah.popupmenuShow(args)
+			case "popupmenu_hide":
+				ah.popupmenuHide(args)
+			case "popupmenu_select":
+				ah.popupmenuSelect(args)
 			default:
 				fmt.Println("Unhandle event", event)
 			}
@@ -375,6 +434,126 @@ func (ah *AreaHandler) setScrollRegion(args []interface{}) {
 	ah.scrollRegion = []int{int(top), int(bot), int(left), int(right)}
 }
 
+func (p *PopupItem) setItem(item []interface{}, selected bool) {
+	text := item[0].(string)
+	kindText := item[1].(string)
+	p.setKind(kindText, selected)
+
+	fg := newRGBA(205, 211, 222, 1)
+	p.menu.SetColor(fg)
+	if selected {
+		p.menu.SetBackground(newRGBA(81, 154, 186, 1))
+	} else {
+		p.menu.SetBackground(newRGBA(14, 17, 18, 1))
+	}
+	p.menu.SetFont(editor.font)
+	p.menu.SetText(text)
+	p.menu.paddingLeft = 10
+	p.menu.paddingRight = 10
+	p.menu.paddingTop = 10
+	p.menu.paddingBottom = 10
+}
+
+func (p *PopupItem) setKind(kindText string, selected bool) {
+	switch kindText {
+	case "function":
+		kindText = "f"
+		p.kind.SetColor(newRGBA(97, 174, 239, 1))
+		p.kind.SetBackground(newRGBA(97, 174, 239, 0.2))
+	default:
+		kindText = "b"
+		p.kind.SetColor(newRGBA(151, 195, 120, 1))
+		p.kind.SetBackground(newRGBA(151, 195, 120, 0.2))
+	}
+	p.kind.SetText(kindText)
+}
+
+func (p *PopupItem) hide() {
+	ui.QueueMain(func() {
+		p.kind.span.Hide()
+		p.menu.span.Hide()
+	})
+}
+
+func (ah *AreaHandler) popupmenuShow(args []interface{}) {
+	arg := args[0].([]interface{})
+	items := arg[0].([]interface{})
+	selected := reflectToInt(arg[1])
+	row := reflectToInt(arg[2])
+	col := reflectToInt(arg[3])
+	popup := editor.popup
+	popupItems := editor.popupItems
+	i := 0
+	widthMax := 0
+	heightSum := 0
+	for i = 0; i < editor.totalPopupItems; i++ {
+		p := popupItems[i]
+		if i >= len(items) {
+			p.hide()
+			continue
+		}
+
+		item := items[i].([]interface{})
+		p.setItem(item, selected == i)
+
+		width, height := p.menu.getSize()
+		if width > widthMax {
+			widthMax = width
+		}
+		y := heightSum
+		heightSum += height
+		ui.QueueMain(func() {
+			p.menu.span.SetPosition(0, y)
+		})
+	}
+
+	for i = 0; i < editor.totalPopupItems; i++ {
+		if i >= len(items) {
+			continue
+		}
+		p := popupItems[i]
+		_, height := p.menu.getSize()
+		ui.QueueMain(func() {
+			p.menu.span.SetSize(widthMax, height)
+			p.menu.span.Show()
+			p.menu.span.QueueRedrawAll()
+		})
+	}
+
+	ui.QueueMain(func() {
+		popup.SetPosition(
+			col*editor.fontWidth,
+			(row+1)*editor.LineHeight,
+		)
+		popup.SetSize(widthMax, heightSum)
+		popup.Show()
+	})
+}
+
+func (ah *AreaHandler) popupmenuHide(args []interface{}) {
+	ui.QueueMain(func() {
+		editor.popup.Hide()
+	})
+}
+
+func (ah *AreaHandler) popupmenuSelect(args []interface{}) {
+	selected := reflectToInt(args[0].([]interface{})[0])
+	for i := 0; i < editor.totalPopupItems; i++ {
+		p := editor.popupItems[i]
+		if selected == i {
+			p.menu.SetBackground(newRGBA(81, 154, 186, 1))
+			ui.QueueMain(func() {
+				p.menu.span.QueueRedrawAll()
+			})
+		} else {
+			p.menu.SetBackground(newRGBA(14, 17, 18, 1))
+			ui.QueueMain(func() {
+				p.menu.span.QueueRedrawAll()
+			})
+		}
+	}
+}
+
 func (ah *AreaHandler) modeChange(args []interface{}) {
 	arg := args[0].([]interface{})
 	editor.mode = arg[0].(string)
@@ -498,6 +677,11 @@ func drawCursor() {
 }
 
 func (ah *AreaHandler) drawText(dp *ui.AreaDrawParams, y int, col int, cols int) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r, debug.Stack())
+		}
+	}()
 	if y >= len(ah.content) {
 		return
 	}
@@ -539,6 +723,7 @@ func (ah *AreaHandler) drawText(dp *ui.AreaDrawParams, y int, col int, cols int)
 	}
 	text = strings.TrimSpace(text)
 	textLayout := ui.NewTextLayout(text, editor.font, -1)
+	shift := (editor.LineHeight - editor.fontHeight) / 2
 
 	for x := start; x <= end; x++ {
 		char := line[x]
@@ -551,7 +736,7 @@ func (ah *AreaHandler) drawText(dp *ui.AreaDrawParams, y int, col int, cols int)
 		}
 		textLayout.SetColor(x-start, x-start+1, fg.R, fg.G, fg.B, fg.A)
 	}
-	dp.Context.Text(float64(start*editor.fontWidth), float64(y*editor.LineHeight+3), textLayout)
+	dp.Context.Text(float64(start*editor.fontWidth), float64(y*editor.LineHeight+shift), textLayout)
 	textLayout.Free()
 
 	for _, x := range specialChars {
@@ -565,7 +750,7 @@ func (ah *AreaHandler) drawText(dp *ui.AreaDrawParams, y int, col int, cols int)
 		}
 		textLayout := ui.NewTextLayout(char.char, editor.font, -1)
 		textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
-		dp.Context.Text(float64(x*editor.fontWidth), float64(y*editor.LineHeight+3), textLayout)
+		dp.Context.Text(float64(x*editor.fontWidth), float64(y*editor.LineHeight+shift), textLayout)
 		textLayout.Free()
 	}
 }
@@ -742,6 +927,69 @@ func (ah *AreaHandler) KeyEvent(a *ui.Area, key *ui.AreaKeyEvent) (handled bool)
 	return true
 }
 
+// Draw the span
+func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
+	if s.bg == nil {
+		return
+	}
+	bg := s.bg
+	p := ui.NewPath(ui.Winding)
+	p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
+	p.End()
+	dp.Context.Fill(p, &ui.Brush{
+		Type: ui.Solid,
+		R:    bg.R,
+		G:    bg.G,
+		B:    bg.B,
+		A:    1,
+	})
+	p.Free()
+
+	textLayout := s.getTextLayout()
+	dp.Context.Text(
+		float64(s.paddingLeft),
+		float64(s.paddingTop),
+		textLayout,
+	)
+	textLayout.Free()
+}
+
+// SetColor sets the color
+func (s *SpanHandler) SetColor(rgba *RGBA) {
+	s.color = rgba
+}
+
+// SetBackground sets the color
+func (s *SpanHandler) SetBackground(rgba *RGBA) {
+	s.bg = rgba
+}
+
+// SetFont sets the font
+func (s *SpanHandler) SetFont(font *ui.Font) {
+	s.font = font
+}
+
+// SetText sets the text
+func (s *SpanHandler) SetText(text string) {
+	s.text = text
+}
+
+func (s *SpanHandler) getTextLayout() *ui.TextLayout {
+	textLayout := ui.NewTextLayout(s.text, s.font, -1)
+	fg := s.color
+	textLayout.SetColor(0, len(s.text), fg.R, fg.G, fg.B, fg.A)
+	return textLayout
+}
+
+func (s *SpanHandler) getSize() (int, int) {
+	textLayout := s.getTextLayout()
+	w, h := textLayout.Extents()
+	width := int(math.Ceil(w)) + s.paddingLeft + s.paddingRight
+	height := int(math.Ceil(h)) + s.paddingTop + s.paddingBottom
+	textLayout.Free()
+	return width, height
+}
+
 func calcColor(c int) RGBA {
 	b := float64(c&255) / 255
 	g := float64((c>>8)&255) / 255
@@ -802,5 +1050,14 @@ func main() {
 	})
 	if err != nil {
 		panic(err)
+	}
+}
+
+func newRGBA(r int, g int, b int, a float64) *RGBA {
+	return &RGBA{
+		R: float64(r) / 255,
+		G: float64(g) / 255,
+		B: float64(b) / 255,
+		A: a,
 	}
 }
