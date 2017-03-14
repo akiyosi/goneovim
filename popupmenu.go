@@ -1,12 +1,17 @@
 package gonvim
 
-import "github.com/dzhou121/ui"
+import (
+	"time"
+
+	"github.com/dzhou121/ui"
+)
 
 // PopupMenu is the popupmenu
 type PopupMenu struct {
-	box   *ui.Box
-	items []*PopupItem
-	total int
+	box    *ui.Box
+	items  []*PopupItem
+	total  int
+	hidden bool
 }
 
 // PopupItem is
@@ -47,6 +52,7 @@ func initPopupmenu() *PopupMenu {
 }
 
 func (p *PopupMenu) show(args []interface{}) {
+	p.hidden = false
 	arg := args[0].([]interface{})
 	items := arg[0].([]interface{})
 	selected := reflectToInt(arg[1])
@@ -55,8 +61,10 @@ func (p *PopupMenu) show(args []interface{}) {
 
 	popupItems := p.items
 	i := 0
-	widthMax := 0
+	kindWidth := 0
+	menuWidthMax := 0
 	heightSum := 0
+	height := 0
 	for i = 0; i < p.total; i++ {
 		popupItem := popupItems[i]
 		if i >= len(items) {
@@ -67,14 +75,18 @@ func (p *PopupMenu) show(args []interface{}) {
 		item := items[i].([]interface{})
 		popupItem.setItem(item, selected == i)
 
-		width, height := popupItem.menu.getSize()
-		if width > widthMax {
-			widthMax = width
+		var menuWidth int
+		menuWidth, height = popupItem.menu.getSize()
+		kindWidth, height = popupItem.kind.getSize()
+
+		if menuWidth > menuWidthMax {
+			menuWidthMax = menuWidth
 		}
 		y := heightSum
 		heightSum += height
 		ui.QueueMain(func() {
-			popupItem.menu.span.SetPosition(0, y)
+			popupItem.kind.span.SetPosition(0, y)
+			popupItem.menu.span.SetPosition(kindWidth, y)
 		})
 	}
 
@@ -83,9 +95,11 @@ func (p *PopupMenu) show(args []interface{}) {
 			continue
 		}
 		popupItem := popupItems[i]
-		_, height := popupItem.menu.getSize()
 		ui.QueueMain(func() {
-			popupItem.menu.span.SetSize(widthMax, height)
+			popupItem.kind.span.SetSize(kindWidth, height)
+			popupItem.kind.span.Show()
+			popupItem.kind.span.QueueRedrawAll()
+			popupItem.menu.span.SetSize(menuWidthMax, height)
 			popupItem.menu.span.Show()
 			popupItem.menu.span.QueueRedrawAll()
 		})
@@ -93,17 +107,23 @@ func (p *PopupMenu) show(args []interface{}) {
 
 	ui.QueueMain(func() {
 		p.box.SetPosition(
-			col*editor.fontWidth,
+			col*editor.fontWidth-kindWidth-p.items[0].menu.paddingLeft,
 			(row+1)*editor.LineHeight,
 		)
-		p.box.SetSize(widthMax, heightSum)
+		p.box.SetSize(menuWidthMax+kindWidth, heightSum)
 		p.box.Show()
 	})
 }
 
 func (p *PopupMenu) hide(args []interface{}) {
-	ui.QueueMain(func() {
-		p.box.Hide()
+	p.hidden = true
+
+	time.AfterFunc(50*time.Millisecond, func() {
+		if p.hidden {
+			ui.QueueMain(func() {
+				p.box.Hide()
+			})
+		}
 	})
 }
 
@@ -139,23 +159,37 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 	}
 	p.menu.SetFont(editor.font)
 	p.menu.SetText(text)
+
 	p.menu.paddingLeft = 10
 	p.menu.paddingRight = 10
-	p.menu.paddingTop = 10
-	p.menu.paddingBottom = 10
+	p.menu.paddingTop = 8
+	p.menu.paddingBottom = 8
+
+	p.kind.paddingLeft = 10
+	p.kind.paddingRight = 10
+	p.kind.paddingTop = 8
+	p.kind.paddingBottom = 8
 }
 
 func (p *PopupItem) setKind(kindText string, selected bool) {
+	color := newRGBA(151, 195, 120, 1)
+	bg := newRGBA(151, 195, 120, 0.2)
+
 	switch kindText {
 	case "function":
 		kindText = "f"
-		p.kind.SetColor(newRGBA(97, 174, 239, 1))
-		p.kind.SetBackground(newRGBA(97, 174, 239, 0.2))
+		color = newRGBA(97, 174, 239, 1)
+		bg = newRGBA(97, 174, 239, 0.2)
+	case "func":
+		kindText = "f"
+		color = newRGBA(97, 174, 239, 1)
+		bg = newRGBA(97, 174, 239, 0.2)
 	default:
 		kindText = "b"
-		p.kind.SetColor(newRGBA(151, 195, 120, 1))
-		p.kind.SetBackground(newRGBA(151, 195, 120, 0.2))
 	}
+	p.kind.SetColor(color)
+	p.kind.SetBackground(bg)
+	p.kind.SetFont(editor.font)
 	p.kind.SetText(kindText)
 }
 

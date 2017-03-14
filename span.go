@@ -1,8 +1,6 @@
 package gonvim
 
 import (
-	"math"
-
 	"github.com/dzhou121/ui"
 )
 
@@ -28,12 +26,21 @@ func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	p := ui.NewPath(ui.Winding)
 	p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
 	p.End()
+
+	bottomBg := newRGBA(14, 17, 18, 1)
+	dp.Context.Fill(p, &ui.Brush{
+		Type: ui.Solid,
+		R:    bottomBg.R,
+		G:    bottomBg.G,
+		B:    bottomBg.B,
+		A:    bottomBg.A,
+	})
 	dp.Context.Fill(p, &ui.Brush{
 		Type: ui.Solid,
 		R:    bg.R,
 		G:    bg.G,
 		B:    bg.B,
-		A:    1,
+		A:    bg.A,
 	})
 	p.Free()
 
@@ -74,10 +81,7 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 }
 
 func (s *SpanHandler) getSize() (int, int) {
-	textLayout := s.getTextLayout()
-	w, h := textLayout.Extents()
-	width := int(math.Ceil(w)) + s.paddingLeft + s.paddingRight
-	height := int(math.Ceil(h)) + s.paddingTop + s.paddingBottom
-	textLayout.Free()
+	width := editor.fontWidth*len(s.text) + s.paddingLeft + s.paddingRight
+	height := editor.fontHeight + s.paddingTop + s.paddingBottom
 	return width, height
 }
