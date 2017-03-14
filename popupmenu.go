@@ -42,6 +42,7 @@ func initPopupmenu() *PopupMenu {
 		box.Append(kindSpan, false)
 		box.Append(menuSpan, false)
 	}
+	box.SetShadow(0, 2, 0, 0, 0, 1, 4)
 	box.Hide()
 
 	return &PopupMenu{

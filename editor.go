@@ -157,15 +157,6 @@ func (e *Editor) handleRedraw() {
 				args := update[1].([]interface{})
 				bg := calcColor(reflectToInt(args[0]))
 				editor.Background = bg
-				// ui.QueueMain(func() {
-				// 	editor.area.SetBackground(&ui.Brush{
-				// 		Type: ui.Solid,
-				// 		R:    bg.R,
-				// 		G:    bg.G,
-				// 		B:    bg.B,
-				// 		A:    bg.A,
-				// 	})
-				// })
 			case "cursor_goto":
 				ah.cursorGoto(args)
 			case "put":
