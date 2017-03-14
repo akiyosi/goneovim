@@ -122,7 +122,7 @@ func InitEditor() error {
 	o["rgb"] = true
 	o["popupmenu_external"] = true
 	editor.nvim.AttachUI(editor.cols, editor.rows, o)
-	fmt.Println(editor.nvim.Subscribe("Gui"))
+	editor.nvim.Subscribe("Gui")
 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	editor.nvim.Command("runtime! ginit.vim")
 
@@ -236,12 +236,10 @@ func (e *Editor) resize() {
 	rows := height / editor.font.lineHeight
 	oldCols := editor.cols
 	oldRows := editor.rows
-	if oldCols != cols || oldRows != rows {
-		editor.cols = cols
-		editor.rows = rows
-		if oldCols > 0 && oldRows > 0 {
-			editor.nvim.TryResizeUI(cols, rows)
-		}
+	editor.cols = cols
+	editor.rows = rows
+	if oldCols > 0 && oldRows > 0 {
+		editor.nvim.TryResizeUI(cols, rows)
 	}
 }
 

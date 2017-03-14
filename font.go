@@ -1,7 +1,6 @@
 package gonvim
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/dzhou121/ui"
@@ -33,7 +32,6 @@ func fontSize(font *ui.Font) (int, int) {
 	w, h := textLayout.Extents()
 	width := int(math.Ceil(w))
 	height := int(math.Ceil(h))
-	fmt.Println(width, height)
 	return width, height
 }
 
