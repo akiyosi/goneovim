@@ -177,14 +177,38 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 	bg := newRGBA(151, 195, 120, 0.2)
 
 	switch kindText {
-	case "function":
+	case "function", "func":
 		kindText = "f"
 		color = newRGBA(97, 174, 239, 1)
 		bg = newRGBA(97, 174, 239, 0.2)
-	case "func":
-		kindText = "f"
-		color = newRGBA(97, 174, 239, 1)
-		bg = newRGBA(97, 174, 239, 0.2)
+	case "var", "statement", "instance", "param", "import":
+		kindText = "v"
+		color = newRGBA(223, 106, 115, 1)
+		bg = newRGBA(223, 106, 115, 0.2)
+	case "const":
+		kindText = "c"
+		color = newRGBA(223, 106, 115, 1)
+		bg = newRGBA(223, 106, 115, 0.2)
+	case "class":
+		kindText = "c"
+		color = newRGBA(229, 193, 124, 1)
+		bg = newRGBA(229, 193, 124, 0.2)
+	case "type":
+		kindText = "t"
+		color = newRGBA(229, 193, 124, 1)
+		bg = newRGBA(229, 193, 124, 0.2)
+	case "module":
+		kindText = "m"
+		color = newRGBA(42, 161, 152, 1)
+		bg = newRGBA(42, 161, 152, 0.2)
+	case "keyword":
+		kindText = "k"
+		color = newRGBA(42, 161, 152, 1)
+		bg = newRGBA(42, 161, 152, 0.2)
+	case "package":
+		kindText = "p"
+		color = newRGBA(42, 161, 152, 1)
+		bg = newRGBA(42, 161, 152, 0.2)
 	default:
 		kindText = "b"
 	}
