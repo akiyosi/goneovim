@@ -81,7 +81,7 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 }
 
 func (s *SpanHandler) getSize() (int, int) {
-	width := editor.fontWidth*len(s.text) + s.paddingLeft + s.paddingRight
-	height := editor.fontHeight + s.paddingTop + s.paddingBottom
+	width := editor.font.width*len(s.text) + s.paddingLeft + s.paddingRight
+	height := editor.font.height + s.paddingTop + s.paddingBottom
 	return width, height
 }

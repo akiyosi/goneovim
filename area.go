@@ -46,6 +46,9 @@ func (ah *AreaHandler) put(args []interface{}) {
 	y := ah.cursor[0]
 	row := ah.cursor[0]
 	col := ah.cursor[1]
+	if row >= editor.rows {
+		return
+	}
 	line := ah.content[row]
 	for _, arg := range args {
 		chars := arg.([]interface{})
@@ -189,10 +192,11 @@ func (ah *AreaHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 		return
 	}
 
-	row := int(math.Ceil(dp.ClipY / float64(editor.LineHeight)))
-	col := int(math.Ceil(dp.ClipX / float64(editor.fontWidth)))
-	rows := int(math.Ceil(dp.ClipHeight / float64(editor.LineHeight)))
-	cols := int(math.Ceil(dp.ClipWidth / float64(editor.fontWidth)))
+	font := editor.font
+	row := int(math.Ceil(dp.ClipY / float64(font.lineHeight)))
+	col := int(math.Ceil(dp.ClipX / float64(font.width)))
+	rows := int(math.Ceil(dp.ClipHeight / float64(font.lineHeight)))
+	cols := int(math.Ceil(dp.ClipWidth / float64(font.width)))
 
 	p := ui.NewPath(ui.Winding)
 	p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
@@ -264,8 +268,8 @@ func (ah *AreaHandler) drawText(dp *ui.AreaDrawParams, y int, col int, cols int)
 		return
 	}
 	text = strings.TrimSpace(text)
-	textLayout := ui.NewTextLayout(text, editor.font, -1)
-	shift := (editor.LineHeight - editor.fontHeight) / 2
+	textLayout := ui.NewTextLayout(text, editor.font.font, -1)
+	shift := (editor.font.lineHeight - editor.font.height) / 2
 
 	for x := start; x <= end; x++ {
 		char := line[x]
@@ -278,7 +282,7 @@ func (ah *AreaHandler) drawText(dp *ui.AreaDrawParams, y int, col int, cols int)
 		}
 		textLayout.SetColor(x-start, x-start+1, fg.R, fg.G, fg.B, fg.A)
 	}
-	dp.Context.Text(float64(start*editor.fontWidth), float64(y*editor.LineHeight+shift), textLayout)
+	dp.Context.Text(float64(start*editor.font.width), float64(y*editor.font.lineHeight+shift), textLayout)
 	textLayout.Free()
 
 	for _, x := range specialChars {
@@ -290,9 +294,9 @@ func (ah *AreaHandler) drawText(dp *ui.AreaDrawParams, y int, col int, cols int)
 		if char.highlight.foreground != nil {
 			fg = *(char.highlight.foreground)
 		}
-		textLayout := ui.NewTextLayout(char.char, editor.font, -1)
+		textLayout := ui.NewTextLayout(char.char, editor.font.font, -1)
 		textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
-		dp.Context.Text(float64(x*editor.fontWidth), float64(y*editor.LineHeight+shift), textLayout)
+		dp.Context.Text(float64(x*editor.font.width), float64(y*editor.font.lineHeight+shift), textLayout)
 		textLayout.Free()
 	}
 }
@@ -328,10 +332,10 @@ func (ah *AreaHandler) fillHightlight(dp *ui.AreaDrawParams, y int, col int, col
 					// last bg is different; draw the previous and start a new one
 					p := ui.NewPath(ui.Winding)
 					p.AddRectangle(
-						float64(start*editor.fontWidth),
-						float64(y*editor.LineHeight),
-						float64((end-start+1)*editor.fontWidth),
-						float64(editor.LineHeight),
+						float64(start*editor.font.width),
+						float64(y*editor.font.lineHeight),
+						float64((end-start+1)*editor.font.width),
+						float64(editor.font.lineHeight),
 					)
 					p.End()
 					dp.Context.Fill(p, &ui.Brush{
@@ -353,10 +357,10 @@ func (ah *AreaHandler) fillHightlight(dp *ui.AreaDrawParams, y int, col int, col
 			if lastBg != nil {
 				p := ui.NewPath(ui.Winding)
 				p.AddRectangle(
-					float64(start*editor.fontWidth),
-					float64(y*editor.LineHeight),
-					float64((end-start+1)*editor.fontWidth),
-					float64(editor.LineHeight),
+					float64(start*editor.font.width),
+					float64(y*editor.font.lineHeight),
+					float64((end-start+1)*editor.font.width),
+					float64(editor.font.lineHeight),
 				)
 				p.End()
 				dp.Context.Fill(p, &ui.Brush{
@@ -378,10 +382,10 @@ func (ah *AreaHandler) fillHightlight(dp *ui.AreaDrawParams, y int, col int, col
 	if lastBg != nil {
 		p := ui.NewPath(ui.Winding)
 		p.AddRectangle(
-			float64(start*editor.fontWidth),
-			float64(y*editor.LineHeight),
-			float64((end-start+1)*editor.fontWidth),
-			float64(editor.LineHeight),
+			float64(start*editor.font.width),
+			float64(y*editor.font.lineHeight),
+			float64((end-start+1)*editor.font.width),
+			float64(editor.font.lineHeight),
 		)
 		p.End()
 
@@ -472,10 +476,10 @@ func (ah *AreaHandler) KeyEvent(a *ui.Area, key *ui.AreaKeyEvent) (handled bool)
 func areaQueueRedraw(x, y, width, heigt int) {
 	ui.QueueMain(func() {
 		editor.area.QueueRedraw(
-			float64(x*editor.fontWidth),
-			float64(y*editor.LineHeight),
-			float64(width*editor.fontWidth),
-			float64(heigt*editor.LineHeight),
+			float64(x*editor.font.width),
+			float64(y*editor.font.lineHeight),
+			float64(width*editor.font.width),
+			float64(heigt*editor.font.lineHeight),
 		)
 	})
 }
@@ -483,12 +487,12 @@ func areaQueueRedraw(x, y, width, heigt int) {
 func areaScrollRect(x, y, width, heigt, offsetX, offsetY int) {
 	ui.QueueMain(func() {
 		editor.area.ScrollRect(
-			float64(x*editor.fontWidth),
-			float64(y*editor.LineHeight),
-			float64(width*editor.fontWidth),
-			float64(heigt*editor.LineHeight),
-			float64(offsetX*editor.fontWidth),
-			float64(offsetY*editor.LineHeight),
+			float64(x*editor.font.width),
+			float64(y*editor.font.lineHeight),
+			float64(width*editor.font.width),
+			float64(heigt*editor.font.lineHeight),
+			float64(offsetX*editor.font.width),
+			float64(offsetY*editor.font.lineHeight),
 		)
 	})
 }

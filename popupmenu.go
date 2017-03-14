@@ -108,8 +108,8 @@ func (p *PopupMenu) show(args []interface{}) {
 
 	ui.QueueMain(func() {
 		p.box.SetPosition(
-			col*editor.fontWidth-kindWidth-p.items[0].menu.paddingLeft,
-			(row+1)*editor.LineHeight,
+			col*editor.font.width-kindWidth-p.items[0].menu.paddingLeft,
+			(row+1)*editor.font.lineHeight,
 		)
 		p.box.SetSize(menuWidthMax+kindWidth, heightSum)
 		p.box.Show()
@@ -158,7 +158,7 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 	} else {
 		p.menu.SetBackground(newRGBA(14, 17, 18, 1))
 	}
-	p.menu.SetFont(editor.font)
+	p.menu.SetFont(editor.font.font)
 	p.menu.SetText(text)
 
 	p.menu.paddingLeft = 10
@@ -190,7 +190,7 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 	}
 	p.kind.SetColor(color)
 	p.kind.SetBackground(bg)
-	p.kind.SetFont(editor.font)
+	p.kind.SetFont(editor.font.font)
 	p.kind.SetText(kindText)
 }
 

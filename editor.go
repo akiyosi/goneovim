@@ -3,6 +3,8 @@ package gonvim
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"unsafe"
 
@@ -29,13 +31,10 @@ type Editor struct {
 	nvim         *nvim.Nvim
 	nvimAttached bool
 	mode         string
-	font         *ui.Font
+	font         *Font
 	rows         int
 	cols         int
 	cursor       *ui.Area
-	fontWidth    int
-	fontHeight   int
-	LineHeight   int
 	Foreground   RGBA
 	Background   RGBA
 	window       *ui.Window
@@ -43,6 +42,8 @@ type Editor struct {
 	areaHandler  *AreaHandler
 	close        chan bool
 	popup        *PopupMenu
+	width        int
+	height       int
 }
 
 func initWindow(box *ui.Box, width, height int) *ui.Window {
@@ -54,14 +55,10 @@ func initWindow(box *ui.Box, width, height int) *ui.Window {
 	})
 	window.OnContentSizeChanged(func(w *ui.Window, data unsafe.Pointer) bool {
 		width, height = window.ContentSize()
+		editor.width = width
+		editor.height = height
 		editor.area.SetSize(width, height)
-		cols := width / editor.fontWidth
-		rows := height / editor.LineHeight
-		if editor.cols != cols || editor.rows != rows {
-			editor.cols = cols
-			editor.rows = rows
-			editor.nvim.TryResizeUI(cols, rows)
-		}
+		editor.resize()
 		return true
 	})
 	window.Show()
@@ -87,7 +84,6 @@ func InitEditor() error {
 	ah.area.SetSize(width, height)
 	// ah.area.SetPosition(100, 100)
 	window := initWindow(box, width, height)
-	font := initFont()
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
@@ -96,23 +92,11 @@ func InitEditor() error {
 		return err
 	}
 
-	cols := int(width / font.width)
-	rows := int(height / font.lineHeight)
-
-	content := make([][]*Char, rows)
-	for i := 0; i < rows; i++ {
-		content[i] = make([]*Char, cols)
-	}
+	font := initFont("", 14, 0)
 
 	editor = &Editor{
 		nvim:         neovim,
 		nvimAttached: false,
-		font:         font.font,
-		fontWidth:    font.width,
-		fontHeight:   font.height,
-		rows:         rows,
-		cols:         cols,
-		LineHeight:   font.lineHeight,
 		window:       window,
 		area:         ah.area,
 		areaHandler:  ah,
@@ -120,9 +104,15 @@ func InitEditor() error {
 		close:        make(chan bool),
 		cursor:       cursor,
 		popup:        popupMenu,
+		width:        width,
+		height:       height,
+		font:         font,
+		cols:         0,
+		rows:         0,
 	}
 
-	editor.handleRedraw()
+	editor.resize()
+	editor.handleNotification()
 	go func() {
 		neovim.Serve()
 		editor.close <- true
@@ -131,7 +121,10 @@ func InitEditor() error {
 	o := make(map[string]interface{})
 	o["rgb"] = true
 	o["popupmenu_external"] = true
-	editor.nvim.AttachUI(cols, rows, o)
+	editor.nvim.AttachUI(editor.cols, editor.rows, o)
+	fmt.Println(editor.nvim.Subscribe("Gui"))
+	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
+	editor.nvim.Command("runtime! ginit.vim")
 
 	go func() {
 		<-editor.close
@@ -141,11 +134,22 @@ func InitEditor() error {
 	return nil
 }
 
-func (e *Editor) handleRedraw() {
+func (e *Editor) handleNotification() {
 	ah := e.areaHandler
-	mutext := &sync.Mutex{}
+	e.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
+		event := updates[0].(string)
+		switch event {
+		case "Font":
+			e.guiFont(updates[1:])
+		case "Linespace":
+			e.guiLinespace(updates[1:])
+		default:
+			fmt.Println("unhandled Gui event", event)
+		}
+	})
+	mutex := &sync.Mutex{}
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		mutext.Lock()
+		mutex.Lock()
 		for _, update := range updates {
 			event := update[0].(string)
 			args := update[1:]
@@ -185,24 +189,73 @@ func (e *Editor) handleRedraw() {
 				fmt.Println("Unhandle event", event)
 			}
 		}
-		mutext.Unlock()
+		mutex.Unlock()
 		if !e.nvimAttached {
 			e.nvimAttached = true
 		}
 		drawCursor()
 	})
 }
+
+func (e *Editor) guiFont(args ...interface{}) {
+	fontArg := args[0].([]interface{})
+	parts := strings.Split(fontArg[0].(string), ":")
+	if len(parts) < 1 {
+		return
+	}
+
+	height := 14
+	for _, p := range parts[1:] {
+		if strings.HasPrefix(p, "h") {
+			var err error
+			height, err = strconv.Atoi(p[1:])
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	e.font.change(parts[0], height)
+	e.resize()
+}
+
+func (e *Editor) guiLinespace(args ...interface{}) {
+	fontArg := args[0].([]interface{})
+	lineSpace, err := strconv.Atoi(fontArg[0].(string))
+	if err != nil {
+		return
+	}
+	e.font.changeLineSpace(lineSpace)
+	e.resize()
+}
+
+func (e *Editor) resize() {
+	width := e.width
+	height := e.height
+	cols := width / editor.font.width
+	rows := height / editor.font.lineHeight
+	oldCols := editor.cols
+	oldRows := editor.rows
+	if oldCols != cols || oldRows != rows {
+		editor.cols = cols
+		editor.rows = rows
+		if oldCols > 0 && oldRows > 0 {
+			editor.nvim.TryResizeUI(cols, rows)
+		}
+	}
+}
+
 func drawCursor() {
 	row := editor.areaHandler.cursor[0]
 	col := editor.areaHandler.cursor[1]
 	ui.QueueMain(func() {
-		editor.cursor.SetPosition(col*editor.fontWidth, row*editor.LineHeight)
+		editor.cursor.SetPosition(col*editor.font.width, row*editor.font.lineHeight)
 	})
 
 	mode := editor.mode
 	if mode == "normal" {
 		ui.QueueMain(func() {
-			editor.cursor.SetSize(editor.fontWidth, editor.LineHeight)
+			editor.cursor.SetSize(editor.font.width, editor.font.lineHeight)
 			editor.cursor.SetBackground(&ui.Brush{
 				Type: ui.Solid,
 				R:    1,
@@ -213,7 +266,7 @@ func drawCursor() {
 		})
 	} else if mode == "insert" {
 		ui.QueueMain(func() {
-			editor.cursor.SetSize(1, editor.LineHeight)
+			editor.cursor.SetSize(1, editor.font.lineHeight)
 			editor.cursor.SetBackground(&ui.Brush{
 				Type: ui.Solid,
 				R:    1,
