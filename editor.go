@@ -8,6 +8,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
 )
@@ -42,6 +43,7 @@ type Editor struct {
 	areaHandler  *AreaHandler
 	close        chan bool
 	popup        *PopupMenu
+	finder       *Finder
 	width        int
 	height       int
 }
@@ -59,6 +61,7 @@ func initWindow(box *ui.Box, width, height int) *ui.Window {
 		editor.height = height
 		editor.area.SetSize(width, height)
 		editor.resize()
+		editor.finder.rePosition()
 		return true
 	})
 	window.Show()
@@ -75,11 +78,13 @@ func InitEditor() error {
 	ah := initArea()
 	cursor := ui.NewArea(&AreaHandler{})
 	popupMenu := initPopupmenu()
+	finder := initFinder()
 
 	box := ui.NewHorizontalBox()
 	box.Append(ah.area, false)
 	box.Append(cursor, false)
 	box.Append(popupMenu.box, false)
+	box.Append(finder.box, false)
 
 	ah.area.SetSize(width, height)
 	// ah.area.SetPosition(100, 100)
@@ -104,6 +109,7 @@ func InitEditor() error {
 		close:        make(chan bool),
 		cursor:       cursor,
 		popup:        popupMenu,
+		finder:       finder,
 		width:        width,
 		height:       height,
 		font:         font,
@@ -113,6 +119,7 @@ func InitEditor() error {
 
 	editor.resize()
 	editor.handleNotification()
+	editor.finder.rePosition()
 	go func() {
 		neovim.Serve()
 		editor.close <- true
@@ -125,6 +132,7 @@ func InitEditor() error {
 	editor.nvim.Subscribe("Gui")
 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	editor.nvim.Command("runtime! ginit.vim")
+	fzf.RegisterPlugin(editor.nvim)
 
 	go func() {
 		<-editor.close
@@ -143,6 +151,18 @@ func (e *Editor) handleNotification() {
 			e.guiFont(updates[1:])
 		case "Linespace":
 			e.guiLinespace(updates[1:])
+		case "finder_pattern":
+			e.finder.showPattern(updates[1:])
+		case "finder_pattern_pos":
+			e.finder.cursorPos(updates[1:])
+		case "finder_show_result":
+			e.finder.showResult(updates[1:])
+		case "finder_show":
+			e.finder.show()
+		case "finder_hide":
+			e.finder.hide()
+		case "finder_select":
+			e.finder.selectResult(updates[1:])
 		default:
 			fmt.Println("unhandled Gui event", event)
 		}

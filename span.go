@@ -1,12 +1,17 @@
 package gonvim
 
 import (
+	"strings"
+
 	"github.com/dzhou121/ui"
 )
 
 // SpanHandler is
 type SpanHandler struct {
 	AreaHandler
+	match         string
+	matchColor    *RGBA
+	matchIndex    []int
 	text          string
 	bg            *RGBA
 	color         *RGBA
@@ -77,6 +82,20 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 	textLayout := ui.NewTextLayout(s.text, s.font, -1)
 	fg := s.color
 	textLayout.SetColor(0, len(s.text), fg.R, fg.G, fg.B, fg.A)
+	if s.matchColor != nil {
+		if len(s.matchIndex) > 0 {
+			for _, i := range s.matchIndex {
+				textLayout.SetColor(i, i+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
+			}
+		} else if s.match != "" {
+			for _, c := range s.match {
+				i := strings.Index(s.text, string(c))
+				if i != -1 {
+					textLayout.SetColor(i, i+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
+				}
+			}
+		}
+	}
 	return textLayout
 }
 

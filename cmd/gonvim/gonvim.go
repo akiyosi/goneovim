@@ -3,13 +3,15 @@ package main
 import (
 	"net/http"
 
+	_ "net/http/pprof"
+
 	"github.com/dzhou121/gonvim"
 	"github.com/dzhou121/ui"
 )
 
 func main() {
 	go func() {
-		http.ListenAndServe("0.0.0.0:6060", nil)
+		http.ListenAndServe("0.0.0.0:6070", nil)
 	}()
 	err := ui.Main(func() {
 		gonvim.InitEditor()
