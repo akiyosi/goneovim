@@ -130,6 +130,7 @@ func (f *Finder) showResult(args []interface{}) {
 	result := args[0].([]interface{})
 	selected := reflectToInt(args[1])
 	match := [][]int{}
+	resultType := args[3]
 	for _, i := range args[2].([]interface{}) {
 		m := []int{}
 		for _, n := range i.([]interface{}) {
@@ -158,7 +159,13 @@ func (f *Finder) showResult(args []interface{}) {
 			})
 		}
 		itemHandler := f.items[i]
-		itemHandler.item.SetText(item.(string))
+		text := item.(string)
+		if resultType != nil {
+			itemHandler.item.textType = resultType.(string)
+		} else {
+			itemHandler.item.textType = ""
+		}
+		itemHandler.item.SetText(text)
 		itemHandler.item.SetFont(editor.font.font)
 		itemHandler.item.paddingLeft = 10
 		itemHandler.item.paddingRight = 10

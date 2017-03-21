@@ -2,7 +2,7 @@ package gonvim
 
 import (
 	"fmt"
-	"runtime/debug"
+	"path/filepath"
 	"strings"
 
 	"github.com/dzhou121/ui"
@@ -22,6 +22,7 @@ type SpanHandler struct {
 	paddingRight  int
 	paddingTop    int
 	paddingBottom int
+	textType      string
 }
 
 // Draw the span
@@ -81,22 +82,77 @@ func (s *SpanHandler) SetText(text string) {
 }
 
 func (s *SpanHandler) getTextLayout() *ui.TextLayout {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println(r, debug.Stack())
+	text := s.text
+	matchIndex := s.matchIndex
+	var textLayout *ui.TextLayout
+	shift := map[int]int{}
+	if s.textType == "file" || s.textType == "dir" {
+		dir := filepath.Dir(s.text)
+		if dir == "." {
+			dir = ""
 		}
-	}()
-	textLayout := ui.NewTextLayout(s.text, s.font, -1)
-	fg := s.color
-	textLayout.SetColor(0, len(s.text), fg.R, fg.G, fg.B, fg.A)
+
+		base := filepath.Base(s.text)
+		if dir != "" {
+			i := strings.Index(s.text, dir)
+			if i != -1 {
+				for j := range dir {
+					shift[j+i] = len(base) + 1 + j
+				}
+			}
+		}
+		if base != "" {
+			i := strings.LastIndex(s.text, base)
+			if i != -1 {
+				for j := range base {
+					shift[j+i] = j
+				}
+			}
+		}
+
+		text = fmt.Sprintf("%s %s", base, dir)
+		textLayout = ui.NewTextLayout(text, s.font, -1)
+		fg := s.color
+		textLayout.SetColor(0, len(base), fg.R, fg.G, fg.B, fg.A)
+
+		fg = newRGBA(131, 131, 131, 1)
+		textLayout.SetColor(len(base), len(base)+len(dir)+1, fg.R, fg.G, fg.B, fg.A)
+	} else if s.textType == "line" {
+		i := strings.Index(s.text, "\t")
+		textLayout = ui.NewTextLayout(text, s.font, -1)
+		fg := s.color
+		textLayout.SetColor(i, len(text), fg.R, fg.G, fg.B, fg.A)
+
+		fg = newRGBA(131, 131, 131, 1)
+		textLayout.SetColor(0, i, fg.R, fg.G, fg.B, fg.A)
+	} else if s.textType == "ag" {
+		parts := strings.SplitN(s.text, ":", 4)
+		if len(parts) < 4 {
+			text = ""
+		} else {
+			text = parts[3]
+		}
+		textLayout = ui.NewTextLayout(text, s.font, -1)
+		fg := s.color
+		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
+	} else {
+		textLayout = ui.NewTextLayout(text, s.font, -1)
+		fg := s.color
+		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
+	}
+
 	if s.matchColor != nil {
-		if len(s.matchIndex) > 0 {
-			for _, i := range s.matchIndex {
+		if len(matchIndex) > 0 {
+			for _, i := range matchIndex {
+				j, ok := shift[i]
+				if ok {
+					i = j
+				}
 				textLayout.SetColor(i, i+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
 			}
 		} else if s.match != "" {
 			for _, c := range s.match {
-				i := strings.Index(s.text, string(c))
+				i := strings.Index(text, string(c))
 				if i != -1 {
 					textLayout.SetColor(i, i+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
 				}
