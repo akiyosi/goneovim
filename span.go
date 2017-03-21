@@ -1,6 +1,8 @@
 package gonvim
 
 import (
+	"fmt"
+	"runtime/debug"
 	"strings"
 
 	"github.com/dzhou121/ui"
@@ -79,6 +81,11 @@ func (s *SpanHandler) SetText(text string) {
 }
 
 func (s *SpanHandler) getTextLayout() *ui.TextLayout {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r, debug.Stack())
+		}
+	}()
 	textLayout := ui.NewTextLayout(s.text, s.font, -1)
 	fg := s.color
 	textLayout.SetColor(0, len(s.text), fg.R, fg.G, fg.B, fg.A)
