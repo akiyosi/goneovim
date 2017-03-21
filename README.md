@@ -13,3 +13,10 @@ After succesfully installing to GOBIN, you can run it
 ```
 gonvim
 ```
+
+# Features
+
+A fuzzy finder in the GUI
+
+![Readme](./screen1.png)
+![Readme](./screen2.png)
