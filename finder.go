@@ -145,7 +145,7 @@ func (f *Finder) showResult(args []interface{}) {
 			itemHandler := &SpanHandler{}
 			itemSpan := ui.NewArea(itemHandler)
 			itemHandler.span = itemSpan
-			itemHandler.matchColor = newRGBA(29, 91, 145, 1)
+			itemHandler.matchColor = newRGBA(133, 153, 0, 1)
 			y := height * (i + 1)
 			ui.QueueMain(func() {
 				f.box.Append(itemSpan, false)
