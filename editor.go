@@ -35,7 +35,7 @@ type Editor struct {
 	font         *Font
 	rows         int
 	cols         int
-	cursor       *ui.Area
+	cursor       *CursorHandler
 	Foreground   RGBA
 	Background   RGBA
 	window       *ui.Window
@@ -76,13 +76,16 @@ func InitEditor() error {
 	width := 800
 	height := 600
 	ah := initArea()
-	cursor := ui.NewArea(&AreaHandler{})
+	cursor := &CursorHandler{}
+	cursorArea := ui.NewArea(cursor)
+	cursor.area = cursorArea
+
 	popupMenu := initPopupmenu()
 	finder := initFinder()
 
 	box := ui.NewHorizontalBox()
 	box.Append(ah.area, false)
-	box.Append(cursor, false)
+	box.Append(cursor.area, false)
 	box.Append(popupMenu.box, false)
 	box.Append(finder.box, false)
 
@@ -267,31 +270,19 @@ func drawCursor() {
 	row := editor.areaHandler.cursor[0]
 	col := editor.areaHandler.cursor[1]
 	ui.QueueMain(func() {
-		editor.cursor.SetPosition(col*editor.font.width, row*editor.font.lineHeight)
+		editor.cursor.area.SetPosition(col*editor.font.width, row*editor.font.lineHeight)
 	})
 
 	mode := editor.mode
 	if mode == "normal" {
 		ui.QueueMain(func() {
-			editor.cursor.SetSize(editor.font.width, editor.font.lineHeight)
-			editor.cursor.SetBackground(&ui.Brush{
-				Type: ui.Solid,
-				R:    1,
-				G:    1,
-				B:    1,
-				A:    0.5,
-			})
+			editor.cursor.area.SetSize(editor.font.width, editor.font.lineHeight)
+			editor.cursor.bg = newRGBA(255, 255, 255, 0.5)
 		})
 	} else if mode == "insert" {
 		ui.QueueMain(func() {
-			editor.cursor.SetSize(1, editor.font.lineHeight)
-			editor.cursor.SetBackground(&ui.Brush{
-				Type: ui.Solid,
-				R:    1,
-				G:    1,
-				B:    1,
-				A:    0.9,
-			})
+			editor.cursor.area.SetSize(1, editor.font.lineHeight)
+			editor.cursor.bg = newRGBA(255, 255, 255, 0.9)
 		})
 	}
 }

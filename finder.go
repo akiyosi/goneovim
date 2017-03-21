@@ -15,7 +15,7 @@ type Finder struct {
 	items       []*FinderItem
 	mutex       *sync.Mutex
 	width       int
-	cursor      *ui.Area
+	cursor      *CursorHandler
 	resultType  string
 	agTypes     []string
 }
@@ -39,18 +39,14 @@ func initFinder() *Finder {
 	patternHandler.paddingTop = 8
 	patternHandler.paddingBottom = 8
 
-	cursor := ui.NewArea(&AreaHandler{})
-	cursor.SetSize(1, 24)
-	cursor.SetBackground(&ui.Brush{
-		Type: ui.Solid,
-		R:    1,
-		G:    1,
-		B:    1,
-		A:    0.9,
-	})
+	cursor := &CursorHandler{}
+	cursorArea := ui.NewArea(cursor)
+	cursorArea.SetSize(1, 24)
+	cursor.area = cursorArea
+	cursor.bg = newRGBA(255, 255, 255, 0.9)
 
 	box.Append(pattern, false)
-	box.Append(cursor, false)
+	box.Append(cursorArea, false)
 	box.SetShadow(0, 2, 0, 0, 0, 1, 4)
 	box.Hide()
 
@@ -78,11 +74,11 @@ func (f *Finder) hide() {
 }
 
 func (f *Finder) cursorPos(args []interface{}) {
-	f.cursor.SetSize(1, editor.font.lineHeight)
+	f.cursor.area.SetSize(1, editor.font.lineHeight)
 	p := reflectToInt(args[0])
 	x := p*editor.font.width + f.pattern.paddingLeft
 	ui.QueueMain(func() {
-		f.cursor.SetPosition(x, f.pattern.paddingTop/2)
+		f.cursor.area.SetPosition(x, f.pattern.paddingTop/2)
 	})
 }
 

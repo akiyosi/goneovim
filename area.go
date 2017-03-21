@@ -483,16 +483,3 @@ func areaQueueRedraw(x, y, width, heigt int) {
 		)
 	})
 }
-
-func areaScrollRect(x, y, width, heigt, offsetX, offsetY int) {
-	ui.QueueMain(func() {
-		editor.area.ScrollRect(
-			float64(x*editor.font.width),
-			float64(y*editor.font.lineHeight),
-			float64(width*editor.font.width),
-			float64(heigt*editor.font.lineHeight),
-			float64(offsetX*editor.font.width),
-			float64(offsetY*editor.font.lineHeight),
-		)
-	})
-}
