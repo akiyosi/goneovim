@@ -88,7 +88,7 @@ func (f *Finder) selectResult(args []interface{}) {
 	for i := 0; i < len(f.items); i++ {
 		item := f.items[i]
 		if selected == i {
-			item.item.SetBackground(newRGBA(81, 154, 186, 1))
+			item.item.SetBackground(newRGBA(81, 154, 186, 0.5))
 			ui.QueueMain(func() {
 				item.item.span.QueueRedrawAll()
 			})
@@ -145,7 +145,7 @@ func (f *Finder) showResult(args []interface{}) {
 			itemHandler := &SpanHandler{}
 			itemSpan := ui.NewArea(itemHandler)
 			itemHandler.span = itemSpan
-			itemHandler.matchColor = newRGBA(133, 153, 0, 1)
+			itemHandler.matchColor = newRGBA(81, 154, 186, 1)
 			y := height * (i + 1)
 			ui.QueueMain(func() {
 				f.box.Append(itemSpan, false)
@@ -169,7 +169,7 @@ func (f *Finder) showResult(args []interface{}) {
 		itemHandler.item.match = f.patternText
 		itemHandler.item.matchIndex = match[i]
 		if i == selected {
-			itemHandler.item.SetBackground(newRGBA(81, 154, 186, 1))
+			itemHandler.item.SetBackground(newRGBA(81, 154, 186, 0.5))
 		} else {
 			itemHandler.item.SetBackground(newRGBA(14, 17, 18, 1))
 		}

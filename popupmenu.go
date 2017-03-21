@@ -133,7 +133,7 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 	for i := 0; i < p.total; i++ {
 		popupItem := p.items[i]
 		if selected == i {
-			popupItem.menu.SetBackground(newRGBA(81, 154, 186, 1))
+			popupItem.menu.SetBackground(newRGBA(81, 154, 186, 0.5))
 			ui.QueueMain(func() {
 				popupItem.menu.span.QueueRedrawAll()
 			})
@@ -154,7 +154,7 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 	fg := newRGBA(205, 211, 222, 1)
 	p.menu.SetColor(fg)
 	if selected {
-		p.menu.SetBackground(newRGBA(81, 154, 186, 1))
+		p.menu.SetBackground(newRGBA(81, 154, 186, 0.5))
 	} else {
 		p.menu.SetBackground(newRGBA(14, 17, 18, 1))
 	}
