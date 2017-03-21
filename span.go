@@ -3,6 +3,7 @@ package gonvim
 import (
 	"fmt"
 	"runtime/debug"
+	"strings"
 
 	"github.com/dzhou121/ui"
 )
@@ -93,15 +94,14 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 			for _, i := range s.matchIndex {
 				textLayout.SetColor(i, i+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
 			}
+		} else if s.match != "" {
+			for _, c := range s.match {
+				i := strings.Index(s.text, string(c))
+				if i != -1 {
+					textLayout.SetColor(i, i+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
+				}
+			}
 		}
-		// else if s.match != "" {
-		// 	for _, c := range s.match {
-		// 		i := strings.Index(s.text, string(c))
-		// 		if i != -1 {
-		// 			textLayout.SetColor(i, i+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
-		// 		}
-		// 	}
-		// }
 	}
 	return textLayout
 }
