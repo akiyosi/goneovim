@@ -1,6 +1,7 @@
 package gonvim
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/dzhou121/ui"
@@ -15,6 +16,8 @@ type Finder struct {
 	mutex       *sync.Mutex
 	width       int
 	cursor      *ui.Area
+	resultType  string
+	agTypes     []string
 }
 
 // FinderItem is the result shown
@@ -85,6 +88,14 @@ func (f *Finder) cursorPos(args []interface{}) {
 
 func (f *Finder) selectResult(args []interface{}) {
 	selected := reflectToInt(args[0])
+	if f.resultType == "ag" {
+		n := 0
+		for i := 0; i <= selected; i++ {
+			for n++; n < len(f.agTypes) && f.agTypes[n] != "ag_line"; n++ {
+			}
+		}
+		selected = n
+	}
 	for i := 0; i < len(f.items); i++ {
 		item := f.items[i]
 		if selected == i {
@@ -127,10 +138,9 @@ func (f *Finder) rePosition() {
 func (f *Finder) showResult(args []interface{}) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	result := args[0].([]interface{})
 	selected := reflectToInt(args[1])
+
 	match := [][]int{}
-	resultType := args[3]
 	for _, i := range args[2].([]interface{}) {
 		m := []int{}
 		for _, n := range i.([]interface{}) {
@@ -138,6 +148,53 @@ func (f *Finder) showResult(args []interface{}) {
 		}
 		match = append(match, m)
 	}
+
+	resultType := ""
+	if args[3] != nil {
+		resultType = args[3].(string)
+	}
+	f.resultType = resultType
+	result := []string{}
+
+	agLastFile := ""
+	agTypes := []string{}
+	agMatches := [][]int{}
+	for i, item := range args[0].([]interface{}) {
+		text := item.(string)
+		if resultType == "ag" {
+			parts := strings.SplitN(text, ":", 4)
+			if len(parts) < 4 {
+				continue
+			}
+			m := match[i]
+			file := parts[0]
+			if agLastFile != file {
+				fileMatch := []int{}
+				for n := range m {
+					if m[n] < len(parts[0]) {
+						fileMatch = append(fileMatch, m[n])
+					}
+				}
+				result = append(result, parts[0])
+				agTypes = append(agTypes, "ag_file")
+				agLastFile = file
+				agMatches = append(agMatches, fileMatch)
+			}
+			lineIndex := strings.Index(text, parts[3])
+			lineMatch := []int{}
+			for n := range m {
+				if m[n] >= lineIndex {
+					lineMatch = append(lineMatch, m[n]-lineIndex)
+				}
+			}
+			result = append(result, parts[3])
+			agTypes = append(agTypes, "ag_line")
+			agMatches = append(agMatches, lineMatch)
+		} else {
+			result = append(result, text)
+		}
+	}
+	f.agTypes = agTypes
 	for i, item := range result {
 		if i > len(f.items)-1 {
 			height := 8 + 8 + editor.font.height
@@ -159,13 +216,8 @@ func (f *Finder) showResult(args []interface{}) {
 			})
 		}
 		itemHandler := f.items[i]
-		text := item.(string)
-		if resultType != nil {
-			itemHandler.item.textType = resultType.(string)
-		} else {
-			itemHandler.item.textType = ""
-		}
-		itemHandler.item.SetText(text)
+		itemHandler.item.textType = resultType
+		itemHandler.item.SetText(item)
 		itemHandler.item.SetFont(editor.font.font)
 		itemHandler.item.paddingLeft = 10
 		itemHandler.item.paddingRight = 10
@@ -174,7 +226,13 @@ func (f *Finder) showResult(args []interface{}) {
 		fg := newRGBA(205, 211, 222, 1)
 		itemHandler.item.SetColor(fg)
 		itemHandler.item.match = f.patternText
-		itemHandler.item.matchIndex = match[i]
+		if resultType == "ag" {
+			itemHandler.item.textType = agTypes[i]
+			itemHandler.item.matchIndex = agMatches[i]
+		}
+		if resultType != "ag" {
+			itemHandler.item.matchIndex = match[i]
+		}
 		if i == selected {
 			itemHandler.item.SetBackground(newRGBA(81, 154, 186, 0.5))
 		} else {

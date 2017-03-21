@@ -86,7 +86,8 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 	matchIndex := s.matchIndex
 	var textLayout *ui.TextLayout
 	shift := map[int]int{}
-	if s.textType == "file" || s.textType == "dir" {
+	indent := 0
+	if s.textType == "file" || s.textType == "dir" || s.textType == "ag_file" {
 		dir := filepath.Dir(s.text)
 		if dir == "." {
 			dir = ""
@@ -110,13 +111,20 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 			}
 		}
 
+		baseLen := len(base)
+
 		text = fmt.Sprintf("%s %s", base, dir)
+		if s.textType == "ag_file" {
+			text = "- " + text
+			baseLen += 2
+			indent = 2
+		}
 		textLayout = ui.NewTextLayout(text, s.font, -1)
 		fg := s.color
-		textLayout.SetColor(0, len(base), fg.R, fg.G, fg.B, fg.A)
+		textLayout.SetColor(0, baseLen, fg.R, fg.G, fg.B, fg.A)
 
 		fg = newRGBA(131, 131, 131, 1)
-		textLayout.SetColor(len(base), len(base)+len(dir)+1, fg.R, fg.G, fg.B, fg.A)
+		textLayout.SetColor(baseLen, baseLen+len(dir)+1, fg.R, fg.G, fg.B, fg.A)
 	} else if s.textType == "line" {
 		i := strings.Index(s.text, "\t")
 		textLayout = ui.NewTextLayout(text, s.font, -1)
@@ -125,13 +133,9 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 
 		fg = newRGBA(131, 131, 131, 1)
 		textLayout.SetColor(0, i, fg.R, fg.G, fg.B, fg.A)
-	} else if s.textType == "ag" {
-		parts := strings.SplitN(s.text, ":", 4)
-		if len(parts) < 4 {
-			text = ""
-		} else {
-			text = parts[3]
-		}
+	} else if s.textType == "ag_line" {
+		text = "    " + text
+		indent = 4
 		textLayout = ui.NewTextLayout(text, s.font, -1)
 		fg := s.color
 		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
@@ -148,7 +152,7 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 				if ok {
 					i = j
 				}
-				textLayout.SetColor(i, i+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
+				textLayout.SetColor(i+indent, i+indent+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
 			}
 		} else if s.match != "" {
 			for _, c := range s.match {
