@@ -62,14 +62,16 @@ func initFinder() *Finder {
 }
 
 func (f *Finder) show() {
-	ui.QueueMain(func() {
-		f.box.Show()
-	})
+	// ui.QueueMain(func() {
+	// 	f.box.Show()
+	// })
 }
 
 func (f *Finder) hide() {
 	ui.QueueMain(func() {
 		f.box.Hide()
+		f.pattern.span.Hide()
+		f.cursor.area.Hide()
 	})
 }
 
@@ -78,6 +80,7 @@ func (f *Finder) cursorPos(args []interface{}) {
 	p := reflectToInt(args[0])
 	x := p*editor.font.width + f.pattern.paddingLeft
 	ui.QueueMain(func() {
+		f.cursor.area.Show()
 		f.cursor.area.SetPosition(x, f.pattern.paddingTop/2)
 	})
 }
@@ -118,7 +121,7 @@ func (f *Finder) showPattern(args []interface{}) {
 	f.pattern.SetColor(fg)
 	f.pattern.SetBackground(newRGBA(14, 17, 18, 1))
 	ui.QueueMain(func() {
-		f.box.Show()
+		// f.box.Show()
 		f.pattern.span.Show()
 		f.pattern.span.QueueRedrawAll()
 	})
@@ -245,4 +248,7 @@ func (f *Finder) showResult(args []interface{}) {
 			item.item.span.Hide()
 		})
 	}
+	ui.QueueMain(func() {
+		f.box.Show()
+	})
 }
