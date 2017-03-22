@@ -120,11 +120,10 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 			indent = 2
 		}
 		textLayout = ui.NewTextLayout(text, s.font, -1)
-		fg := s.color
+		fg := newRGBA(131, 131, 131, 1)
+		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
+		fg = s.color
 		textLayout.SetColor(0, baseLen, fg.R, fg.G, fg.B, fg.A)
-
-		fg = newRGBA(131, 131, 131, 1)
-		textLayout.SetColor(baseLen, baseLen+len(dir)+1, fg.R, fg.G, fg.B, fg.A)
 	} else if s.textType == "line" {
 		i := strings.Index(s.text, "\t")
 		textLayout = ui.NewTextLayout(text, s.font, -1)
