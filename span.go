@@ -129,7 +129,7 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 		i := strings.Index(s.text, "\t")
 		textLayout = ui.NewTextLayout(text, s.font, -1)
 		fg := s.color
-		textLayout.SetColor(i, len(text), fg.R, fg.G, fg.B, fg.A)
+		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
 
 		fg = newRGBA(131, 131, 131, 1)
 		textLayout.SetColor(0, i, fg.R, fg.G, fg.B, fg.A)
