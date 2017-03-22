@@ -18,6 +18,7 @@ type Finder struct {
 	cursor      *CursorHandler
 	resultType  string
 	agTypes     []string
+	hidden      bool
 }
 
 // FinderItem is the result shown
@@ -57,17 +58,20 @@ func initFinder() *Finder {
 		mutex:   &sync.Mutex{},
 		width:   width,
 		cursor:  cursor,
+		hidden:  true,
 	}
 	return f
 }
 
 func (f *Finder) show() {
+	f.hidden = false
 	// ui.QueueMain(func() {
 	// 	f.box.Show()
 	// })
 }
 
 func (f *Finder) hide() {
+	f.hidden = true
 	ui.QueueMain(func() {
 		f.box.Hide()
 		f.pattern.span.Hide()
@@ -135,6 +139,9 @@ func (f *Finder) rePosition() {
 }
 
 func (f *Finder) showResult(args []interface{}) {
+	if f.hidden {
+		return
+	}
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	selected := reflectToInt(args[1])
