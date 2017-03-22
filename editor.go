@@ -56,6 +56,9 @@ func initWindow(box *ui.Box, width, height int) *ui.Window {
 		return true
 	})
 	window.OnContentSizeChanged(func(w *ui.Window, data unsafe.Pointer) bool {
+		if editor == nil {
+			return
+		}
 		width, height = window.ContentSize()
 		editor.width = width
 		editor.height = height
