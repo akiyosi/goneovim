@@ -60,6 +60,9 @@ func initWindow(box *ui.Box, width, height int) *ui.Window {
 			return true
 		}
 		width, height = window.ContentSize()
+		if width == editor.width && height == editor.height {
+			return
+		}
 		editor.width = width
 		editor.height = height
 		editor.area.SetSize(width, height)
