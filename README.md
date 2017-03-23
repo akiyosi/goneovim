@@ -16,7 +16,11 @@ gonvim
 
 # Features
 
-A fuzzy finder in the GUI
+- A fuzzy finder in the GUI
 
 ![Readme](./screen1.png)
 ![Readme](./screen2.png)
+
+- Popup Menu drawn in the GUI (external-popupmen)
+
+![Readme](./screen3.png)
