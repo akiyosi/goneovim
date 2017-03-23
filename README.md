@@ -4,7 +4,7 @@ Neovim GUI written in Golang, using a forked ui libray from https://github.com/a
 - Neovim
 
 # Install
-Only working in macOS right now
+Working on macOS and Linux
 ```
 go get -u github.com/dzhou121/gonvim/cmd/gonvim
 ```
