@@ -126,7 +126,7 @@ func InitEditor() error {
 		font:         font,
 		cols:         0,
 		rows:         0,
-		selectedBg:   newRGBA(81, 154, 186, 0.6),
+		selectedBg:   newRGBA(81, 154, 186, 0.5),
 		matchFg:      newRGBA(81, 154, 186, 1),
 	}
 
