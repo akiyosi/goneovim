@@ -102,7 +102,7 @@ func (f *Finder) selectResult(args []interface{}) {
 	for i := 0; i < len(f.items); i++ {
 		item := f.items[i]
 		if selected == i {
-			item.item.SetBackground(newRGBA(81, 154, 186, 0.5))
+			item.item.SetBackground(editor.selectedBg)
 			ui.QueueMain(func() {
 				item.item.span.QueueRedrawAll()
 			})
@@ -240,7 +240,7 @@ func (f *Finder) showResult(args []interface{}) {
 			itemHandler.item.matchIndex = match[i]
 		}
 		if i == selected {
-			itemHandler.item.SetBackground(newRGBA(81, 154, 186, 0.5))
+			itemHandler.item.SetBackground(editor.selectedBg)
 		} else {
 			itemHandler.item.SetBackground(newRGBA(14, 17, 18, 1))
 		}

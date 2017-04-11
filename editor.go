@@ -46,6 +46,7 @@ type Editor struct {
 	finder       *Finder
 	width        int
 	height       int
+	selectedBg   *RGBA
 }
 
 func initWindow(box *ui.Box, width, height int) *ui.Window {
@@ -124,6 +125,7 @@ func InitEditor() error {
 		font:         font,
 		cols:         0,
 		rows:         0,
+		selectedBg:   newRGBA(81, 154, 186, 0.5),
 	}
 
 	editor.resize()
