@@ -47,6 +47,7 @@ type Editor struct {
 	width        int
 	height       int
 	selectedBg   *RGBA
+	matchFg      *RGBA
 }
 
 func initWindow(box *ui.Box, width, height int) *ui.Window {
@@ -125,7 +126,8 @@ func InitEditor() error {
 		font:         font,
 		cols:         0,
 		rows:         0,
-		selectedBg:   newRGBA(81, 154, 186, 0.5),
+		selectedBg:   newRGBA(81, 154, 186, 0.6),
+		matchFg:      newRGBA(81, 154, 186, 1),
 	}
 
 	editor.resize()
