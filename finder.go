@@ -134,7 +134,7 @@ func (f *Finder) showPattern(args []interface{}) {
 func (f *Finder) rePosition() {
 	x := (editor.width - f.width) / 2
 	ui.QueueMain(func() {
-		f.box.SetPosition(x, 0)
+		f.box.SetPosition(x, editor.tablineHeight)
 	})
 }
 

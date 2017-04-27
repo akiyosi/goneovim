@@ -29,25 +29,27 @@ type Char struct {
 
 // Editor is the editor
 type Editor struct {
-	nvim         *nvim.Nvim
-	nvimAttached bool
-	mode         string
-	font         *Font
-	rows         int
-	cols         int
-	cursor       *CursorHandler
-	Foreground   RGBA
-	Background   RGBA
-	window       *ui.Window
-	area         *ui.Area
-	areaHandler  *AreaHandler
-	close        chan bool
-	popup        *PopupMenu
-	finder       *Finder
-	width        int
-	height       int
-	selectedBg   *RGBA
-	matchFg      *RGBA
+	nvim          *nvim.Nvim
+	nvimAttached  bool
+	mode          string
+	font          *Font
+	rows          int
+	cols          int
+	cursor        *CursorHandler
+	Foreground    RGBA
+	Background    RGBA
+	window        *ui.Window
+	area          *ui.Area
+	areaHandler   *AreaHandler
+	close         chan bool
+	popup         *PopupMenu
+	finder        *Finder
+	tabline       *Tabline
+	width         int
+	height        int
+	tablineHeight int
+	selectedBg    *RGBA
+	matchFg       *RGBA
 }
 
 func initWindow(box *ui.Box, width, height int) *ui.Window {
@@ -62,12 +64,14 @@ func initWindow(box *ui.Box, width, height int) *ui.Window {
 			return true
 		}
 		width, height = window.ContentSize()
+		height = height - editor.tablineHeight
 		if width == editor.width && height == editor.height {
 			return true
 		}
 		editor.width = width
 		editor.height = height
 		editor.area.SetSize(width, height)
+		editor.tabline.resize(width, editor.tablineHeight)
 		editor.resize()
 		editor.finder.rePosition()
 		return true
@@ -83,6 +87,7 @@ func InitEditor() error {
 	}
 	width := 800
 	height := 600
+	tablineHeight := 34
 	ah := initArea()
 	cursor := &CursorHandler{}
 	cursorArea := ui.NewArea(cursor)
@@ -90,16 +95,18 @@ func InitEditor() error {
 
 	popupMenu := initPopupmenu()
 	finder := initFinder()
+	tabline := initTabline(width, tablineHeight)
 
 	box := ui.NewHorizontalBox()
 	box.Append(ah.area, false)
 	box.Append(cursor.area, false)
 	box.Append(popupMenu.box, false)
 	box.Append(finder.box, false)
+	box.Append(tabline.box, false)
 
 	ah.area.SetSize(width, height)
-	// ah.area.SetPosition(100, 100)
-	window := initWindow(box, width, height)
+	ah.area.SetPosition(0, tablineHeight)
+	window := initWindow(box, width, height+tablineHeight)
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
@@ -111,23 +118,25 @@ func InitEditor() error {
 	font := initFont("", 14, 0)
 
 	editor = &Editor{
-		nvim:         neovim,
-		nvimAttached: false,
-		window:       window,
-		area:         ah.area,
-		areaHandler:  ah,
-		mode:         "normal",
-		close:        make(chan bool),
-		cursor:       cursor,
-		popup:        popupMenu,
-		finder:       finder,
-		width:        width,
-		height:       height,
-		font:         font,
-		cols:         0,
-		rows:         0,
-		selectedBg:   newRGBA(81, 154, 186, 0.5),
-		matchFg:      newRGBA(81, 154, 186, 1),
+		nvim:          neovim,
+		nvimAttached:  false,
+		window:        window,
+		area:          ah.area,
+		areaHandler:   ah,
+		mode:          "normal",
+		close:         make(chan bool),
+		cursor:        cursor,
+		popup:         popupMenu,
+		finder:        finder,
+		tabline:       tabline,
+		width:         width,
+		height:        height,
+		tablineHeight: tablineHeight,
+		font:          font,
+		cols:          0,
+		rows:          0,
+		selectedBg:    newRGBA(81, 154, 186, 0.5),
+		matchFg:       newRGBA(81, 154, 186, 1),
 	}
 
 	editor.resize()
@@ -140,7 +149,8 @@ func InitEditor() error {
 
 	o := make(map[string]interface{})
 	o["rgb"] = true
-	o["popupmenu_external"] = true
+	o["ext_popupmenu"] = true
+	o["ext_tabline"] = true
 	editor.nvim.AttachUI(editor.cols, editor.rows, o)
 	editor.nvim.Subscribe("Gui")
 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
@@ -218,6 +228,8 @@ func (e *Editor) handleNotification() {
 				editor.popup.hide(args)
 			case "popupmenu_select":
 				editor.popup.selectItem(args)
+			case "tabline_update":
+				editor.tabline.update(args)
 			default:
 				fmt.Println("Unhandle event", event)
 			}
@@ -280,7 +292,7 @@ func drawCursor() {
 	row := editor.areaHandler.cursor[0]
 	col := editor.areaHandler.cursor[1]
 	ui.QueueMain(func() {
-		editor.cursor.area.SetPosition(col*editor.font.width, row*editor.font.lineHeight)
+		editor.cursor.area.SetPosition(col*editor.font.width, row*editor.font.lineHeight+editor.tablineHeight)
 	})
 
 	mode := editor.mode

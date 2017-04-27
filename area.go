@@ -108,16 +108,30 @@ func (ah *AreaHandler) eolClear(args []interface{}) {
 func (ah *AreaHandler) highlightSet(args []interface{}) {
 	for _, arg := range args {
 		hl := arg.([]interface{})[0].(map[string]interface{})
+		_, ok := hl["reverse"]
+		if ok {
+			highlight := Highlight{}
+			highlight.foreground = ah.highlight.background
+			highlight.background = ah.highlight.foreground
+			ah.highlight = highlight
+			continue
+		}
+
 		highlight := Highlight{}
-		for key, value := range hl {
-			switch key {
-			case "foreground":
-				rgba := calcColor(reflectToInt(value))
-				highlight.foreground = &rgba
-			case "background":
-				rgba := calcColor(reflectToInt(value))
-				highlight.background = &rgba
-			}
+		fg, ok := hl["foreground"]
+		if ok {
+			rgba := calcColor(reflectToInt(fg))
+			highlight.foreground = &rgba
+		} else {
+			highlight.foreground = &editor.Foreground
+		}
+
+		bg, ok := hl["background"]
+		if ok {
+			rgba := calcColor(reflectToInt(bg))
+			highlight.background = &rgba
+		} else {
+			highlight.background = &editor.Background
 		}
 		ah.highlight = highlight
 	}

@@ -8,6 +8,12 @@ import (
 	"github.com/dzhou121/ui"
 )
 
+// Border is the border of span
+type Border struct {
+	color *RGBA
+	width int
+}
+
 // SpanHandler is
 type SpanHandler struct {
 	AreaHandler
@@ -23,6 +29,12 @@ type SpanHandler struct {
 	paddingTop    int
 	paddingBottom int
 	textType      string
+	borderTop     *Border
+	borderRight   *Border
+	borderLeft    *Border
+	borderBottom  *Border
+	width         int
+	height        int
 }
 
 // Draw the span
@@ -52,6 +64,11 @@ func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	})
 	p.Free()
 
+	s.drawBorder(dp)
+
+	if s.text == "" {
+		return
+	}
 	textLayout := s.getTextLayout()
 	dp.Context.Text(
 		float64(s.paddingLeft),
@@ -59,6 +76,29 @@ func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 		textLayout,
 	)
 	textLayout.Free()
+}
+
+func (s *SpanHandler) drawBorder(dp *ui.AreaDrawParams) {
+	if s.borderBottom != nil {
+		s.drawRect(dp, 0, s.height-s.borderBottom.width, s.width, s.borderBottom.width, s.borderBottom.color)
+	}
+	if s.borderRight != nil {
+		s.drawRect(dp, s.width-s.borderRight.width, 0, s.borderRight.width, s.height, s.borderRight.color)
+	}
+}
+
+func (s *SpanHandler) drawRect(dp *ui.AreaDrawParams, x, y, width, height int, color *RGBA) {
+	p := ui.NewPath(ui.Winding)
+	p.AddRectangle(float64(x), float64(y), float64(width), float64(height))
+	p.End()
+	dp.Context.Fill(p, &ui.Brush{
+		Type: ui.Solid,
+		R:    color.R,
+		G:    color.G,
+		B:    color.B,
+		A:    color.A,
+	})
+	p.Free()
 }
 
 // SetColor sets the color
@@ -163,6 +203,14 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 		}
 	}
 	return textLayout
+}
+
+func (s *SpanHandler) setSize(width, height int) {
+	s.width = width
+	s.height = height
+	ui.QueueMain(func() {
+		s.span.SetSize(width, height)
+	})
 }
 
 func (s *SpanHandler) getSize() (int, int) {
