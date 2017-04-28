@@ -41,6 +41,7 @@ type Editor struct {
 	window        *ui.Window
 	area          *ui.Area
 	areaHandler   *AreaHandler
+	areaBox       *ui.Box
 	close         chan bool
 	popup         *PopupMenu
 	finder        *Finder
@@ -70,6 +71,7 @@ func initWindow(box *ui.Box, width, height int) *ui.Window {
 		}
 		editor.width = width
 		editor.height = height
+		editor.areaBox.SetSize(width, height)
 		editor.area.SetSize(width, height)
 		editor.tabline.resize(width, editor.tablineHeight)
 		editor.resize()
@@ -126,6 +128,7 @@ func InitEditor() error {
 		window:        window,
 		area:          ah.area,
 		areaHandler:   ah,
+		areaBox:       areaBox,
 		mode:          "normal",
 		close:         make(chan bool),
 		cursor:        cursor,
