@@ -9,6 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
+	"github.com/dzhou121/neovim-locpopup/rplugin/go/locpopup"
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
 )
@@ -35,7 +36,7 @@ type Editor struct {
 	font          *Font
 	rows          int
 	cols          int
-	cursor        *CursorHandler
+	cursor        *CursorBox
 	Foreground    RGBA
 	Background    RGBA
 	window        *ui.Window
@@ -73,6 +74,7 @@ func initWindow(box *ui.Box, width, height int) *ui.Window {
 		editor.height = height
 		editor.areaBox.SetSize(width, height)
 		editor.area.SetSize(width, height)
+		editor.cursor.setSize(width, height)
 		editor.tabline.resize(width, editor.tablineHeight)
 		editor.resize()
 		editor.finder.rePosition()
@@ -91,18 +93,18 @@ func InitEditor() error {
 	height := 600
 	tablineHeight := 34
 	ah := initArea()
-	cursor := &CursorHandler{}
-	cursorArea := ui.NewArea(cursor)
-	cursor.area = cursorArea
 
+	cursor := initCursorBox(width, height)
 	popupMenu := initPopupmenu()
 	finder := initFinder()
 	tabline := initTabline(width, tablineHeight)
+	loc := initLocpopup()
 
 	box := ui.NewHorizontalBox()
 	areaBox := ui.NewHorizontalBox()
 	areaBox.Append(ah.area, false)
-	areaBox.Append(cursor.area, false)
+	areaBox.Append(cursor.box, false)
+	areaBox.Append(loc.box, false)
 	areaBox.Append(popupMenu.box, false)
 	areaBox.Append(finder.box, false)
 	box.Append(tabline.box, false)
@@ -162,6 +164,7 @@ func InitEditor() error {
 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	editor.nvim.Command("runtime! ginit.vim")
 	fzf.RegisterPlugin(editor.nvim)
+	locpopup.RegisterPlugin(editor.nvim)
 
 	go func() {
 		<-editor.close
@@ -192,6 +195,14 @@ func (e *Editor) handleNotification() {
 			e.finder.hide()
 		case "finder_select":
 			e.finder.selectResult(updates[1:])
+		case "locpopup_show":
+			arg, ok := updates[1].(map[string]interface{})
+			if !ok {
+				return
+			}
+			e.cursor.locpopup.show(arg)
+		case "locpopup_hide":
+			e.cursor.locpopup.hide()
 		default:
 			fmt.Println("unhandled Gui event", event)
 		}
@@ -244,7 +255,7 @@ func (e *Editor) handleNotification() {
 		if !e.nvimAttached {
 			e.nvimAttached = true
 		}
-		drawCursor()
+		editor.cursor.draw()
 	})
 }
 
@@ -291,27 +302,6 @@ func (e *Editor) resize() {
 	editor.rows = rows
 	if oldCols > 0 && oldRows > 0 {
 		editor.nvim.TryResizeUI(cols, rows)
-	}
-}
-
-func drawCursor() {
-	row := editor.areaHandler.cursor[0]
-	col := editor.areaHandler.cursor[1]
-	ui.QueueMain(func() {
-		editor.cursor.area.SetPosition(col*editor.font.width, row*editor.font.lineHeight)
-	})
-
-	mode := editor.mode
-	if mode == "normal" {
-		ui.QueueMain(func() {
-			editor.cursor.area.SetSize(editor.font.width, editor.font.lineHeight)
-			editor.cursor.bg = newRGBA(255, 255, 255, 0.5)
-		})
-	} else if mode == "insert" {
-		ui.QueueMain(func() {
-			editor.cursor.area.SetSize(1, editor.font.lineHeight)
-			editor.cursor.bg = newRGBA(255, 255, 255, 0.9)
-		})
 	}
 }
 
