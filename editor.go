@@ -98,14 +98,17 @@ func InitEditor() error {
 	tabline := initTabline(width, tablineHeight)
 
 	box := ui.NewHorizontalBox()
-	box.Append(ah.area, false)
-	box.Append(cursor.area, false)
-	box.Append(popupMenu.box, false)
-	box.Append(finder.box, false)
+	areaBox := ui.NewHorizontalBox()
+	areaBox.Append(ah.area, false)
+	areaBox.Append(cursor.area, false)
+	areaBox.Append(popupMenu.box, false)
+	areaBox.Append(finder.box, false)
 	box.Append(tabline.box, false)
+	box.Append(areaBox, false)
 
+	areaBox.SetSize(width, height)
+	areaBox.SetPosition(0, tablineHeight)
 	ah.area.SetSize(width, height)
-	ah.area.SetPosition(0, tablineHeight)
 	window := initWindow(box, width, height+tablineHeight)
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
@@ -292,7 +295,7 @@ func drawCursor() {
 	row := editor.areaHandler.cursor[0]
 	col := editor.areaHandler.cursor[1]
 	ui.QueueMain(func() {
-		editor.cursor.area.SetPosition(col*editor.font.width, row*editor.font.lineHeight+editor.tablineHeight)
+		editor.cursor.area.SetPosition(col*editor.font.width, row*editor.font.lineHeight)
 	})
 
 	mode := editor.mode

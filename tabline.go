@@ -29,6 +29,10 @@ func initTabline(width int, height int) *Tabline {
 	bgSpan := ui.NewArea(handler)
 	handler.span = bgSpan
 	handler.SetBackground(newRGBA(24, 29, 34, 1))
+	handler.borderBottom = &Border{
+		width: 2,
+		color: newRGBA(0, 0, 0, 1),
+	}
 	handler.setSize(width, height)
 	ui.QueueMain(func() {
 		box.Show()
