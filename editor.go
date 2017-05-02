@@ -34,6 +34,7 @@ type Editor struct {
 	nvimAttached  bool
 	mode          string
 	font          *Font
+	smallerFont   *Font
 	rows          int
 	cols          int
 	cursor        *CursorBox
@@ -117,12 +118,14 @@ func InitEditor() error {
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
+		Path: "/Users/Lulu/Downloads/neovim-0.2.0/build/bin/nvim",
 	})
 	if err != nil {
 		return err
 	}
 
 	font := initFont("", 14, 0)
+	smallerFont := initFont("", 14, 0)
 
 	editor = &Editor{
 		nvim:          neovim,
@@ -141,6 +144,7 @@ func InitEditor() error {
 		height:        height,
 		tablineHeight: tablineHeight,
 		font:          font,
+		smallerFont:   smallerFont,
 		cols:          0,
 		rows:          0,
 		selectedBg:    newRGBA(81, 154, 186, 0.5),
@@ -278,6 +282,7 @@ func (e *Editor) guiFont(args ...interface{}) {
 	}
 
 	e.font.change(parts[0], height)
+	e.smallerFont.change(parts[0], height-2)
 	e.resize()
 }
 
@@ -288,6 +293,7 @@ func (e *Editor) guiLinespace(args ...interface{}) {
 		return
 	}
 	e.font.changeLineSpace(lineSpace)
+	e.smallerFont.changeLineSpace(lineSpace)
 	e.resize()
 }
 

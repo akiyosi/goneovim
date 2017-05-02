@@ -158,7 +158,7 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 	} else {
 		p.menu.SetBackground(newRGBA(14, 17, 18, 1))
 	}
-	p.menu.SetFont(editor.font.font)
+	p.menu.SetFont(editor.font)
 	p.menu.SetText(text)
 
 	p.menu.paddingLeft = 10
@@ -214,7 +214,7 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 	}
 	p.kind.SetColor(color)
 	p.kind.SetBackground(bg)
-	p.kind.SetFont(editor.font.font)
+	p.kind.SetFont(editor.font)
 	p.kind.SetText(kindText)
 }
 

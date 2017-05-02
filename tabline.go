@@ -2,6 +2,7 @@ package gonvim
 
 import (
 	"github.com/dzhou121/ui"
+	"github.com/neovim/go-client/nvim"
 )
 
 // Tabline of the editor
@@ -52,7 +53,7 @@ func (t *Tabline) resize(width int, height int) {
 
 func (t *Tabline) update(args []interface{}) {
 	arg := args[0].([]interface{})
-	t.CurrentID = reflectToInt(arg[0])
+	t.CurrentID = int(arg[0].(nvim.Tabpage))
 	tabs := arg[1].([]interface{})
 	for i, tabInterface := range tabs {
 		tabMap, ok := tabInterface.(map[string]interface{})
@@ -72,7 +73,7 @@ func (t *Tabline) update(args []interface{}) {
 			padding := (t.height - editor.font.height - 2) / 2
 			handler.SetColor(fg)
 			handler.SetBackground(newRGBA(0, 0, 0, 1))
-			handler.SetFont(editor.font.font)
+			handler.SetFont(editor.font)
 			handler.setSize(tab.width, t.height)
 			handler.paddingTop = padding
 			handler.paddingLeft = int(float64(padding) * 1.5)
@@ -90,7 +91,7 @@ func (t *Tabline) update(args []interface{}) {
 			})
 		}
 		tab := t.Tabs[i]
-		tab.ID = reflectToInt(tabMap["tab"])
+		tab.ID = int(tabMap["tab"].(nvim.Tabpage))
 		if tab.ID == t.CurrentID {
 			tab.current = true
 			tab.span.borderBottom.color = newRGBA(81, 154, 186, 1)

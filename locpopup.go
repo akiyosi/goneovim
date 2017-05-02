@@ -37,27 +37,34 @@ func (l *Locpopup) show(loc map[string]interface{}) {
 	switch locType {
 	case "E":
 		l.locType.SetText("Error")
-		l.locType.SetFont(editor.font.font)
+		l.locType.SetFont(editor.smallerFont)
 		l.locType.SetColor(newRGBA(255, 255, 255, 1))
 		l.locType.SetBackground(newRGBA(204, 62, 68, 1))
-		l.locType.span.SetPosition(5, editor.font.shift)
-		l.locType.setSize(editor.font.width*5, editor.font.height)
+		l.locType.span.SetPosition(editor.font.shift, editor.font.shift)
+		l.locType.paddingTop = editor.font.height - editor.smallerFont.height
+		l.locType.paddingLeft = editor.font.shift
+		l.locType.paddingRight = editor.font.shift
+		l.locType.setSize(l.locType.getSize())
 	case "W":
 		l.locType.SetText("Warning")
-		l.locType.SetFont(editor.font.font)
+		l.locType.SetFont(editor.smallerFont)
 		l.locType.SetColor(newRGBA(255, 255, 255, 1))
 		l.locType.SetBackground(newRGBA(203, 203, 65, 1))
-		l.locType.span.SetPosition(5, editor.font.shift)
-		l.locType.setSize(editor.font.width*7, editor.font.height)
+		l.locType.span.SetPosition(editor.font.shift, editor.font.shift)
+		l.locType.paddingTop = editor.font.height - editor.smallerFont.height
+		l.locType.paddingLeft = editor.font.shift
+		l.locType.paddingRight = editor.font.shift
+		l.locType.setSize(l.locType.getSize())
 	}
 	text := loc["text"].(string)
 	l.text.SetText(text)
-	l.text.SetFont(editor.font.font)
+	l.text.SetFont(editor.font)
 	l.text.SetColor(newRGBA(14, 17, 18, 1))
 	l.text.SetBackground(newRGBA(212, 215, 214, 1))
-	l.text.paddingLeft = editor.font.width*len(l.locType.text) + 10
-	l.text.paddingRight = 5
-	w, _ := l.text.getSize()
+	w, _ := l.locType.getSize()
+	l.text.paddingLeft = w + editor.font.shift*2
+	l.text.paddingRight = editor.font.shift
+	w, _ = l.text.getSize()
 	l.text.setSize(w, editor.font.lineHeight)
 	l.text.paddingTop = editor.font.shift
 	ui.QueueMain(func() {

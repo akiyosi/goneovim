@@ -120,7 +120,7 @@ func (f *Finder) showPattern(args []interface{}) {
 	f.pattern.span.SetSize(f.width, 8+8+editor.font.height)
 	f.pattern.SetText(p)
 	f.patternText = p
-	f.pattern.SetFont(editor.font.font)
+	f.pattern.SetFont(editor.font)
 	fg := newRGBA(205, 211, 222, 1)
 	f.pattern.SetColor(fg)
 	f.pattern.SetBackground(newRGBA(14, 17, 18, 1))
@@ -224,7 +224,7 @@ func (f *Finder) showResult(args []interface{}) {
 		itemHandler := f.items[i]
 		itemHandler.item.textType = resultType
 		itemHandler.item.SetText(item)
-		itemHandler.item.SetFont(editor.font.font)
+		itemHandler.item.SetFont(editor.font)
 		itemHandler.item.paddingLeft = 10
 		itemHandler.item.paddingRight = 10
 		itemHandler.item.paddingTop = 8
