@@ -38,7 +38,8 @@ func fontSize(font *ui.Font) (int, int) {
 
 func initFont(family string, size int, lineSpace int) *Font {
 	font := newFont(family, size)
-	width, height := fontSize(font)
+	height := size
+	width, _ := fontSize(font)
 	lineHeight := height + lineSpace
 	shift := (lineHeight - height) / 2
 	return &Font{
@@ -54,7 +55,8 @@ func initFont(family string, size int, lineSpace int) *Font {
 func (f *Font) change(family string, size int) {
 	f.font.Free()
 	font := newFont(family, size)
-	width, height := fontSize(font)
+	height := size
+	width, _ := fontSize(font)
 	lineHeight := height + f.lineSpace
 	shift := (lineHeight - height) / 2
 	f.font = font

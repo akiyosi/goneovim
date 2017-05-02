@@ -33,47 +33,49 @@ func initLocpopup() *Locpopup {
 }
 
 func (l *Locpopup) show(loc map[string]interface{}) {
+	font := editor.font
+	smallerFont := editor.smallerFont
 	locType := loc["type"].(string)
+	typePadding := smallerFont.shift
+	typeMargin := int(float64(smallerFont.shift) * 1.4)
+	heightDiff := (font.height - smallerFont.height) / 2
+	textPadding := typePadding + typeMargin - heightDiff
+	l.locType.SetFont(smallerFont)
 	switch locType {
 	case "E":
 		l.locType.SetText("Error")
-		l.locType.SetFont(editor.smallerFont)
-		l.locType.SetColor(newRGBA(255, 255, 255, 1))
 		l.locType.SetBackground(newRGBA(204, 62, 68, 1))
-		l.locType.span.SetPosition(editor.font.shift, editor.font.shift)
-		l.locType.paddingTop = editor.font.height - editor.smallerFont.height
-		l.locType.paddingLeft = editor.font.shift
-		l.locType.paddingRight = editor.font.shift
-		l.locType.setSize(l.locType.getSize())
+		l.locType.SetColor(newRGBA(255, 255, 255, 1))
 	case "W":
 		l.locType.SetText("Warning")
-		l.locType.SetFont(editor.smallerFont)
-		l.locType.SetColor(newRGBA(255, 255, 255, 1))
 		l.locType.SetBackground(newRGBA(203, 203, 65, 1))
-		l.locType.span.SetPosition(editor.font.shift, editor.font.shift)
-		l.locType.paddingTop = editor.font.height - editor.smallerFont.height
-		l.locType.paddingLeft = editor.font.shift
-		l.locType.paddingRight = editor.font.shift
-		l.locType.setSize(l.locType.getSize())
+		l.locType.SetColor(newRGBA(255, 255, 255, 1))
 	}
+	l.locType.span.SetPosition(typeMargin, typeMargin)
+	l.locType.paddingTop = typePadding
+	l.locType.paddingLeft = typePadding
+	l.locType.paddingRight = l.locType.paddingLeft
+	l.locType.paddingBottom = l.locType.paddingTop
+	w, _ := l.locType.getSize()
+	l.locType.setSize(l.locType.getSize())
+
 	text := loc["text"].(string)
 	l.text.SetText(text)
-	l.text.SetFont(editor.font)
+	l.text.SetFont(font)
 	l.text.SetColor(newRGBA(14, 17, 18, 1))
 	l.text.SetBackground(newRGBA(212, 215, 214, 1))
-	w, _ := l.locType.getSize()
-	l.text.paddingLeft = w + editor.font.shift*2
-	l.text.paddingRight = editor.font.shift
-	w, _ = l.text.getSize()
-	l.text.setSize(w, editor.font.lineHeight)
-	l.text.paddingTop = editor.font.shift
+	l.text.paddingLeft = w + typeMargin*2
+	l.text.paddingRight = textPadding
+	l.text.paddingTop = textPadding
+	l.text.paddingBottom = l.text.paddingTop
+	l.text.setSize(l.text.getSize())
 	ui.QueueMain(func() {
-		l.box.SetPosition(0, editor.font.lineHeight)
+		l.box.SetPosition(0, font.lineHeight)
 		l.locType.span.Show()
 		l.text.span.Show()
 		l.locType.span.QueueRedrawAll()
 		l.text.span.QueueRedrawAll()
-		l.box.SetSize(w, editor.font.lineHeight)
+		l.box.SetSize(l.text.getSize())
 		l.box.Show()
 	})
 }

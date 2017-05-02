@@ -118,7 +118,6 @@ func InitEditor() error {
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
-		Path: "/Users/Lulu/Downloads/neovim-0.2.0/build/bin/nvim",
 	})
 	if err != nil {
 		return err
