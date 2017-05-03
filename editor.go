@@ -206,6 +206,12 @@ func (e *Editor) handleNotification() {
 			e.cursor.locpopup.show(arg)
 		case "locpopup_hide":
 			e.cursor.locpopup.hide()
+		case "signature_show":
+			e.cursor.signature.show(updates[1:])
+		case "signature_pos":
+			e.cursor.signature.pos(updates[1:])
+		case "signature_hide":
+			e.cursor.signature.hide()
 		default:
 			fmt.Println("unhandled Gui event", event)
 		}

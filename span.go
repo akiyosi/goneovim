@@ -35,6 +35,7 @@ type SpanHandler struct {
 	borderBottom  *Border
 	width         int
 	height        int
+	underline     []int
 }
 
 // Draw the span
@@ -76,6 +77,7 @@ func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 		textLayout,
 	)
 	textLayout.Free()
+	s.drawUnderline(dp)
 }
 
 func (s *SpanHandler) drawBorder(dp *ui.AreaDrawParams) {
@@ -85,6 +87,36 @@ func (s *SpanHandler) drawBorder(dp *ui.AreaDrawParams) {
 	if s.borderRight != nil {
 		s.drawRect(dp, s.width-s.borderRight.width, 0, s.borderRight.width, s.height, s.borderRight.color)
 	}
+	if s.borderTop != nil {
+		s.drawRect(dp, 0, 0, s.width, s.borderTop.width, s.borderTop.color)
+	}
+	if s.borderLeft != nil {
+		s.drawRect(dp, 0, 0, s.borderLeft.width, s.height, s.borderLeft.color)
+	}
+}
+
+func (s *SpanHandler) drawUnderline(dp *ui.AreaDrawParams) {
+	if len(s.underline) == 0 {
+		return
+	}
+	p := ui.NewPath(ui.Winding)
+	for _, i := range s.underline {
+		p.AddRectangle(
+			float64((i+1)*s.font.width),
+			float64(s.font.height+s.paddingTop),
+			float64(s.font.width),
+			1)
+	}
+	p.End()
+	fg := s.color
+	dp.Context.Fill(p, &ui.Brush{
+		Type: ui.Solid,
+		R:    fg.R,
+		G:    fg.G,
+		B:    fg.B,
+		A:    fg.A,
+	})
+	p.Free()
 }
 
 func (s *SpanHandler) drawRect(dp *ui.AreaDrawParams, x, y, width, height int, color *RGBA) {

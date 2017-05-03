@@ -6,9 +6,10 @@ import (
 
 // CursorBox is
 type CursorBox struct {
-	box      *ui.Box
-	cursor   *CursorHandler
-	locpopup *Locpopup
+	box       *ui.Box
+	cursor    *CursorHandler
+	locpopup  *Locpopup
+	signature *Signature
 }
 
 // CursorHandler is the cursor
@@ -26,9 +27,11 @@ func initCursorBox(width, height int) *CursorBox {
 	cursor.area = cursorArea
 
 	loc := initLocpopup()
+	sig := initSignature()
 
 	box.Append(cursorArea, false)
 	box.Append(loc.box, false)
+	box.Append(sig.box, false)
 
 	ui.QueueMain(func() {
 		cursorArea.Show()
@@ -36,9 +39,10 @@ func initCursorBox(width, height int) *CursorBox {
 	})
 
 	return &CursorBox{
-		box:      box,
-		cursor:   cursor,
-		locpopup: loc,
+		box:       box,
+		cursor:    cursor,
+		locpopup:  loc,
+		signature: sig,
 	}
 }
 
@@ -61,8 +65,9 @@ func (c *CursorBox) draw() {
 	row := editor.areaHandler.cursor[0]
 	col := editor.areaHandler.cursor[1]
 	ui.QueueMain(func() {
-		c.box.SetPosition(col*editor.font.width, row*editor.font.lineHeight)
+		c.cursor.area.SetPosition(col*editor.font.width, row*editor.font.lineHeight)
 	})
+	c.locpopup.move()
 
 	mode := editor.mode
 	if mode == "normal" {

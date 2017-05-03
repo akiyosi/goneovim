@@ -69,14 +69,22 @@ func (l *Locpopup) show(loc map[string]interface{}) {
 	l.text.paddingTop = textPadding
 	l.text.paddingBottom = l.text.paddingTop
 	l.text.setSize(l.text.getSize())
+	l.move()
 	ui.QueueMain(func() {
-		l.box.SetPosition(0, font.lineHeight)
 		l.locType.span.Show()
 		l.text.span.Show()
 		l.locType.span.QueueRedrawAll()
 		l.text.span.QueueRedrawAll()
 		l.box.SetSize(l.text.getSize())
 		l.box.Show()
+	})
+}
+
+func (l *Locpopup) move() {
+	row := editor.areaHandler.cursor[0]
+	col := editor.areaHandler.cursor[1]
+	ui.QueueMain(func() {
+		l.box.SetPosition(col*editor.font.width, (row+1)*editor.font.lineHeight)
 	})
 }
 
