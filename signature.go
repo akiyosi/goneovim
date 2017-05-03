@@ -1,7 +1,6 @@
 package gonvim
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/dzhou121/ui"
@@ -96,7 +95,6 @@ func (s *Signature) underline() {
 	for j := start; j <= i; j++ {
 		s.span.underline = append(s.span.underline, j)
 	}
-	fmt.Println("underline ", text[start:i])
 	ui.QueueMain(func() {
 		s.span.span.QueueRedrawAll()
 	})

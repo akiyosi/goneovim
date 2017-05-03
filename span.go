@@ -38,6 +38,14 @@ type SpanHandler struct {
 	underline     []int
 }
 
+// CrossHandler is a span looking like X
+type CrossHandler struct {
+	AreaHandler
+	width int
+	color *RGBA
+	bg    *RGBA
+}
+
 // Draw the span
 func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	if s.bg == nil {
@@ -82,16 +90,16 @@ func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 
 func (s *SpanHandler) drawBorder(dp *ui.AreaDrawParams) {
 	if s.borderBottom != nil {
-		s.drawRect(dp, 0, s.height-s.borderBottom.width, s.width, s.borderBottom.width, s.borderBottom.color)
+		drawRect(dp, 0, s.height-s.borderBottom.width, s.width, s.borderBottom.width, s.borderBottom.color)
 	}
 	if s.borderRight != nil {
-		s.drawRect(dp, s.width-s.borderRight.width, 0, s.borderRight.width, s.height, s.borderRight.color)
+		drawRect(dp, s.width-s.borderRight.width, 0, s.borderRight.width, s.height, s.borderRight.color)
 	}
 	if s.borderTop != nil {
-		s.drawRect(dp, 0, 0, s.width, s.borderTop.width, s.borderTop.color)
+		drawRect(dp, 0, 0, s.width, s.borderTop.width, s.borderTop.color)
 	}
 	if s.borderLeft != nil {
-		s.drawRect(dp, 0, 0, s.borderLeft.width, s.height, s.borderLeft.color)
+		drawRect(dp, 0, 0, s.borderLeft.width, s.height, s.borderLeft.color)
 	}
 }
 
@@ -119,7 +127,7 @@ func (s *SpanHandler) drawUnderline(dp *ui.AreaDrawParams) {
 	p.Free()
 }
 
-func (s *SpanHandler) drawRect(dp *ui.AreaDrawParams, x, y, width, height int, color *RGBA) {
+func drawRect(dp *ui.AreaDrawParams, x, y, width, height int, color *RGBA) {
 	p := ui.NewPath(ui.Winding)
 	p.AddRectangle(float64(x), float64(y), float64(width), float64(height))
 	p.End()
@@ -249,4 +257,38 @@ func (s *SpanHandler) getSize() (int, int) {
 	width := s.font.width*len(s.text) + s.paddingLeft + s.paddingRight
 	height := s.font.height + s.paddingTop + s.paddingBottom
 	return width, height
+}
+
+func newCross(width int, color, bg *RGBA) *CrossHandler {
+	handler := &CrossHandler{
+		width: width,
+		color: color,
+		bg:    bg,
+	}
+	area := ui.NewArea(handler)
+	handler.area = area
+	area.SetSize(width, width)
+	return handler
+}
+
+// Draw the cross
+func (c *CrossHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
+	drawRect(dp, 0, 0, c.width, c.width, c.bg)
+	p := ui.NewPath(ui.Winding)
+	p.NewFigure(float64(0), float64(0))
+	p.LineTo(float64(c.width), float64(c.width))
+	p.NewFigure(float64(c.width), float64(0))
+	p.LineTo(0, float64(c.width))
+	p.End()
+	dp.Context.Stroke(p, &ui.Brush{
+		Type: ui.Solid,
+		R:    c.color.R,
+		G:    c.color.G,
+		B:    c.color.B,
+		A:    c.color.A,
+	},
+		&ui.StrokeParams{
+			Thickness: 1,
+		})
+	p.Free()
 }
