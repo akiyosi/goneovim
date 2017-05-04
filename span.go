@@ -273,7 +273,6 @@ func newCross(width int, color, bg *RGBA) *CrossHandler {
 
 // Draw the cross
 func (c *CrossHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
-	drawRect(dp, 0, 0, c.width, c.width, c.bg)
 	p := ui.NewPath(ui.Winding)
 	p.NewFigure(float64(0), float64(0))
 	p.LineTo(float64(c.width), float64(c.width))
@@ -288,7 +287,7 @@ func (c *CrossHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 		A:    c.color.A,
 	},
 		&ui.StrokeParams{
-			Thickness: 1,
+			Thickness: 2,
 		})
 	p.Free()
 }

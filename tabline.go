@@ -1,6 +1,9 @@
 package gonvim
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
 )
@@ -16,15 +19,16 @@ type Tabline struct {
 
 // Tab in the tabline
 type Tab struct {
-	box     *ui.Box
-	ID      int
-	Name    string
-	current bool
-	span    *SpanHandler
-	bg      *SpanHandler
-	width   int
-	chars   int
-	cross   *CrossHandler
+	box      *ui.Box
+	ID       int
+	Name     string
+	current  bool
+	span     *SpanHandler
+	bg       *SpanHandler
+	width    int
+	chars    int
+	cross    *Svg
+	fileicon *Svg
 }
 
 func initTabline(width int, height int) *Tabline {
@@ -74,15 +78,18 @@ func (t *Tabline) update(args []interface{}) {
 			bgHandler.span = bgSpan
 			padding := (t.height - editor.font.height - 2) / 2
 			paddingLeft := editor.font.width * 2
-			chars := 23
-			cross := newCross(editor.font.width, newRGBA(255, 255, 255, 1), newRGBA(0, 0, 0, 1))
+			chars := 21
+			fileiconWidth := editor.font.width * 2
+			cross := newSvg("cross", editor.font.width*2, editor.font.width*2, newRGBA(255, 255, 255, 1), newRGBA(0, 0, 0, 1))
+			fileicon := newSvg("default", fileiconWidth, fileiconWidth, nil, nil)
 			tab := &Tab{
-				box:   box,
-				span:  handler,
-				width: editor.font.width*chars + 3*paddingLeft + editor.font.width,
-				chars: chars,
-				bg:    bgHandler,
-				cross: cross,
+				box:      box,
+				span:     handler,
+				width:    editor.font.width*chars + fileiconWidth + 3*paddingLeft + editor.font.width,
+				chars:    chars,
+				bg:       bgHandler,
+				cross:    cross,
+				fileicon: fileicon,
 			}
 			t.Tabs = append(t.Tabs, tab)
 			fg := newRGBA(212, 215, 214, 1)
@@ -107,14 +114,25 @@ func (t *Tabline) update(args []interface{}) {
 				box.Append(bgSpan, false)
 				box.Append(tabSpan, false)
 				box.Append(cross.area, false)
+				box.Append(fileicon.area, false)
 				t.box.Append(box, false)
 				box.SetPosition(i*tab.width, 0)
-				cross.area.SetPosition(tab.width-paddingLeft-editor.font.width, (t.height-editor.font.width)/2)
-				tabSpan.SetPosition(paddingLeft, 0)
+				cross.area.SetPosition(tab.width-paddingLeft-editor.font.width, (t.height-cross.height)/2)
+				fileicon.setPosition(paddingLeft, (t.height-fileicon.height)/2)
+				tabSpan.SetPosition(paddingLeft+fileiconWidth+editor.font.width, 0)
 			})
 		}
 		tab := t.Tabs[i]
 		tab.ID = int(tabMap["tab"].(nvim.Tabpage))
+		tab.Name = tabMap["name"].(string)
+		text := tab.Name
+		fileType := getFileType(text)
+		tab.fileicon.name = fileType
+		if len(text) > tab.chars {
+			text = text[len(text)-tab.chars+3 : len(text)]
+			text = "..." + text
+		}
+		tab.span.SetText(text)
 		if tab.ID == t.CurrentID {
 			tab.current = true
 			tab.bg.borderBottom.color = newRGBA(81, 154, 186, 1)
@@ -122,6 +140,7 @@ func (t *Tabline) update(args []interface{}) {
 			tab.span.SetBackground(newRGBA(0, 0, 0, 1))
 			tab.span.SetColor(newRGBA(212, 215, 214, 1))
 			tab.cross.color = newRGBA(212, 215, 214, 1)
+			tab.cross.bg = newRGBA(0, 0, 0, 1)
 		} else {
 			tab.current = false
 			tab.bg.borderBottom.color = newRGBA(0, 0, 0, 1)
@@ -129,19 +148,14 @@ func (t *Tabline) update(args []interface{}) {
 			tab.span.SetBackground(newRGBA(24, 29, 34, 1))
 			tab.span.SetColor(&editor.Foreground)
 			tab.cross.color = &editor.Foreground
+			tab.cross.bg = newRGBA(24, 29, 34, 1)
 		}
-		tab.Name = tabMap["name"].(string)
-		text := tab.Name
-		if len(text) > tab.chars {
-			text = text[len(text)-tab.chars+3 : len(text)]
-			text = "..." + text
-		}
-		tab.span.SetText(text)
 		ui.QueueMain(func() {
 			tab.box.Show()
 			tab.span.span.QueueRedrawAll()
 			tab.bg.span.QueueRedrawAll()
 			tab.cross.area.QueueRedrawAll()
+			tab.fileicon.area.QueueRedrawAll()
 		})
 	}
 
@@ -152,4 +166,16 @@ func (t *Tabline) update(args []interface{}) {
 			tab.box.Hide()
 		})
 	}
+}
+
+func getFileType(text string) string {
+	if strings.HasPrefix(text, "term://") {
+		return "sh"
+	}
+	base := filepath.Base(text)
+	if strings.Index(base, ".") >= 0 {
+		parts := strings.Split(base, ".")
+		return parts[len(parts)-1]
+	}
+	return "default"
 }

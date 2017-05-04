@@ -487,6 +487,12 @@ func (ah *AreaHandler) KeyEvent(a *ui.Area, key *ui.AreaKeyEvent) (handled bool)
 	return true
 }
 
+func (a *AreaHandler) setPosition(x, y int) {
+	ui.QueueMain(func() {
+		a.area.SetPosition(x, y)
+	})
+}
+
 func areaQueueRedraw(x, y, width, heigt int) {
 	ui.QueueMain(func() {
 		editor.area.QueueRedraw(

@@ -23,6 +23,7 @@ type Finder struct {
 
 // FinderItem is the result shown
 type FinderItem struct {
+	icon *Svg
 	item *SpanHandler
 }
 
@@ -201,6 +202,8 @@ func (f *Finder) showResult(args []interface{}) {
 		}
 	}
 	f.agTypes = agTypes
+	paddingLeft := 10
+	paddingTop := 8
 	for i, item := range result {
 		if i > len(f.items)-1 {
 			height := 8 + 8 + editor.font.height
@@ -210,25 +213,30 @@ func (f *Finder) showResult(args []interface{}) {
 			itemSpan := ui.NewArea(itemHandler)
 			itemHandler.span = itemSpan
 			itemHandler.matchColor = editor.matchFg
+			itemHandler.paddingLeft = paddingLeft
+			itemHandler.paddingRight = paddingLeft
+			itemHandler.paddingTop = paddingTop
+			itemHandler.paddingBottom = paddingTop
+			iconWidth := editor.font.width * 2
+			icon := newSvg("default", iconWidth, iconWidth, nil, nil)
 			y := height * (i + 1)
 			ui.QueueMain(func() {
 				f.box.Append(itemSpan, false)
+				f.box.Append(icon.area, false)
 				itemSpan.SetSize(width, height)
 				itemSpan.SetPosition(0, y)
+				icon.setPosition(paddingLeft, y+paddingTop)
 			})
 
 			f.items = append(f.items, &FinderItem{
 				item: itemHandler,
+				icon: icon,
 			})
 		}
 		itemHandler := f.items[i]
 		itemHandler.item.textType = resultType
 		itemHandler.item.SetText(item)
 		itemHandler.item.SetFont(editor.font)
-		itemHandler.item.paddingLeft = 10
-		itemHandler.item.paddingRight = 10
-		itemHandler.item.paddingTop = 8
-		itemHandler.item.paddingBottom = 8
 		fg := newRGBA(205, 211, 222, 1)
 		itemHandler.item.SetColor(fg)
 		itemHandler.item.match = f.patternText
@@ -238,6 +246,26 @@ func (f *Finder) showResult(args []interface{}) {
 		}
 		if resultType != "ag" {
 			itemHandler.item.matchIndex = match[i]
+		}
+		if resultType == "file" {
+			itemHandler.icon.name = getFileType(item)
+			itemHandler.item.paddingLeft = paddingLeft + itemHandler.icon.width + editor.font.width
+			ui.QueueMain(func() {
+				itemHandler.icon.area.Show()
+				itemHandler.icon.area.QueueRedrawAll()
+			})
+		} else if resultType == "dir" {
+			itemHandler.icon.name = "folder"
+			itemHandler.item.paddingLeft = paddingLeft + itemHandler.icon.width + editor.font.width
+			ui.QueueMain(func() {
+				itemHandler.icon.area.Show()
+				itemHandler.icon.area.QueueRedrawAll()
+			})
+		} else {
+			itemHandler.item.paddingLeft = paddingLeft
+			ui.QueueMain(func() {
+				itemHandler.icon.area.Hide()
+			})
 		}
 		if i == selected {
 			itemHandler.item.SetBackground(editor.selectedBg)
@@ -253,6 +281,7 @@ func (f *Finder) showResult(args []interface{}) {
 		item := f.items[i]
 		ui.QueueMain(func() {
 			item.item.span.Hide()
+			item.icon.area.Hide()
 		})
 	}
 	ui.QueueMain(func() {
