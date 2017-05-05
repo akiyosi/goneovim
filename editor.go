@@ -42,6 +42,7 @@ type Editor struct {
 	Background    RGBA
 	window        *ui.Window
 	area          *ui.Area
+	screen        *Screen
 	areaHandler   *AreaHandler
 	areaBox       *ui.Box
 	close         chan bool
@@ -55,7 +56,7 @@ type Editor struct {
 	matchFg       *RGBA
 }
 
-func initWindow(box *ui.Box, width, height int) *ui.Window {
+func initMainWindow(box *ui.Box, width, height int) *ui.Window {
 	window := ui.NewWindow("Gonvim", width, height, false)
 	window.SetChild(box)
 	window.OnClosing(func(*ui.Window) bool {
@@ -74,6 +75,8 @@ func initWindow(box *ui.Box, width, height int) *ui.Window {
 		editor.width = width
 		editor.height = height
 		editor.areaBox.SetSize(width, height)
+		editor.screen.box.SetSize(width, height)
+		editor.screen.setSize(width, height)
 		editor.area.SetSize(width, height)
 		editor.cursor.setSize(width, height)
 		editor.tabline.resize(width, editor.tablineHeight)
@@ -95,6 +98,7 @@ func InitEditor() error {
 	tablineHeight := 34
 	ah := initArea()
 
+	screen := initScreen(width, height)
 	cursor := initCursorBox(width, height)
 	popupMenu := initPopupmenu()
 	finder := initFinder()
@@ -103,7 +107,8 @@ func InitEditor() error {
 
 	box := ui.NewHorizontalBox()
 	areaBox := ui.NewHorizontalBox()
-	areaBox.Append(ah.area, false)
+	areaBox.Append(screen.box, false)
+	// areaBox.Append(ah.area, false)
 	areaBox.Append(cursor.box, false)
 	areaBox.Append(loc.box, false)
 	areaBox.Append(popupMenu.box, false)
@@ -114,7 +119,7 @@ func InitEditor() error {
 	areaBox.SetSize(width, height)
 	areaBox.SetPosition(0, tablineHeight)
 	ah.area.SetSize(width, height)
-	window := initWindow(box, width, height+tablineHeight)
+	window := initMainWindow(box, width, height+tablineHeight)
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
@@ -130,6 +135,7 @@ func InitEditor() error {
 		nvim:          neovim,
 		nvimAttached:  false,
 		window:        window,
+		screen:        screen,
 		area:          ah.area,
 		areaHandler:   ah,
 		areaBox:       areaBox,
@@ -178,7 +184,7 @@ func InitEditor() error {
 }
 
 func (e *Editor) handleNotification() {
-	ah := e.areaHandler
+	screen := e.screen
 	e.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
 		event := updates[0].(string)
 		switch event {
@@ -219,6 +225,7 @@ func (e *Editor) handleNotification() {
 	mutex := &sync.Mutex{}
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
 		mutex.Lock()
+		e.screen.redrawWindows()
 		for _, update := range updates {
 			event := update[0].(string)
 			args := update[1:]
@@ -231,23 +238,24 @@ func (e *Editor) handleNotification() {
 				bg := calcColor(reflectToInt(args[0]))
 				editor.Background = bg
 			case "cursor_goto":
-				ah.cursorGoto(args)
+				screen.cursorGoto(args)
 			case "put":
-				ah.put(args)
+				screen.put(args)
 			case "eol_clear":
-				ah.eolClear(args)
+				screen.eolClear(args)
 			case "clear":
-				ah.clear(args)
+				screen.clear(args)
 			case "resize":
-				ah.resize(args)
+				screen.resize(args)
 			case "highlight_set":
-				ah.highlightSet(args)
+				screen.highlightSet(args)
 			case "set_scroll_region":
-				ah.setScrollRegion(args)
+				screen.setScrollRegion(args)
 			case "scroll":
-				ah.scroll(args)
+				screen.scroll(args)
 			case "mode_change":
-				ah.modeChange(args)
+				arg := update[1].([]interface{})
+				editor.mode = arg[0].(string)
 			case "popupmenu_show":
 				editor.popup.show(args)
 			case "popupmenu_hide":

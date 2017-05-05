@@ -9,6 +9,12 @@ import (
 	"github.com/dzhou121/ui"
 )
 
+// Border is the border of area
+type Border struct {
+	color *RGBA
+	width int
+}
+
 // AreaHandler is
 type AreaHandler struct {
 	area         *ui.Area
@@ -21,6 +27,12 @@ type AreaHandler struct {
 	width        int
 	height       int
 	span         *ui.Area
+	borderTop    *Border
+	borderRight  *Border
+	borderLeft   *Border
+	borderBottom *Border
+	x, y         int
+	shown        bool
 }
 
 func initArea() *AreaHandler {
@@ -487,9 +499,14 @@ func (ah *AreaHandler) KeyEvent(a *ui.Area, key *ui.AreaKeyEvent) (handled bool)
 	return true
 }
 
-func (a *AreaHandler) setPosition(x, y int) {
+func (ah *AreaHandler) setPosition(x, y int) {
+	if x == ah.x && y == ah.y {
+		return
+	}
+	ah.x = x
+	ah.y = y
 	ui.QueueMain(func() {
-		a.area.SetPosition(x, y)
+		ah.area.SetPosition(x, y)
 	})
 }
 
@@ -501,5 +518,36 @@ func areaQueueRedraw(x, y, width, heigt int) {
 			float64(width*editor.font.width),
 			float64(heigt*editor.font.lineHeight),
 		)
+	})
+}
+
+func (ah *AreaHandler) show() {
+	if ah.shown {
+		return
+	}
+	ah.shown = true
+	ui.QueueMain(func() {
+		ah.area.Show()
+	})
+}
+
+func (ah *AreaHandler) hide() {
+	if !ah.shown {
+		return
+	}
+	ah.shown = false
+	ui.QueueMain(func() {
+		ah.area.Hide()
+	})
+}
+
+func (ah *AreaHandler) setSize(width, height int) {
+	if width == ah.width && height == ah.height {
+		return
+	}
+	ah.width = width
+	ah.height = height
+	ui.QueueMain(func() {
+		ah.area.SetSize(width, height)
 	})
 }

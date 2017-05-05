@@ -62,8 +62,8 @@ func (c *CursorHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 }
 
 func (c *CursorBox) draw() {
-	row := editor.areaHandler.cursor[0]
-	col := editor.areaHandler.cursor[1]
+	row := editor.screen.cursor[0]
+	col := editor.screen.cursor[1]
 	ui.QueueMain(func() {
 		c.cursor.area.SetPosition(col*editor.font.width, row*editor.font.lineHeight)
 	})

@@ -8,12 +8,6 @@ import (
 	"github.com/dzhou121/ui"
 )
 
-// Border is the border of span
-type Border struct {
-	color *RGBA
-	width int
-}
-
 // SpanHandler is
 type SpanHandler struct {
 	AreaHandler
@@ -29,10 +23,6 @@ type SpanHandler struct {
 	paddingTop    int
 	paddingBottom int
 	textType      string
-	borderTop     *Border
-	borderRight   *Border
-	borderLeft    *Border
-	borderBottom  *Border
 	width         int
 	height        int
 	underline     []int
