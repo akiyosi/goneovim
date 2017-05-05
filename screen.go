@@ -1,6 +1,8 @@
 package gonvim
 
 import (
+	"fmt"
+
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
 )
@@ -305,13 +307,14 @@ func (s *Screen) queueRedraw(x, y, width, height int) {
 	if win != nil && width <= win.width && height <= win.height {
 		win.queueRedraw(x-win.pos[1], y-win.pos[0], width, height)
 	} else {
+		fmt.Println("queue redraw all")
 		s.queueRedrawAll()
 	}
 }
 
 func (s *Screen) posWin(x, y int) *Window {
 	for _, win := range s.curWins {
-		if win.pos[0] <= y && win.pos[1] <= x && (win.pos[0]+win.height) >= y && (win.pos[1]+win.width >= x) {
+		if win.pos[0] <= y && win.pos[1] <= x && (win.pos[0]+win.height+1) >= y && (win.pos[1]+win.width >= x) {
 			return win
 		}
 	}
