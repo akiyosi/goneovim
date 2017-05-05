@@ -101,8 +101,8 @@ func (s *Signature) underline() {
 }
 
 func (s *Signature) move() {
-	row := editor.areaHandler.cursor[0] + s.cusor[0]
-	col := editor.areaHandler.cursor[1] + s.cusor[1]
+	row := editor.screen.cursor[0] + s.cusor[0]
+	col := editor.screen.cursor[1] + s.cusor[1]
 	_, h := s.span.getSize()
 	i := strings.Index(s.span.text, "(")
 	if i >= 0 {

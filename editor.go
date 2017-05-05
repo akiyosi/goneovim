@@ -40,9 +40,7 @@ type Editor struct {
 	Foreground    RGBA
 	Background    RGBA
 	window        *ui.Window
-	area          *ui.Area
 	screen        *Screen
-	areaHandler   *AreaHandler
 	areaBox       *ui.Box
 	close         chan bool
 	popup         *PopupMenu
@@ -76,7 +74,6 @@ func initMainWindow(box *ui.Box, width, height int) *ui.Window {
 		editor.areaBox.SetSize(width, height)
 		editor.screen.box.SetSize(width, height)
 		editor.screen.setSize(width, height)
-		editor.area.SetSize(width, height)
 		editor.cursor.setSize(width, height)
 		editor.tabline.resize(width, editor.tablineHeight)
 		editor.resize()
@@ -95,7 +92,6 @@ func InitEditor() error {
 	width := 800
 	height := 600
 	tablineHeight := 34
-	ah := initArea()
 
 	screen := initScreen(width, height)
 	cursor := initCursorBox(width, height)
@@ -107,7 +103,6 @@ func InitEditor() error {
 	box := ui.NewHorizontalBox()
 	areaBox := ui.NewHorizontalBox()
 	areaBox.Append(screen.box, false)
-	// areaBox.Append(ah.area, false)
 	areaBox.Append(cursor.box, false)
 	areaBox.Append(loc.box, false)
 	areaBox.Append(popupMenu.box, false)
@@ -117,7 +112,6 @@ func InitEditor() error {
 
 	areaBox.SetSize(width, height)
 	areaBox.SetPosition(0, tablineHeight)
-	ah.area.SetSize(width, height)
 	window := initMainWindow(box, width, height+tablineHeight)
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
@@ -135,8 +129,6 @@ func InitEditor() error {
 		nvimAttached:  false,
 		window:        window,
 		screen:        screen,
-		area:          ah.area,
-		areaHandler:   ah,
 		areaBox:       areaBox,
 		mode:          "normal",
 		close:         make(chan bool),

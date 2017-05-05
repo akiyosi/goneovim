@@ -28,14 +28,6 @@ type SpanHandler struct {
 	underline     []int
 }
 
-// CrossHandler is a span looking like X
-type CrossHandler struct {
-	AreaHandler
-	width int
-	color *RGBA
-	bg    *RGBA
-}
-
 // Draw the span
 func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	if s.bg == nil {
@@ -113,20 +105,6 @@ func (s *SpanHandler) drawUnderline(dp *ui.AreaDrawParams) {
 		G:    fg.G,
 		B:    fg.B,
 		A:    fg.A,
-	})
-	p.Free()
-}
-
-func drawRect(dp *ui.AreaDrawParams, x, y, width, height int, color *RGBA) {
-	p := ui.NewPath(ui.Winding)
-	p.AddRectangle(float64(x), float64(y), float64(width), float64(height))
-	p.End()
-	dp.Context.Fill(p, &ui.Brush{
-		Type: ui.Solid,
-		R:    color.R,
-		G:    color.G,
-		B:    color.B,
-		A:    color.A,
 	})
 	p.Free()
 }
@@ -247,37 +225,4 @@ func (s *SpanHandler) getSize() (int, int) {
 	width := s.font.width*len(s.text) + s.paddingLeft + s.paddingRight
 	height := s.font.height + s.paddingTop + s.paddingBottom
 	return width, height
-}
-
-func newCross(width int, color, bg *RGBA) *CrossHandler {
-	handler := &CrossHandler{
-		width: width,
-		color: color,
-		bg:    bg,
-	}
-	area := ui.NewArea(handler)
-	handler.area = area
-	area.SetSize(width, width)
-	return handler
-}
-
-// Draw the cross
-func (c *CrossHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
-	p := ui.NewPath(ui.Winding)
-	p.NewFigure(float64(0), float64(0))
-	p.LineTo(float64(c.width), float64(c.width))
-	p.NewFigure(float64(c.width), float64(0))
-	p.LineTo(0, float64(c.width))
-	p.End()
-	dp.Context.Stroke(p, &ui.Brush{
-		Type: ui.Solid,
-		R:    c.color.R,
-		G:    c.color.G,
-		B:    c.color.B,
-		A:    c.color.A,
-	},
-		&ui.StrokeParams{
-			Thickness: 2,
-		})
-	p.Free()
 }
