@@ -11,12 +11,11 @@ import (
 // Window is
 type Window struct {
 	AreaHandler
-	win        nvim.Window
-	width      int
-	height     int
-	pos        [2]int
-	tab        nvim.Tabpage
-	statusline string
+	win    nvim.Window
+	width  int
+	height int
+	pos    [2]int
+	tab    nvim.Tabpage
 }
 
 // Draw the window
@@ -46,8 +45,8 @@ func (w *Window) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 		if y >= editor.rows {
 			continue
 		}
-		w.fillHightlight(dp, y, col, cols)
-		w.drawText(dp, y, col, cols)
+		fillHightlight(dp, y, col, cols, w.pos)
+		drawText(dp, y, col, cols, w.pos)
 	}
 
 	if col-w.pos[1]+cols > w.width {
@@ -118,7 +117,7 @@ func (w *Window) drawBorder(dp *ui.AreaDrawParams) {
 	p.Free()
 }
 
-func (w *Window) drawText(dp *ui.AreaDrawParams, y int, col int, cols int) {
+func drawText(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
 	screen := editor.screen
 	if y >= len(screen.content) {
 		return
@@ -174,7 +173,7 @@ func (w *Window) drawText(dp *ui.AreaDrawParams, y int, col int, cols int) {
 		}
 		textLayout.SetColor(x-start, x-start+1, fg.R, fg.G, fg.B, fg.A)
 	}
-	dp.Context.Text(float64((start-w.pos[1])*editor.font.width), float64((y-w.pos[0])*editor.font.lineHeight+shift), textLayout)
+	dp.Context.Text(float64((start-pos[1])*editor.font.width), float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
 	textLayout.Free()
 
 	for _, x := range specialChars {
@@ -188,12 +187,12 @@ func (w *Window) drawText(dp *ui.AreaDrawParams, y int, col int, cols int) {
 		}
 		textLayout := ui.NewTextLayout(char.char, editor.font.font, -1)
 		textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
-		dp.Context.Text(float64((x-w.pos[1])*editor.font.width), float64((y-w.pos[0])*editor.font.lineHeight+shift), textLayout)
+		dp.Context.Text(float64((x-pos[1])*editor.font.width), float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
 		textLayout.Free()
 	}
 }
 
-func (w *Window) fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int) {
+func fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
 	screen := editor.screen
 	if y >= len(screen.content) {
 		return
@@ -225,8 +224,8 @@ func (w *Window) fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int)
 					// last bg is different; draw the previous and start a new one
 					p := ui.NewPath(ui.Winding)
 					p.AddRectangle(
-						float64((start-w.pos[1])*editor.font.width),
-						float64((y-w.pos[0])*editor.font.lineHeight),
+						float64((start-pos[1])*editor.font.width),
+						float64((y-pos[0])*editor.font.lineHeight),
 						float64((end-start+1)*editor.font.width),
 						float64(editor.font.lineHeight),
 					)
@@ -250,8 +249,8 @@ func (w *Window) fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int)
 			if lastBg != nil {
 				p := ui.NewPath(ui.Winding)
 				p.AddRectangle(
-					float64((start-w.pos[1])*editor.font.width),
-					float64((y-w.pos[0])*editor.font.lineHeight),
+					float64((start-pos[1])*editor.font.width),
+					float64((y-pos[0])*editor.font.lineHeight),
 					float64((end-start+1)*editor.font.width),
 					float64(editor.font.lineHeight),
 				)
@@ -275,8 +274,8 @@ func (w *Window) fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int)
 	if lastBg != nil {
 		p := ui.NewPath(ui.Winding)
 		p.AddRectangle(
-			float64((start-w.pos[1])*editor.font.width),
-			float64((y-w.pos[0])*editor.font.lineHeight),
+			float64((start-pos[1])*editor.font.width),
+			float64((y-pos[0])*editor.font.lineHeight),
 			float64((end-start+1)*editor.font.width),
 			float64(editor.font.lineHeight),
 		)

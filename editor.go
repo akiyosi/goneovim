@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"unsafe"
 
 	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
@@ -222,9 +221,9 @@ func (e *Editor) handleNotification() {
 			fmt.Println("unhandled Gui event", event)
 		}
 	})
-	mutex := &sync.Mutex{}
+	// mutex := &sync.Mutex{}
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		mutex.Lock()
+		// mutex.Lock()
 		e.screen.redrawWindows()
 		for _, update := range updates {
 			event := update[0].(string)
@@ -268,7 +267,7 @@ func (e *Editor) handleNotification() {
 				fmt.Println("Unhandle event", event)
 			}
 		}
-		mutex.Unlock()
+		// mutex.Unlock()
 		if !e.nvimAttached {
 			e.nvimAttached = true
 		}

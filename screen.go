@@ -1,8 +1,6 @@
 package gonvim
 
 import (
-	"fmt"
-
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
 )
@@ -19,7 +17,7 @@ type Screen struct {
 	curtab       nvim.Tabpage
 	highlight    Highlight
 	curWins      []*Window
-	cmdheight    int
+	bottom       int
 }
 
 func initScreen(width, height int) *Screen {
@@ -54,12 +52,10 @@ func (s *Screen) getWindows() map[nvim.Window]*Window {
 		b.WindowHeight(nwin, &win.height)
 		b.WindowPosition(nwin, &win.pos)
 		b.WindowTabpage(nwin, &win.tab)
-		// b.WindowOption(nwin, "statusline", &win.statusline)
 		wins[nwin] = win
 	}
 	err := b.Execute()
 	if err != nil {
-		fmt.Println(err)
 		return nil
 	}
 	return wins
@@ -81,6 +77,13 @@ func (s *Screen) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 		A:    1,
 	})
 	p.Free()
+
+	if s.bottom > 0 {
+		for i := s.bottom; i >= 0; i-- {
+			fillHightlight(dp, editor.rows-i-1, 0, editor.cols, [2]int{0, 0})
+			drawText(dp, editor.rows-i-1, 0, editor.cols, [2]int{0, 0})
+		}
+	}
 }
 
 func (s *Screen) redrawWindows() {
@@ -91,7 +94,6 @@ func (s *Screen) redrawWindows() {
 	for _, w := range wins {
 		win, ok := s.wins[w.win]
 		if !ok {
-			fmt.Println("new win")
 			area := ui.NewArea(w)
 			w.area = area
 			ui.QueueMain(func() {
@@ -107,11 +109,10 @@ func (s *Screen) redrawWindows() {
 		}
 	}
 	s.curWins = []*Window{}
-	s.cmdheight = editor.rows
+	s.bottom = editor.rows
 	for _, win := range s.wins {
 		_, ok := wins[win.win]
 		if !ok {
-			fmt.Println("rem win")
 			delete(s.wins, win.win)
 			area := win.area
 			ui.QueueMain(func() {
@@ -121,9 +122,9 @@ func (s *Screen) redrawWindows() {
 			continue
 		}
 		if win.tab == s.curtab {
-			cmdheight := editor.rows - (win.height + win.pos[0])
-			if cmdheight < s.cmdheight {
-				s.cmdheight = cmdheight
+			bottom := editor.rows - (win.height + win.pos[0])
+			if bottom < s.bottom {
+				s.bottom = bottom
 			}
 			s.curWins = append(s.curWins, win)
 			win.setSize((win.width+1)*editor.font.width, (win.height+1)*editor.font.lineHeight)
@@ -133,7 +134,7 @@ func (s *Screen) redrawWindows() {
 			win.hide()
 		}
 	}
-	fmt.Println("cmdheight is", s.cmdheight)
+	s.bottom--
 }
 
 func (s *Screen) resize(args []interface{}) {
@@ -293,6 +294,10 @@ func (s *Screen) queueRedrawAll() {
 			area.QueueRedrawAll()
 		})
 	}
+
+	ui.QueueMain(func() {
+		s.area.QueueRedrawAll()
+	})
 }
 
 func (s *Screen) queueRedraw(x, y, width, height int) {
