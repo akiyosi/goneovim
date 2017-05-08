@@ -16,11 +16,18 @@ gonvim
 
 # Features
 
+- Tabline
+
+![](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/tab.gif)
+
 - A fuzzy finder in the GUI
 
-![Readme](./screen1.png)
-![Readme](./screen2.png)
+![](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/fuzzyfinder.gif)
 
-- Popup Menu drawn in the GUI (external-popupmen)
+- Function signature popup
 
-![Readme](./screen3.png)
+![Readme](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/signature.gif)
+
+- Lint message popup
+
+![Readme](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/lint.gif)
