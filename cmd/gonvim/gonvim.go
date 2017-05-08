@@ -11,7 +11,7 @@ import (
 
 func main() {
 	go func() {
-		http.ListenAndServe("0.0.0.0:6080", nil)
+		http.ListenAndServe("0.0.0.0:6070", nil)
 	}()
 	err := ui.Main(func() {
 		gonvim.InitEditor()

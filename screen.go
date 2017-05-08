@@ -20,15 +20,16 @@ type Window struct {
 // Screen is the main editor area
 type Screen struct {
 	AreaHandler
-	box          *ui.Box
-	wins         map[nvim.Window]*Window
-	cursor       [2]int
-	lastCursor   [2]int
-	content      [][]*Char
-	scrollRegion []int
-	curtab       nvim.Tabpage
-	highlight    Highlight
-	curWins      map[nvim.Window]*Window
+	box             *ui.Box
+	wins            map[nvim.Window]*Window
+	cursor          [2]int
+	lastCursor      [2]int
+	content         [][]*Char
+	scrollRegion    []int
+	curtab          nvim.Tabpage
+	highlight       Highlight
+	curWins         map[nvim.Window]*Window
+	queueRedrawArea [4]int
 }
 
 func initScreen(width, height int) *Screen {
@@ -293,13 +294,12 @@ func (s *Screen) scroll(args []interface{}) {
 		}
 	}
 }
-func (s *Screen) queueRedrawAll() {
-	ui.QueueMain(func() {
-		s.area.QueueRedrawAll()
-	})
-}
 
-func (s *Screen) queueRedraw(x, y, width, height int) {
+func (s *Screen) redraw() {
+	x := s.queueRedrawArea[0]
+	y := s.queueRedrawArea[1]
+	width := s.queueRedrawArea[2] - x
+	height := s.queueRedrawArea[3] - y
 	ui.QueueMain(func() {
 		s.area.QueueRedraw(
 			float64(x*editor.font.width),
@@ -308,6 +308,29 @@ func (s *Screen) queueRedraw(x, y, width, height int) {
 			float64(height*editor.font.lineHeight),
 		)
 	})
+	s.queueRedrawArea[0] = 0
+	s.queueRedrawArea[1] = 0
+	s.queueRedrawArea[2] = 0
+	s.queueRedrawArea[3] = 0
+}
+
+func (s *Screen) queueRedrawAll() {
+	s.queueRedrawArea = [4]int{0, 0, editor.cols, editor.rows}
+}
+
+func (s *Screen) queueRedraw(x, y, width, height int) {
+	if x < s.queueRedrawArea[0] {
+		s.queueRedrawArea[0] = x
+	}
+	if y < s.queueRedrawArea[1] {
+		s.queueRedrawArea[1] = y
+	}
+	if (x + width) > s.queueRedrawArea[2] {
+		s.queueRedrawArea[2] = x + width
+	}
+	if (y + height) > s.queueRedrawArea[3] {
+		s.queueRedrawArea[3] = y + height
+	}
 }
 
 func (s *Screen) posWin(x, y int) *Window {

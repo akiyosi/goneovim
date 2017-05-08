@@ -152,7 +152,11 @@ func InitEditor() error {
 	editor.handleNotification()
 	editor.finder.rePosition()
 	go func() {
-		neovim.Serve()
+		err := neovim.Serve()
+		fmt.Println("neovim now close")
+		if err != nil {
+			fmt.Println(err)
+		}
 		editor.close <- true
 	}()
 
@@ -260,6 +264,7 @@ func (e *Editor) handleNotification() {
 				fmt.Println("Unhandle event", event)
 			}
 		}
+		screen.redraw()
 		mutex.Unlock()
 		if !e.nvimAttached {
 			e.nvimAttached = true
