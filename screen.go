@@ -530,41 +530,36 @@ func (w *Window) drawBorder(dp *ui.AreaDrawParams) {
 	p.AddRectangle(
 		(float64(w.width+w.pos[1]))*float64(editor.font.width),
 		float64(w.pos[0]*editor.font.lineHeight),
-		float64(editor.font.width)*1,
+		float64(editor.font.width),
 		float64(w.height*editor.font.lineHeight),
 	)
 	p.End()
 	stops := []ui.GradientStop{}
-	n := 100
-	for i := 0; i < n; i++ {
+	n := 10
+	for i := 0; i <= n; i++ {
 		s := ui.GradientStop{
 			Pos: float64(i) / float64(n),
-			R:   float64(i+10) / 255 / 2,
-			G:   float64(i+10) / 255 / 2,
-			B:   float64(i+10) / 255 / 2,
-			A:   1 - (float64(i) / float64(n)),
+			R:   float64(10) / 255,
+			G:   float64(10) / 255,
+			B:   float64(10) / 255,
+			A:   (1 - (float64(i) / float64(n))) / 2,
 		}
 		stops = append(stops, s)
 	}
 	dp.Context.Fill(p, &ui.Brush{
-		Type: ui.LinearGradient,
-		R:    color.R,
-		G:    color.G,
-		B:    color.B,
-		A:    1,
-
-		X0:    (float64(w.width+w.pos[1]) + 1.5) * float64(editor.font.width),
+		Type:  ui.LinearGradient,
+		X0:    (float64(w.width+w.pos[1]) + 1) * float64(editor.font.width),
 		Y0:    0,
-		X1:    (float64(w.width+w.pos[1]) - 0.5) * float64(editor.font.width),
+		X1:    (float64(w.width + w.pos[1])) * float64(editor.font.width),
 		Y1:    0,
 		Stops: stops,
 	})
 	p.Free()
 
 	p = ui.NewPath(ui.Winding)
-	p.AddRectangle((float64(w.width+w.pos[1])+1)*float64(editor.font.width),
+	p.AddRectangle((float64(w.width+w.pos[1])+1)*float64(editor.font.width)-1,
 		float64(w.pos[0]*editor.font.lineHeight),
-		0.5,
+		1,
 		float64(w.height*editor.font.lineHeight),
 	)
 	// p.AddRectangle(

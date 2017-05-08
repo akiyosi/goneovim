@@ -153,7 +153,6 @@ func InitEditor() error {
 	editor.finder.rePosition()
 	go func() {
 		err := neovim.Serve()
-		fmt.Println("neovim now close")
 		if err != nil {
 			fmt.Println(err)
 		}
