@@ -95,7 +95,7 @@ func InitEditor() error {
 	width := 800
 	height := 600
 	tablineHeight := 34
-	statuslineHeight := 25
+	statuslineHeight := 28
 
 	screen := initScreen(width, height)
 	cursor := initCursorBox(width, height)
@@ -277,6 +277,7 @@ func (e *Editor) handleNotification() {
 			e.nvimAttached = true
 		}
 		editor.cursor.draw()
+		go editor.statusline.redraw()
 	})
 }
 

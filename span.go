@@ -130,6 +130,10 @@ func (s *SpanHandler) SetText(text string) {
 }
 
 func (s *SpanHandler) getTextLayout() *ui.TextLayout {
+	font := s.font
+	if font == nil {
+		font = editor.font
+	}
 	text := s.text
 	matchIndex := s.matchIndex
 	var textLayout *ui.TextLayout
@@ -167,14 +171,14 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 			baseLen += 2
 			indent = 2
 		}
-		textLayout = ui.NewTextLayout(text, s.font.font, -1)
+		textLayout = ui.NewTextLayout(text, font.font, -1)
 		fg := newRGBA(131, 131, 131, 1)
 		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
 		fg = s.color
 		textLayout.SetColor(0, baseLen, fg.R, fg.G, fg.B, fg.A)
 	} else if s.textType == "line" {
 		i := strings.Index(s.text, "\t")
-		textLayout = ui.NewTextLayout(text, s.font.font, -1)
+		textLayout = ui.NewTextLayout(text, font.font, -1)
 		fg := s.color
 		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
 
@@ -183,11 +187,11 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 	} else if s.textType == "ag_line" {
 		text = "    " + text
 		indent = 4
-		textLayout = ui.NewTextLayout(text, s.font.font, -1)
+		textLayout = ui.NewTextLayout(text, font.font, -1)
 		fg := s.color
 		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
 	} else {
-		textLayout = ui.NewTextLayout(text, s.font.font, -1)
+		textLayout = ui.NewTextLayout(text, font.font, -1)
 		fg := s.color
 		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
 	}
