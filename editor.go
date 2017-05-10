@@ -68,7 +68,7 @@ func initMainWindow(box *ui.Box, width, height int) *ui.Window {
 			return true
 		}
 		width, height = window.ContentSize()
-		height = height - editor.tablineHeight
+		height = height - editor.tablineHeight - editor.statuslineHeight
 		if width == editor.width && height == editor.height {
 			return true
 		}
@@ -79,6 +79,10 @@ func initMainWindow(box *ui.Box, width, height int) *ui.Window {
 		editor.screen.setSize(width, height)
 		editor.cursor.setSize(width, height)
 		editor.tabline.resize(width, editor.tablineHeight)
+		editor.statusline.box.SetSize(width, editor.statuslineHeight)
+		editor.statusline.setSize(width, editor.statuslineHeight)
+		editor.statusline.box.SetPosition(0, editor.tablineHeight+height)
+		editor.statusline.redraw()
 		editor.resize()
 		editor.finder.rePosition()
 		return true
