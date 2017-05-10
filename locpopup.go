@@ -16,11 +16,11 @@ func initLocpopup() *Locpopup {
 
 	typeHandler := &SpanHandler{}
 	typeSpan := ui.NewArea(typeHandler)
-	typeHandler.span = typeSpan
+	typeHandler.area = typeSpan
 
 	textHandler := &SpanHandler{}
 	textSpan := ui.NewArea(textHandler)
-	textHandler.span = textSpan
+	textHandler.area = textSpan
 
 	box.Append(textSpan, false)
 	box.Append(typeSpan, false)
@@ -51,7 +51,7 @@ func (l *Locpopup) show(loc map[string]interface{}) {
 		l.locType.SetBackground(newRGBA(203, 203, 65, 1))
 		l.locType.SetColor(newRGBA(255, 255, 255, 1))
 	}
-	l.locType.span.SetPosition(typeMargin, typeMargin)
+	l.locType.area.SetPosition(typeMargin, typeMargin)
 	l.locType.paddingTop = typePadding
 	l.locType.paddingLeft = typePadding
 	l.locType.paddingRight = l.locType.paddingLeft
@@ -71,10 +71,10 @@ func (l *Locpopup) show(loc map[string]interface{}) {
 	l.text.setSize(l.text.getSize())
 	l.move()
 	ui.QueueMain(func() {
-		l.locType.span.Show()
-		l.text.span.Show()
-		l.locType.span.QueueRedrawAll()
-		l.text.span.QueueRedrawAll()
+		l.locType.area.Show()
+		l.text.area.Show()
+		l.locType.area.QueueRedrawAll()
+		l.text.area.QueueRedrawAll()
 		l.box.SetSize(l.text.getSize())
 		l.box.Show()
 	})

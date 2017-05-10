@@ -17,7 +17,6 @@ type AreaHandler struct {
 	area         *ui.Area
 	width        int
 	height       int
-	span         *ui.Area
 	borderTop    *Border
 	borderRight  *Border
 	borderLeft   *Border
@@ -38,6 +37,10 @@ func drawRect(dp *ui.AreaDrawParams, x, y, width, height int, color *RGBA) {
 		A:    color.A,
 	})
 	p.Free()
+}
+
+// Draw the area
+func (ah *AreaHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 }
 
 // MouseEvent is
@@ -111,6 +114,21 @@ func (ah *AreaHandler) KeyEvent(a *ui.Area, key *ui.AreaKeyEvent) (handled bool)
 	}
 	editor.nvim.Input(input)
 	return true
+}
+
+func (ah *AreaHandler) drawBorder(dp *ui.AreaDrawParams) {
+	if ah.borderBottom != nil {
+		drawRect(dp, 0, ah.height-ah.borderBottom.width, ah.width, ah.borderBottom.width, ah.borderBottom.color)
+	}
+	if ah.borderRight != nil {
+		drawRect(dp, ah.width-ah.borderRight.width, 0, ah.borderRight.width, ah.height, ah.borderRight.color)
+	}
+	if ah.borderTop != nil {
+		drawRect(dp, 0, 0, ah.width, ah.borderTop.width, ah.borderTop.color)
+	}
+	if ah.borderLeft != nil {
+		drawRect(dp, 0, 0, ah.borderLeft.width, ah.height, ah.borderLeft.color)
+	}
 }
 
 func (ah *AreaHandler) setPosition(x, y int) {

@@ -217,12 +217,16 @@ func (s *SpanHandler) setSize(width, height int) {
 	s.width = width
 	s.height = height
 	ui.QueueMain(func() {
-		s.span.SetSize(width, height)
+		s.area.SetSize(width, height)
 	})
 }
 
 func (s *SpanHandler) getSize() (int, int) {
-	width := s.font.width*len(s.text) + s.paddingLeft + s.paddingRight
-	height := s.font.height + s.paddingTop + s.paddingBottom
+	font := s.font
+	if font == nil {
+		font = editor.font
+	}
+	width := font.width*len(s.text) + s.paddingLeft + s.paddingRight
+	height := font.height + s.paddingTop + s.paddingBottom
 	return width, height
 }

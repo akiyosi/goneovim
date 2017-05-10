@@ -27,11 +27,11 @@ func initPopupmenu() *PopupMenu {
 	for i := 0; i < total; i++ {
 		kindSpanHandler := &SpanHandler{}
 		kindSpan := ui.NewArea(kindSpanHandler)
-		kindSpanHandler.span = kindSpan
+		kindSpanHandler.area = kindSpan
 
 		menuSpanHandler := &SpanHandler{}
 		menuSpan := ui.NewArea(menuSpanHandler)
-		menuSpanHandler.span = menuSpan
+		menuSpanHandler.area = menuSpan
 
 		popupItem := &PopupItem{
 			kind: kindSpanHandler,
@@ -86,8 +86,8 @@ func (p *PopupMenu) show(args []interface{}) {
 		y := heightSum
 		heightSum += height
 		ui.QueueMain(func() {
-			popupItem.kind.span.SetPosition(0, y)
-			popupItem.menu.span.SetPosition(kindWidth, y)
+			popupItem.kind.area.SetPosition(0, y)
+			popupItem.menu.area.SetPosition(kindWidth, y)
 		})
 	}
 
@@ -97,12 +97,12 @@ func (p *PopupMenu) show(args []interface{}) {
 		}
 		popupItem := popupItems[i]
 		ui.QueueMain(func() {
-			popupItem.kind.span.SetSize(kindWidth, height)
-			popupItem.kind.span.Show()
-			popupItem.kind.span.QueueRedrawAll()
-			popupItem.menu.span.SetSize(menuWidthMax, height)
-			popupItem.menu.span.Show()
-			popupItem.menu.span.QueueRedrawAll()
+			popupItem.kind.area.SetSize(kindWidth, height)
+			popupItem.kind.area.Show()
+			popupItem.kind.area.QueueRedrawAll()
+			popupItem.menu.area.SetSize(menuWidthMax, height)
+			popupItem.menu.area.Show()
+			popupItem.menu.area.QueueRedrawAll()
 		})
 	}
 
@@ -135,12 +135,12 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 		if selected == i {
 			popupItem.menu.SetBackground(editor.selectedBg)
 			ui.QueueMain(func() {
-				popupItem.menu.span.QueueRedrawAll()
+				popupItem.menu.area.QueueRedrawAll()
 			})
 		} else {
 			popupItem.menu.SetBackground(newRGBA(14, 17, 18, 1))
 			ui.QueueMain(func() {
-				popupItem.menu.span.QueueRedrawAll()
+				popupItem.menu.area.QueueRedrawAll()
 			})
 		}
 	}
@@ -220,7 +220,7 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 
 func (p *PopupItem) hide() {
 	ui.QueueMain(func() {
-		p.kind.span.Hide()
-		p.menu.span.Hide()
+		p.kind.area.Hide()
+		p.menu.area.Hide()
 	})
 }

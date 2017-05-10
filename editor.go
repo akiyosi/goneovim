@@ -30,28 +30,30 @@ type Char struct {
 
 // Editor is the editor
 type Editor struct {
-	nvim          *nvim.Nvim
-	nvimAttached  bool
-	mode          string
-	font          *Font
-	smallerFont   *Font
-	rows          int
-	cols          int
-	cursor        *CursorBox
-	Foreground    RGBA
-	Background    RGBA
-	window        *ui.Window
-	screen        *Screen
-	areaBox       *ui.Box
-	close         chan bool
-	popup         *PopupMenu
-	finder        *Finder
-	tabline       *Tabline
-	width         int
-	height        int
-	tablineHeight int
-	selectedBg    *RGBA
-	matchFg       *RGBA
+	nvim             *nvim.Nvim
+	nvimAttached     bool
+	mode             string
+	font             *Font
+	smallerFont      *Font
+	rows             int
+	cols             int
+	cursor           *CursorBox
+	Foreground       RGBA
+	Background       RGBA
+	window           *ui.Window
+	screen           *Screen
+	areaBox          *ui.Box
+	close            chan bool
+	popup            *PopupMenu
+	finder           *Finder
+	tabline          *Tabline
+	statusline       *Statusline
+	statuslineHeight int
+	width            int
+	height           int
+	tablineHeight    int
+	selectedBg       *RGBA
+	matchFg          *RGBA
 }
 
 func initMainWindow(box *ui.Box, width, height int) *ui.Window {
@@ -93,6 +95,7 @@ func InitEditor() error {
 	width := 800
 	height := 600
 	tablineHeight := 34
+	statuslineHeight := 25
 
 	screen := initScreen(width, height)
 	cursor := initCursorBox(width, height)
@@ -100,6 +103,7 @@ func InitEditor() error {
 	finder := initFinder()
 	tabline := initTabline(width, tablineHeight)
 	loc := initLocpopup()
+	statusline := initStatusline(width, statuslineHeight)
 
 	box := ui.NewHorizontalBox()
 	areaBox := ui.NewHorizontalBox()
@@ -110,10 +114,12 @@ func InitEditor() error {
 	areaBox.Append(finder.box, false)
 	box.Append(tabline.box, false)
 	box.Append(areaBox, false)
+	box.Append(statusline.box, false)
 
 	areaBox.SetSize(width, height)
 	areaBox.SetPosition(0, tablineHeight)
-	window := initMainWindow(box, width, height+tablineHeight)
+	statusline.box.SetPosition(0, tablineHeight+height)
+	window := initMainWindow(box, width, height+tablineHeight+statuslineHeight)
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
@@ -126,26 +132,28 @@ func InitEditor() error {
 	smallerFont := initFont("", 14, 0)
 
 	editor = &Editor{
-		nvim:          neovim,
-		nvimAttached:  false,
-		window:        window,
-		screen:        screen,
-		areaBox:       areaBox,
-		mode:          "normal",
-		close:         make(chan bool),
-		cursor:        cursor,
-		popup:         popupMenu,
-		finder:        finder,
-		tabline:       tabline,
-		width:         width,
-		height:        height,
-		tablineHeight: tablineHeight,
-		font:          font,
-		smallerFont:   smallerFont,
-		cols:          0,
-		rows:          0,
-		selectedBg:    newRGBA(81, 154, 186, 0.5),
-		matchFg:       newRGBA(81, 154, 186, 1),
+		nvim:             neovim,
+		nvimAttached:     false,
+		window:           window,
+		screen:           screen,
+		areaBox:          areaBox,
+		mode:             "normal",
+		close:            make(chan bool),
+		cursor:           cursor,
+		popup:            popupMenu,
+		finder:           finder,
+		tabline:          tabline,
+		width:            width,
+		height:           height,
+		tablineHeight:    tablineHeight,
+		statusline:       statusline,
+		statuslineHeight: statuslineHeight,
+		font:             font,
+		smallerFont:      smallerFont,
+		cols:             0,
+		rows:             0,
+		selectedBg:       newRGBA(81, 154, 186, 0.5),
+		matchFg:          newRGBA(81, 154, 186, 1),
 	}
 
 	editor.resize()

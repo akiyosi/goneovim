@@ -36,7 +36,7 @@ func initTabline(width int, height int) *Tabline {
 	box.SetSize(width, height)
 	handler := &SpanHandler{}
 	bgSpan := ui.NewArea(handler)
-	handler.span = bgSpan
+	handler.area = bgSpan
 	handler.SetBackground(newRGBA(24, 29, 34, 1))
 	handler.borderBottom = &Border{
 		width: 2,
@@ -72,10 +72,10 @@ func (t *Tabline) update(args []interface{}) {
 			box := ui.NewHorizontalBox()
 			handler := &SpanHandler{}
 			tabSpan := ui.NewArea(handler)
-			handler.span = tabSpan
+			handler.area = tabSpan
 			bgHandler := &SpanHandler{}
 			bgSpan := ui.NewArea(bgHandler)
-			bgHandler.span = bgSpan
+			bgHandler.area = bgSpan
 			padding := (t.height - editor.font.height - 2) / 2
 			paddingLeft := editor.font.width * 2
 			chars := 21
@@ -152,8 +152,8 @@ func (t *Tabline) update(args []interface{}) {
 		}
 		ui.QueueMain(func() {
 			tab.box.Show()
-			tab.span.span.QueueRedrawAll()
-			tab.bg.span.QueueRedrawAll()
+			tab.span.area.QueueRedrawAll()
+			tab.bg.area.QueueRedrawAll()
 			tab.cross.area.QueueRedrawAll()
 			tab.fileicon.area.QueueRedrawAll()
 		})

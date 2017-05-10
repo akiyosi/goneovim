@@ -35,7 +35,7 @@ func initFinder() *Finder {
 
 	patternHandler := &SpanHandler{}
 	pattern := ui.NewArea(patternHandler)
-	patternHandler.span = pattern
+	patternHandler.area = pattern
 	patternHandler.paddingLeft = 10
 	patternHandler.paddingRight = 10
 	patternHandler.paddingTop = 8
@@ -75,7 +75,7 @@ func (f *Finder) hide() {
 	f.hidden = true
 	ui.QueueMain(func() {
 		f.box.Hide()
-		f.pattern.span.Hide()
+		f.pattern.area.Hide()
 		f.cursor.area.Hide()
 	})
 }
@@ -105,12 +105,12 @@ func (f *Finder) selectResult(args []interface{}) {
 		if selected == i {
 			item.item.SetBackground(editor.selectedBg)
 			ui.QueueMain(func() {
-				item.item.span.QueueRedrawAll()
+				item.item.area.QueueRedrawAll()
 			})
 		} else {
 			item.item.SetBackground(newRGBA(14, 17, 18, 1))
 			ui.QueueMain(func() {
-				item.item.span.QueueRedrawAll()
+				item.item.area.QueueRedrawAll()
 			})
 		}
 	}
@@ -118,7 +118,7 @@ func (f *Finder) selectResult(args []interface{}) {
 
 func (f *Finder) showPattern(args []interface{}) {
 	p := args[0].(string)
-	f.pattern.span.SetSize(f.width, 8+8+editor.font.height)
+	f.pattern.area.SetSize(f.width, 8+8+editor.font.height)
 	f.pattern.SetText(p)
 	f.patternText = p
 	f.pattern.SetFont(editor.font)
@@ -127,8 +127,8 @@ func (f *Finder) showPattern(args []interface{}) {
 	f.pattern.SetBackground(newRGBA(14, 17, 18, 1))
 	ui.QueueMain(func() {
 		// f.box.Show()
-		f.pattern.span.Show()
-		f.pattern.span.QueueRedrawAll()
+		f.pattern.area.Show()
+		f.pattern.area.QueueRedrawAll()
 	})
 }
 
@@ -211,7 +211,7 @@ func (f *Finder) showResult(args []interface{}) {
 
 			itemHandler := &SpanHandler{}
 			itemSpan := ui.NewArea(itemHandler)
-			itemHandler.span = itemSpan
+			itemHandler.area = itemSpan
 			itemHandler.matchColor = editor.matchFg
 			itemHandler.paddingLeft = paddingLeft
 			itemHandler.paddingRight = paddingLeft
@@ -273,14 +273,14 @@ func (f *Finder) showResult(args []interface{}) {
 			itemHandler.item.SetBackground(newRGBA(14, 17, 18, 1))
 		}
 		ui.QueueMain(func() {
-			itemHandler.item.span.Show()
-			itemHandler.item.span.QueueRedrawAll()
+			itemHandler.item.area.Show()
+			itemHandler.item.area.QueueRedrawAll()
 		})
 	}
 	for i := len(result); i < len(f.items); i++ {
 		item := f.items[i]
 		ui.QueueMain(func() {
-			item.item.span.Hide()
+			item.item.area.Hide()
 			item.icon.area.Hide()
 		})
 	}

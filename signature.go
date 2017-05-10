@@ -18,7 +18,7 @@ func initSignature() *Signature {
 	box := ui.NewHorizontalBox()
 	handler := &SpanHandler{}
 	span := ui.NewArea(handler)
-	handler.span = span
+	handler.area = span
 	box.Append(span, false)
 	return &Signature{
 		box:   box,
@@ -96,7 +96,7 @@ func (s *Signature) underline() {
 		s.span.underline = append(s.span.underline, j)
 	}
 	ui.QueueMain(func() {
-		s.span.span.QueueRedrawAll()
+		s.span.area.QueueRedrawAll()
 	})
 }
 
