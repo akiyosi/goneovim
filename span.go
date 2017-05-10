@@ -2,30 +2,37 @@ package gonvim
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"strings"
 
+	"github.com/dzhou121/svg"
 	"github.com/dzhou121/ui"
 )
 
 // SpanHandler is
 type SpanHandler struct {
 	AreaHandler
-	match         string
-	matchColor    *RGBA
-	matchIndex    []int
-	text          string
-	bg            *RGBA
-	color         *RGBA
-	font          *Font
-	paddingLeft   int
-	paddingRight  int
-	paddingTop    int
-	paddingBottom int
-	textType      string
-	width         int
-	height        int
-	underline     []int
+	match            string
+	matchColor       *RGBA
+	matchIndex       []int
+	text             string
+	bg               *RGBA
+	color            *RGBA
+	font             *Font
+	paddingLeft      int
+	paddingRight     int
+	paddingTop       int
+	paddingBottom    int
+	textType         string
+	width            int
+	height           int
+	underline        []int
+	svg              string
+	svgColor         *RGBA
+	svgSecond        string
+	svgSecondPadding int
+	svgSecondColor   *RGBA
 }
 
 // Draw the span
@@ -68,6 +75,8 @@ func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	)
 	textLayout.Free()
 	s.drawUnderline(dp)
+	s.drawSvg(dp)
+	s.drawSvgSecond(dp)
 }
 
 func (s *SpanHandler) drawBorder(dp *ui.AreaDrawParams) {
@@ -83,6 +92,142 @@ func (s *SpanHandler) drawBorder(dp *ui.AreaDrawParams) {
 	if s.borderLeft != nil {
 		drawRect(dp, 0, 0, s.borderLeft.width, s.height, s.borderLeft.color)
 	}
+}
+
+func (s *SpanHandler) drawSvg(dp *ui.AreaDrawParams) {
+	if s.svg == "" {
+		return
+	}
+
+	svgXML := getSvgs()[s.svg]
+	if svgXML == nil {
+		svgXML = getSvgs()["default"]
+	}
+
+	wScale := float64(s.width) / float64(svgXML.width)
+	hScale := float64(s.height) / float64(svgXML.height)
+	r, err := svg.ParseSvg(svgXML.xml, "", math.Min(wScale, hScale))
+	if err != nil {
+		return
+	}
+
+	color := s.svgColor
+	if color == nil {
+		color = svgXML.color
+	}
+	if color == nil {
+		color = newRGBA(255, 255, 255, 1)
+	}
+
+	path := ui.NewPath(ui.Winding)
+	for _, g := range r.Groups {
+		for _, e := range g.Elements {
+			switch p := e.(type) {
+			case *svg.Path:
+				cmdChan := p.Parse()
+				for cmd := range cmdChan {
+					switch cmd.Name {
+					case svg.MOVETO:
+						path.NewFigure(cmd.Points[0][0], cmd.Points[0][1])
+					case svg.LINETO:
+						path.LineTo(cmd.Points[0][0], cmd.Points[0][1])
+					case svg.CURVETO:
+						p := cmd.Points
+						path.BezierTo(p[0][0], p[0][1], p[1][0], p[1][1], p[2][0], p[2][1])
+					}
+				}
+			}
+		}
+	}
+	path.End()
+	dp.Context.Fill(path, &ui.Brush{
+		Type: ui.Solid,
+		R:    color.R,
+		G:    color.G,
+		B:    color.B,
+		A:    color.A,
+	})
+	if svgXML.thickness > 0 {
+		dp.Context.Stroke(path, &ui.Brush{
+			Type: ui.Solid,
+			R:    color.R,
+			G:    color.G,
+			B:    color.B,
+			A:    color.A,
+		},
+			&ui.StrokeParams{
+				Thickness: svgXML.thickness,
+			})
+	}
+	path.Free()
+}
+
+func (s *SpanHandler) drawSvgSecond(dp *ui.AreaDrawParams) {
+	if s.svgSecond == "" {
+		return
+	}
+
+	svgXML := getSvgs()[s.svgSecond]
+	if svgXML == nil {
+		svgXML = getSvgs()["default"]
+	}
+
+	wScale := float64(s.width) / float64(svgXML.width)
+	hScale := float64(s.height) / float64(svgXML.height)
+	r, err := svg.ParseSvg(svgXML.xml, "", math.Min(wScale, hScale))
+	if err != nil {
+		return
+	}
+
+	color := s.svgSecondColor
+	if color == nil {
+		color = svgXML.color
+	}
+	if color == nil {
+		color = newRGBA(255, 255, 255, 1)
+	}
+
+	path := ui.NewPath(ui.Winding)
+	for _, g := range r.Groups {
+		for _, e := range g.Elements {
+			switch p := e.(type) {
+			case *svg.Path:
+				cmdChan := p.Parse()
+				for cmd := range cmdChan {
+					switch cmd.Name {
+					case svg.MOVETO:
+						path.NewFigure(cmd.Points[0][0]+float64(s.svgSecondPadding), cmd.Points[0][1])
+					case svg.LINETO:
+						path.LineTo(cmd.Points[0][0]+float64(s.svgSecondPadding), cmd.Points[0][1])
+					case svg.CURVETO:
+						p := cmd.Points
+						path.BezierTo(p[0][0]+float64(s.svgSecondPadding), p[0][1], p[1][0]+float64(s.svgSecondPadding), p[1][1], p[2][0]+float64(s.svgSecondPadding), p[2][1])
+					}
+				}
+			}
+		}
+	}
+	path.End()
+	dp.Context.Fill(path, &ui.Brush{
+		Type: ui.Solid,
+		R:    color.R,
+		G:    color.G,
+		B:    color.B,
+		A:    color.A,
+	})
+	if svgXML.thickness > 0 {
+		dp.Context.Stroke(path, &ui.Brush{
+			Type: ui.Solid,
+			R:    color.R,
+			G:    color.G,
+			B:    color.B,
+			A:    color.A,
+		},
+			&ui.StrokeParams{
+				Thickness: svgXML.thickness,
+			})
+	}
+	path.Free()
 }
 
 func (s *SpanHandler) drawUnderline(dp *ui.AreaDrawParams) {
