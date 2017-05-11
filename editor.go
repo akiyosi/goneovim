@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"unsafe"
 
 	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
@@ -54,7 +53,6 @@ type Editor struct {
 	tablineHeight    int
 	selectedBg       *RGBA
 	matchFg          *RGBA
-	redrawMutex      sync.Mutex
 }
 
 func initMainWindow(box *ui.Box, width, height int) *ui.Window {
@@ -196,7 +194,7 @@ func (e *Editor) handleNotification() {
 		go e.handleRPCGui(updates...)
 	})
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		go e.handleRedraw(updates...)
+		e.handleRedraw(updates...)
 	})
 }
 
@@ -239,10 +237,8 @@ func (e *Editor) handleRPCGui(updates ...interface{}) {
 }
 
 func (e *Editor) handleRedraw(updates ...[]interface{}) {
-	e.redrawMutex.Lock()
-	defer e.redrawMutex.Unlock()
 	screen := e.screen
-	screen.redrawWindows()
+	go screen.redrawWindows()
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -285,8 +281,8 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			fmt.Println("Unhandle event", event)
 		}
 	}
-	editor.cursor.draw()
 	screen.redraw()
+	editor.cursor.draw()
 	if !e.nvimAttached {
 		e.nvimAttached = true
 	}
