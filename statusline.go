@@ -71,6 +71,7 @@ type StatusMode struct {
 type StatuslineGit struct {
 	SpanHandler
 	branch string
+	file   string
 }
 
 // StatuslineEncoding is
@@ -248,6 +249,7 @@ func (s *StatuslineGit) Redraw() (int, int) {
 	editor.nvim.Call("expand", &file, "%:p")
 
 	if file == "" || strings.HasPrefix(file, "term://") {
+		s.file = file
 		if s.branch == "" {
 			return 0, 0
 		}
@@ -257,6 +259,11 @@ func (s *StatuslineGit) Redraw() (int, int) {
 		return 0, 0
 	}
 
+	if s.file == file {
+		return w, h
+	}
+
+	s.file = file
 	dir := filepath.Dir(file)
 	out, err := exec.Command("git", "-C", dir, "branch").Output()
 	if err != nil {
