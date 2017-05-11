@@ -54,6 +54,7 @@ type Editor struct {
 	tablineHeight    int
 	selectedBg       *RGBA
 	matchFg          *RGBA
+	redrawMutex      sync.Mutex
 }
 
 func initMainWindow(box *ui.Box, width, height int) *ui.Window {
@@ -191,98 +192,105 @@ func InitEditor() error {
 }
 
 func (e *Editor) handleNotification() {
-	screen := e.screen
 	e.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
-		event := updates[0].(string)
-		switch event {
-		case "Font":
-			e.guiFont(updates[1:])
-		case "Linespace":
-			e.guiLinespace(updates[1:])
-		case "finder_pattern":
-			e.finder.showPattern(updates[1:])
-		case "finder_pattern_pos":
-			e.finder.cursorPos(updates[1:])
-		case "finder_show_result":
-			e.finder.showResult(updates[1:])
-		case "finder_show":
-			e.finder.show()
-		case "finder_hide":
-			e.finder.hide()
-		case "finder_select":
-			e.finder.selectResult(updates[1:])
-		case "locpopup_show":
-			arg, ok := updates[1].(map[string]interface{})
-			if !ok {
-				return
-			}
-			e.cursor.locpopup.show(arg)
-		case "locpopup_hide":
-			e.cursor.locpopup.hide()
-		case "signature_show":
-			e.cursor.signature.show(updates[1:])
-		case "signature_pos":
-			e.cursor.signature.pos(updates[1:])
-		case "signature_hide":
-			e.cursor.signature.hide()
-		default:
-			fmt.Println("unhandled Gui event", event)
-		}
+		go e.handleRPCGui(updates...)
 	})
-	mutex := &sync.Mutex{}
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		mutex.Lock()
-		e.screen.redrawWindows()
-		for _, update := range updates {
-			event := update[0].(string)
-			args := update[1:]
-			switch event {
-			case "update_fg":
-				args := update[1].([]interface{})
-				editor.Foreground = calcColor(reflectToInt(args[0]))
-			case "update_bg":
-				args := update[1].([]interface{})
-				bg := calcColor(reflectToInt(args[0]))
-				editor.Background = bg
-			case "cursor_goto":
-				screen.cursorGoto(args)
-			case "put":
-				screen.put(args)
-			case "eol_clear":
-				screen.eolClear(args)
-			case "clear":
-				screen.clear(args)
-			case "resize":
-				screen.resize(args)
-			case "highlight_set":
-				screen.highlightSet(args)
-			case "set_scroll_region":
-				screen.setScrollRegion(args)
-			case "scroll":
-				screen.scroll(args)
-			case "mode_change":
-				arg := update[1].([]interface{})
-				editor.mode = arg[0].(string)
-			case "popupmenu_show":
-				editor.popup.show(args)
-			case "popupmenu_hide":
-				editor.popup.hide(args)
-			case "popupmenu_select":
-				editor.popup.selectItem(args)
-			case "tabline_update":
-				editor.tabline.update(args)
-			default:
-				fmt.Println("Unhandle event", event)
-			}
-		}
-		screen.redraw()
-		mutex.Unlock()
-		if !e.nvimAttached {
-			e.nvimAttached = true
-		}
-		editor.cursor.draw()
-		go editor.statusline.redraw()
+		go e.handleRedraw(updates...)
 	})
+}
+
+func (e *Editor) handleRPCGui(updates ...interface{}) {
+	event := updates[0].(string)
+	switch event {
+	case "Font":
+		e.guiFont(updates[1:])
+	case "Linespace":
+		e.guiLinespace(updates[1:])
+	case "finder_pattern":
+		e.finder.showPattern(updates[1:])
+	case "finder_pattern_pos":
+		e.finder.cursorPos(updates[1:])
+	case "finder_show_result":
+		e.finder.showResult(updates[1:])
+	case "finder_show":
+		e.finder.show()
+	case "finder_hide":
+		e.finder.hide()
+	case "finder_select":
+		e.finder.selectResult(updates[1:])
+	case "locpopup_show":
+		arg, ok := updates[1].(map[string]interface{})
+		if !ok {
+			return
+		}
+		e.cursor.locpopup.show(arg)
+	case "locpopup_hide":
+		e.cursor.locpopup.hide()
+	case "signature_show":
+		e.cursor.signature.show(updates[1:])
+	case "signature_pos":
+		e.cursor.signature.pos(updates[1:])
+	case "signature_hide":
+		e.cursor.signature.hide()
+	default:
+		fmt.Println("unhandled Gui event", event)
+	}
+}
+
+func (e *Editor) handleRedraw(updates ...[]interface{}) {
+	e.redrawMutex.Lock()
+	defer e.redrawMutex.Unlock()
+	screen := e.screen
+	screen.redrawWindows()
+	for _, update := range updates {
+		event := update[0].(string)
+		args := update[1:]
+		switch event {
+		case "update_fg":
+			args := update[1].([]interface{})
+			editor.Foreground = calcColor(reflectToInt(args[0]))
+		case "update_bg":
+			args := update[1].([]interface{})
+			bg := calcColor(reflectToInt(args[0]))
+			editor.Background = bg
+		case "cursor_goto":
+			screen.cursorGoto(args)
+		case "put":
+			screen.put(args)
+		case "eol_clear":
+			screen.eolClear(args)
+		case "clear":
+			screen.clear(args)
+		case "resize":
+			screen.resize(args)
+		case "highlight_set":
+			screen.highlightSet(args)
+		case "set_scroll_region":
+			screen.setScrollRegion(args)
+		case "scroll":
+			screen.scroll(args)
+		case "mode_change":
+			arg := update[1].([]interface{})
+			editor.mode = arg[0].(string)
+		case "popupmenu_show":
+			editor.popup.show(args)
+		case "popupmenu_hide":
+			editor.popup.hide(args)
+		case "popupmenu_select":
+			editor.popup.selectItem(args)
+		case "tabline_update":
+			editor.tabline.update(args)
+		default:
+			fmt.Println("Unhandle event", event)
+		}
+	}
+	editor.cursor.draw()
+	screen.redraw()
+	if !e.nvimAttached {
+		e.nvimAttached = true
+	}
+	go editor.statusline.redraw()
 }
 
 func (e *Editor) guiFont(args ...interface{}) {
