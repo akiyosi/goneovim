@@ -2,10 +2,9 @@ package gonvim
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
-
-	git "gopkg.in/src-d/go-git.v4"
 
 	"github.com/dzhou121/ui"
 )
@@ -259,11 +258,7 @@ func (s *StatuslineGit) Redraw() (int, int) {
 	}
 
 	dir := filepath.Dir(file)
-	repo, err := git.PlainOpen(dir)
-	for dir != "/" && dir != "." && err != nil {
-		dir = filepath.Dir(dir)
-		repo, err = git.PlainOpen(dir)
-	}
+	out, err := exec.Command("git", "-C", dir, "branch").Output()
 	if err != nil {
 		if s.branch == "" {
 			return 0, 0
@@ -274,11 +269,18 @@ func (s *StatuslineGit) Redraw() (int, int) {
 		return 0, 0
 	}
 
-	ref, _ := repo.Head()
-	tree, _ := repo.Worktree()
-	status, _ := tree.Status()
-	branch := ref.Name().Short()
-	if !status.IsClean() {
+	branch := ""
+	for _, line := range strings.Split(string(out), "\n") {
+		if strings.HasPrefix(line, "* ") {
+			if strings.HasPrefix(line, "* (HEAD detached at ") {
+				branch = line[20 : len(line)-1]
+			} else {
+				branch = line[2:]
+			}
+		}
+	}
+	_, err = exec.Command("git", "-C", dir, "diff", "--quiet").Output()
+	if err != nil {
 		branch += "*"
 	}
 
