@@ -3,6 +3,7 @@ package gonvim
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -131,8 +132,17 @@ func InitEditor() error {
 		return err
 	}
 
-	font := initFont("", 14, 0)
-	smallerFont := initFont("", 14, 0)
+	fontFamily := ""
+	switch runtime.GOOS {
+	case "windows":
+		fontFamily = "Consolas"
+	case "darwin":
+		fontFamily = "Courier New"
+	default:
+		fontFamily = "Monospace"
+	}
+	font := initFont(fontFamily, 14, 6)
+	smallerFont := initFont(fontFamily, 12, 0)
 
 	editor = &Editor{
 		nvim:             neovim,
@@ -153,8 +163,6 @@ func InitEditor() error {
 		statuslineHeight: statuslineHeight,
 		font:             font,
 		smallerFont:      smallerFont,
-		cols:             0,
-		rows:             0,
 		selectedBg:       newRGBA(81, 154, 186, 0.5),
 		matchFg:          newRGBA(81, 154, 186, 1),
 	}

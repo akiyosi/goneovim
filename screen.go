@@ -446,6 +446,56 @@ func fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int)
 	}
 }
 
+func drawText2(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
+	screen := editor.screen
+	if y >= len(screen.content) {
+		return
+	}
+	line := screen.content[y]
+	for x := col; x < col+cols; x++ {
+		if x >= len(line) {
+			continue
+		}
+		char := line[x]
+		if char == nil {
+			continue
+		}
+		// if char.highlight.background != nil {
+		// 	drawRect2(dp, x, y, 1, 1, char.highlight.background)
+		// }
+		if char.char == " " || char.char == "" {
+			continue
+		}
+		fg := editor.Foreground
+		if char.highlight.foreground != nil {
+			fg = *(char.highlight.foreground)
+		}
+		textLayout := ui.NewTextLayout(char.char, editor.font.font, -1)
+		textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
+		dp.Context.Text(float64(x*editor.font.width), float64(y*editor.font.lineHeight+editor.font.shift), textLayout)
+		textLayout.Free()
+	}
+}
+
+func drawRect2(dp *ui.AreaDrawParams, col, row, cols, rows int, color *RGBA) {
+	p := ui.NewPath(ui.Winding)
+	p.AddRectangle(
+		float64(col*editor.font.width),
+		float64(row*editor.font.lineHeight),
+		float64(cols*editor.font.width),
+		float64(rows*editor.font.lineHeight),
+	)
+	p.End()
+	dp.Context.Fill(p, &ui.Brush{
+		Type: ui.Solid,
+		R:    color.R,
+		G:    color.G,
+		B:    color.B,
+		A:    color.A,
+	})
+	p.Free()
+}
+
 func drawText(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
 	screen := editor.screen
 	if y >= len(screen.content) {
@@ -489,7 +539,7 @@ func drawText(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
 	}
 	text = strings.TrimSpace(text)
 	textLayout := ui.NewTextLayout(text, editor.font.font, -1)
-	shift := (editor.font.lineHeight - editor.font.height) / 2
+	shift := editor.font.shift
 
 	for x := start; x <= end; x++ {
 		char := line[x]

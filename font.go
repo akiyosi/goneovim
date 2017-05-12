@@ -29,7 +29,7 @@ func newFont(family string, size int) *ui.Font {
 }
 
 func fontSize(font *ui.Font) (int, int) {
-	textLayout := ui.NewTextLayout("a", font, -1)
+	textLayout := ui.NewTextLayout("W", font, -1)
 	w, h := textLayout.Extents()
 	width := int(math.Ceil(w))
 	height := int(math.Ceil(h))
@@ -39,13 +39,12 @@ func fontSize(font *ui.Font) (int, int) {
 func initFont(family string, size int, lineSpace int) *Font {
 	font := newFont(family, size)
 	width, height := fontSize(font)
-	lineHeight := height + lineSpace
-	shift := (lineHeight - height) / 2
+	shift := lineSpace / 2
 	return &Font{
 		font:       font,
 		width:      width,
 		height:     height,
-		lineHeight: lineHeight,
+		lineHeight: height + lineSpace,
 		lineSpace:  lineSpace,
 		shift:      shift,
 	}
@@ -68,6 +67,6 @@ func (f *Font) change(family string, size int) {
 func (f *Font) changeLineSpace(lineSpace int) {
 	f.lineSpace = lineSpace
 	f.lineHeight = f.height + lineSpace
-	shift := (f.lineHeight - f.height) / 2
+	shift := lineSpace / 2
 	f.shift = shift
 }
