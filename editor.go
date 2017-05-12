@@ -238,7 +238,7 @@ func (e *Editor) handleRPCGui(updates ...interface{}) {
 
 func (e *Editor) handleRedraw(updates ...[]interface{}) {
 	screen := e.screen
-	go screen.redrawWindows()
+	screen.redrawWindows()
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
