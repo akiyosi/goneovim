@@ -75,6 +75,9 @@ func (s *Screen) getWindows() map[nvim.Window]*Window {
 
 // Draw the screen
 func (s *Screen) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
+	if editor == nil {
+		return
+	}
 	font := editor.font
 	row := int(math.Ceil(dp.ClipY / float64(font.lineHeight)))
 	col := int(math.Ceil(dp.ClipX / font.truewidth))

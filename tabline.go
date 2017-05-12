@@ -10,7 +10,7 @@ import (
 
 // Tabline of the editor
 type Tabline struct {
-	bg        *SpanHandler
+	AreaHandler
 	box       *ui.Box
 	CurrentID int
 	Tabs      []*Tab
@@ -33,30 +33,24 @@ type Tab struct {
 
 func initTabline(width int, height int) *Tabline {
 	box := ui.NewHorizontalBox()
-	box.SetSize(width, height)
-	handler := &SpanHandler{}
-	bgSpan := ui.NewArea(handler)
-	handler.area = bgSpan
-	handler.SetBackground(newRGBA(24, 29, 34, 1))
-	handler.borderBottom = &Border{
+	tabline := &Tabline{
+		box:    box,
+		height: height,
+	}
+	tabline.area = ui.NewArea(tabline)
+	tabline.bg = newRGBA(24, 29, 34, 1)
+	tabline.borderBottom = &Border{
 		width: 2,
 		color: newRGBA(0, 0, 0, 1),
 	}
-	handler.setSize(width, height)
-	ui.QueueMain(func() {
-		box.Show()
-		box.Append(bgSpan, false)
-	})
-	return &Tabline{
-		box:    box,
-		height: height,
-		bg:     handler,
-	}
+	box.SetSize(width, height)
+	tabline.setSize(width, height)
+	box.Append(tabline.area, false)
+	return tabline
 }
 
 func (t *Tabline) resize(width int, height int) {
 	t.box.SetSize(width, height)
-	t.bg.setSize(width, height)
 }
 
 func (t *Tabline) update(args []interface{}) {

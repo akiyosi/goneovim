@@ -21,6 +21,7 @@ type AreaHandler struct {
 	borderRight  *Border
 	borderLeft   *Border
 	borderBottom *Border
+	bg           *RGBA
 	x, y         int
 	shown        bool
 }
@@ -41,6 +42,39 @@ func drawRect(dp *ui.AreaDrawParams, x, y, width, height int, color *RGBA) {
 
 // Draw the area
 func (ah *AreaHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
+	if ah.bg == nil {
+		return
+	}
+	bg := ah.bg
+	p := ui.NewPath(ui.Winding)
+	p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
+	p.End()
+
+	dp.Context.Fill(p, &ui.Brush{
+		Type: ui.Solid,
+		R:    bg.R,
+		G:    bg.G,
+		B:    bg.B,
+		A:    bg.A,
+	})
+	p.Free()
+
+	ah.drawBorder(dp)
+}
+
+func (ah *AreaHandler) drawBorder(dp *ui.AreaDrawParams) {
+	if ah.borderBottom != nil {
+		drawRect(dp, 0, ah.height-ah.borderBottom.width, ah.width, ah.borderBottom.width, ah.borderBottom.color)
+	}
+	if ah.borderRight != nil {
+		drawRect(dp, ah.width-ah.borderRight.width, 0, ah.borderRight.width, ah.height, ah.borderRight.color)
+	}
+	if ah.borderTop != nil {
+		drawRect(dp, 0, 0, ah.width, ah.borderTop.width, ah.borderTop.color)
+	}
+	if ah.borderLeft != nil {
+		drawRect(dp, 0, 0, ah.borderLeft.width, ah.height, ah.borderLeft.color)
+	}
 }
 
 // MouseEvent is
@@ -114,21 +148,6 @@ func (ah *AreaHandler) KeyEvent(a *ui.Area, key *ui.AreaKeyEvent) (handled bool)
 	}
 	editor.nvim.Input(input)
 	return true
-}
-
-func (ah *AreaHandler) drawBorder(dp *ui.AreaDrawParams) {
-	if ah.borderBottom != nil {
-		drawRect(dp, 0, ah.height-ah.borderBottom.width, ah.width, ah.borderBottom.width, ah.borderBottom.color)
-	}
-	if ah.borderRight != nil {
-		drawRect(dp, ah.width-ah.borderRight.width, 0, ah.borderRight.width, ah.height, ah.borderRight.color)
-	}
-	if ah.borderTop != nil {
-		drawRect(dp, 0, 0, ah.width, ah.borderTop.width, ah.borderTop.color)
-	}
-	if ah.borderLeft != nil {
-		drawRect(dp, 0, 0, ah.borderLeft.width, ah.height, ah.borderLeft.color)
-	}
 }
 
 func (ah *AreaHandler) setPosition(x, y int) {

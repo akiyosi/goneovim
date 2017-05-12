@@ -25,8 +25,6 @@ type SpanHandler struct {
 	paddingTop       int
 	paddingBottom    int
 	textType         string
-	width            int
-	height           int
 	underline        []int
 	svg              string
 	svgColor         *RGBA
@@ -37,6 +35,9 @@ type SpanHandler struct {
 
 // Draw the span
 func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
+	if editor == nil {
+		return
+	}
 	if s.bg == nil {
 		return
 	}
@@ -77,21 +78,6 @@ func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	s.drawUnderline(dp)
 	s.drawSvg(dp)
 	s.drawSvgSecond(dp)
-}
-
-func (s *SpanHandler) drawBorder(dp *ui.AreaDrawParams) {
-	if s.borderBottom != nil {
-		drawRect(dp, 0, s.height-s.borderBottom.width, s.width, s.borderBottom.width, s.borderBottom.color)
-	}
-	if s.borderRight != nil {
-		drawRect(dp, s.width-s.borderRight.width, 0, s.borderRight.width, s.height, s.borderRight.color)
-	}
-	if s.borderTop != nil {
-		drawRect(dp, 0, 0, s.width, s.borderTop.width, s.borderTop.color)
-	}
-	if s.borderLeft != nil {
-		drawRect(dp, 0, 0, s.borderLeft.width, s.height, s.borderLeft.color)
-	}
 }
 
 func (s *SpanHandler) drawSvg(dp *ui.AreaDrawParams) {
@@ -360,14 +346,6 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 		}
 	}
 	return textLayout
-}
-
-func (s *SpanHandler) setSize(width, height int) {
-	s.width = width
-	s.height = height
-	ui.QueueMain(func() {
-		s.area.SetSize(width, height)
-	})
 }
 
 func (s *SpanHandler) getSize() (int, int) {

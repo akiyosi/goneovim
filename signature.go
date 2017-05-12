@@ -20,6 +20,7 @@ func initSignature() *Signature {
 	span := ui.NewArea(handler)
 	handler.area = span
 	box.Append(span, false)
+	box.Hide()
 	return &Signature{
 		box:   box,
 		span:  handler,

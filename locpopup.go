@@ -24,6 +24,7 @@ func initLocpopup() *Locpopup {
 
 	box.Append(textSpan, false)
 	box.Append(typeSpan, false)
+	box.Hide()
 
 	return &Locpopup{
 		box:     box,

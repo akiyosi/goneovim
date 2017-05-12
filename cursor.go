@@ -48,6 +48,9 @@ func initCursorBox(width, height int) *CursorBox {
 
 // Draw the cursor
 func (c *CursorHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
+	if c.bg == nil {
+		return
+	}
 	p := ui.NewPath(ui.Winding)
 	p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
 	p.End()
