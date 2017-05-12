@@ -237,9 +237,9 @@ func (s *SpanHandler) drawUnderline(dp *ui.AreaDrawParams) {
 	p := ui.NewPath(ui.Winding)
 	for _, i := range s.underline {
 		p.AddRectangle(
-			float64((i+1)*s.font.width),
+			float64(i+1)*s.font.truewidth,
 			float64(s.font.height+s.paddingTop),
-			float64(s.font.width),
+			s.font.truewidth,
 			1)
 	}
 	p.End()
@@ -375,7 +375,7 @@ func (s *SpanHandler) getSize() (int, int) {
 	if font == nil {
 		font = editor.font
 	}
-	width := font.width*len(s.text) + s.paddingLeft + s.paddingRight
+	width := int(font.truewidth*float64(len(s.text))) + s.paddingLeft + s.paddingRight
 	height := font.height + s.paddingTop + s.paddingBottom
 	return width, height
 }

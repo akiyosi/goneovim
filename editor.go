@@ -334,7 +334,8 @@ func (e *Editor) guiLinespace(args ...interface{}) {
 func (e *Editor) resize() {
 	width := e.width
 	height := e.height
-	cols := width / editor.font.width
+	// cols := width / editor.font.width
+	cols := int(float64(width) / editor.font.truewidth)
 	rows := height / editor.font.lineHeight
 	oldCols := editor.cols
 	oldRows := editor.rows

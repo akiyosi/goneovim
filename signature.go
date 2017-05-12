@@ -49,7 +49,7 @@ func (s *Signature) show(args []interface{}) {
 	s.span.borderLeft = border
 	s.span.borderRight = border
 	s.span.paddingTop = font.shift * 2
-	s.span.paddingLeft = font.width
+	s.span.paddingLeft = int(font.truewidth)
 	s.span.paddingRight = s.span.paddingLeft
 	s.span.paddingBottom = s.span.paddingTop
 	s.span.setSize(s.span.getSize())
@@ -109,7 +109,7 @@ func (s *Signature) move() {
 		col -= i
 	}
 	ui.QueueMain(func() {
-		s.box.SetPosition(col*editor.font.width, row*editor.font.lineHeight-h)
+		s.box.SetPosition(int(float64(col)*editor.font.truewidth), row*editor.font.lineHeight-h)
 	})
 }
 

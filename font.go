@@ -10,6 +10,7 @@ import (
 type Font struct {
 	font       *ui.Font
 	width      int
+	truewidth  float64
 	height     int
 	lineHeight int
 	lineSpace  int
@@ -28,21 +29,23 @@ func newFont(family string, size int) *ui.Font {
 	return font
 }
 
-func fontSize(font *ui.Font) (int, int) {
+func fontSize(font *ui.Font) (int, int, float64) {
 	textLayout := ui.NewTextLayout("W", font, -1)
 	w, h := textLayout.Extents()
 	width := int(math.Ceil(w))
 	height := int(math.Ceil(h))
-	return width, height
+	textLayout.Free()
+	return width, height, w
 }
 
 func initFont(family string, size int, lineSpace int) *Font {
 	font := newFont(family, size)
-	width, height := fontSize(font)
+	width, height, truewidth := fontSize(font)
 	shift := lineSpace / 2
 	return &Font{
 		font:       font,
 		width:      width,
+		truewidth:  truewidth,
 		height:     height,
 		lineHeight: height + lineSpace,
 		lineSpace:  lineSpace,
@@ -53,13 +56,13 @@ func initFont(family string, size int, lineSpace int) *Font {
 func (f *Font) change(family string, size int) {
 	f.font.Free()
 	font := newFont(family, size)
-	height := size
-	width, _ := fontSize(font)
+	width, height, truewidth := fontSize(font)
 	lineHeight := height + f.lineSpace
 	shift := (lineHeight - height) / 2
 	f.font = font
 	f.width = width
 	f.height = height
+	f.truewidth = truewidth
 	f.lineHeight = lineHeight
 	f.shift = shift
 }

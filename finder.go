@@ -83,7 +83,7 @@ func (f *Finder) hide() {
 func (f *Finder) cursorPos(args []interface{}) {
 	f.cursor.area.SetSize(1, editor.font.lineHeight)
 	p := reflectToInt(args[0])
-	x := p*editor.font.width + f.pattern.paddingLeft
+	x := int(float64(p)*editor.font.truewidth) + f.pattern.paddingLeft
 	ui.QueueMain(func() {
 		f.cursor.area.Show()
 		f.cursor.area.SetPosition(x, f.pattern.paddingTop/2)
@@ -217,7 +217,7 @@ func (f *Finder) showResult(args []interface{}) {
 			itemHandler.paddingRight = paddingLeft
 			itemHandler.paddingTop = paddingTop
 			itemHandler.paddingBottom = paddingTop
-			iconWidth := editor.font.width * 2
+			iconWidth := int(editor.font.truewidth * 2)
 			icon := newSvg("default", iconWidth, iconWidth, nil, nil)
 			y := height * (i + 1)
 			ui.QueueMain(func() {

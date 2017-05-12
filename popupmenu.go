@@ -108,7 +108,7 @@ func (p *PopupMenu) show(args []interface{}) {
 
 	ui.QueueMain(func() {
 		p.box.SetPosition(
-			col*editor.font.width-kindWidth-p.items[0].menu.paddingLeft,
+			int(float64(col)*editor.font.truewidth)-kindWidth-p.items[0].menu.paddingLeft,
 			(row+1)*editor.font.lineHeight,
 		)
 		p.box.SetSize(menuWidthMax+kindWidth, heightSum)

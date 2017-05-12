@@ -65,7 +65,7 @@ func (c *CursorBox) draw() {
 	row := editor.screen.cursor[0]
 	col := editor.screen.cursor[1]
 	ui.QueueMain(func() {
-		c.cursor.area.SetPosition(col*editor.font.width, row*editor.font.lineHeight)
+		c.cursor.area.SetPosition(int(float64(col)*editor.font.truewidth), row*editor.font.lineHeight)
 	})
 	c.locpopup.move()
 

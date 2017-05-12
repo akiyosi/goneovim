@@ -84,7 +84,7 @@ func (l *Locpopup) move() {
 	row := editor.screen.cursor[0]
 	col := editor.screen.cursor[1]
 	ui.QueueMain(func() {
-		l.box.SetPosition(col*editor.font.width, (row+1)*editor.font.lineHeight)
+		l.box.SetPosition(int(float64(col)*editor.font.truewidth), (row+1)*editor.font.lineHeight)
 	})
 }
 

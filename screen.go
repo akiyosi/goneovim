@@ -77,9 +77,9 @@ func (s *Screen) getWindows() map[nvim.Window]*Window {
 func (s *Screen) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	font := editor.font
 	row := int(math.Ceil(dp.ClipY / float64(font.lineHeight)))
-	col := int(math.Ceil(dp.ClipX / float64(font.width)))
+	col := int(math.Ceil(dp.ClipX / font.truewidth))
 	rows := int(math.Ceil(dp.ClipHeight / float64(font.lineHeight)))
-	cols := int(math.Ceil(dp.ClipWidth / float64(font.width)))
+	cols := int(math.Ceil(dp.ClipWidth / font.truewidth))
 
 	p := ui.NewPath(ui.Winding)
 	p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
@@ -302,9 +302,9 @@ func (s *Screen) redraw() {
 	height := s.queueRedrawArea[3] - y
 	ui.QueueMain(func() {
 		s.area.QueueRedraw(
-			float64(x*editor.font.width),
+			float64(x)*editor.font.truewidth,
 			float64(y*editor.font.lineHeight),
-			float64(width*editor.font.width),
+			float64(width)*editor.font.truewidth,
 			float64(height*editor.font.lineHeight),
 		)
 	})
@@ -378,9 +378,9 @@ func fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int)
 					// last bg is different; draw the previous and start a new one
 					p := ui.NewPath(ui.Winding)
 					p.AddRectangle(
-						float64((start-pos[1])*editor.font.width),
+						float64(start-pos[1])*editor.font.truewidth,
 						float64((y-pos[0])*editor.font.lineHeight),
-						float64((end-start+1)*editor.font.width),
+						float64(end-start+1)*editor.font.truewidth,
 						float64(editor.font.lineHeight),
 					)
 					p.End()
@@ -403,9 +403,9 @@ func fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int)
 			if lastBg != nil {
 				p := ui.NewPath(ui.Winding)
 				p.AddRectangle(
-					float64((start-pos[1])*editor.font.width),
+					float64(start-pos[1])*editor.font.truewidth,
 					float64((y-pos[0])*editor.font.lineHeight),
-					float64((end-start+1)*editor.font.width),
+					float64(end-start+1)*editor.font.truewidth,
 					float64(editor.font.lineHeight),
 				)
 				p.End()
@@ -428,9 +428,9 @@ func fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int)
 	if lastBg != nil {
 		p := ui.NewPath(ui.Winding)
 		p.AddRectangle(
-			float64((start-pos[1])*editor.font.width),
+			float64(start-pos[1])*editor.font.truewidth,
 			float64((y-pos[0])*editor.font.lineHeight),
-			float64((end-start+1)*editor.font.width),
+			float64(end-start+1)*editor.font.truewidth,
 			float64(editor.font.lineHeight),
 		)
 		p.End()
@@ -444,56 +444,6 @@ func fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int)
 		})
 		p.Free()
 	}
-}
-
-func drawText2(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
-	screen := editor.screen
-	if y >= len(screen.content) {
-		return
-	}
-	line := screen.content[y]
-	for x := col; x < col+cols; x++ {
-		if x >= len(line) {
-			continue
-		}
-		char := line[x]
-		if char == nil {
-			continue
-		}
-		// if char.highlight.background != nil {
-		// 	drawRect2(dp, x, y, 1, 1, char.highlight.background)
-		// }
-		if char.char == " " || char.char == "" {
-			continue
-		}
-		fg := editor.Foreground
-		if char.highlight.foreground != nil {
-			fg = *(char.highlight.foreground)
-		}
-		textLayout := ui.NewTextLayout(char.char, editor.font.font, -1)
-		textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
-		dp.Context.Text(float64(x*editor.font.width), float64(y*editor.font.lineHeight+editor.font.shift), textLayout)
-		textLayout.Free()
-	}
-}
-
-func drawRect2(dp *ui.AreaDrawParams, col, row, cols, rows int, color *RGBA) {
-	p := ui.NewPath(ui.Winding)
-	p.AddRectangle(
-		float64(col*editor.font.width),
-		float64(row*editor.font.lineHeight),
-		float64(cols*editor.font.width),
-		float64(rows*editor.font.lineHeight),
-	)
-	p.End()
-	dp.Context.Fill(p, &ui.Brush{
-		Type: ui.Solid,
-		R:    color.R,
-		G:    color.G,
-		B:    color.B,
-		A:    color.A,
-	})
-	p.Free()
 }
 
 func drawText(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
@@ -552,7 +502,7 @@ func drawText(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
 		}
 		textLayout.SetColor(x-start, x-start+1, fg.R, fg.G, fg.B, fg.A)
 	}
-	dp.Context.Text(float64((start-pos[1])*editor.font.width), float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
+	dp.Context.Text(float64(start-pos[1])*editor.font.truewidth, float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
 	textLayout.Free()
 
 	for _, x := range specialChars {
@@ -566,21 +516,21 @@ func drawText(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
 		}
 		textLayout := ui.NewTextLayout(char.char, editor.font.font, -1)
 		textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
-		dp.Context.Text(float64((x-pos[1])*editor.font.width), float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
+		dp.Context.Text(float64(x-pos[1])*editor.font.truewidth, float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
 		textLayout.Free()
 	}
 }
 
 func (w *Window) drawBorder(dp *ui.AreaDrawParams) {
-	drawRect(dp, (w.pos[1]+w.width)*editor.font.width, w.pos[0]*editor.font.lineHeight, editor.font.width, w.height*editor.font.lineHeight, &editor.Background)
+	drawRect(dp, int(float64(w.pos[1]+w.width)*editor.font.truewidth), w.pos[0]*editor.font.lineHeight, int(editor.font.truewidth), w.height*editor.font.lineHeight, &editor.Background)
 
 	color := newRGBA(0, 0, 0, 1)
 
 	p := ui.NewPath(ui.Winding)
 	p.AddRectangle(
-		(float64(w.width+w.pos[1]))*float64(editor.font.width),
+		(float64(w.width+w.pos[1]))*editor.font.truewidth,
 		float64(w.pos[0]*editor.font.lineHeight),
-		float64(editor.font.width),
+		editor.font.truewidth,
 		float64(w.height*editor.font.lineHeight),
 	)
 	p.End()
@@ -598,16 +548,16 @@ func (w *Window) drawBorder(dp *ui.AreaDrawParams) {
 	}
 	dp.Context.Fill(p, &ui.Brush{
 		Type:  ui.LinearGradient,
-		X0:    (float64(w.width+w.pos[1]) + 1) * float64(editor.font.width),
+		X0:    (float64(w.width+w.pos[1]) + 1) * float64(editor.font.truewidth),
 		Y0:    0,
-		X1:    (float64(w.width + w.pos[1])) * float64(editor.font.width),
+		X1:    (float64(w.width + w.pos[1])) * float64(editor.font.truewidth),
 		Y1:    0,
 		Stops: stops,
 	})
 	p.Free()
 
 	p = ui.NewPath(ui.Winding)
-	p.AddRectangle((float64(w.width+w.pos[1])+1)*float64(editor.font.width)-1,
+	p.AddRectangle((float64(w.width+w.pos[1])+1)*float64(editor.font.truewidth)-1,
 		float64(w.pos[0]*editor.font.lineHeight),
 		1,
 		float64(w.height*editor.font.lineHeight),

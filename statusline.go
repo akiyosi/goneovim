@@ -104,14 +104,6 @@ func initStatusline(width, height int) *Statusline {
 	}
 	box.Append(area, false)
 
-	pos := &StatuslinePos{}
-	pos.area = ui.NewArea(pos)
-	pos.text = "Ln 128, Col 119"
-	pos.bg = bg
-	pos.color = fg
-	box.Append(pos.area, false)
-	statusline.pos = pos
-
 	mode := &StatusMode{}
 	mode.area = ui.NewArea(mode)
 	mode.bg = bg
@@ -151,6 +143,14 @@ func initStatusline(width, height int) *Statusline {
 	encoding.color = fg
 	box.Append(encoding.area, false)
 	statusline.encoding = encoding
+
+	pos := &StatuslinePos{}
+	pos.area = ui.NewArea(pos)
+	pos.text = "Ln 128, Col 119"
+	pos.bg = bg
+	pos.color = fg
+	box.Append(pos.area, false)
+	statusline.pos = pos
 
 	lint := &StatuslineLint{
 		errors:   -1,
@@ -430,7 +430,7 @@ func (s *StatuslineLint) Redraw() (int, int) {
 			s.svg = "cross"
 			s.svgColor = newRGBA(204, 62, 68, 1)
 			s.svgSecond = "exclamation"
-			s.svgSecondPadding = editor.font.width * (len(fmt.Sprintf("%d", s.errors)) + 3)
+			s.svgSecondPadding = int(editor.font.truewidth * float64(len(fmt.Sprintf("%d", s.errors))+3))
 			s.paddingLeft = editor.font.height + 2
 			w, h = s.getSize()
 			s.setSize(w, h)
