@@ -43,13 +43,14 @@ func initTabline(width int, height int) *Tabline {
 		color: newRGBA(0, 0, 0, 1),
 	}
 	box.SetSize(width, height)
-	tabline.setSize(width, height)
 	box.Append(tabline.area, false)
+	tabline.setSize(width, height)
 	return tabline
 }
 
 func (t *Tabline) resize(width int, height int) {
 	t.box.SetSize(width, height)
+	t.setSize(width, height)
 }
 
 func (t *Tabline) update(args []interface{}) {
@@ -79,11 +80,9 @@ func (t *Tabline) update(args []interface{}) {
 			}
 			tab.area = ui.NewArea(tab)
 			tab.font = editor.font
-			tab.setSize(tab.width, t.height)
 			tab.paddingTop = padding
 			tab.paddingLeft = paddingLeft + fileiconWidth + editor.font.width
 			t.Tabs = append(t.Tabs, tab)
-			box.SetSize(tab.width, t.height)
 			tab.borderRight = &Border{
 				width: 1,
 				color: newRGBA(0, 0, 0, 1),
@@ -94,10 +93,12 @@ func (t *Tabline) update(args []interface{}) {
 			}
 
 			ui.QueueMain(func() {
+				t.box.Append(box, false)
 				box.Append(tab.area, false)
 				box.Append(cross.area, false)
 				box.Append(fileicon.area, false)
-				t.box.Append(box, false)
+				box.SetSize(tab.width, t.height)
+				tab.setSize(tab.width, t.height)
 				box.SetPosition(i*tab.width, 0)
 				cross.area.SetPosition(tab.width-paddingLeft-editor.font.width, (t.height-cross.height)/2)
 				fileicon.setPosition(paddingLeft, (t.height-fileicon.height)/2)
