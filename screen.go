@@ -1,6 +1,7 @@
 package gonvim
 
 import (
+	"fmt"
 	"math"
 	"strings"
 
@@ -15,6 +16,8 @@ type Window struct {
 	height int
 	pos    [2]int
 	tab    nvim.Tabpage
+	hl     string
+	bg     *RGBA
 }
 
 // Screen is the main editor area
@@ -138,11 +141,36 @@ func (s *Screen) redrawWindows() {
 		b.WindowHeight(nwin, &win.height)
 		b.WindowPosition(nwin, &win.pos)
 		b.WindowTabpage(nwin, &win.tab)
+		b.WindowOption(nwin, "winhl", &win.hl)
 		wins[nwin] = win
 	}
 	err := b.Execute()
 	if err != nil {
 		return
+	}
+	for _, win := range wins {
+		if win.hl != "" {
+			parts := strings.Split(win.hl, ",")
+			for _, part := range parts {
+				if strings.HasPrefix(part, "Normal:") {
+					hl := part[7:]
+					result := ""
+					neovim.Eval(fmt.Sprintf("synIDattr(hlID('%s'), 'bg')", hl), &result)
+					if result != "" {
+						var r, g, b int
+						format := "#%02x%02x%02x"
+						n, err := fmt.Sscanf(result, format, &r, &g, &b)
+						if err != nil {
+							continue
+						}
+						if n != 3 {
+							continue
+						}
+						win.bg = newRGBA(r, g, b, 1)
+					}
+				}
+			}
+		}
 	}
 	s.curWins = wins
 }
@@ -261,6 +289,13 @@ func (s *Screen) scroll(args []interface{}) {
 	bot := s.scrollRegion[1]
 	left := s.scrollRegion[2]
 	right := s.scrollRegion[3]
+
+	if top == 0 && bot == 0 && left == 0 && right == 0 {
+		top = 0
+		bot = editor.rows - 1
+		left = 0
+		right = editor.cols - 1
+	}
 
 	//areaScrollRect(left, top, (right - left + 1), (bot - top + 1), 0, -count)
 	s.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
@@ -525,7 +560,11 @@ func drawText(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
 }
 
 func (w *Window) drawBorder(dp *ui.AreaDrawParams) {
-	drawRect(dp, int(float64(w.pos[1]+w.width)*editor.font.truewidth), w.pos[0]*editor.font.lineHeight, int(editor.font.truewidth), w.height*editor.font.lineHeight, &editor.Background)
+	bg := &editor.Background
+	if w.bg != nil {
+		bg = w.bg
+	}
+	drawRect(dp, int(float64(w.pos[1]+w.width)*editor.font.truewidth), w.pos[0]*editor.font.lineHeight, int(editor.font.truewidth), w.height*editor.font.lineHeight, bg)
 
 	color := newRGBA(0, 0, 0, 1)
 

@@ -246,7 +246,7 @@ func (e *Editor) handleRPCGui(updates ...interface{}) {
 
 func (e *Editor) handleRedraw(updates ...[]interface{}) {
 	screen := e.screen
-	screen.redrawWindows()
+	go screen.redrawWindows()
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -275,7 +275,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 		case "scroll":
 			screen.scroll(args)
 		case "mode_change":
-			arg := update[1].([]interface{})
+			arg := update[len(update)-1].([]interface{})
 			editor.mode = arg[0].(string)
 		case "popupmenu_show":
 			editor.popup.show(args)
