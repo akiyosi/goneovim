@@ -72,17 +72,21 @@ func (c *CursorBox) draw() {
 	})
 	c.locpopup.move()
 
+	cursorBg := newRGBA(255, 255, 255, 1)
+
 	mode := editor.mode
 	if mode == "normal" {
 		ui.QueueMain(func() {
 			c.cursor.area.SetSize(editor.font.width, editor.font.lineHeight)
-			c.cursor.bg = newRGBA(255, 255, 255, 0.5)
+			cursorBg.A = 0.5
+			c.cursor.bg = cursorBg
 			c.cursor.area.QueueRedrawAll()
 		})
 	} else if mode == "insert" {
 		ui.QueueMain(func() {
 			c.cursor.area.SetSize(1, editor.font.lineHeight)
-			c.cursor.bg = newRGBA(255, 255, 255, 0.9)
+			cursorBg.A = 0.9
+			c.cursor.bg = cursorBg
 			c.cursor.area.QueueRedrawAll()
 		})
 	}

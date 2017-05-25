@@ -253,11 +253,21 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 		switch event {
 		case "update_fg":
 			args := update[1].([]interface{})
-			editor.Foreground = calcColor(reflectToInt(args[0]))
+			color := reflectToInt(args[0])
+			if color == -1 {
+				editor.Foreground = *newRGBA(255, 255, 255, 1)
+			} else {
+				editor.Foreground = calcColor(reflectToInt(args[0]))
+			}
 		case "update_bg":
 			args := update[1].([]interface{})
-			bg := calcColor(reflectToInt(args[0]))
-			editor.Background = bg
+			color := reflectToInt(args[0])
+			if color == -1 {
+				editor.Background = *newRGBA(0, 0, 0, 1)
+			} else {
+				bg := calcColor(reflectToInt(args[0]))
+				editor.Background = bg
+			}
 		case "cursor_goto":
 			screen.cursorGoto(args)
 		case "put":
