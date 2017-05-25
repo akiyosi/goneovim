@@ -141,14 +141,15 @@ func (s *Screen) redrawWindows() {
 		b.WindowHeight(nwin, &win.height)
 		b.WindowPosition(nwin, &win.pos)
 		b.WindowTabpage(nwin, &win.tab)
-		b.WindowOption(nwin, "winhl", &win.hl)
 		wins[nwin] = win
 	}
 	err := b.Execute()
 	if err != nil {
 		return
 	}
-	for _, win := range wins {
+	s.curWins = wins
+	for _, win := range s.curWins {
+		neovim.WindowOption(win.win, "winhl", &win.hl)
 		if win.hl != "" {
 			parts := strings.Split(win.hl, ",")
 			for _, part := range parts {
@@ -172,7 +173,6 @@ func (s *Screen) redrawWindows() {
 			}
 		}
 	}
-	s.curWins = wins
 }
 
 func (s *Screen) resize(args []interface{}) {
