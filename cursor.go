@@ -77,16 +77,16 @@ func (c *CursorBox) draw() {
 	mode := editor.mode
 	if mode == "normal" {
 		ui.QueueMain(func() {
-			c.cursor.area.SetSize(editor.font.width, editor.font.lineHeight)
 			cursorBg.A = 0.5
 			c.cursor.bg = cursorBg
+			c.cursor.area.SetSize(editor.font.width, editor.font.lineHeight)
 			c.cursor.area.QueueRedrawAll()
 		})
 	} else if mode == "insert" {
 		ui.QueueMain(func() {
-			c.cursor.area.SetSize(1, editor.font.lineHeight)
 			cursorBg.A = 0.9
 			c.cursor.bg = cursorBg
+			c.cursor.area.SetSize(1, editor.font.lineHeight)
 			c.cursor.area.QueueRedrawAll()
 		})
 	}
