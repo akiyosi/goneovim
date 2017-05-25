@@ -182,7 +182,12 @@ func InitEditor() error {
 	o["rgb"] = true
 	o["ext_popupmenu"] = true
 	o["ext_tabline"] = true
-	editor.nvim.AttachUI(editor.cols, editor.rows, o)
+	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
+	if err != nil {
+		fmt.Println("nvim attach UI error", err)
+		ui.Quit()
+		return nil
+	}
 	editor.nvim.Subscribe("Gui")
 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	editor.nvim.Command("runtime! ginit.vim")
