@@ -91,6 +91,10 @@ func (ah *AreaHandler) DragBroken(a *ui.Area) {
 
 // KeyEvent is
 func (ah *AreaHandler) KeyEvent(a *ui.Area, key *ui.AreaKeyEvent) (handled bool) {
+	if editor == nil {
+		return false
+	}
+
 	if key.Up {
 		return false
 	}
