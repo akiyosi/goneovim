@@ -358,7 +358,9 @@ func (e *Editor) resize() {
 	editor.cols = cols
 	editor.rows = rows
 	if oldCols > 0 && oldRows > 0 {
-		editor.nvim.TryResizeUI(cols, rows)
+		if cols != oldCols || rows != oldRows {
+			editor.nvim.TryResizeUI(cols, rows)
+		}
 	}
 }
 
