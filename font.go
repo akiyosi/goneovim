@@ -54,7 +54,7 @@ func initFont(family string, size int, lineSpace int) *Font {
 }
 
 func (f *Font) change(family string, size int) {
-	f.font.Free()
+	oldFont := f.font
 	font := newFont(family, size)
 	width, height, truewidth := fontSize(font)
 	lineHeight := height + f.lineSpace
@@ -65,6 +65,7 @@ func (f *Font) change(family string, size int) {
 	f.truewidth = truewidth
 	f.lineHeight = lineHeight
 	f.shift = shift
+	oldFont.Free()
 }
 
 func (f *Font) changeLineSpace(lineSpace int) {
