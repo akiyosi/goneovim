@@ -129,6 +129,8 @@ func InitEditor() error {
 		Args: os.Args[1:],
 	})
 	if err != nil {
+		fmt.Println("nvim start error", err)
+		ui.Quit()
 		return err
 	}
 
