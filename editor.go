@@ -191,6 +191,7 @@ func InitEditor() error {
 	editor.nvim.Subscribe("Gui")
 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	editor.nvim.Command("runtime! ginit.vim")
+	editor.nvim.Command("let g:gonvim_running=1")
 	fzf.RegisterPlugin(editor.nvim)
 	locpopup.RegisterPlugin(editor.nvim)
 
