@@ -31,3 +31,11 @@ gonvim
 - Lint message popup
 
 ![Readme](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/lint.gif)
+
+# Font
+To change the font, install https://github.com/equalsraf/neovim-gui-shim 
+
+change the font and size call
+```:GuiFont Monaco:h13```
+change the line space
+```:GuiLinespace 8```
