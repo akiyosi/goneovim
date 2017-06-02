@@ -39,8 +39,8 @@ type Editor struct {
 	rows             int
 	cols             int
 	cursor           *CursorBox
-	Foreground       RGBA
-	Background       RGBA
+	Foreground       *RGBA
+	Background       *RGBA
 	window           *ui.Window
 	screen           *Screen
 	areaBox          *ui.Box
@@ -266,7 +266,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			args := update[1].([]interface{})
 			color := reflectToInt(args[0])
 			if color == -1 {
-				editor.Foreground = *newRGBA(255, 255, 255, 1)
+				editor.Foreground = newRGBA(255, 255, 255, 1)
 			} else {
 				editor.Foreground = calcColor(reflectToInt(args[0]))
 			}
@@ -274,7 +274,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			args := update[1].([]interface{})
 			color := reflectToInt(args[0])
 			if color == -1 {
-				editor.Background = *newRGBA(0, 0, 0, 1)
+				editor.Background = newRGBA(0, 0, 0, 1)
 			} else {
 				bg := calcColor(reflectToInt(args[0]))
 				editor.Background = bg

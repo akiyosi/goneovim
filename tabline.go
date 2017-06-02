@@ -127,8 +127,8 @@ func (t *Tabline) update(args []interface{}) {
 			tab.current = false
 			tab.borderBottom.color = newRGBA(0, 0, 0, 1)
 			tab.bg = newRGBA(24, 29, 34, 1)
-			tab.color = &editor.Foreground
-			tab.cross.color = &editor.Foreground
+			tab.color = editor.Foreground
+			tab.cross.color = editor.Foreground
 			tab.cross.bg = newRGBA(24, 29, 34, 1)
 		}
 		ui.QueueMain(func() {

@@ -258,17 +258,17 @@ func (s *Screen) highlightSet(args []interface{}) {
 		fg, ok := hl["foreground"]
 		if ok {
 			rgba := calcColor(reflectToInt(fg))
-			highlight.foreground = &rgba
+			highlight.foreground = rgba
 		} else {
-			highlight.foreground = &editor.Foreground
+			highlight.foreground = editor.Foreground
 		}
 
 		bg, ok := hl["background"]
 		if ok {
 			rgba := calcColor(reflectToInt(bg))
-			highlight.background = &rgba
+			highlight.background = rgba
 		} else {
-			highlight.background = &editor.Background
+			highlight.background = editor.Background
 		}
 		s.highlight = highlight
 	}
@@ -536,7 +536,7 @@ func drawText(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
 		}
 		fg := editor.Foreground
 		if char.highlight.foreground != nil {
-			fg = *(char.highlight.foreground)
+			fg = char.highlight.foreground
 		}
 		textLayout.SetColor(x-start, x-start+1, fg.R, fg.G, fg.B, fg.A)
 	}
@@ -550,7 +550,7 @@ func drawText(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
 		}
 		fg := editor.Foreground
 		if char.highlight.foreground != nil {
-			fg = *(char.highlight.foreground)
+			fg = char.highlight.foreground
 		}
 		textLayout := ui.NewTextLayout(char.char, editor.font.font, -1)
 		textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
@@ -560,7 +560,7 @@ func drawText(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
 }
 
 func (w *Window) drawBorder(dp *ui.AreaDrawParams) {
-	bg := &editor.Background
+	bg := editor.Background
 	if w.bg != nil {
 		bg = w.bg
 	}
