@@ -41,6 +41,7 @@ type Editor struct {
 	cursor           *CursorBox
 	Foreground       *RGBA
 	Background       *RGBA
+	special          *RGBA
 	window           *ui.Window
 	screen           *Screen
 	areaBox          *ui.Box
@@ -279,6 +280,14 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 				bg := calcColor(reflectToInt(args[0]))
 				editor.Background = bg
 			}
+		case "update_sp":
+			args := update[1].([]interface{})
+			color := reflectToInt(args[0])
+			if color == -1 {
+				editor.special = newRGBA(255, 255, 255, 1)
+			} else {
+				editor.special = calcColor(reflectToInt(args[0]))
+			}
 		case "cursor_goto":
 			screen.cursorGoto(args)
 		case "put":
@@ -306,6 +315,8 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			editor.popup.selectItem(args)
 		case "tabline_update":
 			editor.tabline.update(args)
+		case "busy_start":
+		case "busy_stop":
 		default:
 			fmt.Println("Unhandle event", event)
 		}
