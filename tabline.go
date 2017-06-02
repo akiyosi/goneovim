@@ -14,7 +14,6 @@ type Tabline struct {
 	box       *ui.Box
 	CurrentID int
 	Tabs      []*Tab
-	height    int
 }
 
 // Tab in the tabline
@@ -33,8 +32,7 @@ type Tab struct {
 func initTabline(width int, height int) *Tabline {
 	box := ui.NewHorizontalBox()
 	tabline := &Tabline{
-		box:    box,
-		height: height,
+		box: box,
 	}
 	tabline.area = ui.NewArea(tabline)
 	tabline.bg = newRGBA(24, 29, 34, 1)
@@ -51,6 +49,9 @@ func initTabline(width int, height int) *Tabline {
 func (t *Tabline) resize(width int, height int) {
 	t.box.SetSize(width, height)
 	t.setSize(width, height)
+	for _, tab := range t.Tabs {
+		tab.setSize(tab.width, height)
+	}
 }
 
 func (t *Tabline) update(args []interface{}) {

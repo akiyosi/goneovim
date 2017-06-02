@@ -11,7 +11,7 @@ import (
 
 // StatuslineItem is
 type StatuslineItem interface {
-	Redraw() (int, int)
+	Redraw(bool) (int, int)
 	setPosition(x, y int)
 }
 
@@ -181,21 +181,21 @@ func (s *Statusline) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	s.drawBorder(dp)
 }
 
-func (s *Statusline) redraw() {
+func (s *Statusline) redraw(force bool) {
 	margin := s.paddingLeft
-	margin = s.redrawItem(s.mode, margin, true)
-	margin = s.redrawItem(s.git, margin, true)
-	margin = s.redrawItem(s.file, margin, true)
+	margin = s.redrawItem(s.mode, force, margin, true)
+	margin = s.redrawItem(s.git, force, margin, true)
+	margin = s.redrawItem(s.file, force, margin, true)
 
 	margin = s.paddingRight
-	margin = s.redrawItem(s.filetype, margin, false)
-	margin = s.redrawItem(s.encoding, margin, false)
-	margin = s.redrawItem(s.pos, margin, false)
-	margin = s.redrawItem(s.lint, margin, false)
+	margin = s.redrawItem(s.filetype, force, margin, false)
+	margin = s.redrawItem(s.encoding, force, margin, false)
+	margin = s.redrawItem(s.pos, force, margin, false)
+	margin = s.redrawItem(s.lint, force, margin, false)
 }
 
-func (s *Statusline) redrawItem(item StatuslineItem, margin int, left bool) int {
-	w, h := item.Redraw()
+func (s *Statusline) redrawItem(item StatuslineItem, force bool, margin int, left bool) int {
+	w, h := item.Redraw(force)
 	if w > 0 {
 		y := (s.height-s.borderTopWidth-h)/2 + s.borderTopWidth
 		x := 0
@@ -211,9 +211,9 @@ func (s *Statusline) redrawItem(item StatuslineItem, margin int, left bool) int 
 }
 
 // Redraw mode
-func (s *StatusMode) Redraw() (int, int) {
+func (s *StatusMode) Redraw(force bool) (int, int) {
 	w, h := s.getSize()
-	if editor.mode != s.mode {
+	if force || editor.mode != s.mode {
 		s.mode = editor.mode
 		switch s.mode {
 		case "normal":
@@ -242,7 +242,7 @@ func (s *StatusMode) Redraw() (int, int) {
 }
 
 // Redraw git
-func (s *StatuslineGit) Redraw() (int, int) {
+func (s *StatuslineGit) Redraw(force bool) (int, int) {
 	w, h := s.getSize()
 
 	file := ""
@@ -291,7 +291,7 @@ func (s *StatuslineGit) Redraw() (int, int) {
 		branch += "*"
 	}
 
-	if s.branch != branch {
+	if force || s.branch != branch {
 		s.branch = branch
 		s.text = branch
 		s.paddingLeft = editor.font.height + 2
@@ -307,14 +307,14 @@ func (s *StatuslineGit) Redraw() (int, int) {
 }
 
 // Redraw file
-func (s *StatuslineFile) Redraw() (int, int) {
+func (s *StatuslineFile) Redraw(force bool) (int, int) {
 	w, h := s.getSize()
 	file := ""
 	editor.nvim.Call("expand", &file, "%")
 	if file == "" {
 		file = "[No Name]"
 	}
-	if file != s.file {
+	if force || file != s.file {
 		if strings.HasPrefix(file, "term://") {
 			s.textType = ""
 		} else {
@@ -334,7 +334,7 @@ func (s *StatuslineFile) Redraw() (int, int) {
 }
 
 // Redraw pos
-func (s *StatuslinePos) Redraw() (int, int) {
+func (s *StatuslinePos) Redraw(force bool) (int, int) {
 	w, h := s.getSize()
 	pos := new([]interface{})
 	err := editor.nvim.Call("getpos", pos, ".")
@@ -343,7 +343,7 @@ func (s *StatuslinePos) Redraw() (int, int) {
 	}
 	ln := reflectToInt((*pos)[1])
 	col := reflectToInt((*pos)[2])
-	if ln != s.ln || col != s.col {
+	if force || ln != s.ln || col != s.col {
 		s.ln = ln
 		s.col = col
 		s.text = fmt.Sprintf("Ln %d, Col %d", ln, col)
@@ -357,12 +357,12 @@ func (s *StatuslinePos) Redraw() (int, int) {
 }
 
 // Redraw encoding
-func (s *StatuslineEncoding) Redraw() (int, int) {
+func (s *StatuslineEncoding) Redraw(force bool) (int, int) {
 	w, h := s.getSize()
 	encoding := ""
 	curbuf, _ := editor.nvim.CurrentBuffer()
 	editor.nvim.BufferOption(curbuf, "fileencoding", &encoding)
-	if s.encoding != encoding {
+	if force || s.encoding != encoding {
 		s.encoding = encoding
 		s.text = encoding
 		w, h = s.getSize()
@@ -375,12 +375,12 @@ func (s *StatuslineEncoding) Redraw() (int, int) {
 }
 
 // Redraw filetype
-func (s *StatuslineFiletype) Redraw() (int, int) {
+func (s *StatuslineFiletype) Redraw(force bool) (int, int) {
 	w, h := s.getSize()
 	filetype := ""
 	curbuf, _ := editor.nvim.CurrentBuffer()
 	editor.nvim.BufferOption(curbuf, "filetype", &filetype)
-	if s.filetype != filetype {
+	if force || s.filetype != filetype {
 		s.filetype = filetype
 		s.text = filetype
 		w, h = s.getSize()
@@ -393,7 +393,7 @@ func (s *StatuslineFiletype) Redraw() (int, int) {
 }
 
 // Redraw lint
-func (s *StatuslineLint) Redraw() (int, int) {
+func (s *StatuslineLint) Redraw(force bool) (int, int) {
 	w, h := s.getSize()
 	result := new([]map[string]interface{})
 	err := editor.nvim.Call("getloclist", result, "winnr(\"$\")")
@@ -414,7 +414,7 @@ func (s *StatuslineLint) Redraw() (int, int) {
 			warnings++
 		}
 	}
-	if s.errors != errors || s.warnings != warnings {
+	if force || s.errors != errors || s.warnings != warnings {
 		s.errors = errors
 		s.warnings = warnings
 		if errors == 0 && warnings == 0 {

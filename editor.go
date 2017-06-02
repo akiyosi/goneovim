@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"unsafe"
 
 	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
@@ -54,6 +55,8 @@ type Editor struct {
 	tablineHeight    int
 	selectedBg       *RGBA
 	matchFg          *RGBA
+	resizeMutex      sync.Mutex
+	redrawMutex      sync.Mutex
 }
 
 func initMainWindow(box *ui.Box, width, height int) *ui.Window {
@@ -68,27 +71,23 @@ func initMainWindow(box *ui.Box, width, height int) *ui.Window {
 			return true
 		}
 		width, height = window.ContentSize()
-		height = height - editor.tablineHeight - editor.statuslineHeight
+		fmt.Println("window changed", width, height)
 		if width == editor.width && height == editor.height {
 			return true
 		}
-		editor.width = width
-		editor.height = height
-		editor.areaBox.SetSize(width, height)
-		editor.screen.box.SetSize(width, height)
-		editor.screen.setSize(width, height)
-		editor.cursor.setSize(width, height)
-		editor.tabline.resize(width, editor.tablineHeight)
-		editor.statusline.box.SetSize(width, editor.statuslineHeight)
-		editor.statusline.setSize(width, editor.statuslineHeight)
-		editor.statusline.box.SetPosition(0, editor.tablineHeight+height)
-		editor.statusline.redraw()
-		editor.resize()
-		editor.finder.rePosition()
+		editor.resize(width, height)
 		return true
 	})
 	window.Show()
 	return window
+}
+
+func getTablineHeight(font *Font) int {
+	return font.lineHeight + 12
+}
+
+func getStatuslineHeight(font *Font) int {
+	return font.lineHeight + 6
 }
 
 // InitEditor inits the editor
@@ -96,13 +95,27 @@ func InitEditor() error {
 	if editor != nil {
 		return nil
 	}
+
+	fontFamily := ""
+	switch runtime.GOOS {
+	case "windows":
+		fontFamily = "Consolas"
+	case "darwin":
+		fontFamily = "Courier New"
+	default:
+		fontFamily = "Monospace"
+	}
+	font := initFont(fontFamily, 14, 6)
+	smallerFont := initFont(fontFamily, 12, 0)
+
 	width := 800
 	height := 600
-	tablineHeight := 34
-	statuslineHeight := 28
+	tablineHeight := getTablineHeight(font)
+	statuslineHeight := getStatuslineHeight(font)
+	screenHeight := height - tablineHeight - statuslineHeight
 
-	screen := initScreen(width, height)
-	cursor := initCursorBox(width, height)
+	screen := initScreen(width, screenHeight)
+	cursor := initCursorBox(width, screenHeight)
 	popupMenu := initPopupmenu()
 	finder := initFinder()
 	tabline := initTabline(width, tablineHeight)
@@ -120,10 +133,10 @@ func InitEditor() error {
 	box.Append(areaBox, false)
 	box.Append(statusline.box, false)
 
-	areaBox.SetSize(width, height)
+	areaBox.SetSize(width, screenHeight)
 	areaBox.SetPosition(0, tablineHeight)
-	statusline.box.SetPosition(0, tablineHeight+height)
-	window := initMainWindow(box, width, height+tablineHeight+statuslineHeight)
+	statusline.box.SetPosition(0, tablineHeight+screenHeight)
+	window := initMainWindow(box, width, height)
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
@@ -133,18 +146,6 @@ func InitEditor() error {
 		ui.Quit()
 		return err
 	}
-
-	fontFamily := ""
-	switch runtime.GOOS {
-	case "windows":
-		fontFamily = "Consolas"
-	case "darwin":
-		fontFamily = "Courier New"
-	default:
-		fontFamily = "Monospace"
-	}
-	font := initFont(fontFamily, 14, 6)
-	smallerFont := initFont(fontFamily, 12, 0)
 
 	editor = &Editor{
 		nvim:             neovim,
@@ -169,7 +170,7 @@ func InitEditor() error {
 		matchFg:          newRGBA(81, 154, 186, 1),
 	}
 
-	editor.resize()
+	editor.nvimResize()
 	editor.handleNotification()
 	editor.finder.rePosition()
 	go func() {
@@ -210,7 +211,9 @@ func (e *Editor) handleNotification() {
 		go e.handleRPCGui(updates...)
 	})
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
+		e.redrawMutex.Lock()
 		e.handleRedraw(updates...)
+		e.redrawMutex.Unlock()
 	})
 }
 
@@ -312,7 +315,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 	if !e.nvimAttached {
 		e.nvimAttached = true
 	}
-	go editor.statusline.redraw()
+	go editor.statusline.redraw(false)
 }
 
 func (e *Editor) guiFont(args ...interface{}) {
@@ -335,7 +338,7 @@ func (e *Editor) guiFont(args ...interface{}) {
 
 	e.font.change(parts[0], height)
 	e.smallerFont.change(parts[0], height-2)
-	e.resize()
+	e.resize(e.width, e.height)
 }
 
 func (e *Editor) guiLinespace(args ...interface{}) {
@@ -346,12 +349,38 @@ func (e *Editor) guiLinespace(args ...interface{}) {
 	}
 	e.font.changeLineSpace(lineSpace)
 	e.smallerFont.changeLineSpace(lineSpace)
-	e.resize()
+	e.resize(e.width, e.height)
 }
 
-func (e *Editor) resize() {
-	width := e.width
-	height := e.height
+func (e *Editor) resize(width, height int) {
+	ui.QueueMain(func() {
+		e.resizeMutex.Lock()
+		defer e.resizeMutex.Unlock()
+		e.tablineHeight = getTablineHeight(e.font)
+		e.statuslineHeight = getStatuslineHeight(e.font)
+		screenHeight := height - e.tablineHeight - e.statuslineHeight
+		e.width = width
+		e.height = height
+		e.areaBox.SetSize(width, screenHeight)
+		e.areaBox.SetPosition(0, e.tablineHeight)
+		e.screen.box.SetSize(width, screenHeight)
+		e.screen.setSize(width, screenHeight)
+		e.cursor.setSize(width, screenHeight)
+		e.tabline.resize(width, e.tablineHeight)
+		e.statusline.redraw(true)
+		e.statusline.box.SetSize(width, e.statuslineHeight)
+		e.statusline.setSize(width, e.statuslineHeight)
+		e.statusline.box.SetPosition(0, e.tablineHeight+screenHeight)
+		e.finder.rePosition()
+		e.nvimResize()
+	})
+}
+
+func (e *Editor) nvimResize() {
+	e.redrawMutex.Lock()
+	defer e.redrawMutex.Unlock()
+	width := e.screen.width
+	height := e.screen.height
 	// cols := width / editor.font.width
 	cols := int(float64(width) / editor.font.truewidth)
 	rows := height / editor.font.lineHeight

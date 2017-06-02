@@ -43,13 +43,13 @@ func initFinder() *Finder {
 
 	cursor := &CursorHandler{}
 	cursorArea := ui.NewArea(cursor)
-	cursorArea.SetSize(1, 24)
 	cursor.area = cursorArea
 	cursor.bg = newRGBA(255, 255, 255, 0.9)
 
 	box.Append(pattern, false)
 	box.Append(cursorArea, false)
 	box.SetShadow(0, 2, 0, 0, 0, 1, 4)
+	cursorArea.Hide()
 	box.Hide()
 
 	f := &Finder{
@@ -81,12 +81,14 @@ func (f *Finder) hide() {
 }
 
 func (f *Finder) cursorPos(args []interface{}) {
-	f.cursor.area.SetSize(1, editor.font.lineHeight)
+	_, h := f.pattern.getSize()
+	f.cursor.setSize(1, editor.font.lineHeight)
 	p := reflectToInt(args[0])
 	x := int(float64(p)*editor.font.truewidth) + f.pattern.paddingLeft
+	y := (h - editor.font.lineHeight) / 2
 	ui.QueueMain(func() {
 		f.cursor.area.Show()
-		f.cursor.area.SetPosition(x, f.pattern.paddingTop/2)
+		f.cursor.area.SetPosition(x, y)
 	})
 }
 
@@ -118,7 +120,9 @@ func (f *Finder) selectResult(args []interface{}) {
 
 func (f *Finder) showPattern(args []interface{}) {
 	p := args[0].(string)
-	f.pattern.area.SetSize(f.width, 8+8+editor.font.height)
+	_, height := f.pattern.getSize()
+	f.cursor.setSize(1, editor.font.lineHeight)
+	f.pattern.area.SetSize(f.width, height)
 	f.pattern.SetText(p)
 	f.patternText = p
 	f.pattern.SetFont(editor.font)
@@ -127,6 +131,7 @@ func (f *Finder) showPattern(args []interface{}) {
 	f.pattern.SetBackground(newRGBA(14, 17, 18, 1))
 	ui.QueueMain(func() {
 		// f.box.Show()
+		f.cursor.area.Show()
 		f.pattern.area.Show()
 		f.pattern.area.QueueRedrawAll()
 	})
