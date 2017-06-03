@@ -354,8 +354,19 @@ func (e *Editor) guiFont(args ...interface{}) {
 
 func (e *Editor) guiLinespace(args ...interface{}) {
 	fontArg := args[0].([]interface{})
-	lineSpace, err := strconv.Atoi(fontArg[0].(string))
-	if err != nil {
+	var lineSpace int
+	var err error
+	switch arg := fontArg[0].(type) {
+	case string:
+		lineSpace, err = strconv.Atoi(arg)
+		if err != nil {
+			return
+		}
+	case int32: // can't combine these in a type switch without compile error
+		lineSpace = int(arg)
+	case int64:
+		lineSpace = int(arg)
+	default:
 		return
 	}
 	e.font.changeLineSpace(lineSpace)
