@@ -27,39 +27,10 @@ type AreaHandler struct {
 }
 
 func drawRect(dp *ui.AreaDrawParams, x, y, width, height int, color *RGBA) {
-	p := ui.NewPath(ui.Winding)
-	p.AddRectangle(float64(x), float64(y), float64(width), float64(height))
-	p.End()
-	dp.Context.Fill(p, &ui.Brush{
-		Type: ui.Solid,
-		R:    color.R,
-		G:    color.G,
-		B:    color.B,
-		A:    color.A,
-	})
-	p.Free()
 }
 
 // Draw the area
 func (ah *AreaHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
-	if ah.bg == nil {
-		return
-	}
-	bg := ah.bg
-	p := ui.NewPath(ui.Winding)
-	p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
-	p.End()
-
-	dp.Context.Fill(p, &ui.Brush{
-		Type: ui.Solid,
-		R:    bg.R,
-		G:    bg.G,
-		B:    bg.B,
-		A:    bg.A,
-	})
-	p.Free()
-
-	ah.drawBorder(dp)
 }
 
 func (ah *AreaHandler) drawBorder(dp *ui.AreaDrawParams) {

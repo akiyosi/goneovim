@@ -1,10 +1,12 @@
 package gonvim
 
+import "fmt"
+
 // RGBA is
 type RGBA struct {
-	R float64
-	G float64
-	B float64
+	R int
+	G int
+	B int
 	A float64
 }
 
@@ -21,10 +23,14 @@ func (rgba *RGBA) equals(other *RGBA) bool {
 	return rgba.R == other.R && rgba.G == other.G && rgba.B == other.B && rgba.A == other.A
 }
 
+func (rgba *RGBA) String() string {
+	return fmt.Sprintf("rgba(%d, %d, %d, %f)", rgba.R, rgba.G, rgba.B, rgba.A)
+}
+
 func calcColor(c int) *RGBA {
-	b := float64(c&255) / 255
-	g := float64((c>>8)&255) / 255
-	r := float64((c>>16)&255) / 255
+	b := c & 255
+	g := (c >> 8) & 255
+	r := (c >> 16) & 255
 	return &RGBA{
 		R: r,
 		G: g,
@@ -35,9 +41,9 @@ func calcColor(c int) *RGBA {
 
 func newRGBA(r int, g int, b int, a float64) *RGBA {
 	return &RGBA{
-		R: float64(r) / 255,
-		G: float64(g) / 255,
-		B: float64(b) / 255,
+		R: r,
+		G: g,
+		B: b,
 		A: a,
 	}
 }

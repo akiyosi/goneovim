@@ -6,11 +6,14 @@ import (
 
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
+	"github.com/therecipe/qt/widgets"
 )
 
 // Tabline of the editor
 type Tabline struct {
 	AreaHandler
+	widget    *widgets.QWidget
+	layout    *widgets.QHBoxLayout
 	box       *ui.Box
 	CurrentID int
 	Tabs      []*Tab
@@ -27,6 +30,17 @@ type Tab struct {
 	chars    int
 	cross    *Svg
 	fileicon *Svg
+}
+
+func initTablineNew(height int) *Tabline {
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetFixedHeight(height)
+	layout := widgets.NewQHBoxLayout2(widget)
+
+	return &Tabline{
+		widget: widget,
+		layout: layout,
+	}
 }
 
 func initTabline(width int, height int) *Tabline {
@@ -55,6 +69,7 @@ func (t *Tabline) resize(width int, height int) {
 }
 
 func (t *Tabline) update(args []interface{}) {
+	return
 	arg := args[0].([]interface{})
 	t.CurrentID = int(arg[0].(nvim.Tabpage))
 	tabs := arg[1].([]interface{})

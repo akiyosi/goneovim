@@ -41,26 +41,26 @@ func (s *SpanHandler) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	if s.bg == nil {
 		return
 	}
-	bg := s.bg
+	// bg := s.bg
 	p := ui.NewPath(ui.Winding)
 	p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
 	p.End()
 
-	bottomBg := newRGBA(14, 17, 18, 1)
-	dp.Context.Fill(p, &ui.Brush{
-		Type: ui.Solid,
-		R:    bottomBg.R,
-		G:    bottomBg.G,
-		B:    bottomBg.B,
-		A:    bottomBg.A,
-	})
-	dp.Context.Fill(p, &ui.Brush{
-		Type: ui.Solid,
-		R:    bg.R,
-		G:    bg.G,
-		B:    bg.B,
-		A:    bg.A,
-	})
+	// bottomBg := newRGBA(14, 17, 18, 1)
+	// dp.Context.Fill(p, &ui.Brush{
+	// 	Type: ui.Solid,
+	// 	R:    bottomBg.R,
+	// 	G:    bottomBg.G,
+	// 	B:    bottomBg.B,
+	// 	A:    bottomBg.A,
+	// })
+	// dp.Context.Fill(p, &ui.Brush{
+	// 	Type: ui.Solid,
+	// 	R:    bg.R,
+	// 	G:    bg.G,
+	// 	B:    bg.B,
+	// 	A:    bg.A,
+	// })
 	p.Free()
 
 	s.drawBorder(dp)
@@ -126,25 +126,25 @@ func (s *SpanHandler) drawSvg(dp *ui.AreaDrawParams) {
 		}
 	}
 	path.End()
-	dp.Context.Fill(path, &ui.Brush{
-		Type: ui.Solid,
-		R:    color.R,
-		G:    color.G,
-		B:    color.B,
-		A:    color.A,
-	})
-	if svgXML.thickness > 0 {
-		dp.Context.Stroke(path, &ui.Brush{
-			Type: ui.Solid,
-			R:    color.R,
-			G:    color.G,
-			B:    color.B,
-			A:    color.A,
-		},
-			&ui.StrokeParams{
-				Thickness: svgXML.thickness,
-			})
-	}
+	// dp.Context.Fill(path, &ui.Brush{
+	// 	Type: ui.Solid,
+	// 	R:    color.R,
+	// 	G:    color.G,
+	// 	B:    color.B,
+	// 	A:    color.A,
+	// })
+	// if svgXML.thickness > 0 {
+	// 	dp.Context.Stroke(path, &ui.Brush{
+	// 		Type: ui.Solid,
+	// 		R:    color.R,
+	// 		G:    color.G,
+	// 		B:    color.B,
+	// 		A:    color.A,
+	// 	},
+	// 		&ui.StrokeParams{
+	// 			Thickness: svgXML.thickness,
+	// 		})
+	// }
 	path.Free()
 }
 
@@ -194,25 +194,25 @@ func (s *SpanHandler) drawSvgSecond(dp *ui.AreaDrawParams) {
 		}
 	}
 	path.End()
-	dp.Context.Fill(path, &ui.Brush{
-		Type: ui.Solid,
-		R:    color.R,
-		G:    color.G,
-		B:    color.B,
-		A:    color.A,
-	})
-	if svgXML.thickness > 0 {
-		dp.Context.Stroke(path, &ui.Brush{
-			Type: ui.Solid,
-			R:    color.R,
-			G:    color.G,
-			B:    color.B,
-			A:    color.A,
-		},
-			&ui.StrokeParams{
-				Thickness: svgXML.thickness,
-			})
-	}
+	// dp.Context.Fill(path, &ui.Brush{
+	// 	Type: ui.Solid,
+	// 	R:    color.R,
+	// 	G:    color.G,
+	// 	B:    color.B,
+	// 	A:    color.A,
+	// })
+	// if svgXML.thickness > 0 {
+	// 	dp.Context.Stroke(path, &ui.Brush{
+	// 		Type: ui.Solid,
+	// 		R:    color.R,
+	// 		G:    color.G,
+	// 		B:    color.B,
+	// 		A:    color.A,
+	// 	},
+	// 		&ui.StrokeParams{
+	// 			Thickness: svgXML.thickness,
+	// 		})
+	// }
 	path.Free()
 }
 
@@ -229,14 +229,14 @@ func (s *SpanHandler) drawUnderline(dp *ui.AreaDrawParams) {
 			1)
 	}
 	p.End()
-	fg := s.color
-	dp.Context.Fill(p, &ui.Brush{
-		Type: ui.Solid,
-		R:    fg.R,
-		G:    fg.G,
-		B:    fg.B,
-		A:    fg.A,
-	})
+	// fg := s.color
+	// dp.Context.Fill(p, &ui.Brush{
+	// 	Type: ui.Solid,
+	// 	R:    fg.R,
+	// 	G:    fg.G,
+	// 	B:    fg.B,
+	// 	A:    fg.A,
+	// })
 	p.Free()
 }
 
@@ -269,7 +269,7 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 	matchIndex := s.matchIndex
 	var textLayout *ui.TextLayout
 	shift := map[int]int{}
-	indent := 0
+	// indent := 0
 	if s.textType == "file" || s.textType == "dir" || s.textType == "ag_file" {
 		dir := filepath.Dir(s.text)
 		if dir == "." {
@@ -300,31 +300,31 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 		if s.textType == "ag_file" {
 			text = "- " + text
 			baseLen += 2
-			indent = 2
+			// indent = 2
 		}
 		textLayout = ui.NewTextLayout(text, font.font, -1)
-		fg := newRGBA(131, 131, 131, 1)
-		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
-		fg = s.color
-		textLayout.SetColor(0, baseLen, fg.R, fg.G, fg.B, fg.A)
+		// fg := newRGBA(131, 131, 131, 1)
+		// textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
+		// fg = s.color
+		// textLayout.SetColor(0, baseLen, fg.R, fg.G, fg.B, fg.A)
 	} else if s.textType == "line" {
-		i := strings.Index(s.text, "\t")
+		// i := strings.Index(s.text, "\t")
 		textLayout = ui.NewTextLayout(text, font.font, -1)
-		fg := s.color
-		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
+		// fg := s.color
+		// textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
 
-		fg = newRGBA(131, 131, 131, 1)
-		textLayout.SetColor(0, i, fg.R, fg.G, fg.B, fg.A)
+		// fg = newRGBA(131, 131, 131, 1)
+		// textLayout.SetColor(0, i, fg.R, fg.G, fg.B, fg.A)
 	} else if s.textType == "ag_line" {
 		text = "    " + text
-		indent = 4
+		// indent = 4
 		textLayout = ui.NewTextLayout(text, font.font, -1)
-		fg := s.color
-		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
+		// fg := s.color
+		// textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
 	} else {
 		textLayout = ui.NewTextLayout(text, font.font, -1)
-		fg := s.color
-		textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
+		// fg := s.color
+		// textLayout.SetColor(0, len(text), fg.R, fg.G, fg.B, fg.A)
 	}
 
 	if s.matchColor != nil {
@@ -334,13 +334,13 @@ func (s *SpanHandler) getTextLayout() *ui.TextLayout {
 				if ok {
 					i = j
 				}
-				textLayout.SetColor(i+indent, i+indent+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
+				// textLayout.SetColor(i+indent, i+indent+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
 			}
 		} else if s.match != "" {
 			for _, c := range s.match {
 				i := strings.Index(text, string(c))
 				if i != -1 {
-					textLayout.SetColor(i, i+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
+					// textLayout.SetColor(i, i+1, s.matchColor.R, s.matchColor.G, s.matchColor.B, s.matchColor.A)
 				}
 			}
 		}

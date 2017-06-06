@@ -90,25 +90,25 @@ func (s *Svg) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 		}
 	}
 	path.End()
-	dp.Context.Fill(path, &ui.Brush{
-		Type: ui.Solid,
-		R:    color.R,
-		G:    color.G,
-		B:    color.B,
-		A:    color.A,
-	})
-	if svgXML.thickness > 0 {
-		dp.Context.Stroke(path, &ui.Brush{
-			Type: ui.Solid,
-			R:    color.R,
-			G:    color.G,
-			B:    color.B,
-			A:    color.A,
-		},
-			&ui.StrokeParams{
-				Thickness: svgXML.thickness,
-			})
-	}
+	// dp.Context.Fill(path, &ui.Brush{
+	// 	Type: ui.Solid,
+	// 	R:    color.R,
+	// 	G:    color.G,
+	// 	B:    color.B,
+	// 	A:    color.A,
+	// })
+	// if svgXML.thickness > 0 {
+	// 	dp.Context.Stroke(path, &ui.Brush{
+	// 		Type: ui.Solid,
+	// 		R:    color.R,
+	// 		G:    color.G,
+	// 		B:    color.B,
+	// 		A:    color.A,
+	// 	},
+	// 		&ui.StrokeParams{
+	// 			Thickness: svgXML.thickness,
+	// 		})
+	// }
 	path.Free()
 }
 

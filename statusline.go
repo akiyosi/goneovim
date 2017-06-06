@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/dzhou121/ui"
+	"github.com/therecipe/qt/widgets"
 )
 
 // StatuslineItem is
@@ -18,8 +19,10 @@ type StatuslineItem interface {
 // Statusline is
 type Statusline struct {
 	AreaHandler
-	box *ui.Box
-	bg  *RGBA
+	widget *widgets.QWidget
+	layout *widgets.QHBoxLayout
+	box    *ui.Box
+	bg     *RGBA
 
 	borderTopWidth int
 	paddingLeft    int
@@ -78,6 +81,17 @@ type StatuslineGit struct {
 type StatuslineEncoding struct {
 	SpanHandler
 	encoding string
+}
+
+func initStatuslineNew(height int) *Statusline {
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetFixedHeight(height)
+	layout := widgets.NewQHBoxLayout2(widget)
+
+	return &Statusline{
+		widget: widget,
+		layout: layout,
+	}
 }
 
 func initStatusline(width, height int) *Statusline {
@@ -170,18 +184,19 @@ func (s *Statusline) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	p := ui.NewPath(ui.Winding)
 	p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
 	p.End()
-	dp.Context.Fill(p, &ui.Brush{
-		Type: ui.Solid,
-		R:    s.bg.R,
-		G:    s.bg.G,
-		B:    s.bg.B,
-		A:    s.bg.A,
-	})
+	// dp.Context.Fill(p, &ui.Brush{
+	// 	Type: ui.Solid,
+	// 	R:    s.bg.R,
+	// 	G:    s.bg.G,
+	// 	B:    s.bg.B,
+	// 	A:    s.bg.A,
+	// })
 	p.Free()
 	s.drawBorder(dp)
 }
 
 func (s *Statusline) redraw(force bool) {
+	return
 	margin := s.paddingLeft
 	margin = s.redrawItem(s.mode, force, margin, true)
 	margin = s.redrawItem(s.git, force, margin, true)

@@ -13,6 +13,8 @@ import (
 	"github.com/dzhou121/neovim-locpopup/rplugin/go/locpopup"
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
+	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/widgets"
 )
 
 var editor *Editor
@@ -107,7 +109,6 @@ func InitEditor() error {
 		fontFamily = "Monospace"
 	}
 	font := initFont(fontFamily, 14, 6)
-	smallerFont := initFont(fontFamily, 12, 0)
 
 	width := 800
 	height := 600
@@ -166,7 +167,6 @@ func InitEditor() error {
 		statusline:       statusline,
 		statuslineHeight: statuslineHeight,
 		font:             font,
-		smallerFont:      smallerFont,
 		selectedBg:       newRGBA(81, 154, 186, 0.5),
 		matchFg:          newRGBA(81, 154, 186, 1),
 	}
@@ -273,13 +273,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			}
 		case "update_bg":
 			args := update[1].([]interface{})
-			color := reflectToInt(args[0])
-			if color == -1 {
-				editor.Background = newRGBA(0, 0, 0, 1)
-			} else {
-				bg := calcColor(reflectToInt(args[0]))
-				editor.Background = bg
-			}
+			screen.updateBg(args)
 		case "update_sp":
 			args := update[1].([]interface{})
 			color := reflectToInt(args[0])
@@ -348,7 +342,6 @@ func (e *Editor) guiFont(args ...interface{}) {
 	}
 
 	e.font.change(parts[0], height)
-	e.smallerFont.change(parts[0], height-2)
 	e.resize(e.width, e.height)
 }
 
@@ -370,7 +363,6 @@ func (e *Editor) guiLinespace(args ...interface{}) {
 		return
 	}
 	e.font.changeLineSpace(lineSpace)
-	e.smallerFont.changeLineSpace(lineSpace)
 	e.resize(e.width, e.height)
 }
 
@@ -378,31 +370,30 @@ func (e *Editor) resize(width, height int) {
 	ui.QueueMain(func() {
 		e.resizeMutex.Lock()
 		defer e.resizeMutex.Unlock()
-		e.tablineHeight = getTablineHeight(e.font)
-		e.statuslineHeight = getStatuslineHeight(e.font)
-		screenHeight := height - e.tablineHeight - e.statuslineHeight
-		e.width = width
-		e.height = height
-		e.areaBox.SetSize(width, screenHeight)
-		e.areaBox.SetPosition(0, e.tablineHeight)
-		e.screen.box.SetSize(width, screenHeight)
-		e.screen.setSize(width, screenHeight)
-		e.cursor.setSize(width, screenHeight)
-		e.tabline.resize(width, e.tablineHeight)
-		e.statusline.redraw(true)
-		e.statusline.box.SetSize(width, e.statuslineHeight)
-		e.statusline.setSize(width, e.statuslineHeight)
-		e.statusline.box.SetPosition(0, e.tablineHeight+screenHeight)
-		e.finder.rePosition()
-		e.nvimResize()
+		// e.tablineHeight = getTablineHeight(e.font)
+		// e.statuslineHeight = getStatuslineHeight(e.font)
+		// screenHeight := height - e.tablineHeight - e.statuslineHeight
+		// e.width = width
+		// e.height = height
+		// e.areaBox.SetSize(width, screenHeight)
+		// e.areaBox.SetPosition(0, e.tablineHeight)
+		// e.screen.box.SetSize(width, screenHeight)
+		// e.screen.setSize(width, screenHeight)
+		// e.cursor.setSize(width, screenHeight)
+		// e.tabline.resize(width, e.tablineHeight)
+		// e.statusline.redraw(true)
+		// e.statusline.box.SetSize(width, e.statuslineHeight)
+		// e.statusline.setSize(width, e.statuslineHeight)
+		// e.statusline.box.SetPosition(0, e.tablineHeight+screenHeight)
+		// e.finder.rePosition()
+		// e.nvimResize()
 	})
 }
 
 func (e *Editor) nvimResize() {
 	e.redrawMutex.Lock()
 	defer e.redrawMutex.Unlock()
-	width := e.screen.width
-	height := e.screen.height
+	width, height := e.screen.size()
 	// cols := width / editor.font.width
 	cols := int(float64(width) / editor.font.truewidth)
 	rows := height / editor.font.lineHeight
@@ -426,4 +417,105 @@ func (hl *Highlight) copy() Highlight {
 		highlight.background = hl.background.copy()
 	}
 	return highlight
+}
+
+// InitEditorNew is
+func InitEditorNew() {
+	widgets.NewQApplication(0, nil)
+	fontFamily := ""
+	switch runtime.GOOS {
+	case "windows":
+		fontFamily = "Consolas"
+	case "darwin":
+		fontFamily = "Courier New"
+	default:
+		fontFamily = "Monospace"
+	}
+	font := initFontNew(fontFamily, 14, 6)
+
+	width := 800
+	height := 600
+	tablineHeight := getTablineHeight(font)
+	statuslineHeight := getStatuslineHeight(font)
+	//screenHeight := height - tablineHeight - statuslineHeight
+
+	//create a window
+	window := widgets.NewQMainWindow(nil, 0)
+	window.SetWindowTitle("Hello World Example")
+	window.SetContentsMargins(0, 0, 0, 0)
+	window.SetMinimumSize2(width, height)
+
+	tabline := initTablineNew(tablineHeight)
+	statusline := initStatuslineNew(statuslineHeight)
+	screen := initScreenNew()
+
+	layout := widgets.NewQVBoxLayout()
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetContentsMargins(0, 0, 0, 0)
+	widget.SetLayout(layout)
+	layout.AddWidget(tabline.widget, 0, core.Qt__AlignTop)
+	layout.AddWidget(screen.widget, 1, 0)
+	layout.AddWidget(statusline.widget, 0, core.Qt__AlignBottom)
+	layout.SetContentsMargins(0, 0, 0, 0)
+
+	window.SetCentralWidget(widget)
+
+	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
+		Args: os.Args[1:],
+	})
+	if err != nil {
+		fmt.Println("nvim start error", err)
+		return
+	}
+
+	editor = &Editor{
+		nvim:             neovim,
+		nvimAttached:     false,
+		screen:           screen,
+		mode:             "normal",
+		close:            make(chan bool),
+		tabline:          tabline,
+		width:            width,
+		height:           height,
+		tablineHeight:    tablineHeight,
+		statusline:       statusline,
+		statuslineHeight: statuslineHeight,
+		font:             font,
+		selectedBg:       newRGBA(81, 154, 186, 0.5),
+		matchFg:          newRGBA(81, 154, 186, 1),
+	}
+
+	editor.nvimResize()
+	editor.handleNotification()
+	// editor.finder.rePosition()
+	go func() {
+		err := neovim.Serve()
+		if err != nil {
+			fmt.Println(err)
+		}
+		editor.close <- true
+	}()
+
+	o := make(map[string]interface{})
+	o["rgb"] = true
+	o["ext_popupmenu"] = true
+	o["ext_tabline"] = true
+	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
+	if err != nil {
+		fmt.Println("nvim attach UI error", err)
+		return
+	}
+	editor.nvim.Subscribe("Gui")
+	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
+	editor.nvim.Command("runtime! ginit.vim")
+	editor.nvim.Command("let g:gonvim_running=1")
+	fzf.RegisterPlugin(editor.nvim)
+	locpopup.RegisterPlugin(editor.nvim)
+
+	go func() {
+		<-editor.close
+	}()
+
+	window.Show()
+	widgets.QApplication_Exec()
 }
