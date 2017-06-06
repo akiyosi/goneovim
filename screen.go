@@ -3,10 +3,12 @@ package gonvim
 import (
 	"fmt"
 	"math"
+	"runtime"
 	"strings"
 
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
+	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
@@ -36,6 +38,16 @@ type Screen struct {
 	highlight       Highlight
 	curWins         map[nvim.Window]*Window
 	queueRedrawArea [4]int
+	specialKeys     map[core.Qt__Key]string
+
+	controlModifier core.Qt__KeyboardModifier
+	cmdModifier     core.Qt__KeyboardModifier
+	shiftModifier   core.Qt__KeyboardModifier
+	altModifier     core.Qt__KeyboardModifier
+	metaModifier    core.Qt__KeyboardModifier
+	keyControl      core.Qt__Key
+	keyCmd          core.Qt__Key
+	keyAlt          core.Qt__Key
 }
 
 func initScreen(width, height int) *Screen {
@@ -62,7 +74,7 @@ func initScreenNew() *Screen {
 		widget: widget,
 	}
 	widget.ConnectPaintEvent(screen.paint)
-	widget.ConnectKeyPressEvent(screen.keyPress)
+	screen.initSpecialKeys()
 	return screen
 }
 
@@ -95,8 +107,169 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	p.DestroyQPainter()
 }
 
+func (s *Screen) initSpecialKeys() {
+	s.specialKeys = map[core.Qt__Key]string{}
+	s.specialKeys[core.Qt__Key_Up] = "Up"
+	s.specialKeys[core.Qt__Key_Down] = "Down"
+	s.specialKeys[core.Qt__Key_Left] = "Left"
+	s.specialKeys[core.Qt__Key_Right] = "Right"
+
+	s.specialKeys[core.Qt__Key_F1] = "F1"
+	s.specialKeys[core.Qt__Key_F2] = "F2"
+	s.specialKeys[core.Qt__Key_F3] = "F3"
+	s.specialKeys[core.Qt__Key_F4] = "F4"
+	s.specialKeys[core.Qt__Key_F5] = "F5"
+	s.specialKeys[core.Qt__Key_F6] = "F6"
+	s.specialKeys[core.Qt__Key_F7] = "F7"
+	s.specialKeys[core.Qt__Key_F8] = "F8"
+	s.specialKeys[core.Qt__Key_F9] = "F9"
+	s.specialKeys[core.Qt__Key_F10] = "F10"
+	s.specialKeys[core.Qt__Key_F11] = "F11"
+	s.specialKeys[core.Qt__Key_F12] = "F12"
+
+	s.specialKeys[core.Qt__Key_Backspace] = "BS"
+	s.specialKeys[core.Qt__Key_Delete] = "Del"
+	s.specialKeys[core.Qt__Key_Insert] = "Insert"
+	s.specialKeys[core.Qt__Key_Home] = "Home"
+	s.specialKeys[core.Qt__Key_End] = "End"
+	s.specialKeys[core.Qt__Key_PageUp] = "PageUp"
+	s.specialKeys[core.Qt__Key_PageDown] = "PageDown"
+
+	s.specialKeys[core.Qt__Key_Return] = "Enter"
+	s.specialKeys[core.Qt__Key_Enter] = "Enter"
+	s.specialKeys[core.Qt__Key_Tab] = "Tab"
+	s.specialKeys[core.Qt__Key_Backtab] = "Tab"
+	s.specialKeys[core.Qt__Key_Escape] = "Esc"
+
+	s.specialKeys[core.Qt__Key_Backslash] = "Bslash"
+	s.specialKeys[core.Qt__Key_Space] = "Space"
+
+	goos := runtime.GOOS
+	s.shiftModifier = core.Qt__ShiftModifier
+	s.altModifier = core.Qt__AltModifier
+	s.keyAlt = core.Qt__Key_Alt
+	if goos == "darwin" {
+		s.controlModifier = core.Qt__MetaModifier
+		s.cmdModifier = core.Qt__ControlModifier
+		s.metaModifier = core.Qt__AltModifier
+		s.keyControl = core.Qt__Key_Meta
+		s.keyCmd = core.Qt__Key_Control
+	} else {
+		s.controlModifier = core.Qt__ControlModifier
+		s.metaModifier = core.Qt__MetaModifier
+		s.keyControl = core.Qt__Key_Control
+		if goos == "linux" {
+			s.cmdModifier = core.Qt__MetaModifier
+			s.keyCmd = core.Qt__Key_Meta
+		}
+	}
+}
+
 func (s *Screen) keyPress(event *gui.QKeyEvent) {
-	fmt.Println(event)
+	if editor == nil {
+		return
+	}
+	input := s.convertKey(event.Text(), event.Key(), event.Modifiers())
+	editor.nvim.Input(input)
+}
+
+func (s *Screen) convertKey(text string, key int, mod core.Qt__KeyboardModifier) string {
+	if mod&core.Qt__KeypadModifier > 0 {
+		switch core.Qt__Key(key) {
+		case core.Qt__Key_Home:
+			return fmt.Sprintf("<%sHome>", s.modPrefix(mod))
+		case core.Qt__Key_End:
+			return fmt.Sprintf("<%sEnd>", s.modPrefix(mod))
+		case core.Qt__Key_PageUp:
+			return fmt.Sprintf("<%sPageUp>", s.modPrefix(mod))
+		case core.Qt__Key_PageDown:
+			return fmt.Sprintf("<%sPageDown>", s.modPrefix(mod))
+		case core.Qt__Key_Plus:
+			return fmt.Sprintf("<%sPlus>", s.modPrefix(mod))
+		case core.Qt__Key_Minus:
+			return fmt.Sprintf("<%sMinus>", s.modPrefix(mod))
+		case core.Qt__Key_multiply:
+			return fmt.Sprintf("<%sMultiply>", s.modPrefix(mod))
+		case core.Qt__Key_division:
+			return fmt.Sprintf("<%sDivide>", s.modPrefix(mod))
+		case core.Qt__Key_Enter:
+			return fmt.Sprintf("<%sEnter>", s.modPrefix(mod))
+		case core.Qt__Key_Period:
+			return fmt.Sprintf("<%sPoint>", s.modPrefix(mod))
+		case core.Qt__Key_0:
+			return fmt.Sprintf("<%s0>", s.modPrefix(mod))
+		case core.Qt__Key_1:
+			return fmt.Sprintf("<%s1>", s.modPrefix(mod))
+		case core.Qt__Key_2:
+			return fmt.Sprintf("<%s2>", s.modPrefix(mod))
+		case core.Qt__Key_3:
+			return fmt.Sprintf("<%s3>", s.modPrefix(mod))
+		case core.Qt__Key_4:
+			return fmt.Sprintf("<%s4>", s.modPrefix(mod))
+		case core.Qt__Key_5:
+			return fmt.Sprintf("<%s5>", s.modPrefix(mod))
+		case core.Qt__Key_6:
+			return fmt.Sprintf("<%s6>", s.modPrefix(mod))
+		case core.Qt__Key_7:
+			return fmt.Sprintf("<%s7>", s.modPrefix(mod))
+		case core.Qt__Key_8:
+			return fmt.Sprintf("<%s8>", s.modPrefix(mod))
+		case core.Qt__Key_9:
+			return fmt.Sprintf("<%s9>", s.modPrefix(mod))
+		}
+	}
+
+	if text == "<" {
+		return "<lt>"
+	}
+
+	specialKey, ok := s.specialKeys[core.Qt__Key(key)]
+	if ok {
+		return fmt.Sprintf("<%s%s>", s.modPrefix(mod), specialKey)
+	}
+
+	if text == "\\" {
+		return fmt.Sprintf("<%s%s>", s.modPrefix(mod), "Bslash")
+	}
+
+	c := ""
+	if text == "" {
+		if mod&s.controlModifier > 0 || mod&s.cmdModifier > 0 {
+			if int(s.keyControl) == key || int(s.keyCmd) == key || int(s.keyAlt) == key {
+				return ""
+			} else {
+				c = string(key)
+			}
+		} else {
+			return ""
+		}
+	} else {
+		c = string(text[0])
+	}
+
+	prefix := s.modPrefix(mod)
+	if prefix != "" {
+		return fmt.Sprintf("<%s%s>", prefix, c)
+	}
+
+	return c
+}
+
+func (s *Screen) modPrefix(mod core.Qt__KeyboardModifier) string {
+	prefix := ""
+	if mod&s.cmdModifier > 0 {
+		prefix += "D-"
+	}
+
+	if mod&s.controlModifier > 0 {
+		prefix += "C-"
+	}
+
+	if mod&s.altModifier > 0 {
+		prefix += "A-"
+	}
+
+	return prefix
 }
 
 func (s *Screen) getWindows() map[nvim.Window]*Window {

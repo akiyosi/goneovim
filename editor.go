@@ -441,13 +441,14 @@ func InitEditorNew() {
 
 	//create a window
 	window := widgets.NewQMainWindow(nil, 0)
-	window.SetWindowTitle("Hello World Example")
+	window.SetWindowTitle("Gonvim")
 	window.SetContentsMargins(0, 0, 0, 0)
 	window.SetMinimumSize2(width, height)
 
 	tabline := initTablineNew(tablineHeight)
 	statusline := initStatuslineNew(statuslineHeight)
 	screen := initScreenNew()
+	window.ConnectKeyPressEvent(screen.keyPress)
 
 	layout := widgets.NewQVBoxLayout()
 	widget := widgets.NewQWidget(nil, 0)
