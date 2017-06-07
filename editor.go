@@ -343,6 +343,7 @@ func (e *Editor) guiFont(args ...interface{}) {
 	}
 
 	e.font.change(parts[0], height)
+	e.popup.updateFont(e.font)
 	e.resize(e.width, e.height)
 }
 
@@ -451,7 +452,7 @@ func InitEditorNew() {
 	screen := initScreenNew()
 	cursor := initCursorNew()
 	cursor.widget.SetParent(screen.widget)
-	popup := initPopupmenuNew()
+	popup := initPopupmenuNew(font)
 	popup.widget.SetParent(screen.widget)
 	window.ConnectKeyPressEvent(screen.keyPress)
 

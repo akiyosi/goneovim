@@ -30,7 +30,7 @@ type PopupItem struct {
 	menu      *SpanHandler
 }
 
-func initPopupmenuNew() *PopupMenu {
+func initPopupmenuNew(font *Font) *PopupMenu {
 	layout := widgets.NewQGridLayout2()
 	layout.SetSpacing(0)
 	layout.SetContentsMargins(0, 0, 0, 0)
@@ -48,8 +48,10 @@ func initPopupmenuNew() *PopupMenu {
 	for i := 0; i < max; i++ {
 		kind := widgets.NewQLabel(nil, 0)
 		kind.SetContentsMargins(10, 10, 10, 10)
+		kind.SetFont(font.fontNew)
 		menu := widgets.NewQLabel(nil, 0)
 		menu.SetContentsMargins(10, 10, 10, 10)
+		menu.SetFont(font.fontNew)
 		layout.AddWidget(kind, i, 0, 0)
 		layout.AddWidget(menu, i, 1, 0)
 
@@ -98,6 +100,14 @@ func initPopupmenu() *PopupMenu {
 		box:   box,
 		items: popupItems,
 		total: total,
+	}
+}
+
+func (p *PopupMenu) updateFont(font *Font) {
+	for i := 0; i < p.total; i++ {
+		popupItem := p.items[i]
+		popupItem.kindLable.SetFont(font.fontNew)
+		popupItem.menuLable.SetFont(font.fontNew)
 	}
 }
 
@@ -254,7 +264,6 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 		bg = editor.selectedBg
 	}
 	p.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", bg.String(), fg.String()))
-	p.menuLable.SetFont(editor.font.fontNew)
 	p.menuLable.SetText(text)
 }
 
@@ -299,7 +308,6 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 		kindText = "b"
 	}
 	p.kindLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", bg.String(), color.String()))
-	p.kindLable.SetFont(editor.font.fontNew)
 	p.kindLable.SetText(kindText)
 }
 
