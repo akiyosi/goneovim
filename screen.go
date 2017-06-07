@@ -28,6 +28,8 @@ type Window struct {
 // Screen is the main editor area
 type Screen struct {
 	AreaHandler
+	width           int
+	height          int
 	widget          *widgets.QWidget
 	box             *ui.Box
 	wins            map[nvim.Window]*Window
@@ -83,6 +85,9 @@ func initScreenNew() *Screen {
 		if editor == nil {
 			return
 		}
+		width, height := screen.size()
+		screen.width = width
+		screen.height = height
 		editor.nvimResize()
 	})
 	return screen
@@ -106,10 +111,14 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	defer s.paintMutex.Unlock()
 	font := editor.font
 	rect := vqp.M_rect()
-	row := int(math.Ceil(float64(rect.Y()) / float64(font.lineHeight)))
-	col := int(math.Ceil(float64(rect.X()) / font.truewidth))
-	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
-	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
+	top := rect.Y()
+	left := rect.X()
+	right := left + rect.Width()
+	bottom := top + rect.Height()
+	row := int(float64(top) / float64(font.lineHeight))
+	col := int(float64(left) / font.truewidth)
+	rows := int(math.Ceil(float64(bottom)/float64(font.lineHeight))) - row
+	cols := int(math.Ceil(float64(right)/font.truewidth)) - col
 
 	p := gui.NewQPainter2(s.widget)
 	p.SetFont(editor.font.fontNew)

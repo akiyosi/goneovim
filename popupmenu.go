@@ -1,23 +1,72 @@
 package gonvim
 
 import (
-	"time"
+	"fmt"
 
 	"github.com/dzhou121/ui"
+	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/widgets"
 )
 
 // PopupMenu is the popupmenu
 type PopupMenu struct {
-	box    *ui.Box
-	items  []*PopupItem
-	total  int
-	hidden bool
+	widget    *widgets.QWidget
+	layout    *widgets.QGridLayout
+	box       *ui.Box
+	items     []*PopupItem
+	rawItems  []interface{}
+	total     int
+	showTotal int
+	selected  int
+	hidden    bool
+	top       int
 }
 
 // PopupItem is
 type PopupItem struct {
-	kind *SpanHandler
-	menu *SpanHandler
+	kindLable *widgets.QLabel
+	menuLable *widgets.QLabel
+	kind      *SpanHandler
+	menu      *SpanHandler
+}
+
+func initPopupmenuNew() *PopupMenu {
+	layout := widgets.NewQGridLayout2()
+	layout.SetSpacing(0)
+	layout.SetContentsMargins(0, 0, 0, 0)
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetLayout(layout)
+	widget.SetContentsMargins(0, 0, 0, 0)
+	widget.SetStyleSheet("background-color: rgba(14, 17, 18, 1);")
+	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+	shadow.SetBlurRadius(20)
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, 255))
+	shadow.SetOffset3(0, 2)
+	widget.SetGraphicsEffect(shadow)
+	max := 15
+	var popupItems []*PopupItem
+	for i := 0; i < max; i++ {
+		kind := widgets.NewQLabel(nil, 0)
+		kind.SetContentsMargins(10, 10, 10, 10)
+		menu := widgets.NewQLabel(nil, 0)
+		menu.SetContentsMargins(10, 10, 10, 10)
+		layout.AddWidget(kind, i, 0, 0)
+		layout.AddWidget(menu, i, 1, 0)
+
+		popupItem := &PopupItem{
+			kindLable: kind,
+			menuLable: menu,
+		}
+		popupItems = append(popupItems, popupItem)
+	}
+
+	widget.Hide()
+	return &PopupMenu{
+		widget: widget,
+		layout: layout,
+		items:  popupItems,
+		total:  max,
+	}
 }
 
 func initPopupmenu() *PopupMenu {
@@ -59,91 +108,139 @@ func (p *PopupMenu) show(args []interface{}) {
 	selected := reflectToInt(arg[1])
 	row := reflectToInt(arg[2])
 	col := reflectToInt(arg[3])
+	p.rawItems = items
+	p.selected = selected
+	p.top = 0
 
 	popupItems := p.items
-	i := 0
-	kindWidth := 0
-	menuWidthMax := 0
-	heightSum := 0
-	height := 0
-	for i = 0; i < p.total; i++ {
+	itemHeight := editor.font.height + 20
+	itemHeightReal := popupItems[0].menuLable.Height()
+	if itemHeightReal < itemHeight {
+		itemHeight = itemHeightReal
+	}
+	heightLeft := editor.screen.height - row*editor.font.lineHeight
+	total := heightLeft / itemHeight
+	fmt.Println(editor.screen.height, itemHeight, heightLeft)
+	if total < p.total {
+		p.showTotal = total
+	} else {
+		p.showTotal = p.total
+	}
+
+	for i := 0; i < p.total; i++ {
 		popupItem := popupItems[i]
-		if i >= len(items) {
-			popupItem.hide()
+		if i >= len(items) || i >= total {
+			popupItem.kindLable.Hide()
+			popupItem.menuLable.Hide()
 			continue
 		}
 
 		item := items[i].([]interface{})
 		popupItem.setItem(item, selected == i)
-
-		var menuWidth int
-		menuWidth, height = popupItem.menu.getSize()
-		kindWidth, height = popupItem.kind.getSize()
-
-		if menuWidth > menuWidthMax {
-			menuWidthMax = menuWidth
-		}
-		y := heightSum
-		heightSum += height
-		ui.QueueMain(func() {
-			popupItem.kind.area.SetPosition(0, y)
-			popupItem.menu.area.SetPosition(kindWidth, y)
-		})
+		popupItem.kindLable.Show()
+		popupItem.menuLable.Show()
 	}
 
-	for i = 0; i < p.total; i++ {
-		if i >= len(items) {
-			continue
-		}
-		popupItem := popupItems[i]
-		ui.QueueMain(func() {
-			popupItem.kind.area.SetSize(kindWidth, height)
-			popupItem.kind.area.Show()
-			popupItem.kind.area.QueueRedrawAll()
-			popupItem.menu.area.SetSize(menuWidthMax, height)
-			popupItem.menu.area.Show()
-			popupItem.menu.area.QueueRedrawAll()
-		})
-	}
+	p.widget.Move2(
+		int(float64(col)*editor.font.truewidth)-popupItems[0].kindLable.Width()-10,
+		(row+1)*editor.font.lineHeight,
+	)
+	p.widget.Show()
 
-	ui.QueueMain(func() {
-		p.box.SetPosition(
-			int(float64(col)*editor.font.truewidth)-kindWidth-p.items[0].menu.paddingLeft,
-			(row+1)*editor.font.lineHeight,
-		)
-		p.box.SetSize(menuWidthMax+kindWidth, heightSum)
-		p.box.Show()
-	})
+	// popupItems := p.items
+	// i := 0
+	// kindWidth := 0
+	// menuWidthMax := 0
+	// heightSum := 0
+	// height := 0
+	// for i = 0; i < p.total; i++ {
+	// 	popupItem := popupItems[i]
+	// 	if i >= len(items) {
+	// 		popupItem.hide()
+	// 		continue
+	// 	}
+
+	// 	item := items[i].([]interface{})
+	// 	popupItem.setItem(item, selected == i)
+
+	// 	var menuWidth int
+	// 	menuWidth, height = popupItem.menu.getSize()
+	// 	kindWidth, height = popupItem.kind.getSize()
+
+	// 	if menuWidth > menuWidthMax {
+	// 		menuWidthMax = menuWidth
+	// 	}
+	// 	y := heightSum
+	// 	heightSum += height
+	// 	ui.QueueMain(func() {
+	// 		popupItem.kind.area.SetPosition(0, y)
+	// 		popupItem.menu.area.SetPosition(kindWidth, y)
+	// 	})
+	// }
+
+	// for i = 0; i < p.total; i++ {
+	// 	if i >= len(items) {
+	// 		continue
+	// 	}
+	// 	popupItem := popupItems[i]
+	// 	ui.QueueMain(func() {
+	// 		popupItem.kind.area.SetSize(kindWidth, height)
+	// 		popupItem.kind.area.Show()
+	// 		popupItem.kind.area.QueueRedrawAll()
+	// 		popupItem.menu.area.SetSize(menuWidthMax, height)
+	// 		popupItem.menu.area.Show()
+	// 		popupItem.menu.area.QueueRedrawAll()
+	// 	})
+	// }
+
+	// ui.QueueMain(func() {
+	// 	p.box.SetPosition(
+	// 		int(float64(col)*editor.font.truewidth)-kindWidth-p.items[0].menu.paddingLeft,
+	// 		(row+1)*editor.font.lineHeight,
+	// 	)
+	// 	p.box.SetSize(menuWidthMax+kindWidth, heightSum)
+	// 	p.box.Show()
+	// })
 }
 
 func (p *PopupMenu) hide(args []interface{}) {
 	p.hidden = true
-
-	time.AfterFunc(50*time.Millisecond, func() {
-		if p.hidden {
-			ui.QueueMain(func() {
-				p.box.Hide()
-			})
-		}
-	})
+	p.widget.Hide()
 }
 
 func (p *PopupMenu) selectItem(args []interface{}) {
 	selected := reflectToInt(args[0].([]interface{})[0])
-	for i := 0; i < p.total; i++ {
-		popupItem := p.items[i]
-		if selected == i {
-			popupItem.menu.SetBackground(editor.selectedBg)
-			ui.QueueMain(func() {
-				popupItem.menu.area.QueueRedrawAll()
-			})
-		} else {
-			popupItem.menu.SetBackground(newRGBA(14, 17, 18, 1))
-			ui.QueueMain(func() {
-				popupItem.menu.area.QueueRedrawAll()
-			})
-		}
+	if selected == -1 {
+		p.top = 0
 	}
+	if selected-p.top >= p.showTotal {
+		p.scroll(selected - p.top - p.showTotal + 1)
+	}
+	if selected >= 0 && selected-p.top < 0 {
+		p.scroll(-1)
+	}
+	fg := newRGBA(205, 211, 222, 1)
+	for i := 0; i < p.showTotal; i++ {
+		popupItem := p.items[i]
+		bg := newRGBA(14, 17, 18, 1)
+		if selected == i+p.top {
+			bg = editor.selectedBg
+		}
+		popupItem.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", bg.String(), fg.String()))
+	}
+}
+
+func (p *PopupMenu) scroll(n int) {
+	p.top += n
+	items := p.rawItems
+	popupItems := p.items
+	for i := 0; i < p.showTotal; i++ {
+		popupItem := popupItems[i]
+		item := items[i+p.top].([]interface{})
+		popupItem.setItem(item, false)
+	}
+	p.widget.Hide()
+	p.widget.Show()
 }
 
 func (p *PopupItem) setItem(item []interface{}, selected bool) {
@@ -152,24 +249,13 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 	p.setKind(kindText, selected)
 
 	fg := newRGBA(205, 211, 222, 1)
-	p.menu.SetColor(fg)
+	bg := newRGBA(14, 17, 18, 1)
 	if selected {
-		p.menu.SetBackground(editor.selectedBg)
-	} else {
-		p.menu.SetBackground(newRGBA(14, 17, 18, 1))
+		bg = editor.selectedBg
 	}
-	p.menu.SetFont(editor.font)
-	p.menu.SetText(text)
-
-	p.menu.paddingLeft = 10
-	p.menu.paddingRight = 10
-	p.menu.paddingTop = 8
-	p.menu.paddingBottom = 8
-
-	p.kind.paddingLeft = 10
-	p.kind.paddingRight = 10
-	p.kind.paddingTop = 8
-	p.kind.paddingBottom = 8
+	p.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", bg.String(), fg.String()))
+	p.menuLable.SetFont(editor.font.fontNew)
+	p.menuLable.SetText(text)
 }
 
 func (p *PopupItem) setKind(kindText string, selected bool) {
@@ -212,10 +298,9 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 	default:
 		kindText = "b"
 	}
-	p.kind.SetColor(color)
-	p.kind.SetBackground(bg)
-	p.kind.SetFont(editor.font)
-	p.kind.SetText(kindText)
+	p.kindLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", bg.String(), color.String()))
+	p.kindLable.SetFont(editor.font.fontNew)
+	p.kindLable.SetText(kindText)
 }
 
 func (p *PopupItem) hide() {
