@@ -238,19 +238,19 @@ func (e *Editor) handleRPCGui(updates ...interface{}) {
 	case "finder_select":
 		e.finder.selectResult(updates[1:])
 	case "locpopup_show":
-		arg, ok := updates[1].(map[string]interface{})
-		if !ok {
-			return
-		}
-		e.cursor.locpopup.show(arg)
+		// arg, ok := updates[1].(map[string]interface{})
+		// if !ok {
+		// 	return
+		// }
+		// e.cursor.locpopup.show(arg)
 	case "locpopup_hide":
-		e.cursor.locpopup.hide()
+		// e.cursor.locpopup.hide()
 	case "signature_show":
-		e.cursor.signature.show(updates[1:])
+		// e.cursor.signature.show(updates[1:])
 	case "signature_pos":
-		e.cursor.signature.pos(updates[1:])
+		// e.cursor.signature.pos(updates[1:])
 	case "signature_hide":
-		e.cursor.signature.hide()
+		// e.cursor.signature.hide()
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}

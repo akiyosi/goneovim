@@ -20,6 +20,8 @@ type PopupMenu struct {
 	selected  int
 	hidden    bool
 	top       int
+	scrollBar *widgets.QWidget
+	scrollCol *widgets.QWidget
 }
 
 // PopupItem is
@@ -34,8 +36,19 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	layout := widgets.NewQGridLayout2()
 	layout.SetSpacing(0)
 	layout.SetContentsMargins(0, 0, 0, 0)
+	scrollCol := widgets.NewQWidget(nil, 0)
+	scrollCol.SetContentsMargins(0, 0, 0, 0)
+	scrollCol.SetFixedWidth(5)
+	scrollBar := widgets.NewQWidget(scrollCol, 0)
+	scrollBar.SetFixedWidth(5)
+	scrollBar.SetStyleSheet("background-color: rgba(255,255,255,0.5);")
+	mainLayout := widgets.NewQHBoxLayout()
+	mainLayout.AddLayout(layout, 0)
+	mainLayout.AddWidget(scrollCol, 0, 0)
+	mainLayout.SetContentsMargins(0, 0, 0, 0)
+	mainLayout.SetSpacing(0)
 	widget := widgets.NewQWidget(nil, 0)
-	widget.SetLayout(layout)
+	widget.SetLayout(mainLayout)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetStyleSheet("background-color: rgba(14, 17, 18, 1);")
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
@@ -64,10 +77,12 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 
 	widget.Hide()
 	return &PopupMenu{
-		widget: widget,
-		layout: layout,
-		items:  popupItems,
-		total:  max,
+		widget:    widget,
+		layout:    layout,
+		items:     popupItems,
+		total:     max,
+		scrollBar: scrollBar,
+		scrollCol: scrollCol,
 	}
 }
 
@@ -124,13 +139,13 @@ func (p *PopupMenu) show(args []interface{}) {
 
 	popupItems := p.items
 	itemHeight := editor.font.height + 20
-	itemHeightReal := popupItems[0].menuLable.Height()
-	if itemHeightReal < itemHeight {
-		itemHeight = itemHeightReal
-	}
-	heightLeft := editor.screen.height - row*editor.font.lineHeight
+	// itemHeightReal := popupItems[0].menuLable.Height()
+	// if itemHeightReal < itemHeight {
+	// 	itemHeight = itemHeightReal
+	// }
+	// fmt.Println(itemHeight, itemHeightReal)
+	heightLeft := editor.screen.height - (row+1)*editor.font.lineHeight
 	total := heightLeft / itemHeight
-	fmt.Println(editor.screen.height, itemHeight, heightLeft)
 	if total < p.total {
 		p.showTotal = total
 	} else {
@@ -157,6 +172,13 @@ func (p *PopupMenu) show(args []interface{}) {
 	)
 	p.widget.Show()
 
+	if len(items) > p.showTotal {
+		p.scrollBar.SetFixedHeight(int(float64(p.showTotal) / float64(len(items)) * float64(itemHeight*p.showTotal)))
+		p.scrollBar.Move2(0, 0)
+		p.scrollCol.Show()
+	} else {
+		p.scrollCol.Hide()
+	}
 	// popupItems := p.items
 	// i := 0
 	// kindWidth := 0
@@ -249,6 +271,7 @@ func (p *PopupMenu) scroll(n int) {
 		item := items[i+p.top].([]interface{})
 		popupItem.setItem(item, false)
 	}
+	p.scrollBar.Move2(0, int((float64(p.top)/float64(len(items)))*float64(p.widget.Height())))
 	p.widget.Hide()
 	p.widget.Show()
 }

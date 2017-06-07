@@ -654,6 +654,8 @@ func (s *Screen) cursorWin() *Window {
 }
 
 func fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
+	rectF := core.NewQRectF()
+	defer rectF.DestroyQRectF()
 	screen := editor.screen
 	if y >= len(screen.content) {
 		return
@@ -683,11 +685,14 @@ func fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 					end = x
 				} else {
 					// last bg is different; draw the previous and start a new one
-					p.FillRect5(
-						int(float64(start-pos[1])*editor.font.truewidth),
-						(y-pos[0])*editor.font.lineHeight,
-						int(float64(end-start+1)*editor.font.truewidth),
-						editor.font.lineHeight,
+					rectF.SetRect(
+						float64(start-pos[1])*editor.font.truewidth,
+						float64((y-pos[0])*editor.font.lineHeight),
+						float64(end-start+1)*editor.font.truewidth,
+						float64(editor.font.lineHeight),
+					)
+					p.FillRect4(
+						rectF,
 						gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
 					)
 
@@ -699,11 +704,14 @@ func fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 			}
 		} else {
 			if lastBg != nil {
-				p.FillRect5(
-					int(float64(start-pos[1])*editor.font.truewidth),
-					(y-pos[0])*editor.font.lineHeight,
-					int(float64(end-start+1)*editor.font.truewidth),
-					editor.font.lineHeight,
+				rectF.SetRect(
+					float64(start-pos[1])*editor.font.truewidth,
+					float64((y-pos[0])*editor.font.lineHeight),
+					float64(end-start+1)*editor.font.truewidth,
+					float64(editor.font.lineHeight),
+				)
+				p.FillRect4(
+					rectF,
 					gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
 				)
 
@@ -715,11 +723,14 @@ func fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 		}
 	}
 	if lastBg != nil {
-		p.FillRect5(
-			int(float64(start-pos[1])*editor.font.truewidth),
-			(y-pos[0])*editor.font.lineHeight,
-			int(float64(end-start+1)*editor.font.truewidth),
-			editor.font.lineHeight,
+		rectF.SetRect(
+			float64(start-pos[1])*editor.font.truewidth,
+			float64((y-pos[0])*editor.font.lineHeight),
+			float64(end-start+1)*editor.font.truewidth,
+			float64(editor.font.lineHeight),
+		)
+		p.FillRect4(
+			rectF,
 			gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
 		)
 	}
@@ -730,6 +741,8 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 	if y >= len(screen.content) {
 		return
 	}
+	pointF := core.NewQPointF()
+	defer pointF.DestroyQPointF()
 	line := screen.content[y]
 	chars := map[*RGBA][]int{}
 	specialChars := []int{}
@@ -782,11 +795,9 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 		}
 		if text != "" {
 			p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
-			p.DrawText3(
-				int(float64(col-pos[1])*editor.font.truewidth),
-				(y-pos[0])*editor.font.lineHeight+editor.font.shift,
-				text,
-			)
+			pointF.SetX(float64(col-pos[1]) * editor.font.truewidth)
+			pointF.SetY(float64((y-pos[0])*editor.font.lineHeight + editor.font.shift))
+			p.DrawText(pointF, text)
 		}
 	}
 
@@ -800,11 +811,9 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 			fg = editor.Foreground
 		}
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
-		p.DrawText3(
-			int(float64(x-pos[1])*editor.font.truewidth),
-			(y-pos[0])*editor.font.lineHeight+editor.font.shift,
-			char.char,
-		)
+		pointF.SetX(float64(x-pos[1]) * editor.font.truewidth)
+		pointF.SetY(float64((y-pos[0])*editor.font.lineHeight + editor.font.shift))
+		p.DrawText(pointF, char.char)
 		// fg := editor.Foreground
 		// if char.highlight.foreground != nil {
 		// 	fg = char.highlight.foreground
