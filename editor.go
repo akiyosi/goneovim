@@ -41,6 +41,7 @@ type Editor struct {
 	rows             int
 	cols             int
 	cursor           *CursorBox
+	cursorNew        *Cursor
 	Foreground       *RGBA
 	Background       *RGBA
 	special          *RGBA
@@ -59,7 +60,6 @@ type Editor struct {
 	selectedBg       *RGBA
 	matchFg          *RGBA
 	resizeMutex      sync.Mutex
-	redrawMutex      sync.Mutex
 }
 
 func initMainWindow(box *ui.Box, width, height int) *ui.Window {
@@ -112,8 +112,8 @@ func InitEditor() error {
 
 	width := 800
 	height := 600
-	tablineHeight := getTablineHeight(font)
-	statuslineHeight := getStatuslineHeight(font)
+	tablineHeight := 34
+	statuslineHeight := 20
 	screenHeight := height - tablineHeight - statuslineHeight
 
 	screen := initScreen(width, screenHeight)
@@ -212,9 +212,9 @@ func (e *Editor) handleNotification() {
 		go e.handleRPCGui(updates...)
 	})
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		e.redrawMutex.Lock()
+		e.screen.paintMutex.Lock()
 		e.handleRedraw(updates...)
-		e.redrawMutex.Unlock()
+		e.screen.paintMutex.Unlock()
 	})
 }
 
@@ -317,6 +317,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 	}
 	screen.redraw()
 	editor.cursor.draw()
+	editor.cursorNew.update()
 	if !e.nvimAttached {
 		e.nvimAttached = true
 	}
@@ -386,13 +387,13 @@ func (e *Editor) resize(width, height int) {
 		// e.statusline.setSize(width, e.statuslineHeight)
 		// e.statusline.box.SetPosition(0, e.tablineHeight+screenHeight)
 		// e.finder.rePosition()
-		// e.nvimResize()
+		e.nvimResize()
 	})
 }
 
 func (e *Editor) nvimResize() {
-	e.redrawMutex.Lock()
-	defer e.redrawMutex.Unlock()
+	e.screen.paintMutex.Lock()
+	defer e.screen.paintMutex.Unlock()
 	width, height := e.screen.size()
 	// cols := width / editor.font.width
 	cols := int(float64(width) / editor.font.truewidth)
@@ -421,7 +422,7 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditorNew is
 func InitEditorNew() {
-	widgets.NewQApplication(0, nil)
+	app := widgets.NewQApplication(0, nil)
 	fontFamily := ""
 	switch runtime.GOOS {
 	case "windows":
@@ -435,8 +436,8 @@ func InitEditorNew() {
 
 	width := 800
 	height := 600
-	tablineHeight := getTablineHeight(font)
-	statuslineHeight := getStatuslineHeight(font)
+	tablineHeight := 34
+	statuslineHeight := 24
 	//screenHeight := height - tablineHeight - statuslineHeight
 
 	//create a window
@@ -448,7 +449,10 @@ func InitEditorNew() {
 	tabline := initTablineNew(tablineHeight)
 	statusline := initStatuslineNew(statuslineHeight)
 	screen := initScreenNew()
+	cursor := initCursorNew()
+	cursor.widget.SetParent(screen.widget)
 	window.ConnectKeyPressEvent(screen.keyPress)
+	popupMenu := initPopupmenu()
 
 	layout := widgets.NewQVBoxLayout()
 	widget := widgets.NewQWidget(nil, 0)
@@ -458,6 +462,7 @@ func InitEditorNew() {
 	layout.AddWidget(screen.widget, 1, 0)
 	layout.AddWidget(statusline.widget, 0, core.Qt__AlignBottom)
 	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(0)
 
 	window.SetCentralWidget(widget)
 
@@ -466,6 +471,7 @@ func InitEditorNew() {
 	})
 	if err != nil {
 		fmt.Println("nvim start error", err)
+		app.Quit()
 		return
 	}
 
@@ -473,8 +479,10 @@ func InitEditorNew() {
 		nvim:             neovim,
 		nvimAttached:     false,
 		screen:           screen,
+		cursorNew:        cursor,
 		mode:             "normal",
 		close:            make(chan bool),
+		popup:            popupMenu,
 		tabline:          tabline,
 		width:            width,
 		height:           height,
@@ -504,6 +512,7 @@ func InitEditorNew() {
 	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
 	if err != nil {
 		fmt.Println("nvim attach UI error", err)
+		app.Quit()
 		return
 	}
 	editor.nvim.Subscribe("Gui")
@@ -515,6 +524,7 @@ func InitEditorNew() {
 
 	go func() {
 		<-editor.close
+		app.Quit()
 	}()
 
 	window.Show()

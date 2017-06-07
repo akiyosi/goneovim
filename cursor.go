@@ -2,6 +2,7 @@ package gonvim
 
 import (
 	"github.com/dzhou121/ui"
+	"github.com/therecipe/qt/widgets"
 )
 
 // CursorBox is
@@ -16,6 +17,31 @@ type CursorBox struct {
 type CursorHandler struct {
 	AreaHandler
 	bg *RGBA
+}
+
+type Cursor struct {
+	widget *widgets.QWidget
+}
+
+func initCursorNew() *Cursor {
+	widget := widgets.NewQWidget(nil, 0)
+	return &Cursor{
+		widget: widget,
+	}
+}
+
+func (c *Cursor) update() {
+	row := editor.screen.cursor[0]
+	col := editor.screen.cursor[1]
+	mode := editor.mode
+	if mode == "normal" {
+		c.widget.Resize2(editor.font.width, editor.font.lineHeight)
+		c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.5)")
+	} else if mode == "insert" {
+		c.widget.Resize2(1, editor.font.lineHeight)
+		c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
+	}
+	c.widget.Move2(int(float64(col)*editor.font.truewidth), row*editor.font.lineHeight)
 }
 
 func initCursorBox(width, height int) *CursorBox {

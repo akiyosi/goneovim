@@ -5,6 +5,7 @@ import (
 	"math"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
@@ -39,6 +40,8 @@ type Screen struct {
 	curWins         map[nvim.Window]*Window
 	queueRedrawArea [4]int
 	specialKeys     map[core.Qt__Key]string
+	paintMutex      sync.Mutex
+	redrawMutex     sync.Mutex
 
 	controlModifier core.Qt__KeyboardModifier
 	cmdModifier     core.Qt__KeyboardModifier
@@ -74,14 +77,33 @@ func initScreenNew() *Screen {
 		widget: widget,
 	}
 	widget.ConnectPaintEvent(screen.paint)
+	widget.ConnectCustomEvent(screen.customEvent)
 	screen.initSpecialKeys()
+	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		if editor == nil {
+			return
+		}
+		editor.nvimResize()
+	})
 	return screen
+}
+
+func (s *Screen) customEvent(event *core.QEvent) {
+	if event.Type() == core.QEvent__UpdateRequest {
+		go s.redraw()
+	}
+}
+
+func (s *Screen) redrawRequest() {
+	s.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 }
 
 func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	if editor == nil {
 		return
 	}
+	s.paintMutex.Lock()
+	defer s.paintMutex.Unlock()
 	font := editor.font
 	rect := vqp.M_rect()
 	row := int(math.Ceil(float64(rect.Y()) / float64(font.lineHeight)))
@@ -90,20 +112,17 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
 
 	p := gui.NewQPainter2(s.widget)
-	color := gui.NewQColor()
-	color.SetRgb(255, 255, 255, 255)
-	p.SetPen2(color)
 	p.SetFont(editor.font.fontNew)
 
 	for y := row; y < row+rows; y++ {
 		if y >= editor.rows {
 			continue
 		}
-		// fillHightlight(dp, y, col, cols, [2]int{0, 0})
+		fillHightlight(p, y, col, cols, [2]int{0, 0})
 		drawText(p, y, col, cols, [2]int{0, 0})
 	}
 
-	p.DrawText3(10, 10, "test test")
+	s.drawBorder(p, row, col, rows, cols)
 	p.DestroyQPainter()
 }
 
@@ -170,7 +189,9 @@ func (s *Screen) keyPress(event *gui.QKeyEvent) {
 		return
 	}
 	input := s.convertKey(event.Text(), event.Key(), event.Modifiers())
-	editor.nvim.Input(input)
+	if input != "" {
+		editor.nvim.Input(input)
+	}
 }
 
 func (s *Screen) convertKey(text string, key int, mod core.Qt__KeyboardModifier) string {
@@ -334,7 +355,7 @@ func (s *Screen) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 	// s.drawBorder(dp, row, col, rows, cols)
 }
 
-func (s *Screen) drawBorder(dp *ui.AreaDrawParams, row, col, rows, cols int) {
+func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
 	for _, win := range s.curWins {
 		if win.pos[0]+win.height < row && (win.pos[1]+win.width+1) < col {
 			continue
@@ -343,7 +364,7 @@ func (s *Screen) drawBorder(dp *ui.AreaDrawParams, row, col, rows, cols int) {
 			continue
 		}
 
-		win.drawBorder(dp)
+		win.drawBorder(p)
 	}
 }
 
@@ -573,18 +594,18 @@ func (s *Screen) scroll(args []interface{}) {
 }
 
 func (s *Screen) redraw() {
-	// x := s.queueRedrawArea[0]
-	// y := s.queueRedrawArea[1]
-	// width := s.queueRedrawArea[2] - x
-	// height := s.queueRedrawArea[3] - y
-	// ui.QueueMain(func() {
-	// 	s.area.QueueRedraw(
-	// 		float64(x)*editor.font.truewidth,
-	// 		float64(y*editor.font.lineHeight),
-	// 		float64(width)*editor.font.truewidth,
-	// 		float64(height*editor.font.lineHeight),
-	// 	)
-	// })
+	x := s.queueRedrawArea[0]
+	y := s.queueRedrawArea[1]
+	width := s.queueRedrawArea[2] - x
+	height := s.queueRedrawArea[3] - y
+	if width > 0 && height > 0 {
+		s.widget.Update2(
+			int(float64(x)*editor.font.truewidth),
+			y*editor.font.lineHeight,
+			int(float64(width)*editor.font.truewidth),
+			height*editor.font.lineHeight,
+		)
+	}
 	s.queueRedrawArea[0] = 0
 	s.queueRedrawArea[1] = 0
 	s.queueRedrawArea[2] = 0
@@ -623,7 +644,7 @@ func (s *Screen) cursorWin() *Window {
 	return s.posWin(s.cursor[1], s.cursor[0])
 }
 
-func fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int) {
+func fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 	screen := editor.screen
 	if y >= len(screen.content) {
 		return
@@ -653,22 +674,13 @@ func fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int)
 					end = x
 				} else {
 					// last bg is different; draw the previous and start a new one
-					p := ui.NewPath(ui.Winding)
-					p.AddRectangle(
-						float64(start-pos[1])*editor.font.truewidth,
-						float64((y-pos[0])*editor.font.lineHeight),
-						float64(end-start+1)*editor.font.truewidth,
-						float64(editor.font.lineHeight),
+					p.FillRect5(
+						int(float64(start-pos[1])*editor.font.truewidth),
+						(y-pos[0])*editor.font.lineHeight,
+						int(float64(end-start+1)*editor.font.truewidth),
+						editor.font.lineHeight,
+						gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
 					)
-					p.End()
-					// dp.Context.Fill(p, &ui.Brush{
-					// 	Type: ui.Solid,
-					// 	R:    lastBg.R,
-					// 	G:    lastBg.G,
-					// 	B:    lastBg.B,
-					// 	A:    lastBg.A,
-					// })
-					p.Free()
 
 					// start a new one
 					start = x
@@ -678,22 +690,13 @@ func fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int)
 			}
 		} else {
 			if lastBg != nil {
-				p := ui.NewPath(ui.Winding)
-				p.AddRectangle(
-					float64(start-pos[1])*editor.font.truewidth,
-					float64((y-pos[0])*editor.font.lineHeight),
-					float64(end-start+1)*editor.font.truewidth,
-					float64(editor.font.lineHeight),
+				p.FillRect5(
+					int(float64(start-pos[1])*editor.font.truewidth),
+					(y-pos[0])*editor.font.lineHeight,
+					int(float64(end-start+1)*editor.font.truewidth),
+					editor.font.lineHeight,
+					gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
 				)
-				p.End()
-				// dp.Context.Fill(p, &ui.Brush{
-				// 	Type: ui.Solid,
-				// 	R:    lastBg.R,
-				// 	G:    lastBg.G,
-				// 	B:    lastBg.B,
-				// 	A:    lastBg.A,
-				// })
-				p.Free()
 
 				// start a new one
 				start = x
@@ -703,23 +706,13 @@ func fillHightlight(dp *ui.AreaDrawParams, y int, col int, cols int, pos [2]int)
 		}
 	}
 	if lastBg != nil {
-		p := ui.NewPath(ui.Winding)
-		p.AddRectangle(
-			float64(start-pos[1])*editor.font.truewidth,
-			float64((y-pos[0])*editor.font.lineHeight),
-			float64(end-start+1)*editor.font.truewidth,
-			float64(editor.font.lineHeight),
+		p.FillRect5(
+			int(float64(start-pos[1])*editor.font.truewidth),
+			(y-pos[0])*editor.font.lineHeight,
+			int(float64(end-start+1)*editor.font.truewidth),
+			editor.font.lineHeight,
+			gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
 		)
-		p.End()
-
-		// dp.Context.Fill(p, &ui.Brush{
-		// 	Type: ui.Solid,
-		// 	R:    lastBg.R,
-		// 	G:    lastBg.G,
-		// 	B:    lastBg.B,
-		// 	A:    lastBg.A,
-		// })
-		p.Free()
 	}
 }
 
@@ -729,69 +722,80 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 		return
 	}
 	line := screen.content[y]
-	text := ""
-	var specialChars []int
-	start := -1
-	end := col
+	chars := map[*RGBA][]int{}
+	specialChars := []int{}
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
 			continue
 		}
 		char := line[x]
 		if char == nil {
-			text += " "
 			continue
 		}
 		if char.char == " " {
-			text += " "
 			continue
 		}
 		if char.char == "" {
-			text += " "
 			continue
 		}
 		if !isNormalWidth(char.char) {
-			text += " "
 			specialChars = append(specialChars, x)
 			continue
 		}
-		text += char.char
-		if start == -1 {
-			start = x
+		fg := char.highlight.foreground
+		if fg == nil {
+			fg = editor.Foreground
 		}
-		end = x
+		colorSlice, ok := chars[fg]
+		if !ok {
+			colorSlice = []int{}
+		}
+		colorSlice = append(colorSlice, x)
+		chars[fg] = colorSlice
 	}
-	if start == -1 {
-		return
-	}
-	text = strings.TrimSpace(text)
-	// textLayout := ui.NewTextLayout(text, editor.font.font, -1)
-	shift := editor.font.shift
 
-	for x := start; x <= end; x++ {
-		char := line[x]
-		if char == nil || char.char == " " {
-			continue
+	for fg, colorSlice := range chars {
+		text := ""
+		slice := colorSlice[:]
+		for x := col; x < col+cols; x++ {
+			if len(slice) == 0 {
+				break
+			}
+			index := slice[0]
+			if x < index {
+				text += " "
+				continue
+			}
+			if x == index {
+				text += line[x].char
+				slice = slice[1:]
+			}
 		}
-		// fg := editor.Foreground
-		// if char.highlight.foreground != nil {
-		// 	fg = char.highlight.foreground
-		// }
-		// textLayout.SetColor(x-start, x-start+1, fg.R, fg.G, fg.B, fg.A)
+		if text != "" {
+			p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
+			p.DrawText3(
+				int(float64(col-pos[1])*editor.font.truewidth),
+				(y-pos[0])*editor.font.lineHeight+editor.font.shift,
+				text,
+			)
+		}
 	}
-	p.DrawText3(
-		int(float64(start-pos[1])*editor.font.truewidth),
-		(y-pos[0])*editor.font.lineHeight+editor.font.height+shift,
-		text,
-	)
-	// dp.Context.Text(float64(start-pos[1])*editor.font.truewidth, float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
-	// textLayout.Free()
 
 	for _, x := range specialChars {
 		char := line[x]
 		if char == nil || char.char == " " {
 			continue
 		}
+		fg := char.highlight.foreground
+		if fg == nil {
+			fg = editor.Foreground
+		}
+		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
+		p.DrawText3(
+			int(float64(x-pos[1])*editor.font.truewidth),
+			(y-pos[0])*editor.font.lineHeight+editor.font.shift,
+			char.char,
+		)
 		// fg := editor.Foreground
 		// if char.highlight.foreground != nil {
 		// 	fg = char.highlight.foreground
@@ -801,66 +805,153 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 		// dp.Context.Text(float64(x-pos[1])*editor.font.truewidth, float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
 		// textLayout.Free()
 	}
+
+	// text := ""
+	// var specialChars []int
+	// start := -1
+	// end := col
+	// for x := col; x < col+cols; x++ {
+	// 	if x >= len(line) {
+	// 		continue
+	// 	}
+	// 	char := line[x]
+	// 	if char == nil {
+	// 		text += " "
+	// 		continue
+	// 	}
+	// 	if char.char == " " {
+	// 		text += " "
+	// 		continue
+	// 	}
+	// 	if char.char == "" {
+	// 		text += " "
+	// 		continue
+	// 	}
+	// 	if !isNormalWidth(char.char) {
+	// 		text += " "
+	// 		specialChars = append(specialChars, x)
+	// 		continue
+	// 	}
+	// 	text += char.char
+	// 	if start == -1 {
+	// 		start = x
+	// 	}
+	// 	end = x
+	// }
+	// if start == -1 {
+	// 	return
+	// }
+	// text = strings.TrimSpace(text)
+	// shift := editor.font.shift
+
+	// for x := start; x <= end; x++ {
+	// 	char := line[x]
+	// 	if char == nil || char.char == " " {
+	// 		continue
+	// 	}
+	// 	// fg := editor.Foreground
+	// 	// if char.highlight.foreground != nil {
+	// 	// 	fg = char.highlight.foreground
+	// 	// }
+	// 	// textLayout.SetColor(x-start, x-start+1, fg.R, fg.G, fg.B, fg.A)
+	// }
+	// p.DrawText3(
+	// 	int(float64(start-pos[1])*editor.font.truewidth),
+	// 	(y-pos[0])*editor.font.lineHeight+shift,
+	// 	text,
+	// )
+	// // dp.Context.Text(float64(start-pos[1])*editor.font.truewidth, float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
+	// // textLayout.Free()
+
+	// for _, x := range specialChars {
+	// 	char := line[x]
+	// 	if char == nil || char.char == " " {
+	// 		continue
+	// 	}
+	// 	// fg := editor.Foreground
+	// 	// if char.highlight.foreground != nil {
+	// 	// 	fg = char.highlight.foreground
+	// 	// }
+	// 	// textLayout := ui.NewTextLayout(char.char, editor.font.font, -1)
+	// 	// textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
+	// 	// dp.Context.Text(float64(x-pos[1])*editor.font.truewidth, float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
+	// 	// textLayout.Free()
+	// }
 }
 
-func (w *Window) drawBorder(dp *ui.AreaDrawParams) {
+func (w *Window) drawBorder(p *gui.QPainter) {
 	bg := editor.Background
 	if w.bg != nil {
 		bg = w.bg
 	}
-	drawRect(dp, int(float64(w.pos[1]+w.width)*editor.font.truewidth), w.pos[0]*editor.font.lineHeight, int(editor.font.truewidth), w.height*editor.font.lineHeight, bg)
-
-	// color := newRGBA(0, 0, 0, 1)
-
-	p := ui.NewPath(ui.Winding)
-	p.AddRectangle(
-		(float64(w.width+w.pos[1]))*editor.font.truewidth,
-		float64(w.pos[0]*editor.font.lineHeight),
-		editor.font.truewidth,
-		float64(w.height*editor.font.lineHeight),
+	p.FillRect5(
+		int(float64(w.pos[1]+w.width)*editor.font.truewidth),
+		w.pos[0]*editor.font.lineHeight,
+		int(editor.font.truewidth),
+		w.height*editor.font.lineHeight,
+		gui.NewQColor3(bg.R, bg.G, bg.B, 255),
 	)
-	p.End()
-	stops := []ui.GradientStop{}
-	n := 10
-	for i := 0; i <= n; i++ {
-		s := ui.GradientStop{
-			Pos: float64(i) / float64(n),
-			R:   float64(10) / 255,
-			G:   float64(10) / 255,
-			B:   float64(10) / 255,
-			A:   (1 - (float64(i) / float64(n))) / 2,
-		}
-		stops = append(stops, s)
-	}
-	dp.Context.Fill(p, &ui.Brush{
-		Type:  ui.LinearGradient,
-		X0:    (float64(w.width+w.pos[1]) + 1) * float64(editor.font.truewidth),
-		Y0:    0,
-		X1:    (float64(w.width + w.pos[1])) * float64(editor.font.truewidth),
-		Y1:    0,
-		Stops: stops,
-	})
-	p.Free()
-
-	p = ui.NewPath(ui.Winding)
-	p.AddRectangle((float64(w.width+w.pos[1])+1)*float64(editor.font.truewidth)-1,
-		float64(w.pos[0]*editor.font.lineHeight),
+	p.FillRect5(
+		int(float64(w.pos[1]+1+w.width)*editor.font.truewidth-1),
+		w.pos[0]*editor.font.lineHeight,
 		1,
-		float64(w.height*editor.font.lineHeight),
+		w.height*editor.font.lineHeight,
+		gui.NewQColor3(0, 0, 0, 255),
 	)
+
+	// drawRect(dp, int(float64(w.pos[1]+w.width)*editor.font.truewidth), w.pos[0]*editor.font.lineHeight, int(editor.font.truewidth), w.height*editor.font.lineHeight, bg)
+
+	// // color := newRGBA(0, 0, 0, 1)
+
+	// p := ui.NewPath(ui.Winding)
 	// p.AddRectangle(
-	// 	0,
-	// 	float64(w.height*editor.font.lineHeight)-1,
-	// 	float64((w.width+1)*editor.font.width),
-	// 	1,
+	// 	(float64(w.width+w.pos[1]))*editor.font.truewidth,
+	// 	float64(w.pos[0]*editor.font.lineHeight),
+	// 	editor.font.truewidth,
+	// 	float64(w.height*editor.font.lineHeight),
 	// )
-	p.End()
+	// p.End()
+	// stops := []ui.GradientStop{}
+	// n := 10
+	// for i := 0; i <= n; i++ {
+	// 	s := ui.GradientStop{
+	// 		Pos: float64(i) / float64(n),
+	// 		R:   float64(10) / 255,
+	// 		G:   float64(10) / 255,
+	// 		B:   float64(10) / 255,
+	// 		A:   (1 - (float64(i) / float64(n))) / 2,
+	// 	}
+	// 	stops = append(stops, s)
+	// }
 	// dp.Context.Fill(p, &ui.Brush{
-	// 	Type: ui.Solid,
-	// 	R:    color.R,
-	// 	G:    color.G,
-	// 	B:    color.B,
-	// 	A:    color.A,
+	// 	Type:  ui.LinearGradient,
+	// 	X0:    (float64(w.width+w.pos[1]) + 1) * float64(editor.font.truewidth),
+	// 	Y0:    0,
+	// 	X1:    (float64(w.width + w.pos[1])) * float64(editor.font.truewidth),
+	// 	Y1:    0,
+	// 	Stops: stops,
 	// })
-	p.Free()
+	// p.Free()
+
+	// p = ui.NewPath(ui.Winding)
+	// p.AddRectangle((float64(w.width+w.pos[1])+1)*float64(editor.font.truewidth)-1,
+	// 	float64(w.pos[0]*editor.font.lineHeight),
+	// 	1,
+	// 	float64(w.height*editor.font.lineHeight),
+	// )
+	// // p.AddRectangle(
+	// // 	0,
+	// // 	float64(w.height*editor.font.lineHeight)-1,
+	// // 	float64((w.width+1)*editor.font.width),
+	// // 	1,
+	// // )
+	// p.End()
+	// // dp.Context.Fill(p, &ui.Brush{
+	// // 	Type: ui.Solid,
+	// // 	R:    color.R,
+	// // 	G:    color.G,
+	// // 	B:    color.B,
+	// // 	A:    color.A,
+	// // })
+	// p.Free()
 }

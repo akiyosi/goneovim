@@ -34,6 +34,7 @@ func initLocpopup() *Locpopup {
 }
 
 func (l *Locpopup) show(loc map[string]interface{}) {
+	return
 	font := editor.font
 	smallerFont := editor.smallerFont
 	locType := loc["type"].(string)

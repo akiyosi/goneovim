@@ -27,6 +27,10 @@ func (rgba *RGBA) String() string {
 	return fmt.Sprintf("rgba(%d, %d, %d, %f)", rgba.R, rgba.G, rgba.B, rgba.A)
 }
 
+func (rgba *RGBA) Hex() string {
+	return fmt.Sprintf("#%02x%02x%02x", uint8(rgba.R), uint8(rgba.G), uint8(rgba.B))
+}
+
 func calcColor(c int) *RGBA {
 	b := c & 255
 	g := (c >> 8) & 255
