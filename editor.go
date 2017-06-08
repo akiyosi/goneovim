@@ -521,7 +521,8 @@ func InitEditorNew() {
 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	editor.nvim.Command("runtime! ginit.vim")
 	editor.nvim.Command("let g:gonvim_running=1")
-	fzf.RegisterPlugin(editor.nvim)
+	fzfShim := fzf.RegisterPlugin(editor.nvim)
+	editor.finder.fzfShim = fzfShim
 	locpopup.RegisterPlugin(editor.nvim)
 
 	go func() {

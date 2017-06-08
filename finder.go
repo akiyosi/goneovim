@@ -6,9 +6,10 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
+	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
@@ -29,14 +30,16 @@ type Finder struct {
 	max         int
 	showTotal   int
 	pattern     *widgets.QLabel
+	fzfShim     *fzf.Shim
 }
 
 // FinderResultItem is the result shown
 type FinderResultItem struct {
-	icon   *svg.QSvgWidget
-	base   *widgets.QLabel
-	folder *widgets.QLabel
-	widget *widgets.QWidget
+	icon *svg.QSvgWidget
+	base *widgets.QLabel
+	// folder *widgets.QLabel
+	widget   *widgets.QWidget
+	selected bool
 }
 
 // FinderPattern is
@@ -56,14 +59,20 @@ func initFinder() *Finder {
 	widget.SetLayout(mainLayout)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetFixedWidth(width)
-	widget.SetStyleSheet("background-color: rgba(14, 17, 18, 1); color: rgba(205, 211, 222, 1);")
+	widget.SetStyleSheet(".QWidget {background-color: rgba(21, 25, 27, 1); } * { color: rgba(205, 211, 222, 1); }")
+	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+	shadow.SetBlurRadius(20)
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, 255))
+	shadow.SetOffset3(0, 2)
+	widget.SetGraphicsEffect(shadow)
 
 	resultMainLayout := widgets.NewQHBoxLayout()
 	resultMainLayout.SetContentsMargins(0, 0, 0, 0)
 	resultMainLayout.SetSpacing(0)
 
+	padding := 8
 	resultLayout := widgets.NewQVBoxLayout()
-	resultLayout.SetContentsMargins(10, 0, 10, 0)
+	resultLayout.SetContentsMargins(0, 0, 0, 0)
 	resultLayout.SetSpacing(0)
 	resultWidget := widgets.NewQWidget(nil, 0)
 	resultWidget.SetLayout(resultLayout)
@@ -83,7 +92,7 @@ func initFinder() *Finder {
 	resultMainWidget.SetLayout(resultMainLayout)
 
 	pattern := widgets.NewQLabel(nil, 0)
-	pattern.SetContentsMargins(5, 5, 5, 5)
+	pattern.SetContentsMargins(padding, padding, padding, padding)
 	pattern.SetStyleSheet("background-color: #3c3c3c;")
 	patternLayout := widgets.NewQVBoxLayout()
 	patternLayout.AddWidget(pattern, 0, 0)
@@ -91,7 +100,7 @@ func initFinder() *Finder {
 	patternLayout.SetSpacing(0)
 	patternWidget := widgets.NewQWidget(nil, 0)
 	patternWidget.SetLayout(patternLayout)
-	patternWidget.SetContentsMargins(5, 5, 5, 1)
+	patternWidget.SetContentsMargins(padding, padding, padding, padding)
 
 	mainLayout.AddWidget(patternWidget, 0, 0)
 	mainLayout.AddWidget(resultMainWidget, 0, 0)
@@ -100,27 +109,29 @@ func initFinder() *Finder {
 	max := 20
 	for i := 0; i < max; i++ {
 		itemWidget := widgets.NewQWidget(nil, 0)
-		itemWidget.SetContentsMargins(10, 0, 10, 0)
-		itemLayout := newVFlowLayout(10)
+		itemWidget.SetContentsMargins(0, 0, 0, 0)
+		itemLayout := newVFlowLayout(padding, padding*2)
 		itemWidget.SetLayout(itemLayout)
 		resultLayout.AddWidget(itemWidget, 0, 0)
 		icon := svg.NewQSvgWidget(nil)
 		icon.SetFixedWidth(14)
 		icon.SetFixedHeight(14)
+		icon.SetContentsMargins(0, 0, 0, 0)
 		base := widgets.NewQLabel(nil, 0)
 		base.SetText("base")
-		base.SetContentsMargins(0, 10, 0, 10)
-		folder := widgets.NewQLabel(nil, 0)
-		folder.SetContentsMargins(0, 10, 0, 10)
-		folder.SetStyleSheet("color: rgba(131, 131, 131, 1);")
+		base.SetContentsMargins(0, padding, 0, padding)
+		base.SetStyleSheet("background-color: none;")
+		// folder := widgets.NewQLabel(nil, 0)
+		// folder.SetContentsMargins(0, 10, 0, 10)
+		// folder.SetStyleSheet("color: rgba(131, 131, 131, 1);")
 		itemLayout.AddWidget(icon)
 		itemLayout.AddWidget(base)
-		itemLayout.AddWidget(folder)
+		// itemLayout.AddWidget(folder)
 		resultItem := &FinderResultItem{
 			widget: itemWidget,
 			icon:   icon,
 			base:   base,
-			folder: folder,
+			// folder: folder,
 		}
 		resultItems = append(resultItems, resultItem)
 	}
@@ -172,6 +183,11 @@ func (f *Finder) resize() {
 	f.widget.Move2(x, 0)
 	itemHeight := f.resultItems[0].widget.SizeHint().Height()
 	f.showTotal = int(float64(editor.screen.height)/float64(itemHeight)*0.6) - 1
+	f.fzfShim.SetMax(f.showTotal)
+
+	for i := f.showTotal; i < len(f.resultItems); i++ {
+		f.resultItems[i].widget.Hide()
+	}
 }
 
 func (f *Finder) show() {
@@ -204,8 +220,28 @@ func (f *Finder) cursorPos(args []interface{}) {
 	// })
 }
 
+func (f *Finder) showSelected(selected int) {
+	for i, resultItem := range f.resultItems {
+		if i >= f.showTotal {
+			break
+		}
+		if selected == i {
+			if !resultItem.selected {
+				resultItem.selected = true
+				resultItem.widget.SetStyleSheet(fmt.Sprintf(".QWidget {background-color: %s;}", editor.selectedBg))
+			}
+		} else {
+			if resultItem.selected {
+				resultItem.selected = false
+				resultItem.widget.SetStyleSheet("")
+			}
+		}
+	}
+}
+
 func (f *Finder) selectResult(args []interface{}) {
-	// selected := reflectToInt(args[0])
+	selected := reflectToInt(args[0])
+	f.showSelected(selected)
 	// if f.resultType == "ag" {
 	// 	n := 0
 	// 	for i := 0; i <= selected; i++ {
@@ -263,7 +299,7 @@ func (f *Finder) showResult(args []interface{}) {
 	}
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	// selected := reflectToInt(args[1])
+	selected := reflectToInt(args[1])
 	match := [][]int{}
 	for _, i := range args[2].([]interface{}) {
 		m := []int{}
@@ -281,7 +317,10 @@ func (f *Finder) showResult(args []interface{}) {
 
 	rawItems := args[0].([]interface{})
 	for i, resultItem := range f.resultItems {
-		if i >= len(rawItems) || i >= f.showTotal {
+		if i >= f.showTotal {
+			break
+		}
+		if i >= len(rawItems) {
 			resultItem.widget.Hide()
 			continue
 		}
@@ -292,14 +331,19 @@ func (f *Finder) showResult(args []interface{}) {
 			resultItem.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 			resultItem.icon.Show()
 			resultItem.base.SetText(formatPath(text, match[i]))
+		} else if resultType == "dir" {
+			svgContent := getSvg("folder", nil)
+			resultItem.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+			resultItem.icon.Show()
+			resultItem.base.SetText(formatPath(text, match[i]))
 		} else {
 			resultItem.base.SetText(text)
 			resultItem.icon.Hide()
-			resultItem.folder.Hide()
+			// resultItem.folder.Hide()
 		}
 		resultItem.widget.Show()
 	}
-	time.Sleep(50 * time.Millisecond)
+	f.showSelected(selected)
 	f.widget.Hide()
 	f.widget.Show()
 

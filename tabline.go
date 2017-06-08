@@ -35,7 +35,7 @@ type Tab struct {
 	file      *widgets.QLabel
 }
 
-func newVFlowLayout(spacing int) *widgets.QLayout {
+func newVFlowLayout(spacing int, padding int) *widgets.QLayout {
 	layout := widgets.NewQLayout2()
 	items := []*widgets.QLayoutItem{}
 	layout.ConnectSizeHint(func() *core.QSize {
@@ -49,9 +49,10 @@ func newVFlowLayout(spacing int) *widgets.QLayout {
 		items = append(items, item)
 	})
 	layout.ConnectSetGeometry(func(r *core.QRect) {
-		x := 0
+		x := padding
 		sizes := [][]int{}
 		maxHeight := 0
+		totalWidth := r.Width()
 		for _, item := range items {
 			sizeHint := item.SizeHint()
 			width := sizeHint.Width()
@@ -69,6 +70,11 @@ func newVFlowLayout(spacing int) *widgets.QLayout {
 			y := 0
 			if height != maxHeight {
 				y = (maxHeight - height) / 2
+			}
+			if x+width+padding > totalWidth {
+				width = totalWidth - x - padding
+				item.SetGeometry(core.NewQRect4(x, y, width, height))
+				break
 			}
 			item.SetGeometry(core.NewQRect4(x, y, width, height))
 			x += width + spacing
