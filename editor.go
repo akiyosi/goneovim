@@ -451,6 +451,8 @@ func InitEditorNew() {
 	cursor.widget.SetParent(screen.widget)
 	popup := initPopupmenuNew(font)
 	popup.widget.SetParent(screen.widget)
+	finder := initFinder()
+	finder.widget.SetParent(screen.widget)
 	window.ConnectKeyPressEvent(screen.keyPress)
 
 	layout := widgets.NewQVBoxLayout()
@@ -482,6 +484,7 @@ func InitEditorNew() {
 		mode:             "normal",
 		close:            make(chan bool),
 		popup:            popup,
+		finder:           finder,
 		tabline:          tabline,
 		width:            width,
 		height:           height,

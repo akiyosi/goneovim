@@ -35,6 +35,60 @@ type Tab struct {
 	file      *widgets.QLabel
 }
 
+func newVFlowLayout(spacing int) *widgets.QLayout {
+	layout := widgets.NewQLayout2()
+	items := []*widgets.QLayoutItem{}
+	layout.ConnectSizeHint(func() *core.QSize {
+		size := core.NewQSize()
+		for _, item := range items {
+			size = size.ExpandedTo(item.MinimumSize())
+		}
+		return size
+	})
+	layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
+		items = append(items, item)
+	})
+	layout.ConnectSetGeometry(func(r *core.QRect) {
+		x := 0
+		sizes := [][]int{}
+		maxHeight := 0
+		for _, item := range items {
+			sizeHint := item.SizeHint()
+			width := sizeHint.Width()
+			height := sizeHint.Height()
+			size := []int{width, height}
+			sizes = append(sizes, size)
+			if height > maxHeight {
+				maxHeight = height
+			}
+		}
+		for i, item := range items {
+			size := sizes[i]
+			width := size[0]
+			height := size[1]
+			y := 0
+			if height != maxHeight {
+				y = (maxHeight - height) / 2
+			}
+			item.SetGeometry(core.NewQRect4(x, y, width, height))
+			x += width + spacing
+		}
+	})
+	layout.ConnectItemAt(func(index int) *widgets.QLayoutItem {
+		if index < len(items) {
+			return items[index]
+		}
+		return nil
+	})
+	layout.ConnectTakeAt(func(index int) *widgets.QLayoutItem {
+		if index < len(items) {
+			return items[index]
+		}
+		return nil
+	})
+	return layout
+}
+
 func initTablineNew(height int) *Tabline {
 	width := 210
 	widget := widgets.NewQWidget(nil, 0)

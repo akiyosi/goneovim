@@ -1,67 +1,182 @@
 package gonvim
 
 import (
+	"fmt"
+	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
+	"time"
+
+	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/svg"
+	"github.com/therecipe/qt/widgets"
 )
 
 // Finder is a fuzzy finder window
 type Finder struct {
 	// box         *ui.Box
 	// pattern     *SpanHandler
+	widget      *widgets.QWidget
 	patternText string
-	items       []*FinderItem
-	mutex       *sync.Mutex
+	resultItems []*FinderResultItem
+	mutex       sync.Mutex
 	width       int
-	// cursor      *CursorHandler
-	resultType string
-	agTypes    []string
-	hidden     bool
+	cursor      *widgets.QWidget
+	resultType  string
+	agTypes     []string
+	hidden      bool
+	max         int
+	showTotal   int
+	pattern     *widgets.QLabel
 }
 
-// FinderItem is the result shown
-type FinderItem struct {
-	icon *Svg
+// FinderResultItem is the result shown
+type FinderResultItem struct {
+	icon   *svg.QSvgWidget
+	base   *widgets.QLabel
+	folder *widgets.QLabel
+	widget *widgets.QWidget
 }
 
-// func initFinder() *Finder {
-// 	width := 600
+// FinderPattern is
+type FinderPattern struct {
+}
 
-// 	box := ui.NewHorizontalBox()
-// 	box.SetSize(width, 500)
+// FinderResult is
+type FinderResult struct {
+}
 
-// 	patternHandler := &SpanHandler{}
-// 	pattern := ui.NewArea(patternHandler)
-// 	patternHandler.area = pattern
-// 	patternHandler.paddingLeft = 10
-// 	patternHandler.paddingRight = 10
-// 	patternHandler.paddingTop = 8
-// 	patternHandler.paddingBottom = 8
+func initFinder() *Finder {
+	width := 600
+	mainLayout := widgets.NewQVBoxLayout()
+	mainLayout.SetContentsMargins(0, 0, 0, 0)
+	mainLayout.SetSpacing(0)
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetLayout(mainLayout)
+	widget.SetContentsMargins(0, 0, 0, 0)
+	widget.SetFixedWidth(width)
+	widget.SetStyleSheet("background-color: rgba(14, 17, 18, 1); color: rgba(205, 211, 222, 1);")
 
-// 	cursor := &CursorHandler{}
-// 	cursorArea := ui.NewArea(cursor)
-// 	cursor.area = cursorArea
-// 	cursor.bg = newRGBA(255, 255, 255, 0.9)
+	resultMainLayout := widgets.NewQHBoxLayout()
+	resultMainLayout.SetContentsMargins(0, 0, 0, 0)
+	resultMainLayout.SetSpacing(0)
 
-// 	box.Append(pattern, false)
-// 	box.Append(cursorArea, false)
-// 	box.SetShadow(0, 2, 0, 0, 0, 1, 4)
-// 	cursorArea.Hide()
-// 	box.Hide()
+	resultLayout := widgets.NewQVBoxLayout()
+	resultLayout.SetContentsMargins(10, 0, 10, 0)
+	resultLayout.SetSpacing(0)
+	resultWidget := widgets.NewQWidget(nil, 0)
+	resultWidget.SetLayout(resultLayout)
+	resultWidget.SetContentsMargins(0, 0, 0, 0)
 
-// 	f := &Finder{
-// 		box:     box,
-// 		pattern: patternHandler,
-// 		items:   []*FinderItem{},
-// 		mutex:   &sync.Mutex{},
-// 		width:   width,
-// 		cursor:  cursor,
-// 		hidden:  true,
-// 	}
-// 	return f
-// }
+	scrollCol := widgets.NewQWidget(nil, 0)
+	scrollCol.SetContentsMargins(0, 0, 0, 0)
+	scrollCol.SetFixedWidth(5)
+	scrollBar := widgets.NewQWidget(scrollCol, 0)
+	scrollBar.SetFixedWidth(5)
+	scrollBar.SetStyleSheet("background-color: rgba(255,255,255,0.5);")
+
+	resultMainWidget := widgets.NewQWidget(nil, 0)
+	resultMainWidget.SetContentsMargins(0, 0, 0, 0)
+	resultMainLayout.AddWidget(resultWidget, 0, 0)
+	resultMainLayout.AddWidget(scrollCol, 0, 0)
+	resultMainWidget.SetLayout(resultMainLayout)
+
+	pattern := widgets.NewQLabel(nil, 0)
+	pattern.SetContentsMargins(5, 5, 5, 5)
+	pattern.SetStyleSheet("background-color: #3c3c3c;")
+	patternLayout := widgets.NewQVBoxLayout()
+	patternLayout.AddWidget(pattern, 0, 0)
+	patternLayout.SetContentsMargins(0, 0, 0, 0)
+	patternLayout.SetSpacing(0)
+	patternWidget := widgets.NewQWidget(nil, 0)
+	patternWidget.SetLayout(patternLayout)
+	patternWidget.SetContentsMargins(5, 5, 5, 1)
+
+	mainLayout.AddWidget(patternWidget, 0, 0)
+	mainLayout.AddWidget(resultMainWidget, 0, 0)
+
+	resultItems := []*FinderResultItem{}
+	max := 20
+	for i := 0; i < max; i++ {
+		itemWidget := widgets.NewQWidget(nil, 0)
+		itemWidget.SetContentsMargins(10, 0, 10, 0)
+		itemLayout := newVFlowLayout(10)
+		itemWidget.SetLayout(itemLayout)
+		resultLayout.AddWidget(itemWidget, 0, 0)
+		icon := svg.NewQSvgWidget(nil)
+		icon.SetFixedWidth(14)
+		icon.SetFixedHeight(14)
+		base := widgets.NewQLabel(nil, 0)
+		base.SetText("base")
+		base.SetContentsMargins(0, 10, 0, 10)
+		folder := widgets.NewQLabel(nil, 0)
+		folder.SetContentsMargins(0, 10, 0, 10)
+		folder.SetStyleSheet("color: rgba(131, 131, 131, 1);")
+		itemLayout.AddWidget(icon)
+		itemLayout.AddWidget(base)
+		itemLayout.AddWidget(folder)
+		resultItem := &FinderResultItem{
+			widget: itemWidget,
+			icon:   icon,
+			base:   base,
+			folder: folder,
+		}
+		resultItems = append(resultItems, resultItem)
+	}
+
+	// 	box := ui.NewHorizontalBox()
+	// 	box.SetSize(width, 500)
+
+	// 	patternHandler := &SpanHandler{}
+	// 	pattern := ui.NewArea(patternHandler)
+	// 	patternHandler.area = pattern
+	// 	patternHandler.paddingLeft = 10
+	// 	patternHandler.paddingRight = 10
+	// 	patternHandler.paddingTop = 8
+	// 	patternHandler.paddingBottom = 8
+
+	// 	cursor := &CursorHandler{}
+	// 	cursorArea := ui.NewArea(cursor)
+	// 	cursor.area = cursorArea
+	// 	cursor.bg = newRGBA(255, 255, 255, 0.9)
+
+	// 	box.Append(pattern, false)
+	// 	box.Append(cursorArea, false)
+	// 	box.SetShadow(0, 2, 0, 0, 0, 1, 4)
+	// 	cursorArea.Hide()
+	// 	box.Hide()
+
+	// 	f := &Finder{
+	// 		box:     box,
+	// 		pattern: patternHandler,
+	// 		items:   []*FinderItem{},
+	// 		mutex:   &sync.Mutex{},
+	// 		width:   width,
+	// 		cursor:  cursor,
+	// 		hidden:  true,
+	// 	}
+	// 	return f
+	widget.Hide()
+	return &Finder{
+		width:       width,
+		widget:      widget,
+		resultItems: resultItems,
+		max:         max,
+		pattern:     pattern,
+	}
+}
+
+func (f *Finder) resize() {
+	x := (editor.screen.width - f.width) / 2
+	f.widget.Move2(x, 0)
+	itemHeight := f.resultItems[0].widget.SizeHint().Height()
+	f.showTotal = int(float64(editor.screen.height)/float64(itemHeight)*0.6) - 1
+}
 
 func (f *Finder) show() {
 	f.hidden = false
+	// f.widget.Show()
 	// ui.QueueMain(func() {
 	// 	f.box.Show()
 	// })
@@ -69,6 +184,7 @@ func (f *Finder) show() {
 
 func (f *Finder) hide() {
 	f.hidden = true
+	f.widget.Hide()
 	// ui.QueueMain(func() {
 	// 	f.box.Hide()
 	// 	f.pattern.area.Hide()
@@ -115,7 +231,8 @@ func (f *Finder) selectResult(args []interface{}) {
 }
 
 func (f *Finder) showPattern(args []interface{}) {
-	// p := args[0].(string)
+	p := args[0].(string)
+	f.pattern.SetText(p)
 	// _, height := f.pattern.getSize()
 	// f.cursor.setSize(1, editor.font.lineHeight)
 	// f.pattern.area.SetSize(f.width, height)
@@ -141,12 +258,74 @@ func (f *Finder) rePosition() {
 }
 
 func (f *Finder) showResult(args []interface{}) {
-	// if f.hidden {
-	// 	return
-	// }
-	// f.mutex.Lock()
-	// defer f.mutex.Unlock()
+	if f.hidden {
+		return
+	}
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
 	// selected := reflectToInt(args[1])
+	match := [][]int{}
+	for _, i := range args[2].([]interface{}) {
+		m := []int{}
+		for _, n := range i.([]interface{}) {
+			m = append(m, reflectToInt(n))
+		}
+		match = append(match, m)
+	}
+
+	resultType := ""
+	if args[3] != nil {
+		resultType = args[3].(string)
+	}
+	// f.resultType = resultType
+
+	rawItems := args[0].([]interface{})
+	for i, resultItem := range f.resultItems {
+		if i >= len(rawItems) || i >= f.showTotal {
+			resultItem.widget.Hide()
+			continue
+		}
+		item := rawItems[i]
+		text := item.(string)
+		if resultType == "file" {
+			svgContent := getSvg(getFileType(text), nil)
+			resultItem.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+			resultItem.icon.Show()
+			resultItem.base.SetText(formatPath(text, match[i]))
+		} else {
+			resultItem.base.SetText(text)
+			resultItem.icon.Hide()
+			resultItem.folder.Hide()
+		}
+		resultItem.widget.Show()
+	}
+	time.Sleep(50 * time.Millisecond)
+	f.widget.Hide()
+	f.widget.Show()
+
+	// for i, item := range args[0].([]interface{}) {
+	// 	text := item.(string)
+	// 	resultItem := f.resultItems[i]
+
+	// 	if resultType == "file" {
+	// 		svgContent := getSvg(getFileType(text), nil)
+	// 		resultItem.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	// 		resultItem.icon.Show()
+	// 		resultItem.base.SetText(formatPath(text, match[i]))
+	// 		// dir := filepath.Dir(text)
+	// 		// if dir != "." {
+	// 		// 	// resultItem.folder.SetText(dir)
+	// 		// 	resultItem.folder.SetText(filepath.Dir(text))
+	// 		// 	resultItem.folder.Show()
+	// 		// } else {
+	// 		// 	resultItem.folder.Hide()
+	// 		// }
+	// 	} else {
+	// 		resultItem.base.SetText(text)
+	// 		resultItem.icon.Hide()
+	// 		resultItem.folder.Hide()
+	// 	}
+	// }
 
 	// match := [][]int{}
 	// for _, i := range args[2].([]interface{}) {
@@ -288,4 +467,51 @@ func (f *Finder) showResult(args []interface{}) {
 	// ui.QueueMain(func() {
 	// 	f.box.Show()
 	// })
+}
+
+func formatPath(path string, matchIndex []int) string {
+	sort.Ints(matchIndex)
+
+	color := ""
+	if editor != nil && editor.matchFg != nil {
+		color = editor.matchFg.Hex()
+	}
+
+	dirText := ""
+	dir := filepath.Dir(path)
+	if dir == "." {
+		dir = ""
+	}
+	if dir != "" {
+		i := strings.Index(path, dir)
+		if i != -1 {
+			for j, char := range dir {
+				if color != "" && len(matchIndex) > 0 && i+j == matchIndex[0] {
+					dirText += fmt.Sprintf("<font color='%s'>%s</font>", color, string(char))
+					matchIndex = matchIndex[1:]
+				} else {
+					dirText += string(char)
+				}
+			}
+		}
+	}
+
+	baseText := ""
+	base := filepath.Base(path)
+	if base != "" {
+		i := strings.LastIndex(path, base)
+		if i != -1 {
+			for j, char := range base {
+				if color != "" && len(matchIndex) > 0 && i+j == matchIndex[0] {
+					baseText += fmt.Sprintf("<font color='%s'>%s</font>", color, string(char))
+					matchIndex = matchIndex[1:]
+				} else {
+					baseText += string(char)
+				}
+			}
+		}
+	}
+
+	text := fmt.Sprintf("%s <font color='#838383'>%s</font>", baseText, dirText)
+	return text
 }

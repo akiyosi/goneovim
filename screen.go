@@ -86,6 +86,7 @@ func initScreenNew() *Screen {
 		screen.width = width
 		screen.height = height
 		editor.nvimResize()
+		editor.finder.resize()
 	})
 	return screen
 }
