@@ -120,7 +120,7 @@ func initFinder() *Finder {
 		base := widgets.NewQLabel(nil, 0)
 		base.SetText("base")
 		base.SetContentsMargins(0, padding, 0, padding)
-		base.SetStyleSheet("background-color: none;")
+		base.SetStyleSheet("background-color: none; white-space: pre-wrap;")
 		// folder := widgets.NewQLabel(nil, 0)
 		// folder.SetContentsMargins(0, 10, 0, 10)
 		// folder.SetStyleSheet("color: rgba(131, 131, 131, 1);")
@@ -330,14 +330,14 @@ func (f *Finder) showResult(args []interface{}) {
 			svgContent := getSvg(getFileType(text), nil)
 			resultItem.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 			resultItem.icon.Show()
-			resultItem.base.SetText(formatPath(text, match[i]))
+			resultItem.base.SetText(formatText(text, match[i], true))
 		} else if resultType == "dir" {
 			svgContent := getSvg("folder", nil)
 			resultItem.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 			resultItem.icon.Show()
-			resultItem.base.SetText(formatPath(text, match[i]))
+			resultItem.base.SetText(formatText(text, match[i], true))
 		} else {
-			resultItem.base.SetText(text)
+			resultItem.base.SetText(formatText(text, match[i], false))
 			resultItem.icon.Hide()
 			// resultItem.folder.Hide()
 		}
@@ -513,7 +513,7 @@ func (f *Finder) showResult(args []interface{}) {
 	// })
 }
 
-func formatPath(path string, matchIndex []int) string {
+func formatText(text string, matchIndex []int, path bool) string {
 	sort.Ints(matchIndex)
 
 	color := ""
@@ -521,13 +521,31 @@ func formatPath(path string, matchIndex []int) string {
 		color = editor.matchFg.Hex()
 	}
 
+	match := len(matchIndex) > 0
+	if !path {
+		formattedText := ""
+		for i, char := range text {
+			if color != "" && len(matchIndex) > 0 && i == matchIndex[0] {
+				formattedText += fmt.Sprintf("<font color='%s'>%s</font>", color, string(char))
+				matchIndex = matchIndex[1:]
+			} else if color != "" && match && string(char) == " " {
+				formattedText += "&nbsp;"
+			} else if color != "" && match && string(char) == "\t" {
+				formattedText += "&nbsp;&nbsp;&nbsp;&nbsp;"
+			} else {
+				formattedText += string(char)
+			}
+		}
+		return formattedText
+	}
+
 	dirText := ""
-	dir := filepath.Dir(path)
+	dir := filepath.Dir(text)
 	if dir == "." {
 		dir = ""
 	}
 	if dir != "" {
-		i := strings.Index(path, dir)
+		i := strings.Index(text, dir)
 		if i != -1 {
 			for j, char := range dir {
 				if color != "" && len(matchIndex) > 0 && i+j == matchIndex[0] {
@@ -541,9 +559,9 @@ func formatPath(path string, matchIndex []int) string {
 	}
 
 	baseText := ""
-	base := filepath.Base(path)
+	base := filepath.Base(text)
 	if base != "" {
-		i := strings.LastIndex(path, base)
+		i := strings.LastIndex(text, base)
 		if i != -1 {
 			for j, char := range base {
 				if color != "" && len(matchIndex) > 0 && i+j == matchIndex[0] {
@@ -556,6 +574,5 @@ func formatPath(path string, matchIndex []int) string {
 		}
 	}
 
-	text := fmt.Sprintf("%s <font color='#838383'>%s</font>", baseText, dirText)
-	return text
+	return fmt.Sprintf("%s <font color='#838383'>%s</font>", baseText, dirText)
 }

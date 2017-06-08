@@ -26,6 +26,7 @@ type PopupMenu struct {
 type PopupItem struct {
 	kindLable *widgets.QLabel
 	menuLable *widgets.QLabel
+	selected  bool
 }
 
 func initPopupmenuNew(font *Font) *PopupMenu {
@@ -46,7 +47,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetLayout(mainLayout)
 	widget.SetContentsMargins(0, 0, 0, 0)
-	widget.SetStyleSheet("background-color: rgba(14, 17, 18, 1);")
+	widget.SetStyleSheet("background-color: rgba(14, 17, 18, 1); color: rgba(205, 211, 222, 1);")
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(20)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, 255))
@@ -56,10 +57,10 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	var popupItems []*PopupItem
 	for i := 0; i < max; i++ {
 		kind := widgets.NewQLabel(nil, 0)
-		kind.SetContentsMargins(10, 10, 10, 10)
+		kind.SetContentsMargins(8, 8, 8, 8)
 		kind.SetFont(font.fontNew)
 		menu := widgets.NewQLabel(nil, 0)
-		menu.SetContentsMargins(10, 10, 10, 10)
+		menu.SetContentsMargins(8, 8, 8, 8)
 		menu.SetFont(font.fontNew)
 		layout.AddWidget(kind, i, 0, 0)
 		layout.AddWidget(menu, i, 1, 0)
@@ -163,7 +164,7 @@ func (p *PopupMenu) show(args []interface{}) {
 	}
 
 	p.widget.Move2(
-		int(float64(col)*editor.font.truewidth)-popupItems[0].kindLable.Width()-10,
+		int(float64(col)*editor.font.truewidth)-popupItems[0].kindLable.Width()-8,
 		(row+1)*editor.font.lineHeight,
 	)
 	p.widget.Show()
@@ -247,14 +248,20 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 	if selected >= 0 && selected-p.top < 0 {
 		p.scroll(-1)
 	}
-	fg := newRGBA(205, 211, 222, 1)
 	for i := 0; i < p.showTotal; i++ {
 		popupItem := p.items[i]
-		bg := newRGBA(14, 17, 18, 1)
 		if selected == i+p.top {
-			bg = editor.selectedBg
+			if !popupItem.selected {
+				popupItem.selected = true
+				bg := editor.selectedBg
+				popupItem.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s;", bg.String()))
+			}
+		} else {
+			if popupItem.selected {
+				popupItem.selected = false
+				popupItem.menuLable.SetStyleSheet("")
+			}
 		}
-		popupItem.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", bg.String(), fg.String()))
 	}
 }
 
@@ -277,12 +284,20 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 	kindText := item[1].(string)
 	p.setKind(kindText, selected)
 
-	fg := newRGBA(205, 211, 222, 1)
-	bg := newRGBA(14, 17, 18, 1)
+	// fg := newRGBA(205, 211, 222, 1)
+	// bg := newRGBA(14, 17, 18, 1)
 	if selected {
-		bg = editor.selectedBg
+		if !p.selected {
+			p.selected = true
+			bg := editor.selectedBg
+			p.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s;", bg.String()))
+		}
+	} else {
+		if p.selected {
+			p.selected = false
+			p.menuLable.SetStyleSheet("")
+		}
 	}
-	p.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", bg.String(), fg.String()))
 	p.menuLable.SetText(text)
 }
 

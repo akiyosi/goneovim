@@ -6,7 +6,6 @@ import (
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
@@ -138,27 +137,6 @@ func initTablineNew(height int) *Tabline {
 		background-color: rgba(24, 29, 34, 1);
 	}
 	`)
-	widget.ConnectPaintEvent(func(event *gui.QPaintEvent) {
-		rect := event.M_rect()
-		width := rect.Width()
-		height := rect.Height()
-		p := gui.NewQPainter2(widget)
-		p.FillRect5(
-			0,
-			0,
-			width,
-			height,
-			gui.NewQColor3(24, 29, 34, 255),
-		)
-		p.FillRect5(
-			0,
-			height-2,
-			width,
-			2,
-			gui.NewQColor3(0, 0, 0, 255),
-		)
-		p.DestroyQPainter()
-	})
 
 	tabs := []*Tab{}
 	for i := 0; i < 10; i++ {
