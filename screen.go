@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -27,11 +26,9 @@ type Window struct {
 
 // Screen is the main editor area
 type Screen struct {
-	AreaHandler
 	width           int
 	height          int
 	widget          *widgets.QWidget
-	box             *ui.Box
 	wins            map[nvim.Window]*Window
 	cursor          [2]int
 	lastCursor      [2]int
@@ -56,19 +53,19 @@ type Screen struct {
 }
 
 func initScreen(width, height int) *Screen {
-	box := ui.NewHorizontalBox()
+	// box := ui.NewHorizontalBox()
 	screen := &Screen{
-		box:          box,
-		wins:         map[nvim.Window]*Window{},
-		cursor:       [2]int{0, 0},
-		lastCursor:   [2]int{0, 0},
-		scrollRegion: []int{0, 0, 0, 0},
+	// box:          box,
+	// wins:         map[nvim.Window]*Window{},
+	// cursor:       [2]int{0, 0},
+	// lastCursor:   [2]int{0, 0},
+	// scrollRegion: []int{0, 0, 0, 0},
 	}
-	area := ui.NewArea(screen)
-	screen.area = area
-	screen.setSize(width, height)
-	box.Append(area, false)
-	box.SetSize(width, height)
+	// area := ui.NewArea(screen)
+	// screen.area = area
+	// screen.setSize(width, height)
+	// box.Append(area, false)
+	// box.SetSize(width, height)
 	return screen
 }
 
@@ -327,42 +324,42 @@ func (s *Screen) getWindows() map[nvim.Window]*Window {
 }
 
 // Draw the screen
-func (s *Screen) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
-	return
-	// if editor == nil {
-	// 	return
-	// }
-	// font := editor.font
-	// row := int(math.Ceil(dp.ClipY / float64(font.lineHeight)))
-	// col := int(math.Ceil(dp.ClipX / font.truewidth))
-	// rows := int(math.Ceil(dp.ClipHeight / float64(font.lineHeight)))
-	// cols := int(math.Ceil(dp.ClipWidth / font.truewidth))
+// func (s *Screen) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
+// 	return
+// if editor == nil {
+// 	return
+// }
+// font := editor.font
+// row := int(math.Ceil(dp.ClipY / float64(font.lineHeight)))
+// col := int(math.Ceil(dp.ClipX / font.truewidth))
+// rows := int(math.Ceil(dp.ClipHeight / float64(font.lineHeight)))
+// cols := int(math.Ceil(dp.ClipWidth / font.truewidth))
 
-	// p := ui.NewPath(ui.Winding)
-	// p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
-	// p.End()
+// p := ui.NewPath(ui.Winding)
+// p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
+// p.End()
 
-	// bg := editor.Background
+// bg := editor.Background
 
-	// dp.Context.Fill(p, &ui.Brush{
-	// 	Type: ui.Solid,
-	// 	R:    bg.R,
-	// 	G:    bg.G,
-	// 	B:    bg.B,
-	// 	A:    1,
-	// })
-	// p.Free()
+// dp.Context.Fill(p, &ui.Brush{
+// 	Type: ui.Solid,
+// 	R:    bg.R,
+// 	G:    bg.G,
+// 	B:    bg.B,
+// 	A:    1,
+// })
+// p.Free()
 
-	// for y := row; y < row+rows; y++ {
-	// 	if y >= editor.rows {
-	// 		continue
-	// 	}
-	// 	fillHightlight(dp, y, col, cols, [2]int{0, 0})
-	// 	drawText(dp, y, col, cols, [2]int{0, 0})
-	// }
+// for y := row; y < row+rows; y++ {
+// 	if y >= editor.rows {
+// 		continue
+// 	}
+// 	fillHightlight(dp, y, col, cols, [2]int{0, 0})
+// 	drawText(dp, y, col, cols, [2]int{0, 0})
+// }
 
-	// s.drawBorder(dp, row, col, rows, cols)
-}
+// s.drawBorder(dp, row, col, rows, cols)
+// }
 
 func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
 	for _, win := range s.curWins {

@@ -3,7 +3,6 @@ package gonvim
 import (
 	"fmt"
 
-	"github.com/dzhou121/ui"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
@@ -12,7 +11,6 @@ import (
 type PopupMenu struct {
 	widget    *widgets.QWidget
 	layout    *widgets.QGridLayout
-	box       *ui.Box
 	items     []*PopupItem
 	rawItems  []interface{}
 	total     int
@@ -28,8 +26,6 @@ type PopupMenu struct {
 type PopupItem struct {
 	kindLable *widgets.QLabel
 	menuLable *widgets.QLabel
-	kind      *SpanHandler
-	menu      *SpanHandler
 }
 
 func initPopupmenuNew(font *Font) *PopupMenu {
@@ -87,34 +83,34 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 }
 
 func initPopupmenu() *PopupMenu {
-	total := 10
-	box := ui.NewHorizontalBox()
-	var popupItems []*PopupItem
-	for i := 0; i < total; i++ {
-		kindSpanHandler := &SpanHandler{}
-		kindSpan := ui.NewArea(kindSpanHandler)
-		kindSpanHandler.area = kindSpan
+	// total := 10
+	// box := ui.NewHorizontalBox()
+	// var popupItems []*PopupItem
+	// for i := 0; i < total; i++ {
+	// 	kindSpanHandler := &SpanHandler{}
+	// 	kindSpan := ui.NewArea(kindSpanHandler)
+	// 	kindSpanHandler.area = kindSpan
 
-		menuSpanHandler := &SpanHandler{}
-		menuSpan := ui.NewArea(menuSpanHandler)
-		menuSpanHandler.area = menuSpan
+	// 	menuSpanHandler := &SpanHandler{}
+	// 	menuSpan := ui.NewArea(menuSpanHandler)
+	// 	menuSpanHandler.area = menuSpan
 
-		popupItem := &PopupItem{
-			kind: kindSpanHandler,
-			menu: menuSpanHandler,
-		}
+	// 	popupItem := &PopupItem{
+	// 		kind: kindSpanHandler,
+	// 		menu: menuSpanHandler,
+	// 	}
 
-		popupItems = append(popupItems, popupItem)
-		box.Append(kindSpan, false)
-		box.Append(menuSpan, false)
-	}
-	box.SetShadow(0, 2, 0, 0, 0, 1, 4)
-	box.Hide()
+	// 	popupItems = append(popupItems, popupItem)
+	// 	box.Append(kindSpan, false)
+	// 	box.Append(menuSpan, false)
+	// }
+	// box.SetShadow(0, 2, 0, 0, 0, 1, 4)
+	// box.Hide()
 
 	return &PopupMenu{
-		box:   box,
-		items: popupItems,
-		total: total,
+	// box:   box,
+	// items: popupItems,
+	// total: total,
 	}
 }
 
@@ -335,8 +331,8 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 }
 
 func (p *PopupItem) hide() {
-	ui.QueueMain(func() {
-		p.kind.area.Hide()
-		p.menu.area.Hide()
-	})
+	// ui.QueueMain(func() {
+	// 	p.kind.area.Hide()
+	// 	p.menu.area.Hide()
+	// })
 }

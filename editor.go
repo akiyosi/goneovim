@@ -7,11 +7,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"unsafe"
 
 	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
 	"github.com/dzhou121/neovim-locpopup/rplugin/go/locpopup"
-	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
@@ -33,21 +31,20 @@ type Char struct {
 
 // Editor is the editor
 type Editor struct {
-	nvim             *nvim.Nvim
-	nvimAttached     bool
-	mode             string
-	font             *Font
-	smallerFont      *Font
-	rows             int
-	cols             int
-	cursor           *CursorBox
-	cursorNew        *Cursor
-	Foreground       *RGBA
-	Background       *RGBA
-	special          *RGBA
-	window           *ui.Window
-	screen           *Screen
-	areaBox          *ui.Box
+	nvim         *nvim.Nvim
+	nvimAttached bool
+	mode         string
+	font         *Font
+	smallerFont  *Font
+	rows         int
+	cols         int
+	cursorNew    *Cursor
+	Foreground   *RGBA
+	Background   *RGBA
+	special      *RGBA
+	// window           *ui.Window
+	screen *Screen
+	// areaBox          *ui.Box
 	close            chan bool
 	popup            *PopupMenu
 	finder           *Finder
@@ -62,28 +59,28 @@ type Editor struct {
 	resizeMutex      sync.Mutex
 }
 
-func initMainWindow(box *ui.Box, width, height int) *ui.Window {
-	window := ui.NewWindow("Gonvim", width, height, false)
-	window.SetChild(box)
-	window.OnClosing(func(*ui.Window) bool {
-		ui.Quit()
-		return true
-	})
-	window.OnContentSizeChanged(func(w *ui.Window, data unsafe.Pointer) bool {
-		if editor == nil {
-			return true
-		}
-		width, height = window.ContentSize()
-		fmt.Println("window changed", width, height)
-		if width == editor.width && height == editor.height {
-			return true
-		}
-		editor.resize(width, height)
-		return true
-	})
-	window.Show()
-	return window
-}
+// func initMainWindow(box *ui.Box, width, height int) *ui.Window {
+// 	window := ui.NewWindow("Gonvim", width, height, false)
+// 	window.SetChild(box)
+// 	window.OnClosing(func(*ui.Window) bool {
+// 		ui.Quit()
+// 		return true
+// 	})
+// 	window.OnContentSizeChanged(func(w *ui.Window, data unsafe.Pointer) bool {
+// 		if editor == nil {
+// 			return true
+// 		}
+// 		width, height = window.ContentSize()
+// 		fmt.Println("window changed", width, height)
+// 		if width == editor.width && height == editor.height {
+// 			return true
+// 		}
+// 		editor.resize(width, height)
+// 		return true
+// 	})
+// 	window.Show()
+// 	return window
+// }
 
 func getTablineHeight(font *Font) int {
 	return font.lineHeight + 12
@@ -94,118 +91,118 @@ func getStatuslineHeight(font *Font) int {
 }
 
 // InitEditor inits the editor
-func InitEditor() error {
-	if editor != nil {
-		return nil
-	}
+// func InitEditor() error {
+// 	if editor != nil {
+// 		return nil
+// 	}
 
-	fontFamily := ""
-	switch runtime.GOOS {
-	case "windows":
-		fontFamily = "Consolas"
-	case "darwin":
-		fontFamily = "Courier New"
-	default:
-		fontFamily = "Monospace"
-	}
-	font := initFont(fontFamily, 14, 6)
+// 	fontFamily := ""
+// 	switch runtime.GOOS {
+// 	case "windows":
+// 		fontFamily = "Consolas"
+// 	case "darwin":
+// 		fontFamily = "Courier New"
+// 	default:
+// 		fontFamily = "Monospace"
+// 	}
+// 	font := initFont(fontFamily, 14, 6)
 
-	width := 800
-	height := 600
-	tablineHeight := 34
-	statuslineHeight := 20
-	screenHeight := height - tablineHeight - statuslineHeight
+// 	width := 800
+// 	height := 600
+// 	tablineHeight := 34
+// 	statuslineHeight := 20
+// 	screenHeight := height - tablineHeight - statuslineHeight
 
-	screen := initScreen(width, screenHeight)
-	cursor := initCursorBox(width, screenHeight)
-	popupMenu := initPopupmenu()
-	finder := initFinder()
-	tabline := initTabline(width, tablineHeight)
-	loc := initLocpopup()
-	statusline := initStatusline(width, statuslineHeight)
+// 	screen := initScreen(width, screenHeight)
+// 	cursor := initCursorBox(width, screenHeight)
+// 	popupMenu := initPopupmenu()
+// 	finder := initFinder()
+// 	tabline := initTabline(width, tablineHeight)
+// 	loc := initLocpopup()
+// 	statusline := initStatusline(width, statuslineHeight)
 
-	box := ui.NewHorizontalBox()
-	areaBox := ui.NewHorizontalBox()
-	areaBox.Append(screen.box, false)
-	areaBox.Append(cursor.box, false)
-	areaBox.Append(loc.box, false)
-	areaBox.Append(popupMenu.box, false)
-	areaBox.Append(finder.box, false)
-	box.Append(tabline.box, false)
-	box.Append(areaBox, false)
-	box.Append(statusline.box, false)
+// 	box := ui.NewHorizontalBox()
+// 	areaBox := ui.NewHorizontalBox()
+// 	areaBox.Append(screen.box, false)
+// 	areaBox.Append(cursor.box, false)
+// 	areaBox.Append(loc.box, false)
+// 	areaBox.Append(popupMenu.box, false)
+// 	areaBox.Append(finder.box, false)
+// 	box.Append(tabline.box, false)
+// 	box.Append(areaBox, false)
+// 	box.Append(statusline.box, false)
 
-	areaBox.SetSize(width, screenHeight)
-	areaBox.SetPosition(0, tablineHeight)
-	statusline.box.SetPosition(0, tablineHeight+screenHeight)
-	window := initMainWindow(box, width, height)
+// 	areaBox.SetSize(width, screenHeight)
+// 	areaBox.SetPosition(0, tablineHeight)
+// 	statusline.box.SetPosition(0, tablineHeight+screenHeight)
+// 	window := initMainWindow(box, width, height)
 
-	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
-		Args: os.Args[1:],
-	})
-	if err != nil {
-		fmt.Println("nvim start error", err)
-		ui.Quit()
-		return err
-	}
+// 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
+// 		Args: os.Args[1:],
+// 	})
+// 	if err != nil {
+// 		fmt.Println("nvim start error", err)
+// 		ui.Quit()
+// 		return err
+// 	}
 
-	editor = &Editor{
-		nvim:             neovim,
-		nvimAttached:     false,
-		window:           window,
-		screen:           screen,
-		areaBox:          areaBox,
-		mode:             "normal",
-		close:            make(chan bool),
-		cursor:           cursor,
-		popup:            popupMenu,
-		finder:           finder,
-		tabline:          tabline,
-		width:            width,
-		height:           height,
-		tablineHeight:    tablineHeight,
-		statusline:       statusline,
-		statuslineHeight: statuslineHeight,
-		font:             font,
-		selectedBg:       newRGBA(81, 154, 186, 0.5),
-		matchFg:          newRGBA(81, 154, 186, 1),
-	}
+// 	editor = &Editor{
+// 		nvim:             neovim,
+// 		nvimAttached:     false,
+// 		window:           window,
+// 		screen:           screen,
+// 		areaBox:          areaBox,
+// 		mode:             "normal",
+// 		close:            make(chan bool),
+// 		cursor:           cursor,
+// 		popup:            popupMenu,
+// 		finder:           finder,
+// 		tabline:          tabline,
+// 		width:            width,
+// 		height:           height,
+// 		tablineHeight:    tablineHeight,
+// 		statusline:       statusline,
+// 		statuslineHeight: statuslineHeight,
+// 		font:             font,
+// 		selectedBg:       newRGBA(81, 154, 186, 0.5),
+// 		matchFg:          newRGBA(81, 154, 186, 1),
+// 	}
 
-	editor.nvimResize()
-	editor.handleNotification()
-	editor.finder.rePosition()
-	go func() {
-		err := neovim.Serve()
-		if err != nil {
-			fmt.Println(err)
-		}
-		editor.close <- true
-	}()
+// 	editor.nvimResize()
+// 	editor.handleNotification()
+// 	editor.finder.rePosition()
+// 	go func() {
+// 		err := neovim.Serve()
+// 		if err != nil {
+// 			fmt.Println(err)
+// 		}
+// 		editor.close <- true
+// 	}()
 
-	o := make(map[string]interface{})
-	o["rgb"] = true
-	o["ext_popupmenu"] = true
-	o["ext_tabline"] = true
-	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
-	if err != nil {
-		fmt.Println("nvim attach UI error", err)
-		ui.Quit()
-		return nil
-	}
-	editor.nvim.Subscribe("Gui")
-	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
-	editor.nvim.Command("runtime! ginit.vim")
-	editor.nvim.Command("let g:gonvim_running=1")
-	fzf.RegisterPlugin(editor.nvim)
-	locpopup.RegisterPlugin(editor.nvim)
+// 	o := make(map[string]interface{})
+// 	o["rgb"] = true
+// 	o["ext_popupmenu"] = true
+// 	o["ext_tabline"] = true
+// 	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
+// 	if err != nil {
+// 		fmt.Println("nvim attach UI error", err)
+// 		ui.Quit()
+// 		return nil
+// 	}
+// 	editor.nvim.Subscribe("Gui")
+// 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
+// 	editor.nvim.Command("runtime! ginit.vim")
+// 	editor.nvim.Command("let g:gonvim_running=1")
+// 	fzf.RegisterPlugin(editor.nvim)
+// 	locpopup.RegisterPlugin(editor.nvim)
 
-	go func() {
-		<-editor.close
-		ui.Quit()
-	}()
+// 	go func() {
+// 		<-editor.close
+// 		ui.Quit()
+// 	}()
 
-	return nil
-}
+// 	return nil
+// }
 
 func (e *Editor) handleNotification() {
 	e.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
@@ -316,7 +313,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 		}
 	}
 	screen.redraw()
-	editor.cursor.draw()
+	// editor.cursor.draw()
 	editor.cursorNew.update()
 	if !e.nvimAttached {
 		e.nvimAttached = true
@@ -369,27 +366,27 @@ func (e *Editor) guiLinespace(args ...interface{}) {
 }
 
 func (e *Editor) resize(width, height int) {
-	ui.QueueMain(func() {
-		e.resizeMutex.Lock()
-		defer e.resizeMutex.Unlock()
-		// e.tablineHeight = getTablineHeight(e.font)
-		// e.statuslineHeight = getStatuslineHeight(e.font)
-		// screenHeight := height - e.tablineHeight - e.statuslineHeight
-		// e.width = width
-		// e.height = height
-		// e.areaBox.SetSize(width, screenHeight)
-		// e.areaBox.SetPosition(0, e.tablineHeight)
-		// e.screen.box.SetSize(width, screenHeight)
-		// e.screen.setSize(width, screenHeight)
-		// e.cursor.setSize(width, screenHeight)
-		// e.tabline.resize(width, e.tablineHeight)
-		// e.statusline.redraw(true)
-		// e.statusline.box.SetSize(width, e.statuslineHeight)
-		// e.statusline.setSize(width, e.statuslineHeight)
-		// e.statusline.box.SetPosition(0, e.tablineHeight+screenHeight)
-		// e.finder.rePosition()
-		e.nvimResize()
-	})
+	// 	ui.QueueMain(func() {
+	// 		e.resizeMutex.Lock()
+	// 		defer e.resizeMutex.Unlock()
+	// 		// e.tablineHeight = getTablineHeight(e.font)
+	// 		// e.statuslineHeight = getStatuslineHeight(e.font)
+	// 		// screenHeight := height - e.tablineHeight - e.statuslineHeight
+	// 		// e.width = width
+	// 		// e.height = height
+	// 		// e.areaBox.SetSize(width, screenHeight)
+	// 		// e.areaBox.SetPosition(0, e.tablineHeight)
+	// 		// e.screen.box.SetSize(width, screenHeight)
+	// 		// e.screen.setSize(width, screenHeight)
+	// 		// e.cursor.setSize(width, screenHeight)
+	// 		// e.tabline.resize(width, e.tablineHeight)
+	// 		// e.statusline.redraw(true)
+	// 		// e.statusline.box.SetSize(width, e.statuslineHeight)
+	// 		// e.statusline.setSize(width, e.statuslineHeight)
+	// 		// e.statusline.box.SetPosition(0, e.tablineHeight+screenHeight)
+	// 		// e.finder.rePosition()
+	// 		e.nvimResize()
+	// 	})
 }
 
 func (e *Editor) nvimResize() {

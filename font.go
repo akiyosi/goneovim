@@ -3,7 +3,6 @@ package gonvim
 import (
 	"math"
 
-	"github.com/dzhou121/ui"
 	"github.com/therecipe/qt/gui"
 )
 
@@ -12,7 +11,6 @@ type Font struct {
 	fontNew            *gui.QFont
 	defaultFont        *gui.QFont
 	defaultFontMetrics *gui.QFontMetricsF
-	font               *ui.Font
 	width              int
 	truewidth          float64
 	ascent             float64
@@ -22,26 +20,26 @@ type Font struct {
 	shift              int
 }
 
-func newFont(family string, size int) *ui.Font {
-	fontDesc := &ui.FontDescriptor{
-		Family:  family,
-		Size:    float64(size),
-		Weight:  ui.TextWeightNormal,
-		Italic:  ui.TextItalicNormal,
-		Stretch: ui.TextStretchNormal,
-	}
-	font := ui.LoadClosestFont(fontDesc)
-	return font
-}
+// func newFont(family string, size int) *ui.Font {
+// 	fontDesc := &ui.FontDescriptor{
+// 		Family:  family,
+// 		Size:    float64(size),
+// 		Weight:  ui.TextWeightNormal,
+// 		Italic:  ui.TextItalicNormal,
+// 		Stretch: ui.TextStretchNormal,
+// 	}
+// 	font := ui.LoadClosestFont(fontDesc)
+// 	return font
+// }
 
-func fontSize(font *ui.Font) (int, int, float64) {
-	textLayout := ui.NewTextLayout("W", font, -1)
-	w, h := textLayout.Extents()
-	width := int(math.Ceil(w))
-	height := int(math.Ceil(h))
-	textLayout.Free()
-	return width, height, w
-}
+// func fontSize(font *ui.Font) (int, int, float64) {
+// 	textLayout := ui.NewTextLayout("W", font, -1)
+// 	w, h := textLayout.Extents()
+// 	width := int(math.Ceil(w))
+// 	height := int(math.Ceil(h))
+// 	textLayout.Free()
+// 	return width, height, w
+// }
 
 func fontSizeNew(font *gui.QFont) (int, int, float64, float64) {
 	fontMetrics := gui.NewQFontMetricsF(font)
@@ -72,20 +70,20 @@ func initFontNew(family string, size int, lineSpace int) *Font {
 	}
 }
 
-func initFont(family string, size int, lineSpace int) *Font {
-	font := newFont(family, size)
-	width, height, truewidth := fontSize(font)
-	shift := lineSpace / 2
-	return &Font{
-		font:       font,
-		width:      width,
-		truewidth:  truewidth,
-		height:     height,
-		lineHeight: height + lineSpace,
-		lineSpace:  lineSpace,
-		shift:      shift,
-	}
-}
+// func initFont(family string, size int, lineSpace int) *Font {
+// 	font := newFont(family, size)
+// 	width, height, truewidth := fontSize(font)
+// 	shift := lineSpace / 2
+// 	return &Font{
+// 		font:       font,
+// 		width:      width,
+// 		truewidth:  truewidth,
+// 		height:     height,
+// 		lineHeight: height + lineSpace,
+// 		lineSpace:  lineSpace,
+// 		shift:      shift,
+// 	}
+// }
 
 func (f *Font) change(family string, size int) {
 	f.fontNew.SetFamily(family)

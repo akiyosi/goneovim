@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -14,20 +13,16 @@ import (
 
 // Tabline of the editor
 type Tabline struct {
-	AreaHandler
 	widget    *widgets.QWidget
 	layout    *widgets.QLayout
-	box       *ui.Box
 	CurrentID int
 	Tabs      []*Tab
 }
 
 // Tab in the tabline
 type Tab struct {
-	SpanHandler
 	widget    *widgets.QWidget
 	layout    *widgets.QHBoxLayout
-	box       *ui.Box
 	ID        int
 	Name      string
 	current   bool
@@ -142,28 +137,26 @@ func initTablineNew(height int) *Tabline {
 }
 
 func initTabline(width int, height int) *Tabline {
-	box := ui.NewHorizontalBox()
-	tabline := &Tabline{
-		box: box,
-	}
-	tabline.area = ui.NewArea(tabline)
-	tabline.bg = newRGBA(24, 29, 34, 1)
-	tabline.borderBottom = &Border{
-		width: 2,
-		color: newRGBA(0, 0, 0, 1),
-	}
-	box.SetSize(width, height)
-	box.Append(tabline.area, false)
-	tabline.setSize(width, height)
+	// box := ui.NewHorizontalBox()
+	tabline := &Tabline{}
+	// tabline.area = ui.NewArea(tabline)
+	// tabline.bg = newRGBA(24, 29, 34, 1)
+	// tabline.borderBottom = &Border{
+	// 	width: 2,
+	// 	color: newRGBA(0, 0, 0, 1),
+	// }
+	// box.SetSize(width, height)
+	// box.Append(tabline.area, false)
+	// tabline.setSize(width, height)
 	return tabline
 }
 
 func (t *Tabline) resize(width int, height int) {
-	t.box.SetSize(width, height)
-	t.setSize(width, height)
-	for _, tab := range t.Tabs {
-		tab.setSize(tab.width, height)
-	}
+	// t.box.SetSize(width, height)
+	// t.setSize(width, height)
+	// for _, tab := range t.Tabs {
+	// 	tab.setSize(tab.width, height)
+	// }
 }
 
 func (t *Tabline) update(args []interface{}) {

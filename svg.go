@@ -2,11 +2,7 @@ package gonvim
 
 import (
 	"fmt"
-	"math"
 	"sync"
-
-	"github.com/dzhou121/svg"
-	"github.com/dzhou121/ui"
 )
 
 var svgsOnce sync.Once
@@ -23,7 +19,6 @@ type SvgXML struct {
 
 // Svg is
 type Svg struct {
-	AreaHandler
 	width  int
 	height int
 	color  *RGBA
@@ -31,93 +26,93 @@ type Svg struct {
 	name   string
 }
 
-func newSvg(name string, width int, height int, color, bg *RGBA) *Svg {
-	handler := &Svg{
-		name:   name,
-		width:  width,
-		height: height,
-		color:  color,
-		bg:     bg,
-	}
-	area := ui.NewArea(handler)
-	handler.area = area
-	area.SetSize(width, width)
-	return handler
-}
+// func newSvg(name string, width int, height int, color, bg *RGBA) *Svg {
+// 	handler := &Svg{
+// 		name:   name,
+// 		width:  width,
+// 		height: height,
+// 		color:  color,
+// 		bg:     bg,
+// 	}
+// 	area := ui.NewArea(handler)
+// 	handler.area = area
+// 	area.SetSize(width, width)
+// 	return handler
+// }
 
 // Draw the svg
-func (s *Svg) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
-	svgXML := getSvgs()[s.name]
-	if svgXML == nil {
-		svgXML = getSvgs()["default"]
-	}
+// func (s *Svg) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
+// 	svgXML := getSvgs()[s.name]
+// 	if svgXML == nil {
+// 		svgXML = getSvgs()["default"]
+// 	}
 
-	wScale := float64(s.width) / float64(svgXML.width)
-	hScale := float64(s.height) / float64(svgXML.height)
-	r, err := svg.ParseSvg(svgXML.xml, "", math.Min(wScale, hScale))
-	if err != nil {
-		return
-	}
-	if s.bg != nil {
-		drawRect(dp, 0, 0, s.width, s.height, s.bg)
-	}
+// 	wScale := float64(s.width) / float64(svgXML.width)
+// 	hScale := float64(s.height) / float64(svgXML.height)
+// 	r, err := svg.ParseSvg(svgXML.xml, "", math.Min(wScale, hScale))
+// 	if err != nil {
+// 		return
+// 	}
+// 	if s.bg != nil {
+// 		drawRect(dp, 0, 0, s.width, s.height, s.bg)
+// 	}
 
-	color := s.color
-	if color == nil {
-		color = svgXML.color
-	}
-	if color == nil {
-		color = newRGBA(255, 255, 255, 1)
-	}
+// 	color := s.color
+// 	if color == nil {
+// 		color = svgXML.color
+// 	}
+// 	if color == nil {
+// 		color = newRGBA(255, 255, 255, 1)
+// 	}
 
-	path := ui.NewPath(ui.Winding)
-	for _, g := range r.Groups {
-		for _, e := range g.Elements {
-			switch p := e.(type) {
-			case *svg.Path:
-				cmdChan := p.Parse()
-				for cmd := range cmdChan {
-					switch cmd.Name {
-					case svg.MOVETO:
-						path.NewFigure(cmd.Points[0][0], cmd.Points[0][1])
-					case svg.LINETO:
-						path.LineTo(cmd.Points[0][0], cmd.Points[0][1])
-					case svg.CURVETO:
-						p := cmd.Points
-						path.BezierTo(p[0][0], p[0][1], p[1][0], p[1][1], p[2][0], p[2][1])
-					}
-				}
-			}
-		}
-	}
-	path.End()
-	// dp.Context.Fill(path, &ui.Brush{
-	// 	Type: ui.Solid,
-	// 	R:    color.R,
-	// 	G:    color.G,
-	// 	B:    color.B,
-	// 	A:    color.A,
-	// })
-	// if svgXML.thickness > 0 {
-	// 	dp.Context.Stroke(path, &ui.Brush{
-	// 		Type: ui.Solid,
-	// 		R:    color.R,
-	// 		G:    color.G,
-	// 		B:    color.B,
-	// 		A:    color.A,
-	// 	},
-	// 		&ui.StrokeParams{
-	// 			Thickness: svgXML.thickness,
-	// 		})
-	// }
-	path.Free()
-}
+// 	path := ui.NewPath(ui.Winding)
+// 	for _, g := range r.Groups {
+// 		for _, e := range g.Elements {
+// 			switch p := e.(type) {
+// 			case *svg.Path:
+// 				cmdChan := p.Parse()
+// 				for cmd := range cmdChan {
+// 					switch cmd.Name {
+// 					case svg.MOVETO:
+// 						path.NewFigure(cmd.Points[0][0], cmd.Points[0][1])
+// 					case svg.LINETO:
+// 						path.LineTo(cmd.Points[0][0], cmd.Points[0][1])
+// 					case svg.CURVETO:
+// 						p := cmd.Points
+// 						path.BezierTo(p[0][0], p[0][1], p[1][0], p[1][1], p[2][0], p[2][1])
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	path.End()
+// 	// dp.Context.Fill(path, &ui.Brush{
+// 	// 	Type: ui.Solid,
+// 	// 	R:    color.R,
+// 	// 	G:    color.G,
+// 	// 	B:    color.B,
+// 	// 	A:    color.A,
+// 	// })
+// 	// if svgXML.thickness > 0 {
+// 	// 	dp.Context.Stroke(path, &ui.Brush{
+// 	// 		Type: ui.Solid,
+// 	// 		R:    color.R,
+// 	// 		G:    color.G,
+// 	// 		B:    color.B,
+// 	// 		A:    color.A,
+// 	// 	},
+// 	// 		&ui.StrokeParams{
+// 	// 			Thickness: svgXML.thickness,
+// 	// 		})
+// 	// }
+// 	path.Free()
+// }
 
-func (s *Svg) redraw() {
-	ui.QueueMain(func() {
-		s.area.QueueRedrawAll()
-	})
-}
+// func (s *Svg) redraw() {
+// 	ui.QueueMain(func() {
+// 		s.area.QueueRedrawAll()
+// 	})
+// }
 
 func getSvgs() map[string]*SvgXML {
 	svgsOnce.Do(func() {
