@@ -38,7 +38,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	scrollCol.SetFixedWidth(5)
 	scrollBar := widgets.NewQWidget(scrollCol, 0)
 	scrollBar.SetFixedWidth(5)
-	scrollBar.SetStyleSheet("background-color: rgba(255,255,255,0.5);")
+	scrollBar.SetStyleSheet("background-color: #3c3c3c;")
 	mainLayout := widgets.NewQHBoxLayout()
 	mainLayout.AddLayout(layout, 0)
 	mainLayout.AddWidget(scrollCol, 0, 0)

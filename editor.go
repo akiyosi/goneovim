@@ -11,7 +11,6 @@ import (
 	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
 	"github.com/dzhou121/neovim-locpopup/rplugin/go/locpopup"
 	"github.com/neovim/go-client/nvim"
-	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -434,8 +433,6 @@ func InitEditorNew() {
 
 	width := 800
 	height := 600
-	tablineHeight := 34
-	statuslineHeight := 24
 	//screenHeight := height - tablineHeight - statuslineHeight
 
 	//create a window
@@ -444,8 +441,8 @@ func InitEditorNew() {
 	window.SetContentsMargins(0, 0, 0, 0)
 	window.SetMinimumSize2(width, height)
 
-	tabline := initTablineNew(tablineHeight)
-	statusline := initStatuslineNew(statuslineHeight)
+	tabline := initTablineNew()
+	statusline := initStatuslineNew()
 	screen := initScreenNew()
 	cursor := initCursorNew()
 	cursor.widget.SetParent(screen.widget)
@@ -459,9 +456,9 @@ func InitEditorNew() {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
-	layout.AddWidget(tabline.widget, 0, core.Qt__AlignTop)
+	layout.AddWidget(tabline.widget, 0, 0)
 	layout.AddWidget(screen.widget, 1, 0)
-	layout.AddWidget(statusline.widget, 0, core.Qt__AlignBottom)
+	layout.AddWidget(statusline.widget, 0, 0)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
@@ -477,23 +474,21 @@ func InitEditorNew() {
 	}
 
 	editor = &Editor{
-		nvim:             neovim,
-		nvimAttached:     false,
-		screen:           screen,
-		cursorNew:        cursor,
-		mode:             "normal",
-		close:            make(chan bool),
-		popup:            popup,
-		finder:           finder,
-		tabline:          tabline,
-		width:            width,
-		height:           height,
-		tablineHeight:    tablineHeight,
-		statusline:       statusline,
-		statuslineHeight: statuslineHeight,
-		font:             font,
-		selectedBg:       newRGBA(81, 154, 186, 0.5),
-		matchFg:          newRGBA(81, 154, 186, 1),
+		nvim:         neovim,
+		nvimAttached: false,
+		screen:       screen,
+		cursorNew:    cursor,
+		mode:         "normal",
+		close:        make(chan bool),
+		popup:        popup,
+		finder:       finder,
+		tabline:      tabline,
+		width:        width,
+		height:       height,
+		statusline:   statusline,
+		font:         font,
+		selectedBg:   newRGBA(81, 154, 186, 0.5),
+		matchFg:      newRGBA(81, 154, 186, 1),
 	}
 
 	editor.nvimResize()

@@ -34,7 +34,7 @@ type Tab struct {
 	file      *widgets.QLabel
 }
 
-func newVFlowLayout(spacing int, padding int) *widgets.QLayout {
+func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int) *widgets.QLayout {
 	layout := widgets.NewQLayout2()
 	items := []*widgets.QLayoutItem{}
 	layout.ConnectSizeHint(func() *core.QSize {
@@ -49,6 +49,7 @@ func newVFlowLayout(spacing int, padding int) *widgets.QLayout {
 	})
 	layout.ConnectSetGeometry(func(r *core.QRect) {
 		x := padding
+		right := padding
 		sizes := [][]int{}
 		maxHeight := 0
 		totalWidth := r.Width()
@@ -66,17 +67,23 @@ func newVFlowLayout(spacing int, padding int) *widgets.QLayout {
 			size := sizes[i]
 			width := size[0]
 			height := size[1]
-			y := 0
+			y := paddingTop
 			if height != maxHeight {
-				y = (maxHeight - height) / 2
+				y = (maxHeight-height)/2 + paddingTop
 			}
-			if x+width+padding > totalWidth {
-				width = totalWidth - x - padding
+
+			if rightIdex > 0 && i >= rightIdex {
+				item.SetGeometry(core.NewQRect4(totalWidth-width-right, y, width, height))
+				right += width + spacing
+			} else {
+				if x+width+padding > totalWidth {
+					width = totalWidth - x - padding
+					item.SetGeometry(core.NewQRect4(x, y, width, height))
+					break
+				}
 				item.SetGeometry(core.NewQRect4(x, y, width, height))
-				break
+				x += width + spacing
 			}
-			item.SetGeometry(core.NewQRect4(x, y, width, height))
-			x += width + spacing
 		}
 	})
 	layout.ConnectItemAt(func(index int) *widgets.QLayoutItem {
@@ -94,7 +101,7 @@ func newVFlowLayout(spacing int, padding int) *widgets.QLayout {
 	return layout
 }
 
-func initTablineNew(height int) *Tabline {
+func initTablineNew() *Tabline {
 	width := 210
 	widget := widgets.NewQWidget(nil, 0)
 	layout := widgets.NewQLayout2()
@@ -102,7 +109,11 @@ func initTablineNew(height int) *Tabline {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	items := []*widgets.QLayoutItem{}
 	layout.ConnectSizeHint(func() *core.QSize {
-		return core.NewQSize2(width, 0)
+		size := core.NewQSize()
+		for _, item := range items {
+			size = size.ExpandedTo(item.MinimumSize())
+		}
+		return size
 	})
 	layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
 		items = append(items, item)
@@ -126,7 +137,6 @@ func initTablineNew(height int) *Tabline {
 	})
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
-	widget.SetFixedHeight(height)
 	widget.SetStyleSheet(`
 	QWidget {
 		color: rgba(147, 161, 161, 1);
@@ -149,6 +159,7 @@ func initTablineNew(height int) *Tabline {
 		fileIcon.SetFixedWidth(14)
 		fileIcon.SetFixedHeight(14)
 		file := widgets.NewQLabel(nil, 0)
+		file.SetContentsMargins(0, 10, 0, 10)
 		closeIcon := svg.NewQSvgWidget(nil)
 		closeIcon.SetFixedWidth(14)
 		closeIcon.SetFixedHeight(14)
