@@ -163,12 +163,6 @@ func (p *PopupMenu) show(args []interface{}) {
 		popupItem.menuLable.Show()
 	}
 
-	p.widget.Move2(
-		int(float64(col)*editor.font.truewidth)-popupItems[0].kindLable.Width()-8,
-		(row+1)*editor.font.lineHeight,
-	)
-	p.widget.Show()
-
 	if len(items) > p.showTotal {
 		p.scrollBar.SetFixedHeight(int(float64(p.showTotal) / float64(len(items)) * float64(itemHeight*p.showTotal)))
 		p.scrollBar.Move2(0, 0)
@@ -176,6 +170,14 @@ func (p *PopupMenu) show(args []interface{}) {
 	} else {
 		p.scrollCol.Hide()
 	}
+
+	p.widget.Move2(
+		int(float64(col)*editor.font.truewidth)-popupItems[0].kindLable.Width()-8,
+		(row+1)*editor.font.lineHeight,
+	)
+	// p.widget.Show()
+	// p.widget.Hide()
+	p.widget.Show()
 	// popupItems := p.items
 	// i := 0
 	// kindWidth := 0

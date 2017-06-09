@@ -73,7 +73,10 @@ func initScreenNew() *Screen {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	screen := &Screen{
-		widget: widget,
+		widget:       widget,
+		cursor:       [2]int{0, 0},
+		lastCursor:   [2]int{0, 0},
+		scrollRegion: []int{0, 0, 0, 0},
 	}
 	widget.ConnectPaintEvent(screen.paint)
 	widget.ConnectCustomEvent(screen.customEvent)
@@ -547,7 +550,10 @@ func (s *Screen) setScrollRegion(args []interface{}) {
 	bot := reflectToInt(arg[1])
 	left := reflectToInt(arg[2])
 	right := reflectToInt(arg[3])
-	s.scrollRegion = []int{int(top), int(bot), int(left), int(right)}
+	s.scrollRegion[0] = top
+	s.scrollRegion[1] = bot
+	s.scrollRegion[2] = left
+	s.scrollRegion[3] = right
 }
 
 func (s *Screen) scroll(args []interface{}) {

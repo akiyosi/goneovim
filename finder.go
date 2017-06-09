@@ -35,8 +35,9 @@ type Finder struct {
 
 // FinderResultItem is the result shown
 type FinderResultItem struct {
-	icon *svg.QSvgWidget
-	base *widgets.QLabel
+	shown bool
+	icon  *svg.QSvgWidget
+	base  *widgets.QLabel
 	// folder *widgets.QLabel
 	widget   *widgets.QWidget
 	selected bool
