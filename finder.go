@@ -18,29 +18,33 @@ import (
 type Finder struct {
 	// box         *ui.Box
 	// pattern     *SpanHandler
-	widget      *widgets.QWidget
-	patternText string
-	resultItems []*FinderResultItem
-	mutex       sync.Mutex
-	width       int
-	cursor      *widgets.QWidget
-	resultType  string
-	agTypes     []string
-	hidden      bool
-	max         int
-	showTotal   int
-	pattern     *widgets.QLabel
-	fzfShim     *fzf.Shim
+	widget         *widgets.QWidget
+	patternText    string
+	resultItems    []*FinderResultItem
+	resultWidget   *widgets.QWidget
+	itemHeight     int
+	mutex          sync.Mutex
+	width          int
+	cursor         *widgets.QWidget
+	resultType     string
+	agTypes        []string
+	hidden         bool
+	max            int
+	showTotal      int
+	pattern        *widgets.QLabel
+	patternPadding int
+	scrollBar      *widgets.QWidget
+	scrollCol      *widgets.QWidget
 }
 
 // FinderResultItem is the result shown
 type FinderResultItem struct {
-	shown bool
-	icon  *svg.QSvgWidget
-	base  *widgets.QLabel
-	// folder *widgets.QLabel
-	widget   *widgets.QWidget
-	selected bool
+	hidden     bool
+	icon       *svg.QSvgWidget
+	iconHidden bool
+	base       *widgets.QLabel
+	widget     *widgets.QWidget
+	selected   bool
 }
 
 // FinderPattern is
@@ -103,11 +107,17 @@ func initFinder() *Finder {
 	patternWidget.SetLayout(patternLayout)
 	patternWidget.SetContentsMargins(padding, padding, padding, padding)
 
+	cursor := widgets.NewQWidget(nil, 0)
+	cursor.SetParent(pattern)
+	cursor.SetFixedSize2(1, pattern.SizeHint().Height()-padding*2)
+	cursor.Move2(padding, padding)
+	cursor.SetStyleSheet("background-color: rgba(205, 211, 222, 1);")
+
 	mainLayout.AddWidget(patternWidget, 0, 0)
 	mainLayout.AddWidget(resultMainWidget, 0, 0)
 
 	resultItems := []*FinderResultItem{}
-	max := 20
+	max := 30
 	for i := 0; i < max; i++ {
 		itemWidget := widgets.NewQWidget(nil, 0)
 		itemWidget.SetContentsMargins(0, 0, 0, 0)
@@ -171,11 +181,44 @@ func initFinder() *Finder {
 	// 	return f
 	widget.Hide()
 	return &Finder{
-		width:       width,
-		widget:      widget,
-		resultItems: resultItems,
-		max:         max,
-		pattern:     pattern,
+		width:          width,
+		widget:         widget,
+		resultItems:    resultItems,
+		resultWidget:   resultWidget,
+		max:            max,
+		pattern:        pattern,
+		patternPadding: padding,
+		scrollCol:      scrollCol,
+		scrollBar:      scrollBar,
+		cursor:         cursor,
+	}
+}
+
+func (f *FinderResultItem) show() {
+	if f.hidden {
+		f.hidden = false
+		f.widget.Show()
+	}
+}
+
+func (f *FinderResultItem) hide() {
+	if !f.hidden {
+		f.hidden = true
+		f.widget.Hide()
+	}
+}
+
+func (f *FinderResultItem) showIcon() {
+	if f.iconHidden {
+		f.iconHidden = false
+		f.icon.Show()
+	}
+}
+
+func (f *FinderResultItem) hideIcon() {
+	if !f.iconHidden {
+		f.iconHidden = true
+		f.icon.Hide()
 	}
 }
 
@@ -183,8 +226,9 @@ func (f *Finder) resize() {
 	x := (editor.screen.width - f.width) / 2
 	f.widget.Move2(x, 0)
 	itemHeight := f.resultItems[0].widget.SizeHint().Height()
-	f.showTotal = int(float64(editor.screen.height)/float64(itemHeight)*0.6) - 1
-	f.fzfShim.SetMax(f.showTotal)
+	f.itemHeight = itemHeight
+	f.showTotal = int(float64(editor.screen.height)/float64(itemHeight)*0.5) - 1
+	fzf.UpdateMax(editor.nvim, f.showTotal)
 
 	for i := f.showTotal; i < len(f.resultItems); i++ {
 		f.resultItems[i].widget.Hide()
@@ -212,13 +256,19 @@ func (f *Finder) hide() {
 func (f *Finder) cursorPos(args []interface{}) {
 	// _, h := f.pattern.getSize()
 	// f.cursor.setSize(1, editor.font.lineHeight)
-	// p := reflectToInt(args[0])
+	p := reflectToInt(args[0])
+	f.cursorMove(p)
 	// x := int(float64(p)*editor.font.truewidth) + f.pattern.paddingLeft
 	// y := (h - editor.font.lineHeight) / 2
 	// ui.QueueMain(func() {
 	// 	f.cursor.area.Show()
 	// 	f.cursor.area.SetPosition(x, y)
 	// })
+}
+
+func (f *Finder) cursorMove(p int) {
+	x := editor.font.defaultFontMetrics.Width(string(f.patternText[:p]))
+	f.cursor.Move2(f.patternPadding+int(x), f.patternPadding)
 }
 
 func (f *Finder) showSelected(selected int) {
@@ -269,7 +319,10 @@ func (f *Finder) selectResult(args []interface{}) {
 
 func (f *Finder) showPattern(args []interface{}) {
 	p := args[0].(string)
+	f.patternText = p
 	f.pattern.SetText(p)
+	f.cursorMove(reflectToInt(args[1]))
+
 	// _, height := f.pattern.getSize()
 	// f.cursor.setSize(1, editor.font.lineHeight)
 	// f.pattern.area.SetSize(f.width, height)
@@ -322,7 +375,7 @@ func (f *Finder) showResult(args []interface{}) {
 			break
 		}
 		if i >= len(rawItems) {
-			resultItem.widget.Hide()
+			resultItem.hide()
 			continue
 		}
 		item := rawItems[i]
@@ -330,21 +383,46 @@ func (f *Finder) showResult(args []interface{}) {
 		if resultType == "file" {
 			svgContent := getSvg(getFileType(text), nil)
 			resultItem.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-			resultItem.icon.Show()
 			resultItem.base.SetText(formatText(text, match[i], true))
+			resultItem.showIcon()
 		} else if resultType == "dir" {
 			svgContent := getSvg("folder", nil)
 			resultItem.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-			resultItem.icon.Show()
 			resultItem.base.SetText(formatText(text, match[i], true))
+			resultItem.showIcon()
 		} else {
 			resultItem.base.SetText(formatText(text, match[i], false))
-			resultItem.icon.Hide()
-			// resultItem.folder.Hide()
+			resultItem.hideIcon()
 		}
-		resultItem.widget.Show()
+		resultItem.show()
 	}
 	f.showSelected(selected)
+
+	start := reflectToInt(args[4])
+	total := reflectToInt(args[5])
+
+	// if len(rawItems) == f.showTotal {
+	// 	f.scrollCol.Show()
+	// } else {
+	// 	f.scrollCol.Hide()
+	// }
+	f.resultWidget.Hide()
+	f.resultWidget.Show()
+
+	if total > f.showTotal {
+		height := int(float64(f.showTotal) / float64(total) * float64(f.itemHeight*f.showTotal))
+		if height == 0 {
+			height = 1
+		}
+		f.scrollBar.SetFixedHeight(height)
+		f.scrollBar.Move2(0, int(float64(start)/float64(total)*(float64(f.itemHeight*f.showTotal))))
+		f.scrollCol.Show()
+	} else {
+		f.scrollCol.Hide()
+	}
+
+	f.widget.Hide()
+	f.widget.Show()
 	f.widget.Hide()
 	f.widget.Show()
 

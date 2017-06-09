@@ -436,7 +436,6 @@ func (s *Screen) updateBg(args []interface{}) {
 		editor.Background = bg
 	}
 	css := fmt.Sprintf("background-color: %s;", editor.Background.String())
-	fmt.Println(css)
 	s.widget.SetStyleSheet(css)
 }
 
