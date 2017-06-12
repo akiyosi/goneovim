@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
-	"github.com/dzhou121/neovim-locpopup/rplugin/go/locpopup"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/widgets"
 )
@@ -45,6 +44,7 @@ type Editor struct {
 	screen *Screen
 	// areaBox          *ui.Box
 	close            chan bool
+	loc              *Locpopup
 	popup            *PopupMenu
 	finder           *Finder
 	tabline          *Tabline
@@ -56,37 +56,6 @@ type Editor struct {
 	selectedBg       *RGBA
 	matchFg          *RGBA
 	resizeMutex      sync.Mutex
-}
-
-// func initMainWindow(box *ui.Box, width, height int) *ui.Window {
-// 	window := ui.NewWindow("Gonvim", width, height, false)
-// 	window.SetChild(box)
-// 	window.OnClosing(func(*ui.Window) bool {
-// 		ui.Quit()
-// 		return true
-// 	})
-// 	window.OnContentSizeChanged(func(w *ui.Window, data unsafe.Pointer) bool {
-// 		if editor == nil {
-// 			return true
-// 		}
-// 		width, height = window.ContentSize()
-// 		fmt.Println("window changed", width, height)
-// 		if width == editor.width && height == editor.height {
-// 			return true
-// 		}
-// 		editor.resize(width, height)
-// 		return true
-// 	})
-// 	window.Show()
-// 	return window
-// }
-
-func getTablineHeight(font *Font) int {
-	return font.lineHeight + 12
-}
-
-func getStatuslineHeight(font *Font) int {
-	return font.lineHeight + 6
 }
 
 // InitEditor inits the editor
@@ -317,7 +286,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 	if !e.nvimAttached {
 		e.nvimAttached = true
 	}
-	go editor.statusline.redraw(false)
+	editor.statusline.mode.redraw()
 }
 
 func (e *Editor) guiFont(args ...interface{}) {
@@ -450,6 +419,8 @@ func InitEditorNew() {
 	popup.widget.SetParent(screen.widget)
 	finder := initFinder()
 	finder.widget.SetParent(screen.widget)
+	loc := initLocpopup()
+	loc.widget.SetParent(screen.widget)
 	window.ConnectKeyPressEvent(screen.keyPress)
 
 	layout := widgets.NewQVBoxLayout()
@@ -482,6 +453,7 @@ func InitEditorNew() {
 		close:        make(chan bool),
 		popup:        popup,
 		finder:       finder,
+		loc:          loc,
 		tabline:      tabline,
 		width:        width,
 		height:       height,
@@ -517,7 +489,8 @@ func InitEditorNew() {
 	editor.nvim.Command("runtime! ginit.vim")
 	editor.nvim.Command("let g:gonvim_running=1")
 	fzf.RegisterPlugin(editor.nvim)
-	locpopup.RegisterPlugin(editor.nvim)
+	editor.statusline.subscribe()
+	editor.loc.subscribe()
 
 	go func() {
 		<-editor.close

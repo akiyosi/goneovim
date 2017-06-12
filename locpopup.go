@@ -1,90 +1,192 @@
 package gonvim
 
+import (
+	"sort"
+	"sync"
+
+	"github.com/therecipe/qt/widgets"
+)
+
 // Locpopup is the location popup
 type Locpopup struct {
+	mutex        sync.Mutex
+	widget       *widgets.QWidget
+	typeLabel    *widgets.QLabel
+	contentLabel *widgets.QLabel
+	lastType     string
+	lastText     string
+	lastShown    bool
 }
 
 func initLocpopup() *Locpopup {
-	// box := ui.NewHorizontalBox()
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetContentsMargins(4, 4, 4, 4)
+	layout := widgets.NewQHBoxLayout()
+	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(4)
+	widget.SetLayout(layout)
+	widget.SetStyleSheet("color: rgba(14, 17, 18, 1); background-color: rgba(212, 215, 214, 1);")
 
-	// typeHandler := &SpanHandler{}
-	// typeSpan := ui.NewArea(typeHandler)
-	// typeHandler.area = typeSpan
+	typeLabel := widgets.NewQLabel(nil, 0)
+	typeLabel.SetContentsMargins(4, 1, 4, 1)
 
-	// textHandler := &SpanHandler{}
-	// textSpan := ui.NewArea(textHandler)
-	// textHandler.area = textSpan
+	contentLabel := widgets.NewQLabel(nil, 0)
+	contentLabel.SetContentsMargins(0, 0, 0, 0)
 
-	// box.Append(textSpan, false)
-	// box.Append(typeSpan, false)
-	// box.Hide()
+	layout.AddWidget(typeLabel, 0, 0)
+	layout.AddWidget(contentLabel, 0, 0)
+	widget.Hide()
 
 	return &Locpopup{
-	// 	box:     box,
-	// 	locType: typeHandler,
-	// 	text:    textHandler,
+		widget:       widget,
+		typeLabel:    typeLabel,
+		contentLabel: contentLabel,
 	}
 }
 
-func (l *Locpopup) show(loc map[string]interface{}) {
-	// return
-	// font := editor.font
-	// smallerFont := editor.smallerFont
-	// locType := loc["type"].(string)
-	// typePadding := smallerFont.shift
-	// typeMargin := int(float64(smallerFont.shift) * 1.4)
-	// heightDiff := (font.height - smallerFont.height) / 2
-	// textPadding := typePadding + typeMargin - heightDiff
-	// l.locType.SetFont(smallerFont)
-	// switch locType {
-	// case "E":
-	// 	l.locType.SetText("Error")
-	// 	l.locType.SetBackground(newRGBA(204, 62, 68, 1))
-	// 	l.locType.SetColor(newRGBA(255, 255, 255, 1))
-	// case "W":
-	// 	l.locType.SetText("Warning")
-	// 	l.locType.SetBackground(newRGBA(203, 203, 65, 1))
-	// 	l.locType.SetColor(newRGBA(255, 255, 255, 1))
-	// }
-	// l.locType.area.SetPosition(typeMargin, typeMargin)
-	// l.locType.paddingTop = typePadding
-	// l.locType.paddingLeft = typePadding
-	// l.locType.paddingRight = l.locType.paddingLeft
-	// l.locType.paddingBottom = l.locType.paddingTop
-	// w, _ := l.locType.getSize()
-	// l.locType.setSize(l.locType.getSize())
-
-	// text := loc["text"].(string)
-	// l.text.SetText(text)
-	// l.text.SetFont(font)
-	// l.text.SetColor(newRGBA(14, 17, 18, 1))
-	// l.text.SetBackground(newRGBA(212, 215, 214, 1))
-	// l.text.paddingLeft = w + typeMargin*2
-	// l.text.paddingRight = textPadding
-	// l.text.paddingTop = textPadding
-	// l.text.paddingBottom = l.text.paddingTop
-	// l.text.setSize(l.text.getSize())
-	// l.move()
-	// ui.QueueMain(func() {
-	// 	l.locType.area.Show()
-	// 	l.text.area.Show()
-	// 	l.locType.area.QueueRedrawAll()
-	// 	l.text.area.QueueRedrawAll()
-	// 	l.box.SetSize(l.text.getSize())
-	// 	l.box.Show()
-	// })
+func (l *Locpopup) subscribe() {
+	editor.nvim.Subscribe("LocPopup")
+	editor.nvim.RegisterHandler("LocPopup", func(args ...interface{}) {
+		go l.handle(args...)
+	})
+	editor.nvim.Command(`autocmd CursorMoved,CursorHold,InsertEnter,InsertLeave,BufEnter,BufLeave * call rpcnotify(0, "LocPopup", "update")`)
 }
 
-func (l *Locpopup) move() {
-	// row := editor.screen.cursor[0]
-	// col := editor.screen.cursor[1]
-	// ui.QueueMain(func() {
-	// 	l.box.SetPosition(int(float64(col)*editor.font.truewidth), (row+1)*editor.font.lineHeight)
-	// })
+func (l *Locpopup) handle(args ...interface{}) {
+	if len(args) < 1 {
+		return
+	}
+	event, ok := args[0].(string)
+	if !ok {
+		return
+	}
+	switch event {
+	case "update":
+		l.update(args[1:])
+	}
 }
 
-func (l *Locpopup) hide() {
-	// ui.QueueMain(func() {
-	// 	l.box.Hide()
-	// })
+func (l *Locpopup) update(args []interface{}) {
+	l.mutex.Lock()
+	shown := false
+	defer func() {
+		if shown {
+			l.lastShown = true
+		} else {
+			if l.lastShown {
+				l.lastShown = false
+				l.lastText = ""
+				l.widget.Hide()
+			}
+		}
+		l.mutex.Unlock()
+	}()
+	buf, err := editor.nvim.CurrentBuffer()
+	if err != nil {
+		return
+	}
+	buftype := new(string)
+	err = editor.nvim.BufferOption(buf, "buftype", buftype)
+	if err != nil {
+		return
+	}
+	if *buftype == "terminal" {
+		return
+	}
+
+	mode := new(string)
+	err = editor.nvim.Call("mode", mode, "")
+	if err != nil {
+		return
+	}
+	if *mode != "n" {
+		return
+	}
+
+	curWin, err := editor.nvim.CurrentWindow()
+	if err != nil {
+		return
+	}
+	pos, err := editor.nvim.WindowCursor(curWin)
+	if err != nil {
+		return
+	}
+	result := new([]map[string]interface{})
+	err = editor.nvim.Call("getloclist", result, "winnr(\"$\")")
+	if err != nil {
+		return
+	}
+
+	errors := 0
+	warnings := 0
+	locs := []map[string]interface{}{}
+	for _, loc := range *result {
+		lnumInterface := loc["lnum"]
+		if lnumInterface == nil {
+			continue
+		}
+		lnum := reflectToInt(lnumInterface)
+		if lnum == pos[0] {
+			locs = append(locs, loc)
+		}
+		locType := loc["type"].(string)
+		switch locType {
+		case "E":
+			errors++
+		case "W":
+			warnings++
+		}
+	}
+	editor.statusline.lint.redraw(errors, warnings)
+	if len(locs) == 0 {
+		return
+	}
+	if len(locs) > 1 {
+		sort.Sort(ByCol(locs))
+	}
+	var loc map[string]interface{}
+	for _, loc = range locs {
+		if pos[1] >= reflectToInt(loc["col"])-1 {
+			break
+		}
+	}
+
+	locType := loc["type"].(string)
+	text := loc["text"].(string)
+	if locType != l.lastType || text != l.lastText {
+		if locType != l.lastType {
+			switch locType {
+			case "E":
+				l.typeLabel.SetText("Error")
+				l.typeLabel.SetStyleSheet("background-color: rgba(204, 62, 68, 1); color: rgba(212, 215, 214, 1);")
+			case "W":
+				l.typeLabel.SetText("Warning")
+				l.typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1); color: rgba(212, 215, 214, 1);")
+			}
+		}
+		l.contentLabel.SetText(text)
+		l.lastText = text
+		l.lastType = locType
+		l.widget.Hide()
+		l.widget.Show()
+	}
+	shown = true
+}
+
+// ByCol sorts locations by column
+type ByCol []map[string]interface{}
+
+// Len of locations
+func (s ByCol) Len() int {
+	return len(s)
+}
+
+// Swap locations
+func (s ByCol) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+// Less than
+func (s ByCol) Less(i, j int) bool {
+	return reflectToInt(s[i]["col"]) > reflectToInt(s[j]["col"])
 }

@@ -18,6 +18,7 @@ import (
 // 	bg *RGBA
 // }
 
+// Cursor is
 type Cursor struct {
 	widget *widgets.QWidget
 }
@@ -40,7 +41,10 @@ func (c *Cursor) update() {
 		c.widget.Resize2(1, editor.font.lineHeight)
 		c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
 	}
-	c.widget.Move2(int(float64(col)*editor.font.truewidth), row*editor.font.lineHeight)
+	x := int(float64(col) * editor.font.truewidth)
+	y := row * editor.font.lineHeight
+	c.widget.Move2(x, y)
+	editor.loc.widget.Move2(x, y+editor.font.lineHeight)
 }
 
 // func initCursorBox(width, height int) *CursorBox {

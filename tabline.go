@@ -74,7 +74,9 @@ func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int) *wi
 
 			if rightIdex > 0 && i >= rightIdex {
 				item.SetGeometry(core.NewQRect4(totalWidth-width-right, y, width, height))
-				right += width + spacing
+				if width > 0 {
+					right += width + spacing
+				}
 			} else {
 				if x+width+padding > totalWidth {
 					width = totalWidth - x - padding
@@ -82,7 +84,9 @@ func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int) *wi
 					break
 				}
 				item.SetGeometry(core.NewQRect4(x, y, width, height))
-				x += width + spacing
+				if width > 0 {
+					x += width + spacing
+				}
 			}
 		}
 	})
