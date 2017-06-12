@@ -1,31 +1,59 @@
 package gonvim
 
+import (
+	"fmt"
+	"strings"
+
+	"github.com/therecipe/qt/widgets"
+)
+
 // Signature is
 type Signature struct {
-	cusor []int
-	comma int
+	cusor  []int
+	comma  int
+	text   string
+	widget *widgets.QWidget
+	label  *widgets.QLabel
+	height int
 }
 
 func initSignature() *Signature {
-	// box := ui.NewHorizontalBox()
-	// handler := &SpanHandler{}
-	// span := ui.NewArea(handler)
-	// handler.area = span
-	// box.Append(span, false)
-	// box.Hide()
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetContentsMargins(8, 8, 8, 8)
+	widget.SetStyleSheet(`
+	.QWidget {
+		border: 1px solid #000;
+	}
+	QWidget {
+		background-color: rgba(30, 30, 30, 1);
+	}
+	* {
+		color: rgba(205, 211, 222, 1);
+	}
+	`)
+	layout := widgets.NewQVBoxLayout()
+	layout.SetContentsMargins(0, 0, 0, 0)
+
+	label := widgets.NewQLabel(nil, 0)
+	layout.AddWidget(label, 0, 0)
+	widget.SetLayout(layout)
+	widget.Hide()
 	return &Signature{
-	// box:   box,
-	// span:  handler,
-	// cusor: []int{0, 0},
+		cusor:  []int{0, 0},
+		widget: widget,
+		label:  label,
+		height: widget.SizeHint().Height(),
 	}
 }
 
 func (s *Signature) show(args []interface{}) {
-	// text := args[0].(string)
-	// cursor := args[1].([]interface{})
-	// s.comma = reflectToInt(args[2])
-	// s.cusor[0] = reflectToInt(cursor[0])
-	// s.cusor[1] = reflectToInt(cursor[1])
+	text := args[0].(string)
+	s.text = text
+	cursor := args[1].([]interface{})
+	s.comma = reflectToInt(args[2])
+	s.cusor[0] = reflectToInt(cursor[0])
+	s.cusor[1] = reflectToInt(cursor[1])
+	s.update()
 	// font := editor.font
 
 	// s.span.SetFont(font)
@@ -46,7 +74,9 @@ func (s *Signature) show(args []interface{}) {
 	// s.span.paddingRight = s.span.paddingLeft
 	// s.span.paddingBottom = s.span.paddingTop
 	// s.span.setSize(s.span.getSize())
-	// s.move()
+	s.move()
+	s.widget.Hide()
+	s.widget.Show()
 	// s.underline()
 	// ui.QueueMain(func() {
 	// 	s.box.Show()
@@ -56,7 +86,37 @@ func (s *Signature) show(args []interface{}) {
 
 func (s *Signature) pos(args []interface{}) {
 	s.comma = reflectToInt(args[0])
-	s.underline()
+	s.update()
+	// s.underline()
+}
+
+func (s *Signature) update() {
+	text := s.text
+	left := strings.Index(text, "(")
+	right := strings.Index(text, ")")
+	n := 0
+	i := left + 1
+	start := i
+	for ; i < right; i++ {
+		if string(text[i]) == "," {
+			n++
+			if n > s.comma {
+				break
+			}
+			start = i
+		}
+	}
+	for ; start < i; start++ {
+		t := string(text[start])
+		if t == "," || t == " " {
+			continue
+		} else {
+			break
+		}
+	}
+	formattedText := fmt.Sprintf("%s<font style=\"text-decoration:underline\";>%s</font>%s", text[:start], text[start:i], text[i:])
+	fmt.Println(formattedText)
+	s.label.SetText(formattedText)
 }
 
 func (s *Signature) underline() {
@@ -94,19 +154,22 @@ func (s *Signature) underline() {
 }
 
 func (s *Signature) move() {
-	// row := editor.screen.cursor[0] + s.cusor[0]
-	// col := editor.screen.cursor[1] + s.cusor[1]
+	text := s.text
+	row := editor.screen.cursor[0] + s.cusor[0]
+	col := editor.screen.cursor[1] + s.cusor[1]
 	// _, h := s.span.getSize()
-	// i := strings.Index(s.span.text, "(")
-	// if i >= 0 {
-	// 	col -= i
-	// }
+	i := strings.Index(text, "(")
+	s.widget.Move2(
+		int(float64(col)*editor.font.truewidth)-int(editor.font.defaultFontMetrics.Width(string(text[:i]))),
+		row*editor.font.lineHeight-s.height,
+	)
 	// ui.QueueMain(func() {
 	// 	s.box.SetPosition(int(float64(col)*editor.font.truewidth), row*editor.font.lineHeight-h)
 	// })
 }
 
 func (s *Signature) hide() {
+	s.widget.Hide()
 	// ui.QueueMain(func() {
 	// 	s.box.Hide()
 	// })

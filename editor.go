@@ -43,6 +43,7 @@ type Editor struct {
 	screen           *Screen
 	close            chan bool
 	loc              *Locpopup
+	signature        *Signature
 	popup            *PopupMenu
 	finder           *Finder
 	tabline          *Tabline
@@ -87,11 +88,11 @@ func (e *Editor) handleRPCGui(updates ...interface{}) {
 	case "finder_select":
 		e.finder.selectResult(updates[1:])
 	case "signature_show":
-		// e.cursor.signature.show(updates[1:])
+		e.signature.show(updates[1:])
 	case "signature_pos":
-		// e.cursor.signature.pos(updates[1:])
+		e.signature.pos(updates[1:])
 	case "signature_hide":
-		// e.cursor.signature.hide()
+		e.signature.hide()
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}
@@ -269,6 +270,8 @@ func InitEditorNew() {
 	finder.widget.SetParent(screen.widget)
 	loc := initLocpopup()
 	loc.widget.SetParent(screen.widget)
+	signature := initSignature()
+	signature.widget.SetParent(screen.widget)
 	window.ConnectKeyPressEvent(screen.keyPress)
 
 	layout := widgets.NewQVBoxLayout()
@@ -302,6 +305,7 @@ func InitEditorNew() {
 		popup:        popup,
 		finder:       finder,
 		loc:          loc,
+		signature:    signature,
 		tabline:      tabline,
 		width:        width,
 		height:       height,
