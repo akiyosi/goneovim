@@ -378,6 +378,14 @@ func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
 	}
 }
 
+func (s *Screen) subscribe() {
+	editor.nvim.RegisterHandler("winsupdate", func(updates ...interface{}) {
+		s.redrawWindows()
+	})
+	editor.nvim.Subscribe("winsupdate")
+	editor.nvim.Command(`autocmd VimResized,WinEnter,WinLeave * call rpcnotify(0, "winsupdate")`)
+}
+
 func (s *Screen) redrawWindows() {
 	wins := map[nvim.Window]*Window{}
 	neovim := editor.nvim
@@ -919,6 +927,25 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		w.height*editor.font.lineHeight,
 		gui.NewQColor3(0, 0, 0, 255),
 	)
+
+	gradient := gui.NewQLinearGradient3(
+		(float64(w.width+w.pos[1])+1)*float64(editor.font.truewidth),
+		0,
+		(float64(w.width+w.pos[1]))*float64(editor.font.truewidth),
+		0,
+	)
+	gradient.SetColorAt(0, gui.NewQColor3(10, 10, 10, 125))
+	gradient.SetColorAt(1, gui.NewQColor3(10, 10, 10, 0))
+	brush := gui.NewQBrush10(gradient)
+	p.FillRect2(
+		int((float64(w.width+w.pos[1]))*editor.font.truewidth),
+		w.pos[0]*editor.font.lineHeight,
+		int(editor.font.truewidth),
+		w.height*editor.font.lineHeight,
+		brush,
+	)
+	brush.DestroyQBrush()
+	gradient.DestroyQGradient()
 
 	// drawRect(dp, int(float64(w.pos[1]+w.width)*editor.font.truewidth), w.pos[0]*editor.font.lineHeight, int(editor.font.truewidth), w.height*editor.font.lineHeight, bg)
 

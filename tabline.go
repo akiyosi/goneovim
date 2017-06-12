@@ -37,6 +37,7 @@ type Tab struct {
 func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int) *widgets.QLayout {
 	layout := widgets.NewQLayout2()
 	items := []*widgets.QLayoutItem{}
+	rect := core.NewQRect()
 	layout.ConnectSizeHint(func() *core.QSize {
 		size := core.NewQSize()
 		for _, item := range items {
@@ -73,17 +74,20 @@ func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int) *wi
 			}
 
 			if rightIdex > 0 && i >= rightIdex {
-				item.SetGeometry(core.NewQRect4(totalWidth-width-right, y, width, height))
+				rect.SetRect(totalWidth-width-right, y, width, height)
+				item.SetGeometry(rect)
 				if width > 0 {
 					right += width + spacing
 				}
 			} else {
 				if x+width+padding > totalWidth {
 					width = totalWidth - x - padding
-					item.SetGeometry(core.NewQRect4(x, y, width, height))
+					rect.SetRect(x, y, width, height)
+					item.SetGeometry(rect)
 					break
 				}
-				item.SetGeometry(core.NewQRect4(x, y, width, height))
+				rect.SetRect(x, y, width, height)
+				item.SetGeometry(rect)
 				if width > 0 {
 					x += width + spacing
 				}
