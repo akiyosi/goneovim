@@ -185,8 +185,11 @@ func (f *FinderResultItem) hideIcon() {
 }
 
 func (f *Finder) resize() {
+	fmt.Println("finder resize")
 	x := (editor.screen.width - f.width) / 2
+	fmt.Println("finder start to move")
 	f.widget.Move2(x, 0)
+	fmt.Println("finder move finished")
 	itemHeight := f.resultItems[0].widget.SizeHint().Height()
 	f.itemHeight = itemHeight
 	f.showTotal = int(float64(editor.screen.height)/float64(itemHeight)*0.5) - 1

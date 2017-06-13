@@ -1,6 +1,10 @@
 package gonvim
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/therecipe/qt/gui"
+)
 
 // RGBA is
 type RGBA struct {
@@ -27,8 +31,14 @@ func (rgba *RGBA) String() string {
 	return fmt.Sprintf("rgba(%d, %d, %d, %f)", rgba.R, rgba.G, rgba.B, rgba.A)
 }
 
+// Hex is
 func (rgba *RGBA) Hex() string {
 	return fmt.Sprintf("#%02x%02x%02x", uint8(rgba.R), uint8(rgba.G), uint8(rgba.B))
+}
+
+// QColor is
+func (rgba *RGBA) QColor() *gui.QColor {
+	return gui.NewQColor3(rgba.R, rgba.G, rgba.B, int(rgba.A*255))
 }
 
 func calcColor(c int) *RGBA {

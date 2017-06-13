@@ -10,6 +10,7 @@ import (
 
 	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
 	"github.com/neovim/go-client/nvim"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -62,9 +63,9 @@ func (e *Editor) handleNotification() {
 		go e.handleRPCGui(updates...)
 	})
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		e.screen.paintMutex.Lock()
+		// e.screen.paintMutex.Lock()
 		e.handleRedraw(updates...)
-		e.screen.paintMutex.Unlock()
+		// e.screen.paintMutex.Unlock()
 	})
 }
 
@@ -101,6 +102,8 @@ func (e *Editor) handleRPCGui(updates ...interface{}) {
 func (e *Editor) handleRedraw(updates ...[]interface{}) {
 	screen := e.screen
 	// go screen.redrawWindows()
+	screen.pixmapPainter = gui.NewQPainter2(screen.pixmap)
+	screen.pixmapPainter.SetFont(e.font.fontNew)
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -157,6 +160,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			fmt.Println("Unhandle event", event)
 		}
 	}
+	screen.pixmapPainter.DestroyQPainter()
 	screen.redraw()
 	// editor.cursor.draw()
 	editor.cursorNew.update()
@@ -185,6 +189,7 @@ func (e *Editor) guiFont(args ...interface{}) {
 	}
 
 	e.font.change(parts[0], height)
+	e.nvimResize()
 	e.popup.updateFont(e.font)
 }
 
@@ -206,11 +211,12 @@ func (e *Editor) guiLinespace(args ...interface{}) {
 		return
 	}
 	e.font.changeLineSpace(lineSpace)
+	e.nvimResize()
 }
 
 func (e *Editor) nvimResize() {
-	e.screen.paintMutex.Lock()
-	defer e.screen.paintMutex.Unlock()
+	// e.screen.paintMutex.Lock()
+	// defer e.screen.paintMutex.Unlock()
 	width, height := e.screen.size()
 	cols := int(float64(width) / editor.font.truewidth)
 	rows := height / editor.font.lineHeight
@@ -239,6 +245,7 @@ func (hl *Highlight) copy() Highlight {
 // InitEditorNew is
 func InitEditorNew() {
 	app := widgets.NewQApplication(0, nil)
+	devicePixelRatio := app.DevicePixelRatio()
 	fontFamily := ""
 	switch runtime.GOOS {
 	case "windows":
@@ -261,7 +268,7 @@ func InitEditorNew() {
 
 	tabline := initTablineNew()
 	statusline := initStatuslineNew()
-	screen := initScreenNew()
+	screen := initScreenNew(devicePixelRatio)
 	cursor := initCursorNew()
 	cursor.widget.SetParent(screen.widget)
 	popup := initPopupmenuNew(font)
@@ -315,7 +322,6 @@ func InitEditorNew() {
 		matchFg:      newRGBA(81, 154, 186, 1),
 	}
 
-	editor.nvimResize()
 	editor.handleNotification()
 	// editor.finder.rePosition()
 	go func() {
@@ -325,6 +331,8 @@ func InitEditorNew() {
 		}
 		editor.close <- true
 	}()
+
+	screen.updateSize()
 
 	o := make(map[string]interface{})
 	o["rgb"] = true

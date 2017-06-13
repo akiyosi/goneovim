@@ -54,34 +54,9 @@ func (s *Signature) show(args []interface{}) {
 	s.cusor[0] = reflectToInt(cursor[0])
 	s.cusor[1] = reflectToInt(cursor[1])
 	s.update()
-	// font := editor.font
-
-	// s.span.SetFont(font)
-	// s.span.SetText(text)
-	// s.span.setSize(s.span.getSize())
-	// s.span.SetBackground(newRGBA(30, 30, 30, 1))
-	// s.span.SetColor(newRGBA(205, 211, 222, 1))
-	// border := &Border{
-	// 	width: 1,
-	// 	color: newRGBA(0, 0, 0, 1),
-	// }
-	// s.span.borderBottom = border
-	// s.span.borderTop = border
-	// s.span.borderLeft = border
-	// s.span.borderRight = border
-	// s.span.paddingTop = font.shift * 2
-	// s.span.paddingLeft = int(font.truewidth)
-	// s.span.paddingRight = s.span.paddingLeft
-	// s.span.paddingBottom = s.span.paddingTop
-	// s.span.setSize(s.span.getSize())
 	s.move()
 	s.widget.Hide()
 	s.widget.Show()
-	// s.underline()
-	// ui.QueueMain(func() {
-	// 	s.box.Show()
-	// 	s.box.SetSize(s.span.getSize())
-	// })
 }
 
 func (s *Signature) pos(args []interface{}) {
@@ -115,62 +90,20 @@ func (s *Signature) update() {
 		}
 	}
 	formattedText := fmt.Sprintf("%s<font style=\"text-decoration:underline\";>%s</font>%s", text[:start], text[start:i], text[i:])
-	fmt.Println(formattedText)
 	s.label.SetText(formattedText)
-}
-
-func (s *Signature) underline() {
-	// text := s.span.text
-	// left := strings.Index(text, "(")
-	// right := strings.Index(text, ")")
-	// n := 0
-	// i := left + 1
-	// start := i
-	// for ; i < right; i++ {
-	// 	if string(text[i]) == "," {
-	// 		n++
-	// 		if n > s.comma {
-	// 			break
-	// 		}
-	// 		start = i
-	// 	}
-	// }
-	// for ; start < i; start++ {
-	// 	t := string(text[start])
-	// 	if t == "," || t == " " {
-	// 		continue
-	// 	} else {
-	// 		break
-	// 	}
-	// }
-	// i--
-	// s.span.underline = []int{}
-	// for j := start; j <= i; j++ {
-	// 	s.span.underline = append(s.span.underline, j)
-	// }
-	// ui.QueueMain(func() {
-	// 	s.span.area.QueueRedrawAll()
-	// })
 }
 
 func (s *Signature) move() {
 	text := s.text
 	row := editor.screen.cursor[0] + s.cusor[0]
 	col := editor.screen.cursor[1] + s.cusor[1]
-	// _, h := s.span.getSize()
 	i := strings.Index(text, "(")
 	s.widget.Move2(
 		int(float64(col)*editor.font.truewidth)-int(editor.font.defaultFontMetrics.Width(string(text[:i]))),
 		row*editor.font.lineHeight-s.height,
 	)
-	// ui.QueueMain(func() {
-	// 	s.box.SetPosition(int(float64(col)*editor.font.truewidth), row*editor.font.lineHeight-h)
-	// })
 }
 
 func (s *Signature) hide() {
 	s.widget.Hide()
-	// ui.QueueMain(func() {
-	// 	s.box.Hide()
-	// })
 }

@@ -2,7 +2,6 @@ package gonvim
 
 import (
 	"fmt"
-	"math"
 	"runtime"
 	"strings"
 	"sync"
@@ -26,21 +25,25 @@ type Window struct {
 
 // Screen is the main editor area
 type Screen struct {
-	width           int
-	height          int
-	widget          *widgets.QWidget
-	wins            map[nvim.Window]*Window
-	cursor          [2]int
-	lastCursor      [2]int
-	content         [][]*Char
-	scrollRegion    []int
-	curtab          nvim.Tabpage
-	highlight       Highlight
-	curWins         map[nvim.Window]*Window
-	queueRedrawArea [4]int
-	specialKeys     map[core.Qt__Key]string
-	paintMutex      sync.Mutex
-	redrawMutex     sync.Mutex
+	width            int
+	height           int
+	widget           *widgets.QWidget
+	wins             map[nvim.Window]*Window
+	cursor           [2]int
+	lastCursor       [2]int
+	devicePixelRatio float64
+	content          [][]*Char
+	scrollRegion     []int
+	curtab           nvim.Tabpage
+	highlight        Highlight
+	curWins          map[nvim.Window]*Window
+	queueRedrawArea  [4]int
+	specialKeys      map[core.Qt__Key]string
+	paintMutex       sync.Mutex
+	redrawMutex      sync.Mutex
+	pixmap           *gui.QPixmap
+	pixmapPainter    *gui.QPainter
+	item             *widgets.QGraphicsPixmapItem
 
 	controlModifier core.Qt__KeyboardModifier
 	cmdModifier     core.Qt__KeyboardModifier
@@ -69,28 +72,40 @@ func initScreen(width, height int) *Screen {
 	return screen
 }
 
-func initScreenNew() *Screen {
+func initScreenNew(devicePixelRatio float64) *Screen {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
+	// widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+
+	// view := widgets.NewQGraphicsView(nil)
+	// scene := widgets.NewQGraphicsScene(nil)
+	// view.SetScene(scene)
+	// view.SetFixedSize2(200, 200)
+	// item := scene.AddPixmap(gui.NewQPixmap())
+	// view.SetParent(widget)
+
 	screen := &Screen{
-		widget:       widget,
-		cursor:       [2]int{0, 0},
-		lastCursor:   [2]int{0, 0},
-		scrollRegion: []int{0, 0, 0, 0},
+		widget:           widget,
+		cursor:           [2]int{0, 0},
+		lastCursor:       [2]int{0, 0},
+		scrollRegion:     []int{0, 0, 0, 0},
+		devicePixelRatio: devicePixelRatio,
+		// item:             item,
 	}
 	widget.ConnectPaintEvent(screen.paint)
-	widget.ConnectCustomEvent(screen.customEvent)
+	// widget.ConnectCustomEvent(screen.customEvent)
 	screen.initSpecialKeys()
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		if editor == nil {
 			return
 		}
-		width, height := screen.size()
-		screen.width = width
-		screen.height = height
-		editor.nvimResize()
-		editor.finder.resize()
+		screen.updateSize()
 	})
+	// go func() {
+	// 	for range time.Tick(20 * time.Millisecond) {
+	// 		widget.Update()
+	// 	}
+	// }()
 	return screen
 }
 
@@ -110,30 +125,46 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	}
 	s.paintMutex.Lock()
 	defer s.paintMutex.Unlock()
-	font := editor.font
+
+	// font := editor.font
+	// top := rect.Y()
+	// left := rect.X()
+	// width := rect.Width()
+	// height := rect.Height()
+	// right := left + width
+	// bottom := top + height
+	// row := int(float64(top) / float64(font.lineHeight))
+	// col := int(float64(left) / font.truewidth)
+	// rows := int(math.Ceil(float64(bottom)/float64(font.lineHeight))) - row
+	// cols := int(math.Ceil(float64(right)/font.truewidth)) - col
+
 	rect := vqp.M_rect()
-	top := rect.Y()
-	left := rect.X()
-	right := left + rect.Width()
-	bottom := top + rect.Height()
-	row := int(float64(top) / float64(font.lineHeight))
-	col := int(float64(left) / font.truewidth)
-	rows := int(math.Ceil(float64(bottom)/float64(font.lineHeight))) - row
-	cols := int(math.Ceil(float64(right)/font.truewidth)) - col
-
 	p := gui.NewQPainter2(s.widget)
-	p.SetFont(editor.font.fontNew)
-
-	for y := row; y < row+rows; y++ {
-		if y >= editor.rows {
-			continue
-		}
-		fillHightlight(p, y, col, cols, [2]int{0, 0})
-		drawText(p, y, col, cols, [2]int{0, 0})
-	}
-
-	s.drawBorder(p, row, col, rows, cols)
+	source := core.NewQRect4(
+		int(float64(rect.X())*s.devicePixelRatio),
+		int(float64(rect.Y())*s.devicePixelRatio),
+		int(float64(rect.Width())*s.devicePixelRatio),
+		int(float64(rect.Height())*s.devicePixelRatio),
+	)
+	p.DrawPixmap2(rect, s.pixmap, source)
 	p.DestroyQPainter()
+
+	// pixmap := gui.NewQPixmap3(width, height)
+
+	// p := gui.NewQPainter2(pixmap)
+	// p.SetFont(editor.font.fontNew)
+
+	// for y := row; y < row+rows; y++ {
+	// 	if y >= editor.rows {
+	// 		continue
+	// 	}
+	// 	fillHightlight(p, y, col, cols, [2]int{0, 0})
+	// 	drawText(p, y, col, cols, [2]int{0, 0})
+	// }
+
+	// s.drawBorder(p, row, col, rows, cols)
+	// p.DestroyQPainter()
+	// s.widget.Render(pixmap, core.NewQPoint2(left, top), nil, 0)
 }
 
 func (s *Screen) initSpecialKeys() {
@@ -268,9 +299,8 @@ func (s *Screen) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 		if mod&s.controlModifier > 0 || mod&s.cmdModifier > 0 {
 			if int(s.keyControl) == key || int(s.keyCmd) == key || int(s.keyAlt) == key {
 				return ""
-			} else {
-				c = string(key)
 			}
+			c = string(key)
 		} else {
 			return ""
 		}
@@ -443,6 +473,7 @@ func (s *Screen) updateBg(args []interface{}) {
 		bg := calcColor(reflectToInt(args[0]))
 		editor.Background = bg
 	}
+	s.pixmap.Fill(editor.Background.QColor())
 	css := fmt.Sprintf("background-color: %s;", editor.Background.String())
 	s.widget.SetStyleSheet(css)
 }
@@ -450,6 +481,20 @@ func (s *Screen) updateBg(args []interface{}) {
 func (s *Screen) size() (int, int) {
 	geo := s.widget.Geometry()
 	return geo.Width(), geo.Height()
+}
+
+func (s *Screen) updateSize() {
+	width, height := s.size()
+	s.width = width
+	s.height = height
+	pixmap := gui.NewQPixmap3(width, height)
+	if s.devicePixelRatio != 1 {
+		pixmap = pixmap.Scaled2(int(s.devicePixelRatio*float64(width)), int(s.devicePixelRatio*float64(height)), core.Qt__IgnoreAspectRatio, core.Qt__SmoothTransformation)
+		pixmap.SetDevicePixelRatio(s.devicePixelRatio)
+	}
+	s.pixmap = pixmap
+	editor.nvimResize()
+	editor.finder.resize()
 }
 
 func (s *Screen) resize(args []interface{}) {
@@ -469,6 +514,7 @@ func (s *Screen) clear(args []interface{}) {
 	for i := 0; i < editor.rows; i++ {
 		s.content[i] = make([]*Char, editor.cols)
 	}
+	s.pixmap.Fill(editor.Background.QColor())
 	s.queueRedrawAll()
 }
 
@@ -481,6 +527,13 @@ func (s *Screen) eolClear(args []interface{}) {
 		line[x] = nil
 		numChars++
 	}
+	rect := core.NewQRectF4(
+		float64(col)*editor.font.truewidth,
+		float64(row*editor.font.lineHeight),
+		float64(numChars)*editor.font.truewidth,
+		float64(editor.font.lineHeight),
+	)
+	s.pixmapPainter.FillRect4(rect, editor.Background.QColor())
 	s.queueRedraw(col, row, numChars+1, 1)
 }
 
@@ -500,6 +553,7 @@ func (s *Screen) put(args []interface{}) {
 		return
 	}
 	line := s.content[row]
+	text := ""
 	for _, arg := range args {
 		chars := arg.([]interface{})
 		for _, c := range chars {
@@ -509,11 +563,34 @@ func (s *Screen) put(args []interface{}) {
 				line[col] = char
 			}
 			char.char = c.(string)
+			text += char.char
 			char.highlight = s.highlight
 			col++
 			numChars++
 		}
 	}
+	point := core.NewQPointF3(
+		float64(x)*editor.font.truewidth,
+		float64(y*editor.font.lineHeight+editor.font.shift),
+	)
+	rect := core.NewQRectF4(
+		float64(x)*editor.font.truewidth,
+		float64(y*editor.font.lineHeight),
+		float64(numChars)*editor.font.truewidth,
+		float64(editor.font.lineHeight),
+	)
+	bg := editor.Background
+	fg := editor.Foreground
+	if s.highlight.background != nil {
+		bg = s.highlight.background
+	}
+	if s.highlight.foreground != nil {
+		fg = s.highlight.foreground
+	}
+	s.pixmapPainter.FillRect4(rect, bg.QColor())
+	s.pixmapPainter.SetPen2(fg.QColor())
+	s.pixmapPainter.DrawText(point, text)
+	point.DestroyQPointF()
 	s.cursor[1] = col
 	// we redraw one character more than the chars put for double width characters
 	s.queueRedraw(x, y, numChars+1, 1)
@@ -579,6 +656,39 @@ func (s *Screen) scroll(args []interface{}) {
 
 	//areaScrollRect(left, top, (right - left + 1), (bot - top + 1), 0, -count)
 	s.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
+	// if count > 0 {
+	// 	s.pixmapPainter.FillRect5(
+	// 		int(float64(left)*editor.font.truewidth*s.devicePixelRatio),
+	// 		int(float64((bot-count+1)*editor.font.lineHeight)*s.devicePixelRatio),
+	// 		int(float64(right-left+1)*editor.font.truewidth*s.devicePixelRatio),
+	// 		int(float64(count*editor.font.lineHeight)*s.devicePixelRatio),
+	// 		editor.Background.QColor(),
+	// 	)
+	// } else {
+	// 	s.pixmapPainter.FillRect5(
+	// 		int(float64(left)*editor.font.truewidth*s.devicePixelRatio),
+	// 		int(float64(top)*s.devicePixelRatio),
+	// 		int(float64(right-left+1)*editor.font.truewidth*s.devicePixelRatio),
+	// 		int(float64(-count*editor.font.lineHeight)*s.devicePixelRatio),
+	// 		editor.Background.QColor(),
+	// 	)
+	// }
+
+	s.pixmap.Scroll(
+		0,
+		-int(float64(count*editor.font.lineHeight)*(s.devicePixelRatio)),
+		int(float64(left)*editor.font.truewidth*s.devicePixelRatio),
+		int(float64(top*editor.font.lineHeight)*s.devicePixelRatio),
+		int(float64(right-left+1)*editor.font.truewidth*s.devicePixelRatio),
+		int(float64((bot-top+1)*editor.font.lineHeight)*s.devicePixelRatio),
+		nil,
+	)
+	// s.pixmap.Copy2(
+	// 	int(float64(left)*editor.font.truewidth),
+	// 	top*editor.font.lineHeight,
+	// 	int(float64(right-left)*editor.font.truewidth),
+	// 	(bot-top)*editor.font.lineHeight,
+	// )
 
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
@@ -592,8 +702,25 @@ func (s *Screen) scroll(args []interface{}) {
 			}
 		}
 		s.queueRedraw(left, (bot - count + 1), (right - left), count)
+		rect := core.NewQRectF4(
+			float64(left)*editor.font.truewidth,
+			float64((bot-count+1)*editor.font.lineHeight),
+			float64(right-left+1)*editor.font.truewidth,
+			float64(count*editor.font.lineHeight),
+		)
+		s.pixmapPainter.FillRect4(
+			rect,
+			editor.Background.QColor(),
+		)
 		if top > 0 {
 			s.queueRedraw(left, (top - count), (right - left), count)
+			// s.pixmapPainter.FillRect5(
+			// 	int(float64(left)*editor.font.truewidth*s.devicePixelRatio),
+			// 	int(float64((top-count)*editor.font.lineHeight)*s.devicePixelRatio),
+			// 	int(float64(right-left+1)*editor.font.truewidth*s.devicePixelRatio),
+			// 	int(float64(count*editor.font.lineHeight)*s.devicePixelRatio),
+			// 	editor.Background.QColor(),
+			// )
 		}
 	} else {
 		for row := bot; row >= top-count; row-- {
@@ -607,8 +734,25 @@ func (s *Screen) scroll(args []interface{}) {
 			}
 		}
 		s.queueRedraw(left, top, (right - left), -count)
+		rect := core.NewQRectF4(
+			float64(left)*editor.font.truewidth,
+			float64(top*editor.font.lineHeight),
+			float64(right-left+1)*editor.font.truewidth,
+			float64(-count*editor.font.lineHeight),
+		)
+		s.pixmapPainter.FillRect4(
+			rect,
+			editor.Background.QColor(),
+		)
 		if bot < editor.rows-1 {
 			s.queueRedraw(left, bot+1, (right - left), -count)
+			// s.pixmapPainter.FillRect5(
+			// 	int(float64(left)*editor.font.truewidth*s.devicePixelRatio),
+			// 	int(float64(bot+1)*s.devicePixelRatio),
+			// 	int(float64(right-left+1)*editor.font.truewidth*s.devicePixelRatio),
+			// 	int(float64(-count*editor.font.lineHeight)*s.devicePixelRatio),
+			// 	editor.Background.QColor(),
+			// )
 		}
 	}
 }
@@ -619,6 +763,7 @@ func (s *Screen) redraw() {
 	width := s.queueRedrawArea[2] - x
 	height := s.queueRedrawArea[3] - y
 	if width > 0 && height > 0 {
+		// s.item.SetPixmap(s.pixmap)
 		s.widget.Update2(
 			int(float64(x)*editor.font.truewidth),
 			y*editor.font.lineHeight,
@@ -637,6 +782,12 @@ func (s *Screen) queueRedrawAll() {
 }
 
 func (s *Screen) queueRedraw(x, y, width, height int) {
+	// s.widget.Update2(
+	// 	int(float64(x)*editor.font.truewidth),
+	// 	y*editor.font.lineHeight,
+	// 	int(math.Ceil(float64(width)*editor.font.truewidth)),
+	// 	height*editor.font.lineHeight,
+	// )
 	if x < s.queueRedrawArea[0] {
 		s.queueRedrawArea[0] = x
 	}
