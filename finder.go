@@ -28,7 +28,6 @@ type Finder struct {
 	cursor         *widgets.QWidget
 	resultType     string
 	agTypes        []string
-	hidden         bool
 	max            int
 	showTotal      int
 	pattern        *widgets.QLabel
@@ -185,32 +184,19 @@ func (f *FinderResultItem) hideIcon() {
 }
 
 func (f *Finder) resize() {
-	fmt.Println("finder resize")
 	x := (editor.screen.width - f.width) / 2
-	fmt.Println("finder start to move")
 	f.widget.Move2(x, 0)
-	fmt.Println("finder move finished")
 	itemHeight := f.resultItems[0].widget.SizeHint().Height()
 	f.itemHeight = itemHeight
 	f.showTotal = int(float64(editor.screen.height)/float64(itemHeight)*0.5) - 1
 	fzf.UpdateMax(editor.nvim, f.showTotal)
-	fmt.Println("finder resize", f.showTotal)
 
 	for i := f.showTotal; i < len(f.resultItems); i++ {
-		f.resultItems[i].widget.Hide()
+		f.resultItems[i].hide()
 	}
 }
 
-func (f *Finder) show() {
-	f.hidden = false
-	// f.widget.Show()
-	// ui.QueueMain(func() {
-	// 	f.box.Show()
-	// })
-}
-
 func (f *Finder) hide() {
-	f.hidden = true
 	f.widget.Hide()
 }
 
@@ -256,9 +242,6 @@ func (f *Finder) showPattern(args []interface{}) {
 }
 
 func (f *Finder) showResult(args []interface{}) {
-	if f.hidden {
-		return
-	}
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	selected := reflectToInt(args[1])

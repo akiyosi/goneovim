@@ -98,8 +98,12 @@ func (s *Signature) move() {
 	row := editor.screen.cursor[0] + s.cusor[0]
 	col := editor.screen.cursor[1] + s.cusor[1]
 	i := strings.Index(text, "(")
+	x := float64(col) * editor.font.truewidth
+	if i > -1 {
+		x -= editor.font.defaultFontMetrics.Width(string(text[:i]))
+	}
 	s.widget.Move2(
-		int(float64(col)*editor.font.truewidth)-int(editor.font.defaultFontMetrics.Width(string(text[:i]))),
+		int(x),
 		row*editor.font.lineHeight-s.height,
 	)
 }

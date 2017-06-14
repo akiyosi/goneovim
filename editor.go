@@ -82,8 +82,6 @@ func (e *Editor) handleRPCGui(updates ...interface{}) {
 		e.finder.cursorPos(updates[1:])
 	case "finder_show_result":
 		e.finder.showResult(updates[1:])
-	case "finder_show":
-		e.finder.show()
 	case "finder_hide":
 		e.finder.hide()
 	case "finder_select":
@@ -159,6 +157,9 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 		default:
 			fmt.Println("Unhandle event", event)
 		}
+	}
+	for _, win := range screen.curWins {
+		win.drawBorder(screen.pixmapPainter)
 	}
 	screen.pixmapPainter.DestroyQPainter()
 	screen.redraw()
