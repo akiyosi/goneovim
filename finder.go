@@ -26,6 +26,7 @@ type Finder struct {
 	mutex          sync.Mutex
 	width          int
 	cursor         *widgets.QWidget
+	cursorX        int
 	resultType     string
 	agTypes        []string
 	max            int
@@ -33,6 +34,7 @@ type Finder struct {
 	pattern        *widgets.QLabel
 	patternPadding int
 	scrollBar      *widgets.QWidget
+	scrollBarPos   int
 	scrollCol      *widgets.QWidget
 }
 
@@ -141,7 +143,7 @@ func initFinder() *Finder {
 		resultItems = append(resultItems, resultItem)
 	}
 	widget.Hide()
-	return &Finder{
+	finder := &Finder{
 		width:          width,
 		widget:         widget,
 		resultItems:    resultItems,
@@ -153,6 +155,13 @@ func initFinder() *Finder {
 		scrollBar:      scrollBar,
 		cursor:         cursor,
 	}
+	scrollBar.ConnectCustomEvent(func(event *core.QEvent) {
+		scrollBar.Move2(0, finder.scrollBarPos)
+	})
+	cursor.ConnectCustomEvent(func(event *core.QEvent) {
+		cursor.Move2(finder.cursorX+finder.patternPadding, finder.patternPadding)
+	})
+	return finder
 }
 
 func (f *FinderResultItem) show() {
@@ -206,8 +215,8 @@ func (f *Finder) cursorPos(args []interface{}) {
 }
 
 func (f *Finder) cursorMove(p int) {
-	x := editor.font.defaultFontMetrics.Width(string(f.patternText[:p]))
-	f.cursor.Move2(f.patternPadding+int(x), f.patternPadding)
+	f.cursorX = int(editor.font.defaultFontMetrics.Width(string(f.patternText[:p])))
+	f.cursor.CustomEvent(core.NewQEvent(core.QEvent__Move))
 }
 
 func (f *Finder) showSelected(selected int) {
@@ -306,7 +315,8 @@ func (f *Finder) showResult(args []interface{}) {
 			height = 1
 		}
 		f.scrollBar.SetFixedHeight(height)
-		f.scrollBar.Move2(0, int(float64(start)/float64(total)*(float64(f.itemHeight*f.showTotal))))
+		f.scrollBarPos = int(float64(start) / float64(total) * (float64(f.itemHeight * f.showTotal)))
+		f.scrollBar.CustomEvent(core.NewQEvent(core.QEvent__Move))
 		f.scrollCol.Show()
 	} else {
 		f.scrollCol.Hide()

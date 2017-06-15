@@ -56,23 +56,6 @@ type Screen struct {
 	keyAlt          core.Qt__Key
 }
 
-func initScreen(width, height int) *Screen {
-	// box := ui.NewHorizontalBox()
-	screen := &Screen{
-	// box:          box,
-	// wins:         map[nvim.Window]*Window{},
-	// cursor:       [2]int{0, 0},
-	// lastCursor:   [2]int{0, 0},
-	// scrollRegion: []int{0, 0, 0, 0},
-	}
-	// area := ui.NewArea(screen)
-	// screen.area = area
-	// screen.setSize(width, height)
-	// box.Append(area, false)
-	// box.SetSize(width, height)
-	return screen
-}
-
 func initScreenNew(devicePixelRatio float64) *Screen {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
@@ -95,7 +78,9 @@ func initScreenNew(devicePixelRatio float64) *Screen {
 		// item:             item,
 	}
 	widget.ConnectPaintEvent(screen.paint)
-	// widget.ConnectCustomEvent(screen.customEvent)
+	widget.ConnectCustomEvent(func(event *core.QEvent) {
+		screen.redraw()
+	})
 	screen.initSpecialKeys()
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		if editor == nil {
@@ -109,12 +94,6 @@ func initScreenNew(devicePixelRatio float64) *Screen {
 	// 	}
 	// }()
 	return screen
-}
-
-func (s *Screen) customEvent(event *core.QEvent) {
-	if event.Type() == core.QEvent__UpdateRequest {
-		go s.redraw()
-	}
 }
 
 func (s *Screen) redrawRequest() {
@@ -509,6 +488,7 @@ func (s *Screen) resize(args []interface{}) {
 	for i := 0; i < editor.rows; i++ {
 		s.content[i] = make([]*Char, editor.cols)
 	}
+	s.pixmap.Fill(editor.Background.QColor())
 	s.queueRedrawAll()
 }
 
@@ -737,6 +717,10 @@ func (s *Screen) scroll(args []interface{}) {
 			s.queueRedraw(left, bot+1, (right - left), -count)
 		}
 	}
+}
+
+func (s *Screen) update() {
+	s.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 }
 
 func (s *Screen) redraw() {
@@ -1080,59 +1064,4 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	brush.DestroyQBrush()
 	gradient.DestroyQGradient()
 
-	// drawRect(dp, int(float64(w.pos[1]+w.width)*editor.font.truewidth), w.pos[0]*editor.font.lineHeight, int(editor.font.truewidth), w.height*editor.font.lineHeight, bg)
-
-	// // color := newRGBA(0, 0, 0, 1)
-
-	// p := ui.NewPath(ui.Winding)
-	// p.AddRectangle(
-	// 	(float64(w.width+w.pos[1]))*editor.font.truewidth,
-	// 	float64(w.pos[0]*editor.font.lineHeight),
-	// 	editor.font.truewidth,
-	// 	float64(w.height*editor.font.lineHeight),
-	// )
-	// p.End()
-	// stops := []ui.GradientStop{}
-	// n := 10
-	// for i := 0; i <= n; i++ {
-	// 	s := ui.GradientStop{
-	// 		Pos: float64(i) / float64(n),
-	// 		R:   float64(10) / 255,
-	// 		G:   float64(10) / 255,
-	// 		B:   float64(10) / 255,
-	// 		A:   (1 - (float64(i) / float64(n))) / 2,
-	// 	}
-	// 	stops = append(stops, s)
-	// }
-	// dp.Context.Fill(p, &ui.Brush{
-	// 	Type:  ui.LinearGradient,
-	// 	X0:    (float64(w.width+w.pos[1]) + 1) * float64(editor.font.truewidth),
-	// 	Y0:    0,
-	// 	X1:    (float64(w.width + w.pos[1])) * float64(editor.font.truewidth),
-	// 	Y1:    0,
-	// 	Stops: stops,
-	// })
-	// p.Free()
-
-	// p = ui.NewPath(ui.Winding)
-	// p.AddRectangle((float64(w.width+w.pos[1])+1)*float64(editor.font.truewidth)-1,
-	// 	float64(w.pos[0]*editor.font.lineHeight),
-	// 	1,
-	// 	float64(w.height*editor.font.lineHeight),
-	// )
-	// // p.AddRectangle(
-	// // 	0,
-	// // 	float64(w.height*editor.font.lineHeight)-1,
-	// // 	float64((w.width+1)*editor.font.width),
-	// // 	1,
-	// // )
-	// p.End()
-	// // dp.Context.Fill(p, &ui.Brush{
-	// // 	Type: ui.Solid,
-	// // 	R:    color.R,
-	// // 	G:    color.G,
-	// // 	B:    color.B,
-	// // 	A:    color.A,
-	// // })
-	// p.Free()
 }

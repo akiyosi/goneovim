@@ -162,7 +162,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 		win.drawBorder(screen.pixmapPainter)
 	}
 	screen.pixmapPainter.DestroyQPainter()
-	screen.redraw()
+	screen.update()
 	// editor.cursor.draw()
 	editor.cursorNew.update()
 	if !e.nvimAttached {

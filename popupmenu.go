@@ -3,23 +3,27 @@ package gonvim
 import (
 	"fmt"
 
+	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
 
 // PopupMenu is the popupmenu
 type PopupMenu struct {
-	widget    *widgets.QWidget
-	layout    *widgets.QGridLayout
-	items     []*PopupItem
-	rawItems  []interface{}
-	total     int
-	showTotal int
-	selected  int
-	hidden    bool
-	top       int
-	scrollBar *widgets.QWidget
-	scrollCol *widgets.QWidget
+	widget       *widgets.QWidget
+	layout       *widgets.QGridLayout
+	items        []*PopupItem
+	rawItems     []interface{}
+	total        int
+	showTotal    int
+	selected     int
+	hidden       bool
+	top          int
+	scrollBar    *widgets.QWidget
+	scrollBarPos int
+	scrollCol    *widgets.QWidget
+	x            int
+	y            int
 }
 
 // PopupItem is
@@ -27,6 +31,7 @@ type PopupItem struct {
 	kindLable *widgets.QLabel
 	menuLable *widgets.QLabel
 	selected  bool
+	hidden    bool
 }
 
 func initPopupmenuNew(font *Font) *PopupMenu {
@@ -73,7 +78,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	}
 
 	widget.Hide()
-	return &PopupMenu{
+	popup := &PopupMenu{
 		widget:    widget,
 		layout:    layout,
 		items:     popupItems,
@@ -81,38 +86,13 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		scrollBar: scrollBar,
 		scrollCol: scrollCol,
 	}
-}
-
-func initPopupmenu() *PopupMenu {
-	// total := 10
-	// box := ui.NewHorizontalBox()
-	// var popupItems []*PopupItem
-	// for i := 0; i < total; i++ {
-	// 	kindSpanHandler := &SpanHandler{}
-	// 	kindSpan := ui.NewArea(kindSpanHandler)
-	// 	kindSpanHandler.area = kindSpan
-
-	// 	menuSpanHandler := &SpanHandler{}
-	// 	menuSpan := ui.NewArea(menuSpanHandler)
-	// 	menuSpanHandler.area = menuSpan
-
-	// 	popupItem := &PopupItem{
-	// 		kind: kindSpanHandler,
-	// 		menu: menuSpanHandler,
-	// 	}
-
-	// 	popupItems = append(popupItems, popupItem)
-	// 	box.Append(kindSpan, false)
-	// 	box.Append(menuSpan, false)
-	// }
-	// box.SetShadow(0, 2, 0, 0, 0, 1, 4)
-	// box.Hide()
-
-	return &PopupMenu{
-	// box:   box,
-	// items: popupItems,
-	// total: total,
-	}
+	widget.ConnectCustomEvent(func(event *core.QEvent) {
+		widget.Move2(popup.x, popup.y)
+	})
+	scrollBar.ConnectCustomEvent(func(event *core.QEvent) {
+		scrollBar.Move2(0, popup.scrollBarPos)
+	})
+	return popup
 }
 
 func (p *PopupMenu) updateFont(font *Font) {
@@ -136,11 +116,6 @@ func (p *PopupMenu) show(args []interface{}) {
 
 	popupItems := p.items
 	itemHeight := editor.font.height + 20
-	// itemHeightReal := popupItems[0].menuLable.Height()
-	// if itemHeightReal < itemHeight {
-	// 	itemHeight = itemHeightReal
-	// }
-	// fmt.Println(itemHeight, itemHeightReal)
 	heightLeft := editor.screen.height - (row+1)*editor.font.lineHeight
 	total := heightLeft / itemHeight
 	if total < p.total {
@@ -152,86 +127,30 @@ func (p *PopupMenu) show(args []interface{}) {
 	for i := 0; i < p.total; i++ {
 		popupItem := popupItems[i]
 		if i >= len(items) || i >= total {
-			popupItem.kindLable.Hide()
-			popupItem.menuLable.Hide()
+			popupItem.hide()
 			continue
 		}
 
 		item := items[i].([]interface{})
 		popupItem.setItem(item, selected == i)
-		popupItem.kindLable.Show()
-		popupItem.menuLable.Show()
+		popupItem.show()
 	}
 
 	if len(items) > p.showTotal {
 		p.scrollBar.SetFixedHeight(int(float64(p.showTotal) / float64(len(items)) * float64(itemHeight*p.showTotal)))
-		p.scrollBar.Move2(0, 0)
+		p.scrollBarPos = 0
+		p.scrollBar.CustomEvent(core.NewQEvent(core.QEvent__Move))
 		p.scrollCol.Show()
 	} else {
 		p.scrollCol.Hide()
 	}
 
-	p.widget.Move2(
-		int(float64(col)*editor.font.truewidth)-popupItems[0].kindLable.Width()-8,
-		(row+1)*editor.font.lineHeight,
-	)
-	// p.widget.Show()
-	// p.widget.Hide()
+	p.x = int(float64(col)*editor.font.truewidth) - popupItems[0].kindLable.Width() - 8
+	p.y = (row + 1) * editor.font.lineHeight
+	p.widget.CustomEvent(core.NewQEvent(core.QEvent__Move))
 	p.widget.Show()
-	// popupItems := p.items
-	// i := 0
-	// kindWidth := 0
-	// menuWidthMax := 0
-	// heightSum := 0
-	// height := 0
-	// for i = 0; i < p.total; i++ {
-	// 	popupItem := popupItems[i]
-	// 	if i >= len(items) {
-	// 		popupItem.hide()
-	// 		continue
-	// 	}
-
-	// 	item := items[i].([]interface{})
-	// 	popupItem.setItem(item, selected == i)
-
-	// 	var menuWidth int
-	// 	menuWidth, height = popupItem.menu.getSize()
-	// 	kindWidth, height = popupItem.kind.getSize()
-
-	// 	if menuWidth > menuWidthMax {
-	// 		menuWidthMax = menuWidth
-	// 	}
-	// 	y := heightSum
-	// 	heightSum += height
-	// 	ui.QueueMain(func() {
-	// 		popupItem.kind.area.SetPosition(0, y)
-	// 		popupItem.menu.area.SetPosition(kindWidth, y)
-	// 	})
-	// }
-
-	// for i = 0; i < p.total; i++ {
-	// 	if i >= len(items) {
-	// 		continue
-	// 	}
-	// 	popupItem := popupItems[i]
-	// 	ui.QueueMain(func() {
-	// 		popupItem.kind.area.SetSize(kindWidth, height)
-	// 		popupItem.kind.area.Show()
-	// 		popupItem.kind.area.QueueRedrawAll()
-	// 		popupItem.menu.area.SetSize(menuWidthMax, height)
-	// 		popupItem.menu.area.Show()
-	// 		popupItem.menu.area.QueueRedrawAll()
-	// 	})
-	// }
-
-	// ui.QueueMain(func() {
-	// 	p.box.SetPosition(
-	// 		int(float64(col)*editor.font.truewidth)-kindWidth-p.items[0].menu.paddingLeft,
-	// 		(row+1)*editor.font.lineHeight,
-	// 	)
-	// 	p.box.SetSize(menuWidthMax+kindWidth, heightSum)
-	// 	p.box.Show()
-	// })
+	p.widget.Hide()
+	p.widget.Show()
 }
 
 func (p *PopupMenu) hide(args []interface{}) {
@@ -242,7 +161,7 @@ func (p *PopupMenu) hide(args []interface{}) {
 func (p *PopupMenu) selectItem(args []interface{}) {
 	selected := reflectToInt(args[0].([]interface{})[0])
 	if selected == -1 {
-		p.top = 0
+		p.scroll(-p.top)
 	}
 	if selected-p.top >= p.showTotal {
 		p.scroll(selected - p.top - p.showTotal + 1)
@@ -268,6 +187,7 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 }
 
 func (p *PopupMenu) scroll(n int) {
+	// fmt.Println(len(p.rawItems), p.top, n)
 	p.top += n
 	items := p.rawItems
 	popupItems := p.items
@@ -276,7 +196,8 @@ func (p *PopupMenu) scroll(n int) {
 		item := items[i+p.top].([]interface{})
 		popupItem.setItem(item, false)
 	}
-	p.scrollBar.Move2(0, int((float64(p.top)/float64(len(items)))*float64(p.widget.Height())))
+	p.scrollBarPos = int((float64(p.top) / float64(len(items))) * float64(p.widget.Height()))
+	p.scrollBar.CustomEvent(core.NewQEvent(core.QEvent__Move))
 	p.widget.Hide()
 	p.widget.Show()
 }
@@ -348,8 +269,19 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 }
 
 func (p *PopupItem) hide() {
-	// ui.QueueMain(func() {
-	// 	p.kind.area.Hide()
-	// 	p.menu.area.Hide()
-	// })
+	if p.hidden {
+		return
+	}
+	p.hidden = true
+	p.kindLable.Hide()
+	p.menuLable.Hide()
+}
+
+func (p *PopupItem) show() {
+	if !p.hidden {
+		return
+	}
+	p.hidden = false
+	p.kindLable.Show()
+	p.menuLable.Show()
 }
