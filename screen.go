@@ -26,6 +26,7 @@ type Window struct {
 
 // Screen is the main editor area
 type Screen struct {
+	bg               *RGBA
 	width            int
 	height           int
 	widget           *widgets.QWidget
@@ -451,8 +452,6 @@ func (s *Screen) updateBg(args []interface{}) {
 		editor.Background = bg
 	}
 	s.pixmap.Fill(editor.Background.QColor())
-	css := fmt.Sprintf("background-color: %s;", editor.Background.String())
-	s.widget.SetStyleSheet(css)
 }
 
 func (s *Screen) size() (int, int) {
@@ -724,6 +723,11 @@ func (s *Screen) update() {
 }
 
 func (s *Screen) redraw() {
+	if s.bg != editor.Background {
+		s.bg = editor.Background
+		css := fmt.Sprintf("background-color: %s;", editor.Background.String())
+		s.widget.SetStyleSheet(css)
+	}
 	x := s.queueRedrawArea[0]
 	y := s.queueRedrawArea[1]
 	width := s.queueRedrawArea[2] - x
