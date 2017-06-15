@@ -4,6 +4,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -12,7 +13,9 @@ type Locpopup struct {
 	mutex        sync.Mutex
 	widget       *widgets.QWidget
 	typeLabel    *widgets.QLabel
+	typeText     string
 	contentLabel *widgets.QLabel
+	contentText  string
 	lastType     string
 	lastText     string
 	lastShown    bool
@@ -37,11 +40,38 @@ func initLocpopup() *Locpopup {
 	layout.AddWidget(contentLabel, 0, 0)
 	widget.Hide()
 
-	return &Locpopup{
+	loc := &Locpopup{
 		widget:       widget,
 		typeLabel:    typeLabel,
 		contentLabel: contentLabel,
 	}
+	widget.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__Show:
+			widget.Show()
+		case core.QEvent__Hide:
+			widget.Hide()
+		}
+	})
+	contentLabel.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			contentLabel.SetText(loc.contentText)
+		}
+	})
+	typeLabel.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			if loc.typeText == "Error" {
+				typeLabel.SetText("Error")
+				typeLabel.SetStyleSheet("background-color: rgba(204, 62, 68, 1); color: rgba(212, 215, 214, 1);")
+			} else if loc.typeText == "Warning" {
+				typeLabel.SetText("Warning")
+				typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1); color: rgba(212, 215, 214, 1);")
+			}
+		}
+	})
+	return loc
 }
 
 func (l *Locpopup) subscribe() {
@@ -157,18 +187,20 @@ func (l *Locpopup) update(args []interface{}) {
 		if locType != l.lastType {
 			switch locType {
 			case "E":
-				l.typeLabel.SetText("Error")
-				l.typeLabel.SetStyleSheet("background-color: rgba(204, 62, 68, 1); color: rgba(212, 215, 214, 1);")
+				l.typeText = "Error"
 			case "W":
-				l.typeLabel.SetText("Warning")
-				l.typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1); color: rgba(212, 215, 214, 1);")
+				l.typeText = "Warning"
 			}
+			l.typeLabel.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 		}
-		l.contentLabel.SetText(text)
+		if text != l.lastText {
+			l.contentText = text
+			l.contentLabel.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+		}
 		l.lastText = text
 		l.lastType = locType
-		l.widget.Hide()
-		l.widget.Show()
+		l.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+		l.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
 	}
 	shown = true
 }

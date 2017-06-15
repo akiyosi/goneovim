@@ -10,28 +10,35 @@ import (
 
 // PopupMenu is the popupmenu
 type PopupMenu struct {
-	widget       *widgets.QWidget
-	layout       *widgets.QGridLayout
-	items        []*PopupItem
-	rawItems     []interface{}
-	total        int
-	showTotal    int
-	selected     int
-	hidden       bool
-	top          int
-	scrollBar    *widgets.QWidget
-	scrollBarPos int
-	scrollCol    *widgets.QWidget
-	x            int
-	y            int
+	widget          *widgets.QWidget
+	layout          *widgets.QGridLayout
+	items           []*PopupItem
+	rawItems        []interface{}
+	total           int
+	showTotal       int
+	selected        int
+	hidden          bool
+	top             int
+	scrollBar       *widgets.QWidget
+	scrollBarPos    int
+	scrollBarHeight int
+	scrollCol       *widgets.QWidget
+	x               int
+	y               int
 }
 
 // PopupItem is
 type PopupItem struct {
-	kindLable *widgets.QLabel
-	menuLable *widgets.QLabel
-	selected  bool
-	hidden    bool
+	kindLable       *widgets.QLabel
+	kindText        string
+	kindColor       *RGBA
+	kindBg          *RGBA
+	menuLable       *widgets.QLabel
+	menuText        string
+	menuTextRequest string
+	selected        bool
+	selectedRequest bool
+	hidden          bool
 }
 
 func initPopupmenuNew(font *Font) *PopupMenu {
@@ -64,6 +71,14 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		kind := widgets.NewQLabel(nil, 0)
 		kind.SetContentsMargins(8, 8, 8, 8)
 		kind.SetFont(font.fontNew)
+		kind.ConnectCustomEvent(func(event *core.QEvent) {
+			switch event.Type() {
+			case core.QEvent__Show:
+				kind.Show()
+			case core.QEvent__Hide:
+				kind.Hide()
+			}
+		})
 		menu := widgets.NewQLabel(nil, 0)
 		menu.SetContentsMargins(8, 8, 8, 8)
 		menu.SetFont(font.fontNew)
@@ -74,6 +89,26 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 			kindLable: kind,
 			menuLable: menu,
 		}
+		kind.ConnectCustomEvent(func(event *core.QEvent) {
+			switch event.Type() {
+			case core.QEvent__Show:
+				kind.Show()
+			case core.QEvent__Hide:
+				kind.Hide()
+			case core.QEvent__UpdateRequest:
+				popupItem.updateKind()
+			}
+		})
+		menu.ConnectCustomEvent(func(event *core.QEvent) {
+			switch event.Type() {
+			case core.QEvent__Show:
+				menu.Show()
+			case core.QEvent__Hide:
+				menu.Hide()
+			case core.QEvent__UpdateRequest:
+				popupItem.updateMenu()
+			}
+		})
 		popupItems = append(popupItems, popupItem)
 	}
 
@@ -87,10 +122,26 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		scrollCol: scrollCol,
 	}
 	widget.ConnectCustomEvent(func(event *core.QEvent) {
-		widget.Move2(popup.x, popup.y)
+		switch event.Type() {
+		case core.QEvent__Move:
+			widget.Move2(popup.x, popup.y)
+		case core.QEvent__Show:
+			widget.Show()
+		case core.QEvent__Hide:
+			widget.Hide()
+		}
 	})
 	scrollBar.ConnectCustomEvent(func(event *core.QEvent) {
+		scrollBar.SetFixedHeight(popup.scrollBarHeight)
 		scrollBar.Move2(0, popup.scrollBarPos)
+	})
+	scrollCol.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__Show:
+			scrollCol.Show()
+		case core.QEvent__Hide:
+			scrollCol.Hide()
+		}
 	})
 	return popup
 }
@@ -103,8 +154,7 @@ func (p *PopupMenu) updateFont(font *Font) {
 	}
 }
 
-func (p *PopupMenu) show(args []interface{}) {
-	p.hidden = false
+func (p *PopupMenu) showItems(args []interface{}) {
 	arg := args[0].([]interface{})
 	items := arg[0].([]interface{})
 	selected := reflectToInt(arg[1])
@@ -137,25 +187,33 @@ func (p *PopupMenu) show(args []interface{}) {
 	}
 
 	if len(items) > p.showTotal {
-		p.scrollBar.SetFixedHeight(int(float64(p.showTotal) / float64(len(items)) * float64(itemHeight*p.showTotal)))
+		p.scrollBarHeight = int(float64(p.showTotal) / float64(len(items)) * float64(itemHeight*p.showTotal))
 		p.scrollBarPos = 0
 		p.scrollBar.CustomEvent(core.NewQEvent(core.QEvent__Move))
-		p.scrollCol.Show()
+		p.scrollCol.CustomEvent(core.NewQEvent(core.QEvent__Show))
 	} else {
-		p.scrollCol.Hide()
+		p.scrollCol.CustomEvent(core.NewQEvent(core.QEvent__Hide))
 	}
 
-	p.x = int(float64(col)*editor.font.truewidth) - popupItems[0].kindLable.Width() - 8
-	p.y = (row + 1) * editor.font.lineHeight
-	p.widget.CustomEvent(core.NewQEvent(core.QEvent__Move))
-	p.widget.Show()
-	p.widget.Hide()
-	p.widget.Show()
+	p.move(
+		int(float64(col)*editor.font.truewidth)-popupItems[0].kindLable.Width()-8,
+		(row+1)*editor.font.lineHeight,
+	)
+	p.show()
 }
 
-func (p *PopupMenu) hide(args []interface{}) {
-	p.hidden = true
-	p.widget.Hide()
+func (p *PopupMenu) move(x, y int) {
+	p.x = x
+	p.y = y
+	p.widget.CustomEvent(core.NewQEvent(core.QEvent__Move))
+}
+
+func (p *PopupMenu) show() {
+	p.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
+}
+
+func (p *PopupMenu) hide() {
+	p.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
 }
 
 func (p *PopupMenu) selectItem(args []interface{}) {
@@ -171,18 +229,7 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 	}
 	for i := 0; i < p.showTotal; i++ {
 		popupItem := p.items[i]
-		if selected == i+p.top {
-			if !popupItem.selected {
-				popupItem.selected = true
-				bg := editor.selectedBg
-				popupItem.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s;", bg.String()))
-			}
-		} else {
-			if popupItem.selected {
-				popupItem.selected = false
-				popupItem.menuLable.SetStyleSheet("")
-			}
-		}
+		popupItem.setSelected(selected == i+p.top)
 	}
 }
 
@@ -198,30 +245,47 @@ func (p *PopupMenu) scroll(n int) {
 	}
 	p.scrollBarPos = int((float64(p.top) / float64(len(items))) * float64(p.widget.Height()))
 	p.scrollBar.CustomEvent(core.NewQEvent(core.QEvent__Move))
-	p.widget.Hide()
-	p.widget.Show()
+	p.hide()
+	p.show()
+}
+
+func (p *PopupItem) updateKind() {
+	p.kindLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", p.kindBg.String(), p.kindColor.String()))
+	p.kindLable.SetText(p.kindText)
+}
+
+func (p *PopupItem) updateMenu() {
+	if p.selected != p.selectedRequest {
+		p.selected = p.selectedRequest
+		if p.selected {
+			p.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.selectedBg.String()))
+		} else {
+			p.menuLable.SetStyleSheet("")
+		}
+	}
+	if p.menuTextRequest != p.menuText {
+		p.menuText = p.menuTextRequest
+		p.menuLable.SetText(p.menuText)
+	}
+}
+
+func (p *PopupItem) menuUpdateRequest() {
+	if p.selectedRequest != p.selected || p.menuTextRequest != p.menuText {
+		p.menuLable.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+	}
+}
+
+func (p *PopupItem) setSelected(selected bool) {
+	p.selectedRequest = selected
+	p.menuUpdateRequest()
 }
 
 func (p *PopupItem) setItem(item []interface{}, selected bool) {
 	text := item[0].(string)
 	kindText := item[1].(string)
 	p.setKind(kindText, selected)
-
-	// fg := newRGBA(205, 211, 222, 1)
-	// bg := newRGBA(14, 17, 18, 1)
-	if selected {
-		if !p.selected {
-			p.selected = true
-			bg := editor.selectedBg
-			p.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s;", bg.String()))
-		}
-	} else {
-		if p.selected {
-			p.selected = false
-			p.menuLable.SetStyleSheet("")
-		}
-	}
-	p.menuLable.SetText(text)
+	p.menuTextRequest = text
+	p.setSelected(selected)
 }
 
 func (p *PopupItem) setKind(kindText string, selected bool) {
@@ -264,8 +328,12 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 	default:
 		kindText = "b"
 	}
-	p.kindLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", bg.String(), color.String()))
-	p.kindLable.SetText(kindText)
+	if kindText != p.kindText {
+		p.kindText = kindText
+		p.kindColor = color
+		p.kindBg = bg
+		p.kindLable.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+	}
 }
 
 func (p *PopupItem) hide() {
@@ -273,8 +341,8 @@ func (p *PopupItem) hide() {
 		return
 	}
 	p.hidden = true
-	p.kindLable.Hide()
-	p.menuLable.Hide()
+	p.kindLable.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+	p.menuLable.CustomEvent(core.NewQEvent(core.QEvent__Hide))
 }
 
 func (p *PopupItem) show() {
@@ -282,6 +350,6 @@ func (p *PopupItem) show() {
 		return
 	}
 	p.hidden = false
-	p.kindLable.Show()
-	p.menuLable.Show()
+	p.kindLable.CustomEvent(core.NewQEvent(core.QEvent__Show))
+	p.menuLable.CustomEvent(core.NewQEvent(core.QEvent__Show))
 }

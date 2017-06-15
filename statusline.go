@@ -53,6 +53,8 @@ type StatuslineFile struct {
 	fileLabel   *widgets.QLabel
 	folderLabel *widgets.QLabel
 	icon        *svg.QSvgWidget
+	base        string
+	dir         string
 }
 
 // StatuslineFiletype is
@@ -66,12 +68,15 @@ type StatuslinePos struct {
 	ln    int
 	col   int
 	label *widgets.QLabel
+	text  string
 }
 
 // StatusMode is
 type StatusMode struct {
 	label *widgets.QLabel
 	mode  string
+	text  string
+	bg    *RGBA
 }
 
 // StatuslineGit is
@@ -117,6 +122,12 @@ func initStatuslineNew() *Statusline {
 	mode := &StatusMode{
 		label: modeLabel,
 	}
+	modeLabel.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			mode.update()
+		}
+	})
 
 	gitIcon := svg.NewQSvgWidget(nil)
 	gitIcon.SetFixedSize2(14, 14)
@@ -136,6 +147,16 @@ func initStatuslineNew() *Statusline {
 		icon:   gitIcon,
 		label:  gitLabel,
 	}
+	gitWidget.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__Show:
+			gitWidget.Show()
+		case core.QEvent__Hide:
+			gitWidget.Hide()
+		case core.QEvent__UpdateRequest:
+			git.update()
+		}
+	})
 
 	fileIcon := svg.NewQSvgWidget(nil)
 	fileIcon.SetFixedSize2(14, 14)
@@ -160,24 +181,60 @@ func initStatuslineNew() *Statusline {
 		fileLabel:   fileLabel,
 		folderLabel: folderLabel,
 	}
+	fileIcon.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			file.updateIcon()
+		}
+	})
+	fileLabel.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			fileLabel.SetText(file.base)
+		}
+	})
+	folderLabel.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			folderLabel.SetText(file.dir)
+		}
+	})
 
 	encodingLabel := widgets.NewQLabel(nil, 0)
 	encodingLabel.SetContentsMargins(0, 0, 0, 0)
 	encoding := &StatuslineEncoding{
 		label: encodingLabel,
 	}
+	encodingLabel.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			encodingLabel.SetText(encoding.encoding)
+		}
+	})
 
 	posLabel := widgets.NewQLabel(nil, 0)
 	posLabel.SetContentsMargins(0, 0, 0, 0)
 	pos := &StatuslinePos{
 		label: posLabel,
 	}
+	posLabel.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			posLabel.SetText(pos.text)
+		}
+	})
 
 	filetypeLabel := widgets.NewQLabel(nil, 0)
 	filetypeLabel.SetContentsMargins(0, 0, 0, 0)
 	filetype := &StatuslineFiletype{
 		label: filetypeLabel,
 	}
+	filetypeLabel.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			filetypeLabel.SetText(filetype.filetype)
+		}
+	})
 
 	okIcon := svg.NewQSvgWidget(nil)
 	okIcon.SetFixedSize2(14, 14)
@@ -218,6 +275,12 @@ func initStatuslineNew() *Statusline {
 		errors:     -1,
 		warnings:   -1,
 	}
+	lintWidget.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			lint.update()
+		}
+	})
 
 	layout.AddWidget(modeWidget)
 	layout.AddWidget(gitWidget)
@@ -265,6 +328,11 @@ func (s *Statusline) subscribe() {
 	editor.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
 }
 
+func (s *StatusMode) update() {
+	s.label.SetText(s.text)
+	s.label.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
+}
+
 func (s *StatusMode) redraw() {
 	if editor.mode == s.mode {
 		return
@@ -286,8 +354,26 @@ func (s *StatusMode) redraw() {
 		text = "visual"
 		bg = newRGBA(250, 200, 99, 1)
 	}
-	s.label.SetText(text)
-	s.label.SetStyleSheet(fmt.Sprintf("background-color: %s;", bg.String()))
+	s.text = text
+	s.bg = bg
+	s.label.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+}
+
+func (s *StatuslineGit) show() {
+	s.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
+}
+
+func (s *StatuslineGit) hide() {
+	s.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+}
+
+func (s *StatuslineGit) update() {
+	s.label.SetText(s.branch)
+	if !s.svgLoaded {
+		s.svgLoaded = true
+		svgContent := getSvg("git", newRGBA(212, 215, 214, 1))
+		s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	}
 }
 
 func (s *StatuslineGit) redraw(file string) {
@@ -296,7 +382,7 @@ func (s *StatuslineGit) redraw(file string) {
 		if s.branch == "" {
 			return
 		}
-		s.widget.Hide()
+		s.hide()
 		s.branch = ""
 		return
 	}
@@ -312,7 +398,7 @@ func (s *StatuslineGit) redraw(file string) {
 		if s.branch == "" {
 			return
 		}
-		s.widget.Hide()
+		s.hide()
 		s.branch = ""
 		return
 	}
@@ -334,14 +420,14 @@ func (s *StatuslineGit) redraw(file string) {
 
 	if s.branch != branch {
 		s.branch = branch
-		s.label.SetText(branch)
-		if !s.svgLoaded {
-			s.svgLoaded = true
-			svgContent := getSvg("git", newRGBA(212, 215, 214, 1))
-			s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		}
-		s.widget.Show()
+		s.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+		s.show()
 	}
+}
+
+func (s *StatuslineFile) updateIcon() {
+	svgContent := getSvg(s.fileType, nil)
+	s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
 func (s *StatuslineFile) redraw(file string) {
@@ -367,11 +453,16 @@ func (s *StatuslineFile) redraw(file string) {
 	fileType := getFileType(file)
 	if s.fileType != fileType {
 		s.fileType = fileType
-		svgContent := getSvg(fileType, nil)
-		s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.icon.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 	}
-	s.fileLabel.SetText(base)
-	s.folderLabel.SetText(dir)
+	if s.base != base {
+		s.base = base
+		s.fileLabel.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+	}
+	if s.dir != dir {
+		s.dir = dir
+		s.folderLabel.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+	}
 }
 
 func (s *StatuslinePos) redraw(ln, col int) {
@@ -379,7 +470,10 @@ func (s *StatuslinePos) redraw(ln, col int) {
 		return
 	}
 	text := fmt.Sprintf("Ln %d, Col %d", ln, col)
-	s.label.SetText(text)
+	if text != s.text {
+		s.text = text
+		s.label.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+	}
 }
 
 func (s *StatuslineEncoding) redraw(encoding string) {
@@ -387,17 +481,18 @@ func (s *StatuslineEncoding) redraw(encoding string) {
 		return
 	}
 	s.encoding = encoding
-	s.label.SetText(encoding)
+	s.label.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 }
 
 func (s *StatuslineFiletype) redraw(filetype string) {
 	if filetype == s.filetype {
 		return
 	}
-	s.label.SetText(filetype)
+	s.filetype = filetype
+	s.label.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 }
 
-func (s *StatuslineLint) redraw(errors, warnings int) {
+func (s *StatuslineLint) update() {
 	if !s.svgLoaded {
 		s.svgLoaded = true
 		svgContent := getSvg("check", newRGBA(141, 193, 73, 1))
@@ -408,12 +503,7 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 		s.warnIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 
-	if errors == s.errors && warnings == s.warnings {
-		return
-	}
-	s.errors = errors
-	s.warnings = warnings
-	if errors == 0 && warnings == 0 {
+	if s.errors == 0 && s.warnings == 0 {
 		s.okIcon.Show()
 		s.okLabel.SetText("ok")
 		s.okLabel.Show()
@@ -424,11 +514,20 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 	} else {
 		s.okIcon.Hide()
 		s.okLabel.Hide()
-		s.errorLabel.SetText(strconv.Itoa(errors))
-		s.warnLabel.SetText(strconv.Itoa(warnings))
+		s.errorLabel.SetText(strconv.Itoa(s.errors))
+		s.warnLabel.SetText(strconv.Itoa(s.warnings))
 		s.errorIcon.Show()
 		s.errorLabel.Show()
 		s.warnIcon.Show()
 		s.warnLabel.Show()
 	}
+}
+
+func (s *StatuslineLint) redraw(errors, warnings int) {
+	if errors == s.errors && warnings == s.warnings {
+		return
+	}
+	s.errors = errors
+	s.warnings = warnings
+	s.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 }

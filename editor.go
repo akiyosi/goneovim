@@ -87,7 +87,7 @@ func (e *Editor) handleRPCGui(updates ...interface{}) {
 	case "finder_select":
 		e.finder.selectResult(updates[1:])
 	case "signature_show":
-		e.signature.show(updates[1:])
+		e.signature.showItem(updates[1:])
 	case "signature_pos":
 		e.signature.pos(updates[1:])
 	case "signature_hide":
@@ -145,9 +145,9 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			arg := update[len(update)-1].([]interface{})
 			editor.mode = arg[0].(string)
 		case "popupmenu_show":
-			editor.popup.show(args)
+			editor.popup.showItems(args)
 		case "popupmenu_hide":
-			editor.popup.hide(args)
+			editor.popup.hide()
 		case "popupmenu_select":
 			editor.popup.selectItem(args)
 		case "tabline_update":

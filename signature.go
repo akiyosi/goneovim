@@ -4,17 +4,21 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )
 
 // Signature is
 type Signature struct {
-	cusor  []int
-	comma  int
-	text   string
-	widget *widgets.QWidget
-	label  *widgets.QLabel
-	height int
+	cusor         []int
+	comma         int
+	formattedText string
+	text          string
+	widget        *widgets.QWidget
+	label         *widgets.QLabel
+	height        int
+	x             int
+	y             int
 }
 
 func initSignature() *Signature {
@@ -38,15 +42,32 @@ func initSignature() *Signature {
 	layout.AddWidget(label, 0, 0)
 	widget.SetLayout(layout)
 	widget.Hide()
-	return &Signature{
+	signature := &Signature{
 		cusor:  []int{0, 0},
 		widget: widget,
 		label:  label,
 		height: widget.SizeHint().Height(),
 	}
+	widget.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__Move:
+			widget.Move2(signature.x, signature.y)
+		case core.QEvent__Show:
+			widget.Show()
+		case core.QEvent__Hide:
+			widget.Hide()
+		}
+	})
+	label.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			label.SetText(signature.formattedText)
+		}
+	})
+	return signature
 }
 
-func (s *Signature) show(args []interface{}) {
+func (s *Signature) showItem(args []interface{}) {
 	text := args[0].(string)
 	s.text = text
 	cursor := args[1].([]interface{})
@@ -55,8 +76,8 @@ func (s *Signature) show(args []interface{}) {
 	s.cusor[1] = reflectToInt(cursor[1])
 	s.update()
 	s.move()
-	s.widget.Hide()
-	s.widget.Show()
+	s.hide()
+	s.show()
 }
 
 func (s *Signature) pos(args []interface{}) {
@@ -90,7 +111,8 @@ func (s *Signature) update() {
 		}
 	}
 	formattedText := fmt.Sprintf("%s<font style=\"text-decoration:underline\";>%s</font>%s", text[:start], text[start:i], text[i:])
-	s.label.SetText(formattedText)
+	s.formattedText = formattedText
+	s.label.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 }
 
 func (s *Signature) move() {
@@ -102,12 +124,15 @@ func (s *Signature) move() {
 	if i > -1 {
 		x -= editor.font.defaultFontMetrics.Width(string(text[:i]))
 	}
-	s.widget.Move2(
-		int(x),
-		row*editor.font.lineHeight-s.height,
-	)
+	s.x = int(x)
+	s.y = row*editor.font.lineHeight - s.height
+	s.widget.CustomEvent(core.NewQEvent(core.QEvent__Move))
+}
+
+func (s *Signature) show() {
+	s.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
 }
 
 func (s *Signature) hide() {
-	s.widget.Hide()
+	s.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
 }

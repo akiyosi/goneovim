@@ -23,15 +23,16 @@ type Tab struct {
 	widget    *widgets.QWidget
 	layout    *widgets.QHBoxLayout
 	ID        int
+	active    bool
 	Name      string
-	current   bool
 	width     int
 	chars     int
-	cross     *Svg
-	fileicon  *Svg
 	fileIcon  *svg.QSvgWidget
+	fileType  string
 	closeIcon *svg.QSvgWidget
 	file      *widgets.QLabel
+	fileText  string
+	hidden    bool
 }
 
 func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int) *widgets.QLayout {
@@ -182,6 +183,28 @@ func initTablineNew() *Tabline {
 			fileIcon:  fileIcon,
 			closeIcon: closeIcon,
 		}
+		w.ConnectCustomEvent(func(event *core.QEvent) {
+			switch event.Type() {
+			case core.QEvent__Show:
+				w.Show()
+			case core.QEvent__Hide:
+				w.Hide()
+			case core.QEvent__UpdateRequest:
+				tab.updateActive()
+			}
+		})
+		file.ConnectCustomEvent(func(event *core.QEvent) {
+			switch event.Type() {
+			case core.QEvent__UpdateRequest:
+				tab.updateFileText()
+			}
+		})
+		fileIcon.ConnectCustomEvent(func(event *core.QEvent) {
+			switch event.Type() {
+			case core.QEvent__UpdateRequest:
+				tab.updateFileIcon()
+			}
+		})
 		tabs = append(tabs, tab)
 		layout.AddWidget(w)
 	}
@@ -191,6 +214,52 @@ func initTablineNew() *Tabline {
 		layout: layout,
 		Tabs:   tabs,
 	}
+}
+
+func (t *Tab) updateActive() {
+	if t.active {
+		t.widget.SetStyleSheet(".QWidget {border-bottom: 2px solid rgba(81, 154, 186, 1); background-color: rgba(0, 0, 0, 1); } QWidget{color: rgba(212, 215, 214, 1);} ")
+		svgContent := getSvg("cross", newRGBA(212, 215, 214, 1))
+		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	} else {
+		t.widget.SetStyleSheet("")
+		svgContent := getSvg("cross", newRGBA(147, 161, 161, 1))
+		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	}
+}
+
+func (t *Tab) show() {
+	if !t.hidden {
+		return
+	}
+	t.hidden = false
+	t.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
+}
+
+func (t *Tab) hide() {
+	if t.hidden {
+		return
+	}
+	t.hidden = true
+	t.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+}
+
+func (t *Tab) setActive(active bool) {
+	if t.active == active {
+		return
+	}
+	t.active = active
+	t.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+}
+
+func (t *Tab) updateFileText() {
+	text := editor.font.defaultFontMetrics.ElidedText(t.fileText, core.Qt__ElideLeft, float64(t.file.Width()), 0)
+	t.file.SetText(text)
+}
+
+func (t *Tab) updateFileIcon() {
+	svgContent := getSvg(t.fileType, nil)
+	t.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
 func (t *Tabline) update(args []interface{}) {
@@ -208,25 +277,25 @@ func (t *Tabline) update(args []interface{}) {
 		tab := t.Tabs[i]
 		tab.ID = int(tabMap["tab"].(nvim.Tabpage))
 		text := tabMap["name"].(string)
-		svgContent := getSvg(getFileType(text), nil)
-		tab.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		text = editor.font.defaultFontMetrics.ElidedText(text, core.Qt__ElideLeft, float64(tab.file.Width()), 0)
-		tab.file.SetText(text)
-		if tab.ID == t.CurrentID {
-			tab.widget.SetStyleSheet(".QWidget {border-bottom: 2px solid rgba(81, 154, 186, 1); background-color: rgba(0, 0, 0, 1); } QWidget{color: rgba(212, 215, 214, 1);} ")
-			svgContent = getSvg("cross", newRGBA(212, 215, 214, 1))
-			tab.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		} else {
-			tab.widget.SetStyleSheet("")
-			svgContent = getSvg("cross", newRGBA(147, 161, 161, 1))
-			tab.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+
+		fileType := getFileType(text)
+		if fileType != tab.fileType {
+			tab.fileType = fileType
+			tab.fileIcon.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 		}
-		tab.widget.Show()
+
+		if text != tab.fileText {
+			tab.fileText = text
+			tab.file.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+		}
+
+		tab.setActive(tab.ID == t.CurrentID)
+		tab.show()
 	}
 	for i := len(tabs); i < len(t.Tabs); i++ {
 		tab := t.Tabs[i]
-		tab.current = false
-		tab.widget.Hide()
+		tab.setActive(false)
+		tab.hide()
 	}
 }
 

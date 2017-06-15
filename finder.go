@@ -42,8 +42,10 @@ type Finder struct {
 type FinderResultItem struct {
 	hidden     bool
 	icon       *svg.QSvgWidget
+	iconType   string
 	iconHidden bool
 	base       *widgets.QLabel
+	baseText   string
 	widget     *widgets.QWidget
 	selected   bool
 }
@@ -83,6 +85,14 @@ func initFinder() *Finder {
 	resultWidget := widgets.NewQWidget(nil, 0)
 	resultWidget.SetLayout(resultLayout)
 	resultWidget.SetContentsMargins(0, 0, 0, 0)
+	resultWidget.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__Show:
+			resultWidget.Show()
+		case core.QEvent__Hide:
+			resultWidget.Hide()
+		}
+	})
 
 	scrollCol := widgets.NewQWidget(nil, 0)
 	scrollCol.SetContentsMargins(0, 0, 0, 0)
@@ -140,6 +150,36 @@ func initFinder() *Finder {
 			icon:   icon,
 			base:   base,
 		}
+		itemWidget.ConnectCustomEvent(func(event *core.QEvent) {
+			switch event.Type() {
+			case core.QEvent__Show:
+				itemWidget.Show()
+			case core.QEvent__Hide:
+				itemWidget.Hide()
+			case core.QEvent__UpdateRequest:
+				resultItem.update()
+			}
+		})
+		icon.ConnectCustomEvent(func(event *core.QEvent) {
+			switch event.Type() {
+			case core.QEvent__Show:
+				icon.Show()
+			case core.QEvent__Hide:
+				icon.Hide()
+			case core.QEvent__UpdateRequest:
+				resultItem.updateIcon()
+			}
+		})
+		base.ConnectCustomEvent(func(event *core.QEvent) {
+			switch event.Type() {
+			case core.QEvent__Show:
+				base.Show()
+			case core.QEvent__Hide:
+				base.Hide()
+			case core.QEvent__UpdateRequest:
+				base.SetText(resultItem.baseText)
+			}
+		})
 		resultItems = append(resultItems, resultItem)
 	}
 	widget.Hide()
@@ -155,8 +195,30 @@ func initFinder() *Finder {
 		scrollBar:      scrollBar,
 		cursor:         cursor,
 	}
+	widget.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__Show:
+			widget.Show()
+		case core.QEvent__Hide:
+			widget.Hide()
+		}
+	})
+	pattern.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__UpdateRequest:
+			pattern.SetText(finder.patternText)
+		}
+	})
 	scrollBar.ConnectCustomEvent(func(event *core.QEvent) {
 		scrollBar.Move2(0, finder.scrollBarPos)
+	})
+	scrollCol.ConnectCustomEvent(func(event *core.QEvent) {
+		switch event.Type() {
+		case core.QEvent__Show:
+			scrollCol.Show()
+		case core.QEvent__Hide:
+			scrollCol.Hide()
+		}
 	})
 	cursor.ConnectCustomEvent(func(event *core.QEvent) {
 		cursor.Move2(finder.cursorX+finder.patternPadding, finder.patternPadding)
@@ -164,32 +226,61 @@ func initFinder() *Finder {
 	return finder
 }
 
+func (f *FinderResultItem) update() {
+	if f.selected {
+		f.widget.SetStyleSheet(fmt.Sprintf(".QWidget {background-color: %s;}", editor.selectedBg))
+	} else {
+		f.widget.SetStyleSheet("")
+	}
+}
+
+func (f *FinderResultItem) setSelected(selected bool) {
+	if f.selected == selected {
+		return
+	}
+	f.selected = selected
+	f.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+}
+
 func (f *FinderResultItem) show() {
 	if f.hidden {
 		f.hidden = false
-		f.widget.Show()
+		f.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
 	}
 }
 
 func (f *FinderResultItem) hide() {
 	if !f.hidden {
 		f.hidden = true
-		f.widget.Hide()
+		f.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
 	}
+}
+
+func (f *FinderResultItem) updateIcon() {
+	svgContent := getSvg(f.iconType, nil)
+	f.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
 func (f *FinderResultItem) showIcon() {
 	if f.iconHidden {
 		f.iconHidden = false
-		f.icon.Show()
+		f.icon.CustomEvent(core.NewQEvent(core.QEvent__Show))
 	}
 }
 
 func (f *FinderResultItem) hideIcon() {
 	if !f.iconHidden {
 		f.iconHidden = true
-		f.icon.Hide()
+		f.icon.CustomEvent(core.NewQEvent(core.QEvent__Hide))
 	}
+}
+
+func (f *Finder) show() {
+	f.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
+}
+
+func (f *Finder) hide() {
+	f.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
 }
 
 func (f *Finder) resize() {
@@ -203,10 +294,6 @@ func (f *Finder) resize() {
 	for i := f.showTotal; i < len(f.resultItems); i++ {
 		f.resultItems[i].hide()
 	}
-}
-
-func (f *Finder) hide() {
-	f.widget.Hide()
 }
 
 func (f *Finder) cursorPos(args []interface{}) {
@@ -224,17 +311,7 @@ func (f *Finder) showSelected(selected int) {
 		if i >= f.showTotal {
 			break
 		}
-		if selected == i {
-			if !resultItem.selected {
-				resultItem.selected = true
-				resultItem.widget.SetStyleSheet(fmt.Sprintf(".QWidget {background-color: %s;}", editor.selectedBg))
-			}
-		} else {
-			if resultItem.selected {
-				resultItem.selected = false
-				resultItem.widget.SetStyleSheet("")
-			}
-		}
+		resultItem.setSelected(selected == i)
 	}
 }
 
@@ -246,7 +323,7 @@ func (f *Finder) selectResult(args []interface{}) {
 func (f *Finder) showPattern(args []interface{}) {
 	p := args[0].(string)
 	f.patternText = p
-	f.pattern.SetText(p)
+	f.pattern.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 	f.cursorMove(reflectToInt(args[1]))
 }
 
@@ -281,17 +358,34 @@ func (f *Finder) showResult(args []interface{}) {
 		item := rawItems[i]
 		text := item.(string)
 		if resultType == "file" {
-			svgContent := getSvg(getFileType(text), nil)
-			resultItem.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-			resultItem.base.SetText(formatText(text, match[i], true))
+			iconType := getFileType(text)
+			if iconType != resultItem.iconType {
+				resultItem.iconType = iconType
+				resultItem.icon.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+			}
+			formattedText := formatText(text, match[i], true)
+			if formattedText != resultItem.baseText {
+				resultItem.baseText = formattedText
+				resultItem.base.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+			}
 			resultItem.showIcon()
 		} else if resultType == "dir" {
-			svgContent := getSvg("folder", nil)
-			resultItem.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-			resultItem.base.SetText(formatText(text, match[i], true))
+			if resultItem.iconType != "folder" {
+				resultItem.iconType = "folder"
+				resultItem.icon.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+			}
+			formattedText := formatText(text, match[i], true)
+			if formattedText != resultItem.baseText {
+				resultItem.baseText = formattedText
+				resultItem.base.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+			}
 			resultItem.showIcon()
 		} else {
-			resultItem.base.SetText(formatText(text, match[i], false))
+			formattedText := formatText(text, match[i], false)
+			if formattedText != resultItem.baseText {
+				resultItem.baseText = formattedText
+				resultItem.base.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+			}
 			resultItem.hideIcon()
 		}
 		resultItem.show()
@@ -306,8 +400,8 @@ func (f *Finder) showResult(args []interface{}) {
 	// } else {
 	// 	f.scrollCol.Hide()
 	// }
-	f.resultWidget.Hide()
-	f.resultWidget.Show()
+	f.resultWidget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+	f.resultWidget.CustomEvent(core.NewQEvent(core.QEvent__Show))
 
 	if total > f.showTotal {
 		height := int(float64(f.showTotal) / float64(total) * float64(f.itemHeight*f.showTotal))
@@ -317,15 +411,15 @@ func (f *Finder) showResult(args []interface{}) {
 		f.scrollBar.SetFixedHeight(height)
 		f.scrollBarPos = int(float64(start) / float64(total) * (float64(f.itemHeight * f.showTotal)))
 		f.scrollBar.CustomEvent(core.NewQEvent(core.QEvent__Move))
-		f.scrollCol.Show()
+		f.scrollCol.CustomEvent(core.NewQEvent(core.QEvent__Show))
 	} else {
-		f.scrollCol.Hide()
+		f.scrollCol.CustomEvent(core.NewQEvent(core.QEvent__Hide))
 	}
 
-	f.widget.Hide()
-	f.widget.Show()
-	f.widget.Hide()
-	f.widget.Show()
+	f.hide()
+	f.show()
+	f.hide()
+	f.show()
 }
 
 func formatText(text string, matchIndex []int, path bool) string {
