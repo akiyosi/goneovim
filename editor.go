@@ -384,5 +384,9 @@ func InitEditorNew() {
 	}()
 
 	window.Show()
+	popup.widget.Hide()
+	finder.widget.Hide()
+	loc.widget.Hide()
+	signature.widget.Hide()
 	widgets.QApplication_Exec()
 }

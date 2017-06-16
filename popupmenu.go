@@ -83,7 +83,6 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		popupItems = append(popupItems, popupItem)
 	}
 
-	widget.Hide()
 	popup := &PopupMenu{
 		widget:    widget,
 		layout:    layout,
@@ -162,7 +161,7 @@ func (p *PopupMenu) hide() {
 
 func (p *PopupMenu) selectItem(args []interface{}) {
 	selected := reflectToInt(args[0].([]interface{})[0])
-	if selected == -1 {
+	if selected == -1 && p.top > 0 {
 		p.scroll(-p.top)
 	}
 	if selected-p.top >= p.showTotal {

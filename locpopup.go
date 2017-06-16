@@ -36,7 +36,6 @@ func initLocpopup() *Locpopup {
 
 	layout.AddWidget(typeLabel, 0, 0)
 	layout.AddWidget(contentLabel, 0, 0)
-	widget.Hide()
 
 	loc := &Locpopup{
 		widget:       widget,

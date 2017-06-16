@@ -144,7 +144,6 @@ func initFinder() *Finder {
 		}
 		resultItems = append(resultItems, resultItem)
 	}
-	widget.Hide()
 	finder := &Finder{
 		width:          width,
 		widget:         widget,

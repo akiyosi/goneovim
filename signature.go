@@ -40,7 +40,6 @@ func initSignature() *Signature {
 	label := widgets.NewQLabel(nil, 0)
 	layout.AddWidget(label, 0, 0)
 	widget.SetLayout(layout)
-	widget.Hide()
 	signature := &Signature{
 		cusor:  []int{0, 0},
 		widget: widget,
