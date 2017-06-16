@@ -4,7 +4,7 @@ Neovim GUI written in Golang, using a Golang qt backend
 - Neovim (0.2)
 
 # Downloads
-Pre-built packages for Windows, macOS, and Linux are found at the [Releases](https://github.com/dzhou121/gonvim/releases/) page.
+Pre-built packages for macOS, and Linux are found at the [Releases](https://github.com/dzhou121/gonvim/releases/) page.
 
 # Features
 
