@@ -10,6 +10,7 @@ import (
 
 	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
 	"github.com/neovim/go-client/nvim"
+	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
@@ -56,20 +57,33 @@ type Editor struct {
 	selectedBg       *RGBA
 	matchFg          *RGBA
 	resizeMutex      sync.Mutex
+	signal           *editorSignal
+	redrawUpdates    chan [][]interface{}
+	guiUpdates       chan []interface{}
+}
+
+type editorSignal struct {
+	core.QObject
+	_ func() `signal:"redrawSignal"`
+	_ func() `signal:"guiSignal"`
+	_ func() `signal:"statuslineSignal"`
+	_ func() `signal:"locpopupSignal"`
+	_ func() `signal:"lintSignal"`
+	_ func() `signal:"gitSignal"`
 }
 
 func (e *Editor) handleNotification() {
 	e.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
-		go e.handleRPCGui(updates...)
+		e.guiUpdates <- updates
+		e.signal.GuiSignal()
 	})
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		// e.screen.paintMutex.Lock()
-		e.handleRedraw(updates...)
-		// e.screen.paintMutex.Unlock()
+		e.redrawUpdates <- updates
+		e.signal.RedrawSignal()
 	})
 }
 
-func (e *Editor) handleRPCGui(updates ...interface{}) {
+func (e *Editor) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "Font":
@@ -97,11 +111,10 @@ func (e *Editor) handleRPCGui(updates ...interface{}) {
 	}
 }
 
-func (e *Editor) handleRedraw(updates ...[]interface{}) {
-	screen := e.screen
-	// go screen.redrawWindows()
-	screen.pixmapPainter = gui.NewQPainter2(screen.pixmap)
-	screen.pixmapPainter.SetFont(e.font.fontNew)
+func (e *Editor) handleRedraw(updates [][]interface{}) {
+	s := e.screen
+	s.pixmapPainter = gui.NewQPainter2(s.pixmap)
+	s.pixmapPainter.SetFont(editor.font.fontNew)
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -116,7 +129,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			}
 		case "update_bg":
 			args := update[1].([]interface{})
-			screen.updateBg(args)
+			s.updateBg(args)
 		case "update_sp":
 			args := update[1].([]interface{})
 			color := reflectToInt(args[0])
@@ -126,21 +139,21 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 				editor.special = calcColor(reflectToInt(args[0]))
 			}
 		case "cursor_goto":
-			screen.cursorGoto(args)
+			s.cursorGoto(args)
 		case "put":
-			screen.put(args)
+			s.put(args)
 		case "eol_clear":
-			screen.eolClear(args)
+			s.eolClear(args)
 		case "clear":
-			screen.clear(args)
+			s.clear(args)
 		case "resize":
-			screen.resize(args)
+			s.resize(args)
 		case "highlight_set":
-			screen.highlightSet(args)
+			s.highlightSet(args)
 		case "set_scroll_region":
-			screen.setScrollRegion(args)
+			s.setScrollRegion(args)
 		case "scroll":
-			screen.scroll(args)
+			s.scroll(args)
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			editor.mode = arg[0].(string)
@@ -158,16 +171,12 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			fmt.Println("Unhandle event", event)
 		}
 	}
-	for _, win := range screen.curWins {
-		win.drawBorder(screen.pixmapPainter)
+	for _, win := range s.curWins {
+		win.drawBorder(s.pixmapPainter)
 	}
-	screen.pixmapPainter.DestroyQPainter()
-	screen.update()
-	// editor.cursor.draw()
+	s.pixmapPainter.DestroyQPainter()
+	s.update()
 	editor.cursorNew.update()
-	if !e.nvimAttached {
-		e.nvimAttached = true
-	}
 	editor.statusline.mode.redraw()
 }
 
@@ -303,25 +312,40 @@ func InitEditorNew() {
 		return
 	}
 
+	signal := NewEditorSignal(nil)
+
 	editor = &Editor{
-		nvim:         neovim,
-		nvimAttached: false,
-		screen:       screen,
-		cursorNew:    cursor,
-		mode:         "normal",
-		close:        make(chan bool),
-		popup:        popup,
-		finder:       finder,
-		loc:          loc,
-		signature:    signature,
-		tabline:      tabline,
-		width:        width,
-		height:       height,
-		statusline:   statusline,
-		font:         font,
-		selectedBg:   newRGBA(81, 154, 186, 0.5),
-		matchFg:      newRGBA(81, 154, 186, 1),
+		nvim:          neovim,
+		nvimAttached:  false,
+		screen:        screen,
+		cursorNew:     cursor,
+		mode:          "normal",
+		close:         make(chan bool),
+		popup:         popup,
+		finder:        finder,
+		loc:           loc,
+		signature:     signature,
+		tabline:       tabline,
+		width:         width,
+		height:        height,
+		statusline:    statusline,
+		font:          font,
+		selectedBg:    newRGBA(81, 154, 186, 0.5),
+		matchFg:       newRGBA(81, 154, 186, 1),
+		signal:        signal,
+		redrawUpdates: make(chan [][]interface{}, 1000),
+		guiUpdates:    make(chan []interface{}, 1000),
 	}
+
+	signal.ConnectRedrawSignal(func() {
+		updates := <-editor.redrawUpdates
+		editor.handleRedraw(updates)
+	})
+
+	signal.ConnectGuiSignal(func() {
+		updates := <-editor.guiUpdates
+		editor.handleRPCGui(updates)
+	})
 
 	editor.handleNotification()
 	// editor.finder.rePosition()

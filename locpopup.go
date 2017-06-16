@@ -4,7 +4,6 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -16,9 +15,8 @@ type Locpopup struct {
 	typeText     string
 	contentLabel *widgets.QLabel
 	contentText  string
-	lastType     string
-	lastText     string
-	lastShown    bool
+	shown        bool
+	updates      chan []interface{}
 }
 
 func initLocpopup() *Locpopup {
@@ -44,45 +42,40 @@ func initLocpopup() *Locpopup {
 		widget:       widget,
 		typeLabel:    typeLabel,
 		contentLabel: contentLabel,
+		updates:      make(chan []interface{}, 1000),
 	}
-	widget.ConnectCustomEvent(func(event *core.QEvent) {
-		switch event.Type() {
-		case core.QEvent__Show:
-			widget.Show()
-		case core.QEvent__Hide:
-			widget.Hide()
-		}
-	})
-	contentLabel.ConnectCustomEvent(func(event *core.QEvent) {
-		switch event.Type() {
-		case core.QEvent__UpdateRequest:
-			contentLabel.SetText(loc.contentText)
-		}
-	})
-	typeLabel.ConnectCustomEvent(func(event *core.QEvent) {
-		switch event.Type() {
-		case core.QEvent__UpdateRequest:
-			if loc.typeText == "Error" {
-				typeLabel.SetText("Error")
-				typeLabel.SetStyleSheet("background-color: rgba(204, 62, 68, 1); color: rgba(212, 215, 214, 1);")
-			} else if loc.typeText == "Warning" {
-				typeLabel.SetText("Warning")
-				typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1); color: rgba(212, 215, 214, 1);")
-			}
-		}
-	})
 	return loc
 }
 
 func (l *Locpopup) subscribe() {
-	editor.nvim.Subscribe("LocPopup")
-	editor.nvim.RegisterHandler("LocPopup", func(args ...interface{}) {
-		go l.handle(args...)
+	editor.signal.ConnectLocpopupSignal(func() {
+		l.updateLocpopup()
 	})
+	editor.nvim.RegisterHandler("LocPopup", func(args ...interface{}) {
+		l.handle(args)
+	})
+	editor.nvim.Subscribe("LocPopup")
 	editor.nvim.Command(`autocmd CursorMoved,CursorHold,InsertEnter,InsertLeave,BufEnter,BufLeave * call rpcnotify(0, "LocPopup", "update")`)
 }
 
-func (l *Locpopup) handle(args ...interface{}) {
+func (l *Locpopup) updateLocpopup() {
+	if !l.shown {
+		l.widget.Hide()
+		return
+	}
+	l.contentLabel.SetText(l.contentText)
+	if l.typeText == "E" {
+		l.typeLabel.SetText("Error")
+		l.typeLabel.SetStyleSheet("background-color: rgba(204, 62, 68, 1); color: rgba(212, 215, 214, 1);")
+	} else if l.typeText == "W" {
+		l.typeLabel.SetText("Warning")
+		l.typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1); color: rgba(212, 215, 214, 1);")
+	}
+	l.widget.Hide()
+	l.widget.Show()
+}
+
+func (l *Locpopup) handle(args []interface{}) {
 	if len(args) < 1 {
 		return
 	}
@@ -100,14 +93,9 @@ func (l *Locpopup) update(args []interface{}) {
 	l.mutex.Lock()
 	shown := false
 	defer func() {
-		if shown {
-			l.lastShown = true
-		} else {
-			if l.lastShown {
-				l.lastShown = false
-				l.lastText = ""
-				l.widget.Hide()
-			}
+		if !shown {
+			l.shown = false
+			editor.signal.LocpopupSignal()
 		}
 		l.mutex.Unlock()
 	}()
@@ -183,26 +171,13 @@ func (l *Locpopup) update(args []interface{}) {
 
 	locType := loc["type"].(string)
 	text := loc["text"].(string)
-	if locType != l.lastType || text != l.lastText {
-		if locType != l.lastType {
-			switch locType {
-			case "E":
-				l.typeText = "Error"
-			case "W":
-				l.typeText = "Warning"
-			}
-			l.typeLabel.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
-		}
-		if text != l.lastText {
-			l.contentText = text
-			l.contentLabel.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
-		}
-		l.lastText = text
-		l.lastType = locType
-		l.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
-		l.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
-	}
 	shown = true
+	if locType != l.typeText || text != l.contentText || shown != l.shown {
+		l.typeText = locType
+		l.contentText = text
+		l.shown = shown
+		editor.signal.LocpopupSignal()
+	}
 }
 
 // ByCol sorts locations by column

@@ -183,28 +183,6 @@ func initTablineNew() *Tabline {
 			fileIcon:  fileIcon,
 			closeIcon: closeIcon,
 		}
-		w.ConnectCustomEvent(func(event *core.QEvent) {
-			switch event.Type() {
-			case core.QEvent__Show:
-				w.Show()
-			case core.QEvent__Hide:
-				w.Hide()
-			case core.QEvent__UpdateRequest:
-				tab.updateActive()
-			}
-		})
-		file.ConnectCustomEvent(func(event *core.QEvent) {
-			switch event.Type() {
-			case core.QEvent__UpdateRequest:
-				tab.updateFileText()
-			}
-		})
-		fileIcon.ConnectCustomEvent(func(event *core.QEvent) {
-			switch event.Type() {
-			case core.QEvent__UpdateRequest:
-				tab.updateFileIcon()
-			}
-		})
 		tabs = append(tabs, tab)
 		layout.AddWidget(w)
 	}
@@ -233,7 +211,7 @@ func (t *Tab) show() {
 		return
 	}
 	t.hidden = false
-	t.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
+	t.widget.Show()
 }
 
 func (t *Tab) hide() {
@@ -241,7 +219,7 @@ func (t *Tab) hide() {
 		return
 	}
 	t.hidden = true
-	t.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+	t.widget.Hide()
 }
 
 func (t *Tab) setActive(active bool) {
@@ -249,7 +227,7 @@ func (t *Tab) setActive(active bool) {
 		return
 	}
 	t.active = active
-	t.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+	t.updateActive()
 }
 
 func (t *Tab) updateFileText() {
@@ -281,12 +259,12 @@ func (t *Tabline) update(args []interface{}) {
 		fileType := getFileType(text)
 		if fileType != tab.fileType {
 			tab.fileType = fileType
-			tab.fileIcon.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+			tab.updateFileIcon()
 		}
 
 		if text != tab.fileText {
 			tab.fileText = text
-			tab.file.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+			tab.updateFileText()
 		}
 
 		tab.setActive(tab.ID == t.CurrentID)

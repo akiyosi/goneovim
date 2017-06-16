@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -48,22 +47,6 @@ func initSignature() *Signature {
 		label:  label,
 		height: widget.SizeHint().Height(),
 	}
-	widget.ConnectCustomEvent(func(event *core.QEvent) {
-		switch event.Type() {
-		case core.QEvent__Move:
-			widget.Move2(signature.x, signature.y)
-		case core.QEvent__Show:
-			widget.Show()
-		case core.QEvent__Hide:
-			widget.Hide()
-		}
-	})
-	label.ConnectCustomEvent(func(event *core.QEvent) {
-		switch event.Type() {
-		case core.QEvent__UpdateRequest:
-			label.SetText(signature.formattedText)
-		}
-	})
 	return signature
 }
 
@@ -112,7 +95,7 @@ func (s *Signature) update() {
 	}
 	formattedText := fmt.Sprintf("%s<font style=\"text-decoration:underline\";>%s</font>%s", text[:start], text[start:i], text[i:])
 	s.formattedText = formattedText
-	s.label.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+	s.label.SetText(formattedText)
 }
 
 func (s *Signature) move() {
@@ -126,13 +109,13 @@ func (s *Signature) move() {
 	}
 	s.x = int(x)
 	s.y = row*editor.font.lineHeight - s.height
-	s.widget.CustomEvent(core.NewQEvent(core.QEvent__Move))
+	s.widget.Move2(s.x, s.y)
 }
 
 func (s *Signature) show() {
-	s.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
+	s.widget.Show()
 }
 
 func (s *Signature) hide() {
-	s.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+	s.widget.Hide()
 }

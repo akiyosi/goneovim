@@ -1,7 +1,6 @@
 package gonvim
 
 import (
-	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -20,14 +19,6 @@ func initCursorNew() *Cursor {
 	cursor := &Cursor{
 		widget: widget,
 	}
-	widget.ConnectCustomEvent(func(event *core.QEvent) {
-		switch event.Type() {
-		case core.QEvent__UpdateRequest:
-			cursor.updateShape()
-		case core.QEvent__Move:
-			cursor.move()
-		}
-	})
 	return cursor
 }
 
@@ -50,13 +41,13 @@ func (c *Cursor) updateShape() {
 func (c *Cursor) update() {
 	if c.mode != editor.mode {
 		c.mode = editor.mode
-		c.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+		c.updateShape()
 	}
 	row := editor.screen.cursor[0]
 	col := editor.screen.cursor[1]
 	if c.row != row || c.col != col {
 		c.x = int(float64(col) * editor.font.truewidth)
 		c.y = row * editor.font.lineHeight
-		c.widget.CustomEvent(core.NewQEvent(core.QEvent__Move))
+		c.move()
 	}
 }

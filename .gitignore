@@ -1,0 +1,3 @@
+moc*
+cmd/gonvim/gonvim
+cmd/gonvim/deploy/*

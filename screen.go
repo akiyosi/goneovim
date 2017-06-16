@@ -5,7 +5,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -79,9 +78,6 @@ func initScreenNew(devicePixelRatio float64) *Screen {
 		// item:             item,
 	}
 	widget.ConnectPaintEvent(screen.paint)
-	widget.ConnectCustomEvent(func(event *core.QEvent) {
-		screen.redraw()
-	})
 	screen.initSpecialKeys()
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		if editor == nil {
@@ -95,10 +91,6 @@ func initScreenNew(devicePixelRatio float64) *Screen {
 	// 	}
 	// }()
 	return screen
-}
-
-func (s *Screen) redrawRequest() {
-	s.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
 }
 
 func (s *Screen) paint(vqp *gui.QPaintEvent) {
@@ -311,30 +303,6 @@ func (s *Screen) modPrefix(mod core.Qt__KeyboardModifier) string {
 	return prefix
 }
 
-func (s *Screen) getWindows() map[nvim.Window]*Window {
-	wins := map[nvim.Window]*Window{}
-	neovim := editor.nvim
-	curtab, _ := neovim.CurrentTabpage()
-	s.curtab = curtab
-	nwins, _ := neovim.Windows()
-	b := neovim.NewBatch()
-	for _, nwin := range nwins {
-		win := &Window{
-			win: nwin,
-		}
-		b.WindowWidth(nwin, &win.width)
-		b.WindowHeight(nwin, &win.height)
-		b.WindowPosition(nwin, &win.pos)
-		b.WindowTabpage(nwin, &win.tab)
-		wins[nwin] = win
-	}
-	err := b.Execute()
-	if err != nil {
-		return nil
-	}
-	return wins
-}
-
 // Draw the screen
 // func (s *Screen) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
 // 	return
@@ -388,13 +356,13 @@ func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
 
 func (s *Screen) subscribe() {
 	editor.nvim.RegisterHandler("winsupdate", func(updates ...interface{}) {
-		s.redrawWindows()
+		s.getWindows()
 	})
 	editor.nvim.Subscribe("winsupdate")
 	editor.nvim.Command(`autocmd VimResized,WinEnter,WinLeave * call rpcnotify(0, "winsupdate")`)
 }
 
-func (s *Screen) redrawWindows() {
+func (s *Screen) getWindows() {
 	wins := map[nvim.Window]*Window{}
 	neovim := editor.nvim
 	curtab, _ := neovim.CurrentTabpage()
@@ -468,13 +436,8 @@ func (s *Screen) updateSize() {
 	// 	pixmap = pixmap.Scaled2(int(s.devicePixelRatio*float64(width)), int(s.devicePixelRatio*float64(height)), core.Qt__IgnoreAspectRatio, core.Qt__SmoothTransformation)
 	// 	pixmap.SetDevicePixelRatio(s.devicePixelRatio)
 	// }
-	oldpixmap := s.pixmap
 	s.pixmap = gui.NewQPixmap3(int(s.devicePixelRatio*float64(width)), int(s.devicePixelRatio*float64(height)))
 	s.pixmap.SetDevicePixelRatio(s.devicePixelRatio)
-	go func() {
-		time.Sleep(time.Second)
-		oldpixmap.DestroyQPixmap()
-	}()
 	// s.pixmap = pixmap
 	editor.nvimResize()
 	editor.finder.resize()
@@ -589,7 +552,6 @@ func (s *Screen) put(args []interface{}) {
 	s.pixmapPainter.FillRect4(rect, bg.QColor())
 	s.pixmapPainter.SetPen2(fg.QColor())
 	s.pixmapPainter.DrawText(point, text)
-	point.DestroyQPointF()
 	s.cursor[1] = col
 	// we redraw one character more than the chars put for double width characters
 	s.queueRedraw(x, y, numChars+1, 1)
@@ -719,10 +681,6 @@ func (s *Screen) scroll(args []interface{}) {
 }
 
 func (s *Screen) update() {
-	s.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
-}
-
-func (s *Screen) redraw() {
 	if s.bg != editor.Background {
 		s.bg = editor.Background
 		css := fmt.Sprintf("background-color: %s;", editor.Background.String())
@@ -787,7 +745,6 @@ func (s *Screen) cursorWin() *Window {
 
 func fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 	rectF := core.NewQRectF()
-	defer rectF.DestroyQRectF()
 	screen := editor.screen
 	if y >= len(screen.content) {
 		return
@@ -874,7 +831,6 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 		return
 	}
 	pointF := core.NewQPointF()
-	defer pointF.DestroyQPointF()
 	line := screen.content[y]
 	chars := map[*RGBA][]int{}
 	specialChars := []int{}
@@ -1065,7 +1021,4 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		w.height*editor.font.lineHeight,
 		brush,
 	)
-	brush.DestroyQBrush()
-	gradient.DestroyQGradient()
-
 }

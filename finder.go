@@ -85,14 +85,6 @@ func initFinder() *Finder {
 	resultWidget := widgets.NewQWidget(nil, 0)
 	resultWidget.SetLayout(resultLayout)
 	resultWidget.SetContentsMargins(0, 0, 0, 0)
-	resultWidget.ConnectCustomEvent(func(event *core.QEvent) {
-		switch event.Type() {
-		case core.QEvent__Show:
-			resultWidget.Show()
-		case core.QEvent__Hide:
-			resultWidget.Hide()
-		}
-	})
 
 	scrollCol := widgets.NewQWidget(nil, 0)
 	scrollCol.SetContentsMargins(0, 0, 0, 0)
@@ -150,36 +142,6 @@ func initFinder() *Finder {
 			icon:   icon,
 			base:   base,
 		}
-		itemWidget.ConnectCustomEvent(func(event *core.QEvent) {
-			switch event.Type() {
-			case core.QEvent__Show:
-				itemWidget.Show()
-			case core.QEvent__Hide:
-				itemWidget.Hide()
-			case core.QEvent__UpdateRequest:
-				resultItem.update()
-			}
-		})
-		icon.ConnectCustomEvent(func(event *core.QEvent) {
-			switch event.Type() {
-			case core.QEvent__Show:
-				icon.Show()
-			case core.QEvent__Hide:
-				icon.Hide()
-			case core.QEvent__UpdateRequest:
-				resultItem.updateIcon()
-			}
-		})
-		base.ConnectCustomEvent(func(event *core.QEvent) {
-			switch event.Type() {
-			case core.QEvent__Show:
-				base.Show()
-			case core.QEvent__Hide:
-				base.Hide()
-			case core.QEvent__UpdateRequest:
-				base.SetText(resultItem.baseText)
-			}
-		})
 		resultItems = append(resultItems, resultItem)
 	}
 	widget.Hide()
@@ -195,34 +157,6 @@ func initFinder() *Finder {
 		scrollBar:      scrollBar,
 		cursor:         cursor,
 	}
-	widget.ConnectCustomEvent(func(event *core.QEvent) {
-		switch event.Type() {
-		case core.QEvent__Show:
-			widget.Show()
-		case core.QEvent__Hide:
-			widget.Hide()
-		}
-	})
-	pattern.ConnectCustomEvent(func(event *core.QEvent) {
-		switch event.Type() {
-		case core.QEvent__UpdateRequest:
-			pattern.SetText(finder.patternText)
-		}
-	})
-	scrollBar.ConnectCustomEvent(func(event *core.QEvent) {
-		scrollBar.Move2(0, finder.scrollBarPos)
-	})
-	scrollCol.ConnectCustomEvent(func(event *core.QEvent) {
-		switch event.Type() {
-		case core.QEvent__Show:
-			scrollCol.Show()
-		case core.QEvent__Hide:
-			scrollCol.Hide()
-		}
-	})
-	cursor.ConnectCustomEvent(func(event *core.QEvent) {
-		cursor.Move2(finder.cursorX+finder.patternPadding, finder.patternPadding)
-	})
 	return finder
 }
 
@@ -239,20 +173,20 @@ func (f *FinderResultItem) setSelected(selected bool) {
 		return
 	}
 	f.selected = selected
-	f.widget.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+	f.update()
 }
 
 func (f *FinderResultItem) show() {
 	if f.hidden {
 		f.hidden = false
-		f.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
+		f.widget.Show()
 	}
 }
 
 func (f *FinderResultItem) hide() {
 	if !f.hidden {
 		f.hidden = true
-		f.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+		f.widget.Hide()
 	}
 }
 
@@ -264,23 +198,23 @@ func (f *FinderResultItem) updateIcon() {
 func (f *FinderResultItem) showIcon() {
 	if f.iconHidden {
 		f.iconHidden = false
-		f.icon.CustomEvent(core.NewQEvent(core.QEvent__Show))
+		f.icon.Show()
 	}
 }
 
 func (f *FinderResultItem) hideIcon() {
 	if !f.iconHidden {
 		f.iconHidden = true
-		f.icon.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+		f.icon.Hide()
 	}
 }
 
 func (f *Finder) show() {
-	f.widget.CustomEvent(core.NewQEvent(core.QEvent__Show))
+	f.widget.Show()
 }
 
 func (f *Finder) hide() {
-	f.widget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+	f.widget.Hide()
 }
 
 func (f *Finder) resize() {
@@ -303,7 +237,7 @@ func (f *Finder) cursorPos(args []interface{}) {
 
 func (f *Finder) cursorMove(p int) {
 	f.cursorX = int(editor.font.defaultFontMetrics.Width(string(f.patternText[:p])))
-	f.cursor.CustomEvent(core.NewQEvent(core.QEvent__Move))
+	f.cursor.Move2(f.cursorX+f.patternPadding, f.patternPadding)
 }
 
 func (f *Finder) showSelected(selected int) {
@@ -323,7 +257,7 @@ func (f *Finder) selectResult(args []interface{}) {
 func (f *Finder) showPattern(args []interface{}) {
 	p := args[0].(string)
 	f.patternText = p
-	f.pattern.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+	f.pattern.SetText(f.patternText)
 	f.cursorMove(reflectToInt(args[1]))
 }
 
@@ -361,30 +295,30 @@ func (f *Finder) showResult(args []interface{}) {
 			iconType := getFileType(text)
 			if iconType != resultItem.iconType {
 				resultItem.iconType = iconType
-				resultItem.icon.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+				resultItem.updateIcon()
 			}
 			formattedText := formatText(text, match[i], true)
 			if formattedText != resultItem.baseText {
 				resultItem.baseText = formattedText
-				resultItem.base.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+				resultItem.base.SetText(resultItem.baseText)
 			}
 			resultItem.showIcon()
 		} else if resultType == "dir" {
 			if resultItem.iconType != "folder" {
 				resultItem.iconType = "folder"
-				resultItem.icon.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+				resultItem.updateIcon()
 			}
 			formattedText := formatText(text, match[i], true)
 			if formattedText != resultItem.baseText {
 				resultItem.baseText = formattedText
-				resultItem.base.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+				resultItem.base.SetText(resultItem.baseText)
 			}
 			resultItem.showIcon()
 		} else {
 			formattedText := formatText(text, match[i], false)
 			if formattedText != resultItem.baseText {
 				resultItem.baseText = formattedText
-				resultItem.base.CustomEvent(core.NewQEvent(core.QEvent__UpdateRequest))
+				resultItem.base.SetText(resultItem.baseText)
 			}
 			resultItem.hideIcon()
 		}
@@ -400,8 +334,8 @@ func (f *Finder) showResult(args []interface{}) {
 	// } else {
 	// 	f.scrollCol.Hide()
 	// }
-	f.resultWidget.CustomEvent(core.NewQEvent(core.QEvent__Hide))
-	f.resultWidget.CustomEvent(core.NewQEvent(core.QEvent__Show))
+	f.resultWidget.Hide()
+	f.resultWidget.Show()
 
 	if total > f.showTotal {
 		height := int(float64(f.showTotal) / float64(total) * float64(f.itemHeight*f.showTotal))
@@ -410,10 +344,10 @@ func (f *Finder) showResult(args []interface{}) {
 		}
 		f.scrollBar.SetFixedHeight(height)
 		f.scrollBarPos = int(float64(start) / float64(total) * (float64(f.itemHeight * f.showTotal)))
-		f.scrollBar.CustomEvent(core.NewQEvent(core.QEvent__Move))
-		f.scrollCol.CustomEvent(core.NewQEvent(core.QEvent__Show))
+		f.scrollBar.Move2(0, f.scrollBarPos)
+		f.scrollCol.Show()
 	} else {
-		f.scrollCol.CustomEvent(core.NewQEvent(core.QEvent__Hide))
+		f.scrollCol.Hide()
 	}
 
 	f.hide()

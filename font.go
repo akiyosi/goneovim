@@ -27,7 +27,6 @@ func fontSizeNew(font *gui.QFont) (int, int, float64, float64) {
 	ascent := fontMetrics.Ascent()
 	width := int(math.Ceil(w))
 	height := int(math.Ceil(h))
-	fontMetrics.DestroyQFontMetricsF()
 	return width, height, w, ascent
 }
 
