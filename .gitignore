@@ -1,3 +1,4 @@
 moc*
 cmd/gonvim/gonvim
 cmd/gonvim/deploy/*
+cmd/gonvim/rcc*
