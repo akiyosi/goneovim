@@ -323,6 +323,7 @@ func (s *StatuslineGit) hide() {
 	if s.hidden {
 		return
 	}
+	s.hidden = true
 	editor.signal.GitSignal()
 }
 

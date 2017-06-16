@@ -1,6 +1,9 @@
 package gonvim
 
 func isNormalWidth(char string) bool {
+	if len(char) == 0 {
+		return true
+	}
 	if char[0] <= 127 {
 		return true
 	}
