@@ -270,12 +270,12 @@ func (s *Screen) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 			if int(s.keyControl) == key || int(s.keyCmd) == key || int(s.keyAlt) == key {
 				return ""
 			}
-			c = string(key)
+			c = strings.ToLower(string(key))
 		} else {
 			return ""
 		}
 	} else {
-		c = string(text[0])
+		c = text
 	}
 
 	prefix := s.modPrefix(mod)
@@ -470,6 +470,12 @@ func (s *Screen) eolClear(args []interface{}) {
 	col := s.cursor[1]
 	line := s.content[row]
 	numChars := 0
+	if col > 0 {
+		char := line[col-1]
+		if char != nil && !char.normalWidth {
+			col++
+		}
+	}
 	for x := col; x < len(line); x++ {
 		line[x] = nil
 		numChars++
@@ -504,31 +510,41 @@ func (s *Screen) put(args []interface{}) {
 	if x > 0 {
 		char := line[x-1]
 		if char != nil && char.char != "" {
-			if !isNormalWidth(char.char) {
+			if !char.normalWidth {
 				x++
 				col++
 				args = args[1:]
 			}
 		}
 	}
-	lastChar := ""
+	var lastChar *Char
+	oldNormalWidth := true
 	for _, arg := range args {
 		chars := arg.([]interface{})
 		for _, c := range chars {
 			char := line[col]
+			if char != nil && !char.normalWidth {
+				oldNormalWidth = false
+			} else {
+				oldNormalWidth = true
+			}
 			if char == nil {
 				char = &Char{}
 				line[col] = char
 			}
 			char.char = c.(string)
+			char.normalWidth = isNormalWidth(char.char)
 			text += char.char
-			lastChar = char.char
+			lastChar = char
 			char.highlight = s.highlight
 			col++
 			numChars++
 		}
 	}
-	if lastChar != "" && !isNormalWidth(lastChar) {
+	if lastChar != nil && !lastChar.normalWidth {
+		numChars++
+	}
+	if !oldNormalWidth {
 		numChars++
 	}
 	point := core.NewQPointF3(
@@ -554,7 +570,7 @@ func (s *Screen) put(args []interface{}) {
 	s.pixmapPainter.DrawText(point, text)
 	s.cursor[1] = col
 	// we redraw one character more than the chars put for double width characters
-	s.queueRedraw(x, y, numChars+1, 1)
+	s.queueRedraw(x, y, numChars, 1)
 }
 
 func (s *Screen) highlightSet(args []interface{}) {
@@ -848,7 +864,7 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 		if char.char == "" {
 			continue
 		}
-		if !isNormalWidth(char.char) {
+		if !char.normalWidth {
 			specialChars = append(specialChars, x)
 			continue
 		}

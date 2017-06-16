@@ -25,8 +25,9 @@ type Highlight struct {
 
 // Char is
 type Char struct {
-	char      string
-	highlight Highlight
+	normalWidth bool
+	char        string
+	highlight   Highlight
 }
 
 // Editor is the editor

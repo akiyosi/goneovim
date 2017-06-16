@@ -1,10 +1,10 @@
 package gonvim
 
 func isNormalWidth(char string) bool {
-	if char[0] > 127 {
-		return false
+	if char[0] <= 127 {
+		return true
 	}
-	return true
+	return editor.font.fontMetrics.Width(char) <= editor.font.truewidth
 }
 
 func reflectToInt(iface interface{}) int {
