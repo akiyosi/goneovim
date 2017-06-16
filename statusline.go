@@ -344,9 +344,6 @@ func (s *StatuslineGit) update() {
 func (s *StatuslineGit) redraw(file string) {
 	if file == "" || strings.HasPrefix(file, "term://") {
 		s.file = file
-		if s.branch == "" {
-			return
-		}
 		s.hide()
 		s.branch = ""
 		return
@@ -360,9 +357,6 @@ func (s *StatuslineGit) redraw(file string) {
 	dir := filepath.Dir(file)
 	out, err := exec.Command("git", "-C", dir, "branch").Output()
 	if err != nil {
-		if s.branch == "" {
-			return
-		}
 		s.hide()
 		s.branch = ""
 		return
