@@ -1,18 +1,10 @@
-Neovim GUI written in Golang, using a forked ui libray from https://github.com/andlabs/ui
+Neovim GUI written in Golang, using a Golang qt backend
 
 # Requirements
 - Neovim (0.2)
 
-# Install
-Working on macOS and Linux
-```
-go get -u github.com/dzhou121/gonvim/cmd/gonvim
-```
-
-After succesfully installing to GOBIN, you can run it
-```
-gonvim
-```
+# Downloads
+Pre-built packages for macOS, and Linux are found at the [Releases](https://github.com/dzhou121/gonvim/releases/) page.
 
 # Features
 

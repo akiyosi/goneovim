@@ -4,22 +4,18 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
-	"github.com/dzhou121/ui"
+	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/svg"
+	"github.com/therecipe/qt/widgets"
 )
-
-// StatuslineItem is
-type StatuslineItem interface {
-	Redraw(bool) (int, int)
-	setPosition(x, y int)
-}
 
 // Statusline is
 type Statusline struct {
-	AreaHandler
-	box *ui.Box
-	bg  *RGBA
+	widget *widgets.QWidget
+	bg     *RGBA
 
 	borderTopWidth int
 	paddingLeft    int
@@ -33,234 +29,330 @@ type Statusline struct {
 	git      *StatuslineGit
 	encoding *StatuslineEncoding
 	lint     *StatuslineLint
+	updates  chan []interface{}
 }
 
 // StatuslineLint is
 type StatuslineLint struct {
-	SpanHandler
-	errors   int
-	warnings int
+	errors     int
+	warnings   int
+	widget     *widgets.QWidget
+	okIcon     *svg.QSvgWidget
+	errorIcon  *svg.QSvgWidget
+	warnIcon   *svg.QSvgWidget
+	okLabel    *widgets.QLabel
+	errorLabel *widgets.QLabel
+	warnLabel  *widgets.QLabel
+	svgLoaded  bool
 }
 
 // StatuslineFile is
 type StatuslineFile struct {
-	SpanHandler
-	file string
+	file        string
+	fileType    string
+	widget      *widgets.QWidget
+	fileLabel   *widgets.QLabel
+	folderLabel *widgets.QLabel
+	icon        *svg.QSvgWidget
+	base        string
+	dir         string
 }
 
 // StatuslineFiletype is
 type StatuslineFiletype struct {
-	SpanHandler
 	filetype string
+	label    *widgets.QLabel
 }
 
 // StatuslinePos is
 type StatuslinePos struct {
-	SpanHandler
-	ln  int
-	col int
+	ln    int
+	col   int
+	label *widgets.QLabel
+	text  string
 }
 
 // StatusMode is
 type StatusMode struct {
-	SpanHandler
-	mode string
+	label *widgets.QLabel
+	mode  string
+	text  string
+	bg    *RGBA
 }
 
 // StatuslineGit is
 type StatuslineGit struct {
-	SpanHandler
-	branch string
-	file   string
+	branch    string
+	file      string
+	widget    *widgets.QWidget
+	label     *widgets.QLabel
+	icon      *svg.QSvgWidget
+	svgLoaded bool
+	hidden    bool
 }
 
 // StatuslineEncoding is
 type StatuslineEncoding struct {
-	SpanHandler
 	encoding string
+	label    *widgets.QLabel
 }
 
-func initStatusline(width, height int) *Statusline {
-	box := ui.NewHorizontalBox()
-	box.SetSize(width, height)
+func initStatuslineNew() *Statusline {
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetContentsMargins(0, 1, 0, 0)
+	layout := newVFlowLayout(8, 8, 1, 3)
+	widget.SetLayout(layout)
+	widget.SetObjectName("statusline")
+	widget.SetStyleSheet(`
+	QWidget#statusline {
+		border-top: 2px solid rgba(0, 0, 0, 1);
+		background-color: rgba(24, 29, 34, 1);
+	}
+	* {
+		color: rgba(212, 215, 214, 1);
+	}
+	`)
 
-	fg := newRGBA(212, 215, 214, 1)
-	bg := newRGBA(24, 29, 34, 1)
-	statusline := &Statusline{
-		box:            box,
-		bg:             bg,
-		borderTopWidth: 2,
-		paddingLeft:    14,
-		paddingRight:   14,
-		margin:         14,
+	modeLabel := widgets.NewQLabel(nil, 0)
+	modeLabel.SetContentsMargins(4, 1, 4, 1)
+	modeLayout := widgets.NewQHBoxLayout()
+	modeLayout.AddWidget(modeLabel, 0, 0)
+	modeLayout.SetContentsMargins(0, 0, 0, 0)
+	modeWidget := widgets.NewQWidget(nil, 0)
+	modeWidget.SetContentsMargins(0, 4, 0, 4)
+	modeWidget.SetLayout(modeLayout)
+	mode := &StatusMode{
+		label: modeLabel,
 	}
 
-	area := ui.NewArea(statusline)
-	statusline.area = area
-	statusline.setSize(width, height)
-	statusline.borderTop = &Border{
-		width: statusline.borderTopWidth,
-		color: newRGBA(0, 0, 0, 1),
+	gitIcon := svg.NewQSvgWidget(nil)
+	gitIcon.SetFixedSize2(14, 14)
+	gitLabel := widgets.NewQLabel(nil, 0)
+	gitLabel.SetContentsMargins(0, 0, 0, 0)
+	gitLayout := widgets.NewQHBoxLayout()
+	gitLayout.SetContentsMargins(0, 0, 0, 0)
+	gitLayout.SetSpacing(2)
+	gitLayout.AddWidget(gitIcon, 0, 0)
+	gitLayout.AddWidget(gitLabel, 0, 0)
+	gitWidget := widgets.NewQWidget(nil, 0)
+	gitWidget.SetContentsMargins(0, 0, 0, 0)
+	gitWidget.SetLayout(gitLayout)
+	gitWidget.Hide()
+	git := &StatuslineGit{
+		widget: gitWidget,
+		icon:   gitIcon,
+		label:  gitLabel,
 	}
-	box.Append(area, false)
 
-	mode := &StatusMode{}
-	mode.area = ui.NewArea(mode)
-	mode.bg = bg
-	mode.color = fg
-	mode.paddingTop = 2
-	mode.paddingBottom = mode.paddingTop
-	mode.paddingLeft = 4
-	mode.paddingRight = mode.paddingLeft
-	box.Append(mode.area, false)
-	statusline.mode = mode
+	fileIcon := svg.NewQSvgWidget(nil)
+	fileIcon.SetFixedSize2(14, 14)
+	fileLabel := widgets.NewQLabel(nil, 0)
+	fileLabel.SetContentsMargins(0, 0, 0, 0)
+	folderLabel := widgets.NewQLabel(nil, 0)
+	folderLabel.SetContentsMargins(0, 0, 0, 0)
+	folderLabel.SetStyleSheet("color: #838383;")
+	folderLabel.SetContentsMargins(0, 0, 0, 0)
+	fileLayout := widgets.NewQHBoxLayout()
+	fileLayout.SetContentsMargins(0, 0, 0, 0)
+	fileLayout.SetSpacing(2)
+	fileLayout.AddWidget(fileIcon, 0, 0)
+	fileLayout.AddWidget(fileLabel, 0, 0)
+	fileLayout.AddWidget(folderLabel, 0, 0)
+	fileWidget := widgets.NewQWidget(nil, 0)
+	fileWidget.SetContentsMargins(0, 0, 0, 0)
+	fileWidget.SetLayout(fileLayout)
+	file := &StatuslineFile{
+		icon:        fileIcon,
+		widget:      fileWidget,
+		fileLabel:   fileLabel,
+		folderLabel: folderLabel,
+	}
 
-	file := &StatuslineFile{}
-	file.area = ui.NewArea(file)
-	file.bg = bg
-	file.color = fg
-	file.textType = "file"
-	box.Append(file.area, false)
-	statusline.file = file
+	encodingLabel := widgets.NewQLabel(nil, 0)
+	encodingLabel.SetContentsMargins(0, 0, 0, 0)
+	encoding := &StatuslineEncoding{
+		label: encodingLabel,
+	}
 
-	filetype := &StatuslineFiletype{}
-	filetype.area = ui.NewArea(filetype)
-	filetype.bg = bg
-	filetype.color = fg
-	box.Append(filetype.area, false)
-	statusline.filetype = filetype
+	posLabel := widgets.NewQLabel(nil, 0)
+	posLabel.SetContentsMargins(0, 0, 0, 0)
+	pos := &StatuslinePos{
+		label: posLabel,
+	}
 
-	git := &StatuslineGit{}
-	git.area = ui.NewArea(git)
-	git.bg = bg
-	git.color = fg
-	box.Append(git.area, false)
-	statusline.git = git
+	filetypeLabel := widgets.NewQLabel(nil, 0)
+	filetypeLabel.SetContentsMargins(0, 0, 0, 0)
+	filetype := &StatuslineFiletype{
+		label: filetypeLabel,
+	}
 
-	encoding := &StatuslineEncoding{}
-	encoding.area = ui.NewArea(encoding)
-	encoding.bg = bg
-	encoding.color = fg
-	box.Append(encoding.area, false)
-	statusline.encoding = encoding
-
-	pos := &StatuslinePos{}
-	pos.area = ui.NewArea(pos)
-	pos.text = "Ln 128, Col 119"
-	pos.bg = bg
-	pos.color = fg
-	box.Append(pos.area, false)
-	statusline.pos = pos
-
+	okIcon := svg.NewQSvgWidget(nil)
+	okIcon.SetFixedSize2(14, 14)
+	okLabel := widgets.NewQLabel(nil, 0)
+	okLabel.SetContentsMargins(0, 0, 0, 0)
+	errorIcon := svg.NewQSvgWidget(nil)
+	errorIcon.SetFixedSize2(14, 14)
+	errorIcon.Hide()
+	errorLabel := widgets.NewQLabel(nil, 0)
+	errorLabel.SetContentsMargins(0, 0, 0, 0)
+	errorLabel.Hide()
+	warnIcon := svg.NewQSvgWidget(nil)
+	warnIcon.SetFixedSize2(14, 14)
+	warnIcon.Hide()
+	warnLabel := widgets.NewQLabel(nil, 0)
+	warnLabel.SetContentsMargins(0, 0, 0, 0)
+	warnLabel.Hide()
+	lintLayout := widgets.NewQHBoxLayout()
+	lintLayout.SetContentsMargins(0, 0, 0, 0)
+	lintLayout.SetSpacing(2)
+	lintLayout.AddWidget(okIcon, 0, 0)
+	lintLayout.AddWidget(okLabel, 0, 0)
+	lintLayout.AddWidget(errorIcon, 0, 0)
+	lintLayout.AddWidget(errorLabel, 0, 0)
+	lintLayout.AddWidget(warnIcon, 0, 0)
+	lintLayout.AddWidget(warnLabel, 0, 0)
+	lintWidget := widgets.NewQWidget(nil, 0)
+	lintWidget.SetContentsMargins(0, 0, 0, 0)
+	lintWidget.SetLayout(lintLayout)
 	lint := &StatuslineLint{
-		errors:   -1,
-		warnings: -1,
+		widget:     lintWidget,
+		okIcon:     okIcon,
+		errorIcon:  errorIcon,
+		warnIcon:   warnIcon,
+		okLabel:    okLabel,
+		errorLabel: errorLabel,
+		warnLabel:  warnLabel,
+		errors:     -1,
+		warnings:   -1,
 	}
-	lint.area = ui.NewArea(lint)
-	lint.bg = bg
-	lint.color = fg
-	box.Append(lint.area, false)
-	statusline.lint = lint
 
-	return statusline
+	layout.AddWidget(modeWidget)
+	layout.AddWidget(gitWidget)
+	layout.AddWidget(fileWidget)
+	layout.AddWidget(filetypeLabel)
+	layout.AddWidget(encodingLabel)
+	layout.AddWidget(posLabel)
+	layout.AddWidget(lintWidget)
+
+	return &Statusline{
+		widget:   widget,
+		mode:     mode,
+		git:      git,
+		file:     file,
+		lint:     lint,
+		filetype: filetype,
+		encoding: encoding,
+		pos:      pos,
+		updates:  make(chan []interface{}, 1000),
+	}
 }
 
-// Draw the statusline
-func (s *Statusline) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
-	p := ui.NewPath(ui.Winding)
-	p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
-	p.End()
-	dp.Context.Fill(p, &ui.Brush{
-		Type: ui.Solid,
-		R:    s.bg.R,
-		G:    s.bg.G,
-		B:    s.bg.B,
-		A:    s.bg.A,
+func (s *Statusline) subscribe() {
+	editor.signal.ConnectStatuslineSignal(func() {
+		updates := <-s.updates
+		s.handleUpdates(updates)
 	})
-	p.Free()
-	s.drawBorder(dp)
+	editor.signal.ConnectLintSignal(func() {
+		s.lint.update()
+	})
+	editor.signal.ConnectGitSignal(func() {
+		s.git.update()
+	})
+	editor.nvim.RegisterHandler("statusline", func(updates ...interface{}) {
+		s.updates <- updates
+		editor.signal.StatuslineSignal()
+	})
+	editor.nvim.Subscribe("statusline")
+	editor.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding)`)
+	editor.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
 }
 
-func (s *Statusline) redraw(force bool) {
-	margin := s.paddingLeft
-	margin = s.redrawItem(s.mode, force, margin, true)
-	margin = s.redrawItem(s.git, force, margin, true)
-	margin = s.redrawItem(s.file, force, margin, true)
-
-	margin = s.paddingRight
-	margin = s.redrawItem(s.filetype, force, margin, false)
-	margin = s.redrawItem(s.encoding, force, margin, false)
-	margin = s.redrawItem(s.pos, force, margin, false)
-	margin = s.redrawItem(s.lint, force, margin, false)
-}
-
-func (s *Statusline) redrawItem(item StatuslineItem, force bool, margin int, left bool) int {
-	w, h := item.Redraw(force)
-	if w > 0 {
-		y := (s.height-s.borderTopWidth-h)/2 + s.borderTopWidth
-		x := 0
-		if left {
-			x = margin
-		} else {
-			x = s.width - margin - w
-		}
-		item.setPosition(x, y)
-		margin += w + s.margin
+func (s *Statusline) handleUpdates(updates []interface{}) {
+	event := updates[0].(string)
+	switch event {
+	case "bufenter":
+		file := updates[1].(string)
+		filetype := updates[2].(string)
+		encoding := updates[3].(string)
+		s.file.redraw(file)
+		s.filetype.redraw(filetype)
+		s.encoding.redraw(encoding)
+		go s.git.redraw(file)
+	case "cursormoved":
+		pos := updates[1].([]interface{})
+		ln := reflectToInt(pos[1])
+		col := reflectToInt(pos[2]) + reflectToInt(pos[3])
+		s.pos.redraw(ln, col)
+	default:
+		fmt.Println("unhandled statusline event", event)
 	}
-	return margin
 }
 
-// Redraw mode
-func (s *StatusMode) Redraw(force bool) (int, int) {
-	w, h := s.getSize()
-	if force || editor.mode != s.mode {
-		s.mode = editor.mode
-		switch s.mode {
-		case "normal":
-			s.text = "normal"
-			s.bg = newRGBA(102, 153, 204, 1)
-		case "cmdline_normal":
-			s.text = "normal"
-			s.bg = newRGBA(102, 153, 204, 1)
-		case "insert":
-			s.text = "insert"
-			s.bg = newRGBA(153, 199, 148, 1)
-		case "visual":
-			s.text = "visual"
-			s.bg = newRGBA(250, 200, 99, 1)
-		default:
-			s.bg = newRGBA(102, 153, 204, 1)
-			s.text = s.mode
-		}
-		w, h = s.getSize()
-		s.setSize(w, h)
-		ui.QueueMain(func() {
-			s.area.QueueRedrawAll()
-		})
+func (s *StatusMode) update() {
+	s.label.SetText(s.text)
+	s.label.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
+}
+
+func (s *StatusMode) redraw() {
+	if editor.mode == s.mode {
+		return
 	}
-	return w, h
+	s.mode = editor.mode
+	text := s.mode
+	bg := newRGBA(102, 153, 204, 1)
+	switch s.mode {
+	case "normal":
+		text = "normal"
+		bg = newRGBA(102, 153, 204, 1)
+	case "cmdline_normal":
+		text = "normal"
+		bg = newRGBA(102, 153, 204, 1)
+	case "insert":
+		text = "insert"
+		bg = newRGBA(153, 199, 148, 1)
+	case "visual":
+		text = "visual"
+		bg = newRGBA(250, 200, 99, 1)
+	}
+	s.text = text
+	s.bg = bg
+	s.update()
 }
 
-// Redraw git
-func (s *StatuslineGit) Redraw(force bool) (int, int) {
-	w, h := s.getSize()
+func (s *StatuslineGit) hide() {
+	if s.hidden {
+		return
+	}
+	editor.signal.GitSignal()
+}
 
-	file := ""
-	editor.nvim.Call("expand", &file, "%:p")
+func (s *StatuslineGit) update() {
+	if s.hidden {
+		s.widget.Hide()
+		return
+	}
+	s.label.SetText(s.branch)
+	if !s.svgLoaded {
+		s.svgLoaded = true
+		svgContent := getSvg("git", newRGBA(212, 215, 214, 1))
+		s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	}
+	s.widget.Show()
+}
 
+func (s *StatuslineGit) redraw(file string) {
 	if file == "" || strings.HasPrefix(file, "term://") {
 		s.file = file
 		if s.branch == "" {
-			return 0, 0
+			return
 		}
+		s.hide()
 		s.branch = ""
-		s.svg = ""
-		s.setSize(0, 0)
-		return 0, 0
+		return
 	}
 
 	if s.file == file {
-		return w, h
+		return
 	}
 
 	s.file = file
@@ -268,12 +360,11 @@ func (s *StatuslineGit) Redraw(force bool) (int, int) {
 	out, err := exec.Command("git", "-C", dir, "branch").Output()
 	if err != nil {
 		if s.branch == "" {
-			return 0, 0
+			return
 		}
+		s.hide()
 		s.branch = ""
-		s.svg = ""
-		s.setSize(0, 0)
-		return 0, 0
+		return
 	}
 
 	branch := ""
@@ -291,153 +382,116 @@ func (s *StatuslineGit) Redraw(force bool) (int, int) {
 		branch += "*"
 	}
 
-	if force || s.branch != branch {
+	if s.branch != branch {
 		s.branch = branch
-		s.text = branch
-		s.paddingLeft = editor.font.height + 2
-		s.svg = "git"
-		s.svgColor = s.color
-		w, h = s.getSize()
-		s.setSize(w, h)
-		ui.QueueMain(func() {
-			s.area.QueueRedrawAll()
-		})
+		s.hidden = false
+		editor.signal.GitSignal()
 	}
-	return w, h
 }
 
-// Redraw file
-func (s *StatuslineFile) Redraw(force bool) (int, int) {
-	w, h := s.getSize()
-	file := ""
-	editor.nvim.Call("expand", &file, "%")
+func (s *StatuslineFile) updateIcon() {
+	svgContent := getSvg(s.fileType, nil)
+	s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+}
+
+func (s *StatuslineFile) redraw(file string) {
 	if file == "" {
 		file = "[No Name]"
 	}
-	if force || file != s.file {
-		if strings.HasPrefix(file, "term://") {
-			s.textType = ""
-		} else {
-			s.textType = "file"
-		}
-		s.file = file
-		s.text = file
-		s.svg = getFileType(s.file)
-		s.paddingLeft = editor.font.height + 2
-		w, h = s.getSize()
-		s.setSize(w, h)
-		ui.QueueMain(func() {
-			s.area.QueueRedrawAll()
-		})
+
+	if file == s.file {
+		return
 	}
-	return w, h
+
+	s.file = file
+
+	base := filepath.Base(file)
+	dir := filepath.Dir(file)
+	if dir == "." {
+		dir = ""
+	}
+	if strings.HasPrefix(file, "term://") {
+		base = file
+		dir = ""
+	}
+	fileType := getFileType(file)
+	if s.fileType != fileType {
+		s.fileType = fileType
+		s.updateIcon()
+	}
+	if s.base != base {
+		s.base = base
+		s.fileLabel.SetText(s.base)
+	}
+	if s.dir != dir {
+		s.dir = dir
+		s.folderLabel.SetText(s.dir)
+	}
 }
 
-// Redraw pos
-func (s *StatuslinePos) Redraw(force bool) (int, int) {
-	w, h := s.getSize()
-	pos := new([]interface{})
-	err := editor.nvim.Call("getpos", pos, ".")
-	if err != nil {
-		return 0, 0
+func (s *StatuslinePos) redraw(ln, col int) {
+	if ln == s.ln && col == s.col {
+		return
 	}
-	ln := reflectToInt((*pos)[1])
-	col := reflectToInt((*pos)[2])
-	if force || ln != s.ln || col != s.col {
-		s.ln = ln
-		s.col = col
-		s.text = fmt.Sprintf("Ln %d, Col %d", ln, col)
-		w, h = s.getSize()
-		s.setSize(w, h)
-		ui.QueueMain(func() {
-			s.area.QueueRedrawAll()
-		})
+	text := fmt.Sprintf("Ln %d, Col %d", ln, col)
+	if text != s.text {
+		s.text = text
+		s.label.SetText(text)
 	}
-	return w, h
 }
 
-// Redraw encoding
-func (s *StatuslineEncoding) Redraw(force bool) (int, int) {
-	w, h := s.getSize()
-	encoding := ""
-	curbuf, _ := editor.nvim.CurrentBuffer()
-	editor.nvim.BufferOption(curbuf, "fileencoding", &encoding)
-	if force || s.encoding != encoding {
-		s.encoding = encoding
-		s.text = encoding
-		w, h = s.getSize()
-		s.setSize(w, h)
-		ui.QueueMain(func() {
-			s.area.QueueRedrawAll()
-		})
+func (s *StatuslineEncoding) redraw(encoding string) {
+	if s.encoding == encoding {
+		return
 	}
-	return w, h
+	s.encoding = encoding
+	s.label.SetText(s.encoding)
 }
 
-// Redraw filetype
-func (s *StatuslineFiletype) Redraw(force bool) (int, int) {
-	w, h := s.getSize()
-	filetype := ""
-	curbuf, _ := editor.nvim.CurrentBuffer()
-	editor.nvim.BufferOption(curbuf, "filetype", &filetype)
-	if force || s.filetype != filetype {
-		s.filetype = filetype
-		s.text = filetype
-		w, h = s.getSize()
-		s.setSize(w, h)
-		ui.QueueMain(func() {
-			s.area.QueueRedrawAll()
-		})
+func (s *StatuslineFiletype) redraw(filetype string) {
+	if filetype == s.filetype {
+		return
 	}
-	return w, h
+	s.filetype = filetype
+	s.label.SetText(s.filetype)
 }
 
-// Redraw lint
-func (s *StatuslineLint) Redraw(force bool) (int, int) {
-	w, h := s.getSize()
-	result := new([]map[string]interface{})
-	err := editor.nvim.Call("getloclist", result, "winnr(\"$\")")
-	if err != nil {
-		fmt.Println("lint error", err)
-		s.errors = -1
-		s.warnings = -1
-		return 0, 0
+func (s *StatuslineLint) update() {
+	if !s.svgLoaded {
+		s.svgLoaded = true
+		svgContent := getSvg("check", newRGBA(141, 193, 73, 1))
+		s.okIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent = getSvg("cross", newRGBA(204, 62, 68, 1))
+		s.errorIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent = getSvg("exclamation", nil)
+		s.warnIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
-	errors := 0
-	warnings := 0
-	for _, loc := range *result {
-		locType := loc["type"].(string)
-		switch locType {
-		case "E":
-			errors++
-		case "W":
-			warnings++
-		}
+
+	if s.errors == 0 && s.warnings == 0 {
+		s.okIcon.Show()
+		s.okLabel.SetText("ok")
+		s.okLabel.Show()
+		s.errorIcon.Hide()
+		s.errorLabel.Hide()
+		s.warnIcon.Hide()
+		s.warnLabel.Hide()
+	} else {
+		s.okIcon.Hide()
+		s.okLabel.Hide()
+		s.errorLabel.SetText(strconv.Itoa(s.errors))
+		s.warnLabel.SetText(strconv.Itoa(s.warnings))
+		s.errorIcon.Show()
+		s.errorLabel.Show()
+		s.warnIcon.Show()
+		s.warnLabel.Show()
 	}
-	if force || s.errors != errors || s.warnings != warnings {
-		s.errors = errors
-		s.warnings = warnings
-		if errors == 0 && warnings == 0 {
-			s.text = "ok"
-			s.svg = "check"
-			s.svgColor = newRGBA(141, 193, 73, 1)
-			s.svgSecond = ""
-			s.paddingLeft = editor.font.height + 2
-			w, h = s.getSize()
-			s.setSize(w, h)
-		} else {
-			s.text = fmt.Sprintf("%d   %d", s.errors, s.warnings)
-			s.svg = "cross"
-			s.svgColor = newRGBA(204, 62, 68, 1)
-			s.svgSecond = "exclamation"
-			s.svgSecondPadding = int(editor.font.truewidth * float64(len(fmt.Sprintf("%d", s.errors))+3))
-			s.paddingLeft = editor.font.height + 2
-			w, h = s.getSize()
-			s.setSize(w, h)
-		}
-		ui.QueueMain(func() {
-			s.area.QueueRedrawAll()
-		})
+}
+
+func (s *StatuslineLint) redraw(errors, warnings int) {
+	if errors == s.errors && warnings == s.warnings {
+		return
 	}
-	return w, h
+	s.errors = errors
+	s.warnings = warnings
+	editor.signal.LintSignal()
 }

@@ -1,175 +1,228 @@
 package gonvim
 
 import (
-	"time"
+	"fmt"
 
-	"github.com/dzhou121/ui"
+	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/widgets"
 )
 
 // PopupMenu is the popupmenu
 type PopupMenu struct {
-	box    *ui.Box
-	items  []*PopupItem
-	total  int
-	hidden bool
+	widget          *widgets.QWidget
+	layout          *widgets.QGridLayout
+	items           []*PopupItem
+	rawItems        []interface{}
+	total           int
+	showTotal       int
+	selected        int
+	hidden          bool
+	top             int
+	scrollBar       *widgets.QWidget
+	scrollBarPos    int
+	scrollBarHeight int
+	scrollCol       *widgets.QWidget
+	x               int
+	y               int
 }
 
 // PopupItem is
 type PopupItem struct {
-	kind *SpanHandler
-	menu *SpanHandler
+	kindLable       *widgets.QLabel
+	kindText        string
+	kindColor       *RGBA
+	kindBg          *RGBA
+	menuLable       *widgets.QLabel
+	menuText        string
+	menuTextRequest string
+	selected        bool
+	selectedRequest bool
+	hidden          bool
 }
 
-func initPopupmenu() *PopupMenu {
-	total := 10
-	box := ui.NewHorizontalBox()
+func initPopupmenuNew(font *Font) *PopupMenu {
+	layout := widgets.NewQGridLayout2()
+	layout.SetSpacing(0)
+	layout.SetContentsMargins(0, 0, 0, 0)
+	scrollCol := widgets.NewQWidget(nil, 0)
+	scrollCol.SetContentsMargins(0, 0, 0, 0)
+	scrollCol.SetFixedWidth(5)
+	scrollBar := widgets.NewQWidget(scrollCol, 0)
+	scrollBar.SetFixedWidth(5)
+	scrollBar.SetStyleSheet("background-color: #3c3c3c;")
+	mainLayout := widgets.NewQHBoxLayout()
+	mainLayout.AddLayout(layout, 0)
+	mainLayout.AddWidget(scrollCol, 0, 0)
+	mainLayout.SetContentsMargins(0, 0, 0, 0)
+	mainLayout.SetSpacing(0)
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetLayout(mainLayout)
+	widget.SetContentsMargins(0, 0, 0, 0)
+	widget.SetStyleSheet("background-color: rgba(14, 17, 18, 1); color: rgba(205, 211, 222, 1);")
+	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+	shadow.SetBlurRadius(20)
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, 255))
+	shadow.SetOffset3(0, 2)
+	widget.SetGraphicsEffect(shadow)
+	max := 15
 	var popupItems []*PopupItem
-	for i := 0; i < total; i++ {
-		kindSpanHandler := &SpanHandler{}
-		kindSpan := ui.NewArea(kindSpanHandler)
-		kindSpanHandler.area = kindSpan
-
-		menuSpanHandler := &SpanHandler{}
-		menuSpan := ui.NewArea(menuSpanHandler)
-		menuSpanHandler.area = menuSpan
+	for i := 0; i < max; i++ {
+		kind := widgets.NewQLabel(nil, 0)
+		kind.SetContentsMargins(8, 8, 8, 8)
+		kind.SetFont(font.fontNew)
+		menu := widgets.NewQLabel(nil, 0)
+		menu.SetContentsMargins(8, 8, 8, 8)
+		menu.SetFont(font.fontNew)
+		layout.AddWidget(kind, i, 0, 0)
+		layout.AddWidget(menu, i, 1, 0)
 
 		popupItem := &PopupItem{
-			kind: kindSpanHandler,
-			menu: menuSpanHandler,
+			kindLable: kind,
+			menuLable: menu,
 		}
-
 		popupItems = append(popupItems, popupItem)
-		box.Append(kindSpan, false)
-		box.Append(menuSpan, false)
 	}
-	box.SetShadow(0, 2, 0, 0, 0, 1, 4)
-	box.Hide()
 
-	return &PopupMenu{
-		box:   box,
-		items: popupItems,
-		total: total,
+	popup := &PopupMenu{
+		widget:    widget,
+		layout:    layout,
+		items:     popupItems,
+		total:     max,
+		scrollBar: scrollBar,
+		scrollCol: scrollCol,
+	}
+	return popup
+}
+
+func (p *PopupMenu) updateFont(font *Font) {
+	for i := 0; i < p.total; i++ {
+		popupItem := p.items[i]
+		popupItem.kindLable.SetFont(font.fontNew)
+		popupItem.menuLable.SetFont(font.fontNew)
 	}
 }
 
-func (p *PopupMenu) show(args []interface{}) {
-	p.hidden = false
+func (p *PopupMenu) showItems(args []interface{}) {
 	arg := args[0].([]interface{})
 	items := arg[0].([]interface{})
 	selected := reflectToInt(arg[1])
 	row := reflectToInt(arg[2])
 	col := reflectToInt(arg[3])
+	p.rawItems = items
+	p.selected = selected
+	p.top = 0
 
 	popupItems := p.items
-	i := 0
-	kindWidth := 0
-	menuWidthMax := 0
-	heightSum := 0
-	height := 0
-	for i = 0; i < p.total; i++ {
+	itemHeight := editor.font.height + 20
+	heightLeft := editor.screen.height - (row+1)*editor.font.lineHeight
+	total := heightLeft / itemHeight
+	if total < p.total {
+		p.showTotal = total
+	} else {
+		p.showTotal = p.total
+	}
+
+	for i := 0; i < p.total; i++ {
 		popupItem := popupItems[i]
-		if i >= len(items) {
+		if i >= len(items) || i >= total {
 			popupItem.hide()
 			continue
 		}
 
 		item := items[i].([]interface{})
 		popupItem.setItem(item, selected == i)
-
-		var menuWidth int
-		menuWidth, height = popupItem.menu.getSize()
-		kindWidth, height = popupItem.kind.getSize()
-
-		if menuWidth > menuWidthMax {
-			menuWidthMax = menuWidth
-		}
-		y := heightSum
-		heightSum += height
-		ui.QueueMain(func() {
-			popupItem.kind.area.SetPosition(0, y)
-			popupItem.menu.area.SetPosition(kindWidth, y)
-		})
+		popupItem.show()
 	}
 
-	for i = 0; i < p.total; i++ {
-		if i >= len(items) {
-			continue
-		}
-		popupItem := popupItems[i]
-		ui.QueueMain(func() {
-			popupItem.kind.area.SetSize(kindWidth, height)
-			popupItem.kind.area.Show()
-			popupItem.kind.area.QueueRedrawAll()
-			popupItem.menu.area.SetSize(menuWidthMax, height)
-			popupItem.menu.area.Show()
-			popupItem.menu.area.QueueRedrawAll()
-		})
+	if len(items) > p.showTotal {
+		p.scrollBarHeight = int(float64(p.showTotal) / float64(len(items)) * float64(itemHeight*p.showTotal))
+		p.scrollBarPos = 0
+		p.scrollBar.SetFixedHeight(p.scrollBarHeight)
+		p.scrollBar.Move2(0, p.scrollBarPos)
+		p.scrollCol.Show()
+	} else {
+		p.scrollCol.Hide()
 	}
 
-	ui.QueueMain(func() {
-		p.box.SetPosition(
-			int(float64(col)*editor.font.truewidth)-kindWidth-p.items[0].menu.paddingLeft,
-			(row+1)*editor.font.lineHeight,
-		)
-		p.box.SetSize(menuWidthMax+kindWidth, heightSum)
-		p.box.Show()
-	})
+	p.widget.Move2(
+		int(float64(col)*editor.font.truewidth)-popupItems[0].kindLable.Width()-8,
+		(row+1)*editor.font.lineHeight,
+	)
+	p.show()
 }
 
-func (p *PopupMenu) hide(args []interface{}) {
-	p.hidden = true
+func (p *PopupMenu) show() {
+	p.widget.Show()
+}
 
-	time.AfterFunc(50*time.Millisecond, func() {
-		if p.hidden {
-			ui.QueueMain(func() {
-				p.box.Hide()
-			})
-		}
-	})
+func (p *PopupMenu) hide() {
+	p.widget.Hide()
 }
 
 func (p *PopupMenu) selectItem(args []interface{}) {
 	selected := reflectToInt(args[0].([]interface{})[0])
-	for i := 0; i < p.total; i++ {
+	if selected == -1 && p.top > 0 {
+		p.scroll(-p.top)
+	}
+	if selected-p.top >= p.showTotal {
+		p.scroll(selected - p.top - p.showTotal + 1)
+	}
+	if selected >= 0 && selected-p.top < 0 {
+		p.scroll(-1)
+	}
+	for i := 0; i < p.showTotal; i++ {
 		popupItem := p.items[i]
-		if selected == i {
-			popupItem.menu.SetBackground(editor.selectedBg)
-			ui.QueueMain(func() {
-				popupItem.menu.area.QueueRedrawAll()
-			})
+		popupItem.setSelected(selected == i+p.top)
+	}
+}
+
+func (p *PopupMenu) scroll(n int) {
+	// fmt.Println(len(p.rawItems), p.top, n)
+	p.top += n
+	items := p.rawItems
+	popupItems := p.items
+	for i := 0; i < p.showTotal; i++ {
+		popupItem := popupItems[i]
+		item := items[i+p.top].([]interface{})
+		popupItem.setItem(item, false)
+	}
+	p.scrollBarPos = int((float64(p.top) / float64(len(items))) * float64(p.widget.Height()))
+	p.scrollBar.Move2(0, p.scrollBarPos)
+	p.hide()
+	p.show()
+}
+
+func (p *PopupItem) updateKind() {
+	p.kindLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", p.kindBg.String(), p.kindColor.String()))
+	p.kindLable.SetText(p.kindText)
+}
+
+func (p *PopupItem) updateMenu() {
+	if p.selected != p.selectedRequest {
+		p.selected = p.selectedRequest
+		if p.selected {
+			p.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.selectedBg.String()))
 		} else {
-			popupItem.menu.SetBackground(newRGBA(14, 17, 18, 1))
-			ui.QueueMain(func() {
-				popupItem.menu.area.QueueRedrawAll()
-			})
+			p.menuLable.SetStyleSheet("")
 		}
 	}
+	if p.menuTextRequest != p.menuText {
+		p.menuText = p.menuTextRequest
+		p.menuLable.SetText(p.menuText)
+	}
+}
+
+func (p *PopupItem) setSelected(selected bool) {
+	p.selectedRequest = selected
+	p.updateMenu()
 }
 
 func (p *PopupItem) setItem(item []interface{}, selected bool) {
 	text := item[0].(string)
 	kindText := item[1].(string)
 	p.setKind(kindText, selected)
-
-	fg := newRGBA(205, 211, 222, 1)
-	p.menu.SetColor(fg)
-	if selected {
-		p.menu.SetBackground(editor.selectedBg)
-	} else {
-		p.menu.SetBackground(newRGBA(14, 17, 18, 1))
-	}
-	p.menu.SetFont(editor.font)
-	p.menu.SetText(text)
-
-	p.menu.paddingLeft = 10
-	p.menu.paddingRight = 10
-	p.menu.paddingTop = 8
-	p.menu.paddingBottom = 8
-
-	p.kind.paddingLeft = 10
-	p.kind.paddingRight = 10
-	p.kind.paddingTop = 8
-	p.kind.paddingBottom = 8
+	p.menuTextRequest = text
+	p.setSelected(selected)
 }
 
 func (p *PopupItem) setKind(kindText string, selected bool) {
@@ -212,15 +265,28 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 	default:
 		kindText = "b"
 	}
-	p.kind.SetColor(color)
-	p.kind.SetBackground(bg)
-	p.kind.SetFont(editor.font)
-	p.kind.SetText(kindText)
+	if kindText != p.kindText {
+		p.kindText = kindText
+		p.kindColor = color
+		p.kindBg = bg
+		p.updateKind()
+	}
 }
 
 func (p *PopupItem) hide() {
-	ui.QueueMain(func() {
-		p.kind.area.Hide()
-		p.menu.area.Hide()
-	})
+	if p.hidden {
+		return
+	}
+	p.hidden = true
+	p.kindLable.Hide()
+	p.menuLable.Hide()
+}
+
+func (p *PopupItem) show() {
+	if !p.hidden {
+		return
+	}
+	p.hidden = false
+	p.kindLable.Show()
+	p.menuLable.Show()
 }

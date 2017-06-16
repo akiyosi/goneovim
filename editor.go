@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"unsafe"
 
 	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
-	"github.com/dzhou121/neovim-locpopup/rplugin/go/locpopup"
-	"github.com/dzhou121/ui"
 	"github.com/neovim/go-client/nvim"
+	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/widgets"
 )
 
 var editor *Editor
@@ -38,14 +38,14 @@ type Editor struct {
 	smallerFont      *Font
 	rows             int
 	cols             int
-	cursor           *CursorBox
+	cursorNew        *Cursor
 	Foreground       *RGBA
 	Background       *RGBA
 	special          *RGBA
-	window           *ui.Window
 	screen           *Screen
-	areaBox          *ui.Box
 	close            chan bool
+	loc              *Locpopup
+	signature        *Signature
 	popup            *PopupMenu
 	finder           *Finder
 	tabline          *Tabline
@@ -57,168 +57,33 @@ type Editor struct {
 	selectedBg       *RGBA
 	matchFg          *RGBA
 	resizeMutex      sync.Mutex
-	redrawMutex      sync.Mutex
+	signal           *editorSignal
+	redrawUpdates    chan [][]interface{}
+	guiUpdates       chan []interface{}
 }
 
-func initMainWindow(box *ui.Box, width, height int) *ui.Window {
-	window := ui.NewWindow("Gonvim", width, height, false)
-	window.SetChild(box)
-	window.OnClosing(func(*ui.Window) bool {
-		ui.Quit()
-		return true
-	})
-	window.OnContentSizeChanged(func(w *ui.Window, data unsafe.Pointer) bool {
-		if editor == nil {
-			return true
-		}
-		width, height = window.ContentSize()
-		fmt.Println("window changed", width, height)
-		if width == editor.width && height == editor.height {
-			return true
-		}
-		editor.resize(width, height)
-		return true
-	})
-	window.Show()
-	return window
-}
-
-func getTablineHeight(font *Font) int {
-	return font.lineHeight + 12
-}
-
-func getStatuslineHeight(font *Font) int {
-	return font.lineHeight + 6
-}
-
-// InitEditor inits the editor
-func InitEditor() error {
-	if editor != nil {
-		return nil
-	}
-
-	fontFamily := ""
-	switch runtime.GOOS {
-	case "windows":
-		fontFamily = "Consolas"
-	case "darwin":
-		fontFamily = "Courier New"
-	default:
-		fontFamily = "Monospace"
-	}
-	font := initFont(fontFamily, 14, 6)
-	smallerFont := initFont(fontFamily, 12, 0)
-
-	width := 800
-	height := 600
-	tablineHeight := getTablineHeight(font)
-	statuslineHeight := getStatuslineHeight(font)
-	screenHeight := height - tablineHeight - statuslineHeight
-
-	screen := initScreen(width, screenHeight)
-	cursor := initCursorBox(width, screenHeight)
-	popupMenu := initPopupmenu()
-	finder := initFinder()
-	tabline := initTabline(width, tablineHeight)
-	loc := initLocpopup()
-	statusline := initStatusline(width, statuslineHeight)
-
-	box := ui.NewHorizontalBox()
-	areaBox := ui.NewHorizontalBox()
-	areaBox.Append(screen.box, false)
-	areaBox.Append(cursor.box, false)
-	areaBox.Append(loc.box, false)
-	areaBox.Append(popupMenu.box, false)
-	areaBox.Append(finder.box, false)
-	box.Append(tabline.box, false)
-	box.Append(areaBox, false)
-	box.Append(statusline.box, false)
-
-	areaBox.SetSize(width, screenHeight)
-	areaBox.SetPosition(0, tablineHeight)
-	statusline.box.SetPosition(0, tablineHeight+screenHeight)
-	window := initMainWindow(box, width, height)
-
-	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
-		Args: os.Args[1:],
-	})
-	if err != nil {
-		fmt.Println("nvim start error", err)
-		ui.Quit()
-		return err
-	}
-
-	editor = &Editor{
-		nvim:             neovim,
-		nvimAttached:     false,
-		window:           window,
-		screen:           screen,
-		areaBox:          areaBox,
-		mode:             "normal",
-		close:            make(chan bool),
-		cursor:           cursor,
-		popup:            popupMenu,
-		finder:           finder,
-		tabline:          tabline,
-		width:            width,
-		height:           height,
-		tablineHeight:    tablineHeight,
-		statusline:       statusline,
-		statuslineHeight: statuslineHeight,
-		font:             font,
-		smallerFont:      smallerFont,
-		selectedBg:       newRGBA(81, 154, 186, 0.5),
-		matchFg:          newRGBA(81, 154, 186, 1),
-	}
-
-	editor.nvimResize()
-	editor.handleNotification()
-	editor.finder.rePosition()
-	go func() {
-		err := neovim.Serve()
-		if err != nil {
-			fmt.Println(err)
-		}
-		editor.close <- true
-	}()
-
-	o := make(map[string]interface{})
-	o["rgb"] = true
-	o["ext_popupmenu"] = true
-	o["ext_tabline"] = true
-	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
-	if err != nil {
-		fmt.Println("nvim attach UI error", err)
-		ui.Quit()
-		return nil
-	}
-	editor.nvim.Subscribe("Gui")
-	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
-	editor.nvim.Command("runtime! ginit.vim")
-	editor.nvim.Command("let g:gonvim_running=1")
-	fzf.RegisterPlugin(editor.nvim)
-	locpopup.RegisterPlugin(editor.nvim)
-
-	go func() {
-		<-editor.close
-		ui.Quit()
-	}()
-
-	return nil
+type editorSignal struct {
+	core.QObject
+	_ func() `signal:"redrawSignal"`
+	_ func() `signal:"guiSignal"`
+	_ func() `signal:"statuslineSignal"`
+	_ func() `signal:"locpopupSignal"`
+	_ func() `signal:"lintSignal"`
+	_ func() `signal:"gitSignal"`
 }
 
 func (e *Editor) handleNotification() {
 	e.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
-		go e.handleRPCGui(updates...)
+		e.guiUpdates <- updates
+		e.signal.GuiSignal()
 	})
 	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		e.redrawMutex.Lock()
-		e.handleRedraw(updates...)
-		e.redrawMutex.Unlock()
+		e.redrawUpdates <- updates
+		e.signal.RedrawSignal()
 	})
 }
 
-func (e *Editor) handleRPCGui(updates ...interface{}) {
+func (e *Editor) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "Font":
@@ -231,34 +96,25 @@ func (e *Editor) handleRPCGui(updates ...interface{}) {
 		e.finder.cursorPos(updates[1:])
 	case "finder_show_result":
 		e.finder.showResult(updates[1:])
-	case "finder_show":
-		e.finder.show()
 	case "finder_hide":
 		e.finder.hide()
 	case "finder_select":
 		e.finder.selectResult(updates[1:])
-	case "locpopup_show":
-		arg, ok := updates[1].(map[string]interface{})
-		if !ok {
-			return
-		}
-		e.cursor.locpopup.show(arg)
-	case "locpopup_hide":
-		e.cursor.locpopup.hide()
 	case "signature_show":
-		e.cursor.signature.show(updates[1:])
+		e.signature.showItem(updates[1:])
 	case "signature_pos":
-		e.cursor.signature.pos(updates[1:])
+		e.signature.pos(updates[1:])
 	case "signature_hide":
-		e.cursor.signature.hide()
+		e.signature.hide()
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}
 }
 
-func (e *Editor) handleRedraw(updates ...[]interface{}) {
-	screen := e.screen
-	go screen.redrawWindows()
+func (e *Editor) handleRedraw(updates [][]interface{}) {
+	s := e.screen
+	s.pixmapPainter = gui.NewQPainter2(s.pixmap)
+	s.pixmapPainter.SetFont(editor.font.fontNew)
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -273,13 +129,7 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			}
 		case "update_bg":
 			args := update[1].([]interface{})
-			color := reflectToInt(args[0])
-			if color == -1 {
-				editor.Background = newRGBA(0, 0, 0, 1)
-			} else {
-				bg := calcColor(reflectToInt(args[0]))
-				editor.Background = bg
-			}
+			s.updateBg(args)
 		case "update_sp":
 			args := update[1].([]interface{})
 			color := reflectToInt(args[0])
@@ -289,28 +139,28 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 				editor.special = calcColor(reflectToInt(args[0]))
 			}
 		case "cursor_goto":
-			screen.cursorGoto(args)
+			s.cursorGoto(args)
 		case "put":
-			screen.put(args)
+			s.put(args)
 		case "eol_clear":
-			screen.eolClear(args)
+			s.eolClear(args)
 		case "clear":
-			screen.clear(args)
+			s.clear(args)
 		case "resize":
-			screen.resize(args)
+			s.resize(args)
 		case "highlight_set":
-			screen.highlightSet(args)
+			s.highlightSet(args)
 		case "set_scroll_region":
-			screen.setScrollRegion(args)
+			s.setScrollRegion(args)
 		case "scroll":
-			screen.scroll(args)
+			s.scroll(args)
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			editor.mode = arg[0].(string)
 		case "popupmenu_show":
-			editor.popup.show(args)
+			editor.popup.showItems(args)
 		case "popupmenu_hide":
-			editor.popup.hide(args)
+			editor.popup.hide()
 		case "popupmenu_select":
 			editor.popup.selectItem(args)
 		case "tabline_update":
@@ -321,12 +171,13 @@ func (e *Editor) handleRedraw(updates ...[]interface{}) {
 			fmt.Println("Unhandle event", event)
 		}
 	}
-	screen.redraw()
-	editor.cursor.draw()
-	if !e.nvimAttached {
-		e.nvimAttached = true
+	for _, win := range s.curWins {
+		win.drawBorder(s.pixmapPainter)
 	}
-	go editor.statusline.redraw(false)
+	s.pixmapPainter.DestroyQPainter()
+	s.update()
+	editor.cursorNew.update()
+	editor.statusline.mode.redraw()
 }
 
 func (e *Editor) guiFont(args ...interface{}) {
@@ -348,8 +199,8 @@ func (e *Editor) guiFont(args ...interface{}) {
 	}
 
 	e.font.change(parts[0], height)
-	e.smallerFont.change(parts[0], height-2)
-	e.resize(e.width, e.height)
+	e.nvimResize()
+	e.popup.updateFont(e.font)
 }
 
 func (e *Editor) guiLinespace(args ...interface{}) {
@@ -370,40 +221,13 @@ func (e *Editor) guiLinespace(args ...interface{}) {
 		return
 	}
 	e.font.changeLineSpace(lineSpace)
-	e.smallerFont.changeLineSpace(lineSpace)
-	e.resize(e.width, e.height)
-}
-
-func (e *Editor) resize(width, height int) {
-	ui.QueueMain(func() {
-		e.resizeMutex.Lock()
-		defer e.resizeMutex.Unlock()
-		e.tablineHeight = getTablineHeight(e.font)
-		e.statuslineHeight = getStatuslineHeight(e.font)
-		screenHeight := height - e.tablineHeight - e.statuslineHeight
-		e.width = width
-		e.height = height
-		e.areaBox.SetSize(width, screenHeight)
-		e.areaBox.SetPosition(0, e.tablineHeight)
-		e.screen.box.SetSize(width, screenHeight)
-		e.screen.setSize(width, screenHeight)
-		e.cursor.setSize(width, screenHeight)
-		e.tabline.resize(width, e.tablineHeight)
-		e.statusline.redraw(true)
-		e.statusline.box.SetSize(width, e.statuslineHeight)
-		e.statusline.setSize(width, e.statuslineHeight)
-		e.statusline.box.SetPosition(0, e.tablineHeight+screenHeight)
-		e.finder.rePosition()
-		e.nvimResize()
-	})
+	e.nvimResize()
 }
 
 func (e *Editor) nvimResize() {
-	e.redrawMutex.Lock()
-	defer e.redrawMutex.Unlock()
-	width := e.screen.width
-	height := e.screen.height
-	// cols := width / editor.font.width
+	// e.screen.paintMutex.Lock()
+	// defer e.screen.paintMutex.Unlock()
+	width, height := e.screen.size()
 	cols := int(float64(width) / editor.font.truewidth)
 	rows := height / editor.font.lineHeight
 	oldCols := editor.cols
@@ -426,4 +250,143 @@ func (hl *Highlight) copy() Highlight {
 		highlight.background = hl.background.copy()
 	}
 	return highlight
+}
+
+// InitEditorNew is
+func InitEditorNew() {
+	app := widgets.NewQApplication(0, nil)
+	devicePixelRatio := app.DevicePixelRatio()
+	fontFamily := ""
+	switch runtime.GOOS {
+	case "windows":
+		fontFamily = "Consolas"
+	case "darwin":
+		fontFamily = "Courier New"
+	default:
+		fontFamily = "Monospace"
+	}
+	font := initFontNew(fontFamily, 14, 6)
+
+	width := 800
+	height := 600
+
+	//create a window
+	window := widgets.NewQMainWindow(nil, 0)
+	window.SetWindowTitle("Gonvim")
+	window.SetContentsMargins(0, 0, 0, 0)
+	window.SetMinimumSize2(width, height)
+
+	tabline := initTablineNew()
+	statusline := initStatuslineNew()
+	screen := initScreenNew(devicePixelRatio)
+	cursor := initCursorNew()
+	cursor.widget.SetParent(screen.widget)
+	popup := initPopupmenuNew(font)
+	popup.widget.SetParent(screen.widget)
+	finder := initFinder()
+	finder.widget.SetParent(screen.widget)
+	loc := initLocpopup()
+	loc.widget.SetParent(screen.widget)
+	signature := initSignature()
+	signature.widget.SetParent(screen.widget)
+	window.ConnectKeyPressEvent(screen.keyPress)
+
+	layout := widgets.NewQVBoxLayout()
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetContentsMargins(0, 0, 0, 0)
+	widget.SetLayout(layout)
+	layout.AddWidget(tabline.widget, 0, 0)
+	layout.AddWidget(screen.widget, 1, 0)
+	layout.AddWidget(statusline.widget, 0, 0)
+	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(0)
+
+	window.SetCentralWidget(widget)
+
+	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
+		Args: os.Args[1:],
+	})
+	if err != nil {
+		fmt.Println("nvim start error", err)
+		app.Quit()
+		return
+	}
+
+	signal := NewEditorSignal(nil)
+
+	editor = &Editor{
+		nvim:          neovim,
+		nvimAttached:  false,
+		screen:        screen,
+		cursorNew:     cursor,
+		mode:          "normal",
+		close:         make(chan bool),
+		popup:         popup,
+		finder:        finder,
+		loc:           loc,
+		signature:     signature,
+		tabline:       tabline,
+		width:         width,
+		height:        height,
+		statusline:    statusline,
+		font:          font,
+		selectedBg:    newRGBA(81, 154, 186, 0.5),
+		matchFg:       newRGBA(81, 154, 186, 1),
+		signal:        signal,
+		redrawUpdates: make(chan [][]interface{}, 1000),
+		guiUpdates:    make(chan []interface{}, 1000),
+	}
+
+	signal.ConnectRedrawSignal(func() {
+		updates := <-editor.redrawUpdates
+		editor.handleRedraw(updates)
+	})
+
+	signal.ConnectGuiSignal(func() {
+		updates := <-editor.guiUpdates
+		editor.handleRPCGui(updates)
+	})
+
+	editor.handleNotification()
+	// editor.finder.rePosition()
+	go func() {
+		err := neovim.Serve()
+		if err != nil {
+			fmt.Println(err)
+		}
+		editor.close <- true
+	}()
+
+	screen.updateSize()
+
+	o := make(map[string]interface{})
+	o["rgb"] = true
+	o["ext_popupmenu"] = true
+	o["ext_tabline"] = true
+	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
+	if err != nil {
+		fmt.Println("nvim attach UI error", err)
+		app.Quit()
+		return
+	}
+	editor.nvim.Subscribe("Gui")
+	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
+	editor.nvim.Command("runtime! ginit.vim")
+	editor.nvim.Command("let g:gonvim_running=1")
+	fzf.RegisterPlugin(editor.nvim)
+	screen.subscribe()
+	statusline.subscribe()
+	loc.subscribe()
+
+	go func() {
+		<-editor.close
+		app.Quit()
+	}()
+
+	window.Show()
+	popup.widget.Hide()
+	finder.widget.Hide()
+	loc.widget.Hide()
+	signature.widget.Hide()
+	widgets.QApplication_Exec()
 }
