@@ -54,7 +54,7 @@ func (l *Locpopup) subscribe() {
 		l.handle(args)
 	})
 	editor.nvim.Subscribe("LocPopup")
-	editor.nvim.Command(`autocmd CursorMoved,CursorHold,InsertEnter,InsertLeave,BufEnter,BufLeave * call rpcnotify(0, "LocPopup", "update")`)
+	editor.nvim.Command(`autocmd CursorMoved,CursorHold,InsertEnter,InsertLeave * call rpcnotify(0, "LocPopup", "update")`)
 }
 
 func (l *Locpopup) updateLocpopup() {
