@@ -32,6 +32,7 @@ type Char struct {
 
 // Editor is the editor
 type Editor struct {
+	app              *widgets.QApplication
 	nvim             *nvim.Nvim
 	nvimAttached     bool
 	mode             string
@@ -316,6 +317,7 @@ func InitEditorNew() {
 	signal := NewEditorSignal(nil)
 
 	editor = &Editor{
+		app:           app,
 		nvim:          neovim,
 		nvimAttached:  false,
 		screen:        screen,

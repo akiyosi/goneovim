@@ -431,6 +431,7 @@ func (s *Screen) updateSize() {
 	width, height := s.size()
 	s.width = width
 	s.height = height
+	s.devicePixelRatio = editor.app.DevicePixelRatio()
 	// pixmap := gui.NewQPixmap3(width, height)
 	// if s.devicePixelRatio != 1 {
 	// 	pixmap = pixmap.Scaled2(int(s.devicePixelRatio*float64(width)), int(s.devicePixelRatio*float64(height)), core.Qt__IgnoreAspectRatio, core.Qt__SmoothTransformation)
