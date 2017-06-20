@@ -1,4 +1,4 @@
-Neovim GUI written in Golang, using a Golang qt backend
+Neovim GUI written in Golang, using a Golang qt backend (https://github.com/therecipe/qt)
 
 # Requirements
 - Neovim (0.2)
