@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dzhou121/neovim-fzf-shim/rplugin/go/fzf"
+	"github.com/dzhou121/gonvim-fuzzy/rplugin/go/fzf"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
