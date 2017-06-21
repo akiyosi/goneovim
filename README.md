@@ -6,6 +6,16 @@ Neovim GUI written in Golang, using a Golang qt backend (https://github.com/ther
 # Downloads
 Pre-built packages for Windows, macOS, and Linux are found at the [Releases](https://github.com/dzhou121/gonvim/releases/) page.
 
+# Configuration
+Disable the drawing of split by gonvim
+```let g:gonvim_draw_split = 0```
+
+Disable the drawing of statusline by gonvim
+```let g:gonvim_draw_statusline = 0```
+
+Disable the lint popup message
+```let g:gonvim_draw_lint = 0```
+
 # Features
 
 - Tabline

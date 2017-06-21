@@ -52,6 +52,8 @@ type Editor struct {
 	finder           *Finder
 	tabline          *Tabline
 	statusline       *Statusline
+	drawStatusline   bool
+	drawLint         bool
 	statuslineHeight int
 	width            int
 	height           int
@@ -173,9 +175,7 @@ func (e *Editor) handleRedraw(updates [][]interface{}) {
 			fmt.Println("Unhandle event", event)
 		}
 	}
-	for _, win := range s.curWins {
-		win.drawBorder(s.pixmapPainter)
-	}
+	s.drawBorder()
 	s.pixmapPainter.DestroyQPainter()
 	s.update()
 	editor.cursorNew.update()
@@ -372,12 +372,35 @@ func InitEditorNew() {
 		app.Quit()
 		return
 	}
+
+	var drawSplit interface{}
+	editor.nvim.Var("gonvim_draw_split", &drawSplit)
+	if isZero(drawSplit) {
+		editor.screen.drawSplit = false
+	} else {
+		editor.screen.drawSplit = true
+	}
+
+	var drawStatusline interface{}
+	editor.nvim.Var("gonvim_draw_statusline", &drawStatusline)
+	if isZero(drawStatusline) {
+		editor.drawStatusline = false
+	} else {
+		editor.drawStatusline = true
+	}
+
+	var drawLint interface{}
+	editor.nvim.Var("gonvim_draw_lint", &drawLint)
+	if isZero(drawLint) {
+		editor.drawLint = false
+	} else {
+		editor.drawLint = true
+	}
 	editor.nvim.Subscribe("Gui")
 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	editor.nvim.Command("runtime! ginit.vim")
 	editor.nvim.Command("let g:gonvim_running=1")
 	fzf.RegisterPlugin(editor.nvim)
-	screen.subscribe()
 	statusline.subscribe()
 	loc.subscribe()
 

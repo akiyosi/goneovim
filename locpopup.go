@@ -47,6 +47,9 @@ func initLocpopup() *Locpopup {
 }
 
 func (l *Locpopup) subscribe() {
+	if !editor.drawLint {
+		return
+	}
 	editor.signal.ConnectLocpopupSignal(func() {
 		l.updateLocpopup()
 	})

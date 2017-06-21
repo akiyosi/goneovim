@@ -45,6 +45,7 @@ type Screen struct {
 	pixmap           *gui.QPixmap
 	pixmapPainter    *gui.QPainter
 	item             *widgets.QGraphicsPixmapItem
+	drawSplit        bool
 
 	controlModifier core.Qt__KeyboardModifier
 	cmdModifier     core.Qt__KeyboardModifier
@@ -341,28 +342,24 @@ func (s *Screen) modPrefix(mod core.Qt__KeyboardModifier) string {
 // s.drawBorder(dp, row, col, rows, cols)
 // }
 
-func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
+func (s *Screen) drawBorder() {
+	if !s.drawSplit {
+		return
+	}
+	s.getWindows()
 	for _, win := range s.curWins {
-		if win.pos[0]+win.height < row && (win.pos[1]+win.width+1) < col {
-			continue
-		}
-		if win.pos[0] > (row+rows) && (win.pos[1]+win.width) > (col+cols) {
-			continue
-		}
-
-		win.drawBorder(p)
+		win.drawBorder(s.pixmapPainter)
 	}
 }
 
-func (s *Screen) subscribe() {
-	editor.nvim.RegisterHandler("winsupdate", func(updates ...interface{}) {
-		s.getWindows()
-	})
-	editor.nvim.Subscribe("winsupdate")
-	editor.nvim.Command(`autocmd VimResized,WinEnter,WinLeave * call rpcnotify(0, "winsupdate")`)
-}
-
 func (s *Screen) getWindows() {
+	x := s.queueRedrawArea[0]
+	y := s.queueRedrawArea[1]
+	width := s.queueRedrawArea[2] - x
+	height := s.queueRedrawArea[3] - y
+	if width == 0 && height == 0 {
+		return
+	}
 	wins := map[nvim.Window]*Window{}
 	neovim := editor.nvim
 	curtab, _ := neovim.CurrentTabpage()

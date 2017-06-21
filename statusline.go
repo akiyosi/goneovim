@@ -248,6 +248,10 @@ func initStatuslineNew() *Statusline {
 }
 
 func (s *Statusline) subscribe() {
+	if !editor.drawStatusline {
+		s.widget.Hide()
+		return
+	}
 	editor.signal.ConnectStatuslineSignal(func() {
 		updates := <-s.updates
 		s.handleUpdates(updates)

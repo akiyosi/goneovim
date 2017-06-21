@@ -17,3 +17,20 @@ func reflectToInt(iface interface{}) int {
 	}
 	return int(iface.(uint64))
 }
+
+func isZero(d interface{}) bool {
+	if d == nil {
+		return false
+	}
+	switch a := d.(type) {
+	case int64:
+		if a == 0 {
+			return true
+		}
+	case uint64:
+		if a == 0 {
+			return true
+		}
+	}
+	return false
+}
