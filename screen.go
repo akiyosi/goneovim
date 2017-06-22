@@ -361,7 +361,7 @@ func (s *Screen) drawBorder() {
 	}()
 	select {
 	case <-done:
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(50 * time.Millisecond):
 	}
 	for _, win := range s.curWins {
 		win.drawBorder(s.pixmapPainter)
