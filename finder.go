@@ -351,6 +351,12 @@ func (f *Finder) showResult(args []interface{}) {
 			results = append(results, line)
 			itemTypes = append(itemTypes, "file_line")
 			itemMatches = append(itemMatches, lineMatch)
+		} else if resultType == "buffer" {
+			n := strings.Index(text, "]")
+			if n > -1 {
+				text = text[n+1:]
+			}
+			results = append(results, text)
 		} else {
 			results = append(results, text)
 		}
@@ -364,6 +370,8 @@ func (f *Finder) showResult(args []interface{}) {
 		}
 		text := results[i]
 		if resultType == "file" {
+			resultItem.setItem(text, "file", match[i])
+		} else if resultType == "buffer" {
 			resultItem.setItem(text, "file", match[i])
 		} else if resultType == "dir" {
 			resultItem.setItem(text, "dir", match[i])
@@ -415,7 +423,7 @@ func formatText(text string, matchIndex []int, path bool) string {
 	}
 
 	match := len(matchIndex) > 0
-	if !path {
+	if !path || strings.HasPrefix(text, "term://") {
 		formattedText := ""
 		i := 0
 		for _, char := range text {

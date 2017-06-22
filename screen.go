@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -346,13 +347,6 @@ func (s *Screen) drawBorder() {
 	if !s.drawSplit {
 		return
 	}
-	s.getWindows()
-	for _, win := range s.curWins {
-		win.drawBorder(s.pixmapPainter)
-	}
-}
-
-func (s *Screen) getWindows() {
 	x := s.queueRedrawArea[0]
 	y := s.queueRedrawArea[1]
 	width := s.queueRedrawArea[2] - x
@@ -360,6 +354,21 @@ func (s *Screen) getWindows() {
 	if width == 0 && height == 0 {
 		return
 	}
+	done := make(chan struct{})
+	go func() {
+		s.getWindows()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(100 * time.Millisecond):
+	}
+	for _, win := range s.curWins {
+		win.drawBorder(s.pixmapPainter)
+	}
+}
+
+func (s *Screen) getWindows() {
 	wins := map[nvim.Window]*Window{}
 	neovim := editor.nvim
 	curtab, _ := neovim.CurrentTabpage()
