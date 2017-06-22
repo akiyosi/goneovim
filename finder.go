@@ -28,7 +28,7 @@ type Finder struct {
 	cursor         *widgets.QWidget
 	cursorX        int
 	resultType     string
-	agTypes        []string
+	itemTypes      []string
 	max            int
 	showTotal      int
 	pattern        *widgets.QLabel
@@ -189,6 +189,35 @@ func (f *FinderResultItem) hide() {
 	}
 }
 
+func (f *FinderResultItem) setItem(text string, itemType string, match []int) {
+	iconType := ""
+	path := false
+	if itemType == "dir" {
+		iconType = "folder"
+		path = true
+	} else if itemType == "file" {
+		iconType = getFileType(text)
+		path = true
+	} else if itemType == "file_line" {
+		iconType = "empty"
+	}
+	if iconType != "" {
+		if iconType != f.iconType {
+			f.iconType = iconType
+			f.updateIcon()
+		}
+		f.showIcon()
+	} else {
+		f.hideIcon()
+	}
+
+	formattedText := formatText(text, match, path)
+	if formattedText != f.baseText {
+		f.baseText = formattedText
+		f.base.SetText(f.baseText)
+	}
+}
+
 func (f *FinderResultItem) updateIcon() {
 	svgContent := getSvg(f.iconType, nil)
 	f.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -240,10 +269,15 @@ func (f *Finder) cursorMove(p int) {
 }
 
 func (f *Finder) showSelected(selected int) {
-	for i, resultItem := range f.resultItems {
-		if i >= f.showTotal {
-			break
+	if f.resultType == "file_line" {
+		n := 0
+		for i := 0; i <= selected; i++ {
+			for n++; n < len(f.itemTypes) && f.itemTypes[n] == "file"; n++ {
+			}
 		}
+		selected = n
+	}
+	for i, resultItem := range f.resultItems {
 		resultItem.setSelected(selected == i)
 	}
 }
@@ -277,49 +311,66 @@ func (f *Finder) showResult(args []interface{}) {
 	if args[3] != nil {
 		resultType = args[3].(string)
 	}
-	// f.resultType = resultType
+	results := []string{}
+	f.resultType = resultType
 
 	rawItems := args[0].([]interface{})
-	for i, resultItem := range f.resultItems {
-		if i >= f.showTotal {
-			break
+
+	lastFile := ""
+	itemTypes := []string{}
+	itemMatches := [][]int{}
+	for i, item := range rawItems {
+		text := item.(string)
+		if resultType == "file_line" {
+			parts := strings.SplitN(text, ":", 2)
+			if len(parts) < 2 {
+				continue
+			}
+			m := match[i]
+			file := parts[0]
+			if lastFile != file {
+				fileMatch := []int{}
+				for n := range m {
+					if m[n] < len(parts[0]) {
+						fileMatch = append(fileMatch, m[n])
+					}
+				}
+				results = append(results, parts[0])
+				itemTypes = append(itemTypes, "file")
+				lastFile = file
+				itemMatches = append(itemMatches, fileMatch)
+			}
+			line := parts[len(parts)-1]
+			lineIndex := strings.Index(text, line)
+			lineMatch := []int{}
+			for n := range m {
+				if m[n] >= lineIndex {
+					lineMatch = append(lineMatch, m[n]-lineIndex)
+				}
+			}
+			results = append(results, line)
+			itemTypes = append(itemTypes, "file_line")
+			itemMatches = append(itemMatches, lineMatch)
+		} else {
+			results = append(results, text)
 		}
-		if i >= len(rawItems) {
+	}
+	f.itemTypes = itemTypes
+
+	for i, resultItem := range f.resultItems {
+		if i >= len(results) {
 			resultItem.hide()
 			continue
 		}
-		item := rawItems[i]
-		text := item.(string)
+		text := results[i]
 		if resultType == "file" {
-			iconType := getFileType(text)
-			if iconType != resultItem.iconType {
-				resultItem.iconType = iconType
-				resultItem.updateIcon()
-			}
-			formattedText := formatText(text, match[i], true)
-			if formattedText != resultItem.baseText {
-				resultItem.baseText = formattedText
-				resultItem.base.SetText(resultItem.baseText)
-			}
-			resultItem.showIcon()
+			resultItem.setItem(text, "file", match[i])
 		} else if resultType == "dir" {
-			if resultItem.iconType != "folder" {
-				resultItem.iconType = "folder"
-				resultItem.updateIcon()
-			}
-			formattedText := formatText(text, match[i], true)
-			if formattedText != resultItem.baseText {
-				resultItem.baseText = formattedText
-				resultItem.base.SetText(resultItem.baseText)
-			}
-			resultItem.showIcon()
+			resultItem.setItem(text, "dir", match[i])
+		} else if resultType == "file_line" {
+			resultItem.setItem(text, itemTypes[i], itemMatches[i])
 		} else {
-			formattedText := formatText(text, match[i], false)
-			if formattedText != resultItem.baseText {
-				resultItem.baseText = formattedText
-				resultItem.base.SetText(resultItem.baseText)
-			}
-			resultItem.hideIcon()
+			resultItem.setItem(text, "", match[i])
 		}
 		resultItem.show()
 	}
@@ -366,17 +417,28 @@ func formatText(text string, matchIndex []int, path bool) string {
 	match := len(matchIndex) > 0
 	if !path {
 		formattedText := ""
-		for i, char := range text {
+		i := 0
+		for _, char := range text {
 			if color != "" && len(matchIndex) > 0 && i == matchIndex[0] {
 				formattedText += fmt.Sprintf("<font color='%s'>%s</font>", color, string(char))
 				matchIndex = matchIndex[1:]
-			} else if color != "" && match && string(char) == " " {
-				formattedText += "&nbsp;"
-			} else if color != "" && match && string(char) == "\t" {
-				formattedText += "&nbsp;&nbsp;&nbsp;&nbsp;"
+			} else if color != "" && match {
+				switch string(char) {
+				case " ":
+					formattedText += "&nbsp;"
+				case "\t":
+					formattedText += "&nbsp;&nbsp;&nbsp;&nbsp;"
+				case "<":
+					formattedText += "&lt;"
+				case ">":
+					formattedText += "&gt;"
+				default:
+					formattedText += string(char)
+				}
 			} else {
 				formattedText += string(char)
 			}
+			i++
 		}
 		return formattedText
 	}
