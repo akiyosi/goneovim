@@ -290,8 +290,10 @@ func (s *Screen) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 
 func (s *Screen) modPrefix(mod core.Qt__KeyboardModifier) string {
 	prefix := ""
-	if mod&s.cmdModifier > 0 {
-		prefix += "D-"
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		if mod&s.cmdModifier > 0 {
+			prefix += "D-"
+		}
 	}
 
 	if mod&s.controlModifier > 0 {
