@@ -267,17 +267,17 @@ func (s *Screen) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 	}
 
 	c := ""
-	if text == "" {
-		if mod&s.controlModifier > 0 || mod&s.cmdModifier > 0 {
-			if int(s.keyControl) == key || int(s.keyCmd) == key || int(s.keyAlt) == key {
-				return ""
-			}
-			c = strings.ToLower(string(key))
-		} else {
+	if mod&s.controlModifier > 0 || mod&s.cmdModifier > 0 {
+		if int(s.keyControl) == key || int(s.keyCmd) == key || int(s.keyAlt) == key {
 			return ""
 		}
+		c = strings.ToLower(string(key))
 	} else {
 		c = text
+	}
+
+	if c == "" {
+		return ""
 	}
 
 	prefix := s.modPrefix(mod)
