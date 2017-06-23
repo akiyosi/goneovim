@@ -56,6 +56,7 @@ type Screen struct {
 	keyControl      core.Qt__Key
 	keyCmd          core.Qt__Key
 	keyAlt          core.Qt__Key
+	keyShift        core.Qt__Key
 }
 
 func initScreenNew(devicePixelRatio float64) *Screen {
@@ -180,6 +181,7 @@ func (s *Screen) initSpecialKeys() {
 	s.shiftModifier = core.Qt__ShiftModifier
 	s.altModifier = core.Qt__AltModifier
 	s.keyAlt = core.Qt__Key_Alt
+	s.keyShift = core.Qt__Key_Shift
 	if goos == "darwin" {
 		s.controlModifier = core.Qt__MetaModifier
 		s.cmdModifier = core.Qt__ControlModifier
@@ -268,16 +270,24 @@ func (s *Screen) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 
 	c := ""
 	if mod&s.controlModifier > 0 || mod&s.cmdModifier > 0 {
-		if int(s.keyControl) == key || int(s.keyCmd) == key || int(s.keyAlt) == key {
+		if int(s.keyControl) == key || int(s.keyCmd) == key || int(s.keyAlt) == key || int(s.keyShift) == key {
 			return ""
 		}
-		c = strings.ToLower(string(key))
+		c = string(key)
+		if !(mod&s.shiftModifier > 0) {
+			c = strings.ToLower(c)
+		}
 	} else {
 		c = text
 	}
 
 	if c == "" {
 		return ""
+	}
+
+	char := core.NewQChar10(c)
+	if char.Unicode() < 0x100 && !char.IsNumber() && char.IsPrint() {
+		mod &= ^s.shiftModifier
 	}
 
 	prefix := s.modPrefix(mod)
@@ -298,6 +308,10 @@ func (s *Screen) modPrefix(mod core.Qt__KeyboardModifier) string {
 
 	if mod&s.controlModifier > 0 {
 		prefix += "C-"
+	}
+
+	if mod&s.shiftModifier > 0 {
+		prefix += "S-"
 	}
 
 	if mod&s.altModifier > 0 {
