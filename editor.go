@@ -254,6 +254,32 @@ func (hl *Highlight) copy() Highlight {
 	return highlight
 }
 
+func (e *Editor) configure() {
+	var drawSplit interface{}
+	e.nvim.Var("gonvim_draw_split", &drawSplit)
+	if isZero(drawSplit) {
+		e.screen.drawSplit = false
+	} else {
+		e.screen.drawSplit = true
+	}
+
+	var drawStatusline interface{}
+	e.nvim.Var("gonvim_draw_statusline", &drawStatusline)
+	if isZero(drawStatusline) {
+		e.drawStatusline = false
+	} else {
+		e.drawStatusline = true
+	}
+
+	var drawLint interface{}
+	e.nvim.Var("gonvim_draw_lint", &drawLint)
+	if isZero(drawLint) {
+		e.drawLint = false
+	} else {
+		e.drawLint = true
+	}
+}
+
 // InitEditorNew is
 func InitEditorNew() {
 	app := widgets.NewQApplication(0, nil)
@@ -372,34 +398,11 @@ func InitEditorNew() {
 		app.Quit()
 		return
 	}
-
-	var drawSplit interface{}
-	editor.nvim.Var("gonvim_draw_split", &drawSplit)
-	if isZero(drawSplit) {
-		editor.screen.drawSplit = false
-	} else {
-		editor.screen.drawSplit = true
-	}
-
-	var drawStatusline interface{}
-	editor.nvim.Var("gonvim_draw_statusline", &drawStatusline)
-	if isZero(drawStatusline) {
-		editor.drawStatusline = false
-	} else {
-		editor.drawStatusline = true
-	}
-
-	var drawLint interface{}
-	editor.nvim.Var("gonvim_draw_lint", &drawLint)
-	if isZero(drawLint) {
-		editor.drawLint = false
-	} else {
-		editor.drawLint = true
-	}
 	editor.nvim.Subscribe("Gui")
 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	editor.nvim.Command("runtime! ginit.vim")
 	editor.nvim.Command("let g:gonvim_running=1")
+	editor.configure()
 	fzf.RegisterPlugin(editor.nvim)
 	statusline.subscribe()
 	loc.subscribe()
