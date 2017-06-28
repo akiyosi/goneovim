@@ -50,6 +50,7 @@ type Editor struct {
 	signature        *Signature
 	popup            *PopupMenu
 	finder           *Finder
+	palette          *Palette
 	tabline          *Tabline
 	statusline       *Statusline
 	drawStatusline   bool
@@ -312,7 +313,8 @@ func InitEditorNew() {
 	popup := initPopupmenuNew(font)
 	popup.widget.SetParent(screen.widget)
 	finder := initFinder()
-	finder.widget.SetParent(screen.widget)
+	palette := initPalette()
+	palette.widget.SetParent(screen.widget)
 	loc := initLocpopup()
 	loc.widget.SetParent(screen.widget)
 	signature := initSignature()
@@ -352,6 +354,7 @@ func InitEditorNew() {
 		close:         make(chan bool),
 		popup:         popup,
 		finder:        finder,
+		palette:       palette,
 		loc:           loc,
 		signature:     signature,
 		tabline:       tabline,
@@ -414,7 +417,7 @@ func InitEditorNew() {
 
 	window.Show()
 	popup.widget.Hide()
-	finder.widget.Hide()
+	palette.widget.Hide()
 	loc.widget.Hide()
 	signature.widget.Hide()
 	widgets.QApplication_Exec()

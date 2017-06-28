@@ -463,7 +463,7 @@ func (s *Screen) updateSize() {
 	s.pixmap.SetDevicePixelRatio(s.devicePixelRatio)
 	// s.pixmap = pixmap
 	editor.nvimResize()
-	editor.finder.resize()
+	editor.palette.resize()
 }
 
 func (s *Screen) resize(args []interface{}) {
