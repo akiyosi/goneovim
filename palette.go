@@ -13,24 +13,27 @@ import (
 
 // Palette is the popup for fuzzy finder, cmdline etc
 type Palette struct {
-	widget         *widgets.QWidget
-	patternText    string
-	resultItems    []*PaletteResultItem
-	resultWidget   *widgets.QWidget
-	itemHeight     int
-	mutex          sync.Mutex
-	width          int
-	cursor         *widgets.QWidget
-	cursorX        int
-	resultType     string
-	itemTypes      []string
-	max            int
-	showTotal      int
-	pattern        *widgets.QLabel
-	patternPadding int
-	scrollBar      *widgets.QWidget
-	scrollBarPos   int
-	scrollCol      *widgets.QWidget
+	widget           *widgets.QWidget
+	patternText      string
+	resultItems      []*PaletteResultItem
+	resultWidget     *widgets.QWidget
+	resultMainWidget *widgets.QWidget
+	itemHeight       int
+	refreshMutex     sync.Mutex
+	mutex            sync.Mutex
+	width            int
+	cursor           *widgets.QWidget
+	cursorX          int
+	resultType       string
+	itemTypes        []string
+	max              int
+	showTotal        int
+	pattern          *widgets.QLabel
+	patternPadding   int
+	patternWidget    *widgets.QWidget
+	scrollBar        *widgets.QWidget
+	scrollBarPos     int
+	scrollCol        *widgets.QWidget
 }
 
 // PaletteResultItem is the result item
@@ -133,16 +136,18 @@ func initPalette() *Palette {
 		resultItems = append(resultItems, resultItem)
 	}
 	palette := &Palette{
-		width:          width,
-		widget:         widget,
-		resultItems:    resultItems,
-		resultWidget:   resultWidget,
-		max:            max,
-		pattern:        pattern,
-		patternPadding: padding,
-		scrollCol:      scrollCol,
-		scrollBar:      scrollBar,
-		cursor:         cursor,
+		width:            width,
+		widget:           widget,
+		resultItems:      resultItems,
+		resultWidget:     resultWidget,
+		resultMainWidget: resultMainWidget,
+		max:              max,
+		pattern:          pattern,
+		patternPadding:   padding,
+		patternWidget:    patternWidget,
+		scrollCol:        scrollCol,
+		scrollBar:        scrollBar,
+		cursor:           cursor,
 	}
 	return palette
 }
@@ -160,12 +165,36 @@ func (p *Palette) resize() {
 	}
 }
 
+func (p *Palette) showResult() {
+	p.resultMainWidget.Show()
+}
+
+func (p *Palette) hideResult() {
+	p.resultMainWidget.Hide()
+}
+
+func (p *Palette) refresh() {
+	p.refreshMutex.Lock()
+	p.resultWidget.Hide()
+	p.resultWidget.Show()
+	p.hide()
+	p.show()
+	p.hide()
+	p.show()
+	p.refreshMutex.Unlock()
+}
+
 func (p *Palette) show() {
 	p.widget.Show()
 }
 
 func (p *Palette) hide() {
 	p.widget.Hide()
+}
+
+func (p *Palette) setPattern(text string) {
+	p.patternText = text
+	p.pattern.SetText(text)
 }
 
 func (p *Palette) cursorMove(x int) {

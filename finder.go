@@ -136,8 +136,6 @@ func (f *Finder) showResult(args []interface{}) {
 	// } else {
 	// 	f.scrollCol.Hide()
 	// }
-	palette.resultWidget.Hide()
-	palette.resultWidget.Show()
 
 	if total > palette.showTotal {
 		height := int(float64(palette.showTotal) / float64(total) * float64(palette.itemHeight*palette.showTotal))
@@ -152,10 +150,7 @@ func (f *Finder) showResult(args []interface{}) {
 		palette.scrollCol.Hide()
 	}
 
-	palette.hide()
-	palette.show()
-	palette.hide()
-	palette.show()
+	palette.refresh()
 }
 
 func formatText(text string, matchIndex []int, path bool) string {

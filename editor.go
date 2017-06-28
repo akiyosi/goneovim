@@ -49,6 +49,7 @@ type Editor struct {
 	signature        *Signature
 	popup            *PopupMenu
 	finder           *Finder
+	cmdline          *Cmdline
 	palette          *Palette
 	tabline          *Tabline
 	statusline       *Statusline
@@ -167,6 +168,18 @@ func (e *Editor) handleRedraw(updates [][]interface{}) {
 			editor.popup.selectItem(args)
 		case "tabline_update":
 			editor.tabline.update(args)
+		case "cmdline_show":
+			editor.cmdline.show(args)
+		case "cmdline_pos":
+			editor.cmdline.changePos(args)
+		case "cmdline_char":
+			editor.cmdline.putChar(args)
+		case "cmdline_hide":
+			editor.cmdline.hide(args)
+		case "cmdline_function_show":
+			editor.cmdline.functionShow()
+		case "cmdline_function_hide":
+			editor.cmdline.functionHide()
 		case "busy_start":
 		case "busy_stop":
 		default:
@@ -330,6 +343,7 @@ func InitEditorNew() {
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
+		Path: "/Users/Lulu/neovim/build/bin/nvim",
 	})
 	if err != nil {
 		fmt.Println("nvim start error", err)
@@ -349,6 +363,7 @@ func InitEditorNew() {
 		close:         make(chan bool),
 		popup:         popup,
 		finder:        finder,
+		cmdline:       initCmdline(),
 		palette:       palette,
 		loc:           loc,
 		signature:     signature,
@@ -390,6 +405,7 @@ func InitEditorNew() {
 	o["rgb"] = true
 	o["ext_popupmenu"] = true
 	o["ext_tabline"] = true
+	o["ext_cmdline"] = true
 	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
 	if err != nil {
 		fmt.Println("nvim attach UI error", err)
