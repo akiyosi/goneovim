@@ -180,6 +180,12 @@ func (e *Editor) handleRedraw(updates [][]interface{}) {
 			editor.cmdline.functionShow()
 		case "cmdline_function_hide":
 			editor.cmdline.functionHide()
+		case "wildmenu_show":
+			editor.cmdline.wildmenuShow(args)
+		case "wildmenu_select":
+			editor.cmdline.wildmenuSelect(args)
+		case "wildmenu_hide":
+			editor.cmdline.wildmenuHide()
 		case "busy_start":
 		case "busy_stop":
 		default:
@@ -406,6 +412,7 @@ func InitEditorNew() {
 	o["ext_popupmenu"] = true
 	o["ext_tabline"] = true
 	o["ext_cmdline"] = true
+	o["ext_wildmenu"] = true
 	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
 	if err != nil {
 		fmt.Println("nvim attach UI error", err)
