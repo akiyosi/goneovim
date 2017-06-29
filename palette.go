@@ -58,7 +58,7 @@ func initPalette() *Palette {
 	widget.SetContentsMargins(1, 1, 1, 1)
 	widget.SetFixedWidth(width)
 	widget.SetObjectName("palette")
-	widget.SetStyleSheet("QWidget#palette {border: 1px solid #000;} .QWidget {background-color: rgba(21, 25, 27, 1); } * { color: rgba(205, 211, 222, 1); }")
+	widget.SetStyleSheet("QWidget#palette {border: 1px solid #000;} .QWidget {background-color: rgba(24, 29, 34, 1); } * { color: rgba(205, 211, 222, 1); }")
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(20)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, 255))
