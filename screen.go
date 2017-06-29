@@ -419,6 +419,9 @@ func (s *Screen) clear(args []interface{}) {
 func (s *Screen) eolClear(args []interface{}) {
 	row := s.cursor[0]
 	col := s.cursor[1]
+	if row >= editor.rows {
+		return
+	}
 	line := s.content[row]
 	numChars := 0
 	for x := col; x < len(line); x++ {
