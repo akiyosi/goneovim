@@ -349,7 +349,6 @@ func InitEditorNew() {
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
-		Path: "/Users/Lulu/neovim/build/bin/nvim",
 	})
 	if err != nil {
 		fmt.Println("nvim start error", err)
