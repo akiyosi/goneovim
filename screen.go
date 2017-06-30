@@ -2,6 +2,7 @@ package gonvim
 
 import (
 	"fmt"
+	"math"
 	"runtime"
 	"strings"
 	"sync"
@@ -26,27 +27,23 @@ type Window struct {
 
 // Screen is the main editor area
 type Screen struct {
-	bg               *RGBA
-	width            int
-	height           int
-	widget           *widgets.QWidget
-	wins             map[nvim.Window]*Window
-	cursor           [2]int
-	lastCursor       [2]int
-	devicePixelRatio float64
-	content          [][]*Char
-	scrollRegion     []int
-	curtab           nvim.Tabpage
-	highlight        Highlight
-	curWins          map[nvim.Window]*Window
-	queueRedrawArea  [4]int
-	specialKeys      map[core.Qt__Key]string
-	paintMutex       sync.Mutex
-	redrawMutex      sync.Mutex
-	pixmap           *gui.QPixmap
-	pixmapPainter    *gui.QPainter
-	item             *widgets.QGraphicsPixmapItem
-	drawSplit        bool
+	bg              *RGBA
+	width           int
+	height          int
+	widget          *widgets.QWidget
+	wins            map[nvim.Window]*Window
+	cursor          [2]int
+	lastCursor      [2]int
+	content         [][]*Char
+	scrollRegion    []int
+	curtab          nvim.Tabpage
+	highlight       Highlight
+	curWins         map[nvim.Window]*Window
+	queueRedrawArea [4]int
+	specialKeys     map[core.Qt__Key]string
+	paintMutex      sync.Mutex
+	redrawMutex     sync.Mutex
+	drawSplit       bool
 
 	controlModifier core.Qt__KeyboardModifier
 	cmdModifier     core.Qt__KeyboardModifier
@@ -62,23 +59,13 @@ type Screen struct {
 func initScreenNew(devicePixelRatio float64) *Screen {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
-	// widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
-
-	// view := widgets.NewQGraphicsView(nil)
-	// scene := widgets.NewQGraphicsScene(nil)
-	// view.SetScene(scene)
-	// view.SetFixedSize2(200, 200)
-	// item := scene.AddPixmap(gui.NewQPixmap())
-	// view.SetParent(widget)
+	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 
 	screen := &Screen{
-		widget:           widget,
-		cursor:           [2]int{0, 0},
-		lastCursor:       [2]int{0, 0},
-		scrollRegion:     []int{0, 0, 0, 0},
-		devicePixelRatio: devicePixelRatio,
-		// pixmap:           gui.NewQPixmap3(100, 100),
-		// item:             item,
+		widget:       widget,
+		cursor:       [2]int{0, 0},
+		lastCursor:   [2]int{0, 0},
+		scrollRegion: []int{0, 0, 0, 0},
 	}
 	widget.ConnectPaintEvent(screen.paint)
 	screen.initSpecialKeys()
@@ -88,11 +75,6 @@ func initScreenNew(devicePixelRatio float64) *Screen {
 		}
 		screen.updateSize()
 	})
-	// go func() {
-	// 	for range time.Tick(20 * time.Millisecond) {
-	// 		widget.Update()
-	// 	}
-	// }()
 	return screen
 }
 
@@ -104,40 +86,41 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	defer s.paintMutex.Unlock()
 
 	rect := vqp.M_rect()
-	// font := editor.font
-	// top := rect.Y()
-	// left := rect.X()
-	// width := rect.Width()
-	// height := rect.Height()
-	// right := left + width
-	// bottom := top + height
-	// row := int(float64(top) / float64(font.lineHeight))
-	// col := int(float64(left) / font.truewidth)
-	// rows := int(math.Ceil(float64(bottom)/float64(font.lineHeight))) - row
-	// cols := int(math.Ceil(float64(right)/font.truewidth)) - col
+	font := editor.font
+	top := rect.Y()
+	left := rect.X()
+	width := rect.Width()
+	height := rect.Height()
+	right := left + width
+	bottom := top + height
+	row := int(float64(top) / float64(font.lineHeight))
+	col := int(float64(left) / font.truewidth)
+	rows := int(math.Ceil(float64(bottom)/float64(font.lineHeight))) - row
+	cols := int(math.Ceil(float64(right)/font.truewidth)) - col
 
 	p := gui.NewQPainter2(s.widget)
-	source := core.NewQRect4(
-		int(float64(rect.X())*s.devicePixelRatio),
-		int(float64(rect.Y())*s.devicePixelRatio),
-		int(float64(rect.Width())*s.devicePixelRatio),
-		int(float64(rect.Height())*s.devicePixelRatio),
-	)
-	p.DrawPixmap2(rect, s.pixmap, source)
+	if editor.Background != nil {
+		p.FillRect5(
+			left,
+			top,
+			width,
+			height,
+			editor.Background.QColor(),
+		)
+	}
+
+	p.SetFont(editor.font.fontNew)
+
+	for y := row; y < row+rows; y++ {
+		if y >= editor.rows {
+			continue
+		}
+		fillHightlight(p, y, col, cols, [2]int{0, 0})
+		drawText(p, y, col, cols, [2]int{0, 0})
+	}
+
+	s.drawBorder(p, row, col, rows, cols)
 	p.DestroyQPainter()
-
-	// p.SetFont(editor.font.fontNew)
-
-	// for y := row; y < row+rows; y++ {
-	// 	if y >= editor.rows {
-	// 		continue
-	// 	}
-	// 	fillHightlight(p, y, col, cols, [2]int{0, 0})
-	// 	drawText(p, y, col, cols, [2]int{0, 0})
-	// }
-
-	// s.drawBorder(p, row, col, rows, cols)
-	// p.DestroyQPainter()
 }
 
 func (s *Screen) initSpecialKeys() {
@@ -321,55 +304,7 @@ func (s *Screen) modPrefix(mod core.Qt__KeyboardModifier) string {
 	return prefix
 }
 
-// Draw the screen
-// func (s *Screen) Draw(a *ui.Area, dp *ui.AreaDrawParams) {
-// 	return
-// if editor == nil {
-// 	return
-// }
-// font := editor.font
-// row := int(math.Ceil(dp.ClipY / float64(font.lineHeight)))
-// col := int(math.Ceil(dp.ClipX / font.truewidth))
-// rows := int(math.Ceil(dp.ClipHeight / float64(font.lineHeight)))
-// cols := int(math.Ceil(dp.ClipWidth / font.truewidth))
-
-// p := ui.NewPath(ui.Winding)
-// p.AddRectangle(dp.ClipX, dp.ClipY, dp.ClipWidth, dp.ClipHeight)
-// p.End()
-
-// bg := editor.Background
-
-// dp.Context.Fill(p, &ui.Brush{
-// 	Type: ui.Solid,
-// 	R:    bg.R,
-// 	G:    bg.G,
-// 	B:    bg.B,
-// 	A:    1,
-// })
-// p.Free()
-
-// for y := row; y < row+rows; y++ {
-// 	if y >= editor.rows {
-// 		continue
-// 	}
-// 	fillHightlight(dp, y, col, cols, [2]int{0, 0})
-// 	drawText(dp, y, col, cols, [2]int{0, 0})
-// }
-
-// s.drawBorder(dp, row, col, rows, cols)
-// }
-
-func (s *Screen) drawBorder() {
-	if !s.drawSplit {
-		return
-	}
-	x := s.queueRedrawArea[0]
-	y := s.queueRedrawArea[1]
-	width := s.queueRedrawArea[2] - x
-	height := s.queueRedrawArea[3] - y
-	if width == 0 && height == 0 {
-		return
-	}
+func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
 	done := make(chan struct{})
 	go func() {
 		s.getWindows()
@@ -380,7 +315,14 @@ func (s *Screen) drawBorder() {
 	case <-time.After(50 * time.Millisecond):
 	}
 	for _, win := range s.curWins {
-		win.drawBorder(s.pixmapPainter)
+		if win.pos[0]+win.height < row && (win.pos[1]+win.width+1) < col {
+			continue
+		}
+		if win.pos[0] > (row+rows) && (win.pos[1]+win.width) > (col+cols) {
+			continue
+		}
+
+		win.drawBorder(p)
 	}
 }
 
@@ -441,7 +383,6 @@ func (s *Screen) updateBg(args []interface{}) {
 		bg := calcColor(reflectToInt(args[0]))
 		editor.Background = bg
 	}
-	s.pixmap.Fill(editor.Background.QColor())
 }
 
 func (s *Screen) size() (int, int) {
@@ -450,18 +391,7 @@ func (s *Screen) size() (int, int) {
 }
 
 func (s *Screen) updateSize() {
-	width, height := s.size()
-	s.width = width
-	s.height = height
-	s.devicePixelRatio = editor.app.DevicePixelRatio()
-	// pixmap := gui.NewQPixmap3(width, height)
-	// if s.devicePixelRatio != 1 {
-	// 	pixmap = pixmap.Scaled2(int(s.devicePixelRatio*float64(width)), int(s.devicePixelRatio*float64(height)), core.Qt__IgnoreAspectRatio, core.Qt__SmoothTransformation)
-	// 	pixmap.SetDevicePixelRatio(s.devicePixelRatio)
-	// }
-	s.pixmap = gui.NewQPixmap3(int(s.devicePixelRatio*float64(width)), int(s.devicePixelRatio*float64(height)))
-	s.pixmap.SetDevicePixelRatio(s.devicePixelRatio)
-	// s.pixmap = pixmap
+	s.width, s.height = s.size()
 	editor.nvimResize()
 	editor.palette.resize()
 }
@@ -473,7 +403,6 @@ func (s *Screen) resize(args []interface{}) {
 	for i := 0; i < editor.rows; i++ {
 		s.content[i] = make([]*Char, editor.cols)
 	}
-	s.pixmap.Fill(editor.Background.QColor())
 	s.queueRedrawAll()
 }
 
@@ -484,7 +413,6 @@ func (s *Screen) clear(args []interface{}) {
 	for i := 0; i < editor.rows; i++ {
 		s.content[i] = make([]*Char, editor.cols)
 	}
-	s.pixmap.Fill(editor.Background.QColor())
 	s.queueRedrawAll()
 }
 
@@ -503,13 +431,6 @@ func (s *Screen) eolClear(args []interface{}) {
 		line[x] = nil
 		numChars++
 	}
-	rect := core.NewQRectF4(
-		float64(col)*editor.font.truewidth,
-		float64(row*editor.font.lineHeight),
-		float64(numChars)*editor.font.truewidth,
-		float64(editor.font.lineHeight),
-	)
-	s.pixmapPainter.FillRect4(rect, editor.Background.QColor())
 	s.queueRedraw(col, row, numChars+1, 1)
 }
 
@@ -530,16 +451,16 @@ func (s *Screen) put(args []interface{}) {
 	}
 	line := s.content[row]
 	text := ""
-	if x > 0 {
-		char := line[x-1]
-		if char != nil && char.char != "" {
-			if !char.normalWidth {
-				x++
-				col++
-				args = args[1:]
-			}
-		}
-	}
+	// if x > 0 {
+	// 	char := line[x-1]
+	// 	if char != nil && char.char != "" {
+	// 		if !char.normalWidth {
+	// 			x++
+	// 			col++
+	// 			// args = args[1:]
+	// 		}
+	// 	}
+	// }
 	var lastChar *Char
 	oldNormalWidth := true
 	for _, arg := range args {
@@ -570,29 +491,16 @@ func (s *Screen) put(args []interface{}) {
 	if !oldNormalWidth {
 		numChars++
 	}
-	point := core.NewQPointF3(
-		float64(x)*editor.font.truewidth,
-		float64(y*editor.font.lineHeight+editor.font.shift),
-	)
-	rect := core.NewQRectF4(
-		float64(x)*editor.font.truewidth,
-		float64(y*editor.font.lineHeight),
-		float64(numChars)*editor.font.truewidth,
-		float64(editor.font.lineHeight),
-	)
-	bg := editor.Background
-	fg := editor.Foreground
-	if s.highlight.background != nil {
-		bg = s.highlight.background
-	}
-	if s.highlight.foreground != nil {
-		fg = s.highlight.foreground
-	}
-	s.pixmapPainter.FillRect4(rect, bg.QColor())
-	s.pixmapPainter.SetPen2(fg.QColor())
-	s.pixmapPainter.DrawText(point, text)
 	s.cursor[1] = col
-	// we redraw one character more than the chars put for double width characters
+	if x > 0 {
+		char := line[x-1]
+		if char != nil && char.char != "" {
+			if !char.normalWidth {
+				x--
+				// args = args[1:]
+			}
+		}
+	}
 	s.queueRedraw(x, y, numChars, 1)
 }
 
@@ -656,16 +564,6 @@ func (s *Screen) scroll(args []interface{}) {
 
 	s.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
 
-	s.pixmap.Scroll(
-		0,
-		-int(float64(count*editor.font.lineHeight)*(s.devicePixelRatio)),
-		int(float64(left)*editor.font.truewidth*s.devicePixelRatio),
-		int(float64(top*editor.font.lineHeight)*s.devicePixelRatio),
-		int(float64(right-left+1)*editor.font.truewidth*s.devicePixelRatio),
-		int(float64((bot-top+1)*editor.font.lineHeight)*s.devicePixelRatio),
-		nil,
-	)
-
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
 			for col := left; col <= right; col++ {
@@ -678,16 +576,6 @@ func (s *Screen) scroll(args []interface{}) {
 			}
 		}
 		s.queueRedraw(left, (bot - count + 1), (right - left), count)
-		rect := core.NewQRectF4(
-			float64(left)*editor.font.truewidth,
-			float64((bot-count+1)*editor.font.lineHeight),
-			float64(right-left+1)*editor.font.truewidth,
-			float64(count*editor.font.lineHeight),
-		)
-		s.pixmapPainter.FillRect4(
-			rect,
-			editor.Background.QColor(),
-		)
 		if top > 0 {
 			s.queueRedraw(left, (top - count), (right - left), count)
 		}
@@ -703,16 +591,6 @@ func (s *Screen) scroll(args []interface{}) {
 			}
 		}
 		s.queueRedraw(left, top, (right - left), -count)
-		rect := core.NewQRectF4(
-			float64(left)*editor.font.truewidth,
-			float64(top*editor.font.lineHeight),
-			float64(right-left+1)*editor.font.truewidth,
-			float64(-count*editor.font.lineHeight),
-		)
-		s.pixmapPainter.FillRect4(
-			rect,
-			editor.Background.QColor(),
-		)
 		if bot < editor.rows-1 {
 			s.queueRedraw(left, bot+1, (right - left), -count)
 		}
@@ -720,53 +598,24 @@ func (s *Screen) scroll(args []interface{}) {
 }
 
 func (s *Screen) update() {
-	if s.bg != editor.Background {
-		s.bg = editor.Background
-		css := fmt.Sprintf("background-color: %s;", editor.Background.String())
-		s.widget.SetStyleSheet(css)
-	}
-	x := s.queueRedrawArea[0]
-	y := s.queueRedrawArea[1]
-	width := s.queueRedrawArea[2] - x
-	height := s.queueRedrawArea[3] - y
-	if width > 0 && height > 0 {
-		// s.item.SetPixmap(s.pixmap)
-		s.widget.Update2(
-			int(float64(x)*editor.font.truewidth),
-			y*editor.font.lineHeight,
-			int(float64(width)*editor.font.truewidth),
-			height*editor.font.lineHeight,
-		)
-	}
-	s.queueRedrawArea[0] = 0
-	s.queueRedrawArea[1] = 0
-	s.queueRedrawArea[2] = 0
-	s.queueRedrawArea[3] = 0
 }
 
 func (s *Screen) queueRedrawAll() {
-	s.queueRedrawArea = [4]int{0, 0, editor.cols, editor.rows}
+	s.widget.Update2(
+		0,
+		0,
+		int(math.Ceil(float64(editor.cols)*editor.font.truewidth)),
+		editor.rows*editor.font.lineHeight,
+	)
 }
 
 func (s *Screen) queueRedraw(x, y, width, height int) {
-	// s.widget.Update2(
-	// 	int(float64(x)*editor.font.truewidth),
-	// 	y*editor.font.lineHeight,
-	// 	int(math.Ceil(float64(width)*editor.font.truewidth)),
-	// 	height*editor.font.lineHeight,
-	// )
-	if x < s.queueRedrawArea[0] {
-		s.queueRedrawArea[0] = x
-	}
-	if y < s.queueRedrawArea[1] {
-		s.queueRedrawArea[1] = y
-	}
-	if (x + width) > s.queueRedrawArea[2] {
-		s.queueRedrawArea[2] = x + width
-	}
-	if (y + height) > s.queueRedrawArea[3] {
-		s.queueRedrawArea[3] = y + height
-	}
+	s.widget.Update2(
+		int(float64(x)*editor.font.truewidth),
+		y*editor.font.lineHeight,
+		int(math.Ceil(float64(width)*editor.font.truewidth)),
+		height*editor.font.lineHeight,
+	)
 }
 
 func (s *Screen) posWin(x, y int) *Window {
@@ -793,6 +642,7 @@ func fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 	end := -1
 	var lastBg *RGBA
 	var bg *RGBA
+	var lastChar *Char
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -802,6 +652,9 @@ func fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 			bg = char.highlight.background
 		} else {
 			bg = nil
+		}
+		if lastChar != nil && !lastChar.normalWidth {
+			bg = lastChar.highlight.background
 		}
 		if bg != nil {
 			if lastBg == nil {
@@ -849,6 +702,7 @@ func fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 				lastBg = nil
 			}
 		}
+		lastChar = char
 	}
 	if lastBg != nil {
 		rectF.SetRect(
@@ -873,6 +727,15 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 	line := screen.content[y]
 	chars := map[*RGBA][]int{}
 	specialChars := []int{}
+	if col > 0 {
+		char := line[col-1]
+		if char != nil && char.char != "" {
+			if !char.normalWidth {
+				col--
+				// args = args[1:]
+			}
+		}
+	}
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -941,93 +804,16 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 		pointF.SetX(float64(x-pos[1]) * editor.font.truewidth)
 		pointF.SetY(float64((y-pos[0])*editor.font.lineHeight + editor.font.shift))
 		p.DrawText(pointF, char.char)
-		// fg := editor.Foreground
-		// if char.highlight.foreground != nil {
-		// 	fg = char.highlight.foreground
-		// }
-		// textLayout := ui.NewTextLayout(char.char, editor.font.font, -1)
-		// textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
-		// dp.Context.Text(float64(x-pos[1])*editor.font.truewidth, float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
-		// textLayout.Free()
 	}
-
-	// text := ""
-	// var specialChars []int
-	// start := -1
-	// end := col
-	// for x := col; x < col+cols; x++ {
-	// 	if x >= len(line) {
-	// 		continue
-	// 	}
-	// 	char := line[x]
-	// 	if char == nil {
-	// 		text += " "
-	// 		continue
-	// 	}
-	// 	if char.char == " " {
-	// 		text += " "
-	// 		continue
-	// 	}
-	// 	if char.char == "" {
-	// 		text += " "
-	// 		continue
-	// 	}
-	// 	if !isNormalWidth(char.char) {
-	// 		text += " "
-	// 		specialChars = append(specialChars, x)
-	// 		continue
-	// 	}
-	// 	text += char.char
-	// 	if start == -1 {
-	// 		start = x
-	// 	}
-	// 	end = x
-	// }
-	// if start == -1 {
-	// 	return
-	// }
-	// text = strings.TrimSpace(text)
-	// shift := editor.font.shift
-
-	// for x := start; x <= end; x++ {
-	// 	char := line[x]
-	// 	if char == nil || char.char == " " {
-	// 		continue
-	// 	}
-	// 	// fg := editor.Foreground
-	// 	// if char.highlight.foreground != nil {
-	// 	// 	fg = char.highlight.foreground
-	// 	// }
-	// 	// textLayout.SetColor(x-start, x-start+1, fg.R, fg.G, fg.B, fg.A)
-	// }
-	// p.DrawText3(
-	// 	int(float64(start-pos[1])*editor.font.truewidth),
-	// 	(y-pos[0])*editor.font.lineHeight+shift,
-	// 	text,
-	// )
-	// // dp.Context.Text(float64(start-pos[1])*editor.font.truewidth, float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
-	// // textLayout.Free()
-
-	// for _, x := range specialChars {
-	// 	char := line[x]
-	// 	if char == nil || char.char == " " {
-	// 		continue
-	// 	}
-	// 	// fg := editor.Foreground
-	// 	// if char.highlight.foreground != nil {
-	// 	// 	fg = char.highlight.foreground
-	// 	// }
-	// 	// textLayout := ui.NewTextLayout(char.char, editor.font.font, -1)
-	// 	// textLayout.SetColor(0, 1, fg.R, fg.G, fg.B, fg.A)
-	// 	// dp.Context.Text(float64(x-pos[1])*editor.font.truewidth, float64((y-pos[0])*editor.font.lineHeight+shift), textLayout)
-	// 	// textLayout.Free()
-	// }
 }
 
 func (w *Window) drawBorder(p *gui.QPainter) {
 	bg := editor.Background
 	if w.bg != nil {
 		bg = w.bg
+	}
+	if bg == nil {
+		return
 	}
 	p.FillRect5(
 		int(float64(w.pos[1]+w.width)*editor.font.truewidth),

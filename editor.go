@@ -11,7 +11,6 @@ import (
 	"github.com/dzhou121/gonvim-fuzzy/rplugin/go/fzf"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -118,8 +117,6 @@ func (e *Editor) handleRPCGui(updates []interface{}) {
 
 func (e *Editor) handleRedraw(updates [][]interface{}) {
 	s := e.screen
-	s.pixmapPainter = gui.NewQPainter2(s.pixmap)
-	s.pixmapPainter.SetFont(editor.font.fontNew)
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -176,9 +173,6 @@ func (e *Editor) handleRedraw(updates [][]interface{}) {
 			fmt.Println("Unhandle event", event)
 		}
 	}
-	s.drawBorder()
-	s.pixmapPainter.DestroyQPainter()
-	s.update()
 	editor.cursorNew.update()
 	editor.statusline.mode.redraw()
 }
@@ -230,7 +224,7 @@ func (e *Editor) guiLinespace(args ...interface{}) {
 func (e *Editor) nvimResize() {
 	// e.screen.paintMutex.Lock()
 	// defer e.screen.paintMutex.Unlock()
-	width, height := e.screen.size()
+	width, height := e.screen.width, e.screen.height
 	cols := int(float64(width) / editor.font.truewidth)
 	rows := height / editor.font.lineHeight
 	oldCols := editor.cols
