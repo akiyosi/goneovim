@@ -28,7 +28,7 @@ func initSignature() *Signature {
 		border: 1px solid #000;
 	}
 	QWidget {
-		background-color: rgba(30, 30, 30, 1);
+		background-color: rgba(24, 29, 34, 1);
 	}
 	* {
 		color: rgba(205, 211, 222, 1);
