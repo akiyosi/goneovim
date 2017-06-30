@@ -173,6 +173,7 @@ func (e *Editor) handleRedraw(updates [][]interface{}) {
 			fmt.Println("Unhandle event", event)
 		}
 	}
+	s.update()
 	editor.cursorNew.update()
 	editor.statusline.mode.redraw()
 }

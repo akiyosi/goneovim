@@ -421,12 +421,12 @@ func (s *Screen) eolClear(args []interface{}) {
 	col := s.cursor[1]
 	line := s.content[row]
 	numChars := 0
-	if col > 0 {
-		char := line[col-1]
-		if char != nil && !char.normalWidth {
-			col++
-		}
-	}
+	// if col > 0 {
+	// 	char := line[col-1]
+	// 	if char != nil && !char.normalWidth {
+	// 		col++
+	// 	}
+	// }
 	for x := col; x < len(line); x++ {
 		line[x] = nil
 		numChars++
@@ -450,7 +450,11 @@ func (s *Screen) put(args []interface{}) {
 		return
 	}
 	line := s.content[row]
-	text := ""
+	oldFirstNormal := true
+	char := line[x]
+	if char != nil && !char.normalWidth {
+		oldFirstNormal = false
+	}
 	// if x > 0 {
 	// 	char := line[x-1]
 	// 	if char != nil && char.char != "" {
@@ -478,7 +482,6 @@ func (s *Screen) put(args []interface{}) {
 			}
 			char.char = c.(string)
 			char.normalWidth = isNormalWidth(char.char)
-			text += char.char
 			lastChar = char
 			char.highlight = s.highlight
 			col++
@@ -494,10 +497,13 @@ func (s *Screen) put(args []interface{}) {
 	s.cursor[1] = col
 	if x > 0 {
 		char := line[x-1]
-		if char != nil && char.char != "" {
-			if !char.normalWidth {
+		if char != nil && char.char != "" && !char.normalWidth {
+			x--
+			numChars++
+		} else {
+			if !oldFirstNormal {
 				x--
-				// args = args[1:]
+				numChars++
 			}
 		}
 	}
@@ -598,24 +604,54 @@ func (s *Screen) scroll(args []interface{}) {
 }
 
 func (s *Screen) update() {
+	x := s.queueRedrawArea[0]
+	y := s.queueRedrawArea[1]
+	width := s.queueRedrawArea[2] - x
+	height := s.queueRedrawArea[3] - y
+	if width > 0 && height > 0 {
+		// s.item.SetPixmap(s.pixmap)
+		s.widget.Update2(
+			int(float64(x)*editor.font.truewidth),
+			y*editor.font.lineHeight,
+			int(float64(width)*editor.font.truewidth),
+			height*editor.font.lineHeight,
+		)
+	}
+	s.queueRedrawArea[0] = editor.cols
+	s.queueRedrawArea[1] = editor.rows
+	s.queueRedrawArea[2] = 0
+	s.queueRedrawArea[3] = 0
 }
 
 func (s *Screen) queueRedrawAll() {
-	s.widget.Update2(
-		0,
-		0,
-		int(math.Ceil(float64(editor.cols)*editor.font.truewidth)),
-		editor.rows*editor.font.lineHeight,
-	)
+	s.queueRedrawArea = [4]int{0, 0, editor.cols, editor.rows}
+	// s.widget.Update2(
+	// 	0,
+	// 	0,
+	// 	int(math.Ceil(float64(editor.cols)*editor.font.truewidth)),
+	// 	editor.rows*editor.font.lineHeight,
+	// )
 }
 
 func (s *Screen) queueRedraw(x, y, width, height int) {
-	s.widget.Update2(
-		int(float64(x)*editor.font.truewidth),
-		y*editor.font.lineHeight,
-		int(math.Ceil(float64(width)*editor.font.truewidth)),
-		height*editor.font.lineHeight,
-	)
+	if x < s.queueRedrawArea[0] {
+		s.queueRedrawArea[0] = x
+	}
+	if y < s.queueRedrawArea[1] {
+		s.queueRedrawArea[1] = y
+	}
+	if (x + width) > s.queueRedrawArea[2] {
+		s.queueRedrawArea[2] = x + width
+	}
+	if (y + height) > s.queueRedrawArea[3] {
+		s.queueRedrawArea[3] = y + height
+	}
+	// s.widget.Update2(
+	// 	int(float64(x)*editor.font.truewidth),
+	// 	y*editor.font.lineHeight,
+	// 	int(math.Ceil(float64(width)*editor.font.truewidth)),
+	// 	height*editor.font.lineHeight,
+	// )
 }
 
 func (s *Screen) posWin(x, y int) *Window {
@@ -732,9 +768,12 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 		if char != nil && char.char != "" {
 			if !char.normalWidth {
 				col--
+				cols++
 				// args = args[1:]
 			}
 		}
+	}
+	if col+cols < editor.cols {
 	}
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
@@ -788,6 +827,7 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 			pointF.SetX(float64(col-pos[1]) * editor.font.truewidth)
 			pointF.SetY(float64((y-pos[0])*editor.font.lineHeight + editor.font.shift))
 			p.DrawText(pointF, text)
+			// fmt.Println("draw ", text)
 		}
 	}
 
@@ -803,6 +843,7 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 		pointF.SetX(float64(x-pos[1]) * editor.font.truewidth)
 		pointF.SetY(float64((y-pos[0])*editor.font.lineHeight + editor.font.shift))
+		// fmt.Println("draw ", char.char)
 		p.DrawText(pointF, char.char)
 	}
 }
