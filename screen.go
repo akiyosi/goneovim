@@ -465,6 +465,9 @@ func (s *Screen) put(args []interface{}) {
 	for _, arg := range args {
 		chars := arg.([]interface{})
 		for _, c := range chars {
+			if col >= len(line) {
+				continue
+			}
 			char := line[col]
 			if char != nil && !char.normalWidth {
 				oldNormalWidth = false
