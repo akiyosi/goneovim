@@ -421,12 +421,6 @@ func (s *Screen) eolClear(args []interface{}) {
 	col := s.cursor[1]
 	line := s.content[row]
 	numChars := 0
-	// if col > 0 {
-	// 	char := line[col-1]
-	// 	if char != nil && !char.normalWidth {
-	// 		col++
-	// 	}
-	// }
 	for x := col; x < len(line); x++ {
 		line[x] = nil
 		numChars++
@@ -455,16 +449,6 @@ func (s *Screen) put(args []interface{}) {
 	if char != nil && !char.normalWidth {
 		oldFirstNormal = false
 	}
-	// if x > 0 {
-	// 	char := line[x-1]
-	// 	if char != nil && char.char != "" {
-	// 		if !char.normalWidth {
-	// 			x++
-	// 			col++
-	// 			// args = args[1:]
-	// 		}
-	// 	}
-	// }
 	var lastChar *Char
 	oldNormalWidth := true
 	for _, arg := range args {
@@ -625,12 +609,6 @@ func (s *Screen) update() {
 
 func (s *Screen) queueRedrawAll() {
 	s.queueRedrawArea = [4]int{0, 0, editor.cols, editor.rows}
-	// s.widget.Update2(
-	// 	0,
-	// 	0,
-	// 	int(math.Ceil(float64(editor.cols)*editor.font.truewidth)),
-	// 	editor.rows*editor.font.lineHeight,
-	// )
 }
 
 func (s *Screen) queueRedraw(x, y, width, height int) {
@@ -646,12 +624,6 @@ func (s *Screen) queueRedraw(x, y, width, height int) {
 	if (y + height) > s.queueRedrawArea[3] {
 		s.queueRedrawArea[3] = y + height
 	}
-	// s.widget.Update2(
-	// 	int(float64(x)*editor.font.truewidth),
-	// 	y*editor.font.lineHeight,
-	// 	int(math.Ceil(float64(width)*editor.font.truewidth)),
-	// 	height*editor.font.lineHeight,
-	// )
 }
 
 func (s *Screen) posWin(x, y int) *Window {
@@ -769,7 +741,6 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 			if !char.normalWidth {
 				col--
 				cols++
-				// args = args[1:]
 			}
 		}
 	}
@@ -827,7 +798,6 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 			pointF.SetX(float64(col-pos[1]) * editor.font.truewidth)
 			pointF.SetY(float64((y-pos[0])*editor.font.lineHeight + editor.font.shift))
 			p.DrawText(pointF, text)
-			// fmt.Println("draw ", text)
 		}
 	}
 
@@ -843,7 +813,6 @@ func drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 		pointF.SetX(float64(x-pos[1]) * editor.font.truewidth)
 		pointF.SetY(float64((y-pos[0])*editor.font.lineHeight + editor.font.shift))
-		// fmt.Println("draw ", char.char)
 		p.DrawText(pointF, char.char)
 	}
 }
