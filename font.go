@@ -52,7 +52,7 @@ func initFontNew(family string, size int, lineSpace int) *Font {
 
 func (f *Font) change(family string, size int) {
 	f.fontNew.SetFamily(family)
-	f.fontNew.SetPixelSize(size)
+	f.fontNew.SetPointSize(size)
 	f.fontMetrics = gui.NewQFontMetricsF(f.fontNew)
 	width, height, truewidth, ascent := fontSizeNew(f.fontNew)
 	f.width = width

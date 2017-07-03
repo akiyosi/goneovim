@@ -109,7 +109,7 @@ func initStatuslineNew() *Statusline {
 		background-color: rgba(24, 29, 34, 1);
 	}
 	* {
-		color: rgba(212, 215, 214, 1);
+		color: rgba(205, 211, 222, 1);
 	}
 	`)
 

@@ -49,6 +49,7 @@ type Editor struct {
 	signature        *Signature
 	popup            *PopupMenu
 	finder           *Finder
+	cmdline          *Cmdline
 	palette          *Palette
 	tabline          *Tabline
 	statusline       *Statusline
@@ -167,6 +168,24 @@ func (e *Editor) handleRedraw(updates [][]interface{}) {
 			editor.popup.selectItem(args)
 		case "tabline_update":
 			editor.tabline.update(args)
+		case "cmdline_show":
+			editor.cmdline.show(args)
+		case "cmdline_pos":
+			editor.cmdline.changePos(args)
+		case "cmdline_char":
+			editor.cmdline.putChar(args)
+		case "cmdline_hide":
+			editor.cmdline.hide(args)
+		case "cmdline_function_show":
+			editor.cmdline.functionShow()
+		case "cmdline_function_hide":
+			editor.cmdline.functionHide()
+		case "wildmenu_show":
+			editor.cmdline.wildmenuShow(args)
+		case "wildmenu_select":
+			editor.cmdline.wildmenuSelect(args)
+		case "wildmenu_hide":
+			editor.cmdline.wildmenuHide()
 		case "busy_start":
 		case "busy_stop":
 		default:
@@ -349,6 +368,7 @@ func InitEditorNew() {
 		close:         make(chan bool),
 		popup:         popup,
 		finder:        finder,
+		cmdline:       initCmdline(),
 		palette:       palette,
 		loc:           loc,
 		signature:     signature,
@@ -386,10 +406,47 @@ func InitEditorNew() {
 
 	screen.updateSize()
 
+	apiInfo, err := editor.nvim.APIInfo()
+	if err != nil {
+		fmt.Println("nvim get API info error", err)
+		app.Quit()
+		return
+	}
+
 	o := make(map[string]interface{})
 	o["rgb"] = true
 	o["ext_popupmenu"] = true
 	o["ext_tabline"] = true
+	for _, item := range apiInfo {
+		i, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for k, v := range i {
+			if k != "ui_events" {
+				continue
+			}
+			events, ok := v.([]interface{})
+			if !ok {
+				continue
+			}
+			for _, event := range events {
+				function, ok := event.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				name, ok := function["name"]
+				if !ok {
+					continue
+				}
+				if name == "wildmenu_show" {
+					o["ext_wildmenu"] = true
+				} else if name == "cmdline_show" {
+					o["ext_cmdline"] = true
+				}
+			}
+		}
+	}
 	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
 	if err != nil {
 		fmt.Println("nvim attach UI error", err)

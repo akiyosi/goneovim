@@ -21,13 +21,12 @@ type Locpopup struct {
 
 func initLocpopup() *Locpopup {
 	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(4, 4, 4, 4)
+	widget.SetContentsMargins(8, 8, 8, 8)
 	layout := widgets.NewQHBoxLayout()
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(4)
 	widget.SetLayout(layout)
-	widget.SetStyleSheet("color: rgba(14, 17, 18, 1); background-color: rgba(212, 215, 214, 1);")
-
+	widget.SetStyleSheet(".QWidget { border: 1px solid #000; } * {color: rgba(205, 211, 222, 1); background-color: rgba(24, 29, 34, 1);}")
 	typeLabel := widgets.NewQLabel(nil, 0)
 	typeLabel.SetContentsMargins(4, 1, 4, 1)
 
@@ -68,10 +67,10 @@ func (l *Locpopup) updateLocpopup() {
 	l.contentLabel.SetText(l.contentText)
 	if l.typeText == "E" {
 		l.typeLabel.SetText("Error")
-		l.typeLabel.SetStyleSheet("background-color: rgba(204, 62, 68, 1); color: rgba(212, 215, 214, 1);")
+		l.typeLabel.SetStyleSheet("background-color: rgba(204, 62, 68, 1);")
 	} else if l.typeText == "W" {
 		l.typeLabel.SetText("Warning")
-		l.typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1); color: rgba(212, 215, 214, 1);")
+		l.typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1);")
 	}
 	l.widget.Hide()
 	l.widget.Show()
