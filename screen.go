@@ -16,13 +16,14 @@ import (
 
 // Window is
 type Window struct {
-	win    nvim.Window
-	width  int
-	height int
-	pos    [2]int
-	tab    nvim.Tabpage
-	hl     string
-	bg     *RGBA
+	win        nvim.Window
+	width      int
+	height     int
+	pos        [2]int
+	tab        nvim.Tabpage
+	hl         string
+	bg         *RGBA
+	statusline bool
 }
 
 // Screen is the main editor area
@@ -37,6 +38,7 @@ type Screen struct {
 	content         [][]*Char
 	scrollRegion    []int
 	curtab          nvim.Tabpage
+	cmdheight       int
 	highlight       Highlight
 	curWins         map[nvim.Window]*Window
 	queueRedrawArea [4]int
@@ -343,12 +345,18 @@ func (s *Screen) getWindows() {
 		b.WindowTabpage(nwin, &win.tab)
 		wins[nwin] = win
 	}
+	b.Option("cmdheight", &s.cmdheight)
 	err := b.Execute()
 	if err != nil {
 		return
 	}
 	s.curWins = wins
 	for _, win := range s.curWins {
+		if win.height+win.pos[0] < editor.rows-s.cmdheight {
+			win.statusline = true
+		} else {
+			win.statusline = false
+		}
 		neovim.WindowOption(win.win, "winhl", &win.hl)
 		if win.hl != "" {
 			parts := strings.Split(win.hl, ",")
@@ -828,18 +836,22 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	if bg == nil {
 		return
 	}
+	height := w.height
+	if w.statusline {
+		height++
+	}
 	p.FillRect5(
 		int(float64(w.pos[1]+w.width)*editor.font.truewidth),
 		w.pos[0]*editor.font.lineHeight,
 		int(editor.font.truewidth),
-		w.height*editor.font.lineHeight,
+		height*editor.font.lineHeight,
 		gui.NewQColor3(bg.R, bg.G, bg.B, 255),
 	)
 	p.FillRect5(
 		int(float64(w.pos[1]+1+w.width)*editor.font.truewidth-1),
 		w.pos[0]*editor.font.lineHeight,
 		1,
-		w.height*editor.font.lineHeight,
+		height*editor.font.lineHeight,
 		gui.NewQColor3(0, 0, 0, 255),
 	)
 
@@ -856,7 +868,41 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		int((float64(w.width+w.pos[1]))*editor.font.truewidth),
 		w.pos[0]*editor.font.lineHeight,
 		int(editor.font.truewidth),
-		w.height*editor.font.lineHeight,
+		height*editor.font.lineHeight,
+		brush,
+	)
+
+	// p.FillRect5(
+	// 	int(float64(w.pos[1])*editor.font.truewidth),
+	// 	(w.pos[0]+w.height)*editor.font.lineHeight-1,
+	// 	int(float64(w.width+1)*editor.font.truewidth),
+	// 	1,
+	// 	gui.NewQColor3(0, 0, 0, 255),
+	// )
+
+	if w.pos[0] > 0 {
+		p.FillRect5(
+			int(float64(w.pos[1])*editor.font.truewidth),
+			w.pos[0]*editor.font.lineHeight-1,
+			int(float64(w.width+1)*editor.font.truewidth),
+			1,
+			gui.NewQColor3(0, 0, 0, 255),
+		)
+	}
+	gradient = gui.NewQLinearGradient3(
+		float64(w.pos[1])*editor.font.truewidth,
+		float64(w.pos[0]*editor.font.lineHeight),
+		float64(w.pos[1])*editor.font.truewidth,
+		float64(w.pos[0]*editor.font.lineHeight+5),
+	)
+	gradient.SetColorAt(0, gui.NewQColor3(10, 10, 10, 125))
+	gradient.SetColorAt(1, gui.NewQColor3(10, 10, 10, 0))
+	brush = gui.NewQBrush10(gradient)
+	p.FillRect2(
+		int(float64(w.pos[1])*editor.font.truewidth),
+		w.pos[0]*editor.font.lineHeight,
+		int(float64(w.width+1)*editor.font.truewidth),
+		5,
 		brush,
 	)
 }

@@ -406,12 +406,47 @@ func InitEditorNew() {
 
 	screen.updateSize()
 
+	apiInfo, err := editor.nvim.APIInfo()
+	if err != nil {
+		fmt.Println("nvim get API info error", err)
+		app.Quit()
+		return
+	}
+
 	o := make(map[string]interface{})
 	o["rgb"] = true
 	o["ext_popupmenu"] = true
 	o["ext_tabline"] = true
-	o["ext_cmdline"] = true
-	o["ext_wildmenu"] = true
+	for _, item := range apiInfo {
+		i, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for k, v := range i {
+			if k != "ui_events" {
+				continue
+			}
+			events, ok := v.([]interface{})
+			if !ok {
+				continue
+			}
+			for _, event := range events {
+				function, ok := event.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				name, ok := function["name"]
+				if !ok {
+					continue
+				}
+				if name == "wildmenu_show" {
+					o["ext_wildmenu"] = true
+				} else if name == "cmdline_show" {
+					o["ext_cmdline"] = true
+				}
+			}
+		}
+	}
 	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
 	if err != nil {
 		fmt.Println("nvim attach UI error", err)
