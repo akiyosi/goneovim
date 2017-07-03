@@ -858,16 +858,16 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	gradient := gui.NewQLinearGradient3(
 		(float64(w.width+w.pos[1])+1)*float64(editor.font.truewidth),
 		0,
-		(float64(w.width+w.pos[1]))*float64(editor.font.truewidth),
+		(float64(w.width+w.pos[1])+1)*float64(editor.font.truewidth)-6,
 		0,
 	)
 	gradient.SetColorAt(0, gui.NewQColor3(10, 10, 10, 125))
 	gradient.SetColorAt(1, gui.NewQColor3(10, 10, 10, 0))
 	brush := gui.NewQBrush10(gradient)
 	p.FillRect2(
-		int((float64(w.width+w.pos[1]))*editor.font.truewidth),
+		int((float64(w.width+w.pos[1])+1)*editor.font.truewidth)-6,
 		w.pos[0]*editor.font.lineHeight,
-		int(editor.font.truewidth),
+		6,
 		height*editor.font.lineHeight,
 		brush,
 	)
