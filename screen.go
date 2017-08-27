@@ -77,6 +77,9 @@ func initScreenNew(devicePixelRatio float64) *Screen {
 		}
 		screen.updateSize()
 	})
+	widget.ConnectMousePressEvent(screen.mouseEvent)
+	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
+	widget.ConnectMouseMoveEvent(screen.mouseEvent)
 	return screen
 }
 
@@ -182,6 +185,64 @@ func (s *Screen) initSpecialKeys() {
 			s.keyCmd = core.Qt__Key_Meta
 		}
 	}
+}
+
+func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
+	inp := s.convertMouse(event)
+	if inp == "" {
+		return
+	}
+	editor.nvim.Input(inp)
+}
+
+func (s *Screen) convertMouse(event *gui.QMouseEvent) string {
+	font := editor.font
+	x := int(float64(event.X()) / font.truewidth)
+	y := int(float64(event.Y()) / float64(font.lineHeight))
+	pos := []int{x, y}
+
+	bt := event.Button()
+	if event.Type() == core.QEvent__MouseMove {
+		if event.Buttons()&core.Qt__LeftButton > 0 {
+			bt = core.Qt__LeftButton
+		} else if event.Buttons()&core.Qt__RightButton > 0 {
+			bt = core.Qt__RightButton
+		} else if event.Buttons()&core.Qt__MidButton > 0 {
+			bt = core.Qt__MidButton
+		} else {
+			return ""
+		}
+	}
+
+	mod := event.Modifiers()
+	buttonName := ""
+	switch bt {
+	case core.Qt__LeftButton:
+		buttonName += "Left"
+	case core.Qt__RightButton:
+		buttonName += "Right"
+	case core.Qt__MidButton:
+		buttonName += "Middle"
+	case core.Qt__NoButton:
+	default:
+		return ""
+	}
+
+	evType := ""
+	switch event.Type() {
+	case core.QEvent__MouseButtonDblClick:
+		evType += "Mouse"
+	case core.QEvent__MouseButtonPress:
+		evType += "Mouse"
+	case core.QEvent__MouseButtonRelease:
+		evType += "Release"
+	case core.QEvent__MouseMove:
+		evType += "Drag"
+	default:
+		return ""
+	}
+
+	return fmt.Sprintf("<%s%s%s><%d,%d>", s.modPrefix(mod), buttonName, evType, pos[0], pos[1])
 }
 
 func (s *Screen) keyPress(event *gui.QKeyEvent) {
