@@ -80,3 +80,25 @@ Plugin 'equalsraf/neovim-gui-shim'     " Vundle
 GuiFont Monaco:h13
 GuiLinespace 8
 ```
+
+## Manual Installation
+
+Install Qt (https://www1.qt.io/download-open-source/)
+
+Install Qt go bindings
+```
+$> go get -u -v github.com/therecipe/qt/cmd/...
+$> qtsetup
+```
+
+Clone this repository and doing some code generation
+```
+$> go get -u github.com/dzhou121/gonvim/
+$> cd GOPATH/github.com/dzhou121/gonvim/
+$> qtmoc
+```
+
+Now you can build and run
+```
+$> go build && ./gonvim
+```
