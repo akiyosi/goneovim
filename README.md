@@ -20,6 +20,11 @@ Disable Statusline by using
 let g:gonvim_draw_statusline = 0
 ```
 
+Disable Tabline by using
+```vim
+let g:gonvim_draw_tabline = 0
+```
+
 Disable the lint message popup using
 ```vim
 let g:gonvim_draw_lint = 0

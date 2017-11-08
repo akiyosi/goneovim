@@ -38,6 +38,13 @@ type Tab struct {
 	hidden    bool
 }
 
+func (s *Tabline) subscribe() {
+	if !editor.drawTabline {
+		s.widget.Hide()
+		return
+	}
+}
+
 func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {
 	layout := widgets.NewQLayout2()
 	items := []*widgets.QLayoutItem{}

@@ -55,6 +55,7 @@ type Editor struct {
 	statusline       *Statusline
 	message          *Message
 	drawStatusline   bool
+	drawTabline      bool
 	drawLint         bool
 	statuslineHeight int
 	width            int
@@ -312,6 +313,14 @@ func (e *Editor) configure() {
 		e.drawStatusline = true
 	}
 
+	var drawTabline interface{}
+	e.nvim.Var("gonvim_draw_tabline", &drawTabline)
+	if isZero(drawTabline) {
+		e.drawTabline = false
+	} else {
+		e.drawTabline = true
+	}
+
 	var drawLint interface{}
 	e.nvim.Var("gonvim_draw_lint", &drawLint)
 	if isZero(drawLint) {
@@ -442,10 +451,11 @@ func InitEditor() {
 		return
 	}
 
+	editor.configure()
 	o := make(map[string]interface{})
 	o["rgb"] = true
 	o["ext_popupmenu"] = true
-	o["ext_tabline"] = true
+	o["ext_tabline"] = editor.drawTabline
 	for _, item := range apiInfo {
 		i, ok := item.(map[string]interface{})
 		if !ok {
@@ -488,8 +498,8 @@ func InitEditor() {
 	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	editor.nvim.Command("runtime! ginit.vim")
 	editor.nvim.Command("let g:gonvim_running=1")
-	editor.configure()
 	fuzzy.RegisterPlugin(editor.nvim)
+	tabline.subscribe()
 	statusline.subscribe()
 	loc.subscribe()
 	message.subscribe()
