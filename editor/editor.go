@@ -33,6 +33,7 @@ type Char struct {
 type Editor struct {
 	app              *widgets.QApplication
 	nvim             *nvim.Nvim
+	window           *widgets.QMainWindow
 	nvimAttached     bool
 	mode             string
 	font             *Font
@@ -328,6 +329,12 @@ func (e *Editor) configure() {
 	} else {
 		e.drawLint = true
 	}
+
+	var startFullscreen interface{}
+	e.nvim.Var("gonvim_start_fullscreen", &startFullscreen)
+	if isTrue(startFullscreen) {
+		e.window.ShowFullScreen()
+	}
 }
 
 // InitEditor is
@@ -398,6 +405,7 @@ func InitEditor() {
 	editor = &Editor{
 		app:           app,
 		nvim:          neovim,
+		window:        window,
 		nvimAttached:  false,
 		screen:        screen,
 		cursorNew:     cursor,
