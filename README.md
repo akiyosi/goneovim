@@ -11,20 +11,23 @@ Neovim GUI written in Golang, using a [Golang qt backend](https://github.com/the
 
 ## Features
 
-### Statusline and Tabline
+### Tabline, Statusline, Lint Message, Command line and Message
 
-![](https://i.imgur.com/BfQi6MV.png)
-
-> By default both Statusline and Tabline are enabled
+![](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/main.png)
 
 Disable Statusline by using
 ```vim
 let g:gonvim_draw_statusline = 0
 ```
 
+Disable the lint message popup using
+```vim
+let g:gonvim_draw_lint = 0
+```
+
 ### Fuzzy finder in GUI
 
-![](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/fuzzyfinder.gif)
+![](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/fuzzy.png)
 
 To set up fuzzy finder :
 
@@ -46,16 +49,11 @@ GonvimFuzzyBuffers - For searching opened Buffers
 ```
 
 
-## Function signature and Lint Message
+## Autocomplete Menu and Function signature
 
-![Readme](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/signature.gif)
-![Readme](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/lint.gif)
+![Readme](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/popup.png)
+![Readme](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/signature.png)
 
-
-Disable the lint message popup using
-```vim
-let g:gonvim_draw_lint = 0
-```
 
 
 ## Miscellaneous Configuration
