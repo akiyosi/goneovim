@@ -5,12 +5,12 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/dzhou121/gonvim"
+	"github.com/dzhou121/gonvim/editor"
 )
 
 func main() {
 	go func() {
 		http.ListenAndServe("localhost:6080", nil)
 	}()
-	gonvim.InitEditorNew()
+	editor.InitEditor()
 }

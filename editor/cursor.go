@@ -1,4 +1,4 @@
-package gonvim
+package editor
 
 import (
 	"github.com/therecipe/qt/widgets"

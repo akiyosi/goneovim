@@ -1,4 +1,4 @@
-package gonvim
+package editor
 
 func isNormalWidth(char string) bool {
 	if len(char) == 0 {

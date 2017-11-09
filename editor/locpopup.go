@@ -1,4 +1,4 @@
-package gonvim
+package editor
 
 import (
 	"sort"

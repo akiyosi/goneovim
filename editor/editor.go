@@ -1,4 +1,4 @@
-package gonvim
+package editor
 
 import (
 	"fmt"
@@ -295,8 +295,8 @@ func (e *Editor) configure() {
 	}
 }
 
-// InitEditorNew is
-func InitEditorNew() {
+// InitEditor is
+func InitEditor() {
 	app := widgets.NewQApplication(0, nil)
 	devicePixelRatio := app.DevicePixelRatio()
 	fontFamily := ""
