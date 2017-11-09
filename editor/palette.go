@@ -3,7 +3,7 @@ package editor
 import (
 	"fmt"
 
-	"github.com/dzhou121/gonvim-fuzzy/rplugin/go/fzf"
+	"github.com/dzhou121/gonvim/fuzzy"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
@@ -164,7 +164,7 @@ func (p *Palette) resize() {
 	itemHeight := p.resultItems[0].widget.SizeHint().Height()
 	p.itemHeight = itemHeight
 	p.showTotal = int(float64(editor.screen.height)/float64(itemHeight)*0.5) - 1
-	fzf.UpdateMax(editor.nvim, p.showTotal)
+	fuzzy.UpdateMax(editor.nvim, p.showTotal)
 
 	for i := p.showTotal; i < len(p.resultItems); i++ {
 		p.resultItems[i].hide()

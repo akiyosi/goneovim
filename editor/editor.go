@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dzhou121/gonvim-fuzzy/rplugin/go/fzf"
+	"github.com/dzhou121/gonvim/fuzzy"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
@@ -489,7 +489,7 @@ func InitEditor() {
 	editor.nvim.Command("runtime! ginit.vim")
 	editor.nvim.Command("let g:gonvim_running=1")
 	editor.configure()
-	fzf.RegisterPlugin(editor.nvim)
+	fuzzy.RegisterPlugin(editor.nvim)
 	statusline.subscribe()
 	loc.subscribe()
 	message.subscribe()
