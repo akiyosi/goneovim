@@ -39,8 +39,6 @@ func (f *Finder) showPattern(args []interface{}) {
 
 func (f *Finder) showResult(args []interface{}) {
 	palette := editor.palette
-	palette.mutex.Lock()
-	defer palette.mutex.Unlock()
 	selected := reflectToInt(args[1])
 	match := [][]int{}
 	for _, i := range args[2].([]interface{}) {
@@ -150,7 +148,7 @@ func (f *Finder) showResult(args []interface{}) {
 		palette.scrollCol.Hide()
 	}
 
-	palette.refresh()
+	palette.show()
 }
 
 func formatText(text string, matchIndex []int, path bool) string {

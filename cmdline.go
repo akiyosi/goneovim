@@ -71,7 +71,7 @@ func (c *Cmdline) show(args []interface{}) {
 		c.showAddition()
 		palette.scrollCol.Hide()
 	}
-	palette.refresh()
+	palette.show()
 }
 
 func (c *Cmdline) showAddition() {

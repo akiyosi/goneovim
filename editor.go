@@ -53,6 +53,7 @@ type Editor struct {
 	palette          *Palette
 	tabline          *Tabline
 	statusline       *Statusline
+	message          *Message
 	drawStatusline   bool
 	drawLint         bool
 	statuslineHeight int
@@ -75,6 +76,7 @@ type editorSignal struct {
 	_ func() `signal:"locpopupSignal"`
 	_ func() `signal:"lintSignal"`
 	_ func() `signal:"gitSignal"`
+	_ func() `signal:"messageSignal"`
 }
 
 func (e *Editor) handleNotification() {
@@ -186,6 +188,27 @@ func (e *Editor) handleRedraw(updates [][]interface{}) {
 			editor.cmdline.wildmenuSelect(args)
 		case "wildmenu_hide":
 			editor.cmdline.wildmenuHide()
+		case "msg_start_kind":
+			if len(args) > 0 {
+				kinds, ok := args[len(args)-1].([]interface{})
+				if ok {
+					if len(kinds) > 0 {
+						kind, ok := kinds[len(kinds)-1].(string)
+						if ok {
+							editor.message.kind = kind
+						}
+					}
+				}
+			}
+		case "msg_chunk":
+			editor.message.chunk(args)
+			fmt.Println("msg_chunk", args)
+		case "msg_end":
+			fmt.Println("msg_end", args)
+		case "msg_showcmd":
+			fmt.Println("msg_showcmd", args)
+		case "messages":
+			fmt.Println("message", args)
 		case "busy_start":
 		case "busy_stop":
 		default:
@@ -245,12 +268,19 @@ func (e *Editor) nvimResize() {
 	// e.screen.paintMutex.Lock()
 	// defer e.screen.paintMutex.Unlock()
 	width, height := e.screen.width, e.screen.height
+	height += e.tabline.marginTop - e.tabline.marginDefault + e.tabline.marginBottom - e.tabline.marginDefault
 	cols := int(float64(width) / editor.font.truewidth)
 	rows := height / editor.font.lineHeight
 	oldCols := editor.cols
 	oldRows := editor.rows
 	editor.cols = cols
 	editor.rows = rows
+	remainingHeight := height - rows*editor.font.lineHeight
+	remainingHeightBottom := remainingHeight / 2
+	remainingHeightTop := remainingHeight - remainingHeightBottom
+	e.tabline.marginTop = e.tabline.marginDefault + remainingHeightTop
+	e.tabline.marginBottom = e.tabline.marginDefault + remainingHeightBottom
+	e.tabline.updateMargin()
 	if oldCols > 0 && oldRows > 0 {
 		if cols != oldCols || rows != oldRows {
 			editor.nvim.TryResizeUI(cols, rows)
@@ -333,6 +363,8 @@ func InitEditorNew() {
 	loc.widget.SetParent(screen.widget)
 	signature := initSignature()
 	signature.widget.SetParent(screen.widget)
+	message := initMessage()
+	message.widget.SetParent(screen.widget)
 	window.ConnectKeyPressEvent(screen.keyPress)
 
 	layout := widgets.NewQVBoxLayout()
@@ -349,6 +381,7 @@ func InitEditorNew() {
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
+		Path: "/Users/Lulu/Downloads/neovim/build/bin/nvim",
 	})
 	if err != nil {
 		fmt.Println("nvim start error", err)
@@ -373,6 +406,7 @@ func InitEditorNew() {
 		loc:           loc,
 		signature:     signature,
 		tabline:       tabline,
+		message:       message,
 		width:         width,
 		height:        height,
 		statusline:    statusline,
@@ -443,6 +477,8 @@ func InitEditorNew() {
 					o["ext_wildmenu"] = true
 				} else if name == "cmdline_show" {
 					o["ext_cmdline"] = true
+				} else if name == "msg_chunk" {
+					o["ext_messages"] = true
 				}
 			}
 		}
@@ -461,6 +497,7 @@ func InitEditorNew() {
 	fzf.RegisterPlugin(editor.nvim)
 	statusline.subscribe()
 	loc.subscribe()
+	message.subscribe()
 
 	go func() {
 		<-editor.close
@@ -469,7 +506,7 @@ func InitEditorNew() {
 
 	window.Show()
 	popup.widget.Hide()
-	palette.widget.Hide()
+	palette.hide()
 	loc.widget.Hide()
 	signature.widget.Hide()
 	widgets.QApplication_Exec()

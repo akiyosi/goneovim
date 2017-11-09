@@ -12,10 +12,13 @@ import (
 
 // Tabline of the editor
 type Tabline struct {
-	widget    *widgets.QWidget
-	layout    *widgets.QLayout
-	CurrentID int
-	Tabs      []*Tab
+	widget        *widgets.QWidget
+	layout        *widgets.QLayout
+	CurrentID     int
+	Tabs          []*Tab
+	marginDefault int
+	marginTop     int
+	marginBottom  int
 }
 
 // Tab in the tabline
@@ -35,7 +38,7 @@ type Tab struct {
 	hidden    bool
 }
 
-func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int) *widgets.QLayout {
+func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {
 	layout := widgets.NewQLayout2()
 	items := []*widgets.QLayoutItem{}
 	rect := core.NewQRect()
@@ -46,6 +49,27 @@ func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int) *wi
 		}
 		return size
 	})
+	if width > 0 {
+		layout.ConnectMinimumSize(func() *core.QSize {
+			size := core.NewQSize()
+			for _, item := range items {
+				size = size.ExpandedTo(item.MinimumSize())
+			}
+			if size.Width() > width {
+				size.SetWidth(width)
+			}
+			size.SetWidth(0)
+			return size
+		})
+		layout.ConnectMaximumSize(func() *core.QSize {
+			size := core.NewQSize()
+			for _, item := range items {
+				size = size.ExpandedTo(item.MinimumSize())
+			}
+			size.SetWidth(width)
+			return size
+		})
+	}
 	layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
 		items = append(items, item)
 	})
@@ -157,6 +181,10 @@ func initTablineNew() *Tabline {
 	}
 	`)
 
+	marginDefault := 10
+	marginTop := 10
+	marginBottom := 10
+
 	tabs := []*Tab{}
 	for i := 0; i < 10; i++ {
 		w := widgets.NewQWidget(nil, 0)
@@ -168,7 +196,7 @@ func initTablineNew() *Tabline {
 		fileIcon.SetFixedWidth(14)
 		fileIcon.SetFixedHeight(14)
 		file := widgets.NewQLabel(nil, 0)
-		file.SetContentsMargins(0, 10, 0, 10)
+		file.SetContentsMargins(0, marginTop, 0, marginBottom)
 		closeIcon := svg.NewQSvgWidget(nil)
 		closeIcon.SetFixedWidth(14)
 		closeIcon.SetFixedHeight(14)
@@ -188,9 +216,12 @@ func initTablineNew() *Tabline {
 	}
 
 	return &Tabline{
-		widget: widget,
-		layout: layout,
-		Tabs:   tabs,
+		widget:        widget,
+		layout:        layout,
+		Tabs:          tabs,
+		marginDefault: marginDefault,
+		marginTop:     marginTop,
+		marginBottom:  marginBottom,
 	}
 }
 
@@ -238,6 +269,12 @@ func (t *Tab) updateFileText() {
 func (t *Tab) updateFileIcon() {
 	svgContent := getSvg(t.fileType, nil)
 	t.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+}
+
+func (t *Tabline) updateMargin() {
+	for _, tab := range t.Tabs {
+		tab.file.SetContentsMargins(0, t.marginTop, 0, t.marginBottom)
+	}
 }
 
 func (t *Tabline) update(args []interface{}) {
