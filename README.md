@@ -93,8 +93,8 @@ $> qtsetup
 
 Clone this repository and doing some code generation
 ```
-$> go get -u github.com/dzhou121/gonvim/
-$> cd GOPATH/github.com/dzhou121/gonvim/
+$> go get -u github.com/dzhou121/gonvim/editor/
+$> cd GOPATH/github.com/dzhou121/gonvim/editor/
 $> qtmoc
 ```
 
