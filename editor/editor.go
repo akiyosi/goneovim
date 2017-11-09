@@ -202,13 +202,9 @@ func (e *Editor) handleRedraw(updates [][]interface{}) {
 			}
 		case "msg_chunk":
 			editor.message.chunk(args)
-			fmt.Println("msg_chunk", args)
 		case "msg_end":
-			fmt.Println("msg_end", args)
 		case "msg_showcmd":
-			fmt.Println("msg_showcmd", args)
 		case "messages":
-			fmt.Println("message", args)
 		case "busy_start":
 		case "busy_stop":
 		default:
@@ -381,7 +377,6 @@ func InitEditor() {
 
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
-		Path: "/Users/Lulu/Downloads/neovim/build/bin/nvim",
 	})
 	if err != nil {
 		fmt.Println("nvim start error", err)
