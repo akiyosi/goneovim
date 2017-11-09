@@ -2,7 +2,6 @@ package gonvim
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/dzhou121/gonvim-fuzzy/rplugin/go/fzf"
 	"github.com/therecipe/qt/core"
@@ -13,14 +12,13 @@ import (
 
 // Palette is the popup for fuzzy finder, cmdline etc
 type Palette struct {
+	hidden           bool
 	widget           *widgets.QWidget
 	patternText      string
 	resultItems      []*PaletteResultItem
 	resultWidget     *widgets.QWidget
 	resultMainWidget *widgets.QWidget
 	itemHeight       int
-	refreshMutex     sync.Mutex
-	mutex            sync.Mutex
 	width            int
 	cursor           *widgets.QWidget
 	cursorX          int
@@ -53,10 +51,11 @@ func initPalette() *Palette {
 	mainLayout := widgets.NewQVBoxLayout()
 	mainLayout.SetContentsMargins(0, 0, 0, 0)
 	mainLayout.SetSpacing(0)
+	mainLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetLayout(mainLayout)
 	widget.SetContentsMargins(1, 1, 1, 1)
-	widget.SetFixedWidth(width)
+	// widget.SetFixedWidth(width)
 	widget.SetObjectName("palette")
 	widget.SetStyleSheet("QWidget#palette {border: 1px solid #000;} .QWidget {background-color: rgba(24, 29, 34, 1); } * { color: rgba(205, 211, 222, 1); }")
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
@@ -68,11 +67,13 @@ func initPalette() *Palette {
 	resultMainLayout := widgets.NewQHBoxLayout()
 	resultMainLayout.SetContentsMargins(0, 0, 0, 0)
 	resultMainLayout.SetSpacing(0)
+	resultMainLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 
 	padding := 8
 	resultLayout := widgets.NewQVBoxLayout()
 	resultLayout.SetContentsMargins(0, 0, 0, 0)
 	resultLayout.SetSpacing(0)
+	resultLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 	resultWidget := widgets.NewQWidget(nil, 0)
 	resultWidget.SetLayout(resultLayout)
 	resultWidget.SetContentsMargins(0, 0, 0, 0)
@@ -93,10 +94,13 @@ func initPalette() *Palette {
 	pattern := widgets.NewQLabel(nil, 0)
 	pattern.SetContentsMargins(padding, padding, padding, padding)
 	pattern.SetStyleSheet("background-color: #3c3c3c;")
+	pattern.SetFixedWidth(width - padding*2)
+	pattern.SetSizePolicy2(widgets.QSizePolicy__Preferred, widgets.QSizePolicy__Maximum)
 	patternLayout := widgets.NewQVBoxLayout()
 	patternLayout.AddWidget(pattern, 0, 0)
 	patternLayout.SetContentsMargins(0, 0, 0, 0)
 	patternLayout.SetSpacing(0)
+	patternLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 	patternWidget := widgets.NewQWidget(nil, 0)
 	patternWidget.SetLayout(patternLayout)
 	patternWidget.SetContentsMargins(padding, padding, padding, padding)
@@ -115,7 +119,8 @@ func initPalette() *Palette {
 	for i := 0; i < max; i++ {
 		itemWidget := widgets.NewQWidget(nil, 0)
 		itemWidget.SetContentsMargins(0, 0, 0, 0)
-		itemLayout := newVFlowLayout(padding, padding*2, 0, 0)
+		itemLayout := newVFlowLayout(padding, padding*2, 0, 0, width)
+		itemLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 		itemWidget.SetLayout(itemLayout)
 		resultLayout.AddWidget(itemWidget, 0, 0)
 		icon := svg.NewQSvgWidget(nil)
@@ -126,6 +131,7 @@ func initPalette() *Palette {
 		base.SetText("base")
 		base.SetContentsMargins(0, padding, 0, padding)
 		base.SetStyleSheet("background-color: none; white-space: pre-wrap;")
+		// base.SetSizePolicy2(widgets.QSizePolicy__Preferred, widgets.QSizePolicy__Maximum)
 		itemLayout.AddWidget(icon)
 		itemLayout.AddWidget(base)
 		resultItem := &PaletteResultItem{
@@ -165,30 +171,19 @@ func (p *Palette) resize() {
 	}
 }
 
-func (p *Palette) showResult() {
-	p.resultMainWidget.Show()
-}
-
-func (p *Palette) hideResult() {
-	p.resultMainWidget.Hide()
-}
-
-func (p *Palette) refresh() {
-	p.refreshMutex.Lock()
-	p.resultWidget.Hide()
-	p.resultWidget.Show()
-	p.hide()
-	p.show()
-	p.hide()
-	p.show()
-	p.refreshMutex.Unlock()
-}
-
 func (p *Palette) show() {
+	if !p.hidden {
+		return
+	}
+	p.hidden = false
 	p.widget.Show()
 }
 
 func (p *Palette) hide() {
+	if p.hidden {
+		return
+	}
+	p.hidden = true
 	p.widget.Hide()
 }
 
@@ -233,10 +228,10 @@ func (f *PaletteResultItem) setSelected(selected bool) {
 }
 
 func (f *PaletteResultItem) show() {
-	if f.hidden {
-		f.hidden = false
-		f.widget.Show()
-	}
+	// if f.hidden {
+	f.hidden = false
+	f.widget.Show()
+	// }
 }
 
 func (f *PaletteResultItem) hide() {
