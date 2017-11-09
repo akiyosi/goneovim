@@ -100,7 +100,7 @@ type StatuslineEncoding struct {
 func initStatuslineNew() *Statusline {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 1, 0, 0)
-	layout := newVFlowLayout(8, 8, 1, 3)
+	layout := newVFlowLayout(8, 8, 1, 3, 0)
 	widget.SetLayout(layout)
 	widget.SetObjectName("statusline")
 	widget.SetStyleSheet(`

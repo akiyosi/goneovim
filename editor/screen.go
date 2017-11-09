@@ -463,6 +463,7 @@ func (s *Screen) updateSize() {
 	s.width, s.height = s.size()
 	editor.nvimResize()
 	editor.palette.resize()
+	editor.message.resize()
 }
 
 func (s *Screen) resize(args []interface{}) {
