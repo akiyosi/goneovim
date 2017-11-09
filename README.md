@@ -30,6 +30,11 @@ Disable the lint message popup using
 let g:gonvim_draw_lint = 0
 ```
 
+Start in fullscreen mode
+```vim
+let g:gonvim_start_fullscreen = 1
+```
+
 ### Fuzzy finder in GUI
 
 ![](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/fuzzy.png)

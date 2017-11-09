@@ -34,3 +34,20 @@ func isZero(d interface{}) bool {
 	}
 	return false
 }
+
+func isTrue(d interface{}) bool {
+	if d == nil {
+		return false
+	}
+	switch a := d.(type) {
+	case int64:
+		if a == 1 {
+			return true
+		}
+	case uint64:
+		if a == 1 {
+			return true
+		}
+	}
+	return false
+}
