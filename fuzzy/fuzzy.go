@@ -297,6 +297,9 @@ func (s *Fuzzy) processSource() {
 						return
 					}
 					if f.IsDir() {
+						if f.Name() == ".git" {
+							continue
+						}
 						folders = append(folders, filepath.Join(pwd, f.Name()))
 						continue
 					}
