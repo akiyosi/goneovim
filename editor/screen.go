@@ -58,6 +58,7 @@ type Screen struct {
 	keyShift        core.Qt__Key
 }
 
+
 var tooltip *widgets.QLabel
 
 func initScreenNew(devicePixelRatio float64) *Screen {
@@ -97,16 +98,41 @@ func initScreenNew(devicePixelRatio float64) *Screen {
 
 
 func (s *Screen) toolTip(text string) {
-	family := editor.font.fontNew.Family()
-	size := editor.font.fontNew.PointSize()
-	ttfont := gui.NewQFont2(family, size, int(gui.QFont__Normal), false)
-	tooltip.SetFont(ttfont)
-
-	tooltip.SetText(text)
 	if text == "" {
 		tooltip.Hide()
 		return
 	}
+
+	// set editor font
+	family := editor.font.fontNew.Family()
+	size := editor.font.fontNew.PointSize()
+	ttfont := gui.NewQFont2(family, size, int(gui.QFont__Normal), false)
+
+	// set letter space
+	truewidthEn := (*gui.NewQFontMetrics(tooltip.Font())).Width("W", 1)
+	truewidthJa := (*gui.NewQFontMetrics(tooltip.Font())).Width("あ", 1)
+	letterspace := math.Ceil( float64(truewidthEn) * float64(2.0) * float64(100) / float64(truewidthJa) - 1)
+
+	//ttfont.SetLetterSpacing(0, 100)
+	ttfont.SetLetterSpacing(0, letterspace)
+
+	// set font
+	tooltip.SetFont(ttfont)
+
+	// set stylesheet
+	style := fmt.Sprintf(`
+		* {
+			color: rgba(205, 211, 222, 1);
+			background-color: rgba(24, 29, 34, 1);
+			border-bottom-width: 1px;
+			border-bottom-style: solid;
+			border-bottom-color: rgba(205, 211, 222, 1);
+		}`)
+	tooltip.SetStyleSheet(style)
+
+	// set text in tooltip
+	tooltip.SetText(text)
+
 	if tooltip.IsVisible() == false  {
 		row := editor.screen.cursor[0]
 		col := editor.screen.cursor[1]
@@ -115,15 +141,27 @@ func (s *Screen) toolTip(text string) {
 		tooltip.Move(core.NewQPoint2(x, y))
 		tooltip.Show()
 	}
+
 	l := len([]rune(text))
-	qlen := (*gui.NewQFontMetrics(tooltip.Font())).Width(text, l)
-	tooltip.SetMinimumWidth(qlen)
-	tooltip.SetMaximumWidth(qlen)
+	qlenw := (*gui.NewQFontMetrics(tooltip.Font())).Width(text, l) + 1
+	qlenh := int( float64((*gui.NewQFontMetrics(tooltip.Font())).Height()) * float64(1.3) )
+
+	tooltip.SetMinimumWidth(qlenw)
+	tooltip.SetMaximumWidth(qlenw)
+	tooltip.SetMinimumHeight(qlenh)
+	tooltip.SetMaximumHeight(qlenh)
+
 	tooltip.Update()
 }
 
 
 func (s *Screen) InputMethodEvent(event *gui.QInputMethodEvent) {
+	row := editor.screen.cursor[0]
+	col := editor.screen.cursor[1]
+	x := int(float64(col) * editor.font.truewidth)
+	y := row * editor.font.lineHeight
+	tooltip.Move(core.NewQPoint2(x, y))
+
 	if event.CommitString() != "" {
 		editor.nvim.Input(event.CommitString())
 		s.toolTip("")
@@ -138,9 +176,9 @@ func (s *Screen) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVarian
 		imrect := core.NewQRect()
 		row := editor.screen.cursor[0]
 		col := editor.screen.cursor[1]
-		x := int(float64(col) * editor.font.truewidth) + 40
-		y := row * editor.font.lineHeight + 60
-		imrect.SetRect(x, y, 0, 0)
+		x := int(float64(col+3) * editor.font.truewidth)
+		y := (row+3) * editor.font.lineHeight
+		imrect.SetRect(x, y, 1, 1)
 		return core.NewQVariant33(imrect)
 	}
 	return qv
