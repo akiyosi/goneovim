@@ -2,6 +2,7 @@ package editor
 
 import (
 	"github.com/therecipe/qt/widgets"
+	"github.com/therecipe/qt/core"
 )
 
 // Cursor is
@@ -50,4 +51,5 @@ func (c *Cursor) update() {
 		c.y = row * editor.font.lineHeight
 		c.move()
 	}
+	tooltip.Move(core.NewQPoint2(c.x, c.y))
 }

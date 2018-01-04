@@ -379,6 +379,11 @@ func InitEditor() {
 	message.widget.SetParent(screen.widget)
 	window.ConnectKeyPressEvent(screen.keyPress)
 
+	window.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	window.ConnectInputMethodEvent(screen.InputMethodEvent)
+	window.ConnectInputMethodQuery(screen.InputMethodQuery)
+	window.SetAcceptDrops(true)
+
 	layout := widgets.NewQVBoxLayout()
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
