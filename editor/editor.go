@@ -364,6 +364,7 @@ func InitEditor() {
 	tabline := initTablineNew()
 	statusline := initStatuslineNew()
 	screen := initScreenNew(devicePixelRatio)
+	screen.toolTipFont(font)
 	cursor := initCursorNew()
 	cursor.widget.SetParent(screen.widget)
 	popup := initPopupmenuNew(font)

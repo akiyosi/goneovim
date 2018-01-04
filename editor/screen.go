@@ -46,6 +46,7 @@ type Screen struct {
 	paintMutex      sync.Mutex
 	redrawMutex     sync.Mutex
 	drawSplit       bool
+	tooltip         *widgets.QLabel
 
 	controlModifier core.Qt__KeyboardModifier
 	cmdModifier     core.Qt__KeyboardModifier
@@ -58,27 +59,26 @@ type Screen struct {
 	keyShift        core.Qt__Key
 }
 
-
-var tooltip *widgets.QLabel
-
 func initScreenNew(devicePixelRatio float64) *Screen {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 
-	mtooltip := widgets.NewQLabel(widget, 0)
-	mtooltip.SetVisible(false)
-	mtooltip.SetTextFormat(core.Qt__PlainText)
-	mtooltip.SetTextInteractionFlags(core.Qt__NoTextInteraction)
-	mtooltip.SetAutoFillBackground(true)
-
-	tooltip = mtooltip
+	tooltip := widgets.NewQLabel(widget, 0)
+	tooltip.SetVisible(false)
+	tooltip.SetStyleSheet(`
+		* {
+			color: rgba(205, 211, 222, 1);
+			background-color: rgba(24, 29, 34, 1);
+			text-decoration: underline;
+		}`)
 
 	screen := &Screen{
 		widget:       widget,
 		cursor:       [2]int{0, 0},
 		lastCursor:   [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
+		tooltip:      tooltip,
 	}
 	widget.ConnectPaintEvent(screen.paint)
 	screen.initSpecialKeys()
@@ -96,88 +96,49 @@ func initScreenNew(devicePixelRatio float64) *Screen {
 	return screen
 }
 
+func (s *Screen) toolTipFont(font *Font) {
+	s.tooltip.SetFont(font.fontNew)
+	s.tooltip.SetContentsMargins(0, font.lineSpace/2, 0, font.lineSpace/2)
+}
 
 func (s *Screen) toolTip(text string) {
-	if text == "" {
-		tooltip.Hide()
-		return
-	}
+	s.tooltip.SetText(text)
+	s.tooltip.AdjustSize()
+	s.tooltip.Show()
 
-	// set editor font
-	family := editor.font.fontNew.Family()
-	size := editor.font.fontNew.PointSize()
-	ttfont := gui.NewQFont2(family, size, int(gui.QFont__Normal), false)
-
-	// set letter space
-	truewidthEn := (*gui.NewQFontMetrics(tooltip.Font())).Width("W", 1)
-	truewidthJa := (*gui.NewQFontMetrics(tooltip.Font())).Width("あ", 1)
-	letterspace := math.Ceil( float64(truewidthEn) * float64(2.0) * float64(100) / float64(truewidthJa) - 1)
-
-	//ttfont.SetLetterSpacing(0, 100)
-	ttfont.SetLetterSpacing(0, letterspace)
-
-	// set font
-	tooltip.SetFont(ttfont)
-
-	// set stylesheet
-	style := fmt.Sprintf(`
-		* {
-			color: rgba(205, 211, 222, 1);
-			background-color: rgba(24, 29, 34, 1);
-			border-bottom-width: 1px;
-			border-bottom-style: solid;
-			border-bottom-color: rgba(205, 211, 222, 1);
-		}`)
-	tooltip.SetStyleSheet(style)
-
-	// set text in tooltip
-	tooltip.SetText(text)
-
-	if tooltip.IsVisible() == false  {
-		row := editor.screen.cursor[0]
-		col := editor.screen.cursor[1]
-		x := int(float64(col) * editor.font.truewidth)
-		y := row * editor.font.lineHeight
-		tooltip.Move(core.NewQPoint2(x, y))
-		tooltip.Show()
-	}
-
-	l := len([]rune(text))
-	qlenw := (*gui.NewQFontMetrics(tooltip.Font())).Width(text, l) + 1
-	qlenh := int( float64((*gui.NewQFontMetrics(tooltip.Font())).Height()) * float64(1.3) )
-
-	tooltip.SetMinimumWidth(qlenw)
-	tooltip.SetMaximumWidth(qlenw)
-	tooltip.SetMinimumHeight(qlenh)
-	tooltip.SetMaximumHeight(qlenh)
-
-	tooltip.Update()
+	row := s.cursor[0]
+	col := s.cursor[1]
+	c := editor.cursorNew
+	c.x = int(float64(col)*editor.font.truewidth) + s.tooltip.Width()
+	c.y = row * editor.font.lineHeight
+	c.move()
 }
 
-
+// InputMethodEvent is
 func (s *Screen) InputMethodEvent(event *gui.QInputMethodEvent) {
-	row := editor.screen.cursor[0]
-	col := editor.screen.cursor[1]
-	x := int(float64(col) * editor.font.truewidth)
-	y := row * editor.font.lineHeight
-	tooltip.Move(core.NewQPoint2(x, y))
-
 	if event.CommitString() != "" {
 		editor.nvim.Input(event.CommitString())
-		s.toolTip("")
+		s.tooltip.Hide()
 	} else {
-		s.toolTip(event.PreeditString())
+		preeditString := event.PreeditString()
+		if preeditString == "" {
+			s.tooltip.Hide()
+			editor.cursorNew.update()
+		} else {
+			s.toolTip(preeditString)
+		}
 	}
 }
 
-func (s *Screen) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant{
+// InputMethodQuery is
+func (s *Screen) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
 	qv := core.NewQVariant()
 	if query == core.Qt__ImCursorRectangle {
 		imrect := core.NewQRect()
 		row := editor.screen.cursor[0]
 		col := editor.screen.cursor[1]
 		x := int(float64(col+3) * editor.font.truewidth)
-		y := (row+3) * editor.font.lineHeight
+		y := (row + 3) * editor.font.lineHeight
 		imrect.SetRect(x, y, 1, 1)
 		return core.NewQVariant33(imrect)
 	}
