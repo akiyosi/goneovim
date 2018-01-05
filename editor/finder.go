@@ -9,6 +9,7 @@ import (
 
 // Finder is a fuzzy finder window
 type Finder struct {
+	ws *Workspace
 }
 
 func initFinder() *Finder {
@@ -16,21 +17,21 @@ func initFinder() *Finder {
 }
 
 func (f *Finder) hide() {
-	editor.palette.hide()
+	f.ws.palette.hide()
 }
 
 func (f *Finder) cursorPos(args []interface{}) {
 	x := reflectToInt(args[0])
-	editor.palette.cursorMove(x)
+	f.ws.palette.cursorMove(x)
 }
 
 func (f *Finder) selectResult(args []interface{}) {
 	selected := reflectToInt(args[0])
-	editor.palette.showSelected(selected)
+	f.ws.palette.showSelected(selected)
 }
 
 func (f *Finder) showPattern(args []interface{}) {
-	palette := editor.palette
+	palette := f.ws.palette
 	p := args[0].(string)
 	palette.patternText = p
 	palette.pattern.SetText(palette.patternText)
@@ -38,7 +39,7 @@ func (f *Finder) showPattern(args []interface{}) {
 }
 
 func (f *Finder) showResult(args []interface{}) {
-	palette := editor.palette
+	palette := f.ws.palette
 	selected := reflectToInt(args[1])
 	match := [][]int{}
 	for _, i := range args[2].([]interface{}) {
@@ -155,7 +156,7 @@ func formatText(text string, matchIndex []int, path bool) string {
 	sort.Ints(matchIndex)
 
 	color := ""
-	if editor != nil && editor.matchFg != nil {
+	if editor.matchFg != nil {
 		color = editor.matchFg.Hex()
 	}
 

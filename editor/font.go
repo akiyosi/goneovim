@@ -61,7 +61,7 @@ func (f *Font) change(family string, size int) {
 	f.lineHeight = height + f.lineSpace
 	f.ascent = ascent
 	f.shift = int(float64(f.lineSpace)/2 + ascent)
-	editor.screen.toolTipFont(f)
+	// editor.screen.toolTipFont(f)
 }
 
 func (f *Font) changeLineSpace(lineSpace int) {

@@ -14,6 +14,7 @@ import (
 
 // Statusline is
 type Statusline struct {
+	ws     *Workspace
 	widget *widgets.QWidget
 	bg     *RGBA
 
@@ -34,6 +35,7 @@ type Statusline struct {
 
 // StatuslineLint is
 type StatuslineLint struct {
+	s          *Statusline
 	errors     int
 	warnings   int
 	widget     *widgets.QWidget
@@ -48,6 +50,7 @@ type StatuslineLint struct {
 
 // StatuslineFile is
 type StatuslineFile struct {
+	s           *Statusline
 	file        string
 	fileType    string
 	widget      *widgets.QWidget
@@ -74,6 +77,7 @@ type StatuslinePos struct {
 
 // StatusMode is
 type StatusMode struct {
+	s     *Statusline
 	label *widgets.QLabel
 	mode  string
 	text  string
@@ -82,6 +86,7 @@ type StatusMode struct {
 
 // StatuslineGit is
 type StatuslineGit struct {
+	s         *Statusline
 	branch    string
 	file      string
 	widget    *widgets.QWidget
@@ -113,6 +118,11 @@ func initStatuslineNew() *Statusline {
 	}
 	`)
 
+	s := &Statusline{
+		widget:  widget,
+		updates: make(chan []interface{}, 1000),
+	}
+
 	modeLabel := widgets.NewQLabel(nil, 0)
 	modeLabel.SetContentsMargins(4, 1, 4, 1)
 	modeLayout := widgets.NewQHBoxLayout()
@@ -122,8 +132,10 @@ func initStatuslineNew() *Statusline {
 	modeWidget.SetContentsMargins(0, 4, 0, 4)
 	modeWidget.SetLayout(modeLayout)
 	mode := &StatusMode{
+		s:     s,
 		label: modeLabel,
 	}
+	s.mode = mode
 
 	gitIcon := svg.NewQSvgWidget(nil)
 	gitIcon.SetFixedSize2(14, 14)
@@ -139,10 +151,12 @@ func initStatuslineNew() *Statusline {
 	gitWidget.SetLayout(gitLayout)
 	gitWidget.Hide()
 	git := &StatuslineGit{
+		s:      s,
 		widget: gitWidget,
 		icon:   gitIcon,
 		label:  gitLabel,
 	}
+	s.git = git
 
 	fileIcon := svg.NewQSvgWidget(nil)
 	fileIcon.SetFixedSize2(14, 14)
@@ -162,29 +176,34 @@ func initStatuslineNew() *Statusline {
 	fileWidget.SetContentsMargins(0, 0, 0, 0)
 	fileWidget.SetLayout(fileLayout)
 	file := &StatuslineFile{
+		s:           s,
 		icon:        fileIcon,
 		widget:      fileWidget,
 		fileLabel:   fileLabel,
 		folderLabel: folderLabel,
 	}
+	s.file = file
 
 	encodingLabel := widgets.NewQLabel(nil, 0)
 	encodingLabel.SetContentsMargins(0, 0, 0, 0)
 	encoding := &StatuslineEncoding{
 		label: encodingLabel,
 	}
+	s.encoding = encoding
 
 	posLabel := widgets.NewQLabel(nil, 0)
 	posLabel.SetContentsMargins(0, 0, 0, 0)
 	pos := &StatuslinePos{
 		label: posLabel,
 	}
+	s.pos = pos
 
 	filetypeLabel := widgets.NewQLabel(nil, 0)
 	filetypeLabel.SetContentsMargins(0, 0, 0, 0)
 	filetype := &StatuslineFiletype{
 		label: filetypeLabel,
 	}
+	s.filetype = filetype
 
 	okIcon := svg.NewQSvgWidget(nil)
 	okIcon.SetFixedSize2(14, 14)
@@ -215,6 +234,7 @@ func initStatuslineNew() *Statusline {
 	lintWidget.SetContentsMargins(0, 0, 0, 0)
 	lintWidget.SetLayout(lintLayout)
 	lint := &StatuslineLint{
+		s:          s,
 		widget:     lintWidget,
 		okIcon:     okIcon,
 		errorIcon:  errorIcon,
@@ -225,6 +245,7 @@ func initStatuslineNew() *Statusline {
 		errors:     -1,
 		warnings:   -1,
 	}
+	s.lint = lint
 
 	layout.AddWidget(modeWidget)
 	layout.AddWidget(gitWidget)
@@ -234,41 +255,31 @@ func initStatuslineNew() *Statusline {
 	layout.AddWidget(posLabel)
 	layout.AddWidget(lintWidget)
 
-	return &Statusline{
-		widget:   widget,
-		mode:     mode,
-		git:      git,
-		file:     file,
-		lint:     lint,
-		filetype: filetype,
-		encoding: encoding,
-		pos:      pos,
-		updates:  make(chan []interface{}, 1000),
-	}
+	return s
 }
 
 func (s *Statusline) subscribe() {
-	if !editor.drawStatusline {
+	if !s.ws.drawStatusline {
 		s.widget.Hide()
 		return
 	}
-	editor.signal.ConnectStatuslineSignal(func() {
+	s.ws.signal.ConnectStatuslineSignal(func() {
 		updates := <-s.updates
 		s.handleUpdates(updates)
 	})
-	editor.signal.ConnectLintSignal(func() {
+	s.ws.signal.ConnectLintSignal(func() {
 		s.lint.update()
 	})
-	editor.signal.ConnectGitSignal(func() {
+	s.ws.signal.ConnectGitSignal(func() {
 		s.git.update()
 	})
-	editor.nvim.RegisterHandler("statusline", func(updates ...interface{}) {
+	s.ws.nvim.RegisterHandler("statusline", func(updates ...interface{}) {
 		s.updates <- updates
-		editor.signal.StatuslineSignal()
+		s.ws.signal.StatuslineSignal()
 	})
-	editor.nvim.Subscribe("statusline")
-	editor.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding)`)
-	editor.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
+	s.ws.nvim.Subscribe("statusline")
+	s.ws.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding)`)
+	s.ws.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
 }
 
 func (s *Statusline) handleUpdates(updates []interface{}) {
@@ -298,10 +309,10 @@ func (s *StatusMode) update() {
 }
 
 func (s *StatusMode) redraw() {
-	if editor.mode == s.mode {
+	if s.s.ws.mode == s.mode {
 		return
 	}
-	s.mode = editor.mode
+	s.mode = s.s.ws.mode
 	text := s.mode
 	bg := newRGBA(102, 153, 204, 1)
 	switch s.mode {
@@ -328,7 +339,7 @@ func (s *StatuslineGit) hide() {
 		return
 	}
 	s.hidden = true
-	editor.signal.GitSignal()
+	s.s.ws.signal.GitSignal()
 }
 
 func (s *StatuslineGit) update() {
@@ -339,7 +350,7 @@ func (s *StatuslineGit) update() {
 	s.label.SetText(s.branch)
 	if !s.svgLoaded {
 		s.svgLoaded = true
-		svgContent := getSvg("git", newRGBA(212, 215, 214, 1))
+		svgContent := s.s.ws.getSvg("git", newRGBA(212, 215, 214, 1))
 		s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	s.widget.Show()
@@ -384,12 +395,12 @@ func (s *StatuslineGit) redraw(file string) {
 	if s.branch != branch {
 		s.branch = branch
 		s.hidden = false
-		editor.signal.GitSignal()
+		s.s.ws.signal.GitSignal()
 	}
 }
 
 func (s *StatuslineFile) updateIcon() {
-	svgContent := getSvg(s.fileType, nil)
+	svgContent := s.s.ws.getSvg(s.fileType, nil)
 	s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
@@ -458,11 +469,11 @@ func (s *StatuslineFiletype) redraw(filetype string) {
 func (s *StatuslineLint) update() {
 	if !s.svgLoaded {
 		s.svgLoaded = true
-		svgContent := getSvg("check", newRGBA(141, 193, 73, 1))
+		svgContent := s.s.ws.getSvg("check", newRGBA(141, 193, 73, 1))
 		s.okIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		svgContent = getSvg("cross", newRGBA(204, 62, 68, 1))
+		svgContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
 		s.errorIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		svgContent = getSvg("exclamation", nil)
+		svgContent = s.s.ws.getSvg("exclamation", nil)
 		s.warnIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 
@@ -492,5 +503,5 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 	}
 	s.errors = errors
 	s.warnings = warnings
-	editor.signal.LintSignal()
+	s.s.ws.signal.LintSignal()
 }

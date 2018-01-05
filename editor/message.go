@@ -11,6 +11,7 @@ import (
 
 // Message isj
 type Message struct {
+	ws      *Workspace
 	kind    string
 	width   int
 	widget  *widgets.QWidget
@@ -21,6 +22,7 @@ type Message struct {
 
 // MessageItem is
 type MessageItem struct {
+	m       *Message
 	active  bool
 	kind    string
 	text    string
@@ -42,6 +44,13 @@ func initMessage() *Message {
 	widget.SetLayout(layout)
 	widget.SetStyleSheet("* {background-color: rgba(24, 29, 34, 1); color: rgba(205, 211, 222, 1);}")
 
+	m := &Message{
+		width:   width,
+		widget:  widget,
+		layout:  layout,
+		expires: 10,
+	}
+
 	items := []*MessageItem{}
 	for i := 0; i < 10; i++ {
 		w := widgets.NewQWidget(nil, 0)
@@ -62,23 +71,19 @@ func initMessage() *Message {
 		w.Hide()
 		l.Hide()
 		items = append(items, &MessageItem{
+			m:      m,
 			label:  l,
 			icon:   icon,
 			widget: w,
 		})
 	}
 	widget.Show()
-	return &Message{
-		width:   width,
-		widget:  widget,
-		layout:  layout,
-		items:   items,
-		expires: 10,
-	}
+	m.items = items
+	return m
 }
 
 func (m *Message) subscribe() {
-	editor.signal.ConnectMessageSignal(func() {
+	m.ws.signal.ConnectMessageSignal(func() {
 		m.update()
 	})
 }
@@ -114,8 +119,8 @@ func (m *Message) update() {
 }
 
 func (m *Message) resize() {
-	m.width = editor.screen.width / 4
-	m.widget.Move2(editor.screen.width-m.width-34, 0)
+	m.width = m.ws.screen.width / 4
+	m.widget.Move2(m.ws.screen.width-m.width-34, 0)
 	m.widget.Resize2(m.width+34, 0)
 	for _, item := range m.items {
 		item.label.SetMinimumHeight(0)
@@ -164,7 +169,7 @@ func (m *Message) chunk(args []interface{}) {
 
 	item.hideAt = time.Now().Add(time.Duration(m.expires) * time.Second)
 	time.AfterFunc(time.Duration(m.expires+1)*time.Second, func() {
-		editor.signal.MessageSignal()
+		m.ws.signal.MessageSignal()
 	})
 	item.setKind(m.kind)
 	item.setText(text)
@@ -178,7 +183,7 @@ func (i *MessageItem) setText(text string) {
 	label.SetMinimumHeight(0)
 	// label.SetMaximumHeight(0)
 	label.SetText(text)
-	height := label.HeightForWidth(editor.message.width)
+	height := label.HeightForWidth(i.m.width)
 	label.SetMinimumHeight(height)
 	label.SetMaximumHeight(height)
 	i.widget.SetMinimumHeight(height)
@@ -223,11 +228,11 @@ func (i *MessageItem) setKind(kind string) {
 	switch i.kind {
 	case "emsg":
 		style += "color: rgba(204, 62, 68, 1);"
-		svgContent := getSvg("fire", newRGBA(204, 62, 68, 1))
+		svgContent := i.m.ws.getSvg("fire", newRGBA(204, 62, 68, 1))
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	default:
 		style += "color: rgba(81, 154, 186, 1);"
-		svgContent := getSvg("comment", nil)
+		svgContent := i.m.ws.getSvg("comment", nil)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	i.label.SetStyleSheet(style)

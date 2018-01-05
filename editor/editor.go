@@ -2,15 +2,13 @@ package editor
 
 import (
 	"fmt"
-	"os"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/dzhou121/gonvim/fuzzy"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -32,32 +30,11 @@ type Char struct {
 // Editor is the editor
 type Editor struct {
 	app              *widgets.QApplication
+	workspaces       map[string]*Workspace
 	nvim             *nvim.Nvim
 	window           *widgets.QMainWindow
-	nvimAttached     bool
-	mode             string
-	font             *Font
-	smallerFont      *Font
-	rows             int
-	cols             int
-	cursorNew        *Cursor
-	Foreground       *RGBA
-	Background       *RGBA
-	special          *RGBA
-	screen           *Screen
+	wsWidget         *widgets.QWidget
 	close            chan bool
-	loc              *Locpopup
-	signature        *Signature
-	popup            *PopupMenu
-	finder           *Finder
-	cmdline          *Cmdline
-	palette          *Palette
-	tabline          *Tabline
-	statusline       *Statusline
-	message          *Message
-	drawStatusline   bool
-	drawTabline      bool
-	drawLint         bool
 	statuslineHeight int
 	width            int
 	height           int
@@ -68,6 +45,17 @@ type Editor struct {
 	signal           *editorSignal
 	redrawUpdates    chan [][]interface{}
 	guiUpdates       chan []interface{}
+
+	specialKeys     map[core.Qt__Key]string
+	controlModifier core.Qt__KeyboardModifier
+	cmdModifier     core.Qt__KeyboardModifier
+	shiftModifier   core.Qt__KeyboardModifier
+	altModifier     core.Qt__KeyboardModifier
+	metaModifier    core.Qt__KeyboardModifier
+	keyControl      core.Qt__Key
+	keyCmd          core.Qt__Key
+	keyAlt          core.Qt__Key
+	keyShift        core.Qt__Key
 }
 
 type editorSignal struct {
@@ -81,211 +69,6 @@ type editorSignal struct {
 	_ func() `signal:"messageSignal"`
 }
 
-func (e *Editor) handleNotification() {
-	e.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
-		e.guiUpdates <- updates
-		e.signal.GuiSignal()
-	})
-	e.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		e.redrawUpdates <- updates
-		e.signal.RedrawSignal()
-	})
-}
-
-func (e *Editor) handleRPCGui(updates []interface{}) {
-	event := updates[0].(string)
-	switch event {
-	case "Font":
-		e.guiFont(updates[1:])
-	case "Linespace":
-		e.guiLinespace(updates[1:])
-	case "finder_pattern":
-		e.finder.showPattern(updates[1:])
-	case "finder_pattern_pos":
-		e.finder.cursorPos(updates[1:])
-	case "finder_show_result":
-		e.finder.showResult(updates[1:])
-	case "finder_hide":
-		e.finder.hide()
-	case "finder_select":
-		e.finder.selectResult(updates[1:])
-	case "signature_show":
-		e.signature.showItem(updates[1:])
-	case "signature_pos":
-		e.signature.pos(updates[1:])
-	case "signature_hide":
-		e.signature.hide()
-	default:
-		fmt.Println("unhandled Gui event", event)
-	}
-}
-
-func (e *Editor) handleRedraw(updates [][]interface{}) {
-	s := e.screen
-	for _, update := range updates {
-		event := update[0].(string)
-		args := update[1:]
-		switch event {
-		case "update_fg":
-			args := update[1].([]interface{})
-			color := reflectToInt(args[0])
-			if color == -1 {
-				editor.Foreground = newRGBA(255, 255, 255, 1)
-			} else {
-				editor.Foreground = calcColor(reflectToInt(args[0]))
-			}
-		case "update_bg":
-			args := update[1].([]interface{})
-			s.updateBg(args)
-		case "update_sp":
-			args := update[1].([]interface{})
-			color := reflectToInt(args[0])
-			if color == -1 {
-				editor.special = newRGBA(255, 255, 255, 1)
-			} else {
-				editor.special = calcColor(reflectToInt(args[0]))
-			}
-		case "cursor_goto":
-			s.cursorGoto(args)
-		case "put":
-			s.put(args)
-		case "eol_clear":
-			s.eolClear(args)
-		case "clear":
-			s.clear(args)
-		case "resize":
-			s.resize(args)
-		case "highlight_set":
-			s.highlightSet(args)
-		case "set_scroll_region":
-			s.setScrollRegion(args)
-		case "scroll":
-			s.scroll(args)
-		case "mode_change":
-			arg := update[len(update)-1].([]interface{})
-			editor.mode = arg[0].(string)
-		case "popupmenu_show":
-			editor.popup.showItems(args)
-		case "popupmenu_hide":
-			editor.popup.hide()
-		case "popupmenu_select":
-			editor.popup.selectItem(args)
-		case "tabline_update":
-			editor.tabline.update(args)
-		case "cmdline_show":
-			editor.cmdline.show(args)
-		case "cmdline_pos":
-			editor.cmdline.changePos(args)
-		case "cmdline_char":
-			editor.cmdline.putChar(args)
-		case "cmdline_hide":
-			editor.cmdline.hide(args)
-		case "cmdline_function_show":
-			editor.cmdline.functionShow()
-		case "cmdline_function_hide":
-			editor.cmdline.functionHide()
-		case "wildmenu_show":
-			editor.cmdline.wildmenuShow(args)
-		case "wildmenu_select":
-			editor.cmdline.wildmenuSelect(args)
-		case "wildmenu_hide":
-			editor.cmdline.wildmenuHide()
-		case "msg_start_kind":
-			if len(args) > 0 {
-				kinds, ok := args[len(args)-1].([]interface{})
-				if ok {
-					if len(kinds) > 0 {
-						kind, ok := kinds[len(kinds)-1].(string)
-						if ok {
-							editor.message.kind = kind
-						}
-					}
-				}
-			}
-		case "msg_chunk":
-			editor.message.chunk(args)
-		case "msg_end":
-		case "msg_showcmd":
-		case "messages":
-		case "busy_start":
-		case "busy_stop":
-		default:
-			fmt.Println("Unhandle event", event)
-		}
-	}
-	s.update()
-	editor.cursorNew.update()
-	editor.statusline.mode.redraw()
-}
-
-func (e *Editor) guiFont(args ...interface{}) {
-	fontArg := args[0].([]interface{})
-	parts := strings.Split(fontArg[0].(string), ":")
-	if len(parts) < 1 {
-		return
-	}
-
-	height := 14
-	for _, p := range parts[1:] {
-		if strings.HasPrefix(p, "h") {
-			var err error
-			height, err = strconv.Atoi(p[1:])
-			if err != nil {
-				return
-			}
-		}
-	}
-
-	e.font.change(parts[0], height)
-	e.nvimResize()
-	e.popup.updateFont(e.font)
-}
-
-func (e *Editor) guiLinespace(args ...interface{}) {
-	fontArg := args[0].([]interface{})
-	var lineSpace int
-	var err error
-	switch arg := fontArg[0].(type) {
-	case string:
-		lineSpace, err = strconv.Atoi(arg)
-		if err != nil {
-			return
-		}
-	case int32: // can't combine these in a type switch without compile error
-		lineSpace = int(arg)
-	case int64:
-		lineSpace = int(arg)
-	default:
-		return
-	}
-	e.font.changeLineSpace(lineSpace)
-	e.nvimResize()
-}
-
-func (e *Editor) nvimResize() {
-	// e.screen.paintMutex.Lock()
-	// defer e.screen.paintMutex.Unlock()
-	width, height := e.screen.width, e.screen.height
-	height += e.tabline.marginTop - e.tabline.marginDefault + e.tabline.marginBottom - e.tabline.marginDefault
-	cols := int(float64(width) / editor.font.truewidth)
-	rows := height / editor.font.lineHeight
-	oldCols := editor.cols
-	oldRows := editor.rows
-	editor.cols = cols
-	editor.rows = rows
-	remainingHeight := height - rows*editor.font.lineHeight
-	remainingHeightBottom := remainingHeight / 2
-	remainingHeightTop := remainingHeight - remainingHeightBottom
-	e.tabline.marginTop = e.tabline.marginDefault + remainingHeightTop
-	e.tabline.marginBottom = e.tabline.marginDefault + remainingHeightBottom
-	e.tabline.updateMargin()
-	if oldCols > 0 && oldRows > 0 {
-		if cols != oldCols || rows != oldRows {
-			editor.nvim.TryResizeUI(cols, rows)
-		}
-	}
-}
-
 func (hl *Highlight) copy() Highlight {
 	highlight := Highlight{}
 	if hl.foreground != nil {
@@ -297,236 +80,252 @@ func (hl *Highlight) copy() Highlight {
 	return highlight
 }
 
-func (e *Editor) configure() {
-	var drawSplit interface{}
-	e.nvim.Var("gonvim_draw_split", &drawSplit)
-	if isZero(drawSplit) {
-		e.screen.drawSplit = false
-	} else {
-		e.screen.drawSplit = true
-	}
-
-	var drawStatusline interface{}
-	e.nvim.Var("gonvim_draw_statusline", &drawStatusline)
-	if isZero(drawStatusline) {
-		e.drawStatusline = false
-	} else {
-		e.drawStatusline = true
-	}
-
-	var drawTabline interface{}
-	e.nvim.Var("gonvim_draw_tabline", &drawTabline)
-	if isZero(drawTabline) {
-		e.drawTabline = false
-	} else {
-		e.drawTabline = true
-	}
-
-	var drawLint interface{}
-	e.nvim.Var("gonvim_draw_lint", &drawLint)
-	if isZero(drawLint) {
-		e.drawLint = false
-	} else {
-		e.drawLint = true
-	}
-
-	var startFullscreen interface{}
-	e.nvim.Var("gonvim_start_fullscreen", &startFullscreen)
-	if isTrue(startFullscreen) {
-		e.window.ShowFullScreen()
-	}
-}
-
 // InitEditor is
 func InitEditor() {
-	app := widgets.NewQApplication(0, nil)
-	devicePixelRatio := app.DevicePixelRatio()
-	fontFamily := ""
-	switch runtime.GOOS {
-	case "windows":
-		fontFamily = "Consolas"
-	case "darwin":
-		fontFamily = "Courier New"
-	default:
-		fontFamily = "Monospace"
+	editor = &Editor{
+		selectedBg: newRGBA(81, 154, 186, 0.5),
+		matchFg:    newRGBA(81, 154, 186, 1),
 	}
-	font := initFontNew(fontFamily, 14, 6)
-
-	width := 800
-	height := 600
+	e := editor
+	e.app = widgets.NewQApplication(0, nil)
+	e.width = 800
+	e.height = 600
 
 	//create a window
-	window := widgets.NewQMainWindow(nil, 0)
-	window.SetWindowTitle("Gonvim")
-	window.SetContentsMargins(0, 0, 0, 0)
-	window.SetMinimumSize2(width, height)
+	e.window = widgets.NewQMainWindow(nil, 0)
+	e.window.SetWindowTitle("Gonvim")
+	e.window.SetContentsMargins(0, 0, 0, 0)
+	e.window.SetMinimumSize2(e.width, e.height)
 
-	tabline := initTablineNew()
-	statusline := initStatuslineNew()
-	screen := initScreenNew(devicePixelRatio)
-	screen.toolTipFont(font)
-	cursor := initCursorNew()
-	cursor.widget.SetParent(screen.widget)
-	popup := initPopupmenuNew(font)
-	popup.widget.SetParent(screen.widget)
-	finder := initFinder()
-	palette := initPalette()
-	palette.widget.SetParent(screen.widget)
-	loc := initLocpopup()
-	loc.widget.SetParent(screen.widget)
-	signature := initSignature()
-	signature.widget.SetParent(screen.widget)
-	message := initMessage()
-	message.widget.SetParent(screen.widget)
-	window.ConnectKeyPressEvent(screen.keyPress)
+	e.initSpecialKeys()
+	e.window.ConnectKeyPressEvent(e.keyPress)
 
-	window.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	window.ConnectInputMethodEvent(screen.InputMethodEvent)
-	window.ConnectInputMethodQuery(screen.InputMethodQuery)
-	window.SetAcceptDrops(true)
+	// e.window.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	// e.window.ConnectInputMethodEvent(screen.InputMethodEvent)
+	// e.window.ConnectInputMethodQuery(screen.InputMethodQuery)
+	e.window.SetAcceptDrops(true)
 
 	layout := widgets.NewQVBoxLayout()
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
-	layout.AddWidget(tabline.widget, 0, 0)
-	layout.AddWidget(screen.widget, 1, 0)
-	layout.AddWidget(statusline.widget, 0, 0)
+	e.wsWidget = widgets.NewQWidget(nil, 0)
+	layout.AddWidget(e.wsWidget, 1, 0)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
-	window.SetCentralWidget(widget)
-
-	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
-		Args: os.Args[1:],
-	})
-	if err != nil {
-		fmt.Println("nvim start error", err)
-		app.Quit()
-		return
+	ws, err := newWorkspace()
+	if err == nil {
+		ws.widget.SetParent(e.wsWidget)
+		ws.widget.Move2(0, 0)
+		ws.widget.Hide()
+		ws.widget.Show()
+		e.workspaces = map[string]*Workspace{}
+		e.workspaces["0"] = ws
 	}
 
-	signal := NewEditorSignal(nil)
-
-	editor = &Editor{
-		app:           app,
-		nvim:          neovim,
-		window:        window,
-		nvimAttached:  false,
-		screen:        screen,
-		cursorNew:     cursor,
-		mode:          "normal",
-		close:         make(chan bool),
-		popup:         popup,
-		finder:        finder,
-		cmdline:       initCmdline(),
-		palette:       palette,
-		loc:           loc,
-		signature:     signature,
-		tabline:       tabline,
-		message:       message,
-		width:         width,
-		height:        height,
-		statusline:    statusline,
-		font:          font,
-		selectedBg:    newRGBA(81, 154, 186, 0.5),
-		matchFg:       newRGBA(81, 154, 186, 1),
-		signal:        signal,
-		redrawUpdates: make(chan [][]interface{}, 1000),
-		guiUpdates:    make(chan []interface{}, 1000),
-	}
-
-	signal.ConnectRedrawSignal(func() {
-		updates := <-editor.redrawUpdates
-		editor.handleRedraw(updates)
+	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		for _, ws := range e.workspaces {
+			ws.updateSize()
+		}
 	})
 
-	signal.ConnectGuiSignal(func() {
-		updates := <-editor.guiUpdates
-		editor.handleRPCGui(updates)
-	})
-
-	editor.handleNotification()
-	// editor.finder.rePosition()
-	go func() {
-		err := neovim.Serve()
-		if err != nil {
-			fmt.Println(err)
-		}
-		editor.close <- true
-	}()
-
-	screen.updateSize()
-
-	apiInfo, err := editor.nvim.APIInfo()
-	if err != nil {
-		fmt.Println("nvim get API info error", err)
-		app.Quit()
-		return
-	}
-
-	editor.configure()
-	o := make(map[string]interface{})
-	o["rgb"] = true
-	o["ext_popupmenu"] = true
-	o["ext_tabline"] = editor.drawTabline
-	for _, item := range apiInfo {
-		i, ok := item.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		for k, v := range i {
-			if k != "ui_events" {
-				continue
-			}
-			events, ok := v.([]interface{})
-			if !ok {
-				continue
-			}
-			for _, event := range events {
-				function, ok := event.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				name, ok := function["name"]
-				if !ok {
-					continue
-				}
-				if name == "wildmenu_show" {
-					o["ext_wildmenu"] = true
-				} else if name == "cmdline_show" {
-					o["ext_cmdline"] = true
-				} else if name == "msg_chunk" {
-					o["ext_messages"] = true
-				}
-			}
-		}
-	}
-	err = editor.nvim.AttachUI(editor.cols, editor.rows, o)
-	if err != nil {
-		fmt.Println("nvim attach UI error", err)
-		app.Quit()
-		return
-	}
-	editor.nvim.Subscribe("Gui")
-	editor.nvim.Command("runtime plugin/nvim_gui_shim.vim")
-	editor.nvim.Command("runtime! ginit.vim")
-	editor.nvim.Command("let g:gonvim_running=1")
-	fuzzy.RegisterPlugin(editor.nvim)
-	tabline.subscribe()
-	statusline.subscribe()
-	loc.subscribe()
-	message.subscribe()
+	e.window.SetCentralWidget(widget)
 
 	go func() {
 		<-editor.close
-		app.Quit()
+		e.app.Quit()
 	}()
 
-	window.Show()
-	popup.widget.Hide()
-	palette.hide()
-	loc.widget.Hide()
-	signature.widget.Hide()
+	e.window.Show()
 	widgets.QApplication_Exec()
+}
+
+func (e *Editor) keyPress(event *gui.QKeyEvent) {
+	input := e.convertKey(event.Text(), event.Key(), event.Modifiers())
+	if input != "" {
+		e.workspaces["0"].nvim.Input(input)
+	}
+}
+
+func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier) string {
+	if mod&core.Qt__KeypadModifier > 0 {
+		switch core.Qt__Key(key) {
+		case core.Qt__Key_Home:
+			return fmt.Sprintf("<%sHome>", e.modPrefix(mod))
+		case core.Qt__Key_End:
+			return fmt.Sprintf("<%sEnd>", e.modPrefix(mod))
+		case core.Qt__Key_PageUp:
+			return fmt.Sprintf("<%sPageUp>", e.modPrefix(mod))
+		case core.Qt__Key_PageDown:
+			return fmt.Sprintf("<%sPageDown>", e.modPrefix(mod))
+		case core.Qt__Key_Plus:
+			return fmt.Sprintf("<%sPlus>", e.modPrefix(mod))
+		case core.Qt__Key_Minus:
+			return fmt.Sprintf("<%sMinus>", e.modPrefix(mod))
+		case core.Qt__Key_multiply:
+			return fmt.Sprintf("<%sMultiply>", e.modPrefix(mod))
+		case core.Qt__Key_division:
+			return fmt.Sprintf("<%sDivide>", e.modPrefix(mod))
+		case core.Qt__Key_Enter:
+			return fmt.Sprintf("<%sEnter>", e.modPrefix(mod))
+		case core.Qt__Key_Period:
+			return fmt.Sprintf("<%sPoint>", e.modPrefix(mod))
+		case core.Qt__Key_0:
+			return fmt.Sprintf("<%s0>", e.modPrefix(mod))
+		case core.Qt__Key_1:
+			return fmt.Sprintf("<%s1>", e.modPrefix(mod))
+		case core.Qt__Key_2:
+			return fmt.Sprintf("<%s2>", e.modPrefix(mod))
+		case core.Qt__Key_3:
+			return fmt.Sprintf("<%s3>", e.modPrefix(mod))
+		case core.Qt__Key_4:
+			return fmt.Sprintf("<%s4>", e.modPrefix(mod))
+		case core.Qt__Key_5:
+			return fmt.Sprintf("<%s5>", e.modPrefix(mod))
+		case core.Qt__Key_6:
+			return fmt.Sprintf("<%s6>", e.modPrefix(mod))
+		case core.Qt__Key_7:
+			return fmt.Sprintf("<%s7>", e.modPrefix(mod))
+		case core.Qt__Key_8:
+			return fmt.Sprintf("<%s8>", e.modPrefix(mod))
+		case core.Qt__Key_9:
+			return fmt.Sprintf("<%s9>", e.modPrefix(mod))
+		}
+	}
+
+	if text == "<" {
+		return "<lt>"
+	}
+
+	specialKey, ok := e.specialKeys[core.Qt__Key(key)]
+	if ok {
+		return fmt.Sprintf("<%s%s>", e.modPrefix(mod), specialKey)
+	}
+
+	if text == "\\" {
+		return fmt.Sprintf("<%s%s>", e.modPrefix(mod), "Bslash")
+	}
+
+	c := ""
+	if mod&e.controlModifier > 0 || mod&e.cmdModifier > 0 {
+		if int(e.keyControl) == key || int(e.keyCmd) == key || int(e.keyAlt) == key || int(e.keyShift) == key {
+			return ""
+		}
+		c = string(key)
+		if !(mod&e.shiftModifier > 0) {
+			c = strings.ToLower(c)
+		}
+	} else {
+		c = text
+	}
+
+	if c == "" {
+		return ""
+	}
+
+	char := core.NewQChar10(c)
+	if char.Unicode() < 0x100 && !char.IsNumber() && char.IsPrint() {
+		mod &= ^e.shiftModifier
+	}
+
+	prefix := e.modPrefix(mod)
+	if prefix != "" {
+		return fmt.Sprintf("<%s%s>", prefix, c)
+	}
+
+	return c
+}
+
+func (e *Editor) modPrefix(mod core.Qt__KeyboardModifier) string {
+	prefix := ""
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		if mod&e.cmdModifier > 0 {
+			prefix += "D-"
+		}
+	}
+
+	if mod&e.controlModifier > 0 {
+		prefix += "C-"
+	}
+
+	if mod&e.shiftModifier > 0 {
+		prefix += "S-"
+	}
+
+	if mod&e.altModifier > 0 {
+		prefix += "A-"
+	}
+
+	return prefix
+}
+
+func (e *Editor) initSpecialKeys() {
+	e.specialKeys = map[core.Qt__Key]string{}
+	e.specialKeys[core.Qt__Key_Up] = "Up"
+	e.specialKeys[core.Qt__Key_Down] = "Down"
+	e.specialKeys[core.Qt__Key_Left] = "Left"
+	e.specialKeys[core.Qt__Key_Right] = "Right"
+
+	e.specialKeys[core.Qt__Key_F1] = "F1"
+	e.specialKeys[core.Qt__Key_F2] = "F2"
+	e.specialKeys[core.Qt__Key_F3] = "F3"
+	e.specialKeys[core.Qt__Key_F4] = "F4"
+	e.specialKeys[core.Qt__Key_F5] = "F5"
+	e.specialKeys[core.Qt__Key_F6] = "F6"
+	e.specialKeys[core.Qt__Key_F7] = "F7"
+	e.specialKeys[core.Qt__Key_F8] = "F8"
+	e.specialKeys[core.Qt__Key_F9] = "F9"
+	e.specialKeys[core.Qt__Key_F10] = "F10"
+	e.specialKeys[core.Qt__Key_F11] = "F11"
+	e.specialKeys[core.Qt__Key_F12] = "F12"
+	e.specialKeys[core.Qt__Key_F13] = "F13"
+	e.specialKeys[core.Qt__Key_F14] = "F14"
+	e.specialKeys[core.Qt__Key_F15] = "F15"
+	e.specialKeys[core.Qt__Key_F16] = "F16"
+	e.specialKeys[core.Qt__Key_F17] = "F17"
+	e.specialKeys[core.Qt__Key_F18] = "F18"
+	e.specialKeys[core.Qt__Key_F19] = "F19"
+	e.specialKeys[core.Qt__Key_F20] = "F20"
+	e.specialKeys[core.Qt__Key_F21] = "F21"
+	e.specialKeys[core.Qt__Key_F22] = "F22"
+	e.specialKeys[core.Qt__Key_F23] = "F23"
+	e.specialKeys[core.Qt__Key_F24] = "F24"
+	e.specialKeys[core.Qt__Key_Backspace] = "BS"
+	e.specialKeys[core.Qt__Key_Delete] = "Del"
+	e.specialKeys[core.Qt__Key_Insert] = "Insert"
+	e.specialKeys[core.Qt__Key_Home] = "Home"
+	e.specialKeys[core.Qt__Key_End] = "End"
+	e.specialKeys[core.Qt__Key_PageUp] = "PageUp"
+	e.specialKeys[core.Qt__Key_PageDown] = "PageDown"
+
+	e.specialKeys[core.Qt__Key_Return] = "Enter"
+	e.specialKeys[core.Qt__Key_Enter] = "Enter"
+	e.specialKeys[core.Qt__Key_Tab] = "Tab"
+	e.specialKeys[core.Qt__Key_Backtab] = "Tab"
+	e.specialKeys[core.Qt__Key_Escape] = "Esc"
+
+	e.specialKeys[core.Qt__Key_Backslash] = "Bslash"
+	e.specialKeys[core.Qt__Key_Space] = "Space"
+
+	goos := runtime.GOOS
+	e.shiftModifier = core.Qt__ShiftModifier
+	e.altModifier = core.Qt__AltModifier
+	e.keyAlt = core.Qt__Key_Alt
+	e.keyShift = core.Qt__Key_Shift
+	if goos == "darwin" {
+		e.controlModifier = core.Qt__MetaModifier
+		e.cmdModifier = core.Qt__ControlModifier
+		e.metaModifier = core.Qt__AltModifier
+		e.keyControl = core.Qt__Key_Meta
+		e.keyCmd = core.Qt__Key_Control
+	} else {
+		e.controlModifier = core.Qt__ControlModifier
+		e.metaModifier = core.Qt__MetaModifier
+		e.keyControl = core.Qt__Key_Control
+		if goos == "linux" {
+			e.cmdModifier = core.Qt__MetaModifier
+			e.keyCmd = core.Qt__Key_Meta
+		}
+	}
 }

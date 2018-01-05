@@ -1,15 +1,5 @@
 package editor
 
-func isNormalWidth(char string) bool {
-	if len(char) == 0 {
-		return true
-	}
-	if char[0] <= 127 {
-		return true
-	}
-	return editor.font.fontMetrics.Width(char) == editor.font.truewidth
-}
-
 func reflectToInt(iface interface{}) int {
 	o, ok := iface.(int64)
 	if ok {
