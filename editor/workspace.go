@@ -16,6 +16,7 @@ import (
 
 type workspaceSignal struct {
 	core.QObject
+	_ func() `signal:"stopSignal"`
 	_ func() `signal:"redrawSignal"`
 	_ func() `signal:"guiSignal"`
 	_ func() `signal:"statuslineSignal"`
@@ -44,6 +45,7 @@ type Workspace struct {
 	svgsOnce   sync.Once
 	width      int
 	height     int
+	hidden     bool
 
 	nvim       *nvim.Nvim
 	rows       int
@@ -129,7 +131,26 @@ func newWorkspace() (*Workspace, error) {
 	w.loc.widget.Hide()
 	w.signature.widget.Hide()
 
+	w.widget.SetParent(editor.wsWidget)
+	w.widget.Move2(0, 0)
+
 	return w, nil
+}
+
+func (w *Workspace) hide() {
+	if w.hidden {
+		return
+	}
+	w.hidden = true
+	w.widget.Hide()
+}
+
+func (w *Workspace) show() {
+	if !w.hidden {
+		return
+	}
+	w.hidden = false
+	w.widget.Show()
 }
 
 func (w *Workspace) startNvim() error {
@@ -160,6 +181,27 @@ func (w *Workspace) startNvim() error {
 		updates := <-w.guiUpdates
 		w.handleRPCGui(updates)
 	})
+	w.signal.ConnectStopSignal(func() {
+		workspaces := []*Workspace{}
+		index := 0
+		for i, ws := range editor.workspaces {
+			if ws != w {
+				workspaces = append(workspaces, ws)
+			} else {
+				index = i
+			}
+		}
+		if index == 0 {
+			editor.app.Quit()
+			return
+		}
+		editor.workspaces = workspaces
+		w.hide()
+		if editor.active == index {
+			editor.active--
+			editor.workspaceUpdate()
+		}
+	})
 	go func() {
 		err := w.nvim.Serve()
 		if err != nil {
@@ -168,6 +210,7 @@ func (w *Workspace) startNvim() error {
 		w.stopOnce.Do(func() {
 			close(w.stop)
 		})
+		w.signal.StopSignal()
 	}()
 
 	w.updateSize()
@@ -289,8 +332,13 @@ func (w *Workspace) updateSize() {
 		w.width = width
 		w.height = height
 		w.widget.Resize2(width, height)
-		w.widget.Hide()
-		w.widget.Show()
+		if !w.hidden {
+			w.hide()
+			w.show()
+		} else {
+			w.show()
+			w.hide()
+		}
 	}
 
 	height = height - w.statusline.widget.Height()
@@ -443,6 +491,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.signature.pos(updates[1:])
 	case "signature_hide":
 		w.signature.hide()
+	case "gonvim_workspace_new":
+		editor.workspaceNew()
+	case "gonvim_workspace_next":
+		editor.workspaceNext()
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}

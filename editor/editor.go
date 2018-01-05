@@ -30,7 +30,8 @@ type Char struct {
 // Editor is the editor
 type Editor struct {
 	app              *widgets.QApplication
-	workspaces       map[string]*Workspace
+	workspaces       []*Workspace
+	active           int
 	nvim             *nvim.Nvim
 	window           *widgets.QMainWindow
 	wsWidget         *widgets.QWidget
@@ -115,14 +116,13 @@ func InitEditor() {
 	layout.SetSpacing(0)
 
 	ws, err := newWorkspace()
-	if err == nil {
-		ws.widget.SetParent(e.wsWidget)
-		ws.widget.Move2(0, 0)
-		ws.widget.Hide()
-		ws.widget.Show()
-		e.workspaces = map[string]*Workspace{}
-		e.workspaces["0"] = ws
+	if err != nil {
+		return
 	}
+
+	e.workspaces = []*Workspace{}
+	e.workspaces = append(e.workspaces, ws)
+	e.active = 0
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
@@ -141,10 +141,41 @@ func InitEditor() {
 	widgets.QApplication_Exec()
 }
 
+func (e *Editor) workspaceNew() {
+	ws, err := newWorkspace()
+	if err != nil {
+		return
+	}
+	e.active++
+	e.workspaces = append(e.workspaces, nil)
+	copy(e.workspaces[e.active+1:], e.workspaces[e.active:])
+	e.workspaces[e.active] = ws
+	e.workspaceUpdate()
+}
+
+func (e *Editor) workspaceNext() {
+	e.active++
+	if e.active >= len(e.workspaces) {
+		e.active = 0
+	}
+	e.workspaceUpdate()
+}
+
+func (e *Editor) workspaceUpdate() {
+	for i, ws := range e.workspaces {
+		if i == e.active {
+			ws.hide()
+			ws.show()
+		} else {
+			ws.hide()
+		}
+	}
+}
+
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event.Text(), event.Key(), event.Modifiers())
 	if input != "" {
-		e.workspaces["0"].nvim.Input(input)
+		e.workspaces[e.active].nvim.Input(input)
 	}
 }
 
