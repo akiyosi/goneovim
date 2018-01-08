@@ -2,10 +2,14 @@ package editor
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -29,23 +33,23 @@ type Char struct {
 
 // Editor is the editor
 type Editor struct {
-	app              *widgets.QApplication
-	workspaces       []*Workspace
-	active           int
-	nvim             *nvim.Nvim
-	window           *widgets.QMainWindow
-	wsWidget         *widgets.QWidget
-	close            chan bool
+	app        *widgets.QApplication
+	workspaces []*Workspace
+	active     int
+	nvim       *nvim.Nvim
+	window     *widgets.QMainWindow
+	wsWidget   *widgets.QWidget
+	wsSide     *WorkspaceSide
+
 	statuslineHeight int
 	width            int
 	height           int
 	tablineHeight    int
 	selectedBg       *RGBA
 	matchFg          *RGBA
-	resizeMutex      sync.Mutex
-	signal           *editorSignal
-	redrawUpdates    chan [][]interface{}
-	guiUpdates       chan []interface{}
+
+	stop     chan struct{}
+	stopOnce sync.Once
 
 	specialKeys     map[core.Qt__Key]string
 	controlModifier core.Qt__KeyboardModifier
@@ -86,9 +90,13 @@ func InitEditor() {
 	editor = &Editor{
 		selectedBg: newRGBA(81, 154, 186, 0.5),
 		matchFg:    newRGBA(81, 154, 186, 1),
+		stop:       make(chan struct{}),
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
+	e.app.ConnectAboutToQuit(func() {
+		editor.cleanup()
+	})
 	e.width = 800
 	e.height = 600
 
@@ -106,11 +114,13 @@ func InitEditor() {
 	// e.window.ConnectInputMethodQuery(screen.InputMethodQuery)
 	e.window.SetAcceptDrops(true)
 
-	layout := widgets.NewQVBoxLayout()
+	layout := widgets.NewQHBoxLayout()
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
 	e.wsWidget = widgets.NewQWidget(nil, 0)
+	e.wsSide = newWorkspaceSide()
+	layout.AddWidget(e.wsSide.widget, 0, 0)
 	layout.AddWidget(e.wsWidget, 1, 0)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
@@ -123,6 +133,7 @@ func InitEditor() {
 	e.workspaces = []*Workspace{}
 	e.workspaces = append(e.workspaces, ws)
 	e.active = 0
+	ws.initCwd()
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
@@ -133,7 +144,7 @@ func InitEditor() {
 	e.window.SetCentralWidget(widget)
 
 	go func() {
-		<-editor.close
+		<-editor.stop
 		e.app.Quit()
 	}()
 
@@ -150,6 +161,16 @@ func (e *Editor) workspaceNew() {
 	e.workspaces = append(e.workspaces, nil)
 	copy(e.workspaces[e.active+1:], e.workspaces[e.active:])
 	e.workspaces[e.active] = ws
+	ws.initCwd()
+	e.workspaceUpdate()
+}
+
+func (e *Editor) workspaceSwitch(index int) {
+	index--
+	if index < 0 || index >= len(e.workspaces) {
+		return
+	}
+	e.active = index
 	e.workspaceUpdate()
 }
 
@@ -169,6 +190,21 @@ func (e *Editor) workspaceUpdate() {
 		} else {
 			ws.hide()
 		}
+	}
+
+	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
+		if i == e.active {
+			e.wsSide.items[i].setActive()
+		} else {
+			e.wsSide.items[i].setInactive()
+		}
+		e.wsSide.items[i].show()
+	}
+	for i := len(e.workspaces); i < len(e.wsSide.items); i++ {
+		e.wsSide.items[i].hide()
+	}
+	if len(e.workspaces) == 1 {
+		e.wsSide.items[0].hide()
 	}
 }
 
@@ -358,5 +394,27 @@ func (e *Editor) initSpecialKeys() {
 			e.cmdModifier = core.Qt__MetaModifier
 			e.keyCmd = core.Qt__Key_Meta
 		}
+	}
+}
+
+func (e *Editor) close() {
+	e.stopOnce.Do(func() {
+		close(e.stop)
+	})
+}
+
+func (e *Editor) cleanup() {
+	home, err := homedir.Dir()
+	if err != nil {
+		return
+	}
+	sessions := filepath.Join(home, ".gonvim", "sessions")
+	os.RemoveAll(sessions)
+	os.MkdirAll(sessions, 0755)
+	for i, ws := range e.workspaces {
+		sessionPath := filepath.Join(sessions, strconv.Itoa(i)+".vim")
+		fmt.Println(sessionPath)
+		fmt.Println(ws.nvim.Command("mksession " + sessionPath))
+		fmt.Println("mksession finished")
 	}
 }

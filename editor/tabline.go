@@ -47,6 +47,78 @@ func (t *Tabline) subscribe() {
 	}
 }
 
+func newHFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {
+	layout := widgets.NewQLayout2()
+	items := []*widgets.QLayoutItem{}
+	rect := core.NewQRect()
+	layout.ConnectSizeHint(func() *core.QSize {
+		size := core.NewQSize()
+		for _, item := range items {
+			size = size.ExpandedTo(item.MinimumSize())
+		}
+		return size
+	})
+	if width > 0 {
+		layout.ConnectMinimumSize(func() *core.QSize {
+			size := core.NewQSize()
+			for _, item := range items {
+				size = size.ExpandedTo(item.MinimumSize())
+			}
+			if size.Width() > width {
+				size.SetWidth(width)
+			}
+			// size.SetWidth(0)
+			return size
+		})
+		layout.ConnectMaximumSize(func() *core.QSize {
+			size := core.NewQSize()
+			for _, item := range items {
+				size = size.ExpandedTo(item.MinimumSize())
+			}
+			// size.SetWidth(width)
+			return size
+		})
+	}
+	layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
+		items = append(items, item)
+	})
+	layout.ConnectSetGeometry(func(r *core.QRect) {
+		sizes := [][]int{}
+		maxWidth := 0
+		for _, item := range items {
+			sizeHint := item.SizeHint()
+			width := sizeHint.Width()
+			height := sizeHint.Height()
+			size := []int{width, height}
+			sizes = append(sizes, size)
+			if width > maxWidth {
+				maxWidth = width
+			}
+		}
+		y := 0
+		for i, item := range items {
+			size := sizes[i]
+			height := size[1]
+			rect.SetRect(0, y, maxWidth, height)
+			item.SetGeometry(rect)
+			y += height
+		}
+	})
+	layout.ConnectItemAt(func(index int) *widgets.QLayoutItem {
+		if index < len(items) {
+			return items[index]
+		}
+		return nil
+	})
+	layout.ConnectTakeAt(func(index int) *widgets.QLayoutItem {
+		if index < len(items) {
+			return items[index]
+		}
+		return nil
+	})
+	return layout
+}
+
 func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {
 	layout := widgets.NewQLayout2()
 	items := []*widgets.QLayoutItem{}

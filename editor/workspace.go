@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -55,6 +56,7 @@ type Workspace struct {
 	background *RGBA
 	special    *RGBA
 	mode       string
+	cwd        string
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -191,14 +193,16 @@ func (w *Workspace) startNvim() error {
 				index = i
 			}
 		}
-		if index == 0 {
-			editor.app.Quit()
+		if len(workspaces) == 0 {
+			editor.close()
 			return
 		}
 		editor.workspaces = workspaces
 		w.hide()
 		if editor.active == index {
-			editor.active--
+			if index > 0 {
+				editor.active--
+			}
 			editor.workspaceUpdate()
 		}
 	})
@@ -265,6 +269,7 @@ func (w *Workspace) attachUI() error {
 	w.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	w.nvim.Command("runtime! ginit.vim")
 	w.nvim.Command("let g:gonvim_running=1")
+	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())`)
 	fuzzy.RegisterPlugin(w.nvim)
 	w.tabline.subscribe()
 	w.statusline.subscribe()
@@ -276,6 +281,29 @@ func (w *Workspace) attachUI() error {
 	}
 	w.uiAttached = true
 	return nil
+}
+
+func (w *Workspace) initCwd() {
+	cwd := ""
+	w.nvim.Eval("getcwd()", &cwd)
+	w.setCwd(cwd)
+}
+
+func (w *Workspace) setCwd(cwd string) {
+	if cwd == w.cwd {
+		return
+	}
+	w.cwd = cwd
+	base := filepath.Base(cwd)
+	for i, ws := range editor.workspaces {
+		if i >= len(editor.wsSide.items) {
+			return
+		}
+		if ws == w {
+			editor.wsSide.items[i].label.SetText(base)
+			return
+		}
+	}
 }
 
 func (w *Workspace) attachUIOption() map[string]interface{} {
@@ -495,6 +523,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.workspaceNew()
 	case "gonvim_workspace_next":
 		editor.workspaceNext()
+	case "gonvim_workspace_switch":
+		editor.workspaceSwitch(reflectToInt(updates[1]))
+	case "gonvim_workspace_cwd":
+		w.setCwd(updates[1].(string))
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}
@@ -542,4 +574,97 @@ func (w *Workspace) guiLinespace(args ...interface{}) {
 	}
 	w.font.changeLineSpace(lineSpace)
 	w.updateSize()
+}
+
+func (w *Workspace) getInfo() {
+}
+
+// WorkspaceSide is
+type WorkspaceSide struct {
+	widget *widgets.QWidget
+	items  []*WorkspaceSideItem
+}
+
+// WorkspaceSideItem is
+type WorkspaceSideItem struct {
+	hidden bool
+	active bool
+	side   *WorkspaceSide
+	label  *widgets.QLabel
+}
+
+func newWorkspaceSide() *WorkspaceSide {
+	layout := newHFlowLayout(0, 0, 0, 0, 20)
+	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(0)
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetContentsMargins(0, 0, 0, 0)
+	widget.SetLayout(layout)
+	widget.SetStyleSheet(`
+	QWidget {
+		color: rgba(147, 161, 161, 1);
+		border-right: 1px solid rgba(0, 0, 0, 1);
+	}
+	.QWidget {
+		background-color: rgba(24, 29, 34, 1);
+	}
+	`)
+
+	side := &WorkspaceSide{
+		widget: widget,
+	}
+
+	items := []*WorkspaceSideItem{}
+	for i := 0; i < 20; i++ {
+		label := widgets.NewQLabel(nil, 0)
+		label.SetContentsMargins(15, 10, 15, 10)
+		item := &WorkspaceSideItem{
+			side:  side,
+			label: label,
+		}
+		layout.AddWidget(label)
+		items = append(items, item)
+		item.hide()
+	}
+	side.items = items
+	return side
+}
+
+func (i *WorkspaceSideItem) setActive() {
+	if i.active {
+		return
+	}
+	i.active = true
+	i.label.SetStyleSheet(`
+	border-left: 3px solid rgba(81, 154, 186, 1);
+	background-color: rgba(0, 0, 0, 1);
+	color: rgba(212, 215, 214, 1);
+	`)
+}
+
+func (i *WorkspaceSideItem) setInactive() {
+	if !i.active {
+		return
+	}
+	i.active = false
+	i.label.SetStyleSheet(`
+	background-color: rgba(24, 29, 34, 1);
+	color: rgba(147, 161, 161, 1);
+	`)
+}
+
+func (i *WorkspaceSideItem) show() {
+	if !i.hidden {
+		return
+	}
+	i.hidden = false
+	i.label.Show()
+}
+
+func (i *WorkspaceSideItem) hide() {
+	if i.hidden {
+		return
+	}
+	i.hidden = true
+	i.label.Hide()
 }
