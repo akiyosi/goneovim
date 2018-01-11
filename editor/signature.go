@@ -9,6 +9,7 @@ import (
 
 // Signature is
 type Signature struct {
+	ws            *Workspace
 	cusor         []int
 	comma         int
 	formattedText string
@@ -99,15 +100,15 @@ func (s *Signature) update() {
 
 func (s *Signature) move() {
 	text := s.text
-	row := editor.screen.cursor[0] + s.cusor[0]
-	col := editor.screen.cursor[1] + s.cusor[1]
+	row := s.ws.screen.cursor[0] + s.cusor[0]
+	col := s.ws.screen.cursor[1] + s.cusor[1]
 	i := strings.Index(text, "(")
-	x := float64(col) * editor.font.truewidth
+	x := float64(col) * s.ws.font.truewidth
 	if i > -1 {
-		x -= editor.font.defaultFontMetrics.Width(string(text[:i]))
+		x -= s.ws.font.defaultFontMetrics.Width(string(text[:i]))
 	}
 	s.x = int(x)
-	s.y = row*editor.font.lineHeight - s.height
+	s.y = row*s.ws.font.lineHeight - s.height
 	s.widget.Move2(s.x, s.y)
 }
 

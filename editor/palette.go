@@ -12,6 +12,7 @@ import (
 
 // Palette is the popup for fuzzy finder, cmdline etc
 type Palette struct {
+	ws               *Workspace
 	hidden           bool
 	widget           *widgets.QWidget
 	patternText      string
@@ -36,6 +37,7 @@ type Palette struct {
 
 // PaletteResultItem is the result item
 type PaletteResultItem struct {
+	p          *Palette
 	hidden     bool
 	icon       *svg.QSvgWidget
 	iconType   string
@@ -114,6 +116,19 @@ func initPalette() *Palette {
 	mainLayout.AddWidget(patternWidget, 0, 0)
 	mainLayout.AddWidget(resultMainWidget, 0, 0)
 
+	palette := &Palette{
+		width:            width,
+		widget:           widget,
+		resultWidget:     resultWidget,
+		resultMainWidget: resultMainWidget,
+		pattern:          pattern,
+		patternPadding:   padding,
+		patternWidget:    patternWidget,
+		scrollCol:        scrollCol,
+		scrollBar:        scrollBar,
+		cursor:           cursor,
+	}
+
 	resultItems := []*PaletteResultItem{}
 	max := 30
 	for i := 0; i < max; i++ {
@@ -135,36 +150,27 @@ func initPalette() *Palette {
 		itemLayout.AddWidget(icon)
 		itemLayout.AddWidget(base)
 		resultItem := &PaletteResultItem{
+			p:      palette,
 			widget: itemWidget,
 			icon:   icon,
 			base:   base,
 		}
 		resultItems = append(resultItems, resultItem)
 	}
-	palette := &Palette{
-		width:            width,
-		widget:           widget,
-		resultItems:      resultItems,
-		resultWidget:     resultWidget,
-		resultMainWidget: resultMainWidget,
-		max:              max,
-		pattern:          pattern,
-		patternPadding:   padding,
-		patternWidget:    patternWidget,
-		scrollCol:        scrollCol,
-		scrollBar:        scrollBar,
-		cursor:           cursor,
-	}
+	palette.max = max
+	palette.resultItems = resultItems
 	return palette
 }
 
 func (p *Palette) resize() {
-	x := (editor.screen.width - p.width) / 2
+	x := (p.ws.screen.width - p.width) / 2
 	p.widget.Move2(x, 0)
 	itemHeight := p.resultItems[0].widget.SizeHint().Height()
 	p.itemHeight = itemHeight
-	p.showTotal = int(float64(editor.screen.height)/float64(itemHeight)*0.5) - 1
-	fuzzy.UpdateMax(editor.nvim, p.showTotal)
+	p.showTotal = int(float64(p.ws.screen.height)/float64(itemHeight)*0.5) - 1
+	if p.ws.uiAttached {
+		fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
+	}
 
 	for i := p.showTotal; i < len(p.resultItems); i++ {
 		p.resultItems[i].hide()
@@ -193,7 +199,7 @@ func (p *Palette) setPattern(text string) {
 }
 
 func (p *Palette) cursorMove(x int) {
-	p.cursorX = int(editor.font.defaultFontMetrics.Width(string(p.patternText[:x])))
+	p.cursorX = int(p.ws.font.defaultFontMetrics.Width(string(p.patternText[:x])))
 	p.cursor.Move2(p.cursorX+p.patternPadding, p.patternPadding)
 }
 
@@ -271,7 +277,7 @@ func (f *PaletteResultItem) setItem(text string, itemType string, match []int) {
 }
 
 func (f *PaletteResultItem) updateIcon() {
-	svgContent := getSvg(f.iconType, nil)
+	svgContent := f.p.ws.getSvg(f.iconType, nil)
 	f.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 

@@ -9,6 +9,7 @@ import (
 
 // Locpopup is the location popup
 type Locpopup struct {
+	ws           *Workspace
 	mutex        sync.Mutex
 	widget       *widgets.QWidget
 	typeLabel    *widgets.QLabel
@@ -46,17 +47,17 @@ func initLocpopup() *Locpopup {
 }
 
 func (l *Locpopup) subscribe() {
-	if !editor.drawLint {
+	if !l.ws.drawLint {
 		return
 	}
-	editor.signal.ConnectLocpopupSignal(func() {
+	l.ws.signal.ConnectLocpopupSignal(func() {
 		l.updateLocpopup()
 	})
-	editor.nvim.RegisterHandler("LocPopup", func(args ...interface{}) {
+	l.ws.nvim.RegisterHandler("LocPopup", func(args ...interface{}) {
 		l.handle(args)
 	})
-	editor.nvim.Subscribe("LocPopup")
-	editor.nvim.Command(`autocmd CursorMoved,CursorHold,InsertEnter,InsertLeave * call rpcnotify(0, "LocPopup", "update")`)
+	l.ws.nvim.Subscribe("LocPopup")
+	l.ws.nvim.Command(`autocmd CursorMoved,CursorHold,InsertEnter,InsertLeave * call rpcnotify(0, "LocPopup", "update")`)
 }
 
 func (l *Locpopup) updateLocpopup() {
@@ -96,16 +97,16 @@ func (l *Locpopup) update(args []interface{}) {
 	defer func() {
 		if !shown {
 			l.shown = false
-			editor.signal.LocpopupSignal()
+			l.ws.signal.LocpopupSignal()
 		}
 		l.mutex.Unlock()
 	}()
-	buf, err := editor.nvim.CurrentBuffer()
+	buf, err := l.ws.nvim.CurrentBuffer()
 	if err != nil {
 		return
 	}
 	buftype := new(string)
-	err = editor.nvim.BufferOption(buf, "buftype", buftype)
+	err = l.ws.nvim.BufferOption(buf, "buftype", buftype)
 	if err != nil {
 		return
 	}
@@ -114,7 +115,7 @@ func (l *Locpopup) update(args []interface{}) {
 	}
 
 	mode := new(string)
-	err = editor.nvim.Call("mode", mode, "")
+	err = l.ws.nvim.Call("mode", mode, "")
 	if err != nil {
 		return
 	}
@@ -122,16 +123,16 @@ func (l *Locpopup) update(args []interface{}) {
 		return
 	}
 
-	curWin, err := editor.nvim.CurrentWindow()
+	curWin, err := l.ws.nvim.CurrentWindow()
 	if err != nil {
 		return
 	}
-	pos, err := editor.nvim.WindowCursor(curWin)
+	pos, err := l.ws.nvim.WindowCursor(curWin)
 	if err != nil {
 		return
 	}
 	result := new([]map[string]interface{})
-	err = editor.nvim.Call("getloclist", result, "winnr(\"$\")")
+	err = l.ws.nvim.Call("getloclist", result, "winnr(\"$\")")
 	if err != nil {
 		return
 	}
@@ -156,7 +157,7 @@ func (l *Locpopup) update(args []interface{}) {
 			warnings++
 		}
 	}
-	editor.statusline.lint.redraw(errors, warnings)
+	l.ws.statusline.lint.redraw(errors, warnings)
 	if len(locs) == 0 {
 		return
 	}
@@ -177,7 +178,7 @@ func (l *Locpopup) update(args []interface{}) {
 		l.typeText = locType
 		l.contentText = text
 		l.shown = shown
-		editor.signal.LocpopupSignal()
+		l.ws.signal.LocpopupSignal()
 	}
 }
 

@@ -15,6 +15,7 @@ type CmdContent struct {
 
 // Cmdline is the cmdline
 type Cmdline struct {
+	ws            *Workspace
 	pos           int
 	content       *CmdContent
 	preContent    *CmdContent
@@ -64,7 +65,7 @@ func (c *Cmdline) show(args []interface{}) {
 	c.content.indent = indent
 	c.content.prompt = prompt
 	text := c.getText("")
-	palette := editor.palette
+	palette := c.ws.palette
 	palette.setPattern(text)
 	c.cursorMove()
 	if !c.wildmenuShown {
@@ -76,7 +77,7 @@ func (c *Cmdline) show(args []interface{}) {
 
 func (c *Cmdline) showAddition() {
 	lines := append(c.getPromptLines(), c.getFunctionLines()...)
-	palette := editor.palette
+	palette := c.ws.palette
 	for i, resultItem := range palette.resultItems {
 		if i >= len(lines) || i >= palette.showTotal {
 			resultItem.hide()
@@ -117,11 +118,11 @@ func (c *Cmdline) getFunctionLines() []string {
 }
 
 func (c *Cmdline) cursorMove() {
-	editor.palette.cursorMove(c.pos + len(c.content.firstc) + c.content.indent)
+	c.ws.palette.cursorMove(c.pos + len(c.content.firstc) + c.content.indent)
 }
 
 func (c *Cmdline) hide(args []interface{}) {
-	palette := editor.palette
+	palette := c.ws.palette
 	palette.hide()
 	if c.inFunction {
 		c.function = append(c.function, c.content)
@@ -155,7 +156,7 @@ func (c *Cmdline) putChar(args []interface{}) {
 	// level := reflectToInt(args[2])
 	// fmt.Println("putChar", ch, shift, level)
 	text := c.getText(ch)
-	palette := editor.palette
+	palette := c.ws.palette
 	palette.setPattern(text)
 }
 
@@ -163,7 +164,7 @@ func (c *Cmdline) wildmenuShow(args []interface{}) {
 	c.wildmenuShown = true
 	args = args[0].([]interface{})
 	c.rawItems = args[0].([]interface{})
-	palette := editor.palette
+	palette := c.ws.palette
 	c.top = 0
 	for i := 0; i < palette.showTotal; i++ {
 		resultItem := palette.resultItems[i]
@@ -195,7 +196,7 @@ func (c *Cmdline) wildmenuShow(args []interface{}) {
 func (c *Cmdline) wildmenuSelect(args []interface{}) {
 	selected := reflectToInt(args[0].([]interface{})[0])
 	// fmt.Println("selected is", selected)
-	showTotal := editor.palette.showTotal
+	showTotal := c.ws.palette.showTotal
 	if selected == -1 && c.top > 0 {
 		c.wildmenuScroll(-c.top)
 	}
@@ -205,7 +206,7 @@ func (c *Cmdline) wildmenuSelect(args []interface{}) {
 	if selected >= 0 && selected-c.top < 0 {
 		c.wildmenuScroll(-1)
 	}
-	palette := editor.palette
+	palette := c.ws.palette
 	for i := 0; i < palette.showTotal; i++ {
 		item := palette.resultItems[i]
 		item.setSelected(selected == i+c.top)
@@ -214,7 +215,7 @@ func (c *Cmdline) wildmenuSelect(args []interface{}) {
 
 func (c *Cmdline) wildmenuScroll(n int) {
 	c.top += n
-	palette := editor.palette
+	palette := c.ws.palette
 	for i := 0; i < palette.showTotal; i++ {
 		resultItem := palette.resultItems[i]
 		if i >= len(c.rawItems) {

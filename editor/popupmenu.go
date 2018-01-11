@@ -9,6 +9,7 @@ import (
 
 // PopupMenu is the popupmenu
 type PopupMenu struct {
+	ws              *Workspace
 	widget          *widgets.QWidget
 	layout          *widgets.QGridLayout
 	items           []*PopupItem
@@ -113,8 +114,8 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.top = 0
 
 	popupItems := p.items
-	itemHeight := editor.font.height + 20
-	heightLeft := editor.screen.height - (row+1)*editor.font.lineHeight
+	itemHeight := p.ws.font.height + 20
+	heightLeft := p.ws.screen.height - (row+1)*p.ws.font.lineHeight
 	total := heightLeft / itemHeight
 	if total < p.total {
 		p.showTotal = total
@@ -145,8 +146,8 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	}
 
 	p.widget.Move2(
-		int(float64(col)*editor.font.truewidth)-popupItems[0].kindLable.Width()-8,
-		(row+1)*editor.font.lineHeight,
+		int(float64(col)*p.ws.font.truewidth)-popupItems[0].kindLable.Width()-8,
+		(row+1)*p.ws.font.lineHeight,
 	)
 	p.show()
 }

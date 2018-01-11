@@ -12,6 +12,7 @@ import (
 
 // Tabline of the editor
 type Tabline struct {
+	ws            *Workspace
 	widget        *widgets.QWidget
 	layout        *widgets.QLayout
 	CurrentID     int
@@ -19,10 +20,12 @@ type Tabline struct {
 	marginDefault int
 	marginTop     int
 	marginBottom  int
+	height        int
 }
 
 // Tab in the tabline
 type Tab struct {
+	t         *Tabline
 	widget    *widgets.QWidget
 	layout    *widgets.QHBoxLayout
 	ID        int
@@ -38,11 +41,83 @@ type Tab struct {
 	hidden    bool
 }
 
-func (s *Tabline) subscribe() {
-	if !editor.drawTabline {
-		s.widget.Hide()
+func (t *Tabline) subscribe() {
+	if !t.ws.drawTabline {
+		t.widget.Hide()
 		return
 	}
+}
+
+func newHFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {
+	layout := widgets.NewQLayout2()
+	items := []*widgets.QLayoutItem{}
+	rect := core.NewQRect()
+	layout.ConnectSizeHint(func() *core.QSize {
+		size := core.NewQSize()
+		for _, item := range items {
+			size = size.ExpandedTo(item.MinimumSize())
+		}
+		return size
+	})
+	if width > 0 {
+		layout.ConnectMinimumSize(func() *core.QSize {
+			size := core.NewQSize()
+			for _, item := range items {
+				size = size.ExpandedTo(item.MinimumSize())
+			}
+			if size.Width() > width {
+				size.SetWidth(width)
+			}
+			// size.SetWidth(0)
+			return size
+		})
+		layout.ConnectMaximumSize(func() *core.QSize {
+			size := core.NewQSize()
+			for _, item := range items {
+				size = size.ExpandedTo(item.MinimumSize())
+			}
+			// size.SetWidth(width)
+			return size
+		})
+	}
+	layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
+		items = append(items, item)
+	})
+	layout.ConnectSetGeometry(func(r *core.QRect) {
+		sizes := [][]int{}
+		maxWidth := 0
+		for _, item := range items {
+			sizeHint := item.SizeHint()
+			width := sizeHint.Width()
+			height := sizeHint.Height()
+			size := []int{width, height}
+			sizes = append(sizes, size)
+			if width > maxWidth {
+				maxWidth = width
+			}
+		}
+		y := 0
+		for i, item := range items {
+			size := sizes[i]
+			height := size[1]
+			rect.SetRect(0, y, maxWidth, height)
+			item.SetGeometry(rect)
+			y += height
+		}
+	})
+	layout.ConnectItemAt(func(index int) *widgets.QLayoutItem {
+		if index < len(items) {
+			return items[index]
+		}
+		return nil
+	})
+	layout.ConnectTakeAt(func(index int) *widgets.QLayoutItem {
+		if index < len(items) {
+			return items[index]
+		}
+		return nil
+	})
+	return layout
 }
 
 func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {
@@ -141,7 +216,7 @@ func newVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, wid
 	return layout
 }
 
-func initTablineNew() *Tabline {
+func newTabline() *Tabline {
 	width := 210
 	widget := widgets.NewQWidget(nil, 0)
 	layout := widgets.NewQLayout2()
@@ -191,7 +266,13 @@ func initTablineNew() *Tabline {
 	marginDefault := 10
 	marginTop := 10
 	marginBottom := 10
-
+	tabline := &Tabline{
+		widget:        widget,
+		layout:        layout,
+		marginDefault: marginDefault,
+		marginTop:     marginTop,
+		marginBottom:  marginBottom,
+	}
 	tabs := []*Tab{}
 	for i := 0; i < 10; i++ {
 		w := widgets.NewQWidget(nil, 0)
@@ -212,6 +293,7 @@ func initTablineNew() *Tabline {
 		l.AddWidget(closeIcon, 0, 0)
 		w.SetLayout(l)
 		tab := &Tab{
+			t:         tabline,
 			widget:    w,
 			layout:    l,
 			file:      file,
@@ -220,26 +302,22 @@ func initTablineNew() *Tabline {
 		}
 		tabs = append(tabs, tab)
 		layout.AddWidget(w)
+		if i > 0 {
+			tab.hide()
+		}
 	}
-
-	return &Tabline{
-		widget:        widget,
-		layout:        layout,
-		Tabs:          tabs,
-		marginDefault: marginDefault,
-		marginTop:     marginTop,
-		marginBottom:  marginBottom,
-	}
+	tabline.Tabs = tabs
+	return tabline
 }
 
 func (t *Tab) updateActive() {
 	if t.active {
 		t.widget.SetStyleSheet(".QWidget {border-bottom: 2px solid rgba(81, 154, 186, 1); background-color: rgba(0, 0, 0, 1); } QWidget{color: rgba(212, 215, 214, 1);} ")
-		svgContent := getSvg("cross", newRGBA(212, 215, 214, 1))
+		svgContent := t.t.ws.getSvg("cross", newRGBA(212, 215, 214, 1))
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else {
 		t.widget.SetStyleSheet("")
-		svgContent := getSvg("cross", newRGBA(147, 161, 161, 1))
+		svgContent := t.t.ws.getSvg("cross", newRGBA(147, 161, 161, 1))
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 }
@@ -269,18 +347,22 @@ func (t *Tab) setActive(active bool) {
 }
 
 func (t *Tab) updateFileText() {
-	text := editor.font.defaultFontMetrics.ElidedText(t.fileText, core.Qt__ElideLeft, float64(t.file.Width()), 0)
+	text := t.t.ws.font.defaultFontMetrics.ElidedText(t.fileText, core.Qt__ElideLeft, float64(t.file.Width()), 0)
 	t.file.SetText(text)
 }
 
 func (t *Tab) updateFileIcon() {
-	svgContent := getSvg(t.fileType, nil)
+	svgContent := t.t.ws.getSvg(t.fileType, nil)
 	t.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
 func (t *Tabline) updateMargin() {
 	for _, tab := range t.Tabs {
 		tab.file.SetContentsMargins(0, t.marginTop, 0, t.marginBottom)
+		if !tab.hidden {
+			tab.hide()
+			tab.show()
+		}
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 
 // Cursor is
 type Cursor struct {
+	ws     *Workspace
 	widget *widgets.QWidget
 	mode   string
 	x      int
@@ -25,31 +26,31 @@ func initCursorNew() *Cursor {
 
 func (c *Cursor) move() {
 	c.widget.Move2(c.x, c.y)
-	editor.loc.widget.Move2(c.x, c.y+editor.font.lineHeight)
+	c.ws.loc.widget.Move2(c.x, c.y+c.ws.font.lineHeight)
 }
 
 func (c *Cursor) updateShape() {
-	mode := editor.mode
+	mode := c.ws.mode
 	if mode == "normal" {
-		c.widget.Resize2(editor.font.width, editor.font.lineHeight)
+		c.widget.Resize2(c.ws.font.width, c.ws.font.lineHeight)
 		c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.5)")
 	} else if mode == "insert" {
-		c.widget.Resize2(1, editor.font.lineHeight)
+		c.widget.Resize2(1, c.ws.font.lineHeight)
 		c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
 	}
 }
 
 func (c *Cursor) update() {
-	if c.mode != editor.mode {
-		c.mode = editor.mode
+	if c.mode != c.ws.mode {
+		c.mode = c.ws.mode
 		c.updateShape()
 	}
-	row := editor.screen.cursor[0]
-	col := editor.screen.cursor[1]
+	row := c.ws.screen.cursor[0]
+	col := c.ws.screen.cursor[1]
 	if c.row != row || c.col != col {
-		c.x = int(float64(col) * editor.font.truewidth)
-		c.y = row * editor.font.lineHeight
+		c.x = int(float64(col) * c.ws.font.truewidth)
+		c.y = row * c.ws.font.lineHeight
 		c.move()
 	}
-	editor.screen.tooltip.Move(core.NewQPoint2(c.x, c.y))
+	c.ws.screen.tooltip.Move(core.NewQPoint2(c.x, c.y))
 }
