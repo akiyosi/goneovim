@@ -125,15 +125,33 @@ func InitEditor() {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
-	ws, err := newWorkspace()
-	if err != nil {
-		return
-	}
-
 	e.workspaces = []*Workspace{}
-	e.workspaces = append(e.workspaces, ws)
-	e.active = 0
-	ws.initCwd()
+	sessionExists := false
+	home, err := homedir.Dir()
+	if err == nil {
+		for i := 0; i < 20; i++ {
+			path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
+			_, err := os.Stat(path)
+			if err != nil {
+				break
+			}
+			sessionExists = true
+			ws, err := newWorkspace(path)
+			if err != nil {
+				break
+			}
+			e.workspaces = append(e.workspaces, ws)
+			e.workspaceUpdate()
+		}
+	}
+	if !sessionExists {
+		ws, err := newWorkspace("")
+		if err != nil {
+			return
+		}
+		e.workspaces = append(e.workspaces, ws)
+		e.workspaceUpdate()
+	}
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
@@ -149,11 +167,14 @@ func InitEditor() {
 	}()
 
 	e.window.Show()
+	// for i := len(e.workspaces) - 1; i >= 0; i-- {
+	// 	e.active = i
+	// }
 	widgets.QApplication_Exec()
 }
 
 func (e *Editor) workspaceNew() {
-	ws, err := newWorkspace()
+	ws, err := newWorkspace("")
 	if err != nil {
 		return
 	}
@@ -161,7 +182,6 @@ func (e *Editor) workspaceNew() {
 	e.workspaces = append(e.workspaces, nil)
 	copy(e.workspaces[e.active+1:], e.workspaces[e.active:])
 	e.workspaces[e.active] = ws
-	ws.initCwd()
 	e.workspaceUpdate()
 }
 
@@ -182,6 +202,14 @@ func (e *Editor) workspaceNext() {
 	e.workspaceUpdate()
 }
 
+func (e *Editor) workspacePrevious() {
+	e.active--
+	if e.active < 0 {
+		e.active = len(e.workspaces) - 1
+	}
+	e.workspaceUpdate()
+}
+
 func (e *Editor) workspaceUpdate() {
 	for i, ws := range e.workspaces {
 		if i == e.active {
@@ -198,6 +226,7 @@ func (e *Editor) workspaceUpdate() {
 		} else {
 			e.wsSide.items[i].setInactive()
 		}
+		e.wsSide.items[i].setText(e.workspaces[i].cwdBase)
 		e.wsSide.items[i].show()
 	}
 	for i := len(e.workspaces); i < len(e.wsSide.items); i++ {
@@ -411,6 +440,13 @@ func (e *Editor) cleanup() {
 	sessions := filepath.Join(home, ".gonvim", "sessions")
 	os.RemoveAll(sessions)
 	os.MkdirAll(sessions, 0755)
+
+	select {
+	case <-e.stop:
+		return
+	default:
+	}
+
 	for i, ws := range e.workspaces {
 		sessionPath := filepath.Join(sessions, strconv.Itoa(i)+".vim")
 		fmt.Println(sessionPath)

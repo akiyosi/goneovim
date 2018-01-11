@@ -57,6 +57,7 @@ type Workspace struct {
 	special    *RGBA
 	mode       string
 	cwd        string
+	cwdBase    string
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -69,10 +70,44 @@ type Workspace struct {
 	drawLint       bool
 }
 
-func newWorkspace() (*Workspace, error) {
+func newWorkspace(path string) (*Workspace, error) {
 	w := &Workspace{
-		stop: make(chan struct{}),
+		stop:          make(chan struct{}),
+		signal:        NewWorkspaceSignal(nil),
+		redrawUpdates: make(chan [][]interface{}, 1000),
+		guiUpdates:    make(chan []interface{}, 1000),
 	}
+	w.signal.ConnectRedrawSignal(func() {
+		updates := <-w.redrawUpdates
+		w.handleRedraw(updates)
+	})
+	w.signal.ConnectGuiSignal(func() {
+		updates := <-w.guiUpdates
+		w.handleRPCGui(updates)
+	})
+	w.signal.ConnectStopSignal(func() {
+		workspaces := []*Workspace{}
+		index := 0
+		for i, ws := range editor.workspaces {
+			if ws != w {
+				workspaces = append(workspaces, ws)
+			} else {
+				index = i
+			}
+		}
+		if len(workspaces) == 0 {
+			editor.close()
+			return
+		}
+		editor.workspaces = workspaces
+		w.hide()
+		if editor.active == index {
+			if index > 0 {
+				editor.active--
+			}
+			editor.workspaceUpdate()
+		}
+	})
 	fontFamily := ""
 	switch runtime.GOOS {
 	case "windows":
@@ -123,11 +158,6 @@ func newWorkspace() (*Workspace, error) {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
-	err := w.startNvim()
-	if err != nil {
-		return nil, err
-	}
-
 	w.popup.widget.Hide()
 	w.palette.hide()
 	w.loc.widget.Hide()
@@ -135,6 +165,14 @@ func newWorkspace() (*Workspace, error) {
 
 	w.widget.SetParent(editor.wsWidget)
 	w.widget.Move2(0, 0)
+	w.updateSize()
+
+	// err := w.startNvim()
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	go w.startNvim(path)
 
 	return w, nil
 }
@@ -155,7 +193,7 @@ func (w *Workspace) show() {
 	w.widget.Show()
 }
 
-func (w *Workspace) startNvim() error {
+func (w *Workspace) startNvim(path string) error {
 	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
 		Args: os.Args[1:],
 	})
@@ -163,10 +201,6 @@ func (w *Workspace) startNvim() error {
 		return err
 	}
 	w.nvim = neovim
-	w.signal = NewWorkspaceSignal(nil)
-	w.redrawUpdates = make(chan [][]interface{}, 1000)
-	w.guiUpdates = make(chan []interface{}, 1000)
-
 	w.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
 		w.guiUpdates <- updates
 		w.signal.GuiSignal()
@@ -174,37 +208,6 @@ func (w *Workspace) startNvim() error {
 	w.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
 		w.redrawUpdates <- updates
 		w.signal.RedrawSignal()
-	})
-	w.signal.ConnectRedrawSignal(func() {
-		updates := <-w.redrawUpdates
-		w.handleRedraw(updates)
-	})
-	w.signal.ConnectGuiSignal(func() {
-		updates := <-w.guiUpdates
-		w.handleRPCGui(updates)
-	})
-	w.signal.ConnectStopSignal(func() {
-		workspaces := []*Workspace{}
-		index := 0
-		for i, ws := range editor.workspaces {
-			if ws != w {
-				workspaces = append(workspaces, ws)
-			} else {
-				index = i
-			}
-		}
-		if len(workspaces) == 0 {
-			editor.close()
-			return
-		}
-		editor.workspaces = workspaces
-		w.hide()
-		if editor.active == index {
-			if index > 0 {
-				editor.active--
-			}
-			editor.workspaceUpdate()
-		}
 	})
 	go func() {
 		err := w.nvim.Serve()
@@ -217,9 +220,9 @@ func (w *Workspace) startNvim() error {
 		w.signal.StopSignal()
 	}()
 
-	w.updateSize()
 	w.configure()
-	w.attachUI()
+	w.attachUI(path)
+	w.initCwd()
 
 	return nil
 }
@@ -264,29 +267,40 @@ func (w *Workspace) configure() {
 	// 	}
 }
 
-func (w *Workspace) attachUI() error {
+func (w *Workspace) attachUI(path string) error {
 	w.nvim.Subscribe("Gui")
 	w.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	w.nvim.Command("runtime! ginit.vim")
 	w.nvim.Command("let g:gonvim_running=1")
-	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())`)
+	w.workspaceCommands(path)
 	fuzzy.RegisterPlugin(w.nvim)
 	w.tabline.subscribe()
 	w.statusline.subscribe()
 	w.loc.subscribe()
 	w.message.subscribe()
+	w.uiAttached = true
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
 	if err != nil {
 		return err
 	}
-	w.uiAttached = true
 	return nil
+}
+
+func (w *Workspace) workspaceCommands(path string) {
+	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())`)
+	w.nvim.Command(`command! GonvimWorkspaceNew call rpcnotify(0, 'Gui', 'gonvim_workspace_new')`)
+	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
+	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
+	w.nvim.Command(`command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, 'Gui', 'gonvim_workspace_switch', <args>)`)
+	if path != "" {
+		w.nvim.Command("so " + path)
+	}
 }
 
 func (w *Workspace) initCwd() {
 	cwd := ""
 	w.nvim.Eval("getcwd()", &cwd)
-	w.setCwd(cwd)
+	w.nvim.Command("cd " + cwd)
 }
 
 func (w *Workspace) setCwd(cwd string) {
@@ -295,6 +309,7 @@ func (w *Workspace) setCwd(cwd string) {
 	}
 	w.cwd = cwd
 	base := filepath.Base(cwd)
+	w.cwdBase = base
 	for i, ws := range editor.workspaces {
 		if i >= len(editor.wsSide.items) {
 			return
@@ -369,9 +384,11 @@ func (w *Workspace) updateSize() {
 		}
 	}
 
-	height = height - w.statusline.widget.Height()
-	tablineHeight := w.tabline.widget.Height() - w.tabline.marginTop - w.tabline.marginBottom
-	height = height - tablineHeight - w.tabline.marginDefault*2
+	if w.tabline.height == 0 {
+		w.tabline.height = w.tabline.widget.Height() - w.tabline.marginTop - w.tabline.marginBottom
+	}
+
+	height = height - w.tabline.height - w.tabline.marginDefault*2 - w.statusline.widget.Height()
 
 	cols := int(float64(width) / w.font.truewidth)
 	rows := height / w.font.lineHeight
@@ -523,6 +540,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.workspaceNew()
 	case "gonvim_workspace_next":
 		editor.workspaceNext()
+	case "gonvim_workspace_previous":
+		editor.workspacePrevious()
 	case "gonvim_workspace_switch":
 		editor.workspaceSwitch(reflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
@@ -591,6 +610,7 @@ type WorkspaceSideItem struct {
 	active bool
 	side   *WorkspaceSide
 	label  *widgets.QLabel
+	text   string
 }
 
 func newWorkspaceSide() *WorkspaceSide {
@@ -628,6 +648,14 @@ func newWorkspaceSide() *WorkspaceSide {
 	}
 	side.items = items
 	return side
+}
+
+func (i *WorkspaceSideItem) setText(text string) {
+	if i.text == text {
+		return
+	}
+	i.text = text
+	i.label.SetText(text)
 }
 
 func (i *WorkspaceSideItem) setActive() {

@@ -168,7 +168,9 @@ func (p *Palette) resize() {
 	itemHeight := p.resultItems[0].widget.SizeHint().Height()
 	p.itemHeight = itemHeight
 	p.showTotal = int(float64(p.ws.screen.height)/float64(itemHeight)*0.5) - 1
-	fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
+	if p.ws.uiAttached {
+		fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
+	}
 
 	for i := p.showTotal; i < len(p.resultItems); i++ {
 		p.resultItems[i].hide()

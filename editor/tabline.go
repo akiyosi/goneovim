@@ -20,6 +20,7 @@ type Tabline struct {
 	marginDefault int
 	marginTop     int
 	marginBottom  int
+	height        int
 }
 
 // Tab in the tabline
@@ -301,6 +302,9 @@ func newTabline() *Tabline {
 		}
 		tabs = append(tabs, tab)
 		layout.AddWidget(w)
+		if i > 0 {
+			tab.hide()
+		}
 	}
 	tabline.Tabs = tabs
 	return tabline

@@ -1,11 +1,15 @@
 package editor
 
 func reflectToInt(iface interface{}) int {
-	o, ok := iface.(int64)
+	i, ok := iface.(int64)
 	if ok {
-		return int(o)
+		return int(i)
 	}
-	return int(iface.(uint64))
+	u, ok := iface.(uint64)
+	if ok {
+		return int(u)
+	}
+	return 0
 }
 
 func isZero(d interface{}) bool {
