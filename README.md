@@ -11,104 +11,10 @@ Neovim GUI written in Golang, using a [Golang qt backend](https://github.com/the
 
 ## Features
 
-### Tabline, Statusline, Lint Message, Command line and Message
+- [Modern UI](https://github.com/dzhou121/gonvim/wiki/Features#tabline-statusline-lint-message-command-line-and-message)
+- [Fuzzy Finder](https://github.com/dzhou121/gonvim/wiki/Features#fuzzy-finder-in-gui)
 
-![](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/main.png)
+## Documenation
 
-Disable Statusline by using
-```vim
-let g:gonvim_draw_statusline = 0
-```
-
-Disable Tabline by using
-```vim
-let g:gonvim_draw_tabline = 0
-```
-
-Disable the lint message popup using
-```vim
-let g:gonvim_draw_lint = 0
-```
-
-Start in fullscreen mode
-```vim
-let g:gonvim_start_fullscreen = 1
-```
-
-### Fuzzy finder in GUI
-
-![](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/fuzzy.png)
-
-To set up fuzzy finder :
-
-* Install [dzhou121/gonvim-fuzzy](https://github.com/dzhou121/gonvim-fuzzy).
-
-Add any these in your `init.vim` file based on your plugin manager.
-```vim
-Plug 'dzhou121/gonvim-fuzzy'       " Vim plug
-Neobundle 'dzhou121/gonvim-fuzzy'  " Neobundle
-Plugin 'dzhou121/gonvim-fuzzy'     " Vundle
-```
-
-Now you have the following commands available for fuzzy gui search:
-```
-GonvimFuzzyFiles   - For Files
-GonvimFuzzyBLines  - For Lines in the Current File
-GonvimFuzzyAg      - For runing FZF_AG ( searches current directory )
-GonvimFuzzyBuffers - For searching opened Buffers
-```
-
-
-## Autocomplete Menu and Function signature
-
-![Readme](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/popup.png)
-![Readme](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/signature.png)
-
-
-
-## Miscellaneous Configuration
-
-#### Disable drawing of split by gonvim
-```vim
-let g:gonvim_draw_split = 0
-```
-
-#### Font and Line spacing
-
-To change font and line spacing
-
-* Install [equalsraf/neovim-gui-shim](https://github.com/equalsraf/neovim-gui-shim)
-
-Add any these in your `init.vim` file based on your plugin manager.
-```vim
-Plug 'equalsraf/neovim-gui-shim'       " Vim plug
-Neobundle 'equalsraf/neovim-gui-shim'  " Neobundle
-Plugin 'equalsraf/neovim-gui-shim'     " Vundle
-```
-* Now use the following in your `ginit.vim`
-```vim
-GuiFont Monaco:h13
-GuiLinespace 8
-```
-
-## Manual Installation
-
-Install Qt (https://www1.qt.io/download-open-source/)
-
-Install Qt go bindings
-```
-$> go get -u -v github.com/therecipe/qt/cmd/...
-$> qtsetup
-```
-
-Clone this repository and doing some code generation
-```
-$> go get -u github.com/dzhou121/gonvim/editor/
-$> cd GOPATH/github.com/dzhou121/gonvim/editor/
-$> qtmoc
-```
-
-Now you can build and run
-```
-$> go build && ./gonvim
-```
+- [Configurations](https://github.com/dzhou121/gonvim/wiki/Configurations)
+- [Development](https://github.com/dzhou121/gonvim/wiki/Development)
