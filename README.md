@@ -15,6 +15,7 @@ Neovim GUI written in Golang, using a [Golang qt backend](https://github.com/the
 
 - [Modern UI](https://github.com/dzhou121/gonvim/wiki/Features#tabline-statusline-lint-message-command-line-and-message)
 - [Fuzzy Finder](https://github.com/dzhou121/gonvim/wiki/Features#fuzzy-finder-in-gui)
+- [Workspace](https://github.com/dzhou121/gonvim/wiki/Features#workspace)
 
 ## Documenation
 
