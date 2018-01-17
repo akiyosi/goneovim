@@ -572,6 +572,7 @@ func (w *Workspace) guiFont(args ...interface{}) {
 	w.font.change(parts[0], height)
 	w.updateSize()
 	w.popup.updateFont(w.font)
+	w.screen.toolTipFont(w.font)
 }
 
 func (w *Workspace) guiLinespace(args ...interface{}) {

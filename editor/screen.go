@@ -96,37 +96,6 @@ func (s *Screen) toolTip(text string) {
 	c.move()
 }
 
-// InputMethodEvent is
-func (s *Screen) InputMethodEvent(event *gui.QInputMethodEvent) {
-	if event.CommitString() != "" {
-		s.ws.nvim.Input(event.CommitString())
-		s.tooltip.Hide()
-	} else {
-		preeditString := event.PreeditString()
-		if preeditString == "" {
-			s.tooltip.Hide()
-			s.ws.cursor.update()
-		} else {
-			s.toolTip(preeditString)
-		}
-	}
-}
-
-// InputMethodQuery is
-func (s *Screen) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
-	qv := core.NewQVariant()
-	if query == core.Qt__ImCursorRectangle {
-		imrect := core.NewQRect()
-		row := s.ws.screen.cursor[0]
-		col := s.ws.screen.cursor[1]
-		x := int(float64(col+3) * s.ws.font.truewidth)
-		y := (row + 3) * s.ws.font.lineHeight
-		imrect.SetRect(x, y, 1, 1)
-		return core.NewQVariant33(imrect)
-	}
-	return qv
-}
-
 func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	s.paintMutex.Lock()
 	defer s.paintMutex.Unlock()
