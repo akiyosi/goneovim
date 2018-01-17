@@ -33,6 +33,7 @@ type Char struct {
 
 // Editor is the editor
 type Editor struct {
+	version    string
 	app        *widgets.QApplication
 	workspaces []*Workspace
 	active     int
@@ -88,6 +89,7 @@ func (hl *Highlight) copy() Highlight {
 // InitEditor is
 func InitEditor() {
 	editor = &Editor{
+		version:    "v0.2.2",
 		selectedBg: newRGBA(81, 154, 186, 0.5),
 		matchFg:    newRGBA(81, 154, 186, 1),
 		stop:       make(chan struct{}),

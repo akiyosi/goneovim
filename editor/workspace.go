@@ -286,6 +286,7 @@ func (w *Workspace) attachUI(path string) error {
 	w.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	w.nvim.Command("runtime! ginit.vim")
 	w.nvim.Command("let g:gonvim_running=1")
+	w.nvim.Command(fmt.Sprintf("command! GonvimVersion echo \"%s\"", editor.version))
 	w.workspaceCommands(path)
 	w.markdown.commands()
 	fuzzy.RegisterPlugin(w.nvim)
