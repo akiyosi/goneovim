@@ -163,11 +163,11 @@ func initPalette() *Palette {
 }
 
 func (p *Palette) resize() {
-	x := (p.ws.screen.width - p.width) / 2
+	x := (p.ws.width - p.width) / 2
 	p.widget.Move2(x, 0)
 	itemHeight := p.resultItems[0].widget.SizeHint().Height()
 	p.itemHeight = itemHeight
-	p.showTotal = int(float64(p.ws.screen.height)/float64(itemHeight)*0.5) - 1
+	p.showTotal = int(float64(p.ws.height)/float64(itemHeight)*0.5) - 1
 	if p.ws.uiAttached {
 		fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
 	}

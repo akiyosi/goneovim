@@ -17,6 +17,7 @@ import (
 
 type workspaceSignal struct {
 	core.QObject
+	_ func() `signal:"markdownSignal"`
 	_ func() `signal:"stopSignal"`
 	_ func() `signal:"redrawSignal"`
 	_ func() `signal:"guiSignal"`
@@ -35,6 +36,7 @@ type Workspace struct {
 	tabline    *Tabline
 	statusline *Statusline
 	screen     *Screen
+	markdown   *Markdown
 	finder     *Finder
 	palette    *Palette
 	popup      *PopupMenu
@@ -125,6 +127,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.screen = newScreen()
 	w.screen.toolTipFont(w.font)
 	w.screen.ws = w
+	w.markdown = newMarkdown(w)
+	w.markdown.webview.SetParent(w.screen.widget)
 	w.cursor = initCursorNew()
 	w.cursor.widget.SetParent(w.screen.widget)
 	w.cursor.ws = w
@@ -148,10 +152,20 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.cmdline = initCmdline()
 	w.cmdline.ws = w
 
+	// screenLayout := widgets.NewQHBoxLayout()
+	// screenLayout.SetContentsMargins(0, 0, 0, 0)
+	// screenLayout.SetSpacing(0)
+	// screenWidget := widgets.NewQWidget(nil, 0)
+	// screenWidget.SetContentsMargins(0, 0, 0, 0)
+	// screenWidget.SetLayout(screenLayout)
+	// screenLayout.AddWidget(w.screen.widget, 1, 0)
+	// screenLayout.AddWidget(w.markdown.webview, 0, 0)
+
 	layout := widgets.NewQVBoxLayout()
 	w.widget = widgets.NewQWidget(nil, 0)
 	w.widget.SetContentsMargins(0, 0, 0, 0)
 	w.widget.SetLayout(layout)
+	w.widget.SetFocusPolicy(core.Qt__WheelFocus)
 	layout.AddWidget(w.tabline.widget, 0, 0)
 	layout.AddWidget(w.screen.widget, 1, 0)
 	layout.AddWidget(w.statusline.widget, 0, 0)
@@ -273,6 +287,7 @@ func (w *Workspace) attachUI(path string) error {
 	w.nvim.Command("runtime! ginit.vim")
 	w.nvim.Command("let g:gonvim_running=1")
 	w.workspaceCommands(path)
+	w.markdown.commands()
 	fuzzy.RegisterPlugin(w.nvim)
 	w.tabline.subscribe()
 	w.statusline.subscribe()
@@ -387,30 +402,21 @@ func (w *Workspace) updateSize() {
 	if w.tabline.height == 0 {
 		w.tabline.height = w.tabline.widget.Height() - w.tabline.marginTop - w.tabline.marginBottom
 	}
+	if w.statusline.height == 0 {
+		w.statusline.height = w.statusline.widget.Height()
+	}
 
-	height = height - w.tabline.height - w.tabline.marginDefault*2 - w.statusline.widget.Height()
-
-	cols := int(float64(width) / w.font.truewidth)
+	height = w.height - w.tabline.height - w.tabline.marginDefault*2 - w.statusline.height
 	rows := height / w.font.lineHeight
-
 	remainingHeight := height - rows*w.font.lineHeight
 	remainingHeightBottom := remainingHeight / 2
 	remainingHeightTop := remainingHeight - remainingHeightBottom
 	w.tabline.marginTop = w.tabline.marginDefault + remainingHeightTop
 	w.tabline.marginBottom = w.tabline.marginDefault + remainingHeightBottom
 	w.tabline.updateMargin()
-
-	if w.uiAttached {
-		if cols != w.cols || rows != w.rows {
-			w.nvim.TryResizeUI(cols, rows)
-		}
-	}
-	w.cols = cols
-	w.rows = rows
-
-	w.screen.width = width
 	w.screen.height = height - remainingHeight
 
+	w.screen.updateSize()
 	w.palette.resize()
 	w.message.resize()
 }
@@ -546,6 +552,14 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.workspaceSwitch(reflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
 		w.setCwd(updates[1].(string))
+	case GonvimMarkdownUpdateEvent:
+		go w.markdown.update()
+	case GonvimMarkdownToggleEvent:
+		go w.markdown.toggle()
+	case GonvimMarkdownScrollDownEvent:
+		w.markdown.scrollDown()
+	case GonvimMarkdownScrollUpEvent:
+		w.markdown.scrollUp()
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}
@@ -593,9 +607,6 @@ func (w *Workspace) guiLinespace(args ...interface{}) {
 	}
 	w.font.changeLineSpace(lineSpace)
 	w.updateSize()
-}
-
-func (w *Workspace) getInfo() {
 }
 
 // WorkspaceSide is

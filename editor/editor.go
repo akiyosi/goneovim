@@ -97,6 +97,7 @@ func InitEditor() {
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
 	})
+
 	e.width = 800
 	e.height = 600
 
@@ -170,6 +171,7 @@ func InitEditor() {
 	// for i := len(e.workspaces) - 1; i >= 0; i-- {
 	// 	e.active = i
 	// }
+	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
 }
 
