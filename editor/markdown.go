@@ -16,6 +16,7 @@ import (
 const (
 	GonvimMarkdownBufName         = "__GonvimMarkdownPreview__"
 	GonvimMarkdownToggleEvent     = "gonvim_markdown_toggle"
+	GonvimMarkdownNewBufferEvent  = "gonvim_markdown_new_buffer"
 	GonvimMarkdownUpdateEvent     = "gonvim_markdown_update"
 	GonvimMarkdownScrollDownEvent = "gonvim_markdown_scroll_down"
 	GonvimMarkdownScrollUpEvent   = "gonvim_markdown_scroll_up"
@@ -126,7 +127,8 @@ func (m *Markdown) hide() {
 }
 
 func (m *Markdown) commands() {
-	m.ws.nvim.Command(fmt.Sprintf(`autocmd TextChanged,TextChangedI,BufEnter *.md call rpcnotify(0, "Gui", "%s")`, GonvimMarkdownUpdateEvent))
+	m.ws.nvim.Command(fmt.Sprintf(`autocmd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "%s")`, GonvimMarkdownUpdateEvent))
+	m.ws.nvim.Command(fmt.Sprintf(`autocmd BufEnter *.md call rpcnotify(0, "Gui", "%s")`, GonvimMarkdownNewBufferEvent))
 	m.ws.nvim.Command(fmt.Sprintf(`command! GonvimMarkdown call rpcnotify(0, 'Gui', '%s')`, GonvimMarkdownToggleEvent))
 }
 
@@ -167,6 +169,11 @@ func (m *Markdown) toggle() {
 	))
 
 	m.ws.nvim.Command("wincmd p")
+}
+
+func (m *Markdown) newBuffer() {
+	m.htmlSet = false
+	m.update()
 }
 
 func (m *Markdown) update() {

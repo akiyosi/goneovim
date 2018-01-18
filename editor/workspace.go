@@ -558,6 +558,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.workspaceSwitch(reflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
 		w.setCwd(updates[1].(string))
+	case GonvimMarkdownNewBufferEvent:
+		go w.markdown.newBuffer()
 	case GonvimMarkdownUpdateEvent:
 		go w.markdown.update()
 	case GonvimMarkdownToggleEvent:
