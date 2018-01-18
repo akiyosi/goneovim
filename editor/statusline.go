@@ -22,6 +22,7 @@ type Statusline struct {
 	paddingLeft    int
 	paddingRight   int
 	margin         int
+	height         int
 
 	pos      *StatuslinePos
 	mode     *StatusMode

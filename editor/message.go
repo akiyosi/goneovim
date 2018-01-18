@@ -119,8 +119,8 @@ func (m *Message) update() {
 }
 
 func (m *Message) resize() {
-	m.width = m.ws.screen.width / 4
-	m.widget.Move2(m.ws.screen.width-m.width-34, 0)
+	m.width = m.ws.width / 4
+	m.widget.Move2(m.ws.width-m.width-34, 0)
 	m.widget.Resize2(m.width+34, 0)
 	for _, item := range m.items {
 		item.label.SetMinimumHeight(0)

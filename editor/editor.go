@@ -33,6 +33,7 @@ type Char struct {
 
 // Editor is the editor
 type Editor struct {
+	version    string
 	app        *widgets.QApplication
 	workspaces []*Workspace
 	active     int
@@ -88,6 +89,7 @@ func (hl *Highlight) copy() Highlight {
 // InitEditor is
 func InitEditor() {
 	editor = &Editor{
+		version:    "v0.2.2",
 		selectedBg: newRGBA(81, 154, 186, 0.5),
 		matchFg:    newRGBA(81, 154, 186, 1),
 		stop:       make(chan struct{}),
@@ -97,6 +99,7 @@ func InitEditor() {
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
 	})
+
 	e.width = 800
 	e.height = 600
 
@@ -170,6 +173,7 @@ func InitEditor() {
 	// for i := len(e.workspaces) - 1; i >= 0; i-- {
 	// 	e.active = i
 	// }
+	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
 }
 

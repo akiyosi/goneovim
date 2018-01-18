@@ -23,6 +23,7 @@ type Window struct {
 	hl         string
 	bg         *RGBA
 	statusline bool
+	bufName    string
 }
 
 // Screen is the main editor area
@@ -73,9 +74,27 @@ func newScreen() *Screen {
 	widget.ConnectMousePressEvent(screen.mouseEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
+	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		screen.updateSize()
+	})
 	widget.SetAttribute(core.Qt__WA_KeyCompression, false)
 
 	return screen
+}
+
+func (s *Screen) updateSize() {
+	w := s.ws
+	s.width = s.widget.Width()
+	cols := int(float64(s.width) / w.font.truewidth)
+	rows := s.height / w.font.lineHeight
+
+	if w.uiAttached {
+		if cols != w.cols || rows != w.rows {
+			w.nvim.TryResizeUI(cols, rows)
+		}
+	}
+	w.cols = cols
+	w.rows = rows
 }
 
 func (s *Screen) toolTipFont(font *Font) {
@@ -136,6 +155,7 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 
 	s.drawBorder(p, row, col, rows, cols)
 	p.DestroyQPainter()
+	s.ws.markdown.updatePos()
 }
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
@@ -242,6 +262,9 @@ func (s *Screen) getWindows() {
 	}
 	s.curWins = wins
 	for _, win := range s.curWins {
+		buf, _ := neovim.WindowBuffer(win.win)
+		win.bufName, _ = neovim.BufferName(buf)
+
 		if win.height+win.pos[0] < s.ws.rows-s.cmdheight {
 			win.statusline = true
 		} else {
