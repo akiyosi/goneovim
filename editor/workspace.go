@@ -12,6 +12,7 @@ import (
 	"github.com/dzhou121/gonvim/fuzzy"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -166,6 +167,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.SetContentsMargins(0, 0, 0, 0)
 	w.widget.SetLayout(layout)
 	w.widget.SetFocusPolicy(core.Qt__WheelFocus)
+	w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	w.widget.ConnectInputMethodEvent(w.InputMethodEvent)
+	w.widget.ConnectInputMethodQuery(w.InputMethodQuery)
 	layout.AddWidget(w.tabline.widget, 0, 0)
 	layout.AddWidget(w.screen.widget, 1, 0)
 	layout.AddWidget(w.statusline.widget, 0, 0)
@@ -205,6 +209,7 @@ func (w *Workspace) show() {
 	}
 	w.hidden = false
 	w.widget.Show()
+	w.widget.SetFocus2Default()
 }
 
 func (w *Workspace) startNvim(path string) error {
@@ -609,6 +614,37 @@ func (w *Workspace) guiLinespace(args ...interface{}) {
 	}
 	w.font.changeLineSpace(lineSpace)
 	w.updateSize()
+}
+
+// InputMethodEvent is
+func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
+	if event.CommitString() != "" {
+		w.nvim.Input(event.CommitString())
+		w.screen.tooltip.Hide()
+	} else {
+		preeditString := event.PreeditString()
+		if preeditString == "" {
+			w.screen.tooltip.Hide()
+			w.cursor.update()
+		} else {
+			w.screen.toolTip(preeditString)
+		}
+	}
+}
+
+// InputMethodQuery is
+func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
+	qv := core.NewQVariant()
+	if query == core.Qt__ImCursorRectangle {
+		imrect := core.NewQRect()
+		row := w.screen.cursor[0]
+		col := w.screen.cursor[1]
+		x := int(float64(col)*w.font.truewidth) - 1
+		y := row*w.font.lineHeight + w.tabline.height + w.tabline.marginTop + w.tabline.marginBottom
+		imrect.SetRect(x, y, 1, w.font.lineHeight)
+		return core.NewQVariant33(imrect)
+	}
+	return qv
 }
 
 // WorkspaceSide is

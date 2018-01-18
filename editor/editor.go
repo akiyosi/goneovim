@@ -112,9 +112,6 @@ func InitEditor() {
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
 
-	e.window.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	e.window.ConnectInputMethodEvent(e.InputMethodEvent)
-	e.window.ConnectInputMethodQuery(e.InputMethodQuery)
 	e.window.SetAcceptDrops(true)
 
 	layout := widgets.NewQHBoxLayout()
@@ -246,43 +243,6 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	if input != "" {
 		e.workspaces[e.active].nvim.Input(input)
 	}
-}
-
-// InputMethodEvent is
-func (e *Editor) InputMethodEvent(event *gui.QInputMethodEvent) {
-	if event.CommitString() != "" {
-		e.workspaces[e.active].nvim.Input(event.CommitString())
-		e.workspaces[e.active].screen.tooltip.Hide()
-	} else {
-		preeditString := event.PreeditString()
-		if preeditString == "" {
-			e.workspaces[e.active].screen.tooltip.Hide()
-			e.workspaces[e.active].cursor.update()
-		} else {
-			e.workspaces[e.active].screen.toolTip(preeditString)
-		}
-	}
-}
-
-// InputMethodQuery is
-func (e *Editor) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
-	qv := core.NewQVariant()
-	if query == core.Qt__ImCursorRectangle {
-		imrect := core.NewQRect()
-		row := e.workspaces[e.active].screen.cursor[0]
-		col := e.workspaces[e.active].screen.cursor[1]
-		x := int(float64(col + 6) * e.workspaces[e.active].font.truewidth)
-		y := 0
-		switch runtime.GOOS {
-		case "windows":
-			y = (row + 2) * e.workspaces[e.active].font.lineHeight + 2
-		default:
-			y = (row + 3) * e.workspaces[e.active].font.lineHeight + 5
-		}
-		imrect.SetRect(x, y, 1, 1)
-		return core.NewQVariant33(imrect)
-	}
-	return qv
 }
 
 func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier) string {
