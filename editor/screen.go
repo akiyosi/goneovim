@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"runtime"
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -74,6 +75,7 @@ func newScreen() *Screen {
 	widget.ConnectMousePressEvent(screen.mouseEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
+	widget.ConnectWheelEvent(screen.wheelEvent)
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		screen.updateSize()
 	})
@@ -157,6 +159,48 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	p.DestroyQPainter()
 	s.ws.markdown.updatePos()
 }
+
+func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
+	var horiz, vert int
+	var horizKey, vertKey string
+
+	switch runtime.GOOS {
+	 case "darwin":
+		pixels := event.PixelDelta()
+		if (pixels != nil){
+			horiz = int(math.Trunc(float64(pixels.Y() / 6)))
+			vert = int(math.Trunc(float64(pixels.X() / 6)))
+		}
+	 default:
+		horiz = event.AngleDelta().Y()
+		vert = event.AngleDelta().X()
+	}
+
+	mod := event.Modifiers()
+
+	if (horiz > 0) {
+		horizKey = "Up"
+	} else {
+		horizKey = "Down"
+	}
+
+	if (vert > 0) {
+		vertKey = "Left"
+	} else {
+		vertKey = "Right"
+	}
+
+	if (horiz == 0 && vert == 0) {
+		return
+	}
+	if (horiz != 0) {
+		s.ws.nvim.Input( fmt.Sprintf("<%sScrollWheel%s><%s,%s>", editor.modPrefix(mod), horizKey, event.X, event.Y) )
+	}
+	if (vert != 0) {
+		s.ws.nvim.Input( fmt.Sprintf("<%sScrollWheel%s><%s,%s>", editor.modPrefix(mod), vertKey, event.X, event.Y) )
+	}
+}
+
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 	inp := s.convertMouse(event)
