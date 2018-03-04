@@ -169,11 +169,11 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		pixels := event.PixelDelta()
 		if (pixels != nil){
 			horiz = int(math.Trunc(float64(pixels.Y() / 6)))
-			vert = int(math.Trunc(float64(pixels.X() / 6)))
+			vert  = int(math.Trunc(float64(pixels.X() / 6)))
 		}
 	 default:
 		horiz = event.AngleDelta().Y()
-		vert = event.AngleDelta().X()
+		vert  = event.AngleDelta().X()
 	}
 
 	mod := event.Modifiers()
@@ -194,11 +194,12 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		return
 	}
 	if (horiz != 0) {
-		s.ws.nvim.Input( fmt.Sprintf("<%sScrollWheel%s><%s,%s>", editor.modPrefix(mod), horizKey, event.X, event.Y) )
+		s.ws.nvim.Input( fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, event.X(), event.Y()) )
 	}
 	if (vert != 0) {
-		s.ws.nvim.Input( fmt.Sprintf("<%sScrollWheel%s><%s,%s>", editor.modPrefix(mod), vertKey, event.X, event.Y) )
+		s.ws.nvim.Input( fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), vertKey, event.X(), event.Y()) )
 	}
+	event.Accept()
 }
 
 
