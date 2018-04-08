@@ -155,7 +155,7 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 
 	s.drawBorder(p, row, col, rows, cols)
 	p.DestroyQPainter()
-	s.ws.markdown.updatePos()
+//	s.ws.markdown.updatePos()
 }
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
@@ -530,6 +530,10 @@ func (s *Screen) update() {
 
 func (s *Screen) queueRedrawAll() {
 	s.queueRedrawArea = [4]int{0, 0, s.ws.cols, s.ws.rows}
+}
+
+func (s *Screen) redraw() {
+	s.queueRedrawArea = [4]int{s.ws.cols, s.ws.rows, 0, 0}
 }
 
 func (s *Screen) queueRedraw(x, y, width, height int) {
