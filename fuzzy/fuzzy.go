@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dzhou121/gonvim/osdepend"
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/util"
 	"github.com/neovim/go-client/nvim"
@@ -353,7 +354,8 @@ func (s *Fuzzy) processSource() {
 			close(sourceNew)
 		}()
 	case string:
-		cmd := exec.Command("bash", "-c", src)
+  cmd := exec.Command("bash", "-c", src)
+		osdepend.PrepareRunProc(cmd)
 		stdout, _ := cmd.StdoutPipe()
 		output := ""
 		go func() {
