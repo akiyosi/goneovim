@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dzhou121/gonvim/osdepend"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
@@ -371,7 +372,9 @@ func (s *StatuslineGit) redraw(file string) {
 
 	s.file = file
 	dir := filepath.Dir(file)
-	out, err := exec.Command("git", "-C", dir, "branch").Output()
+ cmd := exec.Command("git", "-C", dir, "branch")
+ osdepend.PrepareRunProc(cmd)
+	out, err := cmd.Output()
 	if err != nil {
 		s.hide()
 		s.branch = ""
@@ -388,7 +391,9 @@ func (s *StatuslineGit) redraw(file string) {
 			}
 		}
 	}
-	_, err = exec.Command("git", "-C", dir, "diff", "--quiet").Output()
+ cmd = exec.Command("git", "-C", dir, "diff", "--quiet")
+ osdepend.PrepareRunProc(cmd)
+	_, err = cmd.Output()
 	if err != nil {
 		branch += "*"
 	}
