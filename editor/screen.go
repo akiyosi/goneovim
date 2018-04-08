@@ -168,8 +168,8 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	 case "darwin":
 		pixels := event.PixelDelta()
 		if (pixels != nil){
-			horiz = int(math.Trunc(float64(pixels.Y() / 6)))
-			vert  = int(math.Trunc(float64(pixels.X() / 6)))
+			horiz = int(math.Trunc(float64(pixels.Y())))
+			vert  = int(math.Trunc(float64(pixels.X())))
 		}
 	 default:
 		horiz = event.AngleDelta().Y()

@@ -242,8 +242,7 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event.Text(), event.Key(), event.Modifiers())
 	if input != "" {
 		e.workspaces[e.active].nvim.Input(input)
-		e.workspaces[e.active].screen.queueRedrawAll()
-		e.workspaces[e.active].screen.update()
+		e.workspaces[e.active].screen.redraw()
 	}
 }
 
@@ -323,7 +322,7 @@ func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 		return ""
 	}
 
-	char := core.NewQChar11(c)
+	char := core.NewQChar9(c)
 	if char.Unicode() < 0x100 && !char.IsNumber() && char.IsPrint() {
 		mod &= ^e.shiftModifier
 	}
