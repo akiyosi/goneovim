@@ -190,14 +190,19 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		vertKey = "Right"
 	}
 
+	font := s.ws.font
+	x := int(float64(event.X()) / font.truewidth)
+	y := int(float64(event.Y()) / float64(font.lineHeight))
+	pos := []int{x, y}
+
 	if (horiz == 0 && vert == 0) {
 		return
 	}
 	if (horiz != 0) {
-		s.ws.nvim.Input( fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, event.X(), event.Y()) )
+		s.ws.nvim.Input( fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]) )
 	}
 	if (vert != 0) {
-		s.ws.nvim.Input( fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), vertKey, event.X(), event.Y()) )
+		s.ws.nvim.Input( fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), vertKey, pos[0], pos[1]) )
 	}
 	event.Accept()
 }
