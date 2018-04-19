@@ -129,20 +129,23 @@ func InitEditor() {
 	sessionExists := false
 	home, err := homedir.Dir()
 	if err == nil {
-		for i := 0; i < 20; i++ {
-			path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
-			_, err := os.Stat(path)
-			if err != nil {
-				break
-			}
-			sessionExists = true
-			ws, err := newWorkspace(path)
-			if err != nil {
-				break
-			}
-			e.workspaces = append(e.workspaces, ws)
-			e.workspaceUpdate()
-		}
+	 restoreSessionFlagFile := filepath.Join(home, ".gonvim", "doNotRestoreSessions")
+	 if !isFileExist(restoreSessionFlagFile) {
+		 for i := 0; i < 20; i++ {
+		 	path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
+		 	_, err := os.Stat(path)
+		 	if err != nil {
+		 		break
+		 	}
+		 	sessionExists = true
+		 	ws, err := newWorkspace(path)
+		 	if err != nil {
+		 		break
+		 	}
+		 	e.workspaces = append(e.workspaces, ws)
+		 	e.workspaceUpdate()
+		 }
+  }
 	}
 	if !sessionExists {
 		ws, err := newWorkspace("")
@@ -172,6 +175,11 @@ func InitEditor() {
 	// }
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
+}
+
+func isFileExist(filename string) bool {
+    _, err := os.Stat(filename)
+    return err == nil
 }
 
 func (e *Editor) workspaceNew() {
