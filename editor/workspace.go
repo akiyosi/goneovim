@@ -3,12 +3,13 @@ package editor
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	//"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 
+ shortpath "github.com/akiyosi/short_path"
 	"github.com/dzhou121/gonvim/fuzzy"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -332,7 +333,12 @@ func (w *Workspace) setCwd(cwd string) {
 		return
 	}
 	w.cwd = cwd
-	base := filepath.Base(cwd)
+	//base := filepath.Base(cwd)
+ base, err := shortpath.Minimum(cwd)
+	if err != nil {
+		return
+	}
+
 	w.cwdBase = base
 	for i, ws := range editor.workspaces {
 		if i >= len(editor.wsSide.items) {
