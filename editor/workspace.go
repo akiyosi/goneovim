@@ -421,7 +421,12 @@ func (w *Workspace) updateSize() {
 		w.statusline.height = w.statusline.widget.Height()
 	}
 
-	height = w.height - w.tabline.height - w.tabline.marginDefault*2 - w.statusline.height
+ if (w.drawTabline == true) {
+	 height = w.height - w.tabline.height - w.tabline.marginDefault*2 - w.statusline.height
+ } else {
+	 height = w.height - w.statusline.height
+ }
+
 	rows := height / w.font.lineHeight
 	remainingHeight := height - rows*w.font.lineHeight
 	remainingHeightBottom := remainingHeight / 2
