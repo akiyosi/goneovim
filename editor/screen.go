@@ -155,7 +155,7 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 		s.drawText(p, y, col, cols, [2]int{0, 0})
 	}
 
-	//s.drawBorder(p, row, col, rows, cols)
+	s.drawBorder(p, row, col, rows, cols)
 	p.DestroyQPainter()
 	s.ws.markdown.updatePos()
 }
@@ -284,7 +284,7 @@ func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
 			continue
 		}
 
-		win.drawBorder(p, s)
+		//win.drawBorder(p, s)
 	}
 }
 
