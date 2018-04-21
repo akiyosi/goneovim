@@ -53,6 +53,58 @@ func calcColor(c int) *RGBA {
 	}
 }
 
+func gradColor(rgba *RGBA) *RGBA {
+ var r, g, b int
+
+ if rgba.R > 128 {
+  r = rgba.R - (rgba.R - 128)/2
+ } else {
+  r = rgba.R + (128 - rgba.R)/2
+ }
+
+ if rgba.G > 128 {
+  g = rgba.G - (rgba.G - 128)/2
+ } else {
+  g = rgba.G + (128 - rgba.G)/2
+ }
+
+ if rgba.B > 128 {
+  b = rgba.B - (rgba.B - 128)/2
+ } else {
+  b = rgba.B + (128 - rgba.B)/2
+ }
+
+	return &RGBA{
+		R: r,
+		G: g,
+		B: b,
+		A: rgba.A,
+	}
+}
+
+func shiftColor(rgba *RGBA) *RGBA {
+ var r, g, b int
+ r = rgba.R - 13
+ g = rgba.G - 13
+ b = rgba.B - 13
+ if r <= 0 {
+  r = 0
+ }
+ if r <= 0 {
+  g = 0
+ }
+ if b <= 0 {
+  b = 0
+ }
+	return &RGBA{
+		R: r,
+		G: g,
+		B: b,
+		A: rgba.A,
+	}
+}
+
+
 func newRGBA(r int, g int, b int, a float64) *RGBA {
 	return &RGBA{
 		R: r,

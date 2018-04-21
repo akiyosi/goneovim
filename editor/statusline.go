@@ -110,15 +110,6 @@ func initStatuslineNew() *Statusline {
 	layout := newVFlowLayout(8, 8, 1, 3, 0)
 	widget.SetLayout(layout)
 	widget.SetObjectName("statusline")
-	widget.SetStyleSheet(`
-	QWidget#statusline {
-		border-top: 2px solid rgba(0, 0, 0, 1);
-		background-color: rgba(24, 29, 34, 1);
-	}
-	* {
-		color: rgba(205, 211, 222, 1);
-	}
-	`)
 
 	s := &Statusline{
 		widget:  widget,
@@ -306,6 +297,11 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 }
 
 func (s *StatusMode) update() {
+
+ bg := s.s.ws.screen.highlight.background
+ fg := s.s.ws.screen.highlight.foreground
+ s.s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid;	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg).R, shiftColor(bg).G, shiftColor(bg).B, fg.R, fg.G, fg.B))
+
 	s.label.SetText(s.text)
 	s.label.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
 }
@@ -482,6 +478,7 @@ func (s *StatuslineLint) update() {
 		svgContent = s.s.ws.getSvg("exclamation", nil)
 		s.warnIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
+
 
 	if s.errors == 0 && s.warnings == 0 {
 		s.okIcon.Show()

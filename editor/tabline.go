@@ -1,6 +1,7 @@
 package editor
 
 import (
+ "fmt"
 	"path/filepath"
 	"strings"
 
@@ -252,16 +253,7 @@ func newTabline() *Tabline {
 	})
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
-	widget.SetStyleSheet(`
-	QWidget {
-		color: rgba(147, 161, 161, 1);
-	}
-	.QWidget {
-		border-bottom: 2px solid rgba(0, 0, 0, 1);
-		border-right: 1px solid rgba(0, 0, 0, 1);
-		background-color: rgba(24, 29, 34, 1);
-	}
-	`)
+
 
 	marginDefault := 10
 	marginTop := 10
@@ -273,6 +265,7 @@ func newTabline() *Tabline {
 		marginTop:     marginTop,
 		marginBottom:  marginBottom,
 	}
+
 	tabs := []*Tab{}
 	for i := 0; i < 10; i++ {
 		w := widgets.NewQWidget(nil, 0)
@@ -311,13 +304,16 @@ func newTabline() *Tabline {
 }
 
 func (t *Tab) updateActive() {
+ bg := t.t.ws.screen.highlight.background
+ fg := t.t.ws.screen.highlight.foreground
+	t.t.widget.SetStyleSheet(fmt.Sprintf("QWidget { color: rgba(%d, %d, %d, 0.8);	}	.QWidget {		border-bottom: 0px solid;	border-right: 0px solid;	background-color: rgba(%d, %d, %d, 1);	}	", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, shiftColor(bg).R, shiftColor(bg).G, shiftColor(bg).B))
 	if t.active {
-		t.widget.SetStyleSheet(".QWidget {border-bottom: 2px solid rgba(81, 154, 186, 1); background-color: rgba(0, 0, 0, 1); } QWidget{color: rgba(212, 215, 214, 1);} ")
-		svgContent := t.t.ws.getSvg("cross", newRGBA(212, 215, 214, 1))
+		t.widget.SetStyleSheet(fmt.Sprintf(".QWidget {border-bottom: 0px solid; background-color: rgba(%d, %d, %d, 1); } QWidget{color: rgba(%d, %d, %d, 1);} ", bg.R, bg.G, bg.B, fg.R, fg.G, fg.B))
+		svgContent := t.t.ws.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else {
 		t.widget.SetStyleSheet("")
-		svgContent := t.t.ws.getSvg("cross", newRGBA(147, 161, 161, 1))
+		svgContent := t.t.ws.getSvg("cross", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 0.6))
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 }
