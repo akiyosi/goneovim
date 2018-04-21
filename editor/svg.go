@@ -53,6 +53,45 @@ func (w *Workspace) getSvg(name string, color *RGBA) string {
 func (w *Workspace) initSVGS() {
 	blue := newRGBA(81, 154, 186, 1)
 	w.svgs = map[string]*SvgXML{}
+
+  w.svgs["folder"] = &SvgXML{
+   width: 24,
+   height: 24,
+   xml: `<?xml version="1.0" encoding="utf-8"?>
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%s" d="M10 4H4C2.89 4 2 4.89 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V8C22 6.89 21.1 6 20 6H12L10 4Z" /></svg>`,
+  }
+
+  w.svgs["transform"] = &SvgXML{
+   width: 24,
+   height: 24,
+   xml: `<?xml version="1.0" encoding="utf-8"?>
+<svg fill="%s" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M0 0h24v24H0z" fill="none"/><path d="M22 18v-2H8V4h2L7 1 4 4h2v2H2v2h4v8c0 1.1.9 2 2 2h8v2h-2l3 3 3-3h-2v-2h4zM10 8h6v6h2V8c0-1.1-.9-2-2-2h-6v2z"/></svg>`,
+  }
+
+  // terminal
+  w.svgs["terminal"] = &SvgXML{
+   width: 24,
+   height: 24,
+   xml: `<?xml version="1.0" encoding="utf-8"?>
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%s" d="M20 19V7H4V19H20M20 3A2 2 0 0 1 22 5V19A2 2 0 0 1 20 21H4A2 2 0 0 1 2 19V5C2 3.89 2.9 3 4 3H20M13 17V15H18V17H13M9.58 13L5.57 9H8.4L11.7 12.3C12.09 12.69 12.09 13.33 11.7 13.72L8.42 17H5.59L9.58 13Z" /></svg>`,
+  }
+
+  // for Insert Mode
+  w.svgs["edit"] = &SvgXML{
+   width: 24,
+   height: 24,
+   xml: `<?xml version="1.0" encoding="utf-8"?>
+   <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%s" d="M20.71 4.04C21.1 3.65 21.1 3 20.71 2.63L18.37 0.29C18 -0.1 17.35 -0.1 16.96 0.29L15 2.25L18.75 6M17.75 7L14 3.25L4 13.25V17H7.75L17.75 7Z" /></svg>`,
+  }
+
+  // for Visual Mode
+  w.svgs["select"] = &SvgXML{
+   width: 24,
+   height: 24,
+   xml: `<?xml version="1.0" encoding="utf-8"?>
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%s" d="M4 3H5V5H3V4A1 1 0 0 1 4 3M20 3A1 1 0 0 1 21 4V5H19V3H20M15 5V3H17V5H15M11 5V3H13V5H11M7 5V3H9V5H7M21 20A1 1 0 0 1 20 21H19V19H21V20M15 21V19H17V21H15M11 21V19H13V21H11M7 21V19H9V21H7M4 21A1 1 0 0 1 3 20V19H5V21H4M3 15H5V17H3V15M21 15V17H19V15H21M3 11H5V13H3V11M21 11V13H19V11H21M3 7H5V9H3V7M21 7V9H19V7H21Z" /></svg>`,
+  }
+
 	w.svgs["fire"] = &SvgXML{
 		width:  1792,
 		height: 1792,

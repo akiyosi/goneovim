@@ -79,11 +79,14 @@ type StatuslinePos struct {
 
 // StatusMode is
 type StatusMode struct {
-	s     *Statusline
-	label *widgets.QLabel
-	mode  string
-	text  string
-	bg    *RGBA
+	s         *Statusline
+	label     *widgets.QLabel
+	//mode    string
+ mode      string
+ modeIcon  *svg.QSvgWidget
+	svgLoaded bool
+	text      string
+	//bg        *RGBA
 }
 
 // StatuslineGit is
@@ -106,7 +109,7 @@ type StatuslineEncoding struct {
 
 func initStatuslineNew() *Statusline {
 	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 1, 0, 0)
+	widget.SetContentsMargins(0, 1, 7, 0)
 	layout := newVFlowLayout(8, 8, 1, 3, 0)
 	widget.SetLayout(layout)
 	widget.SetObjectName("statusline")
@@ -116,17 +119,22 @@ func initStatuslineNew() *Statusline {
 		updates: make(chan []interface{}, 1000),
 	}
 
+	modeIcon := svg.NewQSvgWidget(nil)
+	modeIcon.SetFixedSize2(14, 14)
 	modeLabel := widgets.NewQLabel(nil, 0)
-	modeLabel.SetContentsMargins(4, 1, 4, 1)
+	modeLabel.SetContentsMargins(0, 0, 0, 0)
 	modeLayout := widgets.NewQHBoxLayout()
-	modeLayout.AddWidget(modeLabel, 0, 0)
+	modeLayout.AddWidget(modeIcon, 0, 0)
+	//modeLayout.AddWidget(modeLabel, 0, 0)
 	modeLayout.SetContentsMargins(0, 0, 0, 0)
 	modeWidget := widgets.NewQWidget(nil, 0)
-	modeWidget.SetContentsMargins(0, 4, 0, 4)
+	modeWidget.SetContentsMargins(3, 4, 0, 4)
 	modeWidget.SetLayout(modeLayout)
+
 	mode := &StatusMode{
 		s:     s,
 		label: modeLabel,
+  modeIcon: modeIcon,
 	}
 	s.mode = mode
 
@@ -154,7 +162,7 @@ func initStatuslineNew() *Statusline {
 	fileIcon := svg.NewQSvgWidget(nil)
 	fileIcon.SetFixedSize2(14, 14)
 	fileLabel := widgets.NewQLabel(nil, 0)
-	fileLabel.SetContentsMargins(0, 0, 0, 0)
+	fileLabel.SetContentsMargins(0, 4, 0, 4)
 	folderLabel := widgets.NewQLabel(nil, 0)
 	folderLabel.SetContentsMargins(0, 0, 0, 0)
 	folderLabel.SetStyleSheet("color: #838383;")
@@ -216,9 +224,9 @@ func initStatuslineNew() *Statusline {
 	warnLabel.Hide()
 	lintLayout := widgets.NewQHBoxLayout()
 	lintLayout.SetContentsMargins(0, 0, 0, 0)
-	lintLayout.SetSpacing(2)
+	lintLayout.SetSpacing(0)
 	lintLayout.AddWidget(okIcon, 0, 0)
-	lintLayout.AddWidget(okLabel, 0, 0)
+	//lintLayout.AddWidget(okLabel, 0, 0)
 	lintLayout.AddWidget(errorIcon, 0, 0)
 	lintLayout.AddWidget(errorLabel, 0, 0)
 	lintLayout.AddWidget(warnIcon, 0, 0)
@@ -245,8 +253,8 @@ func initStatuslineNew() *Statusline {
 	layout.AddWidget(fileWidget)
 	layout.AddWidget(filetypeLabel)
 	layout.AddWidget(encodingLabel)
-	layout.AddWidget(posLabel)
 	layout.AddWidget(lintWidget)
+	layout.AddWidget(posLabel)
 
 	return s
 }
@@ -300,35 +308,52 @@ func (s *StatusMode) update() {
 
  bg := s.s.ws.screen.highlight.background
  fg := s.s.ws.screen.highlight.foreground
- s.s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid;	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg).R, shiftColor(bg).G, shiftColor(bg).B, fg.R, fg.G, fg.B))
+ s.s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 2px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B))
 
-	s.label.SetText(s.text)
-	s.label.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
+	//s.label.SetText(s.text)
+	//s.label.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
 }
 
 func (s *StatusMode) redraw() {
 	if s.s.ws.mode == s.mode {
 		return
 	}
+ //bg := s.s.ws.screen.highlight.background
+ fg := s.s.ws.screen.highlight.foreground
+
 	s.mode = s.s.ws.mode
 	text := s.mode
-	bg := newRGBA(102, 153, 204, 1)
+	//bg := newRGBA(102, 153, 204, 1)
 	switch s.mode {
 	case "normal":
 		text = "normal"
-		bg = newRGBA(102, 153, 204, 1)
+		//bg = newRGBA(102, 153, 204, 1)
 	case "cmdline_normal":
 		text = "normal"
-		bg = newRGBA(102, 153, 204, 1)
+		//bg = newRGBA(102, 153, 204, 1)
 	case "insert":
 		text = "insert"
-		bg = newRGBA(153, 199, 148, 1)
+		//bg = newRGBA(153, 199, 148, 1)
+	 svgContent := s.s.ws.getSvg("edit", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+	 s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "visual":
 		text = "visual"
-		bg = newRGBA(250, 200, 99, 1)
+		//bg = newRGBA(250, 200, 99, 1)
+	 svgContent := s.s.ws.getSvg("select", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+	 s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	case "replace":
+		text = "replace"
+		//bg = newRGBA(250, 200, 99, 1)
+	 svgContent := s.s.ws.getSvg("transform", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+	 s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
+ if s.mode == "normal" {
+	 s.modeIcon.Hide()
+ } else {
+	 s.modeIcon.Show()
+ }
 	s.text = text
-	s.bg = bg
+	//s.bg = bg
 	s.update()
 }
 
@@ -445,7 +470,7 @@ func (s *StatuslinePos) redraw(ln, col int) {
 	if ln == s.ln && col == s.col {
 		return
 	}
-	text := fmt.Sprintf("Ln %d, Col %d", ln, col)
+	text := fmt.Sprintf("%d,%d", ln, col)
 	if text != s.text {
 		s.text = text
 		s.label.SetText(text)
@@ -479,25 +504,24 @@ func (s *StatuslineLint) update() {
 		s.warnIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 
-
-	if s.errors == 0 && s.warnings == 0 {
-		s.okIcon.Show()
-		s.okLabel.SetText("ok")
-		s.okLabel.Show()
-		s.errorIcon.Hide()
-		s.errorLabel.Hide()
-		s.warnIcon.Hide()
-		s.warnLabel.Hide()
-	} else {
-		s.okIcon.Hide()
-		s.okLabel.Hide()
-		s.errorLabel.SetText(strconv.Itoa(s.errors))
-		s.warnLabel.SetText(strconv.Itoa(s.warnings))
-		s.errorIcon.Show()
-		s.errorLabel.Show()
-		s.warnIcon.Show()
-		s.warnLabel.Show()
-	}
+	//if s.errors == 0 && s.warnings == 0 {
+	//	s.okIcon.Show()
+	//	//s.okLabel.SetText("ok")
+	//	s.okLabel.Show()
+	//	s.errorIcon.Hide()
+	//	s.errorLabel.Hide()
+	//	s.warnIcon.Hide()
+	//	s.warnLabel.Hide()
+	//} else {
+	s.okIcon.Hide()
+	s.okLabel.Hide()
+	s.errorLabel.SetText(strconv.Itoa(s.errors))
+	s.warnLabel.SetText(strconv.Itoa(s.warnings))
+	s.errorIcon.Show()
+	s.errorLabel.Show()
+	s.warnIcon.Show()
+	s.warnLabel.Show()
+	//}
 }
 
 func (s *StatuslineLint) redraw(errors, warnings int) {

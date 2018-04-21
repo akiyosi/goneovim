@@ -685,15 +685,7 @@ func newWorkspaceSide() *WorkspaceSide {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
-	widget.SetStyleSheet(`
-	QWidget {
-		color: rgba(147, 161, 161, 1);
-		border-right: 1px solid rgba(0, 0, 0, 1);
-	}
-	.QWidget {
-		background-color: rgba(24, 29, 34, 1);
-	}
-	`)
+	widget.SetStyleSheet("	QWidget {		color: rgba(189, 194, 197, 1);		border-right: 0px solid;	}	.QWidget {		background-color: rgba(63, 80, 90, 1);	}	")
 
 	side := &WorkspaceSide{
 		widget: widget,
