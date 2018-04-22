@@ -330,7 +330,7 @@ func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 		return ""
 	}
 
-	char := core.NewQChar9(c)
+	char := core.NewQChar11(c)
 	if char.Unicode() < 0x100 && !char.IsNumber() && char.IsPrint() {
 		mod &= ^e.shiftModifier
 	}

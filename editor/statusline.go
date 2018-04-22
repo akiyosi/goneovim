@@ -109,8 +109,8 @@ type StatuslineEncoding struct {
 
 func initStatuslineNew() *Statusline {
 	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 1, 7, 0)
-	layout := newVFlowLayout(8, 8, 1, 3, 0)
+	widget.SetContentsMargins(0, 1, 0, 0)
+	layout := newVFlowLayout(14, 8, 1, 3, 0)
 	widget.SetLayout(layout)
 	widget.SetObjectName("statusline")
 
@@ -128,7 +128,7 @@ func initStatuslineNew() *Statusline {
 	//modeLayout.AddWidget(modeLabel, 0, 0)
 	modeLayout.SetContentsMargins(0, 0, 0, 0)
 	modeWidget := widgets.NewQWidget(nil, 0)
-	modeWidget.SetContentsMargins(3, 4, 0, 4)
+	modeWidget.SetContentsMargins(-1, 5, 0, 5)
 	modeWidget.SetLayout(modeLayout)
 
 	mode := &StatusMode{
@@ -160,21 +160,21 @@ func initStatuslineNew() *Statusline {
 	s.git = git
 
 	fileIcon := svg.NewQSvgWidget(nil)
-	fileIcon.SetFixedSize2(14, 14)
+	fileIcon.SetFixedSize2(13, 13)
 	fileLabel := widgets.NewQLabel(nil, 0)
-	fileLabel.SetContentsMargins(0, 4, 0, 4)
+	fileLabel.SetContentsMargins(0, 5, 0, 5)
 	folderLabel := widgets.NewQLabel(nil, 0)
 	folderLabel.SetContentsMargins(0, 0, 0, 0)
 	folderLabel.SetStyleSheet("color: #838383;")
 	folderLabel.SetContentsMargins(0, 0, 0, 0)
 	fileLayout := widgets.NewQHBoxLayout()
 	fileLayout.SetContentsMargins(0, 0, 0, 0)
-	fileLayout.SetSpacing(2)
+	fileLayout.SetSpacing(3)
 	fileLayout.AddWidget(fileIcon, 0, 0)
 	fileLayout.AddWidget(fileLabel, 0, 0)
 	fileLayout.AddWidget(folderLabel, 0, 0)
 	fileWidget := widgets.NewQWidget(nil, 0)
-	fileWidget.SetContentsMargins(0, 0, 0, 0)
+	fileWidget.SetContentsMargins(-6, 0, 0, 0)
 	fileWidget.SetLayout(fileLayout)
 	file := &StatuslineFile{
 		s:           s,
@@ -304,22 +304,19 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 	}
 }
 
-func (s *StatusMode) update() {
-
- bg := s.s.ws.screen.highlight.background
- fg := s.s.ws.screen.highlight.foreground
- s.s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 2px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B))
-
+//func (s *StatusMode) update() {
 	//s.label.SetText(s.text)
 	//s.label.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
-}
+//}
 
 func (s *StatusMode) redraw() {
 	if s.s.ws.mode == s.mode {
 		return
 	}
- //bg := s.s.ws.screen.highlight.background
+
+ bg := s.s.ws.screen.highlight.background
  fg := s.s.ws.screen.highlight.foreground
+ s.s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	box-shadow: 0px 2px 4px inset; border-top: 2px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B))
 
 	s.mode = s.s.ws.mode
 	text := s.mode
@@ -354,7 +351,6 @@ func (s *StatusMode) redraw() {
  }
 	s.text = text
 	//s.bg = bg
-	s.update()
 }
 
 func (s *StatuslineGit) hide() {
@@ -370,10 +366,11 @@ func (s *StatuslineGit) update() {
 		s.widget.Hide()
 		return
 	}
+ fg := s.s.ws.screen.highlight.foreground
 	s.label.SetText(s.branch)
 	if !s.svgLoaded {
 		s.svgLoaded = true
-		svgContent := s.s.ws.getSvg("git", newRGBA(212, 215, 214, 1))
+	 svgContent := s.s.ws.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
 		s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	s.widget.Show()
