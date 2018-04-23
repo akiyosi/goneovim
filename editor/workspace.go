@@ -443,6 +443,7 @@ func (w *Workspace) updateSize() {
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
+ var tabStyle, statusStyle string
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -455,9 +456,20 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			} else {
 				w.foreground = calcColor(reflectToInt(args[0]))
 			}
+   fg := w.foreground
+   // for Gonvim UI Color form colorscheme
+	  tabStyle = fmt.Sprintf("QWidget { color: rgba(%d, %d, %d, 0.8);	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
+   statusStyle = fmt.Sprintf("	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B)
+	  w.statusline.file.folderLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d, %d, %d, 0.8);", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
+	  svgContent := w.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+		 w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		case "update_bg":
 			args := update[1].([]interface{})
 			s.updateBg(args)
+   // for Gonvim UI Color form colorscheme
+	  bg := w.background
+	  w.tabline.widget.SetStyleSheet(fmt.Sprintf(".QWidget {		border-bottom: 0px solid;	border-right: 0px solid;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + tabStyle)
+   w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 2px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + statusStyle)
 		case "update_sp":
 			args := update[1].([]interface{})
 			color := reflectToInt(args[0])

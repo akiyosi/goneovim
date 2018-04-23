@@ -165,7 +165,6 @@ func initStatuslineNew() *Statusline {
 	fileLabel.SetContentsMargins(0, 6, 0, 6)
 	folderLabel := widgets.NewQLabel(nil, 0)
 	folderLabel.SetContentsMargins(0, 0, 0, 0)
-	folderLabel.SetStyleSheet("color: #838383;")
 	folderLabel.SetContentsMargins(0, 0, 0, 0)
 	fileLayout := widgets.NewQHBoxLayout()
 	fileLayout.SetContentsMargins(0, 0, 0, 0)
@@ -294,6 +293,9 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
 		go s.git.redraw(file)
+  bg := s.ws.screen.highlight.background
+  fg := s.ws.screen.highlight.foreground
+  s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	box-shadow: 0px 2px 4px inset; border-top: 2px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B))
 	case "cursormoved":
 		pos := updates[1].([]interface{})
 		ln := reflectToInt(pos[1])
@@ -314,9 +316,7 @@ func (s *StatusMode) redraw() {
 		return
 	}
 
- bg := s.s.ws.screen.highlight.background
  fg := s.s.ws.screen.highlight.foreground
- s.s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	box-shadow: 0px 2px 4px inset; border-top: 2px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B))
 
 	s.mode = s.s.ws.mode
 	text := s.mode
@@ -495,7 +495,7 @@ func (s *StatuslineLint) update() {
 		s.svgLoaded = true
 		svgContent := s.s.ws.getSvg("check", newRGBA(141, 193, 73, 1))
 		s.okIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		svgContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
+		svgContent = s.s.ws.getSvg("cross", nil)
 		s.errorIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		svgContent = s.s.ws.getSvg("exclamation", nil)
 		s.warnIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -525,6 +525,15 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 	if errors == s.errors && warnings == s.warnings {
 		return
 	}
+	 svgContent := s.s.ws.getSvg("check", nil)
+	 if errors != 0 {
+	  svgContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
+	  s.errorIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+  } 
+	 if warnings != 0 {
+	  svgContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
+	  s.warnIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+  }
 	s.errors = errors
 	s.warnings = warnings
 	s.s.ws.signal.LintSignal()

@@ -109,6 +109,7 @@ func (w *Workspace) initSVGS() {
 		width:     100,
 		height:    100,
 		thickness: 2,
+  color:     w.foreground,
 		xml:       `<?xml version="1.0" encoding="utf-8"?><svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path fill="%s" d="M1490 1322q0 40-28 68l-136 136q-28 28-68 28t-68-28l-294-294-294 294q-28 28-68 28t-68-28l-136-136q-28-28-28-68t28-68l294-294-294-294q-28-28-28-68t28-68l136-136q28-28 68-28t68 28l294 294 294-294q28-28 68-28t68 28l136 136q28 28 28 68t-28 68l-294 294 294 294q28 28 28 68z"/></svg>`,
 	}
 	w.svgs["default"] = &SvgXML{
@@ -149,7 +150,7 @@ func (w *Workspace) initSVGS() {
 		width:     1792,
 		height:    1792,
 		thickness: 0,
-		color:     newRGBA(203, 203, 65, 1),
+		color:     w.foreground,
 		xml:       `<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><g><path fill="%s" d="M1088 1248v224q0 26-19 45t-45 19h-256q-26 0-45-19t-19-45v-224q0-26 19-45t45-19h256q26 0 45 19t19 45zm30-1056l-28 768q-1 26-20.5 45t-45.5 19h-256q-26 0-45.5-19t-20.5-45l-28-768q-1-26 17.5-45t44.5-19h320q26 0 44.5 19t17.5 45z"/></g></svg>`,
 	}
 	w.svgs["sh"] = &SvgXML{

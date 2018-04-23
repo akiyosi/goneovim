@@ -304,9 +304,8 @@ func newTabline() *Tabline {
 }
 
 func (t *Tab) updateActive() {
- bg := t.t.ws.screen.highlight.background
- fg := t.t.ws.screen.highlight.foreground
-	t.t.widget.SetStyleSheet(fmt.Sprintf("QWidget { color: rgba(%d, %d, %d, 0.8);	}	.QWidget {		border-bottom: 0px solid;	border-right: 0px solid;	background-color: rgba(%d, %d, %d, 1);	}	", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B))
+ bg := t.t.ws.background
+ fg := t.t.ws.foreground
 	if t.active {
 		t.widget.SetStyleSheet(fmt.Sprintf(".QWidget {border-bottom: 0px solid; background-color: rgba(%d, %d, %d, 1); } QWidget{color: rgba(%d, %d, %d, 1);} ", bg.R, bg.G, bg.B, fg.R, fg.G, fg.B))
 		svgContent := t.t.ws.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
