@@ -128,7 +128,7 @@ func initStatuslineNew() *Statusline {
 	//modeLayout.AddWidget(modeLabel, 0, 0)
 	modeLayout.SetContentsMargins(0, 0, 0, 0)
 	modeWidget := widgets.NewQWidget(nil, 0)
-	modeWidget.SetContentsMargins(-1, 5, 0, 5)
+	modeWidget.SetContentsMargins(0, 5, 0, 5)
 	modeWidget.SetLayout(modeLayout)
 
 	mode := &StatusMode{
@@ -162,7 +162,7 @@ func initStatuslineNew() *Statusline {
 	fileIcon := svg.NewQSvgWidget(nil)
 	fileIcon.SetFixedSize2(13, 13)
 	fileLabel := widgets.NewQLabel(nil, 0)
-	fileLabel.SetContentsMargins(0, 5, 0, 5)
+	fileLabel.SetContentsMargins(0, 6, 0, 6)
 	folderLabel := widgets.NewQLabel(nil, 0)
 	folderLabel.SetContentsMargins(0, 0, 0, 0)
 	folderLabel.SetStyleSheet("color: #838383;")
@@ -174,7 +174,7 @@ func initStatuslineNew() *Statusline {
 	fileLayout.AddWidget(fileLabel, 0, 0)
 	fileLayout.AddWidget(folderLabel, 0, 0)
 	fileWidget := widgets.NewQWidget(nil, 0)
-	fileWidget.SetContentsMargins(-6, 0, 0, 0)
+	fileWidget.SetContentsMargins(-1, 0, 0, 0)
 	fileWidget.SetLayout(fileLayout)
 	file := &StatuslineFile{
 		s:           s,
