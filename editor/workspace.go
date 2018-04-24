@@ -72,6 +72,9 @@ type Workspace struct {
 	drawStatusline bool
 	drawTabline    bool
 	drawLint       bool
+
+ setGuiFgColor    bool
+ setGuiBgColor    bool
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -80,6 +83,8 @@ func newWorkspace(path string) (*Workspace, error) {
 		signal:        NewWorkspaceSignal(nil),
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
+  setGuiFgColor:   false,
+  setGuiBgColor:   false,
 	}
 	w.signal.ConnectRedrawSignal(func() {
 		updates := <-w.redrawUpdates
@@ -443,7 +448,7 @@ func (w *Workspace) updateSize() {
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
- var tabStyle, statusStyle, popupStyle, locpopupStyle, tooltipStyle, paletteStyle string
+ var wsSideStyle, tabStyle, statusStyle, popupStyle, locpopupStyle, tooltipStyle, paletteStyle string
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -456,32 +461,45 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			} else {
 				w.foreground = calcColor(reflectToInt(args[0]))
 			}
-   fg := w.foreground
-   // for Gonvim UI Color form colorscheme
-   tooltipStyle = fmt.Sprintf("color: rgba(%d, %d, %d, 1); }", shiftColor(fg, -40).R, shiftColor(fg, -40).G, shiftColor(fg, -40).B)
-	  w.palette.cursor.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", shiftColor(fg, -30).R, shiftColor(fg, -30).G, shiftColor(fg, -30).B))
-   paletteStyle = fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); }", shiftColor(fg, -30).R, shiftColor(fg, -30).G, shiftColor(fg, -30).B)
-	  tabStyle = fmt.Sprintf("QWidget { color: rgba(%d, %d, %d, 0.8);	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
-   statusStyle = fmt.Sprintf("	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B)
-   popupStyle = fmt.Sprintf("color: rgba(%d, %d, %d, 1);}", shiftColor(fg, 5).R, shiftColor(fg, 5).G, shiftColor(fg, 5).B)
-   locpopupStyle = fmt.Sprintf(" color: rgba(205, 211, 222, 1); }", shiftColor(fg, 5).R, shiftColor(fg, 5).G, shiftColor(fg, 5).B)
-	  w.statusline.file.folderLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d, %d, %d, 0.8);", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
-	  svgContent := w.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-		 w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+   if w.setGuiFgColor == false {
+    fg := w.foreground
+    w.setGuiFgColor = true
+    editor.wsSide.fgcolor = fg
+    // for Workspaceside
+	   wsSideStyle = fmt.Sprintf("QWidget {	color: rgba(%d, %d, %d, 1);		border-right: 0px solid;	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
+    // for Gonvim UI Color form colorscheme
+    tooltipStyle = fmt.Sprintf("color: rgba(%d, %d, %d, 1); }", shiftColor(fg, -40).R, shiftColor(fg, -40).G, shiftColor(fg, -40).B)
+	   w.palette.cursor.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", shiftColor(fg, -30).R, shiftColor(fg, -30).G, shiftColor(fg, -30).B))
+    paletteStyle = fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); }", shiftColor(fg, -30).R, shiftColor(fg, -30).G, shiftColor(fg, -30).B)
+	   tabStyle = fmt.Sprintf("QWidget { color: rgba(%d, %d, %d, 0.8);	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
+    statusStyle = fmt.Sprintf("	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B)
+    popupStyle = fmt.Sprintf("color: rgba(%d, %d, %d, 1);}", shiftColor(fg, 5).R, shiftColor(fg, 5).G, shiftColor(fg, 5).B)
+    locpopupStyle = fmt.Sprintf(" color: rgba(%d, %d, %d, 1); }", shiftColor(fg, 5).R, shiftColor(fg, 5).G, shiftColor(fg, 5).B)
+	   w.statusline.file.folderLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d, %d, %d, 0.8);", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
+	   svgContent := w.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+		  w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+   }
 		case "update_bg":
 			args := update[1].([]interface{})
 			s.updateBg(args)
    // for Gonvim UI Color form colorscheme
-	  bg := w.background
-	  w.tabline.widget.SetStyleSheet(fmt.Sprintf(".QWidget {		border-bottom: 0px solid;	border-right: 0px solid;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + tabStyle)
-   w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 2px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + statusStyle)
-   w.popup.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
-	  w.popup.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, 1); ", shiftColor(bg, 15).R, shiftColor(bg, 15).G, shiftColor(bg, 15).B) + popupStyle)
-	  w.loc.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid rgba(%d, %d, %d, 1); } * {background-color: rgba(%d, %d, %d, 1);", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + locpopupStyle)
-	  w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: rgba(%d, %d, %d, 1);			text-decoration: underline;", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + tooltipStyle)
-	  w.palette.widget.SetStyleSheet(fmt.Sprintf("QWidget#palette {border: 1px solid rgba(%d, %d, %d, 1);} .QWidget {background-color: rgba(%d, %d, %d, 1); }", shiftColor(bg, 25).R, shiftColor(bg, 25).G, shiftColor(bg, 25).B, shiftColor(bg, 15).R, shiftColor(bg, 15).G, shiftColor(bg, 15).B) + paletteStyle)
-	  w.palette.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
-	  w.palette.pattern.SetStyleSheet(  fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
+   if w.setGuiBgColor == false {
+	   bg := w.background
+    w.setGuiBgColor = true
+    editor.wsSide.bgcolor = bg
+	   w.tabline.widget.SetStyleSheet(fmt.Sprintf(".QWidget {		border-bottom: 0px solid;	border-right: 0px solid;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + tabStyle)
+    w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + statusStyle)
+    w.popup.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+	   w.popup.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, 1); ", shiftColor(bg, 15).R, shiftColor(bg, 15).G, shiftColor(bg, 15).B) + popupStyle)
+	   w.loc.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid rgba(%d, %d, %d, 1); } * {background-color: rgba(%d, %d, %d, 1);", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + locpopupStyle)
+	   w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: rgba(%d, %d, %d, 1);			text-decoration: underline;", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + tooltipStyle)
+	   w.palette.widget.SetStyleSheet(fmt.Sprintf("QWidget#palette {border: 1px solid rgba(%d, %d, %d, 1);} .QWidget {background-color: rgba(%d, %d, %d, 1); }", shiftColor(bg, 25).R, shiftColor(bg, 25).G, shiftColor(bg, 25).B, shiftColor(bg, 15).R, shiftColor(bg, 15).G, shiftColor(bg, 15).B) + paletteStyle)
+	   w.palette.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
+	   w.palette.pattern.SetStyleSheet(  fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
+   // for Workspace
+   editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border: 10px solid rgba(%d, %d, %d, 1); padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg,10).R, shiftColor(bg,10).G, shiftColor(bg,10).B, shiftColor(bg,-5).R, shiftColor(bg,-5).G, shiftColor(bg,-5).B) + wsSideStyle)
+   }
+
 		case "update_sp":
 			args := update[1].([]interface{})
 			color := reflectToInt(args[0])
@@ -691,6 +709,8 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 type WorkspaceSide struct {
 	widget *widgets.QWidget
 	items  []*WorkspaceSideItem
+ fgcolor *RGBA
+ bgcolor *RGBA
 }
 
 // WorkspaceSideItem is
@@ -706,19 +726,22 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout := newHFlowLayout(0, 0, 0, 0, 20)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
+	labeltext := widgets.NewQLabel(nil, 0)
+	labeltext.SetContentsMargins(20, 20, 20, 10)
+ labeltext.SetText("Workspace")
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
-	widget.SetStyleSheet("	QWidget {		color: rgba(189, 194, 197, 1);		border-right: 0px solid;	}	.QWidget {		background-color: rgba(63, 80, 90, 1);	}	")
 
 	side := &WorkspaceSide{
 		widget: widget,
 	}
+	layout.AddWidget(labeltext)
 
 	items := []*WorkspaceSideItem{}
 	for i := 0; i < 20; i++ {
 		label := widgets.NewQLabel(nil, 0)
-		label.SetContentsMargins(15, 10, 15, 10)
+		label.SetContentsMargins(15, 6, 15, 6)
 		item := &WorkspaceSideItem{
 			side:  side,
 			label: label,
@@ -744,11 +767,12 @@ func (i *WorkspaceSideItem) setActive() {
 		return
 	}
 	i.active = true
-	i.label.SetStyleSheet(`
-	border-left: 3px solid rgba(81, 154, 186, 1);
-	background-color: rgba(0, 0, 0, 1);
-	color: rgba(212, 215, 214, 1);
-	`)
+ if i.side.fgcolor == nil {
+  return
+ }
+ bg := i.side.bgcolor
+ fg := i.side.fgcolor
+ i.label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, -5).R, shiftColor(fg, -5).G, shiftColor(fg, -5).B))
 }
 
 func (i *WorkspaceSideItem) setInactive() {
@@ -756,10 +780,12 @@ func (i *WorkspaceSideItem) setInactive() {
 		return
 	}
 	i.active = false
-	i.label.SetStyleSheet(`
-	background-color: rgba(24, 29, 34, 1);
-	color: rgba(147, 161, 161, 1);
-	`)
+ if i.side.fgcolor == nil {
+  return
+ }
+ bg := i.side.bgcolor
+ fg := i.side.fgcolor
+ i.label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
 }
 
 func (i *WorkspaceSideItem) show() {
