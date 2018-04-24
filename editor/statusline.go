@@ -493,12 +493,21 @@ func (s *StatuslineFiletype) redraw(filetype string) {
 func (s *StatuslineLint) update() {
 	if !s.svgLoaded {
 		s.svgLoaded = true
-		svgContent := s.s.ws.getSvg("check", newRGBA(141, 193, 73, 1))
-		s.okIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		svgContent = s.s.ws.getSvg("cross", nil)
-		s.errorIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		svgContent = s.s.ws.getSvg("exclamation", nil)
-		s.warnIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		//svgContent := s.s.ws.getSvg("check", newRGBA(141, 193, 73, 1))
+		//s.okIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	 var svgErrContent, svgWrnContent string
+	 if s.errors != 0 {
+	  svgErrContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
+  } else {
+	  svgErrContent = s.s.ws.getSvg("cross", nil)
+  }
+	 if s.warnings != 0 {
+	  svgWrnContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
+  } else {
+	  svgWrnContent = s.s.ws.getSvg("exclamation", nil)
+  }
+	 s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
+	 s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 	}
 
 	//if s.errors == 0 && s.warnings == 0 {
@@ -523,17 +532,21 @@ func (s *StatuslineLint) update() {
 
 func (s *StatuslineLint) redraw(errors, warnings int) {
 	if errors == s.errors && warnings == s.warnings {
-		return
+   return
 	}
-	 svgContent := s.s.ws.getSvg("check", nil)
-	 if errors != 0 {
-	  svgContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
-	  s.errorIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-  } 
-	 if warnings != 0 {
-	  svgContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
-	  s.warnIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-  }
+	var svgErrContent, svgWrnContent string
+	if errors != 0 {
+	 svgErrContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
+ } else {
+	 svgErrContent = s.s.ws.getSvg("cross", nil)
+ }
+	if warnings != 0 {
+	 svgWrnContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
+ } else {
+	 svgWrnContent = s.s.ws.getSvg("exclamation", nil)
+ }
+	s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
+	s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 	s.errors = errors
 	s.warnings = warnings
 	s.s.ws.signal.LintSignal()
