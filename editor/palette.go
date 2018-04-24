@@ -59,7 +59,6 @@ func initPalette() *Palette {
 	widget.SetContentsMargins(1, 1, 1, 1)
 	// widget.SetFixedWidth(width)
 	widget.SetObjectName("palette")
-	widget.SetStyleSheet("QWidget#palette {border: 1px solid #000;} .QWidget {background-color: rgba(24, 29, 34, 1); } * { color: rgba(205, 211, 222, 1); }")
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(20)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, 255))
@@ -85,7 +84,6 @@ func initPalette() *Palette {
 	scrollCol.SetFixedWidth(5)
 	scrollBar := widgets.NewQWidget(scrollCol, 0)
 	scrollBar.SetFixedWidth(5)
-	scrollBar.SetStyleSheet("background-color: #3c3c3c;")
 
 	resultMainWidget := widgets.NewQWidget(nil, 0)
 	resultMainWidget.SetContentsMargins(0, 0, 0, 0)
@@ -95,7 +93,6 @@ func initPalette() *Palette {
 
 	pattern := widgets.NewQLabel(nil, 0)
 	pattern.SetContentsMargins(padding, padding, padding, padding)
-	pattern.SetStyleSheet("background-color: #3c3c3c;")
 	pattern.SetFixedWidth(width - padding*2)
 	pattern.SetSizePolicy2(widgets.QSizePolicy__Preferred, widgets.QSizePolicy__Maximum)
 	patternLayout := widgets.NewQVBoxLayout()
@@ -111,7 +108,6 @@ func initPalette() *Palette {
 	cursor.SetParent(pattern)
 	cursor.SetFixedSize2(1, pattern.SizeHint().Height()-padding*2)
 	cursor.Move2(padding, padding)
-	cursor.SetStyleSheet("background-color: rgba(205, 211, 222, 1);")
 
 	mainLayout.AddWidget(patternWidget, 0, 0)
 	mainLayout.AddWidget(resultMainWidget, 0, 0)

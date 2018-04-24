@@ -27,7 +27,6 @@ func initLocpopup() *Locpopup {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(4)
 	widget.SetLayout(layout)
-	widget.SetStyleSheet(".QWidget { border: 1px solid #000; } * {color: rgba(205, 211, 222, 1); background-color: rgba(24, 29, 34, 1);}")
 	typeLabel := widgets.NewQLabel(nil, 0)
 	typeLabel.SetContentsMargins(4, 1, 4, 1)
 

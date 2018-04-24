@@ -53,6 +53,21 @@ func calcColor(c int) *RGBA {
 	}
 }
 
+func reverseColor(rgba *RGBA) *RGBA {
+ var r, g, b int
+
+  r = 255 - rgba.R
+  g = 255 - rgba.G
+  b = 255 - rgba.B
+
+	return &RGBA{
+		R: r,
+		G: g,
+		B: b,
+		A: rgba.A,
+	}
+}
+
 func gradColor(rgba *RGBA) *RGBA {
  var r, g, b int
 

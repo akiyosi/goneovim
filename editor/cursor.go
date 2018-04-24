@@ -1,6 +1,8 @@
 package editor
 
 import (
+ "fmt" 
+
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )
@@ -31,12 +33,15 @@ func (c *Cursor) move() {
 
 func (c *Cursor) updateShape() {
 	mode := c.ws.mode
+ bg := c.ws.background
 	if mode == "normal" {
 		c.widget.Resize2(c.ws.font.width, c.ws.font.lineHeight)
-		c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.5)")
+		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.5)")
+		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
 	} else if mode == "insert" {
 		c.widget.Resize2(1, c.ws.font.lineHeight)
-		c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
+		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
+		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.9)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
 	}
 }
 

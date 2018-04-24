@@ -57,12 +57,6 @@ func newScreen() *Screen {
 
 	tooltip := widgets.NewQLabel(widget, 0)
 	tooltip.SetVisible(false)
-	tooltip.SetStyleSheet(`
-		* {
-			color: rgba(205, 211, 222, 1);
-			background-color: rgba(24, 29, 34, 1);
-			text-decoration: underline;
-		}`)
 
 	screen := &Screen{
 		widget:       widget,
