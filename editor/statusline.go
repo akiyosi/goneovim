@@ -295,7 +295,7 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		go s.git.redraw(file)
   bg := s.ws.screen.highlight.background
   fg := s.ws.screen.highlight.foreground
-  s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	box-shadow: 0px 2px 4px inset; border-top: 2px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B))
+  s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B))
 	case "cursormoved":
 		pos := updates[1].([]interface{})
 		ln := reflectToInt(pos[1])

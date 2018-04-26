@@ -271,7 +271,7 @@ func newTabline() *Tabline {
 		w := widgets.NewQWidget(nil, 0)
 		w.SetContentsMargins(10, 0, 10, 0)
 		l := widgets.NewQHBoxLayout()
-		l.SetContentsMargins(0, 0, 0, 0)
+		l.SetContentsMargins(8, 6, 0, 0)
 		l.SetSpacing(10)
 		fileIcon := svg.NewQSvgWidget(nil)
 		fileIcon.SetFixedWidth(12)
@@ -307,7 +307,7 @@ func (t *Tab) updateActive() {
  bg := t.t.ws.background
  fg := t.t.ws.foreground
 	if t.active {
-		t.widget.SetStyleSheet(fmt.Sprintf(".QWidget {border-top: 10px solid rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } QWidget{color: rgba(%d, %d, %d, 1);} ", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, bg.R, bg.G, bg.B, fg.R, fg.G, fg.B))
+  t.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-top: 8px solid rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } QWidget{color: rgba(%d, %d, %d, 1);} ", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, bg.R, bg.G, bg.B, fg.R, fg.G, fg.B))
 		svgContent := t.t.ws.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else {

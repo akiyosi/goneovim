@@ -66,6 +66,7 @@ type Editor struct {
 
  restoreSession    bool
  showWorkspaceside bool
+ workspacepath     string
 }
 
 type editorSignal struct {
@@ -97,6 +98,7 @@ func InitEditor() {
     Global struct {
     RestoreSession     bool
     ShowWorkspaceside  bool
+    Workspacepath      string
  }
  }{}
 	home, err := homedir.Dir()
@@ -109,6 +111,7 @@ func InitEditor() {
 		stop:               make(chan struct{}),
   restoreSession:     cfg.Global.RestoreSession,
   showWorkspaceside:  cfg.Global.ShowWorkspaceside,
+  workspacepath:      cfg.Global.Workspacepath,
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
