@@ -9,7 +9,8 @@ Neovim GUI written in Golang, using a [Golang qt backend](https://github.com/the
 `Requirements:` [Neovim](https://github.com/neovim/neovim) (v0.2)
 
 ![](https://raw.githubusercontent.com/wiki/dzhou121/gonvim/screenshots/main.png)
-
+![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/gonvim-color-black.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/gonvim-color-white.png)
 
 ## Features
 
