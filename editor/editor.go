@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+        gcfg "gopkg.in/gcfg.v1"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -62,6 +63,9 @@ type Editor struct {
 	keyCmd          core.Qt__Key
 	keyAlt          core.Qt__Key
 	keyShift        core.Qt__Key
+
+ restoreSession    bool
+ showWorkspaceside bool
 }
 
 type editorSignal struct {
@@ -88,11 +92,23 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
+
+ cfg := struct {
+    Global struct {
+    RestoreSession     bool
+    ShowWorkspaceside  bool
+ }
+ }{}
+	home, err := homedir.Dir()
+ gcfg.ReadFileInto(&cfg, filepath.Join(home, ".gonvim", "gonvimrc"))
+
 	editor = &Editor{
-		version:    "v0.2.2",
-		selectedBg: newRGBA(81, 154, 186, 0.5),
-		matchFg:    newRGBA(81, 154, 186, 1),
-		stop:       make(chan struct{}),
+		version:            "v0.2.2",
+		selectedBg:         newRGBA(81, 154, 186, 0.5),
+		matchFg:            newRGBA(81, 154, 186, 1),
+		stop:               make(chan struct{}),
+  restoreSession:     cfg.Global.RestoreSession,
+  showWorkspaceside:  cfg.Global.ShowWorkspaceside,
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
@@ -127,10 +143,8 @@ func InitEditor() {
 
 	e.workspaces = []*Workspace{}
 	sessionExists := false
-	home, err := homedir.Dir()
 	if err == nil {
-	 restoreSessionFlagFile := filepath.Join(home, ".gonvim", "doNotRestoreSessions")
-	 if !isFileExist(restoreSessionFlagFile) {
+	 if e.restoreSession == true {
 		 for i := 0; i < 20; i++ {
 		 	path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
 		 	_, err := os.Stat(path)
@@ -146,6 +160,7 @@ func InitEditor() {
 		 	e.workspaceUpdate()
 		 }
   }
+
 	}
 	if !sessionExists {
 		ws, err := newWorkspace("")
@@ -232,6 +247,9 @@ func (e *Editor) workspaceUpdate() {
 	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
 		if i == e.active {
 			e.wsSide.items[i].setActive()
+   if e.showWorkspaceside == true {
+    e.wsSide.title.Show()
+   }
 		} else {
 			e.wsSide.items[i].setInactive()
 		}
@@ -241,9 +259,18 @@ func (e *Editor) workspaceUpdate() {
 	for i := len(e.workspaces); i < len(e.wsSide.items); i++ {
 		e.wsSide.items[i].hide()
 	}
-	if len(e.workspaces) == 1 {
-		e.wsSide.items[0].hide()
-	}
+
+ if len(e.workspaces) == 1 || len(e.wsSide.items) == 1 {
+  if e.showWorkspaceside == false {
+   e.wsSide.items[0].hide()
+   e.wsSide.title.Hide()
+  } else {
+   e.wsSide.title.Show()
+   e.wsSide.items[0].setActive()
+   e.wsSide.items[0].show()
+  }
+ }
+
 }
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {

@@ -708,6 +708,7 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 // WorkspaceSide is
 type WorkspaceSide struct {
 	widget *widgets.QWidget
+ title  *widgets.QLabel
 	items  []*WorkspaceSideItem
  fgcolor *RGBA
  bgcolor *RGBA
@@ -735,6 +736,7 @@ func newWorkspaceSide() *WorkspaceSide {
 
 	side := &WorkspaceSide{
 		widget: widget,
+  title:  labeltext,
 	}
 	layout.AddWidget(labeltext)
 
