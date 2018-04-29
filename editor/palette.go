@@ -3,7 +3,7 @@ package editor
 import (
 	"fmt"
 
-	"github.com/dzhou121/gonvim/fuzzy"
+	"github.com/akiyosi/gonvim/fuzzy"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dzhou121/gonvim/osdepend"
+	"github.com/akiyosi/gonvim/osdepend"
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/util"
 	"github.com/neovim/go-client/nvim"

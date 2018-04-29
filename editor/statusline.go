@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dzhou121/gonvim/osdepend"
+	"github.com/akiyosi/gonvim/osdepend"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"

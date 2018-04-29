@@ -10,7 +10,7 @@ import (
 	"sync"
 
  shortpath "github.com/akiyosi/short_path"
-	"github.com/dzhou121/gonvim/fuzzy"
+	"github.com/akiyosi/gonvim/fuzzy"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
