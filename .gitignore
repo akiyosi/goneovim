@@ -1,6 +1,5 @@
 moc*
 cmd/gonvim/gonvim
 cmd/gonvim/deploy/*
-cmd/gonvim/darwin/*
 cmd/gonvim/windows/*
 cmd/gonvim/rcc*
