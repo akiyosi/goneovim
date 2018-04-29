@@ -328,6 +328,8 @@ func (s *StatusMode) redraw() {
 	case "cmdline_normal":
 		text = "normal"
 		//bg = newRGBA(102, 153, 204, 1)
+	 svgContent := s.s.ws.getSvg("command", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+	 s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "insert":
 		text = "insert"
 		//bg = newRGBA(153, 199, 148, 1)
@@ -341,7 +343,7 @@ func (s *StatusMode) redraw() {
 	case "replace":
 		text = "replace"
 		//bg = newRGBA(250, 200, 99, 1)
-	 svgContent := s.s.ws.getSvg("transform", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+	 svgContent := s.s.ws.getSvg("replace", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
 	 s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
  if s.mode == "normal" {

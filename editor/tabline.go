@@ -405,7 +405,11 @@ func getFileType(text string) string {
 	base := filepath.Base(text)
 	if strings.Index(base, ".") >= 0 {
 		parts := strings.Split(base, ".")
-		return parts[len(parts)-1]
+  filetype := parts[len(parts)-1]
+  if filetype == "md" {
+   filetype = "markdown"
+  }
+		return filetype
 	}
 	return "default"
 }
