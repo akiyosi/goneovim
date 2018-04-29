@@ -73,8 +73,8 @@ type Workspace struct {
 	drawTabline    bool
 	drawLint       bool
 
- setGuiFgColor    bool
- setGuiBgColor    bool
+ setGuiFgColor  bool
+ setGuiBgColor  bool
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -83,8 +83,8 @@ func newWorkspace(path string) (*Workspace, error) {
 		signal:        NewWorkspaceSignal(nil),
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
-  setGuiFgColor:   false,
-  setGuiBgColor:   false,
+  setGuiFgColor: false,
+  setGuiBgColor: false,
 	}
 	w.signal.ConnectRedrawSignal(func() {
 		updates := <-w.redrawUpdates

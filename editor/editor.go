@@ -280,7 +280,7 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event.Text(), event.Key(), event.Modifiers())
 	if input != "" {
 		e.workspaces[e.active].nvim.Input(input)
-		e.workspaces[e.active].screen.redraw()
+		//e.workspaces[e.active].screen.redraw()
 	}
 }
 
