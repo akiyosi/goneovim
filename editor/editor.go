@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-        gcfg "gopkg.in/gcfg.v1"
+ ini "gopkg.in/go-ini/ini.v1"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -93,25 +93,28 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
-
- cfg := struct {
-    Global struct {
-    RestoreSession     bool
-    ShowWorkspaceside  bool
-    Workspacepath      string
- }
- }{}
 	home, err := homedir.Dir()
- gcfg.ReadFileInto(&cfg, filepath.Join(home, ".gonvim", "gonvimrc"))
+ cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
+ var cfgdisplay, cfgrestoresession bool
+ var cfgpath string
+ if cfgerr != nil {
+  cfgdisplay = false
+  cfgpath = "minimum"
+  cfgrestoresession = false
+ } else {
+  cfgdisplay = cfg.Section("workspace").Key("display").MustBool()
+  cfgpath = cfg.Section("workspace").Key("path").String()
+  cfgrestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
+ }
 
 	editor = &Editor{
 		version:            "v0.2.2",
 		selectedBg:         newRGBA(81, 154, 186, 0.5),
 		matchFg:            newRGBA(81, 154, 186, 1),
 		stop:               make(chan struct{}),
-  restoreSession:     cfg.Global.RestoreSession,
-  showWorkspaceside:  cfg.Global.ShowWorkspaceside,
-  workspacepath:      cfg.Global.Workspacepath,
+  showWorkspaceside:  cfgdisplay,
+  workspacepath:      cfgpath,
+  restoreSession:     cfgrestoresession,
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
@@ -250,9 +253,9 @@ func (e *Editor) workspaceUpdate() {
 	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
 		if i == e.active {
 			e.wsSide.items[i].setActive()
-   if e.showWorkspaceside == true {
+   //if e.showWorkspaceside == true {
     e.wsSide.title.Show()
-   }
+   //}
 		} else {
 			e.wsSide.items[i].setInactive()
 		}

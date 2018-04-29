@@ -339,25 +339,25 @@ func (w *Workspace) setCwd(cwd string) {
 	}
 	w.cwd = cwd
  
- var base string
+ var labelpath string
  switch editor.workspacepath {
  case "name":
-	 base = filepath.Base(cwd)
+	 labelpath = filepath.Base(cwd)
  case "minimum":
-  base, _ = shortpath.Minimum(cwd)
+  labelpath, _ = shortpath.Minimum(cwd)
  case "full":
-	 base, _ = filepath.Abs(cwd)
+	 labelpath, _ = filepath.Abs(cwd)
  default:
-	 base, _ = filepath.Abs(cwd)
+	 labelpath, _ = filepath.Abs(cwd)
  } 
 
-	w.cwdBase = base
+	w.cwdBase = filepath.Base(cwd)
 	for i, ws := range editor.workspaces {
 		if i >= len(editor.wsSide.items) {
 			return
 		}
 		if ws == w {
-			editor.wsSide.items[i].label.SetText(base)
+			editor.wsSide.items[i].label.SetText(labelpath)
 			return
 		}
 	}
