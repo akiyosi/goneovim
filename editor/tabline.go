@@ -1,7 +1,7 @@
 package editor
 
 import (
- "fmt"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -254,7 +254,6 @@ func newTabline() *Tabline {
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
 
-
 	marginDefault := 10
 	marginTop := 10
 	marginBottom := 10
@@ -304,10 +303,10 @@ func newTabline() *Tabline {
 }
 
 func (t *Tab) updateActive() {
- bg := t.t.ws.background
- fg := t.t.ws.foreground
+	bg := t.t.ws.background
+	fg := t.t.ws.foreground
 	if t.active {
-  t.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-top: 8px solid rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } QWidget{color: rgba(%d, %d, %d, 1);} ", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, bg.R, bg.G, bg.B, fg.R, fg.G, fg.B))
+		t.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-top: 8px solid rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } QWidget{color: rgba(%d, %d, %d, 1);} ", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, bg.R, bg.G, bg.B, fg.R, fg.G, fg.B))
 		svgContent := t.t.ws.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else {
@@ -405,10 +404,10 @@ func getFileType(text string) string {
 	base := filepath.Base(text)
 	if strings.Index(base, ".") >= 0 {
 		parts := strings.Split(base, ".")
-  filetype := parts[len(parts)-1]
-  if filetype == "md" {
-   filetype = "markdown"
-  }
+		filetype := parts[len(parts)-1]
+		if filetype == "md" {
+			filetype = "markdown"
+		}
 		return filetype
 	}
 	return "default"

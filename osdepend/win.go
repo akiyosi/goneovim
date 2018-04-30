@@ -4,10 +4,9 @@ package osdepend
 
 import (
 	"os/exec"
- "syscall"
+	"syscall"
 )
 
 func PrepareRunProc(cmd *exec.Cmd) {
-    cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 }
-

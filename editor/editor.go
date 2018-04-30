@@ -9,12 +9,12 @@ import (
 	"strings"
 	"sync"
 
- ini "gopkg.in/go-ini/ini.v1"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
+	ini "gopkg.in/go-ini/ini.v1"
 )
 
 var editor *Editor
@@ -64,9 +64,9 @@ type Editor struct {
 	keyAlt          core.Qt__Key
 	keyShift        core.Qt__Key
 
- restoreSession    bool
- showWorkspaceside bool
- workspacepath     string
+	restoreSession    bool
+	showWorkspaceside bool
+	workspacepath     string
 }
 
 type editorSignal struct {
@@ -95,27 +95,27 @@ func (hl *Highlight) copy() Highlight {
 func InitEditor() {
 
 	home, err := homedir.Dir()
- cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
- var cfgWSDisplay, cfgWSRestoresession bool
- var cfgWSPath string
- if cfgerr != nil {
-  cfgWSDisplay = false
-  cfgWSRestoresession = false
-  cfgWSPath = "minimum"
- } else {
-  cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
-  cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
-  cfgWSPath = cfg.Section("workspace").Key("path").String()
- }
+	cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
+	var cfgWSDisplay, cfgWSRestoresession bool
+	var cfgWSPath string
+	if cfgerr != nil {
+		cfgWSDisplay = false
+		cfgWSRestoresession = false
+		cfgWSPath = "minimum"
+	} else {
+		cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
+		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
+		cfgWSPath = cfg.Section("workspace").Key("path").String()
+	}
 
 	editor = &Editor{
-		version:            "v0.2.2",
-		selectedBg:         newRGBA(81, 154, 186, 0.5),
-		matchFg:            newRGBA(81, 154, 186, 1),
-		stop:               make(chan struct{}),
-  restoreSession:     cfgWSRestoresession,
-  showWorkspaceside:  cfgWSDisplay,
-  workspacepath:      cfgWSPath,
+		version:           "v0.2.2",
+		selectedBg:        newRGBA(81, 154, 186, 0.5),
+		matchFg:           newRGBA(81, 154, 186, 1),
+		stop:              make(chan struct{}),
+		restoreSession:    cfgWSRestoresession,
+		showWorkspaceside: cfgWSDisplay,
+		workspacepath:     cfgWSPath,
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
@@ -151,22 +151,22 @@ func InitEditor() {
 	e.workspaces = []*Workspace{}
 	sessionExists := false
 	if err == nil {
-	 if e.restoreSession == true {
-		 for i := 0; i < 20; i++ {
-		 	path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
-		 	_, err := os.Stat(path)
-		 	if err != nil {
-		 		break
-		 	}
-		 	sessionExists = true
-		 	ws, err := newWorkspace(path)
-		 	if err != nil {
-		 		break
-		 	}
-		 	e.workspaces = append(e.workspaces, ws)
-		 	e.workspaceUpdate()
-		 }
-  }
+		if e.restoreSession == true {
+			for i := 0; i < 20; i++ {
+				path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
+				_, err := os.Stat(path)
+				if err != nil {
+					break
+				}
+				sessionExists = true
+				ws, err := newWorkspace(path)
+				if err != nil {
+					break
+				}
+				e.workspaces = append(e.workspaces, ws)
+				e.workspaceUpdate()
+			}
+		}
 
 	}
 	if !sessionExists {
@@ -200,8 +200,8 @@ func InitEditor() {
 }
 
 func isFileExist(filename string) bool {
-    _, err := os.Stat(filename)
-    return err == nil
+	_, err := os.Stat(filename)
+	return err == nil
 }
 
 func (e *Editor) workspaceNew() {
@@ -254,9 +254,9 @@ func (e *Editor) workspaceUpdate() {
 	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
 		if i == e.active {
 			e.wsSide.items[i].setActive()
-   //if e.showWorkspaceside == true {
-    e.wsSide.title.Show()
-   //}
+			//if e.showWorkspaceside == true {
+			e.wsSide.title.Show()
+			//}
 		} else {
 			e.wsSide.items[i].setInactive()
 		}
@@ -267,16 +267,16 @@ func (e *Editor) workspaceUpdate() {
 		e.wsSide.items[i].hide()
 	}
 
- if len(e.workspaces) == 1 || len(e.wsSide.items) == 1 {
-  if e.showWorkspaceside == false {
-   e.wsSide.items[0].hide()
-   e.wsSide.title.Hide()
-  } else {
-   e.wsSide.title.Show()
-   e.wsSide.items[0].setActive()
-   e.wsSide.items[0].show()
-  }
- }
+	if len(e.workspaces) == 1 || len(e.wsSide.items) == 1 {
+		if e.showWorkspaceside == false {
+			e.wsSide.items[0].hide()
+			e.wsSide.title.Hide()
+		} else {
+			e.wsSide.title.Show()
+			e.wsSide.items[0].setActive()
+			e.wsSide.items[0].show()
+		}
+	}
 
 }
 

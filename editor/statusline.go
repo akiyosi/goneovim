@@ -79,11 +79,11 @@ type StatuslinePos struct {
 
 // StatusMode is
 type StatusMode struct {
-	s         *Statusline
-	label     *widgets.QLabel
+	s     *Statusline
+	label *widgets.QLabel
 	//mode    string
- mode      string
- modeIcon  *svg.QSvgWidget
+	mode      string
+	modeIcon  *svg.QSvgWidget
 	svgLoaded bool
 	text      string
 	//bg        *RGBA
@@ -132,9 +132,9 @@ func initStatuslineNew() *Statusline {
 	modeWidget.SetLayout(modeLayout)
 
 	mode := &StatusMode{
-		s:     s,
-		label: modeLabel,
-  modeIcon: modeIcon,
+		s:        s,
+		label:    modeLabel,
+		modeIcon: modeIcon,
 	}
 	s.mode = mode
 
@@ -293,9 +293,9 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
 		go s.git.redraw(file)
-  bg := s.ws.screen.highlight.background
-  fg := s.ws.screen.highlight.foreground
-  s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B))
+		bg := s.ws.screen.highlight.background
+		fg := s.ws.screen.highlight.foreground
+		s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B))
 	case "cursormoved":
 		pos := updates[1].([]interface{})
 		ln := reflectToInt(pos[1])
@@ -307,8 +307,8 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 }
 
 //func (s *StatusMode) update() {
-	//s.label.SetText(s.text)
-	//s.label.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
+//s.label.SetText(s.text)
+//s.label.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
 //}
 
 func (s *StatusMode) redraw() {
@@ -316,7 +316,7 @@ func (s *StatusMode) redraw() {
 		return
 	}
 
- fg := s.s.ws.screen.highlight.foreground
+	fg := s.s.ws.screen.highlight.foreground
 
 	s.mode = s.s.ws.mode
 	text := s.mode
@@ -328,29 +328,29 @@ func (s *StatusMode) redraw() {
 	case "cmdline_normal":
 		text = "normal"
 		//bg = newRGBA(102, 153, 204, 1)
-	 svgContent := s.s.ws.getSvg("command", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-	 s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent := s.s.ws.getSvg("command", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+		s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "insert":
 		text = "insert"
 		//bg = newRGBA(153, 199, 148, 1)
-	 svgContent := s.s.ws.getSvg("edit", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-	 s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent := s.s.ws.getSvg("edit", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+		s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "visual":
 		text = "visual"
 		//bg = newRGBA(250, 200, 99, 1)
-	 svgContent := s.s.ws.getSvg("select", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-	 s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent := s.s.ws.getSvg("select", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+		s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "replace":
 		text = "replace"
 		//bg = newRGBA(250, 200, 99, 1)
-	 svgContent := s.s.ws.getSvg("replace", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-	 s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent := s.s.ws.getSvg("replace", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+		s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
- if s.mode == "normal" {
-	 s.modeIcon.Hide()
- } else {
-	 s.modeIcon.Show()
- }
+	if s.mode == "normal" {
+		s.modeIcon.Hide()
+	} else {
+		s.modeIcon.Show()
+	}
 	s.text = text
 	//s.bg = bg
 }
@@ -368,11 +368,11 @@ func (s *StatuslineGit) update() {
 		s.widget.Hide()
 		return
 	}
- fg := s.s.ws.screen.highlight.foreground
+	fg := s.s.ws.screen.highlight.foreground
 	s.label.SetText(s.branch)
 	if !s.svgLoaded {
 		s.svgLoaded = true
-	 svgContent := s.s.ws.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+		svgContent := s.s.ws.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
 		s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	s.widget.Show()
@@ -392,8 +392,8 @@ func (s *StatuslineGit) redraw(file string) {
 
 	s.file = file
 	dir := filepath.Dir(file)
- cmd := exec.Command("git", "-C", dir, "branch")
- osdepend.PrepareRunProc(cmd)
+	cmd := exec.Command("git", "-C", dir, "branch")
+	osdepend.PrepareRunProc(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		s.hide()
@@ -411,8 +411,8 @@ func (s *StatuslineGit) redraw(file string) {
 			}
 		}
 	}
- cmd = exec.Command("git", "-C", dir, "diff", "--quiet")
- osdepend.PrepareRunProc(cmd)
+	cmd = exec.Command("git", "-C", dir, "diff", "--quiet")
+	osdepend.PrepareRunProc(cmd)
 	_, err = cmd.Output()
 	if err != nil {
 		branch += "*"
@@ -497,19 +497,19 @@ func (s *StatuslineLint) update() {
 		s.svgLoaded = true
 		//svgContent := s.s.ws.getSvg("check", newRGBA(141, 193, 73, 1))
 		//s.okIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	 var svgErrContent, svgWrnContent string
-	 if s.errors != 0 {
-	  svgErrContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
-  } else {
-	  svgErrContent = s.s.ws.getSvg("cross", nil)
-  }
-	 if s.warnings != 0 {
-	  svgWrnContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
-  } else {
-	  svgWrnContent = s.s.ws.getSvg("exclamation", nil)
-  }
-	 s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
-	 s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
+		var svgErrContent, svgWrnContent string
+		if s.errors != 0 {
+			svgErrContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
+		} else {
+			svgErrContent = s.s.ws.getSvg("cross", nil)
+		}
+		if s.warnings != 0 {
+			svgWrnContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
+		} else {
+			svgWrnContent = s.s.ws.getSvg("exclamation", nil)
+		}
+		s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
+		s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 	}
 
 	//if s.errors == 0 && s.warnings == 0 {
@@ -534,19 +534,19 @@ func (s *StatuslineLint) update() {
 
 func (s *StatuslineLint) redraw(errors, warnings int) {
 	if errors == s.errors && warnings == s.warnings {
-   return
+		return
 	}
 	var svgErrContent, svgWrnContent string
 	if errors != 0 {
-	 svgErrContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
- } else {
-	 svgErrContent = s.s.ws.getSvg("cross", nil)
- }
+		svgErrContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
+	} else {
+		svgErrContent = s.s.ws.getSvg("cross", nil)
+	}
 	if warnings != 0 {
-	 svgWrnContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
- } else {
-	 svgWrnContent = s.s.ws.getSvg("exclamation", nil)
- }
+		svgWrnContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
+	} else {
+		svgWrnContent = s.s.ws.getSvg("exclamation", nil)
+	}
 	s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
 	s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 	s.errors = errors

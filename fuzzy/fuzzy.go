@@ -354,7 +354,7 @@ func (s *Fuzzy) processSource() {
 			close(sourceNew)
 		}()
 	case string:
-  cmd := exec.Command("bash", "-c", src)
+		cmd := exec.Command("bash", "-c", src)
 		osdepend.PrepareRunProc(cmd)
 		stdout, _ := cmd.StdoutPipe()
 		output := ""
