@@ -93,18 +93,19 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
+
 	home, err := homedir.Dir()
  cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
- var cfgdisplay, cfgrestoresession bool
- var cfgpath string
+ var cfgWSDisplay, cfgWSRestoresession bool
+ var cfgWSPath string
  if cfgerr != nil {
-  cfgdisplay = false
-  cfgpath = "minimum"
-  cfgrestoresession = false
+  cfgWSDisplay = false
+  cfgWSRestoresession = false
+  cfgWSPath = "minimum"
  } else {
-  cfgdisplay = cfg.Section("workspace").Key("display").MustBool()
-  cfgpath = cfg.Section("workspace").Key("path").String()
-  cfgrestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
+  cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
+  cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
+  cfgWSPath = cfg.Section("workspace").Key("path").String()
  }
 
 	editor = &Editor{
@@ -112,9 +113,9 @@ func InitEditor() {
 		selectedBg:         newRGBA(81, 154, 186, 0.5),
 		matchFg:            newRGBA(81, 154, 186, 1),
 		stop:               make(chan struct{}),
-  showWorkspaceside:  cfgdisplay,
-  workspacepath:      cfgpath,
-  restoreSession:     cfgrestoresession,
+  restoreSession:     cfgWSRestoresession,
+  showWorkspaceside:  cfgWSDisplay,
+  workspacepath:      cfgWSPath,
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
@@ -259,7 +260,7 @@ func (e *Editor) workspaceUpdate() {
 		} else {
 			e.wsSide.items[i].setInactive()
 		}
-		e.wsSide.items[i].setText(e.workspaces[i].cwdBase)
+		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
 		e.wsSide.items[i].show()
 	}
 	for i := len(e.workspaces); i < len(e.wsSide.items); i++ {

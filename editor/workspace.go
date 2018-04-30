@@ -62,6 +62,7 @@ type Workspace struct {
 	mode       string
 	cwd        string
 	cwdBase    string
+ cwdlabel   string
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -199,6 +200,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	// 	return nil, err
 	// }
 
+ fmt.Println("path: ", path)
 	go w.startNvim(path)
 
 	return w, nil
@@ -350,14 +352,14 @@ func (w *Workspace) setCwd(cwd string) {
  default:
 	 labelpath, _ = filepath.Abs(cwd)
  } 
-
+ w.cwdlabel = labelpath
 	w.cwdBase = filepath.Base(cwd)
 	for i, ws := range editor.workspaces {
 		if i >= len(editor.wsSide.items) {
 			return
 		}
 		if ws == w {
-			editor.wsSide.items[i].label.SetText(labelpath)
+			editor.wsSide.items[i].label.SetText(w.cwdlabel)
 			return
 		}
 	}
