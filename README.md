@@ -14,12 +14,12 @@ Neovim GUI written in Golang, using a [Golang qt backend](https://github.com/the
 
 ## Features
 
-- [Modern UI](https://github.com/akiyosi/gonvim/wiki/Features#tabline-statusline-lint-message-command-line-and-message)
-- [Fuzzy Finder](https://github.com/akiyosi/gonvim/wiki/Features#fuzzy-finder-in-gui)
-- [Workspace](https://github.com/akiyosi/gonvim/wiki/Features#workspace)
-- [Markdown Preview](https://github.com/akiyosi/gonvim/wiki/Features#markdown-preview)
+* [Modern UI](https://github.com/akiyosi/gonvim/wiki/Features#tabline-statusline-lint-message-command-line-and-message)
+* [Fuzzy Finder](https://github.com/akiyosi/gonvim/wiki/Features#fuzzy-finder-in-gui)
+* [Workspace](https://github.com/akiyosi/gonvim/wiki/Features#workspace)
+* [Markdown Preview](https://github.com/akiyosi/gonvim/wiki/Features#markdown-preview)
 
 ## Documenation
 
-- [Configurations](https://github.com/akiyosi/gonvim/wiki/Configurations)
-- [Development](https://github.com/akiyosi/gonvim/wiki/Development)
+* [Configurations](https://github.com/akiyosi/gonvim/wiki/Configurations)
+* [Development](https://github.com/akiyosi/gonvim/wiki/Development)

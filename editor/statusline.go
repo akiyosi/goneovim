@@ -109,8 +109,10 @@ type StatuslineEncoding struct {
 
 func initStatuslineNew() *Statusline {
 	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 1, 0, 0)
-	layout := newVFlowLayout(14, 8, 1, 2, 0)
+	widget.SetContentsMargins(0, 0, 0, 0)
+
+	// spacing, padding, paddingtop, rightitemnum, width
+	layout := newVFlowLayout(16, 10, 1, 2, 0)
 	widget.SetLayout(layout)
 	widget.SetObjectName("statusline")
 
@@ -124,11 +126,11 @@ func initStatuslineNew() *Statusline {
 	modeLabel := widgets.NewQLabel(nil, 0)
 	modeLabel.SetContentsMargins(0, 0, 0, 0)
 	modeLayout := widgets.NewQHBoxLayout()
-	modeLayout.AddWidget(modeIcon, 0, 0)
+	// mode displayed as a fileicon
+	//modeLayout.AddWidget(modeIcon, 0, 0)
 	//modeLayout.AddWidget(modeLabel, 0, 0)
 	modeLayout.SetContentsMargins(0, 0, 0, 0)
 	modeWidget := widgets.NewQWidget(nil, 0)
-	modeWidget.SetContentsMargins(0, 5, 0, 5)
 	modeWidget.SetLayout(modeLayout)
 
 	mode := &StatusMode{
@@ -148,7 +150,6 @@ func initStatuslineNew() *Statusline {
 	gitLayout.AddWidget(gitIcon, 0, 0)
 	gitLayout.AddWidget(gitLabel, 0, 0)
 	gitWidget := widgets.NewQWidget(nil, 0)
-	gitWidget.SetContentsMargins(0, 0, 0, 0)
 	gitWidget.SetLayout(gitLayout)
 	gitWidget.Hide()
 	git := &StatuslineGit{
@@ -162,18 +163,16 @@ func initStatuslineNew() *Statusline {
 	fileIcon := svg.NewQSvgWidget(nil)
 	fileIcon.SetFixedSize2(13, 13)
 	fileLabel := widgets.NewQLabel(nil, 0)
-	fileLabel.SetContentsMargins(0, 6, 0, 6)
+	fileLabel.SetContentsMargins(0, 0, 0, 0)
 	folderLabel := widgets.NewQLabel(nil, 0)
-	folderLabel.SetContentsMargins(0, 0, 0, 0)
 	folderLabel.SetContentsMargins(0, 0, 0, 0)
 	fileLayout := widgets.NewQHBoxLayout()
 	fileLayout.SetContentsMargins(0, 0, 0, 0)
 	fileLayout.SetSpacing(3)
 	fileLayout.AddWidget(fileIcon, 0, 0)
-	fileLayout.AddWidget(fileLabel, 0, 0)
 	fileLayout.AddWidget(folderLabel, 0, 0)
+	fileLayout.AddWidget(fileLabel, 0, 0)
 	fileWidget := widgets.NewQWidget(nil, 0)
-	fileWidget.SetContentsMargins(0, 0, 0, 0)
 	fileWidget.SetLayout(fileLayout)
 	file := &StatuslineFile{
 		s:           s,
@@ -185,21 +184,18 @@ func initStatuslineNew() *Statusline {
 	s.file = file
 
 	encodingLabel := widgets.NewQLabel(nil, 0)
-	encodingLabel.SetContentsMargins(0, 0, 0, 0)
 	encoding := &StatuslineEncoding{
 		label: encodingLabel,
 	}
 	s.encoding = encoding
 
 	posLabel := widgets.NewQLabel(nil, 0)
-	posLabel.SetContentsMargins(0, 0, 0, 0)
 	pos := &StatuslinePos{
 		label: posLabel,
 	}
 	s.pos = pos
 
 	filetypeLabel := widgets.NewQLabel(nil, 0)
-	filetypeLabel.SetContentsMargins(0, 0, 0, 0)
 	filetype := &StatuslineFiletype{
 		label: filetypeLabel,
 	}
@@ -231,7 +227,6 @@ func initStatuslineNew() *Statusline {
 	lintLayout.AddWidget(warnIcon, 0, 0)
 	lintLayout.AddWidget(warnLabel, 0, 0)
 	lintWidget := widgets.NewQWidget(nil, 0)
-	lintWidget.SetContentsMargins(0, 0, 0, 0)
 	lintWidget.SetLayout(lintLayout)
 	lint := &StatuslineLint{
 		s:          s,
@@ -247,15 +242,27 @@ func initStatuslineNew() *Statusline {
 	}
 	s.lint = lint
 
-	layout.AddWidget(gitWidget)
+	s.setContentsMarginsForWidgets(0, 7, 0, 9)
+
+	layout.AddWidget(modeWidget)
 	layout.AddWidget(fileWidget)
+	layout.AddWidget(gitWidget)
+	layout.AddWidget(lintWidget)
 	layout.AddWidget(filetypeLabel)
 	layout.AddWidget(encodingLabel)
-	layout.AddWidget(lintWidget)
 	layout.AddWidget(posLabel)
-	layout.AddWidget(modeWidget)
 
 	return s
+}
+
+func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
+	s.pos.label.SetContentsMargins(l, u, r, d)
+	s.mode.label.SetContentsMargins(l, u, r, d)
+	s.file.widget.SetContentsMargins(l, u, r, d)
+	s.filetype.label.SetContentsMargins(l, u, r, d)
+	s.git.widget.SetContentsMargins(l, u, r, d)
+	s.encoding.label.SetContentsMargins(l, u, r, d)
+	s.lint.widget.SetContentsMargins(l, u, r, d)
 }
 
 func (s *Statusline) subscribe() {
@@ -325,31 +332,41 @@ func (s *StatusMode) redraw() {
 	case "normal":
 		text = "normal"
 		//bg = newRGBA(102, 153, 204, 1)
+		//svgContent := s.s.ws.getSvg(s.s.file.fileType, nil)
+		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		//s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "cmdline_normal":
 		text = "normal"
 		//bg = newRGBA(102, 153, 204, 1)
-		svgContent := s.s.ws.getSvg("command", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-		s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent := s.s.ws.getSvg("command", newRGBA(shiftColor(fg, -24).R, shiftColor(fg, -24).G, shiftColor(fg, -24).B, 1))
+		//svgContent := s.s.ws.getSvg(s.s.file.fileType, nil)
+		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "insert":
 		text = "insert"
 		//bg = newRGBA(153, 199, 148, 1)
-		svgContent := s.s.ws.getSvg("edit", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-		s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent := s.s.ws.getSvg("edit", newRGBA(shiftColor(fg, -24).R, shiftColor(fg, -24).G, shiftColor(fg, -24).B, 1))
+		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "visual":
 		text = "visual"
 		//bg = newRGBA(250, 200, 99, 1)
-		svgContent := s.s.ws.getSvg("select", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-		s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent := s.s.ws.getSvg("select", newRGBA(shiftColor(fg, -48).R, shiftColor(fg, -48).G, shiftColor(fg, -48).B, 1))
+		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "replace":
 		text = "replace"
 		//bg = newRGBA(250, 200, 99, 1)
-		svgContent := s.s.ws.getSvg("replace", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-		s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent := s.s.ws.getSvg("replace", newRGBA(shiftColor(fg, -24).R, shiftColor(fg, -24).G, shiftColor(fg, -24).B, 1))
+		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	if s.mode == "normal" {
-		s.modeIcon.Hide()
+		//s.modeIcon.Hide()
+		s.s.file.icon.Hide()
 	} else {
-		s.modeIcon.Show()
+		//s.modeIcon.Show()
+		s.s.file.icon.Show()
 	}
 	s.text = text
 	//s.bg = bg
