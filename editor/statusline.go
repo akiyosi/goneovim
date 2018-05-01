@@ -146,7 +146,7 @@ func initStatuslineNew() *Statusline {
 	gitLabel.SetContentsMargins(0, 0, 0, 0)
 	gitLayout := widgets.NewQHBoxLayout()
 	gitLayout.SetContentsMargins(0, 0, 0, 0)
-	gitLayout.SetSpacing(2)
+	gitLayout.SetSpacing(0)
 	gitLayout.AddWidget(gitIcon, 0, 0)
 	gitLayout.AddWidget(gitLabel, 0, 0)
 	gitWidget := widgets.NewQWidget(nil, 0)
@@ -188,6 +188,7 @@ func initStatuslineNew() *Statusline {
 		label: encodingLabel,
 	}
 	s.encoding = encoding
+	s.encoding.label.Hide()
 
 	posLabel := widgets.NewQLabel(nil, 0)
 	pos := &StatuslinePos{
@@ -200,6 +201,7 @@ func initStatuslineNew() *Statusline {
 		label: filetypeLabel,
 	}
 	s.filetype = filetype
+	s.filetype.label.Hide()
 
 	okIcon := svg.NewQSvgWidget(nil)
 	okIcon.SetFixedSize2(14, 14)
@@ -207,16 +209,16 @@ func initStatuslineNew() *Statusline {
 	okLabel.SetContentsMargins(0, 0, 0, 0)
 	errorIcon := svg.NewQSvgWidget(nil)
 	errorIcon.SetFixedSize2(14, 14)
-	errorIcon.Hide()
+	//errorIcon.Show()
 	errorLabel := widgets.NewQLabel(nil, 0)
 	errorLabel.SetContentsMargins(0, 0, 0, 0)
-	errorLabel.Hide()
+	//errorLabel.Show()
 	warnIcon := svg.NewQSvgWidget(nil)
 	warnIcon.SetFixedSize2(14, 14)
-	warnIcon.Hide()
+	//warnIcon.Show()
 	warnLabel := widgets.NewQLabel(nil, 0)
 	warnLabel.SetContentsMargins(0, 0, 0, 0)
-	warnLabel.Hide()
+	//warnLabel.Show()
 	lintLayout := widgets.NewQHBoxLayout()
 	lintLayout.SetContentsMargins(0, 0, 0, 0)
 	lintLayout.SetSpacing(0)
@@ -247,10 +249,10 @@ func initStatuslineNew() *Statusline {
 	layout.AddWidget(modeWidget)
 	layout.AddWidget(fileWidget)
 	layout.AddWidget(gitWidget)
-	layout.AddWidget(lintWidget)
 	layout.AddWidget(filetypeLabel)
 	layout.AddWidget(encodingLabel)
 	layout.AddWidget(posLabel)
+	layout.AddWidget(lintWidget)
 
 	return s
 }
@@ -300,9 +302,6 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
 		go s.git.redraw(file)
-		bg := s.ws.screen.highlight.background
-		fg := s.ws.screen.highlight.foreground
-		s.ws.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B))
 	case "cursormoved":
 		pos := updates[1].([]interface{})
 		ln := reflectToInt(pos[1])
@@ -499,6 +498,7 @@ func (s *StatuslineEncoding) redraw(encoding string) {
 	}
 	s.encoding = encoding
 	s.label.SetText(s.encoding)
+	s.label.Show()
 }
 
 func (s *StatuslineFiletype) redraw(filetype string) {
@@ -506,7 +506,12 @@ func (s *StatuslineFiletype) redraw(filetype string) {
 		return
 	}
 	s.filetype = filetype
-	s.label.SetText(s.filetype)
+	typetext := strings.Title(s.filetype)
+	if typetext == "Cpp" {
+	 typetext = "C++"
+	}
+	s.label.SetText(typetext)
+	s.label.Show()
 }
 
 func (s *StatuslineLint) update() {

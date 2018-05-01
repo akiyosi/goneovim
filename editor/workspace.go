@@ -518,6 +518,8 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 						editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1); ", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B) + wsSideItemStyle)
 					}
 				}
+	      go w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding)`)
+	      go w.nvim.Command(`call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
 			}
 
 		case "update_sp":
@@ -540,6 +542,8 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.resize(args)
 		case "highlight_set":
 			s.highlightSet(args)
+			fg := w.foreground
+			fmt.Println(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
 		case "set_scroll_region":
 			s.setScrollRegion(args)
 		case "scroll":
