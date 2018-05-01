@@ -65,7 +65,7 @@ func (w *Workspace) initSVGS() {
 		width:  24,
 		height: 24,
 		color:  w.foreground,
-		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M6 2A4 4 0 0 1 10 6V8H14V6A4 4 0 0 1 18 2A4 4 0 0 1 22 6A4 4 0 0 1 18 10H16V14H18A4 4 0 0 1 22 18A4 4 0 0 1 18 22A4 4 0 0 1 14 18V16H10V18A4 4 0 0 1 6 22A4 4 0 0 1 2 18A4 4 0 0 1 6 14H8V10H6A4 4 0 0 1 2 6A4 4 0 0 1 6 2M16 18A2 2 0 0 0 18 20A2 2 0 0 0 20 18A2 2 0 0 0 18 16H16V18M14 10H10V14H14V10M6 16A2 2 0 0 0 4 18A2 2 0 0 0 6 20A2 2 0 0 0 8 18V16H6M8 6A2 2 0 0 0 6 4A2 2 0 0 0 4 6A2 2 0 0 0 6 8H8V6M18 8A2 2 0 0 0 20 6A2 2 0 0 0 18 4A2 2 0 0 0 16 6V8H18Z" /></svg>`,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><g transform="scale(0.9)"><path fill="%s" d="M6 2A4 4 0 0 1 10 6V8H14V6A4 4 0 0 1 18 2A4 4 0 0 1 22 6A4 4 0 0 1 18 10H16V14H18A4 4 0 0 1 22 18A4 4 0 0 1 18 22A4 4 0 0 1 14 18V16H10V18A4 4 0 0 1 6 22A4 4 0 0 1 2 18A4 4 0 0 1 6 14H8V10H6A4 4 0 0 1 2 6A4 4 0 0 1 6 2M16 18A2 2 0 0 0 18 20A2 2 0 0 0 20 18A2 2 0 0 0 18 16H16V18M14 10H10V14H14V10M6 16A2 2 0 0 0 4 18A2 2 0 0 0 6 20A2 2 0 0 0 8 18V16H6M8 6A2 2 0 0 0 6 4A2 2 0 0 0 4 6A2 2 0 0 0 6 8H8V6M18 8A2 2 0 0 0 20 6A2 2 0 0 0 18 4A2 2 0 0 0 16 6V8H18Z" /></g></svg>`,
 	}
 
 	w.svgs["replace"] = &SvgXML{
@@ -89,7 +89,7 @@ func (w *Workspace) initSVGS() {
 		height: 24,
 		color:  w.foreground,
 		xml: `<?xml version="1.0" encoding="utf-8"?>
-   <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%s" d="M20.71 4.04C21.1 3.65 21.1 3 20.71 2.63L18.37 0.29C18 -0.1 17.35 -0.1 16.96 0.29L15 2.25L18.75 6M17.75 7L14 3.25L4 13.25V17H7.75L17.75 7Z" /></svg>`,
+   <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="translate(0,2)"><path fill="%s" d="M20.71 4.04C21.1 3.65 21.1 3 20.71 2.63L18.37 0.29C18 -0.1 17.35 -0.1 16.96 0.29L15 2.25L18.75 6M17.75 7L14 3.25L4 13.25V17H7.75L17.75 7Z" /></g></svg>`,
 	}
 
 	// for Visual Mode
@@ -114,6 +114,7 @@ func (w *Workspace) initSVGS() {
 		xml: `<?xml version="1.0" encoding="utf-8"?>
 <svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path fill="%s" d="M1792 896q0 174-120 321.5t-326 233-450 85.5q-70 0-145-8-198 175-460 242-49 14-114 22-17 2-30.5-9t-17.5-29v-1q-3-4-.5-12t2-10 4.5-9.5l6-9 7-8.5 8-9q7-8 31-34.5t34.5-38 31-39.5 32.5-51 27-59 26-76q-157-89-247.5-220t-90.5-281q0-130 71-248.5t191-204.5 286-136.5 348-50.5q244 0 450 85.5t326 233 120 321.5z"/></svg>`,
 	}
+
 	w.svgs["cross"] = &SvgXML{
 		width:     100,
 		height:    100,
@@ -121,6 +122,14 @@ func (w *Workspace) initSVGS() {
 		color:     w.foreground,
 		xml:       `<?xml version="1.0" encoding="utf-8"?><svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path fill="%s" d="M1490 1322q0 40-28 68l-136 136q-28 28-68 28t-68-28l-294-294-294 294q-28 28-68 28t-68-28l-136-136q-28-28-28-68t28-68l294-294-294-294q-28-28-28-68t28-68l136-136q28-28 68-28t68 28l294 294 294-294q28-28 68-28t68 28l136 136q28 28 28 68t-28 68l-294 294 294 294q28 28 28 68z"/></svg>`,
 	}
+
+	w.svgs["bad"] = &SvgXML{
+		width:  24,
+		height: 24,
+		color:  w.foreground,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M13.46 12L19 17.54V19H17.54L12 13.46L6.46 19H5V17.54L10.54 12L5 6.46V5H6.46L12 10.54L17.54 5H19V6.46L13.46 12Z" /></svg>`,
+	}
+
 	w.svgs["default"] = &SvgXML{
 		width:     200,
 		height:    200,

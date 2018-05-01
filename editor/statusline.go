@@ -110,7 +110,7 @@ type StatuslineEncoding struct {
 func initStatuslineNew() *Statusline {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 1, 0, 0)
-	layout := newVFlowLayout(14, 8, 1, 3, 0)
+	layout := newVFlowLayout(14, 8, 1, 2, 0)
 	widget.SetLayout(layout)
 	widget.SetObjectName("statusline")
 
@@ -173,7 +173,7 @@ func initStatuslineNew() *Statusline {
 	fileLayout.AddWidget(fileLabel, 0, 0)
 	fileLayout.AddWidget(folderLabel, 0, 0)
 	fileWidget := widgets.NewQWidget(nil, 0)
-	fileWidget.SetContentsMargins(-1, 0, 0, 0)
+	fileWidget.SetContentsMargins(0, 0, 0, 0)
 	fileWidget.SetLayout(fileLayout)
 	file := &StatuslineFile{
 		s:           s,
@@ -247,13 +247,13 @@ func initStatuslineNew() *Statusline {
 	}
 	s.lint = lint
 
-	layout.AddWidget(modeWidget)
 	layout.AddWidget(gitWidget)
 	layout.AddWidget(fileWidget)
 	layout.AddWidget(filetypeLabel)
 	layout.AddWidget(encodingLabel)
 	layout.AddWidget(lintWidget)
 	layout.AddWidget(posLabel)
+	layout.AddWidget(modeWidget)
 
 	return s
 }
@@ -446,14 +446,14 @@ func (s *StatuslineFile) redraw(file string) {
 	if dir == "." {
 		dir = ""
 	}
-	if strings.HasPrefix(file, "term://") {
-		base = file
-		dir = ""
-	}
 	fileType := getFileType(file)
 	if s.fileType != fileType {
 		s.fileType = fileType
 		s.updateIcon()
+	}
+	if strings.HasPrefix(file, "term://") {
+		base = file
+		dir = ""
 	}
 	if s.base != base {
 		s.base = base
@@ -499,9 +499,9 @@ func (s *StatuslineLint) update() {
 		//s.okIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		var svgErrContent, svgWrnContent string
 		if s.errors != 0 {
-			svgErrContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
+			svgErrContent = s.s.ws.getSvg("bad", newRGBA(204, 62, 68, 1))
 		} else {
-			svgErrContent = s.s.ws.getSvg("cross", nil)
+			svgErrContent = s.s.ws.getSvg("bad", nil)
 		}
 		if s.warnings != 0 {
 			svgWrnContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
@@ -538,9 +538,9 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 	}
 	var svgErrContent, svgWrnContent string
 	if errors != 0 {
-		svgErrContent = s.s.ws.getSvg("cross", newRGBA(204, 62, 68, 1))
+		svgErrContent = s.s.ws.getSvg("bad", newRGBA(204, 62, 68, 1))
 	} else {
-		svgErrContent = s.s.ws.getSvg("cross", nil)
+		svgErrContent = s.s.ws.getSvg("bad", nil)
 	}
 	if warnings != 0 {
 		svgWrnContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))

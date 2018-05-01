@@ -399,7 +399,7 @@ func (t *Tabline) update(args []interface{}) {
 
 func getFileType(text string) string {
 	if strings.HasPrefix(text, "term://") {
-		return "sh"
+		return "terminal"
 	}
 	base := filepath.Base(text)
 	if strings.Index(base, ".") >= 0 {

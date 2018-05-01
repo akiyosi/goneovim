@@ -209,9 +209,13 @@ func (e *Editor) workspaceNew() {
 	if err != nil {
 		return
 	}
-	e.active++
+	//e.active++
+	//e.workspaces = append(e.workspaces, nil)
+	//copy(e.workspaces[e.active+1:], e.workspaces[e.active:])
+
 	e.workspaces = append(e.workspaces, nil)
-	copy(e.workspaces[e.active+1:], e.workspaces[e.active:])
+	e.active = len(e.workspaces) - 1
+
 	e.workspaces[e.active] = ws
 	e.workspaceUpdate()
 }
