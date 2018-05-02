@@ -26,6 +26,8 @@ Pre-built packages for Windows, macOS, and Linux are found at the [Releases](htt
 
 For macOS and linux environment, you need to deploy Neovim (v0.2.2 or later) under the `$PATH`.
 
+For Windows, you need to add Gonvim `bin` path to `$PATH` environment variable.
+
 
 <br>
 
