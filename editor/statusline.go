@@ -322,7 +322,7 @@ func (s *StatusMode) redraw() {
 		return
 	}
 
-	fg := s.s.ws.screen.highlight.foreground
+	fg := s.s.ws.foreground
 
 	s.mode = s.s.ws.mode
 	text := s.mode
@@ -384,13 +384,13 @@ func (s *StatuslineGit) update() {
 		s.widget.Hide()
 		return
 	}
-	fg := s.s.ws.screen.highlight.foreground
+	//fg := s.s.ws.screen.highlight.foreground
 	s.label.SetText(s.branch)
-	if !s.svgLoaded {
-		s.svgLoaded = true
-		svgContent := s.s.ws.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-		s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	}
+	//if !s.svgLoaded {
+	//	s.svgLoaded = true
+	//	svgContent := s.s.ws.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+	//	s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	//}
 	s.widget.Show()
 }
 
