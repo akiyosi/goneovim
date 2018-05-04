@@ -27,26 +27,25 @@ type PopupMenu struct {
 	y               int
 }
 
-
 // PopupItem is
 type PopupItem struct {
-	kindLabel       *widgets.QLabel
-	kindText        string
-	detailText      string
+	kindLabel  *widgets.QLabel
+	kindText   string
+	detailText string
 
 	menuLabel       *widgets.QLabel
 	menuText        string
 	menuTextRequest string
 
-	detailLabel      *widgets.QLabel
-  detailTextRequest string
+	detailLabel       *widgets.QLabel
+	detailTextRequest string
 
 	selected        bool
 	selectedRequest bool
 
-	kindColor       *RGBA
-	kindBg          *RGBA
-	hidden          bool
+	kindColor *RGBA
+	kindBg    *RGBA
+	hidden    bool
 }
 
 func initPopupmenuNew(font *Font) *PopupMenu {
@@ -86,15 +85,15 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		detail := widgets.NewQLabel(nil, 0)
 		detail.SetContentsMargins(8, 8, 8, 8)
 		detail.SetFont(font.fontNew)
-	  detail.SetObjectName("detailpopup")
+		detail.SetObjectName("detailpopup")
 
 		layout.AddWidget(kind, i, 0, 0)
 		layout.AddWidget(menu, i, 1, 0)
 		layout.AddWidget(detail, i, 2, 0)
 
 		popupItem := &PopupItem{
-			kindLabel: kind,
-			menuLabel: menu,
+			kindLabel:   kind,
+			menuLabel:   menu,
 			detailLabel: detail,
 		}
 		popupItems = append(popupItems, popupItem)
@@ -246,7 +245,7 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 
 	p.setKind(kindText, selected)
 	p.menuTextRequest = text
-	p.detailTextRequest = detail[1:len(detail)-1] // cut "[" and "]"
+	p.detailTextRequest = detail[1 : len(detail)-1] // cut "[" and "]"
 	p.setSelected(selected)
 }
 

@@ -508,7 +508,7 @@ func (s *StatuslineFiletype) redraw(filetype string) {
 	s.filetype = filetype
 	typetext := strings.Title(s.filetype)
 	if typetext == "Cpp" {
-	 typetext = "C++"
+		typetext = "C++"
 	}
 	s.label.SetText(typetext)
 	s.label.Show()

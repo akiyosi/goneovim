@@ -4,15 +4,18 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
 
 // Locpopup is the location popup
 type Locpopup struct {
-	ws           *Workspace
-	mutex        sync.Mutex
-	widget       *widgets.QWidget
-	typeLabel    *widgets.QLabel
+	ws     *Workspace
+	mutex  sync.Mutex
+	widget *widgets.QWidget
+	//typeLabel    *widgets.QLabel
+	typeLabel    *svg.QSvgWidget
 	typeText     string
 	contentLabel *widgets.QLabel
 	contentText  string
@@ -27,8 +30,10 @@ func initLocpopup() *Locpopup {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(4)
 	widget.SetLayout(layout)
-	typeLabel := widgets.NewQLabel(nil, 0)
-	typeLabel.SetContentsMargins(4, 1, 4, 1)
+	//typeLabel := widgets.NewQLabel(nil, 0)
+	//typeLabel.SetContentsMargins(4, 1, 4, 1)
+	typeLabel := svg.NewQSvgWidget(nil)
+	typeLabel.SetFixedSize2(14, 14)
 
 	contentLabel := widgets.NewQLabel(nil, 0)
 	contentLabel.SetContentsMargins(0, 0, 0, 0)
@@ -66,11 +71,15 @@ func (l *Locpopup) updateLocpopup() {
 	}
 	l.contentLabel.SetText(l.contentText)
 	if l.typeText == "E" {
-		l.typeLabel.SetText("Error")
-		l.typeLabel.SetStyleSheet("background-color: rgba(204, 62, 68, 1);")
+		//l.typeLabel.SetText("Error")
+		//l.typeLabel.SetStyleSheet("background-color: rgba(204, 62, 68, 1);")
+		svgContent := l.ws.getSvg("linterr", newRGBA(204, 62, 68, 1))
+		l.typeLabel.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else if l.typeText == "W" {
-		l.typeLabel.SetText("Warning")
-		l.typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1);")
+		//l.typeLabel.SetText("Warning")
+		//l.typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1);")
+		svgContent := l.ws.getSvg("lintwrn", newRGBA(204, 203, 65, 1))
+		l.typeLabel.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	l.widget.Hide()
 	l.widget.Show()
