@@ -1,3 +1,4 @@
+tags*
 moc*
 cmd/gonvim/gonvim
 cmd/gonvim/debug
@@ -5,4 +6,3 @@ cmd/gonvim/deploy/*
 cmd/gonvim/deploy*
 cmd/gonvim/windows/*
 cmd/gonvim/rcc*
-tags
