@@ -137,14 +137,15 @@ func InitEditor() {
 
 	e.window.SetAcceptDrops(true)
 
-	layout := widgets.NewQHBoxLayout()
+	//layout := widgets.NewQHBoxLayout()
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
-	widget.SetLayout(layout)
+	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, widget)
+	//widget.SetLayout(layout)
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
-	layout.AddWidget(e.wsSide.widget, 0, 0)
 	layout.AddWidget(e.wsWidget, 1, 0)
+	layout.AddWidget(e.wsSide.widget, 0, 0)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 

@@ -27,17 +27,25 @@ type PopupMenu struct {
 	y               int
 }
 
+
 // PopupItem is
 type PopupItem struct {
-	kindLable       *widgets.QLabel
+	kindLabel       *widgets.QLabel
 	kindText        string
-	kindColor       *RGBA
-	kindBg          *RGBA
-	menuLable       *widgets.QLabel
+	detailText      string
+
+	menuLabel       *widgets.QLabel
 	menuText        string
 	menuTextRequest string
+
+	detailLabel      *widgets.QLabel
+  detailTextRequest string
+
 	selected        bool
 	selectedRequest bool
+
+	kindColor       *RGBA
+	kindBg          *RGBA
 	hidden          bool
 }
 
@@ -67,6 +75,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	widget.SetGraphicsEffect(shadow)
 	max := 15
 	var popupItems []*PopupItem
+
 	for i := 0; i < max; i++ {
 		kind := widgets.NewQLabel(nil, 0)
 		kind.SetContentsMargins(8, 8, 8, 8)
@@ -74,12 +83,19 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		menu := widgets.NewQLabel(nil, 0)
 		menu.SetContentsMargins(8, 8, 8, 8)
 		menu.SetFont(font.fontNew)
+		detail := widgets.NewQLabel(nil, 0)
+		detail.SetContentsMargins(8, 8, 8, 8)
+		detail.SetFont(font.fontNew)
+	  detail.SetObjectName("detailpopup")
+
 		layout.AddWidget(kind, i, 0, 0)
 		layout.AddWidget(menu, i, 1, 0)
+		layout.AddWidget(detail, i, 2, 0)
 
 		popupItem := &PopupItem{
-			kindLable: kind,
-			menuLable: menu,
+			kindLabel: kind,
+			menuLabel: menu,
+			detailLabel: detail,
 		}
 		popupItems = append(popupItems, popupItem)
 	}
@@ -98,8 +114,9 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 func (p *PopupMenu) updateFont(font *Font) {
 	for i := 0; i < p.total; i++ {
 		popupItem := p.items[i]
-		popupItem.kindLable.SetFont(font.fontNew)
-		popupItem.menuLable.SetFont(font.fontNew)
+		popupItem.kindLabel.SetFont(font.fontNew)
+		popupItem.menuLabel.SetFont(font.fontNew)
+		popupItem.detailLabel.SetFont(font.fontNew)
 	}
 }
 
@@ -146,7 +163,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	}
 
 	p.widget.Move2(
-		int(float64(col)*p.ws.font.truewidth)-popupItems[0].kindLable.Width()-8,
+		int(float64(col)*p.ws.font.truewidth)-popupItems[0].kindLabel.Width()-8,
 		(row+1)*p.ws.font.lineHeight,
 	)
 	p.show()
@@ -194,22 +211,26 @@ func (p *PopupMenu) scroll(n int) {
 }
 
 func (p *PopupItem) updateKind() {
-	p.kindLable.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", p.kindBg.String(), p.kindColor.String()))
-	p.kindLable.SetText(p.kindText)
+	p.kindLabel.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", p.kindBg.String(), p.kindColor.String()))
+	p.kindLabel.SetText(p.kindText)
 }
 
 func (p *PopupItem) updateMenu() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		if p.selected {
-			p.menuLable.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.selectedBg.String()))
+			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.selectedBg.String()))
+			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.selectedBg.String()))
 		} else {
-			p.menuLable.SetStyleSheet("")
+			p.menuLabel.SetStyleSheet("")
+			p.detailLabel.SetStyleSheet("")
 		}
 	}
 	if p.menuTextRequest != p.menuText {
 		p.menuText = p.menuTextRequest
-		p.menuLable.SetText(p.menuText)
+		p.menuLabel.SetText(p.menuText)
+		p.detailText = p.detailTextRequest
+		p.detailLabel.SetText(p.detailText)
 	}
 }
 
@@ -221,8 +242,11 @@ func (p *PopupItem) setSelected(selected bool) {
 func (p *PopupItem) setItem(item []interface{}, selected bool) {
 	text := item[0].(string)
 	kindText := item[1].(string)
+	detail := fmt.Sprintf("%s", item[2:])
+
 	p.setKind(kindText, selected)
 	p.menuTextRequest = text
+	p.detailTextRequest = detail[1:len(detail)-1] // cut "[" and "]"
 	p.setSelected(selected)
 }
 
@@ -279,8 +303,9 @@ func (p *PopupItem) hide() {
 		return
 	}
 	p.hidden = true
-	p.kindLable.Hide()
-	p.menuLable.Hide()
+	p.kindLabel.Hide()
+	p.menuLabel.Hide()
+	p.detailLabel.Hide()
 }
 
 func (p *PopupItem) show() {
@@ -288,6 +313,7 @@ func (p *PopupItem) show() {
 		return
 	}
 	p.hidden = false
-	p.kindLable.Show()
-	p.menuLable.Show()
+	p.kindLabel.Show()
+	p.menuLabel.Show()
+	p.detailLabel.Show()
 }

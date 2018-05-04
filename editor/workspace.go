@@ -483,7 +483,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				paletteStyle = fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); }", shiftColor(fg, -30).R, shiftColor(fg, -30).G, shiftColor(fg, -30).B)
 				tabStyle = fmt.Sprintf("QWidget { color: rgba(%d, %d, %d, 0.8);	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
 				statusStyle = fmt.Sprintf("	* {	color: rgba(%d, %d, %d, 1);	}", shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B)
-				popupStyle = fmt.Sprintf("color: rgba(%d, %d, %d, 1);}", shiftColor(fg, 5).R, shiftColor(fg, 5).G, shiftColor(fg, 5).B)
+				popupStyle = fmt.Sprintf("color: rgba(%d, %d, %d, 1);} #detailpopup {	color: rgba(%d, %d, %d, 1); }", shiftColor(fg, 5).R, shiftColor(fg, 5).G, shiftColor(fg, 5).B,  shiftColor(fg, 55).R, shiftColor(fg, 55).G, shiftColor(fg, 55).B)
 				locpopupStyle = fmt.Sprintf(" color: rgba(%d, %d, %d, 1); }", shiftColor(fg, 5).R, shiftColor(fg, 5).G, shiftColor(fg, 5).B)
 				w.statusline.file.folderLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d, %d, %d, 0.8);", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
 				svgContent := w.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
@@ -757,6 +757,13 @@ func newWorkspaceSide() *WorkspaceSide {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
+
+	//// Drop shadow to Workspace
+	//shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+	//shadow.SetBlurRadius(100)
+	//shadow.SetColor(gui.NewQColor3(0, 0, 0, 80))
+	//shadow.SetOffset3(0, 2)
+	//widget.SetGraphicsEffect(shadow)
 
 	side := &WorkspaceSide{
 		widget: widget,
