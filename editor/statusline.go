@@ -161,7 +161,7 @@ func initStatuslineNew() *Statusline {
 	s.git = git
 
 	fileIcon := svg.NewQSvgWidget(nil)
-	fileIcon.SetFixedSize2(13, 13)
+	fileIcon.SetFixedSize2(14, 14)
 	fileLabel := widgets.NewQLabel(nil, 0)
 	fileLabel.SetContentsMargins(0, 0, 0, 0)
 	folderLabel := widgets.NewQLabel(nil, 0)
