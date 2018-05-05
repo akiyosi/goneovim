@@ -7,6 +7,7 @@ import (
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
@@ -280,6 +281,7 @@ func newTabline() *Tabline {
 		closeIcon := svg.NewQSvgWidget(nil)
 		closeIcon.SetFixedWidth(14)
 		closeIcon.SetFixedHeight(14)
+		closeIcon.SetAttribute(core.Qt__WA_MouseTracking, true)
 		l.AddWidget(fileIcon, 0, 0)
 		l.AddWidget(file, 1, 0)
 		l.AddWidget(closeIcon, 0, 0)
@@ -292,6 +294,14 @@ func newTabline() *Tabline {
 			fileIcon:  fileIcon,
 			closeIcon: closeIcon,
 		}
+
+		tab.widget.SetAttribute(core.Qt__WA_MouseTracking, true)
+		tab.widget.ConnectMouseMoveEvent(tab.mouseMoveEvent)
+		tab.widget.ConnectMousePressEvent(tab.mouseEvent)
+
+		closeIcon.ConnectMousePressEvent(tab.mouseCloseEvent)
+		closeIcon.ConnectMouseMoveEvent(tab.closeMouseMoveEvent)
+
 		tabs = append(tabs, tab)
 		layout.AddWidget(w)
 		if i > 0 {
@@ -299,6 +309,7 @@ func newTabline() *Tabline {
 		}
 	}
 	tabline.Tabs = tabs
+
 	return tabline
 }
 
@@ -411,4 +422,31 @@ func getFileType(text string) string {
 		return filetype
 	}
 	return "default"
+}
+
+func (t *Tab) mouseEvent(event *gui.QMouseEvent) {
+	targetTab := nvim.Tabpage(t.ID)
+	t.t.ws.nvim.SetCurrentTabpage(targetTab)
+}
+
+func (t *Tab) mouseMoveEvent(event *gui.QMouseEvent) {
+	t.closeIcon.SetFixedWidth(14)
+	t.closeIcon.SetFixedHeight(14)
+	svgContent := t.t.ws.getSvg("cross", nil)
+	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+}
+
+func (t *Tab) mouseCloseEvent(event *gui.QMouseEvent) {
+	if t.ID == 1 {
+		t.t.ws.nvim.Command(fmt.Sprintf("q"))
+	} else {
+		t.t.ws.nvim.Command(fmt.Sprintf("tabc %d", t.ID))
+	}
+}
+
+func (t *Tab) closeMouseMoveEvent(event *gui.QMouseEvent) {
+	t.closeIcon.SetFixedWidth(14)
+	t.closeIcon.SetFixedHeight(14)
+	svgContent := t.t.ws.getSvg("hoverclose", nil)
+	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
