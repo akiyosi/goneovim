@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
@@ -47,6 +48,13 @@ func initLocpopup() *Locpopup {
 		contentLabel: contentLabel,
 		updates:      make(chan []interface{}, 1000),
 	}
+
+	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+	shadow.SetBlurRadius(28)
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, 80))
+	shadow.SetOffset3(0, 6)
+	loc.widget.SetGraphicsEffect(shadow)
+
 	return loc
 }
 

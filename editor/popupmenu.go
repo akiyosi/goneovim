@@ -67,11 +67,6 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	widget.SetLayout(mainLayout)
 	widget.SetContentsMargins(1, 1, 1, 1)
 	//widget.SetStyleSheet("* {background-color: rgba(24, 29, 34, 1); color: rgba(205, 211, 222, 1);}")
-	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	shadow.SetBlurRadius(20)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 255))
-	shadow.SetOffset3(0, 2)
-	widget.SetGraphicsEffect(shadow)
 	max := 15
 	var popupItems []*PopupItem
 
@@ -107,6 +102,13 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		scrollBar: scrollBar,
 		scrollCol: scrollCol,
 	}
+
+	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+	shadow.SetBlurRadius(28)
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, 80))
+	shadow.SetOffset3(0, 6)
+	popup.widget.SetGraphicsEffect(shadow)
+
 	return popup
 }
 

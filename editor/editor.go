@@ -137,17 +137,30 @@ func InitEditor() {
 
 	e.window.SetAcceptDrops(true)
 
-	//layout := widgets.NewQHBoxLayout()
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
-	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, widget)
+
+	//// Drop Shadow to wsWidget
+	//layout := widgets.NewQHBoxLayout()
 	//widget.SetLayout(layout)
+	// 
+	//// Drop Shadow to wsSide.widget
+	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, widget)
+
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
 	layout.AddWidget(e.wsWidget, 1, 0)
 	layout.AddWidget(e.wsSide.widget, 0, 0)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
+
+	// Drop shadow to wsSide
+	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+	shadow.SetBlurRadius(60)
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, 25))
+	shadow.SetOffset3(6, 2)
+	e.wsSide.widget.SetGraphicsEffect(shadow)
+
 
 	e.workspaces = []*Workspace{}
 	sessionExists := false
