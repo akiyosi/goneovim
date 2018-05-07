@@ -201,7 +201,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	// }
 
 	fmt.Println("path: ", path)
-	go w.startNvim(path)
+
+	//go w.startNvim(path)
+	w.startNvim(path)  // fix: akiyosi/gonvim/issues/1
 
 	return w, nil
 }
