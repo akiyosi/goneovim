@@ -16,7 +16,6 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 
 * [Modern UI](https://github.com/akiyosi/gonvim/wiki/Features#tabline-statusline-lint-message-command-line-and-message)
 * [Fuzzy Finder](https://github.com/akiyosi/gonvim/wiki/Features#fuzzy-finder-in-gui)
-* [Workspace](https://github.com/akiyosi/gonvim/wiki/Features#workspace)
 * [Markdown Preview](https://github.com/akiyosi/gonvim/wiki/Features#markdown-preview)
 
 <br>
