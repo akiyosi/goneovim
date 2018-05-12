@@ -302,11 +302,11 @@ func (w *Workspace) configure() {
 		w.drawLint = true
 	}
 
-	// 	var startFullscreen interface{}
-	// 	w.nvim.Var("gonvim_start_fullscreen", &startFullscreen)
-	// 	if isTrue(startFullscreen) {
-	// 		e.window.ShowFullScreen()
-	// 	}
+	var startFullscreen interface{}
+	w.nvim.Var("gonvim_start_fullscreen", &startFullscreen)
+	if isTrue(startFullscreen) {
+		editor.window.ShowFullScreen()
+	}
 }
 
 func (w *Workspace) attachUI(path string) error {
@@ -440,18 +440,15 @@ func (w *Workspace) updateSize() {
 		}
 	}
 
-	if w.tabline.height == 0 {
+	if w.drawTabline && w.tabline.height == 0 {
 		w.tabline.height = w.tabline.widget.Height() - w.tabline.marginTop - w.tabline.marginBottom
 	}
-	if w.statusline.height == 0 {
+	if w.drawStatusline && w.statusline.height == 0 {
+		w.statusline.height = w.statusline.widget.Height()
 		w.statusline.height = w.statusline.widget.Height()
 	}
 
-	if w.drawTabline == true {
-		height = w.height - w.tabline.height - w.tabline.marginDefault*2 - w.statusline.height
-	} else {
-		height = w.height - w.statusline.height
-	}
+	height = w.height - w.statusline.height
 
 	rows := height / w.font.lineHeight
 	remainingHeight := height - rows*w.font.lineHeight

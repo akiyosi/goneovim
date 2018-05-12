@@ -46,6 +46,11 @@ type Tab struct {
 func (t *Tabline) subscribe() {
 	if !t.ws.drawTabline {
 		t.widget.Hide()
+		t.height = 0
+		t.marginDefault = 0
+		t.marginTop = 0
+		t.marginBottom = 0
+		t.ws.updateSize()
 		return
 	}
 }
