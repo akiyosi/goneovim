@@ -497,8 +497,8 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			args := update[1].([]interface{})
 			s.updateBg(args)
 			if w.setGuiBgColor == false {
-			  go w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding)`)
-			  go w.nvim.Command(`call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
+				go w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding)`)
+				go w.nvim.Command(`call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
 
 				if editor.wsSide.bgcolor == nil {
 					editor.wsSide.bgcolor = editor.workspaces[0].background
@@ -822,8 +822,6 @@ func (w *Workspace) setGuiColor() {
 	if w.setGuiFgColor == true && w.setGuiBgColor == true {
 		return
 	}
-
-	fmt.Println("I'm called!\n")
 
 	fg := editor.fgcolor
 	bg := editor.bgcolor

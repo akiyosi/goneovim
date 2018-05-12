@@ -23,6 +23,8 @@ var editor *Editor
 type Highlight struct {
 	foreground *RGBA
 	background *RGBA
+	bold       bool
+	italic     bool
 }
 
 // Char is
@@ -90,6 +92,9 @@ func (hl *Highlight) copy() Highlight {
 	if hl.background != nil {
 		highlight.background = hl.background.copy()
 	}
+	highlight.bold = hl.bold
+	highlight.italic = hl.italic
+
 	return highlight
 }
 

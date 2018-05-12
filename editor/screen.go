@@ -461,16 +461,30 @@ func (s *Screen) put(args []interface{}) {
 func (s *Screen) highlightSet(args []interface{}) {
 	for _, arg := range args {
 		hl := arg.([]interface{})[0].(map[string]interface{})
+		highlight := Highlight{}
+
+		bold := hl["bold"]
+		if bold != nil {
+			highlight.bold = true
+		} else {
+			highlight.bold = false
+		}
+
+		italic := hl["italic"]
+		if italic != nil {
+			highlight.italic = true
+		} else {
+			highlight.italic = false
+		}
+
 		_, ok := hl["reverse"]
 		if ok {
-			highlight := Highlight{}
 			highlight.foreground = s.highlight.background
 			highlight.background = s.highlight.foreground
 			s.highlight = highlight
 			continue
 		}
 
-		highlight := Highlight{}
 		fg, ok := hl["foreground"]
 		if ok {
 			rgba := calcColor(reflectToInt(fg))
@@ -699,9 +713,12 @@ func (s *Screen) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 	if y >= len(screen.content) {
 		return
 	}
+	font := p.Font()
+	font.SetBold(false)
+	font.SetItalic(false)
 	pointF := core.NewQPointF()
 	line := screen.content[y]
-	chars := map[*RGBA][]int{}
+	chars := map[Highlight][]int{}
 	specialChars := []int{}
 	if col > 0 {
 		char := line[col-1]
@@ -732,19 +749,23 @@ func (s *Screen) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 			specialChars = append(specialChars, x)
 			continue
 		}
+		highlight := Highlight{}
 		fg := char.highlight.foreground
 		if fg == nil {
 			fg = s.ws.foreground
 		}
-		colorSlice, ok := chars[fg]
+		highlight.foreground = fg
+		highlight.italic = char.highlight.italic
+		highlight.bold = char.highlight.bold
+
+		colorSlice, ok := chars[highlight]
 		if !ok {
 			colorSlice = []int{}
 		}
 		colorSlice = append(colorSlice, x)
-		chars[fg] = colorSlice
+		chars[highlight] = colorSlice
 	}
-
-	for fg, colorSlice := range chars {
+	for highlight, colorSlice := range chars {
 		text := ""
 		slice := colorSlice[:]
 		for x := col; x < col+cols; x++ {
@@ -762,9 +783,12 @@ func (s *Screen) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 			}
 		}
 		if text != "" {
+			fg := highlight.foreground
 			p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 			pointF.SetX(float64(col-pos[1]) * s.ws.font.truewidth)
 			pointF.SetY(float64((y-pos[0])*s.ws.font.lineHeight + s.ws.font.shift))
+			font.SetBold(highlight.bold)
+			font.SetItalic(highlight.italic)
 			p.DrawText(pointF, text)
 		}
 	}
@@ -781,6 +805,8 @@ func (s *Screen) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 		pointF.SetX(float64(x-pos[1]) * s.ws.font.truewidth)
 		pointF.SetY(float64((y-pos[0])*s.ws.font.lineHeight + s.ws.font.shift))
+		font.SetBold(char.highlight.bold)
+		font.SetItalic(char.highlight.italic)
 		p.DrawText(pointF, char.char)
 	}
 }
