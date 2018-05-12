@@ -49,6 +49,8 @@ type Editor struct {
 	tablineHeight    int
 	selectedBg       *RGBA
 	matchFg          *RGBA
+	bgcolor          *RGBA
+	fgcolor          *RGBA
 
 	stop     chan struct{}
 	stopOnce sync.Once
@@ -112,6 +114,8 @@ func InitEditor() {
 		version:           "v0.2.2",
 		selectedBg:        newRGBA(81, 154, 186, 0.5),
 		matchFg:           newRGBA(81, 154, 186, 1),
+		bgcolor:           nil,
+		fgcolor:           nil,
 		stop:              make(chan struct{}),
 		restoreSession:    cfgWSRestoresession,
 		showWorkspaceside: cfgWSDisplay,
@@ -143,7 +147,7 @@ func InitEditor() {
 	//// Drop Shadow to wsWidget
 	//layout := widgets.NewQHBoxLayout()
 	//widget.SetLayout(layout)
-	// 
+	//
 	//// Drop Shadow to wsSide.widget
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, widget)
 
@@ -155,12 +159,13 @@ func InitEditor() {
 	layout.SetSpacing(0)
 
 	// Drop shadow to wsSide
-	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	shadow.SetBlurRadius(60)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 25))
-	shadow.SetOffset3(6, 2)
-	e.wsSide.widget.SetGraphicsEffect(shadow)
-
+	go func() {
+		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+		shadow.SetBlurRadius(60)
+		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
+		shadow.SetOffset3(6, 2)
+		e.wsSide.widget.SetGraphicsEffect(shadow)
+	}()
 
 	e.workspaces = []*Workspace{}
 	sessionExists := false
@@ -181,7 +186,6 @@ func InitEditor() {
 				e.workspaceUpdate()
 			}
 		}
-
 	}
 	if !sessionExists {
 		ws, err := newWorkspace("")

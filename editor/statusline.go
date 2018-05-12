@@ -337,26 +337,26 @@ func (s *StatusMode) redraw() {
 	case "cmdline_normal":
 		text = "normal"
 		//bg = newRGBA(102, 153, 204, 1)
-		svgContent := s.s.ws.getSvg("command", newRGBA(shiftColor(fg, -24).R, shiftColor(fg, -24).G, shiftColor(fg, -24).B, 1))
+		svgContent := s.s.ws.getSvg("command", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		//svgContent := s.s.ws.getSvg(s.s.file.fileType, nil)
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "insert":
 		text = "insert"
 		//bg = newRGBA(153, 199, 148, 1)
-		svgContent := s.s.ws.getSvg("edit", newRGBA(shiftColor(fg, -24).R, shiftColor(fg, -24).G, shiftColor(fg, -24).B, 1))
+		svgContent := s.s.ws.getSvg("edit", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "visual":
 		text = "visual"
 		//bg = newRGBA(250, 200, 99, 1)
-		svgContent := s.s.ws.getSvg("select", newRGBA(shiftColor(fg, -48).R, shiftColor(fg, -48).G, shiftColor(fg, -48).B, 1))
+		svgContent := s.s.ws.getSvg("select", newRGBA(warpColor(fg, 30).R, warpColor(fg, 30).G, warpColor(fg, 30).B, 1))
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "replace":
 		text = "replace"
 		//bg = newRGBA(250, 200, 99, 1)
-		svgContent := s.s.ws.getSvg("replace", newRGBA(shiftColor(fg, -24).R, shiftColor(fg, -24).G, shiftColor(fg, -24).B, 1))
+		svgContent := s.s.ws.getSvg("replace", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}

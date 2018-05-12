@@ -97,6 +97,35 @@ func gradColor(rgba *RGBA) *RGBA {
 	}
 }
 
+func warpColor(rgba *RGBA, v int) *RGBA {
+	var r, g, b int
+
+	if rgba.R > 128 {
+		r = rgba.R + v
+	} else {
+		r = rgba.R - v
+	}
+
+	if rgba.G > 128 {
+		g = rgba.G + v
+	} else {
+		g = rgba.G - v
+	}
+
+	if rgba.B > 128 {
+		b = rgba.B + v
+	} else {
+		b = rgba.B - v
+	}
+
+	return &RGBA{
+		R: r,
+		G: g,
+		B: b,
+		A: rgba.A,
+	}
+}
+
 func shiftColor(rgba *RGBA, v int) *RGBA {
 	var r, g, b int
 	r = rgba.R - v
