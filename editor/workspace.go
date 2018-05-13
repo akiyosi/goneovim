@@ -15,6 +15,7 @@ import (
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
+	"github.com/therecipe/qt/svg"
 )
 
 type workspaceSignal struct {
@@ -720,13 +721,28 @@ type WorkspaceSide struct {
 	bgcolor *RGBA
 }
 
-// WorkspaceSideItem is
-type WorkspaceSideItem struct {
-	hidden bool
-	active bool
-	side   *WorkspaceSide
-	label  *widgets.QLabel
-	text   string
+type Filelist struct {
+  WSitem  *WorkspaceSideItem
+	widget        *widgets.QWidget
+	layout        *widgets.QLayout
+	Fileitems          []*Fileitem
+}
+
+type Fileitem struct {
+	flist         *Filelist
+	widget    *widgets.QWidget
+	layout    *widgets.QHBoxLayout
+	//ID        int
+	//active    bool
+	//Name      string
+	//width     int
+	//chars     int
+	fileIcon  *svg.QSvgWidget
+	fileType  string
+	//closeIcon *svg.QSvgWidget
+	file      *widgets.QLabel
+	fileText  string
+	//hidden    bool
 }
 
 func newWorkspaceSide() *WorkspaceSide {
@@ -747,19 +763,66 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout.AddWidget(labeltext)
 
 	items := []*WorkspaceSideItem{}
+	side.items = items
 	for i := 0; i < 20; i++ {
+	  item := newWorkspaceSideItem()
+		side.items = append(side.items, item)
+		side.items[len(side.items)-1].side = side
+		layout.AddWidget(side.items[len(side.items)-1].widget)
+		side.items[len(side.items)-1].hide()
+	}
+	return side
+}
+
+// WorkspaceSideItem is
+type WorkspaceSideItem struct {
+	hidden bool
+	active bool
+	side   *WorkspaceSide
+
+	widget        *widgets.QWidget
+	//layout    *widgets.QVBoxLayout
+	//layout    *widgets.QLayout
+
+	text   string
+	Filelist  *Filelist
+	label  *widgets.QLabel
+}
+
+func newWorkspaceSideItem() *WorkspaceSideItem {
+	  widget := widgets.NewQWidget(nil, 0)
+
+		//layout := widgets.NewQVBoxLayout()
+	  layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
+
+	  items := []*widgets.QLayoutItem{}
+
+    //layout.ConnectSizeHint(func() *core.QSize {
+    //	size := core.NewQSize()
+    //	for _, item := range items {
+    //		size = size.ExpandedTo(item.MinimumSize())
+    //	}
+    //	return size
+    //})
+    layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
+    	items = append(items, item)
+    })
+    //layout.ConnectSetGeometry(func(r *core.QRect) {
+    //	for i := 0; i < len(items); i++ {
+    //		items[i].SetGeometry(core.NewQRect4(width*i, 0, width, r.Height()))
+    //	}
+    //})
+
 		label := widgets.NewQLabel(nil, 0)
 		label.SetContentsMargins(15, 6, 15, 6)
-		item := &WorkspaceSideItem{
-			side:  side,
+		layout.AddWidget(label, 0, 0)
+
+		sideitem := &WorkspaceSideItem{
+			widget: widget,
 			label: label,
 		}
-		layout.AddWidget(label)
-		items = append(items, item)
-		item.hide()
-	}
-	side.items = items
-	return side
+
+  	return sideitem
 }
 
 func (i *WorkspaceSideItem) setText(text string) {
@@ -768,6 +831,7 @@ func (i *WorkspaceSideItem) setText(text string) {
 	}
 	i.text = text
 	i.label.SetText(text)
+	i.widget.Show()
 }
 
 func (i *WorkspaceSideItem) setActive() {
@@ -801,7 +865,7 @@ func (i *WorkspaceSideItem) show() {
 		return
 	}
 	i.hidden = false
-	i.label.Show()
+	i.widget.Show()
 }
 
 func (i *WorkspaceSideItem) hide() {
@@ -809,7 +873,7 @@ func (i *WorkspaceSideItem) hide() {
 		return
 	}
 	i.hidden = true
-	i.label.Hide()
+	i.widget.Hide()
 }
 
 func (w *Workspace) setGuiColor() {
