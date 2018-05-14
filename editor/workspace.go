@@ -419,13 +419,24 @@ func newFilelistwidget(path string) *Filelist {
   	  	  filename := f.Name()
   	  	  file.SetText(filename)
 
-  	  	  filetype := getFileType(filename)
-  	      svgContent := editor.workspaces[0].getSvg(filetype, nil)
-  	      fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+					filepath := filepath.Join(path, filename)
+					finfo, _ := os.Stat(filepath)
+					var filetype string
+
+					if finfo.IsDir() {
+  	  	    filetype = "/"
+  	        svgContent := editor.workspaces[0].getSvg("directory", nil)
+  	        fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+					} else {
+  	  	    filetype = getFileType(filename)
+  	        svgContent := editor.workspaces[0].getSvg(filetype, nil)
+  	        fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+					}
   
   	  	  filelayout.AddWidget(fileIcon, 0, 0)
   	  	  filelayout.AddWidget(file, 0, 0)
   	  	  filewidget.SetLayout(filelayout)
+					filewidget.SetAttribute(core.Qt__WA_Hover, true)
   
   	  	  fileitem := &Fileitem {
 					 fl: filelist,
@@ -434,7 +445,12 @@ func newFilelistwidget(path string) *Filelist {
 					 file: file,
   	  	   fileIcon: fileIcon,
   	  	   fileType: filetype,
+					 path: filepath,
   	  	  }
+
+		      fileitem.widget.ConnectEnterEvent(fileitem.enterEvent)
+		      fileitem.widget.ConnectLeaveEvent(fileitem.leaveEvent)
+		      fileitem.widget.ConnectMousePressEvent(fileitem.mouseEvent)
 
   	  	  fileitems = append(fileitems, fileitem)
 					filelistlayout.AddWidget(filewidget, 0, 0)
@@ -810,6 +826,7 @@ type Fileitem struct {
 	file      *widgets.QLabel
 	fileText  string
 	//hidden    bool
+	path string
 }
 
 func newWorkspaceSide() *WorkspaceSide {
@@ -926,7 +943,7 @@ func (i *WorkspaceSideItem) setActive() {
 	}
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 5px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
 	i.Filelistwidget.Show()
 }
@@ -1020,4 +1037,16 @@ func (w *Workspace) setGuiColor() {
 		}
 	}
 
+}
+
+func (f *Fileitem) enterEvent(event *core.QEvent) {
+ f.widget.SetStyleSheet(" * { text-decoration: underline; } ")
+}
+
+func (f *Fileitem) leaveEvent(event *core.QEvent) {
+ f.widget.SetStyleSheet(" * { text-decoration: none; } ")
+}
+
+func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
+  editor.workspaces[editor.active].nvim.Command(":e " + f.path)
 }
