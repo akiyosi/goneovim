@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"io/ioutil"
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	shortpath "github.com/akiyosi/short_path"
@@ -368,14 +369,79 @@ func (w *Workspace) setCwd(cwd string) {
 	w.cwdlabel = labelpath
 	w.cwdBase = filepath.Base(cwd)
 	for i, ws := range editor.workspaces {
-		if i >= len(editor.wsSide.items) {
+		if i > len(editor.wsSide.items) {
 			return
 		}
 		if ws == w {
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
+
+			//go func() {
+			 path, _ := filepath.Abs(cwd)
+			 filelist := newFilelistwidget(path)
+
+			 editor.wsSide.items[i].layout.RemoveWidget(editor.wsSide.items[i].Filelistwidget)
+			 editor.wsSide.items[i].layout.AddWidget(filelist.widget, 0, 0)
+			 editor.wsSide.items[i].Filelistwidget = filelist.widget
+			 editor.wsSide.items[i].Filelist = filelist
+			//}()
+
 			return
 		}
 	}
+}
+
+func newFilelistwidget(path string) *Filelist {
+  	  fileitems := []*Fileitem{}
+  	  lsfiles, _ := ioutil.ReadDir(path)
+
+  	  filelist := &Filelist{}
+
+	    filelistwidget := widgets.NewQWidget(nil, 0)
+	    filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
+	    filelistlayout.SetContentsMargins(0, 0, 0, 0)
+      for _, f := range lsfiles {
+  
+  	      filewidget := widgets.NewQWidget(nil, 0)
+
+  	  	  filelayout := widgets.NewQHBoxLayout()
+  	  	  filelayout.SetContentsMargins(3, 3, 0, 0)
+
+  	  	  fileIcon := svg.NewQSvgWidget(nil)
+  	  	  fileIcon.SetFixedWidth(12)
+  	  	  fileIcon.SetFixedHeight(12)
+
+  	  	  file := widgets.NewQLabel(nil, 0)
+  	  	  file.SetContentsMargins(0, 0, 0, 0)
+  
+  	  	  filename := f.Name()
+  	  	  file.SetText(filename)
+
+  	  	  filetype := getFileType(filename)
+  	      svgContent := editor.workspaces[0].getSvg(filetype, nil)
+  	      fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+  
+  	  	  filelayout.AddWidget(fileIcon, 0, 0)
+  	  	  filelayout.AddWidget(file, 0, 0)
+  	  	  filewidget.SetLayout(filelayout)
+  
+  	  	  fileitem := &Fileitem {
+					 fl: filelist,
+  	  	   widget: filewidget,
+  	  	   fileText: filename,
+					 file: file,
+  	  	   fileIcon: fileIcon,
+  	  	   fileType: filetype,
+  	  	  }
+
+  	  	  fileitems = append(fileitems, fileitem)
+					filelistlayout.AddWidget(filewidget, 0, 0)
+  		}
+		  filelistwidget.SetLayout(filelistlayout)
+
+			filelist.widget = filelistwidget
+			filelist.Fileitems = fileitems
+
+			return filelist
 }
 
 func (w *Workspace) attachUIOption() map[string]interface{} {
@@ -724,14 +790,12 @@ type WorkspaceSide struct {
 type Filelist struct {
   WSitem  *WorkspaceSideItem
 	widget        *widgets.QWidget
-	layout        *widgets.QLayout
 	Fileitems          []*Fileitem
 }
 
 type Fileitem struct {
-	flist         *Filelist
+	fl         *Filelist
 	widget    *widgets.QWidget
-	layout    *widgets.QHBoxLayout
 	//ID        int
 	//active    bool
 	//Name      string
@@ -781,12 +845,13 @@ type WorkspaceSideItem struct {
 	side   *WorkspaceSide
 
 	widget        *widgets.QWidget
-	//layout    *widgets.QVBoxLayout
+	layout    *widgets.QBoxLayout
 	//layout    *widgets.QLayout
 
 	text   string
 	Filelist  *Filelist
 	label  *widgets.QLabel
+	Filelistwidget  *widgets.QWidget
 }
 
 func newWorkspaceSideItem() *WorkspaceSideItem {
@@ -797,13 +862,13 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 
 	  items := []*widgets.QLayoutItem{}
 
-    //layout.ConnectSizeHint(func() *core.QSize {
-    //	size := core.NewQSize()
-    //	for _, item := range items {
-    //		size = size.ExpandedTo(item.MinimumSize())
-    //	}
-    //	return size
-    //})
+    layout.ConnectSizeHint(func() *core.QSize {
+    	size := core.NewQSize()
+    	for _, item := range items {
+    		size = size.ExpandedTo(item.MinimumSize())
+    	}
+    	return size
+    })
     layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
     	items = append(items, item)
     })
@@ -815,15 +880,28 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 
 		label := widgets.NewQLabel(nil, 0)
 		label.SetContentsMargins(15, 6, 15, 6)
+
+	  flwidget := widgets.NewQWidget(nil, 0)
+
+		filelist := &Filelist{
+		 widget: flwidget,
+		}
+
 		layout.AddWidget(label, 0, 0)
+		layout.AddWidget(flwidget, 0, 0)
+		//sideitem.Filelist.widget.Hide()
 
 		sideitem := &WorkspaceSideItem{
 			widget: widget,
+			layout: layout,
 			label: label,
+			Filelist: filelist,
+			Filelistwidget: flwidget,
 		}
 
   	return sideitem
 }
+
 
 func (i *WorkspaceSideItem) setText(text string) {
 	if i.text == text {
@@ -845,6 +923,8 @@ func (i *WorkspaceSideItem) setActive() {
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
 	i.label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, -5).R, shiftColor(fg, -5).G, shiftColor(fg, -5).B))
+
+	i.Filelistwidget.Show()
 }
 
 func (i *WorkspaceSideItem) setInactive() {
@@ -858,6 +938,8 @@ func (i *WorkspaceSideItem) setInactive() {
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
 	i.label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
+
+	i.Filelistwidget.Hide()
 }
 
 func (i *WorkspaceSideItem) show() {
@@ -865,7 +947,8 @@ func (i *WorkspaceSideItem) show() {
 		return
 	}
 	i.hidden = false
-	i.widget.Show()
+	i.label.Show()
+	i.Filelistwidget.Show()
 }
 
 func (i *WorkspaceSideItem) hide() {
@@ -873,7 +956,8 @@ func (i *WorkspaceSideItem) hide() {
 		return
 	}
 	i.hidden = true
-	i.widget.Hide()
+	i.label.Hide()
+	i.Filelistwidget.Hide()
 }
 
 func (w *Workspace) setGuiColor() {
