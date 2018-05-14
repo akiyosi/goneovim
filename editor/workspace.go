@@ -2,21 +2,21 @@ package editor
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
-	"io/ioutil"
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	shortpath "github.com/akiyosi/short_path"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
-	"github.com/therecipe/qt/widgets"
 	"github.com/therecipe/qt/svg"
+	"github.com/therecipe/qt/widgets"
 )
 
 type workspaceSignal struct {
@@ -377,15 +377,15 @@ func (w *Workspace) setCwd(cwd string) {
 
 			// go func() { // QObject::setParent: Cannot set parent, new parent is in a different thread
 
-			 // set current path
-			 path, _ := filepath.Abs(cwd)
-			 // get file list
-			 filelist := newFilelistwidget(path)
+			// set current path
+			path, _ := filepath.Abs(cwd)
+			// get file list
+			filelist := newFilelistwidget(path)
 
-			 editor.wsSide.items[i].layout.RemoveWidget(editor.wsSide.items[i].Filelistwidget)
-			 editor.wsSide.items[i].layout.AddWidget(filelist.widget, 0, 0)
-			 editor.wsSide.items[i].Filelistwidget = filelist.widget
-			 editor.wsSide.items[i].Filelist = filelist
+			editor.wsSide.items[i].layout.RemoveWidget(editor.wsSide.items[i].Filelistwidget)
+			editor.wsSide.items[i].layout.AddWidget(filelist.widget, 0, 0)
+			editor.wsSide.items[i].Filelistwidget = filelist.widget
+			editor.wsSide.items[i].Filelist = filelist
 			// }()
 
 			return
@@ -394,73 +394,73 @@ func (w *Workspace) setCwd(cwd string) {
 }
 
 func newFilelistwidget(path string) *Filelist {
-  	  fileitems := []*Fileitem{}
-  	  lsfiles, _ := ioutil.ReadDir(path)
+	fileitems := []*Fileitem{}
+	lsfiles, _ := ioutil.ReadDir(path)
 
-  	  filelist := &Filelist{}
+	filelist := &Filelist{}
 
-	    filelistwidget := widgets.NewQWidget(nil, 0)
-	    filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
-	    filelistlayout.SetContentsMargins(0, 0, 0, 0)
-      for _, f := range lsfiles {
-  
-  	      filewidget := widgets.NewQWidget(nil, 0)
+	filelistwidget := widgets.NewQWidget(nil, 0)
+	filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
+	filelistlayout.SetContentsMargins(0, 0, 0, 0)
+	for _, f := range lsfiles {
 
-  	  	  filelayout := widgets.NewQHBoxLayout()
-  	  	  filelayout.SetContentsMargins(35, 3, 25, 0)
+		filewidget := widgets.NewQWidget(nil, 0)
 
-  	  	  fileIcon := svg.NewQSvgWidget(nil)
-  	  	  fileIcon.SetFixedWidth(11)
-  	  	  fileIcon.SetFixedHeight(11)
+		filelayout := widgets.NewQHBoxLayout()
+		filelayout.SetContentsMargins(35, 3, 25, 0)
 
-  	  	  file := widgets.NewQLabel(nil, 0)
-  	  	  file.SetContentsMargins(0, 0, 0, 0)
-  
-  	  	  filename := f.Name()
-  	  	  file.SetText(filename)
+		fileIcon := svg.NewQSvgWidget(nil)
+		fileIcon.SetFixedWidth(11)
+		fileIcon.SetFixedHeight(11)
 
-					filepath := filepath.Join(path, filename)
-					finfo, _ := os.Stat(filepath)
-					var filetype string
+		file := widgets.NewQLabel(nil, 0)
+		file.SetContentsMargins(0, 0, 0, 0)
 
-					if finfo.IsDir() {
-  	  	    filetype = "/"
-  	        svgContent := editor.workspaces[0].getSvg("directory", nil)
-  	        fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-					} else {
-  	  	    filetype = getFileType(filename)
-  	        svgContent := editor.workspaces[0].getSvg(filetype, nil)
-  	        fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-					}
-  
-  	  	  filelayout.AddWidget(fileIcon, 0, 0)
-  	  	  filelayout.AddWidget(file, 0, 0)
-  	  	  filewidget.SetLayout(filelayout)
-					filewidget.SetAttribute(core.Qt__WA_Hover, true)
-  
-  	  	  fileitem := &Fileitem {
-					 fl: filelist,
-  	  	   widget: filewidget,
-  	  	   fileText: filename,
-					 file: file,
-  	  	   fileIcon: fileIcon,
-  	  	   fileType: filetype,
-					 path: filepath,
-  	  	  }
+		filename := f.Name()
+		file.SetText(filename)
 
-		      fileitem.widget.ConnectEnterEvent(fileitem.enterEvent)
-		      fileitem.widget.ConnectLeaveEvent(fileitem.leaveEvent)
-		      fileitem.widget.ConnectMousePressEvent(fileitem.mouseEvent)
+		filepath := filepath.Join(path, filename)
+		finfo, _ := os.Stat(filepath)
+		var filetype string
 
-  	  	  fileitems = append(fileitems, fileitem)
-					filelistlayout.AddWidget(filewidget, 0, 0)
-  		}
-		  filelistwidget.SetLayout(filelistlayout)
+		if finfo.IsDir() {
+			filetype = "/"
+			svgContent := editor.workspaces[0].getSvg("directory", nil)
+			fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		} else {
+			filetype = getFileType(filename)
+			svgContent := editor.workspaces[0].getSvg(filetype, nil)
+			fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		}
 
-			filelist.widget = filelistwidget
-			filelist.Fileitems = fileitems
+		filelayout.AddWidget(fileIcon, 0, 0)
+		filelayout.AddWidget(file, 0, 0)
+		filewidget.SetLayout(filelayout)
+		filewidget.SetAttribute(core.Qt__WA_Hover, true)
 
-			return filelist
+		fileitem := &Fileitem{
+			fl:       filelist,
+			widget:   filewidget,
+			fileText: filename,
+			file:     file,
+			fileIcon: fileIcon,
+			fileType: filetype,
+			path:     filepath,
+		}
+
+		fileitem.widget.ConnectEnterEvent(fileitem.enterEvent)
+		fileitem.widget.ConnectLeaveEvent(fileitem.leaveEvent)
+		fileitem.widget.ConnectMousePressEvent(fileitem.mouseEvent)
+
+		fileitems = append(fileitems, fileitem)
+		filelistlayout.AddWidget(filewidget, 0, 0)
+	}
+	filelistwidget.SetLayout(filelistlayout)
+
+	filelist.widget = filelistwidget
+	filelist.Fileitems = fileitems
+
+	return filelist
 }
 
 func (w *Workspace) attachUIOption() map[string]interface{} {
@@ -807,24 +807,24 @@ type WorkspaceSide struct {
 }
 
 type Filelist struct {
-  WSitem  *WorkspaceSideItem
-	widget        *widgets.QWidget
-	Fileitems          []*Fileitem
+	WSitem    *WorkspaceSideItem
+	widget    *widgets.QWidget
+	Fileitems []*Fileitem
 }
 
 type Fileitem struct {
-	fl         *Filelist
-	widget    *widgets.QWidget
+	fl     *Filelist
+	widget *widgets.QWidget
 	//ID        int
 	//active    bool
 	//Name      string
 	//width     int
 	//chars     int
-	fileIcon  *svg.QSvgWidget
-	fileType  string
+	fileIcon *svg.QSvgWidget
+	fileType string
 	//closeIcon *svg.QSvgWidget
-	file      *widgets.QLabel
-	fileText  string
+	file     *widgets.QLabel
+	fileText string
 	//hidden    bool
 	path string
 }
@@ -849,7 +849,7 @@ func newWorkspaceSide() *WorkspaceSide {
 	items := []*WorkspaceSideItem{}
 	side.items = items
 	for i := 0; i < 20; i++ {
-	  item := newWorkspaceSideItem()
+		item := newWorkspaceSideItem()
 		side.items = append(side.items, item)
 		side.items[len(side.items)-1].side = side
 		layout.AddWidget(side.items[len(side.items)-1].widget)
@@ -864,65 +864,64 @@ type WorkspaceSideItem struct {
 	active bool
 	side   *WorkspaceSide
 
-	widget        *widgets.QWidget
-	layout    *widgets.QBoxLayout
+	widget *widgets.QWidget
+	layout *widgets.QBoxLayout
 	//layout    *widgets.QLayout
 
-	text   string
-	Filelist  *Filelist
-	label  *widgets.QLabel
-	Filelistwidget  *widgets.QWidget
+	text           string
+	Filelist       *Filelist
+	label          *widgets.QLabel
+	Filelistwidget *widgets.QWidget
 }
 
 func newWorkspaceSideItem() *WorkspaceSideItem {
-	  widget := widgets.NewQWidget(nil, 0)
+	widget := widgets.NewQWidget(nil, 0)
 
-		//layout := widgets.NewQVBoxLayout()
-	  layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
-	  layout.SetContentsMargins(0, 5, 0, 5)
+	//layout := widgets.NewQVBoxLayout()
+	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
+	layout.SetContentsMargins(0, 5, 0, 5)
 
-	  items := []*widgets.QLayoutItem{}
+	items := []*widgets.QLayoutItem{}
 
-    layout.ConnectSizeHint(func() *core.QSize {
-    	size := core.NewQSize()
-    	for _, item := range items {
-    		size = size.ExpandedTo(item.MinimumSize())
-    	}
-    	return size
-    })
-    layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
-    	items = append(items, item)
-    })
-    //layout.ConnectSetGeometry(func(r *core.QRect) {
-    //	for i := 0; i < len(items); i++ {
-    //		items[i].SetGeometry(core.NewQRect4(width*i, 0, width, r.Height()))
-    //	}
-    //})
-
-		label := widgets.NewQLabel(nil, 0)
-		label.SetContentsMargins(15, 6, 10, 6)
-
-	  flwidget := widgets.NewQWidget(nil, 0)
-
-		filelist := &Filelist{
-		 widget: flwidget,
+	layout.ConnectSizeHint(func() *core.QSize {
+		size := core.NewQSize()
+		for _, item := range items {
+			size = size.ExpandedTo(item.MinimumSize())
 		}
+		return size
+	})
+	layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
+		items = append(items, item)
+	})
+	//layout.ConnectSetGeometry(func(r *core.QRect) {
+	//	for i := 0; i < len(items); i++ {
+	//		items[i].SetGeometry(core.NewQRect4(width*i, 0, width, r.Height()))
+	//	}
+	//})
 
-		layout.AddWidget(label, 0, 0)
-		layout.AddWidget(flwidget, 0, 0)
-		//sideitem.Filelist.widget.Hide()
+	label := widgets.NewQLabel(nil, 0)
+	label.SetContentsMargins(15, 6, 10, 6)
 
-		sideitem := &WorkspaceSideItem{
-			widget: widget,
-			layout: layout,
-			label: label,
-			Filelist: filelist,
-			Filelistwidget: flwidget,
-		}
+	flwidget := widgets.NewQWidget(nil, 0)
 
-  	return sideitem
+	filelist := &Filelist{
+		widget: flwidget,
+	}
+
+	layout.AddWidget(label, 0, 0)
+	layout.AddWidget(flwidget, 0, 0)
+	//sideitem.Filelist.widget.Hide()
+
+	sideitem := &WorkspaceSideItem{
+		widget:         widget,
+		layout:         layout,
+		label:          label,
+		Filelist:       filelist,
+		Filelistwidget: flwidget,
+	}
+
+	return sideitem
 }
-
 
 func (i *WorkspaceSideItem) setText(text string) {
 	if i.text == text {
@@ -1040,13 +1039,13 @@ func (w *Workspace) setGuiColor() {
 }
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
- f.widget.SetStyleSheet(" * { text-decoration: underline; } ")
+	f.widget.SetStyleSheet(" * { text-decoration: underline; } ")
 }
 
 func (f *Fileitem) leaveEvent(event *core.QEvent) {
- f.widget.SetStyleSheet(" * { text-decoration: none; } ")
+	f.widget.SetStyleSheet(" * { text-decoration: none; } ")
 }
 
 func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
-  editor.workspaces[editor.active].nvim.Command(":e " + f.path)
+	editor.workspaces[editor.active].nvim.Command(":e " + f.path)
 }
