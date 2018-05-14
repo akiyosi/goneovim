@@ -375,15 +375,18 @@ func (w *Workspace) setCwd(cwd string) {
 		if ws == w {
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
 
-			//go func() {
+			// go func() { // QObject::setParent: Cannot set parent, new parent is in a different thread
+
+			 // set current path
 			 path, _ := filepath.Abs(cwd)
+			 // get file list
 			 filelist := newFilelistwidget(path)
 
 			 editor.wsSide.items[i].layout.RemoveWidget(editor.wsSide.items[i].Filelistwidget)
 			 editor.wsSide.items[i].layout.AddWidget(filelist.widget, 0, 0)
 			 editor.wsSide.items[i].Filelistwidget = filelist.widget
 			 editor.wsSide.items[i].Filelist = filelist
-			//}()
+			// }()
 
 			return
 		}
@@ -404,11 +407,11 @@ func newFilelistwidget(path string) *Filelist {
   	      filewidget := widgets.NewQWidget(nil, 0)
 
   	  	  filelayout := widgets.NewQHBoxLayout()
-  	  	  filelayout.SetContentsMargins(3, 3, 0, 0)
+  	  	  filelayout.SetContentsMargins(35, 3, 25, 0)
 
   	  	  fileIcon := svg.NewQSvgWidget(nil)
-  	  	  fileIcon.SetFixedWidth(12)
-  	  	  fileIcon.SetFixedHeight(12)
+  	  	  fileIcon.SetFixedWidth(11)
+  	  	  fileIcon.SetFixedHeight(11)
 
   	  	  file := widgets.NewQLabel(nil, 0)
   	  	  file.SetContentsMargins(0, 0, 0, 0)
@@ -814,7 +817,7 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 	labeltext := widgets.NewQLabel(nil, 0)
-	labeltext.SetContentsMargins(20, 15, 20, 15)
+	labeltext.SetContentsMargins(20, 15, 20, 10)
 	labeltext.SetText("Workspace")
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
@@ -859,6 +862,7 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 
 		//layout := widgets.NewQVBoxLayout()
 	  layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
+	  layout.SetContentsMargins(0, 5, 0, 5)
 
 	  items := []*widgets.QLayoutItem{}
 
@@ -879,7 +883,7 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
     //})
 
 		label := widgets.NewQLabel(nil, 0)
-		label.SetContentsMargins(15, 6, 15, 6)
+		label.SetContentsMargins(15, 6, 10, 6)
 
 	  flwidget := widgets.NewQWidget(nil, 0)
 
@@ -922,7 +926,7 @@ func (i *WorkspaceSideItem) setActive() {
 	}
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, -5).R, shiftColor(fg, -5).G, shiftColor(fg, -5).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
 	i.Filelistwidget.Show()
 }
@@ -937,7 +941,7 @@ func (i *WorkspaceSideItem) setInactive() {
 	}
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
 	i.Filelistwidget.Hide()
 }
