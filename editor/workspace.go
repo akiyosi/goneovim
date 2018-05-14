@@ -376,7 +376,6 @@ func (w *Workspace) setCwd(cwd string) {
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
 
 			// go func() { // QObject::setParent: Cannot set parent, new parent is in a different thread
-
 			// set current path
 			path, _ := filepath.Abs(cwd)
 			// get file list
@@ -386,7 +385,12 @@ func (w *Workspace) setCwd(cwd string) {
 			editor.wsSide.items[i].layout.AddWidget(filelist.widget, 0, 0)
 			editor.wsSide.items[i].Filelistwidget = filelist.widget
 			editor.wsSide.items[i].Filelist = filelist
+			editor.wsSide.items[i].active = true
 			// }()
+
+			if (len(editor.workspaces) == 1) && (editor.showWorkspaceside == false) {
+				editor.wsSide.items[i].Filelistwidget.Hide()
+			}
 
 			return
 		}
