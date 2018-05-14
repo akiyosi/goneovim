@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"io/ioutil"
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	shortpath "github.com/akiyosi/short_path"
@@ -15,6 +16,7 @@ import (
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
+	"github.com/therecipe/qt/svg"
 )
 
 type workspaceSignal struct {
@@ -367,14 +369,98 @@ func (w *Workspace) setCwd(cwd string) {
 	w.cwdlabel = labelpath
 	w.cwdBase = filepath.Base(cwd)
 	for i, ws := range editor.workspaces {
-		if i >= len(editor.wsSide.items) {
+		if i > len(editor.wsSide.items) {
 			return
 		}
 		if ws == w {
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
+
+			// go func() { // QObject::setParent: Cannot set parent, new parent is in a different thread
+
+			 // set current path
+			 path, _ := filepath.Abs(cwd)
+			 // get file list
+			 filelist := newFilelistwidget(path)
+
+			 editor.wsSide.items[i].layout.RemoveWidget(editor.wsSide.items[i].Filelistwidget)
+			 editor.wsSide.items[i].layout.AddWidget(filelist.widget, 0, 0)
+			 editor.wsSide.items[i].Filelistwidget = filelist.widget
+			 editor.wsSide.items[i].Filelist = filelist
+			// }()
+
 			return
 		}
 	}
+}
+
+func newFilelistwidget(path string) *Filelist {
+  	  fileitems := []*Fileitem{}
+  	  lsfiles, _ := ioutil.ReadDir(path)
+
+  	  filelist := &Filelist{}
+
+	    filelistwidget := widgets.NewQWidget(nil, 0)
+	    filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
+	    filelistlayout.SetContentsMargins(0, 0, 0, 0)
+      for _, f := range lsfiles {
+  
+  	      filewidget := widgets.NewQWidget(nil, 0)
+
+  	  	  filelayout := widgets.NewQHBoxLayout()
+  	  	  filelayout.SetContentsMargins(35, 3, 25, 0)
+
+  	  	  fileIcon := svg.NewQSvgWidget(nil)
+  	  	  fileIcon.SetFixedWidth(11)
+  	  	  fileIcon.SetFixedHeight(11)
+
+  	  	  file := widgets.NewQLabel(nil, 0)
+  	  	  file.SetContentsMargins(0, 0, 0, 0)
+  
+  	  	  filename := f.Name()
+  	  	  file.SetText(filename)
+
+					filepath := filepath.Join(path, filename)
+					finfo, _ := os.Stat(filepath)
+					var filetype string
+
+					if finfo.IsDir() {
+  	  	    filetype = "/"
+  	        svgContent := editor.workspaces[0].getSvg("directory", nil)
+  	        fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+					} else {
+  	  	    filetype = getFileType(filename)
+  	        svgContent := editor.workspaces[0].getSvg(filetype, nil)
+  	        fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+					}
+  
+  	  	  filelayout.AddWidget(fileIcon, 0, 0)
+  	  	  filelayout.AddWidget(file, 0, 0)
+  	  	  filewidget.SetLayout(filelayout)
+					filewidget.SetAttribute(core.Qt__WA_Hover, true)
+  
+  	  	  fileitem := &Fileitem {
+					 fl: filelist,
+  	  	   widget: filewidget,
+  	  	   fileText: filename,
+					 file: file,
+  	  	   fileIcon: fileIcon,
+  	  	   fileType: filetype,
+					 path: filepath,
+  	  	  }
+
+		      fileitem.widget.ConnectEnterEvent(fileitem.enterEvent)
+		      fileitem.widget.ConnectLeaveEvent(fileitem.leaveEvent)
+		      fileitem.widget.ConnectMousePressEvent(fileitem.mouseEvent)
+
+  	  	  fileitems = append(fileitems, fileitem)
+					filelistlayout.AddWidget(filewidget, 0, 0)
+  		}
+		  filelistwidget.SetLayout(filelistlayout)
+
+			filelist.widget = filelistwidget
+			filelist.Fileitems = fileitems
+
+			return filelist
 }
 
 func (w *Workspace) attachUIOption() map[string]interface{} {
@@ -720,13 +806,27 @@ type WorkspaceSide struct {
 	bgcolor *RGBA
 }
 
-// WorkspaceSideItem is
-type WorkspaceSideItem struct {
-	hidden bool
-	active bool
-	side   *WorkspaceSide
-	label  *widgets.QLabel
-	text   string
+type Filelist struct {
+  WSitem  *WorkspaceSideItem
+	widget        *widgets.QWidget
+	Fileitems          []*Fileitem
+}
+
+type Fileitem struct {
+	fl         *Filelist
+	widget    *widgets.QWidget
+	//ID        int
+	//active    bool
+	//Name      string
+	//width     int
+	//chars     int
+	fileIcon  *svg.QSvgWidget
+	fileType  string
+	//closeIcon *svg.QSvgWidget
+	file      *widgets.QLabel
+	fileText  string
+	//hidden    bool
+	path string
 }
 
 func newWorkspaceSide() *WorkspaceSide {
@@ -734,7 +834,7 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 	labeltext := widgets.NewQLabel(nil, 0)
-	labeltext.SetContentsMargins(20, 15, 20, 15)
+	labeltext.SetContentsMargins(20, 15, 20, 10)
 	labeltext.SetText("Workspace")
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
@@ -747,20 +847,82 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout.AddWidget(labeltext)
 
 	items := []*WorkspaceSideItem{}
-	for i := 0; i < 20; i++ {
-		label := widgets.NewQLabel(nil, 0)
-		label.SetContentsMargins(15, 6, 15, 6)
-		item := &WorkspaceSideItem{
-			side:  side,
-			label: label,
-		}
-		layout.AddWidget(label)
-		items = append(items, item)
-		item.hide()
-	}
 	side.items = items
+	for i := 0; i < 20; i++ {
+	  item := newWorkspaceSideItem()
+		side.items = append(side.items, item)
+		side.items[len(side.items)-1].side = side
+		layout.AddWidget(side.items[len(side.items)-1].widget)
+		side.items[len(side.items)-1].hide()
+	}
 	return side
 }
+
+// WorkspaceSideItem is
+type WorkspaceSideItem struct {
+	hidden bool
+	active bool
+	side   *WorkspaceSide
+
+	widget        *widgets.QWidget
+	layout    *widgets.QBoxLayout
+	//layout    *widgets.QLayout
+
+	text   string
+	Filelist  *Filelist
+	label  *widgets.QLabel
+	Filelistwidget  *widgets.QWidget
+}
+
+func newWorkspaceSideItem() *WorkspaceSideItem {
+	  widget := widgets.NewQWidget(nil, 0)
+
+		//layout := widgets.NewQVBoxLayout()
+	  layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
+	  layout.SetContentsMargins(0, 5, 0, 5)
+
+	  items := []*widgets.QLayoutItem{}
+
+    layout.ConnectSizeHint(func() *core.QSize {
+    	size := core.NewQSize()
+    	for _, item := range items {
+    		size = size.ExpandedTo(item.MinimumSize())
+    	}
+    	return size
+    })
+    layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
+    	items = append(items, item)
+    })
+    //layout.ConnectSetGeometry(func(r *core.QRect) {
+    //	for i := 0; i < len(items); i++ {
+    //		items[i].SetGeometry(core.NewQRect4(width*i, 0, width, r.Height()))
+    //	}
+    //})
+
+		label := widgets.NewQLabel(nil, 0)
+		label.SetContentsMargins(15, 6, 10, 6)
+
+	  flwidget := widgets.NewQWidget(nil, 0)
+
+		filelist := &Filelist{
+		 widget: flwidget,
+		}
+
+		layout.AddWidget(label, 0, 0)
+		layout.AddWidget(flwidget, 0, 0)
+		//sideitem.Filelist.widget.Hide()
+
+		sideitem := &WorkspaceSideItem{
+			widget: widget,
+			layout: layout,
+			label: label,
+			Filelist: filelist,
+			Filelistwidget: flwidget,
+		}
+
+  	return sideitem
+}
+
 
 func (i *WorkspaceSideItem) setText(text string) {
 	if i.text == text {
@@ -768,6 +930,7 @@ func (i *WorkspaceSideItem) setText(text string) {
 	}
 	i.text = text
 	i.label.SetText(text)
+	i.widget.Show()
 }
 
 func (i *WorkspaceSideItem) setActive() {
@@ -780,7 +943,9 @@ func (i *WorkspaceSideItem) setActive() {
 	}
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, -5).R, shiftColor(fg, -5).G, shiftColor(fg, -5).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 5px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+
+	i.Filelistwidget.Show()
 }
 
 func (i *WorkspaceSideItem) setInactive() {
@@ -793,7 +958,9 @@ func (i *WorkspaceSideItem) setInactive() {
 	}
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+
+	i.Filelistwidget.Hide()
 }
 
 func (i *WorkspaceSideItem) show() {
@@ -802,6 +969,7 @@ func (i *WorkspaceSideItem) show() {
 	}
 	i.hidden = false
 	i.label.Show()
+	i.Filelistwidget.Show()
 }
 
 func (i *WorkspaceSideItem) hide() {
@@ -810,6 +978,7 @@ func (i *WorkspaceSideItem) hide() {
 	}
 	i.hidden = true
 	i.label.Hide()
+	i.Filelistwidget.Hide()
 }
 
 func (w *Workspace) setGuiColor() {
@@ -868,4 +1037,16 @@ func (w *Workspace) setGuiColor() {
 		}
 	}
 
+}
+
+func (f *Fileitem) enterEvent(event *core.QEvent) {
+ f.widget.SetStyleSheet(" * { text-decoration: underline; } ")
+}
+
+func (f *Fileitem) leaveEvent(event *core.QEvent) {
+ f.widget.SetStyleSheet(" * { text-decoration: none; } ")
+}
+
+func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
+  editor.workspaces[editor.active].nvim.Command(":e " + f.path)
 }
