@@ -530,15 +530,14 @@ func (w *Workspace) updateSize() {
 		}
 	}
 
-	if w.drawTabline && w.tabline.height == 0 {
-		w.tabline.height = w.tabline.widget.Height() - w.tabline.marginTop - w.tabline.marginBottom
+	if w.drawTabline {
+		w.tabline.height = w.tabline.widget.Height()
 	}
-	if w.drawStatusline && w.statusline.height == 0 {
-		w.statusline.height = w.statusline.widget.Height()
+	if w.drawStatusline {
 		w.statusline.height = w.statusline.widget.Height()
 	}
 
-	height = w.height - w.statusline.height
+	height = w.height - w.tabline.height - w.statusline.height
 
 	rows := height / w.font.lineHeight
 	remainingHeight := height - rows*w.font.lineHeight
