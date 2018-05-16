@@ -333,7 +333,7 @@ func (w *Workspace) attachUI(path string) error {
 }
 
 func (w *Workspace) workspaceCommands(path string) {
-	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())`)
+	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`command! GonvimWorkspaceNew call rpcnotify(0, 'Gui', 'gonvim_workspace_new')`)
 	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
 	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
@@ -349,10 +349,13 @@ func (w *Workspace) initCwd() {
 	w.nvim.Command("cd " + cwd)
 }
 
-func (w *Workspace) setCwd(cwd string) {
+func (w *Workspace) setCwd() {
+	cwd := ""
+	w.nvim.Eval("getcwd()", &cwd)
 	if cwd == w.cwd {
 		return
 	}
+
 	w.cwd = cwd
 
 	var labelpath string
@@ -373,28 +376,28 @@ func (w *Workspace) setCwd(cwd string) {
 			return
 		}
 		if ws == w {
-			editor.wsSide.items[i].label.SetText(w.cwdlabel)
-
-			// go func() { // QObject::setParent: Cannot set parent, new parent is in a different thread
-			// set current path
 			path, _ := filepath.Abs(cwd)
-			// get file list
-			filelist := newFilelistwidget(path)
-
-			editor.wsSide.items[i].layout.RemoveWidget(editor.wsSide.items[i].Filelistwidget)
-			editor.wsSide.items[i].layout.AddWidget(filelist.widget, 0, 0)
-			editor.wsSide.items[i].Filelistwidget = filelist.widget
-			editor.wsSide.items[i].Filelist = filelist
-			editor.wsSide.items[i].active = true
-			// }()
+			editor.wsSide.items[i].label.SetText(w.cwdlabel)
+			editor.wsSide.items[i].cwdpath = path
 
 			if (len(editor.workspaces) == 1) && (editor.showWorkspaceside == false) {
-				editor.wsSide.items[i].Filelistwidget.Hide()
+				return
 			}
+
+			filelist := newFilelistwidget(path)
+			editor.wsSide.items[i].setFilelistwidget(filelist)
 
 			return
 		}
 	}
+}
+
+func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
+	i.layout.RemoveWidget(i.Filelistwidget)
+	i.layout.AddWidget(f.widget, 0, 0)
+	i.Filelistwidget = f.widget
+	i.Filelist = f
+	i.active = true
 }
 
 func newFilelistwidget(path string) *Filelist {
@@ -463,6 +466,7 @@ func newFilelistwidget(path string) *Filelist {
 
 	filelist.widget = filelistwidget
 	filelist.Fileitems = fileitems
+	filelist.isload = true
 
 	return filelist
 }
@@ -708,7 +712,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_switch":
 		editor.workspaceSwitch(reflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
-		w.setCwd(updates[1].(string))
+		w.setCwd()
 	case GonvimMarkdownNewBufferEvent:
 		go w.markdown.newBuffer()
 	case GonvimMarkdownUpdateEvent:
@@ -813,6 +817,7 @@ type Filelist struct {
 	WSitem    *WorkspaceSideItem
 	widget    *widgets.QWidget
 	Fileitems []*Fileitem
+	isload    bool
 }
 
 type Fileitem struct {
@@ -871,7 +876,9 @@ type WorkspaceSideItem struct {
 	layout *widgets.QBoxLayout
 	//layout    *widgets.QLayout
 
-	text           string
+	text    string
+	cwdpath string
+
 	Filelist       *Filelist
 	label          *widgets.QLabel
 	Filelistwidget *widgets.QWidget
@@ -884,18 +891,18 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
 	layout.SetContentsMargins(0, 5, 0, 5)
 
-	items := []*widgets.QLayoutItem{}
+	//items := []*widgets.QLayoutItem{}
 
-	layout.ConnectSizeHint(func() *core.QSize {
-		size := core.NewQSize()
-		for _, item := range items {
-			size = size.ExpandedTo(item.MinimumSize())
-		}
-		return size
-	})
-	layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
-		items = append(items, item)
-	})
+	//layout.ConnectSizeHint(func() *core.QSize {
+	//	size := core.NewQSize()
+	//	for _, item := range items {
+	//		size = size.ExpandedTo(item.MinimumSize())
+	//	}
+	//	return size
+	//})
+	//layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
+	//	items = append(items, item)
+	//})
 	//layout.ConnectSetGeometry(func(r *core.QRect) {
 	//	for i := 0; i < len(items); i++ {
 	//		items[i].SetGeometry(core.NewQRect4(width*i, 0, width, r.Height()))
@@ -946,6 +953,11 @@ func (i *WorkspaceSideItem) setActive() {
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
 	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 5px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+
+	if i.Filelist.isload == false && editor.showWorkspaceside == false && len(editor.workspaces) > 1 {
+		filelist := newFilelistwidget(i.cwdpath)
+		i.setFilelistwidget(filelist)
+	}
 
 	i.Filelistwidget.Show()
 }
