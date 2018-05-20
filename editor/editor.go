@@ -232,6 +232,7 @@ func (e *Editor) workspaceNew() {
 	if err != nil {
 		return
 	}
+
 	//e.active++
 	//e.workspaces = append(e.workspaces, nil)
 	//copy(e.workspaces[e.active+1:], e.workspaces[e.active:])
@@ -269,6 +270,7 @@ func (e *Editor) workspacePrevious() {
 }
 
 func (e *Editor) workspaceUpdate() {
+
 	for i, ws := range e.workspaces {
 		if i == e.active {
 			ws.hide()
@@ -290,6 +292,7 @@ func (e *Editor) workspaceUpdate() {
 		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
 		e.wsSide.items[i].show()
 	}
+
 	for i := len(e.workspaces); i < len(e.wsSide.items); i++ {
 		e.wsSide.items[i].hide()
 	}

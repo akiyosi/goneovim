@@ -212,8 +212,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	// 	return nil, err
 	// }
 
-	fmt.Println("path: ", path)
-
 	//go w.startNvim(path)
 	w.startNvim(path) // fix: akiyosi/gonvim/issues/1
 
@@ -372,7 +370,7 @@ func (w *Workspace) setCwd() {
 	w.cwdlabel = labelpath
 	w.cwdBase = filepath.Base(cwd)
 	for i, ws := range editor.workspaces {
-		if i > len(editor.wsSide.items) {
+		if i >= len(editor.wsSide.items) {
 			return
 		}
 		if ws == w {
