@@ -54,6 +54,12 @@ func (w *Workspace) initSVGS() {
 	blue := newRGBA(81, 154, 186, 1)
 	w.svgs = map[string]*SvgXML{}
 
+	w.svgs["circle"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24px" height="24px" viewBox="0 0 24 24"><g transform="scale(0.9) translate(0,2)"><path fill="%s" d="M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z" /></g></svg>`,
+	}
+
 	w.svgs["directory"] = &SvgXML{
 		width:  24,
 		height: 24,

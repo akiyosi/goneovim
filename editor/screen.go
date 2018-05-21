@@ -406,7 +406,7 @@ func (s *Screen) put(args []interface{}) {
 	}
 	line := s.content[row]
 	oldFirstNormal := true
-	char := line[x]
+	char := line[x] // sometimes crash at this line
 	if char != nil && !char.normalWidth {
 		oldFirstNormal = false
 	}
