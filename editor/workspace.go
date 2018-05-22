@@ -419,7 +419,7 @@ func newFilelistwidget(path string) *Filelist {
 		filewidget := widgets.NewQWidget(nil, 0)
 
 		filelayout := widgets.NewQHBoxLayout()
-		filelayout.SetContentsMargins(35, 0, 25, 0)
+		filelayout.SetContentsMargins(35, 0, 10, 0)
 
 		fileIcon := svg.NewQSvgWidget(nil)
 		fileIcon.SetFixedWidth(11)
@@ -867,6 +867,7 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout.SetSpacing(0)
 	labeltext := widgets.NewQLabel(nil, 0)
 	labeltext.SetContentsMargins(20, 15, 20, 10)
+	labeltext.SetSpacing(1)
 	labeltext.SetText("Workspace")
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
