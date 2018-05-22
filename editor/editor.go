@@ -100,7 +100,6 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
-
 	home, err := homedir.Dir()
 	cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
 	var cfgWSDisplay, cfgWSRestoresession bool
@@ -231,6 +230,7 @@ func InitEditor() {
 
 	go func() {
 		<-editor.stop
+		e.app.DisconnectEvent()
 		e.app.Quit()
 	}()
 
