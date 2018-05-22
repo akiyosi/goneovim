@@ -729,7 +729,9 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_redrawSideItem":
 		fl := editor.wsSide.items[editor.active].Filelist
 		if fl.active != -1 {
-			fl.Fileitems[fl.active].updateModifiedbadge()
+			if editor.showWorkspaceside == true || (editor.showWorkspaceside == false && len(editor.workspaces) > 1) {
+				fl.Fileitems[fl.active].updateModifiedbadge()
+			}
 		}
 	case "gonvim_workspace_redrawSideItems":
 		editor.wsSide.items[editor.active].setCurrentFileLabel()

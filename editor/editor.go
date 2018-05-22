@@ -143,8 +143,14 @@ func InitEditor() {
 
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
-
 	e.window.SetAcceptDrops(true)
+
+	// output log
+	// tfile, terr := os.OpenFile("/Users/akiyoshi/test.log", os.O_WRONLY | os.O_CREATE, 0666)
+	// if terr != nil {
+	//     panic(terr)
+	// }
+	// defer tfile.Close()
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
@@ -206,6 +212,20 @@ func InitEditor() {
 			ws.updateSize()
 		}
 	})
+
+	// for macos, open file via Finder
+	var macosArg string
+	if runtime.GOOS == "darwin" {
+		e.app.ConnectEvent(func(event *core.QEvent) bool {
+			switch event.Type() {
+			case core.QEvent__FileOpen:
+				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
+				macosArg = fileOpenEvent.File()
+				go e.workspaces[e.active].nvim.Command(fmt.Sprintf(":e %s", macosArg))
+			}
+			return true
+		})
+	}
 
 	e.window.SetCentralWidget(widget)
 
