@@ -867,7 +867,6 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout.SetSpacing(0)
 	labeltext := widgets.NewQLabel(nil, 0)
 	labeltext.SetContentsMargins(20, 15, 20, 10)
-	labeltext.SetSpacing(1)
 	labeltext.SetText("Workspace")
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
