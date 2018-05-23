@@ -828,11 +828,12 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 
 // WorkspaceSide is
 type WorkspaceSide struct {
-	widget  *widgets.QWidget
-	title   *widgets.QLabel
-	items   []*WorkspaceSideItem
-	fgcolor *RGBA
-	bgcolor *RGBA
+	widget     *widgets.QWidget
+	scrollarea *widgets.QScrollArea
+	title      *widgets.QLabel
+	items      []*WorkspaceSideItem
+	fgcolor    *RGBA
+	bgcolor    *RGBA
 }
 
 type Filelist struct {
@@ -1067,8 +1068,9 @@ func (w *Workspace) setGuiColor() {
 	// for Workspaceside
 	wsSideStyle := fmt.Sprintf("QWidget {	color: rgba(%d, %d, %d, 1);		border-right: 0px solid;	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
 	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border-color: rgba(%d, %d, %d, 1); padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + wsSideStyle)
+	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: rgb(%d, %d, %d); width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: rgb(%d, %d, %d); min-height: 25px;}  QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { border: none; background: none; }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 
-	// wdSide
+	// for WorkspaceSideItem
 	if len(editor.workspaces) == 1 || len(editor.wsSide.items) == 1 {
 		if editor.showWorkspaceside == true {
 			wsSideItemStyle := fmt.Sprintf("color: rgba(%d, %d, %d, 1);	", shiftColor(fg, -5).R, shiftColor(fg, -5).G, shiftColor(fg, -5).B)
