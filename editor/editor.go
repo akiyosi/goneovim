@@ -167,6 +167,7 @@ func InitEditor() {
 	wsSideScrollArea := widgets.NewQScrollArea(nil)
 	wsSideScrollArea.SetWidgetResizable(true)
 	wsSideScrollArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+	wsSideScrollArea.SetFocusProxy(e.window)
 	wsSideScrollArea.SetWidget(e.wsSide.widget)
 	wsSideScrollArea.SetFrameShape(widgets.QFrame__NoFrame)
 	wsSideScrollArea.SetMaximumWidth(230)
@@ -242,7 +243,9 @@ func InitEditor() {
 
 	go func() {
 		<-editor.stop
-		e.app.DisconnectEvent()
+		if runtime.GOOS == "darwin" {
+			e.app.DisconnectEvent()
+		}
 		e.app.Quit()
 	}()
 
