@@ -333,7 +333,7 @@ func (w *Workspace) attachUI(path string) error {
 func (w *Workspace) workspaceCommands(path string) {
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
-	w.nvim.Command(`autocmd TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
+	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	w.nvim.Command(`command! GonvimWorkspaceNew call rpcnotify(0, 'Gui', 'gonvim_workspace_new')`)
 	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
 	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
@@ -413,13 +413,17 @@ func newFilelistwidget(path string) *Filelist {
 	filelistlayout.SetContentsMargins(0, 0, 0, 0)
 	filelistlayout.SetSpacing(1)
 	bg := editor.bgcolor
+	width := editor.workspacewidth
+	filewidgetLeftMargin := 35
+	filewidgetMarginBuf := 65 + 3*int(editor.workspaces[editor.active].font.truewidth)
+	maxfilename := int(float64(width-(filewidgetLeftMargin+filewidgetMarginBuf)) / float64(editor.workspaces[editor.active].font.truewidth))
 
 	for _, f := range lsfiles {
 
 		filewidget := widgets.NewQWidget(nil, 0)
 
 		filelayout := widgets.NewQHBoxLayout()
-		filelayout.SetContentsMargins(35, 0, 10, 0)
+		filelayout.SetContentsMargins(filewidgetLeftMargin, 0, 10, 0)
 
 		fileIcon := svg.NewQSvgWidget(nil)
 		fileIcon.SetFixedWidth(11)
@@ -427,6 +431,7 @@ func newFilelistwidget(path string) *Filelist {
 
 		file := widgets.NewQLabel(nil, 0)
 		file.SetContentsMargins(0, 5, 10, 5)
+		file.SetFont(editor.workspaces[editor.active].font.fontNew)
 
 		fileModified := svg.NewQSvgWidget(nil)
 		fileModified.SetFixedWidth(11)
@@ -434,9 +439,12 @@ func newFilelistwidget(path string) *Filelist {
 		fileModified.SetContentsMargins(10, 10, 0, 2)
 
 		filename := f.Name()
+		if len(filename) >= maxfilename {
+			filename = filename[:maxfilename] + "..."
+		}
 		file.SetText(filename)
 
-		filepath := filepath.Join(path, filename)
+		filepath := filepath.Join(path, f.Name())
 		finfo, _ := os.Stat(filepath)
 		var filetype string
 
@@ -866,18 +874,18 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout := newHFlowLayout(0, 0, 0, 0, 20)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
-	labeltext := widgets.NewQLabel(nil, 0)
-	labeltext.SetContentsMargins(20, 15, 20, 10)
-	labeltext.SetText("Workspace")
+	header := widgets.NewQLabel(nil, 0)
+	header.SetContentsMargins(20, 15, 20, 10)
+	header.SetText("Workspace")
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
 
 	side := &WorkspaceSide{
 		widget: widget,
-		title:  labeltext,
+		title:  header,
 	}
-	layout.AddWidget(labeltext)
+	layout.AddWidget(header)
 
 	items := []*WorkspaceSideItem{}
 	side.items = items
@@ -888,6 +896,12 @@ func newWorkspaceSide() *WorkspaceSide {
 		layout.AddWidget(side.items[len(side.items)-1].widget)
 		side.items[len(side.items)-1].hide()
 	}
+
+	footer := widgets.NewQLabel(nil, 0)
+	footer.SetContentsMargins(20, 15, 20, 10)
+	footer.SetText("WorkspaceEnd")
+	layout.AddWidget(footer)
+
 	return side
 }
 
@@ -936,6 +950,8 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(15, 6, 10, 6)
+	label.SetMaximumWidth(editor.workspacewidth)
+	label.SetMinimumWidth(editor.workspacewidth)
 
 	flwidget := widgets.NewQWidget(nil, 0)
 
@@ -1137,7 +1153,6 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 }
 
 func (f *Fileitem) updateModifiedbadge() {
-	fmt.Println("updateModifiedbadge!")
 	var isModified string
 	isModified, _ = editor.workspaces[editor.active].nvim.CommandOutput("echo &modified")
 

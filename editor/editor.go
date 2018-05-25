@@ -71,6 +71,7 @@ type Editor struct {
 	restoreSession    bool
 	showWorkspaceside bool
 	workspacepath     string
+	workspacewidth    int
 }
 
 type editorSignal struct {
@@ -104,14 +105,17 @@ func InitEditor() {
 	cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
 	var cfgWSDisplay, cfgWSRestoresession bool
 	var cfgWSPath string
+	var cfgWSWidth int
 	if cfgerr != nil {
 		cfgWSDisplay = false
 		cfgWSRestoresession = false
 		cfgWSPath = "minimum"
+		cfgWSWidth = 250
 	} else {
 		cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
 		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
 		cfgWSPath = cfg.Section("workspace").Key("path").String()
+		cfgWSWidth, _ = cfg.Section("workspace").Key("width").Int()
 	}
 
 	editor = &Editor{
@@ -124,6 +128,7 @@ func InitEditor() {
 		restoreSession:    cfgWSRestoresession,
 		showWorkspaceside: cfgWSDisplay,
 		workspacepath:     cfgWSPath,
+		workspacewidth:    cfgWSWidth,
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
@@ -170,8 +175,8 @@ func InitEditor() {
 	wsSideScrollArea.SetFocusProxy(e.window)
 	wsSideScrollArea.SetWidget(e.wsSide.widget)
 	wsSideScrollArea.SetFrameShape(widgets.QFrame__NoFrame)
-	wsSideScrollArea.SetMaximumWidth(230)
-	wsSideScrollArea.SetMinimumWidth(230)
+	wsSideScrollArea.SetMaximumWidth(e.workspacewidth)
+	wsSideScrollArea.SetMinimumWidth(e.workspacewidth)
 	e.wsSide.scrollarea = wsSideScrollArea
 
 	layout.AddWidget(e.wsWidget, 1, 0)
