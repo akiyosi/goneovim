@@ -71,6 +71,7 @@ type Editor struct {
 	restoreSession    bool
 	showWorkspaceside bool
 	workspacepath     string
+	workspacewidth    int
 }
 
 type editorSignal struct {
@@ -100,19 +101,21 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
-
 	home, err := homedir.Dir()
 	cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
 	var cfgWSDisplay, cfgWSRestoresession bool
 	var cfgWSPath string
+	var cfgWSWidth int
 	if cfgerr != nil {
 		cfgWSDisplay = false
 		cfgWSRestoresession = false
 		cfgWSPath = "minimum"
+		cfgWSWidth = 250
 	} else {
 		cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
 		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
 		cfgWSPath = cfg.Section("workspace").Key("path").String()
+		cfgWSWidth, _ = cfg.Section("workspace").Key("width").Int()
 	}
 
 	editor = &Editor{
@@ -125,6 +128,7 @@ func InitEditor() {
 		restoreSession:    cfgWSRestoresession,
 		showWorkspaceside: cfgWSDisplay,
 		workspacepath:     cfgWSPath,
+		workspacewidth:    cfgWSWidth,
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
@@ -143,8 +147,14 @@ func InitEditor() {
 
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
-
 	e.window.SetAcceptDrops(true)
+
+	// output log
+	// tfile, terr := os.OpenFile("/Users/akiyoshi/test.log", os.O_WRONLY | os.O_CREATE, 0666)
+	// if terr != nil {
+	//     panic(terr)
+	// }
+	// defer tfile.Close()
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
@@ -158,8 +168,20 @@ func InitEditor() {
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
+
+	wsSideScrollArea := widgets.NewQScrollArea(nil)
+	wsSideScrollArea.SetWidgetResizable(true)
+	wsSideScrollArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+	wsSideScrollArea.SetFocusProxy(e.window)
+	wsSideScrollArea.SetWidget(e.wsSide.widget)
+	wsSideScrollArea.SetFrameShape(widgets.QFrame__NoFrame)
+	wsSideScrollArea.SetMaximumWidth(e.workspacewidth)
+	wsSideScrollArea.SetMinimumWidth(e.workspacewidth)
+	e.wsSide.scrollarea = wsSideScrollArea
+
 	layout.AddWidget(e.wsWidget, 1, 0)
-	layout.AddWidget(e.wsSide.widget, 0, 0)
+	//layout.AddWidget(e.wsSide.widget, 0, 0)
+	layout.AddWidget(e.wsSide.scrollarea, 0, 0)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
@@ -169,7 +191,8 @@ func InitEditor() {
 		shadow.SetBlurRadius(60)
 		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
 		shadow.SetOffset3(6, 2)
-		e.wsSide.widget.SetGraphicsEffect(shadow)
+		//e.wsSide.widget.SetGraphicsEffect(shadow)
+		e.wsSide.scrollarea.SetGraphicsEffect(shadow)
 	}()
 
 	e.workspaces = []*Workspace{}
@@ -207,10 +230,27 @@ func InitEditor() {
 		}
 	})
 
+	// for macos, open file via Finder
+	var macosArg string
+	if runtime.GOOS == "darwin" {
+		e.app.ConnectEvent(func(event *core.QEvent) bool {
+			switch event.Type() {
+			case core.QEvent__FileOpen:
+				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
+				macosArg = fileOpenEvent.File()
+				go e.workspaces[e.active].nvim.Command(fmt.Sprintf(":e %s", macosArg))
+			}
+			return true
+		})
+	}
+
 	e.window.SetCentralWidget(widget)
 
 	go func() {
 		<-editor.stop
+		if runtime.GOOS == "darwin" {
+			e.app.DisconnectEvent()
+		}
 		e.app.Quit()
 	}()
 
@@ -283,12 +323,12 @@ func (e *Editor) workspaceUpdate() {
 	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
 		if i == e.active {
 			e.wsSide.items[i].setActive()
-			//if e.showWorkspaceside == true {
 			e.wsSide.title.Show()
 			//}
 		} else {
 			e.wsSide.items[i].setInactive()
 		}
+		e.wsSide.scrollarea.Show()
 		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
 		e.wsSide.items[i].show()
 	}
@@ -299,9 +339,11 @@ func (e *Editor) workspaceUpdate() {
 
 	if len(e.workspaces) == 1 || len(e.wsSide.items) == 1 {
 		if e.showWorkspaceside == false {
+			e.wsSide.scrollarea.Hide()
 			e.wsSide.items[0].hide()
 			e.wsSide.title.Hide()
 		} else {
+			e.wsSide.scrollarea.Show()
 			e.wsSide.title.Show()
 			e.wsSide.items[0].setActive()
 			e.wsSide.items[0].show()

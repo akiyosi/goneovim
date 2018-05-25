@@ -332,6 +332,8 @@ func (w *Workspace) attachUI(path string) error {
 
 func (w *Workspace) workspaceCommands(path string) {
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
+	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
+	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	w.nvim.Command(`command! GonvimWorkspaceNew call rpcnotify(0, 'Gui', 'gonvim_workspace_new')`)
 	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
 	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
@@ -395,6 +397,7 @@ func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
 	i.layout.AddWidget(f.widget, 0, 0)
 	i.Filelistwidget = f.widget
 	i.Filelist = f
+	i.Filelist.WSitem = i
 	i.active = true
 }
 
@@ -403,54 +406,76 @@ func newFilelistwidget(path string) *Filelist {
 	lsfiles, _ := ioutil.ReadDir(path)
 
 	filelist := &Filelist{}
+	filelist.active = -1
 
 	filelistwidget := widgets.NewQWidget(nil, 0)
 	filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
 	filelistlayout.SetContentsMargins(0, 0, 0, 0)
+	filelistlayout.SetSpacing(1)
+	bg := editor.bgcolor
+	width := editor.workspacewidth
+	filewidgetLeftMargin := 35
+	filewidgetMarginBuf := 65 + 3*int(editor.workspaces[editor.active].font.truewidth)
+	maxfilename := int(float64(width-(filewidgetLeftMargin+filewidgetMarginBuf)) / float64(editor.workspaces[editor.active].font.truewidth))
+
 	for _, f := range lsfiles {
 
 		filewidget := widgets.NewQWidget(nil, 0)
 
 		filelayout := widgets.NewQHBoxLayout()
-		filelayout.SetContentsMargins(35, 3, 25, 0)
+		filelayout.SetContentsMargins(filewidgetLeftMargin, 0, 10, 0)
 
 		fileIcon := svg.NewQSvgWidget(nil)
 		fileIcon.SetFixedWidth(11)
 		fileIcon.SetFixedHeight(11)
 
 		file := widgets.NewQLabel(nil, 0)
-		file.SetContentsMargins(0, 0, 0, 0)
+		file.SetContentsMargins(0, 5, 10, 5)
+		file.SetFont(editor.workspaces[editor.active].font.fontNew)
+
+		fileModified := svg.NewQSvgWidget(nil)
+		fileModified.SetFixedWidth(11)
+		fileModified.SetFixedHeight(11)
+		fileModified.SetContentsMargins(10, 10, 0, 2)
 
 		filename := f.Name()
+		if len(filename) >= maxfilename {
+			filename = filename[:maxfilename] + "..."
+		}
 		file.SetText(filename)
 
-		filepath := filepath.Join(path, filename)
+		filepath := filepath.Join(path, f.Name())
 		finfo, _ := os.Stat(filepath)
 		var filetype string
 
 		if finfo.IsDir() {
 			filetype = "/"
-			svgContent := editor.workspaces[0].getSvg("directory", nil)
+			svgContent := editor.workspaces[editor.active].getSvg("directory", nil)
 			fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		} else {
 			filetype = getFileType(filename)
-			svgContent := editor.workspaces[0].getSvg(filetype, nil)
+			svgContent := editor.workspaces[editor.active].getSvg(filetype, nil)
 			fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		}
 
+		svgModified := editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+		fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+
 		filelayout.AddWidget(fileIcon, 0, 0)
 		filelayout.AddWidget(file, 0, 0)
+		filelayout.AddWidget(fileModified, 0, 0)
 		filewidget.SetLayout(filelayout)
 		filewidget.SetAttribute(core.Qt__WA_Hover, true)
 
 		fileitem := &Fileitem{
-			fl:       filelist,
-			widget:   filewidget,
-			fileText: filename,
-			file:     file,
-			fileIcon: fileIcon,
-			fileType: filetype,
-			path:     filepath,
+			fl:           filelist,
+			widget:       filewidget,
+			fileText:     filename,
+			file:         file,
+			fileIcon:     fileIcon,
+			fileType:     filetype,
+			path:         filepath,
+			fileModified: fileModified,
 		}
 
 		fileitem.widget.ConnectEnterEvent(fileitem.enterEvent)
@@ -557,8 +582,6 @@ func (w *Workspace) updateSize() {
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
-	//var wsSideItemStyle, wsSideStyle, tabStyle, statusStyle, popupStyle, locpopupStyle, tooltipStyle, paletteStyle string
-
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -711,6 +734,15 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.workspaceSwitch(reflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
 		w.setCwd()
+	case "gonvim_workspace_redrawSideItem":
+		fl := editor.wsSide.items[editor.active].Filelist
+		if fl.active != -1 {
+			if editor.showWorkspaceside == true || (editor.showWorkspaceside == false && len(editor.workspaces) > 1) {
+				fl.Fileitems[fl.active].updateModifiedbadge()
+			}
+		}
+	case "gonvim_workspace_redrawSideItems":
+		editor.wsSide.items[editor.active].setCurrentFileLabel()
 	case GonvimMarkdownNewBufferEvent:
 		go w.markdown.newBuffer()
 	case GonvimMarkdownUpdateEvent:
@@ -804,11 +836,12 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 
 // WorkspaceSide is
 type WorkspaceSide struct {
-	widget  *widgets.QWidget
-	title   *widgets.QLabel
-	items   []*WorkspaceSideItem
-	fgcolor *RGBA
-	bgcolor *RGBA
+	widget     *widgets.QWidget
+	scrollarea *widgets.QScrollArea
+	title      *widgets.QLabel
+	items      []*WorkspaceSideItem
+	fgcolor    *RGBA
+	bgcolor    *RGBA
 }
 
 type Filelist struct {
@@ -816,13 +849,13 @@ type Filelist struct {
 	widget    *widgets.QWidget
 	Fileitems []*Fileitem
 	isload    bool
+	active    int
 }
 
 type Fileitem struct {
 	fl     *Filelist
 	widget *widgets.QWidget
 	//ID        int
-	//active    bool
 	//Name      string
 	//width     int
 	//chars     int
@@ -832,25 +865,27 @@ type Fileitem struct {
 	file     *widgets.QLabel
 	fileText string
 	//hidden    bool
-	path string
+	path         string
+	fileModified *svg.QSvgWidget
+	isOpened     bool
 }
 
 func newWorkspaceSide() *WorkspaceSide {
 	layout := newHFlowLayout(0, 0, 0, 0, 20)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
-	labeltext := widgets.NewQLabel(nil, 0)
-	labeltext.SetContentsMargins(20, 15, 20, 10)
-	labeltext.SetText("Workspace")
+	header := widgets.NewQLabel(nil, 0)
+	header.SetContentsMargins(20, 15, 20, 10)
+	header.SetText("Workspace")
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
 
 	side := &WorkspaceSide{
 		widget: widget,
-		title:  labeltext,
+		title:  header,
 	}
-	layout.AddWidget(labeltext)
+	layout.AddWidget(header)
 
 	items := []*WorkspaceSideItem{}
 	side.items = items
@@ -861,6 +896,12 @@ func newWorkspaceSide() *WorkspaceSide {
 		layout.AddWidget(side.items[len(side.items)-1].widget)
 		side.items[len(side.items)-1].hide()
 	}
+
+	//footer := widgets.NewQLabel(nil, 0)
+	//footer.SetContentsMargins(20, 15, 20, 10)
+	//footer.SetText("WorkspaceFooter")
+	//layout.AddWidget(footer)
+
 	return side
 }
 
@@ -909,6 +950,8 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(15, 6, 10, 6)
+	label.SetMaximumWidth(editor.workspacewidth)
+	label.SetMinimumWidth(editor.workspacewidth)
 
 	flwidget := widgets.NewQWidget(nil, 0)
 
@@ -927,6 +970,7 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 		Filelist:       filelist,
 		Filelistwidget: flwidget,
 	}
+	sideitem.Filelist.WSitem = sideitem
 
 	return sideitem
 }
@@ -950,7 +994,7 @@ func (i *WorkspaceSideItem) setActive() {
 	}
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 5px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
 	if i.Filelist.isload == false && editor.showWorkspaceside == false && len(editor.workspaces) > 1 {
 		filelist := newFilelistwidget(i.cwdpath)
@@ -970,7 +1014,7 @@ func (i *WorkspaceSideItem) setInactive() {
 	}
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 15px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
 	i.Filelistwidget.Hide()
 }
@@ -1004,10 +1048,6 @@ func (w *Workspace) setGuiColor() {
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 
-	// for Workspaceside
-	wsSideStyle := fmt.Sprintf("QWidget {	color: rgba(%d, %d, %d, 1);		border-right: 0px solid;	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
-	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border-color: rgba(%d, %d, %d, 1); padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + wsSideStyle)
-
 	// tab
 	tabStyle := fmt.Sprintf("QWidget { color: rgba(%d, %d, %d, 0.8);	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
 	w.tabline.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border-left: 8px solid rgba(%d, %d, %d, 1); border-bottom: 0px solid;	border-right: 0px solid;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + tabStyle)
@@ -1039,26 +1079,95 @@ func (w *Workspace) setGuiColor() {
 	w.loc.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid rgba(%d, %d, %d, 1); } * {background-color: rgba(%d, %d, %d, 1);", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + locpopupStyle)
 
 	// screan tooltip
-	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: rgba(%d, %d, %d, 1);			text-decoration: underline;", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + tooltipStyle)
+	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: rgba(%d, %d, %d, 1); text-decoration: underline;", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + tooltipStyle)
 
-	// wdSide
+	// for Workspaceside
+	wsSideStyle := fmt.Sprintf("QWidget {	color: rgba(%d, %d, %d, 1);		border-right: 0px solid;	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
+	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border-color: rgba(%d, %d, %d, 1); padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + wsSideStyle)
+	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: rgb(%d, %d, %d); width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: rgb(%d, %d, %d); min-height: 25px;}  QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { border: none; background: none; }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+
+	// for WorkspaceSideItem
 	if len(editor.workspaces) == 1 || len(editor.wsSide.items) == 1 {
 		if editor.showWorkspaceside == true {
 			wsSideItemStyle := fmt.Sprintf("color: rgba(%d, %d, %d, 1);	", shiftColor(fg, -5).R, shiftColor(fg, -5).G, shiftColor(fg, -5).B)
-			editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1); ", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B) + wsSideItemStyle)
+			// editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: -1px 12px; background-color: rgba(%d, %d, %d, 1); ", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B) + wsSideItemStyle)
+			editor.wsSide.items[0].label.SetStyleSheet(wsSideItemStyle)
 		}
 	}
 
 }
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
-	f.widget.SetStyleSheet(" * { text-decoration: underline; } ")
+	bg := editor.bgcolor
+	var svgModified string
+	cfn := ""
+	editor.workspaces[editor.active].nvim.Eval("expand('%:t')", &cfn)
+	if cfn == f.fileText {
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
+		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+	} else {
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); text-decoration: underline; } ", shiftColor(bg, -9).R, shiftColor(bg, -9).G, shiftColor(bg, -9).B))
+		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -9).R, shiftColor(bg, -9).G, shiftColor(bg, -9).B, 1))
+		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+	}
 }
 
 func (f *Fileitem) leaveEvent(event *core.QEvent) {
-	f.widget.SetStyleSheet(" * { text-decoration: none; } ")
+	bg := editor.bgcolor
+	var svgModified string
+	cfn := ""
+	editor.workspaces[editor.active].nvim.Eval("expand('%:t')", &cfn)
+	if cfn != f.fileText {
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); text-decoration: none; } ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+	}
 }
 
 func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
 	editor.workspaces[editor.active].nvim.Command(":e " + f.path)
+	f.fl.WSitem.setCurrentFileLabel()
+}
+
+func (i *WorkspaceSideItem) setCurrentFileLabel() {
+	bg := editor.bgcolor
+	var svgModified string
+	cfn := ""
+	editor.workspaces[editor.active].nvim.Eval("expand('%:t')", &cfn)
+
+	for j, fileitem := range i.Filelist.Fileitems {
+		if fileitem.fileText != cfn {
+			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+			fileitem.isOpened = false
+		} else {
+			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
+			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+			fileitem.isOpened = true
+			i.Filelist.active = j
+		}
+	}
+}
+
+func (f *Fileitem) updateModifiedbadge() {
+	var isModified string
+	isModified, _ = editor.workspaces[editor.active].nvim.CommandOutput("echo &modified")
+
+	fmt.Println(isModified)
+	fg := editor.fgcolor
+	bg := editor.bgcolor
+	var svgModified string
+	if isModified == "1" {
+		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+	} else {
+		if f.isOpened {
+			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+		} else {
+			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+		}
+	}
+	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 }
