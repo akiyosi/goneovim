@@ -897,10 +897,10 @@ func newWorkspaceSide() *WorkspaceSide {
 		side.items[len(side.items)-1].hide()
 	}
 
-	footer := widgets.NewQLabel(nil, 0)
-	footer.SetContentsMargins(20, 15, 20, 10)
-	footer.SetText("WorkspaceEnd")
-	layout.AddWidget(footer)
+	//footer := widgets.NewQLabel(nil, 0)
+	//footer.SetContentsMargins(20, 15, 20, 10)
+	//footer.SetText("WorkspaceFooter")
+	//layout.AddWidget(footer)
 
 	return side
 }
