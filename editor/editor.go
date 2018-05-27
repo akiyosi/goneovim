@@ -349,7 +349,6 @@ func (e *Editor) workspaceUpdate() {
 			e.wsSide.items[0].show()
 		}
 	}
-
 }
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {

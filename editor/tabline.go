@@ -299,13 +299,16 @@ func newTabline() *Tabline {
 			fileIcon:  fileIcon,
 			closeIcon: closeIcon,
 		}
+    tab.closeIcon.Hide()
 
-		tab.widget.SetAttribute(core.Qt__WA_MouseTracking, true)
-		tab.widget.ConnectMouseMoveEvent(tab.mouseMoveEvent)
-		tab.widget.ConnectMousePressEvent(tab.mouseEvent)
+		tab.widget.ConnectEnterEvent(tab.enterEvent)
+		tab.widget.ConnectLeaveEvent(tab.leaveEvent)
+		tab.widget.ConnectMousePressEvent(tab.pressEvent)
 
-		closeIcon.ConnectMousePressEvent(tab.mouseCloseEvent)
-		closeIcon.ConnectMouseMoveEvent(tab.closeMouseMoveEvent)
+		closeIcon.ConnectMousePressEvent(tab.closeIconPressEvent)
+		closeIcon.ConnectMouseReleaseEvent(tab.closeIconReleaseEvent)
+		closeIcon.ConnectEnterEvent(tab.closeIconEnterEvent)
+		closeIcon.ConnectLeaveEvent(tab.closeIconLeaveEvent)
 
 		tabs = append(tabs, tab)
 		layout.AddWidget(w)
@@ -431,19 +434,28 @@ func getFileType(text string) string {
 	return "default"
 }
 
-func (t *Tab) mouseEvent(event *gui.QMouseEvent) {
+func (t *Tab) enterEvent(event *core.QEvent) {
+ t.closeIcon.Show()
+}
+
+func (t *Tab) leaveEvent(event *core.QEvent) {
+ t.closeIcon.Hide()
+}
+
+func (t *Tab) pressEvent(event *gui.QMouseEvent) {
 	targetTab := nvim.Tabpage(t.ID)
 	t.t.ws.nvim.SetCurrentTabpage(targetTab)
 }
 
-func (t *Tab) mouseMoveEvent(event *gui.QMouseEvent) {
+func (t *Tab) closeIconPressEvent(event *gui.QMouseEvent) {
+ fg := editor.fgcolor
 	t.closeIcon.SetFixedWidth(14)
 	t.closeIcon.SetFixedHeight(14)
-	svgContent := t.t.ws.getSvg("cross", nil)
+	svgContent := t.t.ws.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
-func (t *Tab) mouseCloseEvent(event *gui.QMouseEvent) {
+func (t *Tab) closeIconReleaseEvent(event *gui.QMouseEvent) {
 	if t.ID == 1 {
 		t.t.ws.nvim.Command(fmt.Sprintf("q"))
 	} else {
@@ -451,9 +463,16 @@ func (t *Tab) mouseCloseEvent(event *gui.QMouseEvent) {
 	}
 }
 
-func (t *Tab) closeMouseMoveEvent(event *gui.QMouseEvent) {
+func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
 	t.closeIcon.SetFixedWidth(14)
 	t.closeIcon.SetFixedHeight(14)
 	svgContent := t.t.ws.getSvg("hoverclose", nil)
+	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+}
+
+func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
+	t.closeIcon.SetFixedWidth(14)
+	t.closeIcon.SetFixedHeight(14)
+	svgContent := t.t.ws.getSvg("cross", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
