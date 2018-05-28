@@ -299,7 +299,7 @@ func newTabline() *Tabline {
 			fileIcon:  fileIcon,
 			closeIcon: closeIcon,
 		}
-    tab.closeIcon.Hide()
+		tab.closeIcon.Hide()
 
 		tab.widget.ConnectEnterEvent(tab.enterEvent)
 		tab.widget.ConnectLeaveEvent(tab.leaveEvent)
@@ -435,11 +435,11 @@ func getFileType(text string) string {
 }
 
 func (t *Tab) enterEvent(event *core.QEvent) {
- t.closeIcon.Show()
+	t.closeIcon.Show()
 }
 
 func (t *Tab) leaveEvent(event *core.QEvent) {
- t.closeIcon.Hide()
+	t.closeIcon.Hide()
 }
 
 func (t *Tab) pressEvent(event *gui.QMouseEvent) {
@@ -448,7 +448,7 @@ func (t *Tab) pressEvent(event *gui.QMouseEvent) {
 }
 
 func (t *Tab) closeIconPressEvent(event *gui.QMouseEvent) {
- fg := editor.fgcolor
+	fg := editor.fgcolor
 	t.closeIcon.SetFixedWidth(14)
 	t.closeIcon.SetFixedHeight(14)
 	svgContent := t.t.ws.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))

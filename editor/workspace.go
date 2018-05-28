@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	shortpath "github.com/akiyosi/short_path"
@@ -410,13 +411,13 @@ func newFilelistwidget(path string) *Filelist {
 
 	filelistwidget := widgets.NewQWidget(nil, 0)
 	filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
-	filelistlayout.SetContentsMargins(0, 0, 0, 0)
+	filelistlayout.SetContentsMargins(0, 0, 0, 100)
 	filelistlayout.SetSpacing(1)
 	bg := editor.bgcolor
 	width := editor.workspacewidth
 	filewidgetLeftMargin := 35
-	filewidgetMarginBuf := 65 + 3*int(editor.workspaces[editor.active].font.truewidth)
-	maxfilename := int(float64(width-(filewidgetLeftMargin+filewidgetMarginBuf)) / float64(editor.workspaces[editor.active].font.truewidth))
+	filewidgetMarginBuf := 75
+	maxfilenameLength := int(float64(width-(filewidgetLeftMargin+filewidgetMarginBuf)) / float64(editor.workspaces[editor.active].font.truewidth))
 
 	for _, f := range lsfiles {
 
@@ -429,20 +430,50 @@ func newFilelistwidget(path string) *Filelist {
 		fileIcon.SetFixedWidth(11)
 		fileIcon.SetFixedHeight(11)
 
+		filenameWidget := widgets.NewQWidget(nil, 0)
+		filenameLayout := widgets.NewQHBoxLayout()
+		filenameLayout.SetContentsMargins(0, 5, 10, 5)
+		filenameLayout.SetSpacing(0)
+
 		file := widgets.NewQLabel(nil, 0)
-		file.SetContentsMargins(0, 5, 10, 5)
+		//file.SetContentsMargins(0, 5, 10, 5)
+		file.SetContentsMargins(0, 0, 0, 0)
 		file.SetFont(editor.workspaces[editor.active].font.fontNew)
 
 		fileModified := svg.NewQSvgWidget(nil)
 		fileModified.SetFixedWidth(11)
 		fileModified.SetFixedHeight(11)
-		fileModified.SetContentsMargins(10, 10, 0, 2)
+		fileModified.SetContentsMargins(0, 0, 0, 0)
 
 		filename := f.Name()
-		if len(filename) >= maxfilename {
-			filename = filename[:maxfilename] + "..."
+		multibyteCharNum := unicodeCount(filename)
+		filenamerune := []rune(filename)
+		filenameDisplayLength := len(filenamerune) + multibyteCharNum
+
+		if filenameDisplayLength > maxfilenameLength {
+			if multibyteCharNum > 0 {
+				for filenameDisplayLength > maxfilenameLength {
+					filename = string(filenamerune[:(len(filenamerune) - 1)])
+					filenamerune = []rune(filename)
+					multibyteCharNum = unicodeCount(filename)
+					filenameDisplayLength = len(filenamerune) + multibyteCharNum
+				}
+			} else {
+				filename = filename[:maxfilenameLength]
+			}
+			moreIcon := svg.NewQSvgWidget(nil)
+			moreIcon.SetFixedWidth(11)
+			moreIcon.SetFixedHeight(11)
+			svgMoreDotsContent := editor.workspaces[editor.active].getSvg("moredots", nil)
+			moreIcon.Load2(core.NewQByteArray2(svgMoreDotsContent, len(svgMoreDotsContent)))
+			file.SetText(filename)
+			filenameLayout.AddWidget(file, 0, 0)
+			filenameLayout.AddWidget(moreIcon, 0, 0)
+		} else {
+			file.SetText(filename)
+			filenameLayout.AddWidget(file, 0, 0)
 		}
-		file.SetText(filename)
+		filenameWidget.SetLayout(filenameLayout)
 
 		filepath := filepath.Join(path, f.Name())
 		finfo, _ := os.Stat(filepath)
@@ -462,7 +493,7 @@ func newFilelistwidget(path string) *Filelist {
 		fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 
 		filelayout.AddWidget(fileIcon, 0, 0)
-		filelayout.AddWidget(file, 0, 0)
+		filelayout.AddWidget(filenameWidget, 0, 0)
 		filelayout.AddWidget(fileModified, 0, 0)
 		filewidget.SetLayout(filelayout)
 		filewidget.SetAttribute(core.Qt__WA_Hover, true)
@@ -1156,7 +1187,6 @@ func (f *Fileitem) updateModifiedbadge() {
 	var isModified string
 	isModified, _ = editor.workspaces[editor.active].nvim.CommandOutput("echo &modified")
 
-	fmt.Println(isModified)
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 	var svgModified string
@@ -1170,4 +1200,14 @@ func (f *Fileitem) updateModifiedbadge() {
 		}
 	}
 	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+}
+
+func unicodeCount(str string) int {
+	count := 0
+	for _, r := range str {
+		if utf8.RuneLen(r) >= 2 {
+			count++
+		}
+	}
+	return count
 }
