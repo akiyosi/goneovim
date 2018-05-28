@@ -411,7 +411,7 @@ func newFilelistwidget(path string) *Filelist {
 
 	filelistwidget := widgets.NewQWidget(nil, 0)
 	filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
-	filelistlayout.SetContentsMargins(0, 0, 0, 100)
+	filelistlayout.SetContentsMargins(0, 0, 0, 0)
 	filelistlayout.SetSpacing(1)
 	bg := editor.bgcolor
 	width := editor.workspacewidth
@@ -909,7 +909,7 @@ func newWorkspaceSide() *WorkspaceSide {
 	header.SetContentsMargins(20, 15, 20, 10)
 	header.SetText("Workspace")
 	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 0, 0, 0)
+	widget.SetContentsMargins(0, 0, 0, 100)
 	widget.SetLayout(layout)
 
 	side := &WorkspaceSide{
