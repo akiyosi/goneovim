@@ -68,10 +68,7 @@ type Editor struct {
 	keyAlt          core.Qt__Key
 	keyShift        core.Qt__Key
 
-	restoreSession    bool
-	showWorkspaceside bool
-	workspacepath     string
-	workspacewidth    int
+	config *gonvimConfig
 }
 
 type editorSignal struct {
@@ -83,6 +80,13 @@ type editorSignal struct {
 	_ func() `signal:"lintSignal"`
 	_ func() `signal:"gitSignal"`
 	_ func() `signal:"messageSignal"`
+}
+
+type gonvimConfig struct {
+	restoreSession bool
+	showSide       bool
+	pathFormat     string
+	sideWidth      int
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -102,33 +106,15 @@ func (hl *Highlight) copy() Highlight {
 // InitEditor is
 func InitEditor() {
 	home, err := homedir.Dir()
-	cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
-	var cfgWSDisplay, cfgWSRestoresession bool
-	var cfgWSPath string
-	var cfgWSWidth int
-	if cfgerr != nil {
-		cfgWSDisplay = false
-		cfgWSRestoresession = false
-		cfgWSPath = "minimum"
-		cfgWSWidth = 250
-	} else {
-		cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
-		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
-		cfgWSPath = cfg.Section("workspace").Key("path").String()
-		cfgWSWidth, _ = cfg.Section("workspace").Key("width").Int()
-	}
-
+	config := newGonvimConfig(home)
 	editor = &Editor{
-		version:           "v0.2.2",
-		selectedBg:        newRGBA(81, 154, 186, 0.5),
-		matchFg:           newRGBA(81, 154, 186, 1),
-		bgcolor:           nil,
-		fgcolor:           nil,
-		stop:              make(chan struct{}),
-		restoreSession:    cfgWSRestoresession,
-		showWorkspaceside: cfgWSDisplay,
-		workspacepath:     cfgWSPath,
-		workspacewidth:    cfgWSWidth,
+		version:    "v0.2.2",
+		selectedBg: newRGBA(81, 154, 186, 0.5),
+		matchFg:    newRGBA(81, 154, 186, 1),
+		bgcolor:    nil,
+		fgcolor:    nil,
+		stop:       make(chan struct{}),
+		config:     config,
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
@@ -175,8 +161,8 @@ func InitEditor() {
 	wsSideScrollArea.SetFocusProxy(e.window)
 	wsSideScrollArea.SetWidget(e.wsSide.widget)
 	wsSideScrollArea.SetFrameShape(widgets.QFrame__NoFrame)
-	wsSideScrollArea.SetMaximumWidth(e.workspacewidth)
-	wsSideScrollArea.SetMinimumWidth(e.workspacewidth)
+	wsSideScrollArea.SetMaximumWidth(e.config.sideWidth)
+	wsSideScrollArea.SetMinimumWidth(e.config.sideWidth)
 	e.wsSide.scrollarea = wsSideScrollArea
 
 	layout.AddWidget(e.wsWidget, 1, 0)
@@ -198,7 +184,7 @@ func InitEditor() {
 	e.workspaces = []*Workspace{}
 	sessionExists := false
 	if err == nil {
-		if e.restoreSession == true {
+		if e.config.restoreSession == true {
 			for i := 0; i < 20; i++ {
 				path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
 				_, err := os.Stat(path)
@@ -260,6 +246,39 @@ func InitEditor() {
 	// }
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
+}
+
+func newGonvimConfig(home string) *gonvimConfig {
+	cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
+	var cfgWSDisplay, cfgWSRestoresession bool
+	var cfgWSPath string
+	var cfgWSWidth int
+	var errGetWidth error
+	if cfgerr != nil {
+		cfgWSDisplay = false
+		cfgWSRestoresession = false
+		cfgWSPath = "minimum"
+		cfgWSWidth = 250
+	} else {
+		cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
+		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
+		cfgWSPath = cfg.Section("workspace").Key("path").String()
+		if cfgWSPath == "" {
+			cfgWSPath = "minimum"
+		}
+		cfgWSWidth, errGetWidth = cfg.Section("workspace").Key("width").Int()
+		if errGetWidth != nil {
+			cfgWSWidth = 250
+		}
+	}
+	config := &gonvimConfig{
+		restoreSession: cfgWSRestoresession,
+		showSide:       cfgWSDisplay,
+		pathFormat:     cfgWSPath,
+		sideWidth:      cfgWSWidth,
+	}
+
+	return config
 }
 
 func isFileExist(filename string) bool {
@@ -338,7 +357,7 @@ func (e *Editor) workspaceUpdate() {
 	}
 
 	if len(e.workspaces) == 1 || len(e.wsSide.items) == 1 {
-		if e.showWorkspaceside == false {
+		if e.config.showSide == false {
 			e.wsSide.scrollarea.Hide()
 			e.wsSide.items[0].hide()
 			e.wsSide.title.Hide()

@@ -360,7 +360,7 @@ func (w *Workspace) setCwd() {
 	w.cwd = cwd
 
 	var labelpath string
-	switch editor.workspacepath {
+	switch editor.config.pathFormat {
 	case "name":
 		labelpath = filepath.Base(cwd)
 	case "minimum":
@@ -381,7 +381,7 @@ func (w *Workspace) setCwd() {
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
 			editor.wsSide.items[i].cwdpath = path
 
-			if (len(editor.workspaces) == 1) && (editor.showWorkspaceside == false) {
+			if (len(editor.workspaces) == 1) && (editor.config.showSide == false) {
 				return
 			}
 
@@ -414,7 +414,7 @@ func newFilelistwidget(path string) *Filelist {
 	filelistlayout.SetContentsMargins(0, 0, 0, 0)
 	filelistlayout.SetSpacing(1)
 	bg := editor.bgcolor
-	width := editor.workspacewidth
+	width := editor.config.sideWidth
 	filewidgetLeftMargin := 35
 	filewidgetMarginBuf := 75
 	maxfilenameLength := int(float64(width-(filewidgetLeftMargin+filewidgetMarginBuf)) / float64(editor.workspaces[editor.active].font.truewidth))
@@ -768,7 +768,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_redrawSideItem":
 		fl := editor.wsSide.items[editor.active].Filelist
 		if fl.active != -1 {
-			if editor.showWorkspaceside == true || (editor.showWorkspaceside == false && len(editor.workspaces) > 1) {
+			if editor.config.showSide == true || (editor.config.showSide == false && len(editor.workspaces) > 1) {
 				fl.Fileitems[fl.active].updateModifiedbadge()
 			}
 		}
@@ -981,8 +981,8 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(15, 6, 10, 6)
-	label.SetMaximumWidth(editor.workspacewidth)
-	label.SetMinimumWidth(editor.workspacewidth)
+	label.SetMaximumWidth(editor.config.sideWidth)
+	label.SetMinimumWidth(editor.config.sideWidth)
 
 	flwidget := widgets.NewQWidget(nil, 0)
 
@@ -1027,7 +1027,7 @@ func (i *WorkspaceSideItem) setActive() {
 	fg := i.side.fgcolor
 	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
-	if i.Filelist.isload == false && editor.showWorkspaceside == false && len(editor.workspaces) > 1 {
+	if i.Filelist.isload == false && editor.config.showSide == false && len(editor.workspaces) > 1 {
 		filelist := newFilelistwidget(i.cwdpath)
 		i.setFilelistwidget(filelist)
 	}
@@ -1119,7 +1119,7 @@ func (w *Workspace) setGuiColor() {
 
 	// for WorkspaceSideItem
 	if len(editor.workspaces) == 1 || len(editor.wsSide.items) == 1 {
-		if editor.showWorkspaceside == true {
+		if editor.config.showSide == true {
 			editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 			//// scrollarea's setWidget is brokean some magins
 			editor.wsSide.items[0].label.SetContentsMargins(15+15, 6, 0, 6)
