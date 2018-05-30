@@ -502,6 +502,7 @@ func newFilelistwidget(path string) *Filelist {
 			fl:           filelist,
 			widget:       filewidget,
 			fileText:     filename,
+			fileName:     f.Name(),
 			file:         file,
 			fileIcon:     fileIcon,
 			fileType:     filetype,
@@ -884,18 +885,13 @@ type Filelist struct {
 }
 
 type Fileitem struct {
-	fl     *Filelist
-	widget *widgets.QWidget
-	//ID        int
-	//Name      string
-	//width     int
-	//chars     int
-	fileIcon *svg.QSvgWidget
-	fileType string
-	//closeIcon *svg.QSvgWidget
-	file     *widgets.QLabel
-	fileText string
-	//hidden    bool
+	fl           *Filelist
+	widget       *widgets.QWidget
+	fileIcon     *svg.QSvgWidget
+	fileType     string
+	file         *widgets.QLabel
+	fileText     string
+	fileName     string
 	path         string
 	fileModified *svg.QSvgWidget
 	isOpened     bool
@@ -1133,7 +1129,7 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 	var svgModified string
 	cfn := ""
 	editor.workspaces[editor.active].nvim.Eval("expand('%:t')", &cfn)
-	if cfn == f.fileText {
+	if cfn == f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
 		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
@@ -1149,7 +1145,7 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 	var svgModified string
 	cfn := ""
 	editor.workspaces[editor.active].nvim.Eval("expand('%:t')", &cfn)
-	if cfn != f.fileText {
+	if cfn != f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); text-decoration: none; } ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
 		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
@@ -1168,7 +1164,7 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 	editor.workspaces[editor.active].nvim.Eval("expand('%:t')", &cfn)
 
 	for j, fileitem := range i.Filelist.Fileitems {
-		if fileitem.fileText != cfn {
+		if fileitem.fileName != cfn {
 			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
 			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
