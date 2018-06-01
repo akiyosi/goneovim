@@ -25,14 +25,15 @@ type Statusline struct {
 	margin         int
 	height         int
 
-	pos      *StatuslinePos
-	mode     *StatusMode
-	file     *StatuslineFile
-	filetype *StatuslineFiletype
-	git      *StatuslineGit
-	encoding *StatuslineEncoding
-	lint     *StatuslineLint
-	updates  chan []interface{}
+	pos        *StatuslinePos
+	mode       *StatusMode
+	file       *StatuslineFile
+	filetype   *StatuslineFiletype
+	git        *StatuslineGit
+	encoding   *StatuslineEncoding
+	fileFormat *StatuslineFileFormat
+	lint       *StatuslineLint
+	updates    chan []interface{}
 }
 
 // StatuslineLint is
@@ -105,6 +106,12 @@ type StatuslineGit struct {
 type StatuslineEncoding struct {
 	encoding string
 	label    *widgets.QLabel
+}
+
+// StatuslineFileFormat
+type StatuslineFileFormat struct {
+	fileFormat string
+	label      *widgets.QLabel
 }
 
 func initStatuslineNew() *Statusline {
@@ -183,6 +190,13 @@ func initStatuslineNew() *Statusline {
 	}
 	s.file = file
 
+	fileFormatLabel := widgets.NewQLabel(nil, 0)
+	fileFormat := &StatuslineFileFormat{
+		label: fileFormatLabel,
+	}
+	s.fileFormat = fileFormat
+	s.fileFormat.label.Hide()
+
 	encodingLabel := widgets.NewQLabel(nil, 0)
 	encoding := &StatuslineEncoding{
 		label: encodingLabel,
@@ -250,6 +264,7 @@ func initStatuslineNew() *Statusline {
 	layout.AddWidget(fileWidget)
 	layout.AddWidget(gitWidget)
 	layout.AddWidget(filetypeLabel)
+	layout.AddWidget(fileFormatLabel)
 	layout.AddWidget(encodingLabel)
 	layout.AddWidget(posLabel)
 	layout.AddWidget(lintWidget)
@@ -263,6 +278,7 @@ func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 	s.file.widget.SetContentsMargins(l, u, r, d)
 	s.filetype.label.SetContentsMargins(l, u, r, d)
 	s.git.widget.SetContentsMargins(l, u, r, d)
+	s.fileFormat.label.SetContentsMargins(l, u, r, d)
 	s.encoding.label.SetContentsMargins(l, u, r, d)
 	s.lint.widget.SetContentsMargins(l, u, r, d)
 }
@@ -287,7 +303,7 @@ func (s *Statusline) subscribe() {
 		s.ws.signal.StatuslineSignal()
 	})
 	s.ws.nvim.Subscribe("statusline")
-	s.ws.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding)`)
+	s.ws.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
 	s.ws.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
 }
 
@@ -298,9 +314,11 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		file := updates[1].(string)
 		filetype := updates[2].(string)
 		encoding := updates[3].(string)
+		fileFormat := updates[4].(string)
 		s.file.redraw(file)
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
+		s.fileFormat.redraw(fileFormat)
 		go s.git.redraw(file)
 	case "cursormoved":
 		pos := updates[1].([]interface{})
@@ -498,6 +516,18 @@ func (s *StatuslineEncoding) redraw(encoding string) {
 	}
 	s.encoding = encoding
 	s.label.SetText(s.encoding)
+	s.label.Show()
+}
+
+func (s *StatuslineFileFormat) redraw(fileFormat string) {
+	if fileFormat == "" {
+		return
+	}
+	if s.fileFormat == fileFormat {
+		return
+	}
+	s.fileFormat = fileFormat
+	s.label.SetText(s.fileFormat)
 	s.label.Show()
 }
 
