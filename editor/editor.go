@@ -108,7 +108,7 @@ func InitEditor() {
 	home, err := homedir.Dir()
 	config := newGonvimConfig(home)
 	editor = &Editor{
-		version:    "v0.2.2",
+		version:    "v0.2.3",
 		selectedBg: newRGBA(81, 154, 186, 0.5),
 		matchFg:    newRGBA(81, 154, 186, 1),
 		bgcolor:    nil,
