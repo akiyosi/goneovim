@@ -38,7 +38,7 @@ For Windows, you need to add Gonvim `bin` path to `$PATH` environment variable.
 <br>
 
 ## Credits
-* Gonvim was created by dzhou121 ([https://github.com/dzhou121/gonvim](https://github.com/dzhou121/gonvim]))
+* Gonvim was created by dzhou121 ([https://github.com/dzhou121/gonvim](https://github.com/dzhou121/gonvim))
 * Gopher in Gonvim image was created by Takuya Ueda ([https://twitter.com/tenntenn](https://twitter.com/tenntenn))
 
 
