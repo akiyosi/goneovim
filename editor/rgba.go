@@ -54,6 +54,9 @@ func calcColor(c int) *RGBA {
 }
 
 func reverseColor(rgba *RGBA) *RGBA {
+	if rgba == nil {
+		return &RGBA{0, 0, 0, 1}
+	}
 	var r, g, b int
 
 	r = 255 - rgba.R
@@ -69,6 +72,9 @@ func reverseColor(rgba *RGBA) *RGBA {
 }
 
 func gradColor(rgba *RGBA) *RGBA {
+	if rgba == nil {
+		return &RGBA{0, 0, 0, 1}
+	}
 	var r, g, b int
 
 	if rgba.R > 128 {
@@ -98,6 +104,9 @@ func gradColor(rgba *RGBA) *RGBA {
 }
 
 func warpColor(rgba *RGBA, v int) *RGBA {
+	if rgba == nil {
+		return &RGBA{0, 0, 0, 1}
+	}
 	var r, g, b int
 
 	if rgba.R > 128 {
@@ -127,6 +136,9 @@ func warpColor(rgba *RGBA, v int) *RGBA {
 }
 
 func shiftColor(rgba *RGBA, v int) *RGBA {
+	if rgba == nil {
+		return &RGBA{0, 0, 0, 1}
+	}
 	var r, g, b int
 	r = rgba.R - v
 	g = rgba.G - v

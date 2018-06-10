@@ -403,6 +403,9 @@ func (s *Screen) put(args []interface{}) {
 	if row >= s.ws.rows {
 		return
 	}
+	if len(s.content[row])-1 < x {
+		return
+	}
 	line := s.content[row]
 	oldFirstNormal := true
 	char := line[x] // sometimes crash at this line
