@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -87,6 +88,7 @@ type gonvimConfig struct {
 	showSide       bool
 	pathFormat     string
 	sideWidth      int
+	registernum    string
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -133,6 +135,7 @@ func InitEditor() {
 
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
+	e.window.ConnectKeyReleaseEvent(e.keyRelease)
 	e.window.SetAcceptDrops(true)
 
 	// output log
@@ -224,7 +227,7 @@ func InitEditor() {
 			case core.QEvent__FileOpen:
 				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
 				macosArg = fileOpenEvent.File()
-				go e.workspaces[e.active].nvim.Command(fmt.Sprintf(":e %s", macosArg))
+				go e.workspaces[e.active].nvim.Command(fmt.Sprintf(":tabe %s", macosArg))
 			}
 			return true
 		})
@@ -253,12 +256,14 @@ func newGonvimConfig(home string) *gonvimConfig {
 	var cfgWSDisplay, cfgWSRestoresession bool
 	var cfgWSPath string
 	var cfgWSWidth int
+	var cfgRegisterNum string
 	var errGetWidth error
 	if cfgerr != nil {
 		cfgWSDisplay = false
 		cfgWSRestoresession = false
 		cfgWSPath = "minimum"
 		cfgWSWidth = 250
+		cfgRegisterNum = ""
 	} else {
 		cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
 		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
@@ -270,12 +275,14 @@ func newGonvimConfig(home string) *gonvimConfig {
 		if errGetWidth != nil {
 			cfgWSWidth = 250
 		}
+		cfgRegisterNum = cfg.Section("workspace").Key("registernum").String()
 	}
 	config := &gonvimConfig{
 		restoreSession: cfgWSRestoresession,
 		showSide:       cfgWSDisplay,
 		pathFormat:     cfgWSPath,
 		sideWidth:      cfgWSWidth,
+		registernum:    cfgRegisterNum,
 	}
 
 	return config
@@ -284,6 +291,14 @@ func newGonvimConfig(home string) *gonvimConfig {
 func isFileExist(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
+}
+
+func (e *Editor) pasteClipBoard() {
+	go func() {
+		clipBoardText, _ := clipb.ReadAll()
+		e.workspaces[e.active].nvim.Input(clipBoardText)
+		e.workspaces[e.active].nvim.Command(fmt.Sprintf("call setreg('%s', '%s')", e.config.registernum, clipBoardText))
+	}()
 }
 
 func (e *Editor) workspaceNew() {
@@ -374,8 +389,22 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event.Text(), event.Key(), event.Modifiers())
 	if input != "" {
 		e.workspaces[e.active].nvim.Input(input)
-		//e.workspaces[e.active].screen.redraw()
 	}
+}
+
+func (e *Editor) keyRelease(event *gui.QKeyEvent) {
+	go func() {
+		mode, _ := e.workspaces[e.active].nvim.Mode()
+		fmt.Println(mode.Mode)
+		if mode.Mode != "n" {
+			return
+		}
+		var yankedText string
+		yankedText, _ = e.workspaces[e.active].nvim.CommandOutput(fmt.Sprintf("echo getreg(%s)", e.config.registernum))
+		if yankedText != "" {
+			clipb.WriteAll(yankedText)
+		}
+	}()
 }
 
 func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier) string {

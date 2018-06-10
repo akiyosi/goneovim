@@ -260,14 +260,14 @@ func (s *Screen) convertMouse(event *gui.QMouseEvent) string {
 }
 
 func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
-	done := make(chan struct{})
+	done := make(chan struct{}, 1000)
 	go func() {
 		s.getWindows()
 		close(done)
 	}()
 	select {
 	case <-done:
-	case <-time.After(50 * time.Millisecond):
+	case <-time.After(1 * time.Millisecond):
 	}
 	for _, win := range s.curWins {
 		if win.pos[0]+win.height < row && (win.pos[1]+win.width+1) < col {
@@ -276,7 +276,6 @@ func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
 		if win.pos[0] > (row+rows) && (win.pos[1]+win.width) > (col+cols) {
 			continue
 		}
-
 		//win.drawBorder(p, s)
 	}
 }
