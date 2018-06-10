@@ -970,8 +970,12 @@ func (w *Workspace) setGuiColor() {
 
 	// for WorkspaceSideItem
 	if (len(editor.workspaces) == 1 || len(editor.wsSide.items) == 1) || (editor.config.restoreSession == true) {
-		for _, item := range editor.wsSide.items {
+		for i, item := range editor.wsSide.items {
+		  if i == editor.active {
 			item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+		  } else {
+	    item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 15px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+			}
 			//// scrollarea's setWidget is brokean some magins
 			item.label.SetContentsMargins(15+15, 6, 0, 6)
 		}
