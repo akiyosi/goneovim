@@ -296,6 +296,7 @@ func isFileExist(filename string) bool {
 func (e *Editor) pasteClipBoard() {
 	go func() {
 		clipBoardText, _ := clipb.ReadAll()
+		clipBoardText = strings.Replace(clipBoardText, "", "", -1)
 		e.workspaces[e.active].nvim.Command(fmt.Sprintf("call setreg('%s', '%s', 'V')", e.config.registernum, clipBoardText))
 		e.workspaces[e.active].nvim.Command(fmt.Sprintf("execute ':normal \"%sp'", e.config.registernum))
 	}()

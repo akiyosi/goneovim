@@ -303,7 +303,7 @@ func (s *Statusline) subscribe() {
 		s.ws.signal.StatuslineSignal()
 	})
 	s.ws.nvim.Subscribe("statusline")
-	s.ws.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
+	s.ws.nvim.Command(`autocmd BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
 	s.ws.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
 }
 

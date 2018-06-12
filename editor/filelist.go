@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"unicode/utf8"
 
 	"github.com/therecipe/qt/core"
@@ -48,7 +49,12 @@ func newFilelistwidget(path string) *Filelist {
 	bg := editor.bgcolor
 	width := editor.config.sideWidth
 	filewidgetLeftMargin := 35
-	filewidgetMarginBuf := 75
+	var filewidgetMarginBuf int
+	if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
+		filewidgetMarginBuf = 55
+	} else {
+		filewidgetMarginBuf = 70
+	}
 	maxfilenameLength := int(float64(width-(filewidgetLeftMargin+filewidgetMarginBuf)) / float64(editor.workspaces[editor.active].font.truewidth))
 
 	for _, f := range lsfiles {

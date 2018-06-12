@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	shortpath "github.com/akiyosi/short_path"
