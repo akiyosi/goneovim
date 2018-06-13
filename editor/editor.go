@@ -135,7 +135,7 @@ func InitEditor() {
 
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
-	e.window.ConnectKeyReleaseEvent(e.keyRelease)
+	//e.window.ConnectKeyReleaseEvent(e.keyRelease)
 	e.window.SetAcceptDrops(true)
 
 	// output log
@@ -302,6 +302,16 @@ func (e *Editor) pasteClipBoard() {
 	}()
 }
 
+func (e *Editor) copyClipBoard() {
+	go func() {
+		var yankedText string
+		yankedText, _ = e.workspaces[e.active].nvim.CommandOutput(fmt.Sprintf("echo getreg(%s)", e.config.registernum))
+		if yankedText != "" {
+			clipb.WriteAll(yankedText)
+		}
+	}()
+}
+
 func (e *Editor) workspaceNew() {
 	ws, err := newWorkspace("")
 	if err != nil {
@@ -391,21 +401,6 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	if input != "" {
 		e.workspaces[e.active].nvim.Input(input)
 	}
-}
-
-func (e *Editor) keyRelease(event *gui.QKeyEvent) {
-	go func() {
-		mode, _ := e.workspaces[e.active].nvim.Mode()
-		fmt.Println(mode.Mode)
-		if mode.Mode != "n" {
-			return
-		}
-		var yankedText string
-		yankedText, _ = e.workspaces[e.active].nvim.CommandOutput(fmt.Sprintf("echo getreg(%s)", e.config.registernum))
-		if yankedText != "" {
-			clipb.WriteAll(yankedText)
-		}
-	}()
 }
 
 func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier) string {
