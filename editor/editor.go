@@ -88,7 +88,7 @@ type gonvimConfig struct {
 	showSide       bool
 	pathFormat     string
 	sideWidth      int
-	registernum    string
+	clipboard      bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -256,14 +256,14 @@ func newGonvimConfig(home string) *gonvimConfig {
 	var cfgWSDisplay, cfgWSRestoresession bool
 	var cfgWSPath string
 	var cfgWSWidth int
-	var cfgRegisterNum string
+	var cfgClipBoard bool
 	var errGetWidth error
 	if cfgerr != nil {
 		cfgWSDisplay = false
 		cfgWSRestoresession = false
 		cfgWSPath = "minimum"
 		cfgWSWidth = 250
-		cfgRegisterNum = ""
+		cfgClipBoard = true
 	} else {
 		cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
 		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
@@ -275,14 +275,14 @@ func newGonvimConfig(home string) *gonvimConfig {
 		if errGetWidth != nil {
 			cfgWSWidth = 250
 		}
-		cfgRegisterNum = cfg.Section("workspace").Key("registernum").String()
+		cfgClipBoard = cfg.Section("").Key("clipboard").MustBool()
 	}
 	config := &gonvimConfig{
 		restoreSession: cfgWSRestoresession,
 		showSide:       cfgWSDisplay,
 		pathFormat:     cfgWSPath,
 		sideWidth:      cfgWSWidth,
-		registernum:    cfgRegisterNum,
+		clipboard:      cfgClipBoard,
 	}
 
 	return config
@@ -293,23 +293,15 @@ func isFileExist(filename string) bool {
 	return err == nil
 }
 
-func (e *Editor) pasteClipBoard() {
-	go func() {
-		clipBoardText, _ := clipb.ReadAll()
-		clipBoardText = strings.Replace(clipBoardText, "", "", -1)
-		e.workspaces[e.active].nvim.Command(fmt.Sprintf("call setreg('%s', '%s', 'V')", e.config.registernum, clipBoardText))
-		e.workspaces[e.active].nvim.Command(fmt.Sprintf("execute ':normal \"%sp'", e.config.registernum))
-	}()
-}
-
 func (e *Editor) copyClipBoard() {
 	go func() {
 		var yankedText string
-		yankedText, _ = e.workspaces[e.active].nvim.CommandOutput(fmt.Sprintf("echo getreg(%s)", e.config.registernum))
+		yankedText, _ = e.workspaces[e.active].nvim.CommandOutput("echo getreg()")
 		if yankedText != "" {
 			clipb.WriteAll(yankedText)
 		}
 	}()
+
 }
 
 func (e *Editor) workspaceNew() {
