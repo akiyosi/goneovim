@@ -286,7 +286,6 @@ func newTabline() *Tabline {
 		closeIcon := svg.NewQSvgWidget(nil)
 		closeIcon.SetFixedWidth(14)
 		closeIcon.SetFixedHeight(14)
-		closeIcon.SetAttribute(core.Qt__WA_MouseTracking, true)
 		l.AddWidget(fileIcon, 0, 0)
 		l.AddWidget(file, 1, 0)
 		l.AddWidget(closeIcon, 0, 0)

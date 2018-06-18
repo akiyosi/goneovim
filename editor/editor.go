@@ -15,6 +15,7 @@ import (
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
+
 	ini "gopkg.in/go-ini/ini.v1"
 )
 
@@ -39,6 +40,7 @@ type Char struct {
 type Editor struct {
 	version    string
 	app        *widgets.QApplication
+	navigation *Navigation
 	workspaces []*Workspace
 	active     int
 	nvim       *nvim.Nvim
@@ -168,9 +170,12 @@ func InitEditor() {
 	wsSideScrollArea.SetMinimumWidth(e.config.sideWidth)
 	e.wsSide.scrollarea = wsSideScrollArea
 
+	naviWidget := widgets.NewQWidget(nil, 0)
+
 	layout.AddWidget(e.wsWidget, 1, 0)
 	//layout.AddWidget(e.wsSide.widget, 0, 0)
 	layout.AddWidget(e.wsSide.scrollarea, 0, 0)
+	layout.AddWidget(naviWidget, 0, 0)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
@@ -212,6 +217,22 @@ func InitEditor() {
 		e.workspaces = append(e.workspaces, ws)
 		e.workspaceUpdate()
 	}
+
+	navigation := newNavigation()
+	navigation.widget = naviWidget
+	naviWidget.SetLayout(navigation.layout)
+	e.navigation = navigation
+
+	// Drop shadow for Navigation widget
+	go func() {
+		naviShadow := widgets.NewQGraphicsDropShadowEffect(nil)
+		naviShadow.SetBlurRadius(60)
+		naviShadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
+		naviShadow.SetOffset3(6, 2)
+		//e.wsSide.widget.SetGraphicsEffect(shadow)
+		naviWidget.SetGraphicsEffect(naviShadow)
+	}()
+	//
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
