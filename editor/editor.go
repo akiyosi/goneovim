@@ -47,6 +47,7 @@ type Editor struct {
 	window     *widgets.QMainWindow
 	wsWidget   *widgets.QWidget
 	wsSide     *WorkspaceSide
+	deinSide   *DeinSide
 
 	statuslineHeight int
 	width            int
@@ -160,22 +161,20 @@ func InitEditor() {
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
 
-	wsSideScrollArea := widgets.NewQScrollArea(nil)
-	wsSideScrollArea.SetWidgetResizable(true)
-	wsSideScrollArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
-	wsSideScrollArea.SetFocusProxy(e.window)
-	wsSideScrollArea.SetWidget(e.wsSide.widget)
-	wsSideScrollArea.SetFrameShape(widgets.QFrame__NoFrame)
-	wsSideScrollArea.SetMaximumWidth(e.config.sideWidth)
-	wsSideScrollArea.SetMinimumWidth(e.config.sideWidth)
-	e.wsSide.scrollarea = wsSideScrollArea
+	sideArea := widgets.NewQScrollArea(nil)
+	sideArea.SetWidgetResizable(true)
+	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+	sideArea.SetFocusProxy(e.window)
+	sideArea.SetWidget(e.wsSide.widget)
+	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
+	sideArea.SetMaximumWidth(e.config.sideWidth)
+	sideArea.SetMinimumWidth(e.config.sideWidth)
+	e.wsSide.scrollarea = sideArea
 
 	naviWidget := widgets.NewQWidget(nil, 0)
 
 	layout.AddWidget(e.wsWidget, 1, 0)
 	//layout.AddWidget(e.wsSide.widget, 0, 0)
-	layout.AddWidget(e.wsSide.scrollarea, 0, 0)
-	layout.AddWidget(naviWidget, 0, 0)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
@@ -205,7 +204,6 @@ func InitEditor() {
 					break
 				}
 				e.workspaces = append(e.workspaces, ws)
-				e.workspaceUpdate()
 			}
 		}
 	}
@@ -215,13 +213,19 @@ func InitEditor() {
 			return
 		}
 		e.workspaces = append(e.workspaces, ws)
-		e.workspaceUpdate()
 	}
 
 	navigation := newNavigation()
 	navigation.widget = naviWidget
 	naviWidget.SetLayout(navigation.layout)
 	e.navigation = navigation
+	e.navigation.sideArea.AddWidget(e.wsSide.scrollarea)
+	e.navigation.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
+
+	//layout.AddWidget(e.wsSide.scrollarea, 0, 0)
+	layout.AddWidget(e.navigation.sideArea, 0, 0)
+	layout.AddWidget(e.navigation.widget, 0, 0)
+	e.workspaceUpdate()
 
 	// Drop shadow for Navigation widget
 	go func() {
@@ -230,7 +234,7 @@ func InitEditor() {
 		naviShadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
 		naviShadow.SetOffset3(6, 2)
 		//e.wsSide.widget.SetGraphicsEffect(shadow)
-		naviWidget.SetGraphicsEffect(naviShadow)
+		e.navigation.widget.SetGraphicsEffect(naviShadow)
 	}()
 	//
 
@@ -381,12 +385,12 @@ func (e *Editor) workspaceUpdate() {
 	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
 		if i == e.active {
 			e.wsSide.items[i].setActive()
-			e.wsSide.title.Show()
+			//e.wsSide.title.Show()
 			//}
 		} else {
 			e.wsSide.items[i].setInactive()
 		}
-		e.wsSide.scrollarea.Show()
+		//e.wsSide.scrollarea.Show()
 		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
 		e.wsSide.items[i].show()
 	}
@@ -395,18 +399,19 @@ func (e *Editor) workspaceUpdate() {
 		e.wsSide.items[i].hide()
 	}
 
-	if len(e.workspaces) == 1 || len(e.wsSide.items) == 1 {
-		if e.config.showSide == false {
-			e.wsSide.scrollarea.Hide()
-			e.wsSide.items[0].hide()
-			e.wsSide.title.Hide()
-		} else {
-			e.wsSide.scrollarea.Show()
-			e.wsSide.title.Show()
-			e.wsSide.items[0].setActive()
-			e.wsSide.items[0].show()
-		}
-	}
+	//if len(e.workspaces) == 1 || len(e.wsSide.items) == 1 {
+	//	if e.config.showSide == false {
+	//		//e.wsSide.scrollarea.Hide()
+	//		e.wsSide.items[0].hide()
+	//		//e.wsSide.title.Hide()
+	//	} else {
+	//		//e.wsSide.scrollarea.Show()
+	//		//e.wsSide.title.Show()
+	//		e.wsSide.items[0].setActive()
+	//		e.wsSide.items[0].show()
+	//	}
+	//}
+
 }
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
