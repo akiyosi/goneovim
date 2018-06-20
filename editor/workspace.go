@@ -329,6 +329,9 @@ func (w *Workspace) attachUI(path string) error {
 }
 
 func (w *Workspace) workspaceCommands(path string) {
+	if path != "" {
+		w.nvim.Command("so " + path)
+	}
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
@@ -339,9 +342,6 @@ func (w *Workspace) workspaceCommands(path string) {
 	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
 	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
 	w.nvim.Command(`command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, 'Gui', 'gonvim_workspace_switch', <args>)`)
-	if path != "" {
-		w.nvim.Command("so " + path)
-	}
 }
 
 func (w *Workspace) initCwd() {
@@ -381,7 +381,7 @@ func (w *Workspace) setCwd() {
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
 			editor.wsSide.items[i].cwdpath = path
 
-			if (len(editor.workspaces) == 1) && (editor.config.showSide == false) {
+			if editor.config.showSide == false {
 				return
 			}
 
@@ -648,8 +648,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_redrawSideItem":
 		fl := editor.wsSide.items[editor.active].Filelist
 		if fl.active != -1 {
-			if editor.config.showSide == true || (editor.config.showSide == false && len(editor.workspaces) > 1) {
-				fl.Fileitems[fl.active].updateModifiedbadge()
+			if editor.config.showSide == true {
+				if fl.Fileitems != nil {
+					fl.Fileitems[fl.active].updateModifiedbadge()
+				}
 			}
 		}
 	case "gonvim_workspace_redrawSideItems":
@@ -882,10 +884,10 @@ func (i *WorkspaceSideItem) setActive() {
 	fg := i.side.fgcolor
 	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
-	if i.Filelist.isload == false && editor.config.showSide == false && len(editor.workspaces) > 1 {
-		filelist := newFilelistwidget(i.cwdpath)
-		i.setFilelistwidget(filelist)
-	}
+	//if i.Filelist.isload == false && editor.config.showSide == false && len(editor.workspaces) > 1 {
+	//	filelist := newFilelistwidget(i.cwdpath)
+	//	i.setFilelistwidget(filelist)
+	//}
 
 	i.Filelistwidget.Show()
 }
@@ -930,7 +932,6 @@ func (w *Workspace) setGuiColor() {
 	if w.setGuiFgColor == true && w.setGuiBgColor == true {
 		return
 	}
-
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 
@@ -975,9 +976,7 @@ func (w *Workspace) setGuiColor() {
 	noGoodBadNoWay()
 
 	// for Navigation Area
-	editor.navigation.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -10).R, shiftColor(bg, -10).G, shiftColor(bg, -10).B))
-	//editor.navigation.editItem.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
-	//editor.navigation.deinItem.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
+	editor.navigation.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
 
 	var svgEditContent string
 	if editor.navigation.editItem.active == true {
@@ -1010,6 +1009,7 @@ func noGoodBadNoWay() {
 				item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 			} else {
 				item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 15px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+				item.active = false
 			}
 			//// scrollarea's setWidget is brokean some magins
 			item.label.SetContentsMargins(15+15, 6, 0, 6)

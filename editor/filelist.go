@@ -126,6 +126,7 @@ func newFilelistwidget(path string) *Filelist {
 			fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		}
 
+		// Hide with the same color as the background
 		svgModified := editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 		fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 

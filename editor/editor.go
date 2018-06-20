@@ -238,6 +238,11 @@ func InitEditor() {
 	}()
 	//
 
+	if e.config.showSide == false {
+		e.navigation.sideArea.Hide()
+		e.navigation.widget.Hide()
+	}
+
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
 			ws.updateSize()
@@ -290,13 +295,13 @@ func newGonvimConfig(home string) *gonvimConfig {
 		cfgWSWidth = 250
 		cfgClipBoard = true
 	} else {
-		cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
+		cfgWSDisplay = cfg.Section("navigation").Key("display").MustBool()
 		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
 		cfgWSPath = cfg.Section("workspace").Key("path").String()
 		if cfgWSPath == "" {
 			cfgWSPath = "minimum"
 		}
-		cfgWSWidth, errGetWidth = cfg.Section("workspace").Key("width").Int()
+		cfgWSWidth, errGetWidth = cfg.Section("navigation").Key("width").Int()
 		if errGetWidth != nil {
 			cfgWSWidth = 250
 		}
