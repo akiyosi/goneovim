@@ -54,6 +54,24 @@ func (w *Workspace) initSVGS() {
 	blue := newRGBA(81, 154, 186, 1)
 	w.svgs = map[string]*SvgXML{}
 
+	w.svgs["download"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><g transform="translate(0,2)"><path fill="%s" d="M5 20H19V18H5M19 9H15V3H9V9H5L12 16L19 9Z" /></g></svg>`,
+	}
+
+	w.svgs["user"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M12 4A4 4 0 0 1 16 8A4 4 0 0 1 12 12A4 4 0 0 1 8 8A4 4 0 0 1 12 4M12 14C16.42 14 20 15.79 20 18V20H4V18C4 15.79 7.58 14 12 14Z" /></svg>`,
+	}
+
+	w.svgs["star"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.62L12 2L9.19 8.62L2 9.24L7.45 13.97L5.82 21L12 17.27Z" /></svg>`,
+	}
+
 	w.svgs["naviedit"] = &SvgXML{
 		width:  24,
 		height: 24,

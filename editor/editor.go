@@ -92,6 +92,7 @@ type gonvimConfig struct {
 	pathFormat     string
 	sideWidth      int
 	clipboard      bool
+	accentColor    string
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -287,6 +288,7 @@ func newGonvimConfig(home string) *gonvimConfig {
 	var cfgWSPath string
 	var cfgWSWidth int
 	var cfgClipBoard bool
+	var cfgAccentColor string
 	var errGetWidth error
 	if cfgerr != nil {
 		cfgWSDisplay = false
@@ -294,6 +296,7 @@ func newGonvimConfig(home string) *gonvimConfig {
 		cfgWSPath = "minimum"
 		cfgWSWidth = 250
 		cfgClipBoard = true
+		cfgAccentColor = "#519aba"
 	} else {
 		cfgWSDisplay = cfg.Section("navigation").Key("display").MustBool()
 		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
@@ -306,6 +309,9 @@ func newGonvimConfig(home string) *gonvimConfig {
 			cfgWSWidth = 250
 		}
 		cfgClipBoard = cfg.Section("").Key("clipboard").MustBool()
+		if cfgAccentColor == "" {
+			cfgAccentColor = "#519aba"
+		}
 	}
 	config := &gonvimConfig{
 		restoreSession: cfgWSRestoresession,
@@ -313,6 +319,7 @@ func newGonvimConfig(home string) *gonvimConfig {
 		pathFormat:     cfgWSPath,
 		sideWidth:      cfgWSWidth,
 		clipboard:      cfgClipBoard,
+		accentColor:    cfgAccentColor,
 	}
 
 	return config
