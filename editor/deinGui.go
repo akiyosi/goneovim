@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
@@ -17,6 +18,7 @@ type DeinSide struct {
 	layout       *widgets.QLayout
 	title        *widgets.QLabel
 	scrollarea   *widgets.QScrollArea
+	searchlayout *widgets.QBoxLayout
 	searchbox    *widgets.QLineEdit
 	searchresult *widgets.QWidget
 }
@@ -28,16 +30,21 @@ func newDeinSide() *DeinSide {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 	header := widgets.NewQLabel(nil, 0)
-	header.SetContentsMargins(20, 15, 20, 10)
+	header.SetContentsMargins(20, 15, 20, 5)
 	header.SetText("Dein.vim")
 	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 0, 0, 100)
+	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
 
+	searchWidget := widgets.NewQWidget(nil, 0)
+	searchLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, searchWidget)
+	searchLayout.SetContentsMargins(0, 5, 0, 100)
+
 	searchBoxLayout := widgets.NewQHBoxLayout()
-	searchBoxLayout.SetContentsMargins(20, 10, 20, 10)
+	searchBoxLayout.SetContentsMargins(20, 5, 20, 5)
 	searchBoxLayout.SetSpacing(0)
 	searchbox := widgets.NewQLineEdit(nil)
+	searchbox.SetFixedWidth(editor.config.sideWidth - (20 + 20))
 	searchBoxLayout.AddWidget(searchbox, 0, 0)
 	searchBoxWidget := widgets.NewQWidget(nil, 0)
 	searchBoxWidget.SetLayout(searchBoxLayout)
@@ -46,16 +53,20 @@ func newDeinSide() *DeinSide {
 
 	searchresult := widgets.NewQWidget(nil, 0)
 
+	searchLayout.AddWidget(searchBoxWidget, 0, 0)
+	searchLayout.AddWidget(searchresult, 0, 0)
+
 	side := &DeinSide{
 		widget:       widget,
 		layout:       layout,
 		title:        header,
+		searchlayout: searchLayout,
 		searchbox:    searchbox,
 		searchresult: searchresult,
 	}
 
 	layout.AddWidget(header)
-	layout.AddWidget(searchBoxWidget)
+	layout.AddWidget(searchWidget)
 
 	var userPath, defaultPath string
 	userPath, _ = w.nvim.CommandOutput("echo g:dein#cache_directory")
@@ -69,7 +80,7 @@ func newDeinSide() *DeinSide {
 
 	line := widgets.NewQLabel(nil, 0)
 	line.SetText("Path: " + deinDirectInstallPath)
-	layout.AddWidget(line)
+	//layout.AddWidget(line)
 	//line.Show()
 
 	side.title.Show()
@@ -127,7 +138,9 @@ type PluginResults struct {
 }
 
 type Plugin struct {
-	widget *widgets.QWidget
+	widget        *widgets.QWidget
+	installButton *widgets.QWidget
+	repo          string
 }
 
 func doPluginSearch() {
@@ -146,17 +159,19 @@ func doPluginSearch() {
 		return
 	}
 
+	labelColor := darkenHex(editor.config.accentColor)
+
 	widget := widgets.NewQWidget(nil, 0)
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
-	layout.SetContentsMargins(20, 10, 0, 150)
-	layout.SetSpacing(20)
+	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(1)
 
 	for _, p := range results.Plugins {
 		pluginWidget := widgets.NewQWidget(nil, 0)
 		pluginLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, pluginWidget)
-		pluginLayout.SetContentsMargins(2, 2, 2, 2)
+		pluginLayout.SetContentsMargins(20, 5, 20, 5)
 		pluginLayout.SetSpacing(1)
-		pluginWidget.SetFixedWidth(editor.config.sideWidth - (20 + 20 - 2))
+		pluginWidget.SetFixedWidth(editor.config.sideWidth - 2)
 
 		// * plugin name
 		pluginName := widgets.NewQLabel(nil, 0)
@@ -176,7 +191,7 @@ func doPluginSearch() {
 		//pluginInfoLayout := newVFlowLayout(16, 10, 1, 2, 0)
 		pluginInfoLayout := widgets.NewQHBoxLayout()
 		pluginInfoLayout.SetContentsMargins(0, 0, 0, 0)
-		pluginInfoLayout.SetSpacing(8)
+		pluginInfoLayout.SetSpacing(5)
 
 		// ** plugin stars
 		pluginStars := widgets.NewQWidget(nil, 0)
@@ -251,29 +266,56 @@ func doPluginSearch() {
 		pluginInfo.SetLayout(pluginInfoLayout)
 		pluginInfo.SetFixedWidth(pluginStars.Width() + pluginDownloads.Width() + pluginAuthor.Width() + 3*10)
 
+		// * plugin install button
+		pluginInstallLabel := widgets.NewQLabel(nil, 0)
+		pluginInstallLabel.SetText("Install")
+		pluginInstallLabel.SetFixedWidth(65)
+		pluginInstallLabel.SetAlignment(core.Qt__AlignCenter)
+		pluginInstall := widgets.NewQWidget(nil, 0)
+		pluginInstallLayout := widgets.NewQHBoxLayout()
+		pluginInstallLayout.SetContentsMargins(0, 0, 0, 0)
+		pluginInstallLayout.AddWidget(pluginInstallLabel, 0, 0)
+		pluginInstall.SetLayout(pluginInstallLayout)
+		pluginInstall.SetObjectName("installbutton")
+		pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: %s;} ", fg.R, fg.G, fg.B, labelColor))
+
+		// * plugin name & button
+		pluginHead := widgets.NewQWidget(nil, 0)
+		pluginHeadLayout := widgets.NewQHBoxLayout()
+		pluginHeadLayout.SetContentsMargins(0, 0, 0, 0)
+		pluginHeadLayout.SetSpacing(5)
+		pluginHead.SetFixedWidth(editor.config.sideWidth - 2)
+		pluginHead.SetLayout(pluginHeadLayout)
+		pluginHeadLayout.AddWidget(pluginName, 0, 0)
+		pluginHeadLayout.AddWidget(pluginInstall, 0, 0)
+
 		// make widget
-		pluginLayout.AddWidget(pluginName, 0, 0)
+		pluginLayout.AddWidget(pluginHead, 0, 0)
 		if p.ShortDesc != "" {
 			pluginLayout.AddWidget(pluginDesc, 0, 0)
 		}
 		pluginLayout.AddWidget(pluginInfo, 0, 0)
 
-		// add to parent widget
+		// add to parent in side widget
 		layout.AddWidget(pluginWidget, 0, 0)
 
 		plugin := &Plugin{
-			widget: pluginWidget,
+			widget:        pluginWidget,
+			installButton: pluginInstall,
+			repo:          p.GithubOwner + "/" + p.GithubRepoName,
 		}
 		plugin.widget.ConnectEnterEvent(plugin.enterWidget)
 		plugin.widget.ConnectLeaveEvent(plugin.leaveWidget)
 
+		plugin.installButton.ConnectEnterEvent(plugin.enterButton)
+		plugin.installButton.ConnectLeaveEvent(plugin.leaveButton)
+		plugin.installButton.ConnectMousePressEvent(plugin.pressButton)
 	}
 	widget.AdjustSize()
 
-	editor.deinSide.layout.RemoveWidget(editor.deinSide.searchresult)
-	editor.deinSide.searchresult.DestroyQWidget()
-	editor.deinSide.layout.AddWidget(widget)
+	editor.deinSide.searchlayout.RemoveWidget(editor.deinSide.searchresult)
 	editor.deinSide.searchresult = widget
+	editor.deinSide.searchlayout.AddWidget(editor.deinSide.searchresult, 0, 0)
 	widget.Show()
 
 }
@@ -286,4 +328,19 @@ func (p *Plugin) enterWidget(event *core.QEvent) {
 func (p *Plugin) leaveWidget(event *core.QEvent) {
 	bg := editor.bgcolor
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+}
+
+func (p *Plugin) enterButton(event *core.QEvent) {
+	fg := editor.fgcolor
+	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: %s;} ", fg.R, fg.G, fg.B, editor.config.accentColor))
+}
+
+func (p *Plugin) leaveButton(event *core.QEvent) {
+	fg := editor.fgcolor
+	labelColor := darkenHex(editor.config.accentColor)
+	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: %s;} ", fg.R, fg.G, fg.B, labelColor))
+}
+
+func (p *Plugin) pressButton(event *gui.QMouseEvent) {
+	editor.workspaces[editor.active].nvim.Command(":call dein#direct_install('" + p.repo + "')")
 }

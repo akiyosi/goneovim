@@ -325,6 +325,35 @@ func newGonvimConfig(home string) *gonvimConfig {
 	return config
 }
 
+func hexToRGBA(hex string) *RGBA {
+	format := "#%02x%02x%02x"
+	if len(hex) == 4 {
+		format = "#%1x%1x%1x"
+	}
+	var r, g, b uint8
+	n, err := fmt.Sscanf(hex, format, &r, &g, &b)
+	if err != nil {
+		return nil
+	}
+	if n != 3 {
+		return nil
+	}
+	rgba := &RGBA{
+		R: (int)(r),
+		G: (int)(g),
+		B: (int)(b),
+		A: 1,
+	}
+
+	return rgba
+}
+
+func darkenHex(hex string) string {
+	c := hexToRGBA(hex)
+	d := shiftColor(c, 20)
+	return fmt.Sprintf("#%02x%02x%02x", (int)(d.R*255.0), (int)(d.G*255.0), (int)(d.B*255.0))
+}
+
 func isFileExist(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
