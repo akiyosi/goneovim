@@ -272,7 +272,6 @@ func doPluginSearch() {
 
 		// * plugin install button
 		pluginInstallLabel := widgets.NewQLabel(nil, 0)
-		pluginInstallLabel.SetText("Install")
 		pluginInstallLabel.SetFixedWidth(65)
 		pluginInstallLabel.SetAlignment(core.Qt__AlignCenter)
 		pluginInstall := widgets.NewQWidget(nil, 0)
@@ -281,7 +280,16 @@ func doPluginSearch() {
 		pluginInstallLayout.AddWidget(pluginInstallLabel, 0, 0)
 		pluginInstall.SetLayout(pluginInstallLayout)
 		pluginInstall.SetObjectName("installbutton")
+
+		// ret, _ := editor.workspaces[editor.active].nvim.CommandOutput(":call dein#check_install('" + p.GithubRepoName + "')")
+		// bg := editor.bgcolor
+		// if ret != "0" {
+		pluginInstallLabel.SetText("Install")
 		pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: %s;} ", fg.R, fg.G, fg.B, labelColor))
+		// } else {
+		//   pluginInstallLabel.SetText("Installed")
+		//   pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+		// }
 
 		// * plugin name & button
 		pluginHead := widgets.NewQWidget(nil, 0)
@@ -346,11 +354,12 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 }
 
 func (p *Plugin) pressButton(event *gui.QMouseEvent) {
-	editor.workspaces[editor.active].nvim.Command(":call dein#direct_install('" + p.repo + "')")
+	//go func() {
+	editor.workspaces[editor.active].nvim.Command(":silent! call dein#direct_install('" + p.repo + "')")
+	//}()
 }
 
 func (d *DeinSide) enterConfigIcon(event *core.QEvent) {
-	fmt.Println("hoge")
 	w := editor.workspaces[editor.active]
 	fg := editor.fgcolor
 	svgConfigContent := w.getSvg("configfile", newRGBA(shiftColor(fg, -20).R, shiftColor(fg, -20).G, shiftColor(fg, -20).B, 1))
@@ -358,7 +367,6 @@ func (d *DeinSide) enterConfigIcon(event *core.QEvent) {
 }
 
 func (d *DeinSide) leaveConfigIcon(event *core.QEvent) {
-	fmt.Println("fuga")
 	w := editor.workspaces[editor.active]
 	svgConfigContent := w.getSvg("configfile", nil)
 	d.config.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))

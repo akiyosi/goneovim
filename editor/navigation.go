@@ -125,15 +125,23 @@ func (n *NavigationItem) leaveEvent(event *core.QEvent) {
 }
 
 func (n *NavigationItem) mouseEvent(event *gui.QMouseEvent) {
+	if n.active == true {
+		editor.navigation.sideArea.Hide()
+		n.active = false
+		return
+	} else {
+		editor.navigation.sideArea.Show()
+	}
+
 	items := []*NavigationItem{editor.navigation.editItem, editor.navigation.deinItem}
 	for _, item := range items {
 		item.active = false
 	}
 	n.active = true
+
 	setNavigationItemColor()
 
 	switch n.text {
-
 	case "navidein":
 		if editor.deinSide == nil {
 
