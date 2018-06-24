@@ -21,6 +21,7 @@ type DeinSide struct {
 	searchlayout *widgets.QBoxLayout
 	searchbox    *widgets.QLineEdit
 	searchresult *widgets.QWidget
+	config       *svg.QSvgWidget
 }
 
 func newDeinSide() *DeinSide {
@@ -29,9 +30,22 @@ func newDeinSide() *DeinSide {
 	layout := newHFlowLayout(0, 0, 0, 0, 20)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
+
+	headerWidget := widgets.NewQWidget(nil, 0)
+	headerLayout := widgets.NewQHBoxLayout()
+	headerLayout.SetContentsMargins(20, 15, 20, 5)
 	header := widgets.NewQLabel(nil, 0)
-	header.SetContentsMargins(20, 15, 20, 5)
+	//header.SetContentsMargins(20, 15, 20, 5)
+	header.SetContentsMargins(0, 0, 0, 0)
 	header.SetText("Dein.vim")
+	configIcon := svg.NewQSvgWidget(nil)
+	configIcon.SetFixedSize2(13, 13)
+	svgConfigContent := w.getSvg("configfile", nil)
+	configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
+	headerLayout.AddWidget(header, 0, 0)
+	headerLayout.AddWidget(configIcon, 0, 0)
+	headerWidget.SetLayout(headerLayout)
+
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetLayout(layout)
@@ -44,6 +58,7 @@ func newDeinSide() *DeinSide {
 	searchBoxLayout.SetContentsMargins(20, 5, 20, 5)
 	searchBoxLayout.SetSpacing(0)
 	searchbox := widgets.NewQLineEdit(nil)
+	searchbox.SetFocusPolicy(core.Qt__ClickFocus)
 	searchbox.SetFixedWidth(editor.config.sideWidth - (20 + 20))
 	searchBoxLayout.AddWidget(searchbox, 0, 0)
 	searchBoxWidget := widgets.NewQWidget(nil, 0)
@@ -63,25 +78,14 @@ func newDeinSide() *DeinSide {
 		searchlayout: searchLayout,
 		searchbox:    searchbox,
 		searchresult: searchresult,
+		config:       configIcon,
 	}
+	configIcon.ConnectEnterEvent(side.enterConfigIcon)
+	configIcon.ConnectLeaveEvent(side.leaveConfigIcon)
+	configIcon.ConnectMousePressEvent(pressConfigIcon)
 
-	layout.AddWidget(header)
+	layout.AddWidget(headerWidget)
 	layout.AddWidget(searchWidget)
-
-	var userPath, defaultPath string
-	userPath, _ = w.nvim.CommandOutput("echo g:dein#cache_directory")
-	defaultPath, _ = w.nvim.CommandOutput("echo g:dein#_base_path")
-	var deinDirectInstallPath string
-	if userPath == "" {
-		deinDirectInstallPath = defaultPath
-	} else {
-		deinDirectInstallPath = userPath
-	}
-
-	line := widgets.NewQLabel(nil, 0)
-	line.SetText("Path: " + deinDirectInstallPath)
-	//layout.AddWidget(line)
-	//line.Show()
 
 	side.title.Show()
 	side.searchbox.Show()
@@ -171,7 +175,7 @@ func doPluginSearch() {
 		pluginLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, pluginWidget)
 		pluginLayout.SetContentsMargins(20, 5, 20, 5)
 		pluginLayout.SetSpacing(1)
-		pluginWidget.SetFixedWidth(editor.config.sideWidth - 2)
+		pluginWidget.SetFixedWidth(editor.config.sideWidth)
 
 		// * plugin name
 		pluginName := widgets.NewQLabel(nil, 0)
@@ -343,4 +347,34 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 
 func (p *Plugin) pressButton(event *gui.QMouseEvent) {
 	editor.workspaces[editor.active].nvim.Command(":call dein#direct_install('" + p.repo + "')")
+}
+
+func (d *DeinSide) enterConfigIcon(event *core.QEvent) {
+	fmt.Println("hoge")
+	w := editor.workspaces[editor.active]
+	fg := editor.fgcolor
+	svgConfigContent := w.getSvg("configfile", newRGBA(shiftColor(fg, -20).R, shiftColor(fg, -20).G, shiftColor(fg, -20).B, 1))
+	d.config.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
+}
+
+func (d *DeinSide) leaveConfigIcon(event *core.QEvent) {
+	fmt.Println("fuga")
+	w := editor.workspaces[editor.active]
+	svgConfigContent := w.getSvg("configfile", nil)
+	d.config.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
+}
+
+func pressConfigIcon(event *gui.QMouseEvent) {
+	w := editor.workspaces[editor.active]
+	var userPath, defaultPath string
+	userPath, _ = w.nvim.CommandOutput("echo g:dein#cache_directory")
+	defaultPath, _ = w.nvim.CommandOutput("echo g:dein#_base_path")
+	var deinDirectInstallPath string
+	if userPath == "" {
+		deinDirectInstallPath = defaultPath
+	} else {
+		deinDirectInstallPath = userPath
+	}
+	editor.workspaces[editor.active].nvim.Command(":tabnew " + deinDirectInstallPath + "/direct_install.vim")
+
 }

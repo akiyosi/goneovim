@@ -54,6 +54,12 @@ func (w *Workspace) initSVGS() {
 	blue := newRGBA(81, 154, 186, 1)
 	w.svgs = map[string]*SvgXML{}
 
+	w.svgs["configfile"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M5 3C3.89 3 3 3.89 3 5V19C3 20.11 3.89 21 5 21H19C20.11 21 21 20.11 21 19V5C21 3.89 20.11 3 19 3H5M5 5H19V19H5V5M7 7V9H17V7H7M7 11V13H17V11H7M7 15V17H14V15H7Z" /></svg>`,
+	}
+
 	w.svgs["download"] = &SvgXML{
 		width:  24,
 		height: 24,
@@ -63,13 +69,13 @@ func (w *Workspace) initSVGS() {
 	w.svgs["user"] = &SvgXML{
 		width:  24,
 		height: 24,
-		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M12 4A4 4 0 0 1 16 8A4 4 0 0 1 12 12A4 4 0 0 1 8 8A4 4 0 0 1 12 4M12 14C16.42 14 20 15.79 20 18V20H4V18C4 15.79 7.58 14 12 14Z" /></svg>`,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><g transform="translate(0,2)"><path fill="%s" d="M12 4A4 4 0 0 1 16 8A4 4 0 0 1 12 12A4 4 0 0 1 8 8A4 4 0 0 1 12 4M12 14C16.42 14 20 15.79 20 18V20H4V18C4 15.79 7.58 14 12 14Z" /></g></svg>`,
 	}
 
 	w.svgs["star"] = &SvgXML{
 		width:  24,
 		height: 24,
-		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.62L12 2L9.19 8.62L2 9.24L7.45 13.97L5.82 21L12 17.27Z" /></svg>`,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><g transform="translate(0,1)"><path fill="%s" d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.62L12 2L9.19 8.62L2 9.24L7.45 13.97L5.82 21L12 17.27Z" /></g></svg>`,
 	}
 
 	w.svgs["naviedit"] = &SvgXML{

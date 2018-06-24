@@ -179,16 +179,6 @@ func InitEditor() {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
-	// Drop shadow to wsSide
-	go func() {
-		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		shadow.SetBlurRadius(60)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-		shadow.SetOffset3(6, 2)
-		//e.wsSide.widget.SetGraphicsEffect(shadow)
-		e.wsSide.scrollarea.SetGraphicsEffect(shadow)
-	}()
-
 	e.workspaces = []*Workspace{}
 	sessionExists := false
 	if err == nil {
@@ -227,6 +217,16 @@ func InitEditor() {
 	layout.AddWidget(e.navigation.sideArea, 0, 0)
 	layout.AddWidget(e.navigation.widget, 0, 0)
 	e.workspaceUpdate()
+
+	// Drop shadow to wsSide
+	go func() {
+		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+		shadow.SetBlurRadius(60)
+		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
+		shadow.SetOffset3(6, 2)
+		//e.wsSide.widget.SetGraphicsEffect(shadow)
+		e.navigation.sideArea.SetGraphicsEffect(shadow)
+	}()
 
 	// Drop shadow for Navigation widget
 	go func() {
