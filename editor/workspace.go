@@ -980,17 +980,17 @@ func (w *Workspace) setGuiColor() {
 
 	var svgEditContent string
 	if editor.navigation.editItem.active == true {
-		svgEditContent = w.getSvg("naviedit", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgEditContent = w.getSvg("naviedit", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	} else {
-		svgEditContent = w.getSvg("naviedit", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+		svgEditContent = w.getSvg("naviedit", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	}
 	editor.navigation.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
 
 	var svgDeinContent string
 	if editor.navigation.deinItem.active == true {
-		svgDeinContent = w.getSvg("navidein", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgDeinContent = w.getSvg("navidein", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	} else {
-		svgDeinContent = w.getSvg("navidein", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+		svgDeinContent = w.getSvg("navidein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	}
 	editor.navigation.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
 

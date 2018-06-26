@@ -58,13 +58,15 @@ func newNavigation() *Navigation {
 		id:     1,
 	}
 
+	bg := editor.bgcolor
+
 	deinLayout := widgets.NewQVBoxLayout()
 	deinLayout.SetContentsMargins(12, 5, 12, 5)
 	deinLayout.SetSpacing(1)
 	deinIcon := svg.NewQSvgWidget(nil)
 	deinIcon.SetFixedWidth(22)
 	deinIcon.SetFixedHeight(22)
-	svgDeinContent := editor.workspaces[editor.active].getSvg("navidein", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+	svgDeinContent := editor.workspaces[editor.active].getSvg("navidein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	//svgDeinContent := editor.workspaces[editor.active].getSvg("navidein", nil)
 	deinIcon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
 	deinLayout.AddWidget(deinIcon, 0, 0)
@@ -113,13 +115,14 @@ func (n *NavigationItem) enterEvent(event *core.QEvent) {
 
 func (n *NavigationItem) leaveEvent(event *core.QEvent) {
 	fg := editor.fgcolor
+	bg := editor.bgcolor
 	var svgContent string
 	if n.active == true {
 		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
 		svgContent = editor.workspaces[editor.active].getSvg(n.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	} else {
-		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
-		svgContent = editor.workspaces[editor.active].getSvg(n.text, newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+		svgContent = editor.workspaces[editor.active].getSvg(n.text, newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	}
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
@@ -172,6 +175,7 @@ func (n *NavigationItem) mouseEvent(event *gui.QMouseEvent) {
 
 func setNavigationItemColor() {
 	fg := editor.fgcolor
+	bg := editor.bgcolor
 	var svgContent string
 	items := []*NavigationItem{editor.navigation.editItem, editor.navigation.deinItem}
 	for _, item := range items {
@@ -179,8 +183,8 @@ func setNavigationItemColor() {
 			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
 			svgContent = editor.workspaces[editor.active].getSvg(item.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 		} else {
-			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
-			svgContent = editor.workspaces[editor.active].getSvg(item.text, newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+			svgContent = editor.workspaces[editor.active].getSvg(item.text, newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 		}
 		item.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}

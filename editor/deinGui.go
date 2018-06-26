@@ -26,6 +26,8 @@ type DeinSide struct {
 
 func newDeinSide() *DeinSide {
 	w := editor.workspaces[editor.active]
+	fg := editor.fgcolor
+	bg := editor.bgcolor
 
 	layout := newHFlowLayout(0, 0, 0, 0, 20)
 	layout.SetContentsMargins(0, 0, 0, 0)
@@ -40,7 +42,7 @@ func newDeinSide() *DeinSide {
 	header.SetText("Dein.vim")
 	configIcon := svg.NewQSvgWidget(nil)
 	configIcon.SetFixedSize2(13, 13)
-	svgConfigContent := w.getSvg("configfile", nil)
+	svgConfigContent := w.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 	headerLayout.AddWidget(header, 0, 0)
 	headerLayout.AddWidget(configIcon, 0, 0)
@@ -90,9 +92,6 @@ func newDeinSide() *DeinSide {
 	side.title.Show()
 	side.searchbox.Show()
 
-	// Set Color for DeinSide
-	fg := editor.fgcolor
-	bg := editor.bgcolor
 	deinSideStyle := fmt.Sprintf("QWidget {	color: rgba(%d, %d, %d, 1);		border-right: 0px solid;	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
 	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget {padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + deinSideStyle)
 	side.searchbox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid	%s; border-radius: 1px; background: rgba(%d, %d, %d, 1); selection-background-color: rgba(%d, %d, %d, 1); }	", editor.config.accentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + deinSideStyle)
@@ -334,7 +333,7 @@ func doPluginSearch() {
 
 func (p *Plugin) enterWidget(event *core.QEvent) {
 	bg := editor.bgcolor
-	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
+	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 }
 
 func (p *Plugin) leaveWidget(event *core.QEvent) {
@@ -362,13 +361,14 @@ func (p *Plugin) pressButton(event *gui.QMouseEvent) {
 func (d *DeinSide) enterConfigIcon(event *core.QEvent) {
 	w := editor.workspaces[editor.active]
 	fg := editor.fgcolor
-	svgConfigContent := w.getSvg("configfile", newRGBA(shiftColor(fg, -20).R, shiftColor(fg, -20).G, shiftColor(fg, -20).B, 1))
+	svgConfigContent := w.getSvg("configfile", newRGBA(warpColor(fg, -20).R, warpColor(fg, -20).G, warpColor(fg, -20).B, 1))
 	d.config.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 }
 
 func (d *DeinSide) leaveConfigIcon(event *core.QEvent) {
 	w := editor.workspaces[editor.active]
-	svgConfigContent := w.getSvg("configfile", nil)
+	bg := editor.bgcolor
+	svgConfigContent := w.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	d.config.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 }
 
