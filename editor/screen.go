@@ -899,5 +899,6 @@ func (s *Screen) isNormalWidth(char string) bool {
 	if char[0] <= 127 {
 		return true
 	}
-	return s.ws.font.fontMetrics.Width(char) == s.ws.font.truewidth
+	//return s.ws.font.fontMetrics.Width(char) == s.ws.font.truewidth
+	return s.ws.font.fontMetrics.HorizontalAdvance(char, -1) == s.ws.font.truewidth
 }

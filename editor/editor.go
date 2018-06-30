@@ -224,7 +224,6 @@ func InitEditor() {
 		shadow.SetBlurRadius(60)
 		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
 		shadow.SetOffset3(6, 2)
-		//e.wsSide.widget.SetGraphicsEffect(shadow)
 		e.navigation.sideArea.SetGraphicsEffect(shadow)
 	}()
 
@@ -234,7 +233,6 @@ func InitEditor() {
 		naviShadow.SetBlurRadius(60)
 		naviShadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
 		naviShadow.SetOffset3(6, 2)
-		//e.wsSide.widget.SetGraphicsEffect(shadow)
 		e.navigation.widget.SetGraphicsEffect(naviShadow)
 	}()
 	//

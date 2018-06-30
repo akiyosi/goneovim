@@ -24,7 +24,8 @@ type Font struct {
 func fontSizeNew(font *gui.QFont) (int, int, float64, float64) {
 	fontMetrics := gui.NewQFontMetricsF(font)
 	h := fontMetrics.Height()
-	w := fontMetrics.Width("W")
+	//w := fontMetrics.Width("W")
+	w := fontMetrics.HorizontalAdvance("W", -1)
 	ascent := fontMetrics.Ascent()
 	width := int(math.Ceil(w))
 	height := int(math.Ceil(h))

@@ -86,7 +86,8 @@ func newMarkdown(workspace *Workspace) *Markdown {
 	m.container = widgets.NewQPlainTextEdit(nil)
 	channel := webchannel.NewQWebChannel(nil)
 	channel.RegisterObject("content", m.container)
-	m.webpage.SetWebChannel2(channel)
+	//m.webpage.SetWebChannel2(channel)
+	m.webpage.SetWebChannel(channel)
 	m.hide()
 	// m.webview.SetEnabled(false)
 	return m
@@ -133,11 +134,11 @@ func (m *Markdown) commands() {
 }
 
 func (m *Markdown) scrollUp() {
-	m.webpage.RunJavaScript4("window.scrollBy(0, -20)")
+	m.webpage.RunJavaScript("window.scrollBy(0, -20)")
 }
 
 func (m *Markdown) scrollDown() {
-	m.webpage.RunJavaScript4("window.scrollBy(0, 20)")
+	m.webpage.RunJavaScript("window.scrollBy(0, 20)")
 }
 
 func (m *Markdown) toggle() {
