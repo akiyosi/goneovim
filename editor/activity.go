@@ -9,16 +9,16 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
-type Navigation struct {
+type Activity struct {
 	widget   *widgets.QWidget
 	layout   *widgets.QVBoxLayout
-	editItem *NavigationItem
-	deinItem *NavigationItem
+	editItem *ActivityItem
+	deinItem *ActivityItem
 	//sideArea *widgets.QScrollArea
 	sideArea *widgets.QStackedWidget
 }
 
-type NavigationItem struct {
+type ActivityItem struct {
 	widget *widgets.QWidget
 	text   string
 	icon   *svg.QSvgWidget
@@ -26,7 +26,7 @@ type NavigationItem struct {
 	id     int
 }
 
-func newNavigation() *Navigation {
+func newActivity() *Activity {
 	naviLayout := widgets.NewQVBoxLayout()
 	naviLayout.SetContentsMargins(1, 10, 0, 0)
 	naviLayout.SetSpacing(1)
@@ -50,7 +50,7 @@ func newNavigation() *Navigation {
 	editLayout.AddWidget(editIcon, 0, 0)
 	editWidget := widgets.NewQWidget(nil, 0)
 	editWidget.SetLayout(editLayout)
-	editItem := &NavigationItem{
+	editItem := &ActivityItem{
 		widget: editWidget,
 		text:   "naviedit",
 		icon:   editIcon,
@@ -72,7 +72,7 @@ func newNavigation() *Navigation {
 	deinLayout.AddWidget(deinIcon, 0, 0)
 	deinWidget := widgets.NewQWidget(nil, 0)
 	deinWidget.SetLayout(deinLayout)
-	deinItem := &NavigationItem{
+	deinItem := &ActivityItem{
 		widget: deinWidget,
 		text:   "navidein",
 		icon:   deinIcon,
@@ -89,31 +89,31 @@ func newNavigation() *Navigation {
 
 	stackedWidget := widgets.NewQStackedWidget(nil)
 
-	navigation := &Navigation{
+	activity := &Activity{
 		layout:   naviLayout,
 		editItem: editItem,
 		deinItem: deinItem,
 		sideArea: stackedWidget,
 	}
 
-	navigation.editItem.widget.ConnectEnterEvent(editItem.enterEvent)
-	navigation.editItem.widget.ConnectLeaveEvent(editItem.leaveEvent)
-	navigation.editItem.widget.ConnectMousePressEvent(editItem.mouseEvent)
-	navigation.deinItem.widget.ConnectEnterEvent(deinItem.enterEvent)
-	navigation.deinItem.widget.ConnectLeaveEvent(deinItem.leaveEvent)
-	navigation.deinItem.widget.ConnectMousePressEvent(deinItem.mouseEvent)
+	activity.editItem.widget.ConnectEnterEvent(editItem.enterEvent)
+	activity.editItem.widget.ConnectLeaveEvent(editItem.leaveEvent)
+	activity.editItem.widget.ConnectMousePressEvent(editItem.mouseEvent)
+	activity.deinItem.widget.ConnectEnterEvent(deinItem.enterEvent)
+	activity.deinItem.widget.ConnectLeaveEvent(deinItem.leaveEvent)
+	activity.deinItem.widget.ConnectMousePressEvent(deinItem.mouseEvent)
 
-	return navigation
+	return activity
 }
 
-func (n *NavigationItem) enterEvent(event *core.QEvent) {
+func (n *ActivityItem) enterEvent(event *core.QEvent) {
 	fg := editor.fgcolor
 	n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
 	svgContent := editor.workspaces[editor.active].getSvg(n.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
-func (n *NavigationItem) leaveEvent(event *core.QEvent) {
+func (n *ActivityItem) leaveEvent(event *core.QEvent) {
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 	var svgContent string
@@ -127,22 +127,22 @@ func (n *NavigationItem) leaveEvent(event *core.QEvent) {
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
-func (n *NavigationItem) mouseEvent(event *gui.QMouseEvent) {
+func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 	if n.active == true {
-		editor.navigation.sideArea.Hide()
+		editor.activity.sideArea.Hide()
 		n.active = false
 		return
 	} else {
-		editor.navigation.sideArea.Show()
+		editor.activity.sideArea.Show()
 	}
 
-	items := []*NavigationItem{editor.navigation.editItem, editor.navigation.deinItem}
+	items := []*ActivityItem{editor.activity.editItem, editor.activity.deinItem}
 	for _, item := range items {
 		item.active = false
 	}
 	n.active = true
 
-	setNavigationItemColor()
+	setActivityItemColor()
 
 	switch n.text {
 	case "navidein":
@@ -153,7 +153,7 @@ func (n *NavigationItem) mouseEvent(event *gui.QMouseEvent) {
 			sideArea := widgets.NewQScrollArea(nil)
 			sideArea.SetWidgetResizable(true)
 			sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
-			sideArea.SetFocusProxy(editor.window)
+			sideArea.SetFocusPolicy(core.Qt__ClickFocus)
 			sideArea.SetWidget(editor.deinSide.widget)
 			sideArea.SetFrameShape(widgets.QFrame__NoFrame)
 			sideArea.SetMaximumWidth(editor.config.sideWidth)
@@ -163,21 +163,21 @@ func (n *NavigationItem) mouseEvent(event *gui.QMouseEvent) {
 			bg := editor.bgcolor
 			editor.deinSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: rgb(%d, %d, %d); width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: rgb(%d, %d, %d); min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 
-			editor.navigation.sideArea.AddWidget(editor.deinSide.scrollarea)
+			editor.activity.sideArea.AddWidget(editor.deinSide.scrollarea)
 		}
-		editor.navigation.sideArea.SetCurrentWidget(editor.deinSide.scrollarea)
+		editor.activity.sideArea.SetCurrentWidget(editor.deinSide.scrollarea)
 
 	case "naviedit":
-		editor.navigation.sideArea.SetCurrentWidget(editor.wsSide.scrollarea)
+		editor.activity.sideArea.SetCurrentWidget(editor.wsSide.scrollarea)
 	}
 
 }
 
-func setNavigationItemColor() {
+func setActivityItemColor() {
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 	var svgContent string
-	items := []*NavigationItem{editor.navigation.editItem, editor.navigation.deinItem}
+	items := []*ActivityItem{editor.activity.editItem, editor.activity.deinItem}
 	for _, item := range items {
 		if item.active == true {
 			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))

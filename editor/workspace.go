@@ -975,24 +975,24 @@ func (w *Workspace) setGuiColor() {
 
 	noGoodBadNoWay()
 
-	// for Navigation Area
-	editor.navigation.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
+	// for Activity Bar
+	editor.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
 
 	var svgEditContent string
-	if editor.navigation.editItem.active == true {
+	if editor.activity.editItem.active == true {
 		svgEditContent = w.getSvg("naviedit", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	} else {
 		svgEditContent = w.getSvg("naviedit", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	}
-	editor.navigation.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
+	editor.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
 
 	var svgDeinContent string
-	if editor.navigation.deinItem.active == true {
+	if editor.activity.deinItem.active == true {
 		svgDeinContent = w.getSvg("navidein", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	} else {
 		svgDeinContent = w.getSvg("navidein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	}
-	editor.navigation.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
+	editor.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
 
 }
 

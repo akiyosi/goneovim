@@ -40,7 +40,7 @@ type Char struct {
 type Editor struct {
 	version    string
 	app        *widgets.QApplication
-	navigation *Navigation
+	activity   *Activity
 	workspaces []*Workspace
 	active     int
 	nvim       *nvim.Nvim
@@ -87,12 +87,15 @@ type editorSignal struct {
 }
 
 type gonvimConfig struct {
-	restoreSession bool
-	showSide       bool
-	pathFormat     string
-	sideWidth      int
 	clipboard      bool
 	accentColor    string
+	showActivity   bool
+	activityShadow bool
+	showSide       bool
+	restoreSession bool
+	sideShadow     bool
+	sideWidth      int
+	pathFormat     string
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -165,14 +168,12 @@ func InitEditor() {
 	sideArea := widgets.NewQScrollArea(nil)
 	sideArea.SetWidgetResizable(true)
 	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
-	sideArea.SetFocusProxy(e.window)
+	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
 	sideArea.SetWidget(e.wsSide.widget)
 	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
 	sideArea.SetMaximumWidth(e.config.sideWidth)
 	sideArea.SetMinimumWidth(e.config.sideWidth)
 	e.wsSide.scrollarea = sideArea
-
-	naviWidget := widgets.NewQWidget(nil, 0)
 
 	layout.AddWidget(e.wsWidget, 1, 0)
 	//layout.AddWidget(e.wsSide.widget, 0, 0)
@@ -206,40 +207,47 @@ func InitEditor() {
 		e.workspaces = append(e.workspaces, ws)
 	}
 
-	navigation := newNavigation()
-	navigation.widget = naviWidget
-	naviWidget.SetLayout(navigation.layout)
-	e.navigation = navigation
-	e.navigation.sideArea.AddWidget(e.wsSide.scrollarea)
-	e.navigation.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
+	activityWidget := widgets.NewQWidget(nil, 0)
+	activity := newActivity()
+	activity.widget = activityWidget
+	activityWidget.SetLayout(activity.layout)
+	e.activity = activity
+	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
+	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
 
 	//layout.AddWidget(e.wsSide.scrollarea, 0, 0)
-	layout.AddWidget(e.navigation.sideArea, 0, 0)
-	layout.AddWidget(e.navigation.widget, 0, 0)
+	layout.AddWidget(e.activity.sideArea, 0, 0)
+	layout.AddWidget(e.activity.widget, 0, 0)
 	e.workspaceUpdate()
 
-	// Drop shadow to wsSide
-	go func() {
-		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		shadow.SetBlurRadius(60)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-		shadow.SetOffset3(6, 2)
-		e.navigation.sideArea.SetGraphicsEffect(shadow)
-	}()
+	// Drop shadow to Side Bar
+	if e.config.sideShadow == true {
+		go func() {
+			shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+			shadow.SetBlurRadius(60)
+			shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
+			shadow.SetOffset3(6, 2)
+			e.activity.sideArea.SetGraphicsEffect(shadow)
+		}()
+	}
 
-	// Drop shadow for Navigation widget
-	go func() {
-		naviShadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		naviShadow.SetBlurRadius(60)
-		naviShadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-		naviShadow.SetOffset3(6, 2)
-		e.navigation.widget.SetGraphicsEffect(naviShadow)
-	}()
+	// Drop shadow for Activity Bar
+	if e.config.activityShadow == true {
+		go func() {
+			shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+			shadow.SetBlurRadius(60)
+			shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
+			shadow.SetOffset3(6, 2)
+			e.activity.widget.SetGraphicsEffect(shadow)
+		}()
+	}
 	//
 
+	if e.config.showActivity == false {
+		e.activity.widget.Hide()
+	}
 	if e.config.showSide == false {
-		e.navigation.sideArea.Hide()
-		e.navigation.widget.Hide()
+		e.activity.sideArea.Hide()
 	}
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
@@ -282,29 +290,36 @@ func InitEditor() {
 
 func newGonvimConfig(home string) *gonvimConfig {
 	cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
-	var cfgWSDisplay, cfgWSRestoresession bool
+	var cfgActivityDisplay, cfgSideDisplay, cfgWSRestoresession bool
+	var cfgActivityDropShadow, cfgSideDropShadow bool
 	var cfgWSPath string
-	var cfgWSWidth int
+	var cfgSideWidth int
 	var cfgClipBoard bool
 	var cfgAccentColor string
 	var errGetWidth error
 	if cfgerr != nil {
-		cfgWSDisplay = false
+		cfgActivityDisplay = true
+		cfgActivityDropShadow = true
+		cfgSideDisplay = true
+		cfgSideDropShadow = true
 		cfgWSRestoresession = false
 		cfgWSPath = "minimum"
-		cfgWSWidth = 250
+		cfgSideWidth = 250
 		cfgClipBoard = true
 		cfgAccentColor = "#519aba"
 	} else {
-		cfgWSDisplay = cfg.Section("navigation").Key("display").MustBool()
+		cfgActivityDisplay = cfg.Section("activity").Key("display").MustBool()
+		cfgSideDisplay = cfg.Section("side").Key("display").MustBool()
+		cfgActivityDropShadow = cfg.Section("activity").Key("dropshadow").MustBool()
+		cfgSideDropShadow = cfg.Section("side").Key("dropshadow").MustBool()
 		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
 		cfgWSPath = cfg.Section("workspace").Key("path").String()
 		if cfgWSPath == "" {
 			cfgWSPath = "minimum"
 		}
-		cfgWSWidth, errGetWidth = cfg.Section("navigation").Key("width").Int()
+		cfgSideWidth, errGetWidth = cfg.Section("side").Key("width").Int()
 		if errGetWidth != nil {
-			cfgWSWidth = 250
+			cfgSideWidth = 250
 		}
 		cfgClipBoard = cfg.Section("").Key("clipboard").MustBool()
 		if cfgAccentColor == "" {
@@ -313,9 +328,12 @@ func newGonvimConfig(home string) *gonvimConfig {
 	}
 	config := &gonvimConfig{
 		restoreSession: cfgWSRestoresession,
-		showSide:       cfgWSDisplay,
+		showActivity:   cfgActivityDisplay,
+		showSide:       cfgSideDisplay,
+		activityShadow: cfgActivityDropShadow,
+		sideShadow:     cfgSideDropShadow,
 		pathFormat:     cfgWSPath,
-		sideWidth:      cfgWSWidth,
+		sideWidth:      cfgSideWidth,
 		clipboard:      cfgClipBoard,
 		accentColor:    cfgAccentColor,
 	}
