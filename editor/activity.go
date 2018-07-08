@@ -156,9 +156,8 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 			sideArea.SetFocusPolicy(core.Qt__ClickFocus)
 			sideArea.SetWidget(editor.deinSide.widget)
 			sideArea.SetFrameShape(widgets.QFrame__NoFrame)
-			sideArea.SetMaximumWidth(editor.config.sideWidth)
-			sideArea.SetMinimumWidth(editor.config.sideWidth)
 			editor.deinSide.scrollarea = sideArea
+			editor.deinSide.scrollarea.ConnectResizeEvent(deinSideResize)
 
 			bg := editor.bgcolor
 			editor.deinSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: rgb(%d, %d, %d); width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: rgb(%d, %d, %d); min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
@@ -171,6 +170,33 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 		editor.activity.sideArea.SetCurrentWidget(editor.wsSide.scrollarea)
 	}
 
+}
+
+func deinSideResize(event *gui.QResizeEvent) {
+	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+	editor.deinSide.searchresult.widget.SetMinimumWidth(width)
+	editor.deinSide.searchresult.widget.SetMaximumWidth(width)
+
+	editor.deinSide.searchbox.widget.SetMinimumWidth(width)
+	editor.deinSide.searchbox.widget.SetMaximumWidth(width)
+	editor.deinSide.searchbox.editBox.SetFixedWidth(width - (20 + 20))
+
+	editor.deinSide.installedplugins.widget.SetMinimumWidth(width)
+	editor.deinSide.installedplugins.widget.SetMaximumWidth(width)
+
+	for _, item := range editor.deinSide.installedplugins.items {
+		item.widget.SetMaximumWidth(editor.activity.sideArea.Width())
+		item.widget.SetMinimumWidth(editor.activity.sideArea.Width())
+	}
+
+	for _, item := range editor.deinSide.searchresult.plugins {
+		item.widget.SetMaximumWidth(editor.activity.sideArea.Width())
+		item.widget.SetMinimumWidth(editor.activity.sideArea.Width())
+		item.head.SetMaximumWidth(editor.activity.sideArea.Width())
+		item.head.SetMaximumWidth(editor.activity.sideArea.Width())
+		item.desc.SetMinimumWidth(editor.activity.sideArea.Width() - 20)
+		item.desc.SetMinimumWidth(editor.activity.sideArea.Width() - 20)
+	}
 }
 
 func setActivityItemColor() {

@@ -41,6 +41,7 @@ type Editor struct {
 	version    string
 	app        *widgets.QApplication
 	activity   *Activity
+	splitter   *widgets.QSplitter
 	workspaces []*Workspace
 	active     int
 	nvim       *nvim.Nvim
@@ -155,12 +156,9 @@ func InitEditor() {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 
-	//// Drop Shadow to wsWidget
-	//layout := widgets.NewQHBoxLayout()
-	//widget.SetLayout(layout)
-	//
-	//// Drop Shadow to wsSide.widget
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, widget)
+	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(0)
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
@@ -171,14 +169,10 @@ func InitEditor() {
 	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
 	sideArea.SetWidget(e.wsSide.widget)
 	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
-	sideArea.SetMaximumWidth(e.config.sideWidth)
-	sideArea.SetMinimumWidth(e.config.sideWidth)
+	// sideArea.SetMaximumWidth(e.config.sideWidth)
+	// sideArea.SetMinimumWidth(e.config.sideWidth)
+	// sideArea.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 	e.wsSide.scrollarea = sideArea
-
-	layout.AddWidget(e.wsWidget, 1, 0)
-	//layout.AddWidget(e.wsSide.widget, 0, 0)
-	layout.SetContentsMargins(0, 0, 0, 0)
-	layout.SetSpacing(0)
 
 	e.workspaces = []*Workspace{}
 	sessionExists := false
@@ -215,8 +209,17 @@ func InitEditor() {
 	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
 	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
 
-	//layout.AddWidget(e.wsSide.scrollarea, 0, 0)
-	layout.AddWidget(e.activity.sideArea, 0, 0)
+	// layout.AddWidget(e.activity.sideArea, 0, 0)
+
+	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+	splitter.AddWidget(e.activity.sideArea)
+	splitter.AddWidget(e.wsWidget)
+	splitter.SetSizes([]int{editor.config.sideWidth, editor.width - editor.config.sideWidth})
+	splitter.SetStretchFactor(0, 100)
+	splitter.SetObjectName("splitter")
+	e.splitter = splitter
+
+	layout.AddWidget(splitter, 1, 0)
 	layout.AddWidget(e.activity.widget, 0, 0)
 	e.workspaceUpdate()
 

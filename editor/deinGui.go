@@ -18,16 +18,23 @@ import (
 )
 
 type DeinSide struct {
-	widget           *widgets.QWidget
-	layout           *widgets.QLayout
-	title            *widgets.QLabel
-	scrollarea       *widgets.QScrollArea
-	searchlayout     *widgets.QBoxLayout
-	searchbox        *widgets.QLineEdit
+	widget       *widgets.QWidget
+	layout       *widgets.QLayout
+	title        *widgets.QLabel
+	scrollarea   *widgets.QScrollArea
+	searchlayout *widgets.QBoxLayout
+	// searchbox        *widgets.QLineEdit
+	searchbox        *Searchbox
 	plugincontent    *widgets.QStackedWidget
-	searchresult     *widgets.QWidget
+	searchresult     *Searchresult
 	installedplugins *InstalledPlugins
 	config           *svg.QSvgWidget
+}
+
+type Searchbox struct {
+	widget  *widgets.QWidget
+	layout  *widgets.QHBoxLayout
+	editBox *widgets.QLineEdit
 }
 
 type DeinPluginItem struct {
@@ -134,7 +141,9 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, installedPluginWidget)
 		installedPluginLayout.SetContentsMargins(20, 5, 20, 5)
 		installedPluginLayout.SetSpacing(0)
-		installedPluginWidget.SetFixedWidth(editor.config.sideWidth)
+		// installedPluginWidget.SetFixedWidth(editor.config.sideWidth)
+		installedPluginWidget.SetMaximumWidth(editor.config.sideWidth - 55)
+		installedPluginWidget.SetMinimumWidth(editor.config.sideWidth - 55)
 
 		// plugin mame
 		installedPluginName := widgets.NewQLabel(nil, 0)
@@ -249,34 +258,45 @@ func newDeinSide() *DeinSide {
 	widget.SetLayout(layout)
 
 	searchWidget := widgets.NewQWidget(nil, 0)
+	searchWidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Minimum)
 	searchLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, searchWidget)
 	searchLayout.SetContentsMargins(0, 5, 0, 5)
 
 	searchBoxLayout := widgets.NewQHBoxLayout()
 	searchBoxLayout.SetContentsMargins(20, 5, 20, 5)
 	searchBoxLayout.SetSpacing(0)
-	searchbox := widgets.NewQLineEdit(nil)
-	searchbox.SetPlaceholderText("Search Plugins in VimAwesome")
-	searchbox.SetStyleSheet(" #LineEdit {font-size: 9px;} ")
-	searchbox.SetFocusPolicy(core.Qt__ClickFocus)
-	searchbox.SetFixedWidth(editor.config.sideWidth - (20 + 20))
-	searchBoxLayout.AddWidget(searchbox, 0, 0)
+	searchboxEdit := widgets.NewQLineEdit(nil)
+	searchboxEdit.SetPlaceholderText("Search Plugins in VimAwesome")
+	searchboxEdit.SetStyleSheet(" #LineEdit {font-size: 9px;} ")
+	searchboxEdit.SetFocusPolicy(core.Qt__ClickFocus)
+	searchboxEdit.SetFixedWidth(editor.config.sideWidth - (20 + 20))
+	searchBoxLayout.AddWidget(searchboxEdit, 0, 0)
 	searchBoxWidget := widgets.NewQWidget(nil, 0)
 	searchBoxWidget.SetLayout(searchBoxLayout)
 
 	// searchbox.ConnectReturnPressed(doPluginSearch)
-	searchbox.ConnectEditingFinished(doPluginSearch)
+	searchboxEdit.ConnectEditingFinished(doPluginSearch)
 
-	searchLayout.AddWidget(searchBoxWidget, 0, 0)
+	searchbox := &Searchbox{
+		widget:  searchBoxWidget,
+		layout:  searchBoxLayout,
+		editBox: searchboxEdit,
+	}
+
+	searchLayout.AddWidget(searchbox.widget, 0, 0)
 
 	content := widgets.NewQStackedWidget(nil)
+	content.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Minimum)
 
 	layout.AddWidget(headerWidget)
 	layout.AddWidget(searchWidget)
 	layout.AddWidget(content)
 
 	installed := newInstalledPlugins()
-	searchresult := widgets.NewQWidget(nil, 0)
+	searchresultWidget := widgets.NewQWidget(nil, 0)
+	searchresult := &Searchresult{
+		widget: searchresultWidget,
+	}
 
 	// make DeinSide
 	side := &DeinSide{
@@ -290,7 +310,7 @@ func newDeinSide() *DeinSide {
 		installedplugins: installed,
 		config:           configIcon,
 	}
-	content.AddWidget(side.searchresult)
+	content.AddWidget(side.searchresult.widget)
 	content.AddWidget(side.installedplugins.widget)
 	content.SetCurrentWidget(side.installedplugins.widget)
 
@@ -300,7 +320,7 @@ func newDeinSide() *DeinSide {
 
 	deinSideStyle := fmt.Sprintf("QWidget {	color: rgba(%d, %d, %d, 1);		border-right: 0px solid;	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
 	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget {padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + deinSideStyle)
-	side.searchbox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid	%s; border-radius: 1px; background: rgba(%d, %d, %d, 1); selection-background-color: rgba(%d, %d, %d, 1); }	", editor.config.accentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + deinSideStyle)
+	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid	%s; border-radius: 1px; background: rgba(%d, %d, %d, 1); selection-background-color: rgba(%d, %d, %d, 1); }	", editor.config.accentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + deinSideStyle)
 
 	return side
 }
@@ -376,14 +396,22 @@ type PluginSearchResults struct {
 
 type Plugin struct {
 	widget        *widgets.QWidget
+	head          *widgets.QWidget
+	desc          *widgets.QWidget
+	info          *widgets.QWidget
 	installButton *widgets.QWidget
 	repo          string
 }
 
+type Searchresult struct {
+	widget  *widgets.QWidget
+	plugins []*Plugin
+}
+
 func doPluginSearch() {
 
-	if len(editor.deinSide.searchbox.Text()) == 0 {
-		editor.deinSide.plugincontent.RemoveWidget(editor.deinSide.searchresult)
+	if len(editor.deinSide.searchbox.editBox.Text()) == 0 {
+		editor.deinSide.plugincontent.RemoveWidget(editor.deinSide.searchresult.widget)
 		editor.deinSide.installedplugins = newInstalledPlugins()
 		editor.deinSide.plugincontent.AddWidget(editor.deinSide.installedplugins.widget)
 		editor.deinSide.plugincontent.SetCurrentWidget(editor.deinSide.installedplugins.widget)
@@ -394,7 +422,7 @@ func doPluginSearch() {
 	fg := editor.fgcolor
 
 	var results PluginSearchResults
-	response, _ := http.Get("http://vimawesome.com/api/plugins?query=" + editor.deinSide.searchbox.Text())
+	response, _ := http.Get("http://vimawesome.com/api/plugins?query=" + editor.deinSide.searchbox.editBox.Text())
 	defer response.Body.Close()
 
 	// data, _ := ioutil.ReadAll(response.Body)
@@ -410,7 +438,7 @@ func doPluginSearch() {
 		for p := 1; p <= results.TotalPages; p++ {
 
 			var r PluginSearchResults
-			res, _ := http.Get(fmt.Sprintf("http://vimawesome.com/api/plugins?page=%v&query=%v", p, editor.deinSide.searchbox.Text()))
+			res, _ := http.Get(fmt.Sprintf("http://vimawesome.com/api/plugins?page=%v&query=%v", p, editor.deinSide.searchbox.editBox.Text()))
 			defer res.Body.Close()
 			if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
 				fmt.Println("JSON Unmarshal error:", err)
@@ -429,24 +457,38 @@ func doPluginSearch() {
 	layout.SetContentsMargins(0, 0, 0, 18*len(results.Plugins))
 	layout.SetSpacing(1)
 
+	height := editor.workspaces[editor.active].font.height + 5
+
+	resultplugins := []*Plugin{}
 	for _, p := range results.Plugins {
 		pluginWidget := widgets.NewQWidget(nil, 0)
+		// pluginWidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Minimum)
 		pluginLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, pluginWidget)
 		pluginLayout.SetContentsMargins(20, 10, 20, 10)
 		pluginLayout.SetSpacing(1)
-		pluginWidget.SetFixedWidth(editor.config.sideWidth)
+		pluginLayout.SetAlignment(pluginWidget, core.Qt__AlignTop)
+		// pluginWidget.SetFixedWidth(editor.config.sideWidth)
+		pluginWidget.SetMinimumWidth(editor.config.sideWidth)
+		pluginWidget.SetMaximumWidth(editor.config.sideWidth)
 
 		// * plugin name
 		pluginName := widgets.NewQLabel(nil, 0)
 		pluginName.SetText(p.Name)
 		pluginName.SetStyleSheet(fmt.Sprintf(" .QLabel {font: bold; color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
+		pluginName.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Fixed)
 
 		// * plugin description
-		var pluginDesc *widgets.QLabel
+		var pluginDesc *widgets.QWidget
+		var pluginDescLayout *widgets.QHBoxLayout
+		var pluginDescLabel *widgets.QLabel
 		if p.ShortDesc != "" {
-			pluginDesc = widgets.NewQLabel(nil, 0)
-			pluginDesc.SetText(p.ShortDesc)
-			pluginDesc.SetWordWrap(true)
+			pluginDesc = widgets.NewQWidget(nil, 0)
+			pluginDescLayout = widgets.NewQHBoxLayout()
+			pluginDescLabel = widgets.NewQLabel(nil, 0)
+			pluginDescLabel.SetText(p.ShortDesc)
+			pluginDescLabel.SetWordWrap(true)
+			pluginDescLayout.AddWidget(pluginDescLabel, 0, 0)
+			pluginDesc.SetLayout(pluginDescLayout)
 		}
 
 		// * plugin info
@@ -545,7 +587,8 @@ func doPluginSearch() {
 		// bg := editor.bgcolor
 		// if ret != "0" {
 		pluginInstallLabel.SetText("Install")
-		pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { margin-top: 1px; margin-bottom: 1px; color: rgba(%d, %d, %d, 1); background: %s;} ", fg.R, fg.G, fg.B, labelColor))
+		// pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { margin-top: 1px; margin-bottom: 1px; color: rgba(%d, %d, %d, 1); background: %s;} ", fg.R, fg.G, fg.B, labelColor))
+		pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { margin-top: 1px; margin-bottom: 1px; color: #ffffff; background: %s;} ", labelColor))
 		// } else {
 		//   pluginInstallLabel.SetText("Installed")
 		//   pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
@@ -556,10 +599,15 @@ func doPluginSearch() {
 		pluginHeadLayout := widgets.NewQHBoxLayout()
 		pluginHeadLayout.SetContentsMargins(0, 0, 0, 0)
 		pluginHeadLayout.SetSpacing(5)
-		pluginHead.SetFixedWidth(editor.config.sideWidth - 2)
+		// pluginHead.SetFixedWidth(editor.config.sideWidth - 2)
+		// pluginHead.SetMinimumWidth(editor.config.sideWidth)
+		// pluginHead.SetMaximumWidth(editor.config.sideWidth)
 		pluginHead.SetLayout(pluginHeadLayout)
 		pluginHeadLayout.AddWidget(pluginName, 0, 0)
 		pluginHeadLayout.AddWidget(pluginInstall, 0, 0)
+
+		pluginInfo.SetMaximumHeight(height)
+		pluginInfo.SetMinimumHeight(height)
 
 		// make widget
 		pluginLayout.AddWidget(pluginHead, 0, 0)
@@ -573,6 +621,9 @@ func doPluginSearch() {
 
 		plugin := &Plugin{
 			widget:        pluginWidget,
+			head:          pluginHead,
+			desc:          pluginDesc,
+			info:          pluginInfo,
 			installButton: pluginInstall,
 			repo:          p.GithubOwner + "/" + p.GithubRepoName,
 		}
@@ -582,13 +633,22 @@ func doPluginSearch() {
 		plugin.installButton.ConnectEnterEvent(plugin.enterButton)
 		plugin.installButton.ConnectLeaveEvent(plugin.leaveButton)
 		plugin.installButton.ConnectMousePressEvent(plugin.pressButton)
+
+		resultplugins = append(resultplugins, plugin)
 	}
 	widget.AdjustSize()
 
-	editor.deinSide.plugincontent.RemoveWidget(editor.deinSide.searchresult)
-	editor.deinSide.searchresult = widget
-	editor.deinSide.plugincontent.AddWidget(editor.deinSide.searchresult)
-	editor.deinSide.plugincontent.SetCurrentWidget(editor.deinSide.searchresult)
+	editor.deinSide.plugincontent.RemoveWidget(editor.deinSide.installedplugins.widget)
+	editor.deinSide.plugincontent.RemoveWidget(editor.deinSide.searchresult.widget)
+
+	searchresult := &Searchresult{
+		widget:  widget,
+		plugins: resultplugins,
+	}
+	editor.deinSide.searchresult = searchresult
+
+	editor.deinSide.plugincontent.AddWidget(editor.deinSide.searchresult.widget)
+	editor.deinSide.plugincontent.SetCurrentWidget(editor.deinSide.searchresult.widget)
 
 }
 

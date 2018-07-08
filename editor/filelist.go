@@ -23,16 +23,17 @@ type Filelist struct {
 }
 
 type Fileitem struct {
-	fl           *Filelist
-	widget       *widgets.QWidget
-	fileIcon     *svg.QSvgWidget
-	fileType     string
-	file         *widgets.QLabel
-	fileText     string
-	fileName     string
-	path         string
-	fileModified *svg.QSvgWidget
-	isOpened     bool
+	fl             *Filelist
+	widget         *widgets.QWidget
+	fileIcon       *svg.QSvgWidget
+	fileType       string
+	file           *widgets.QLabel
+	fileText       string
+	fileName       string
+	filenameWidget *widgets.QWidget
+	path           string
+	fileModified   *svg.QSvgWidget
+	isOpened       bool
 }
 
 func newFilelistwidget(path string) *Filelist {
@@ -43,11 +44,13 @@ func newFilelistwidget(path string) *Filelist {
 	filelist.active = -1
 
 	filelistwidget := widgets.NewQWidget(nil, 0)
+	// filelistwidget.SetSizePolicy2(widgets.QSizePolicy__Maximum, widgets.QSizePolicy__Maximum)
+	filelistwidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 	filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
 	filelistlayout.SetContentsMargins(0, 0, 0, 0)
 	filelistlayout.SetSpacing(1)
 	bg := editor.bgcolor
-	width := editor.config.sideWidth
+
 	filewidgetLeftMargin := 35
 	var filewidgetMarginBuf int
 	if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
@@ -55,11 +58,14 @@ func newFilelistwidget(path string) *Filelist {
 	} else {
 		filewidgetMarginBuf = 70
 	}
-	maxfilenameLength := int(float64(width-(filewidgetLeftMargin+filewidgetMarginBuf)) / float64(editor.workspaces[editor.active].font.truewidth))
+	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+	maxfilenameLength := float64(width - (filewidgetLeftMargin + filewidgetMarginBuf))
 
 	for _, f := range lsfiles {
 
 		filewidget := widgets.NewQWidget(nil, 0)
+		filewidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
+		// filewidget.SetSizePolicy2(widgets.QSizePolicy__Maximum, widgets.QSizePolicy__Maximum)
 
 		filelayout := widgets.NewQHBoxLayout()
 		filelayout.SetContentsMargins(filewidgetLeftMargin, 0, 10, 0)
@@ -69,6 +75,8 @@ func newFilelistwidget(path string) *Filelist {
 		fileIcon.SetFixedHeight(11)
 
 		filenameWidget := widgets.NewQWidget(nil, 0)
+		filenameWidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
+		// filenameWidget.SetSizePolicy2(widgets.QSizePolicy__Maximum, widgets.QSizePolicy__Maximum)
 		filenameLayout := widgets.NewQHBoxLayout()
 		filenameLayout.SetContentsMargins(0, 5, 10, 5)
 		filenameLayout.SetSpacing(0)
@@ -83,33 +91,9 @@ func newFilelistwidget(path string) *Filelist {
 		fileModified.SetContentsMargins(0, 0, 0, 0)
 
 		filename := f.Name()
-		multibyteCharNum := unicodeCount(filename)
-		filenamerune := []rune(filename)
-		filenameDisplayLength := len(filenamerune) + multibyteCharNum
 
-		if filenameDisplayLength > maxfilenameLength {
-			if multibyteCharNum > 0 {
-				for filenameDisplayLength > maxfilenameLength {
-					filename = string(filenamerune[:(len(filenamerune) - 1)])
-					filenamerune = []rune(filename)
-					multibyteCharNum = unicodeCount(filename)
-					filenameDisplayLength = len(filenamerune) + multibyteCharNum
-				}
-			} else {
-				filename = filename[:maxfilenameLength]
-			}
-			moreIcon := svg.NewQSvgWidget(nil)
-			moreIcon.SetFixedWidth(11)
-			moreIcon.SetFixedHeight(11)
-			svgMoreDotsContent := editor.workspaces[editor.active].getSvg("moredots", nil)
-			moreIcon.Load2(core.NewQByteArray2(svgMoreDotsContent, len(svgMoreDotsContent)))
-			file.SetText(filename)
-			filenameLayout.AddWidget(file, 0, 0)
-			filenameLayout.AddWidget(moreIcon, 0, 0)
-		} else {
-			file.SetText(filename)
-			filenameLayout.AddWidget(file, 0, 0)
-		}
+		filenameLayout.AddWidget(file, 0, 0)
+
 		filenameWidget.SetLayout(filenameLayout)
 
 		filepath := filepath.Join(path, f.Name())
@@ -137,16 +121,18 @@ func newFilelistwidget(path string) *Filelist {
 		filewidget.SetAttribute(core.Qt__WA_Hover, true)
 
 		fileitem := &Fileitem{
-			fl:           filelist,
-			widget:       filewidget,
-			fileText:     filename,
-			fileName:     f.Name(),
-			file:         file,
-			fileIcon:     fileIcon,
-			fileType:     filetype,
-			path:         filepath,
-			fileModified: fileModified,
+			fl:             filelist,
+			widget:         filewidget,
+			fileText:       filename,
+			fileName:       f.Name(),
+			filenameWidget: filenameWidget,
+			file:           file,
+			fileIcon:       fileIcon,
+			fileType:       filetype,
+			path:           filepath,
+			fileModified:   fileModified,
 		}
+		fileitem.setFilename(maxfilenameLength)
 
 		fileitem.widget.ConnectEnterEvent(fileitem.enterEvent)
 		fileitem.widget.ConnectLeaveEvent(fileitem.leaveEvent)
@@ -161,8 +147,44 @@ func newFilelistwidget(path string) *Filelist {
 	filelist.Fileitems = fileitems
 	filelist.isload = true
 
+	editor.wsSide.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
+		filewidgetLeftMargin := 35
+		var filewidgetMarginBuf int
+		if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
+			filewidgetMarginBuf = 55
+		} else {
+			filewidgetMarginBuf = 70
+		}
+		width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+		length := float64(width - (filewidgetLeftMargin + filewidgetMarginBuf))
+
+		for _, item := range editor.wsSide.items {
+			item.label.SetMaximumWidth(editor.activity.sideArea.Width())
+			item.label.SetMinimumWidth(editor.activity.sideArea.Width())
+			for _, fileitem := range item.Filelist.Fileitems {
+				fileitem.setFilename(length)
+			}
+		}
+	})
+
 	return filelist
 }
+
+func (f *Fileitem) setFilename(length float64) {
+	metrics := gui.NewQFontMetricsF(gui.NewQFont())
+	elidedfilename := metrics.ElidedText(f.fileText, core.Qt__ElideRight, length, 0)
+	f.file.Clear()
+	f.file.SetText(elidedfilename)
+}
+
+// func (f *Fileitem) resizeEvent(event *gui.QResizeEvent) {
+// width := editor.config.sideWidth
+// maxfilenameLength := float64(width-(filewidgetLeftMargin+filewidgetMarginBuf))
+// metrics := gui.NewQFontMetricsF(gui.NewQFont())
+// elidedfilename := metrics.ElidedText(filename, core.Qt__ElideRight, maxfilenameLength, 0)
+// file.SetText(elidedfilename)
+// filenameLayout.AddWidget(file, 0, 0)
+// }
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
 	bg := editor.bgcolor

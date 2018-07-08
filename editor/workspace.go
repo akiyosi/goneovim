@@ -767,6 +767,7 @@ func newWorkspaceSide() *WorkspaceSide {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 100)
 	widget.SetLayout(layout)
+	widget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 
 	side := &WorkspaceSide{
 		widget: widget,
@@ -814,32 +815,13 @@ type WorkspaceSideItem struct {
 func newWorkspaceSideItem() *WorkspaceSideItem {
 	widget := widgets.NewQWidget(nil, 0)
 
-	//layout := widgets.NewQVBoxLayout()
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
 	layout.SetContentsMargins(0, 5, 0, 5)
 
-	//items := []*widgets.QLayoutItem{}
-
-	//layout.ConnectSizeHint(func() *core.QSize {
-	//	size := core.NewQSize()
-	//	for _, item := range items {
-	//		size = size.ExpandedTo(item.MinimumSize())
-	//	}
-	//	return size
-	//})
-	//layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
-	//	items = append(items, item)
-	//})
-	//layout.ConnectSetGeometry(func(r *core.QRect) {
-	//	for i := 0; i < len(items); i++ {
-	//		items[i].SetGeometry(core.NewQRect4(width*i, 0, width, r.Height()))
-	//	}
-	//})
-
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(15, 6, 10, 6)
-	label.SetMaximumWidth(editor.config.sideWidth)
-	label.SetMinimumWidth(editor.config.sideWidth)
+	label.SetMaximumWidth(editor.config.sideWidth - 55)
+	label.SetMinimumWidth(editor.config.sideWidth - 55)
 
 	flwidget := widgets.NewQWidget(nil, 0)
 
@@ -849,7 +831,6 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 
 	layout.AddWidget(label, 0, 0)
 	layout.AddWidget(flwidget, 0, 0)
-	//sideitem.Filelist.widget.Hide()
 
 	sideitem := &WorkspaceSideItem{
 		widget:         widget,
@@ -973,6 +954,10 @@ func (w *Workspace) setGuiColor() {
 	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border-color: rgba(%d, %d, %d, 1); padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + wsSideStyle)
 	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: rgb(%d, %d, %d); width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: rgb(%d, %d, %d); min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 
+	// for splitter
+	editor.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+
+	// some style break the file list style
 	noGoodBadNoWay()
 
 	// for Activity Bar
