@@ -96,13 +96,13 @@ func (w *Workspace) initSVGS() {
 		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><g transform="translate(0,1)"><path fill="%s" d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.62L12 2L9.19 8.62L2 9.24L7.45 13.97L5.82 21L12 17.27Z" /></g></svg>`,
 	}
 
-	w.svgs["naviedit"] = &SvgXML{
+	w.svgs["activityedit"] = &SvgXML{
 		width:  24,
 		height: 24,
 		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M6 2A2 2 0 0 0 4 4V20A2 2 0 0 0 6 22H18A2 2 0 0 0 20 20V8L14 2H6M6 4H13V9H18V20H6V4M8 12V14H16V12H8M8 16V18H13V16H8Z" /></svg>`,
 	}
 
-	w.svgs["navidein"] = &SvgXML{
+	w.svgs["activitydein"] = &SvgXML{
 		width:  24,
 		height: 24,
 		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M7 2V13H10V22L17 10H13L17 2H7Z" /></svg>`,

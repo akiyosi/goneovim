@@ -27,14 +27,14 @@ type ActivityItem struct {
 }
 
 func newActivity() *Activity {
-	naviLayout := widgets.NewQVBoxLayout()
-	naviLayout.SetContentsMargins(1, 10, 0, 0)
-	naviLayout.SetSpacing(1)
+	activityLayout := widgets.NewQVBoxLayout()
+	activityLayout.SetContentsMargins(1, 10, 0, 0)
+	activityLayout.SetSpacing(1)
 
-	naviSubLayout := widgets.NewQVBoxLayout()
-	naviSubLayout.SetSpacing(1)
-	naviSubLayout.SetContentsMargins(0, 0, 0, 0)
-	naviSubLayout.SetSpacing(15)
+	activitySubLayout := widgets.NewQVBoxLayout()
+	activitySubLayout.SetSpacing(1)
+	activitySubLayout.SetContentsMargins(0, 0, 0, 0)
+	activitySubLayout.SetSpacing(15)
 
 	fg := editor.fgcolor
 
@@ -44,15 +44,15 @@ func newActivity() *Activity {
 	editIcon := svg.NewQSvgWidget(nil)
 	editIcon.SetFixedWidth(22)
 	editIcon.SetFixedHeight(22)
-	svgContent := editor.workspaces[editor.active].getSvg("naviedit", newRGBA(warpColor(fg, 5).R, warpColor(fg, 5).G, warpColor(fg, 5).B, 1))
-	//svgContent := editor.workspaces[editor.active].getSvg("naviedit", nil)
+	svgContent := editor.workspaces[editor.active].getSvg("activityedit", newRGBA(warpColor(fg, 5).R, warpColor(fg, 5).G, warpColor(fg, 5).B, 1))
+	//svgContent := editor.workspaces[editor.active].getSvg("activityedit", nil)
 	editIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	editLayout.AddWidget(editIcon, 0, 0)
 	editWidget := widgets.NewQWidget(nil, 0)
 	editWidget.SetLayout(editLayout)
 	editItem := &ActivityItem{
 		widget: editWidget,
-		text:   "naviedit",
+		text:   "activityedit",
 		icon:   editIcon,
 		active: true,
 		id:     1,
@@ -66,31 +66,31 @@ func newActivity() *Activity {
 	deinIcon := svg.NewQSvgWidget(nil)
 	deinIcon.SetFixedWidth(22)
 	deinIcon.SetFixedHeight(22)
-	svgDeinContent := editor.workspaces[editor.active].getSvg("navidein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
-	//svgDeinContent := editor.workspaces[editor.active].getSvg("navidein", nil)
+	svgDeinContent := editor.workspaces[editor.active].getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+	//svgDeinContent := editor.workspaces[editor.active].getSvg("activitydein", nil)
 	deinIcon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
 	deinLayout.AddWidget(deinIcon, 0, 0)
 	deinWidget := widgets.NewQWidget(nil, 0)
 	deinWidget.SetLayout(deinLayout)
 	deinItem := &ActivityItem{
 		widget: deinWidget,
-		text:   "navidein",
+		text:   "activitydein",
 		icon:   deinIcon,
 		id:     2,
 	}
 
-	naviSubLayout.AddWidget(editWidget, 0, 0)
-	naviSubLayout.AddWidget(deinWidget, 0, 0)
-	naviSubWidget := widgets.NewQWidget(nil, 0)
-	naviSubWidget.SetLayout(naviSubLayout)
+	activitySubLayout.AddWidget(editWidget, 0, 0)
+	activitySubLayout.AddWidget(deinWidget, 0, 0)
+	activitySubWidget := widgets.NewQWidget(nil, 0)
+	activitySubWidget.SetLayout(activitySubLayout)
 
-	naviLayout.AddWidget(naviSubWidget, 0, 0)
-	naviLayout.SetAlignment(naviSubWidget, core.Qt__AlignTop)
+	activityLayout.AddWidget(activitySubWidget, 0, 0)
+	activityLayout.SetAlignment(activitySubWidget, core.Qt__AlignTop)
 
 	stackedWidget := widgets.NewQStackedWidget(nil)
 
 	activity := &Activity{
-		layout:   naviLayout,
+		layout:   activityLayout,
 		editItem: editItem,
 		deinItem: deinItem,
 		sideArea: stackedWidget,
@@ -145,7 +145,7 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 	setActivityItemColor()
 
 	switch n.text {
-	case "navidein":
+	case "activitydein":
 		if editor.deinSide == nil {
 
 			editor.deinSide = newDeinSide()
@@ -166,7 +166,7 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 		}
 		editor.activity.sideArea.SetCurrentWidget(editor.deinSide.scrollarea)
 
-	case "naviedit":
+	case "activityedit":
 		editor.activity.sideArea.SetCurrentWidget(editor.wsSide.scrollarea)
 	}
 
@@ -174,6 +174,9 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 
 func deinSideResize(event *gui.QResizeEvent) {
 	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+
+	editor.deinSide.header.SetMinimumWidth(width)
+	editor.deinSide.header.SetMaximumWidth(width)
 	editor.deinSide.searchresult.widget.SetMinimumWidth(width)
 	editor.deinSide.searchresult.widget.SetMaximumWidth(width)
 
@@ -185,17 +188,17 @@ func deinSideResize(event *gui.QResizeEvent) {
 	editor.deinSide.installedplugins.widget.SetMaximumWidth(width)
 
 	for _, item := range editor.deinSide.installedplugins.items {
-		item.widget.SetMaximumWidth(editor.activity.sideArea.Width())
-		item.widget.SetMinimumWidth(editor.activity.sideArea.Width())
+		item.widget.SetMaximumWidth(width)
+		item.widget.SetMinimumWidth(width)
 	}
 
 	for _, item := range editor.deinSide.searchresult.plugins {
-		item.widget.SetMaximumWidth(editor.activity.sideArea.Width())
-		item.widget.SetMinimumWidth(editor.activity.sideArea.Width())
-		item.head.SetMaximumWidth(editor.activity.sideArea.Width())
-		item.head.SetMaximumWidth(editor.activity.sideArea.Width())
-		item.desc.SetMinimumWidth(editor.activity.sideArea.Width() - 20)
-		item.desc.SetMinimumWidth(editor.activity.sideArea.Width() - 20)
+		item.widget.SetMaximumWidth(width)
+		item.widget.SetMinimumWidth(width)
+		item.head.SetMaximumWidth(width)
+		item.head.SetMaximumWidth(width)
+		item.desc.SetMinimumWidth(width - 20)
+		item.desc.SetMinimumWidth(width - 20)
 	}
 }
 
