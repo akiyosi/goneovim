@@ -54,7 +54,7 @@ func newActivity() *Activity {
 		widget: editWidget,
 		text:   "activityedit",
 		icon:   editIcon,
-		active: true,
+		active: editor.config.showSide,
 		id:     1,
 	}
 
@@ -132,9 +132,8 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 		editor.activity.sideArea.Hide()
 		n.active = false
 		return
-	} else {
-		editor.activity.sideArea.Show()
 	}
+	editor.activity.sideArea.Show()
 
 	items := []*ActivityItem{editor.activity.editItem, editor.activity.deinItem}
 	for _, item := range items {

@@ -45,7 +45,7 @@ type DeinPluginItem struct {
 	lazy           bool
 	path           string
 	repo           string
-	hook_add       string
+	hookadd        string
 	merged         bool
 	normalizedName string
 	pluginType     string
@@ -112,8 +112,8 @@ func loadDeinCashe() []*DeinPluginItem {
 				i.path = value.(string)
 			case "repo":
 				i.repo = value.(string)
-			case "hook_add":
-				i.hook_add = value.(string)
+			case "hookadd":
+				i.hookadd = value.(string)
 			case "merged":
 				if value == 0 {
 					i.merged = false

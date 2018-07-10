@@ -381,20 +381,21 @@ func (w *Workspace) setCwd() {
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
 			editor.wsSide.items[i].cwdpath = path
 
-			if editor.config.showSide == false {
-				return
-			}
+			// if editor.config.showSide == false {
+			//         return
+			// }
 
 			filelist := newFilelistwidget(path)
 			editor.wsSide.items[i].setFilelistwidget(filelist)
-
 			return
 		}
 	}
 }
 
 func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
-	i.layout.RemoveWidget(i.Filelistwidget)
+	if i.Filelistwidget != nil {
+		i.layout.RemoveWidget(i.Filelistwidget)
+	}
 	i.layout.AddWidget(f.widget, 0, 0)
 	i.Filelistwidget = f.widget
 	i.Filelist = f
@@ -648,10 +649,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_redrawSideItem":
 		fl := editor.wsSide.items[editor.active].Filelist
 		if fl.active != -1 {
-			if editor.config.showSide == true {
-				if fl.Fileitems != nil {
-					fl.Fileitems[fl.active].updateModifiedbadge()
-				}
+			if fl.Fileitems != nil {
+				fl.Fileitems[fl.active].updateModifiedbadge()
 			}
 		}
 	case "gonvim_workspace_redrawSideItems":
@@ -823,21 +822,22 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	label.SetMaximumWidth(editor.config.sideWidth - 55)
 	label.SetMinimumWidth(editor.config.sideWidth - 55)
 
-	flwidget := widgets.NewQWidget(nil, 0)
+	// flwidget := widgets.NewQWidget(nil, 0)
 
-	filelist := &Filelist{
-		widget: flwidget,
-	}
+	filelist := &Filelist{}
+	// filelist := &Filelist{
+	// 	widget: flwidget,
+	// }
 
 	layout.AddWidget(label, 0, 0)
-	layout.AddWidget(flwidget, 0, 0)
+	// layout.AddWidget(flwidget, 0, 0)
 
 	sideitem := &WorkspaceSideItem{
-		widget:         widget,
-		layout:         layout,
-		label:          label,
-		Filelist:       filelist,
-		Filelistwidget: flwidget,
+		widget:   widget,
+		layout:   layout,
+		label:    label,
+		Filelist: filelist,
+		// Filelistwidget: flwidget,
 	}
 	sideitem.Filelist.WSitem = sideitem
 

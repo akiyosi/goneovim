@@ -215,7 +215,7 @@ func InitEditor() {
 	splitter.AddWidget(e.activity.sideArea)
 	splitter.AddWidget(e.wsWidget)
 	splitter.SetSizes([]int{editor.config.sideWidth, editor.width - editor.config.sideWidth})
-	splitter.SetStretchFactor(0, 100)
+	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
 	e.splitter = splitter
 
