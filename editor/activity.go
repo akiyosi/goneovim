@@ -167,6 +167,7 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 
 	case "activityedit":
 		editor.activity.sideArea.SetCurrentWidget(editor.wsSide.scrollarea)
+		editor.workspaces[editor.active].setCwd()
 	}
 
 }

@@ -353,9 +353,10 @@ func (w *Workspace) initCwd() {
 func (w *Workspace) setCwd() {
 	cwd := ""
 	w.nvim.Eval("getcwd()", &cwd)
-	if cwd == w.cwd {
-		return
-	}
+
+	// if cwd == w.cwd {
+	// 	return
+	// }
 
 	w.cwd = cwd
 
@@ -381,9 +382,9 @@ func (w *Workspace) setCwd() {
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
 			editor.wsSide.items[i].cwdpath = path
 
-			// if editor.config.showSide == false {
-			//         return
-			// }
+			if editor.activity.deinItem.active == false && editor.activity.editItem.active == false {
+				return
+			}
 
 			filelist := newFilelistwidget(path)
 			editor.wsSide.items[i].setFilelistwidget(filelist)
@@ -819,8 +820,8 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(15, 6, 10, 6)
-	label.SetMaximumWidth(editor.config.sideWidth - 55)
-	label.SetMinimumWidth(editor.config.sideWidth - 55)
+	label.SetMaximumWidth(editor.config.sideWidth)
+	label.SetMinimumWidth(editor.config.sideWidth)
 
 	// flwidget := widgets.NewQWidget(nil, 0)
 

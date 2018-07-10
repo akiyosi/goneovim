@@ -25,11 +25,18 @@ type DeinSide struct {
 	scrollarea   *widgets.QScrollArea
 	searchlayout *widgets.QBoxLayout
 	// searchbox        *widgets.QLineEdit
+	combobox         *SearchComboBox
 	searchbox        *Searchbox
 	plugincontent    *widgets.QStackedWidget
 	searchresult     *Searchresult
 	installedplugins *InstalledPlugins
 	config           *svg.QSvgWidget
+}
+
+type SearchComboBox struct {
+	widget   *widgets.QWidget
+	layout   *widgets.QHBoxLayout
+	comboBox *widgets.QComboBox
 }
 
 type Searchbox struct {
@@ -268,8 +275,24 @@ func newDeinSide() *DeinSide {
 	searchLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, searchWidget)
 	searchLayout.SetContentsMargins(0, 5, 0, 5)
 
+	comboBoxLayout := widgets.NewQHBoxLayout()
+	comboBoxLayout.SetContentsMargins(20, 5, 20, 0)
+	comboBoxLayout.SetSpacing(0)
+	comboBoxMenu := widgets.NewQComboBox(nil)
+	comboBoxMenu.AddItems([]string{"ALL", "Language", "Completion", "Code-display", "Integrations", "Interface", "Commands", "Other"})
+	comboBoxMenu.SetFocusPolicy(core.Qt__ClickFocus)
+	comboBoxLayout.AddWidget(comboBoxMenu, 0, 0)
+	comboBoxWidget := widgets.NewQWidget(nil, 0)
+	comboBoxWidget.SetLayout(comboBoxLayout)
+
+	combobox := &SearchComboBox{
+		widget:   comboBoxWidget,
+		layout:   comboBoxLayout,
+		comboBox: comboBoxMenu,
+	}
+
 	searchBoxLayout := widgets.NewQHBoxLayout()
-	searchBoxLayout.SetContentsMargins(20, 5, 20, 5)
+	searchBoxLayout.SetContentsMargins(20, 0, 20, 5)
 	searchBoxLayout.SetSpacing(0)
 	searchboxEdit := widgets.NewQLineEdit(nil)
 	searchboxEdit.SetPlaceholderText("Search Plugins in VimAwesome")
@@ -290,6 +313,7 @@ func newDeinSide() *DeinSide {
 		editBox: searchboxEdit,
 	}
 
+	searchLayout.AddWidget(combobox.widget, 0, 0)
 	searchLayout.AddWidget(searchbox.widget, 0, 0)
 
 	content := widgets.NewQStackedWidget(nil)
@@ -310,6 +334,7 @@ func newDeinSide() *DeinSide {
 		widget:           widget,
 		layout:           layout,
 		header:           headerWidget,
+		combobox:         combobox,
 		searchbox:        searchbox,
 		searchlayout:     searchLayout,
 		plugincontent:    content,
@@ -447,8 +472,8 @@ func doPluginSearch() {
 
 }
 
-func drawSearchresults(pagenum int) {
-	var results PluginSearchResults
+func setSearchWord() string {
+	category := editor.deinSide.combobox.comboBox.CurrentText()
 	words := strings.Fields(editor.deinSide.searchbox.editBox.Text())
 	var searchWord string
 	for i, word := range words {
@@ -458,6 +483,16 @@ func drawSearchresults(pagenum int) {
 			searchWord += "+" + word
 		}
 	}
+	if category != "ALL" {
+		searchWord += "+cat:" + category
+	}
+
+	return searchWord
+}
+
+func drawSearchresults(pagenum int) {
+	var results PluginSearchResults
+	searchWord := setSearchWord()
 	response, _ := http.Get(fmt.Sprintf("http://vimawesome.com/api/plugins?page=%v&query=%v", pagenum, searchWord))
 	defer response.Body.Close()
 
