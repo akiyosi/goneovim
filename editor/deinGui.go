@@ -99,6 +99,7 @@ func readDeinCache() (map[interface{}]interface{}, error) {
 
 func loadDeinCashe() []*DeinPluginItem {
 	w := editor.workspaces[editor.active]
+	labelColor := darkenHex(editor.config.accentColor)
 
 	m, _ := readDeinCache()
 	installedPlugins := []*DeinPluginItem{}
@@ -160,9 +161,26 @@ func loadDeinCashe() []*DeinPluginItem {
 		// plugin mame
 		installedPluginName := widgets.NewQLabel(nil, 0)
 		installedPluginName.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
-		installedPluginName.SetText(i.repo)
+		installedPluginName.SetText(i.name)
 		fg := editor.fgcolor
 		installedPluginName.SetStyleSheet(fmt.Sprintf(" .QLabel {font: bold; color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
+
+		// * plugin install button
+		updateButtonLabel := widgets.NewQLabel(nil, 0)
+		updateButtonLabel.SetFixedWidth(65)
+		updateButtonLabel.SetContentsMargins(5, 0, 5, 0)
+		updateButtonLabel.SetAlignment(core.Qt__AlignCenter)
+		updateButton := widgets.NewQWidget(nil, 0)
+		updateButtonLayout := widgets.NewQHBoxLayout()
+		updateButtonLayout.SetContentsMargins(0, 0, 0, 0)
+		updateButtonLayout.AddWidget(updateButtonLabel, 0, 0)
+		updateButton.SetLayout(updateButtonLayout)
+		updateButton.SetObjectName("updatebutton")
+		updateButtonLabel.SetText("Update")
+		updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", labelColor))
+		updateButton.ConnectMousePressEvent(func(*gui.QMouseEvent) {
+			editor.workspaces[editor.active].nvim.Command("call dein#update('" + i.name + "')")
+		})
 
 		// ** Lazy plugin icon
 		bg := editor.bgcolor
@@ -221,6 +239,8 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginHead.SetLayout(installedPluginHeadLayout)
 
 		installedPluginStatus := widgets.NewQWidget(nil, 0)
+		installedPluginStatus.SetMaximumWidth(35)
+		installedPluginStatus.SetMinimumWidth(35)
 		installedPluginStatusLayout := widgets.NewQHBoxLayout2(nil)
 		installedPluginStatus.SetLayout(installedPluginStatusLayout)
 		installedPluginStatusLayout.SetSpacing(0)
@@ -228,11 +248,15 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginStatusLayout.AddWidget(installedPluginLazy, 0, 0)
 		installedPluginStatusLayout.AddWidget(installedPluginSourced, 0, 0)
 		installedPluginStatusLayout.AddWidget(installedPluginSettings, 0, 0)
+		installedPluginLayout.SetAlignment(installedPluginStatus, core.Qt__AlignRight)
+		// installedPluginStatusLayout.SetAlignment(installedPluginSourced, core.Qt__AlignRight)
+		// installedPluginStatusLayout.SetAlignment(installedPluginSettings, core.Qt__AlignRight)
 
 		installedPluginHeadLayout.AddWidget(installedPluginName, 0, 0)
-		installedPluginHeadLayout.AddWidget(installedPluginStatus, 0, 0)
+		installedPluginHeadLayout.AddWidget(updateButton, 0, 0)
 
 		installedPluginLayout.AddWidget(installedPluginHead, 0, 0)
+		installedPluginLayout.AddWidget(installedPluginStatus, 0, 0)
 		i.widget = installedPluginWidget
 
 		installedPlugins = append(installedPlugins, i)

@@ -646,16 +646,16 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_switch":
 		editor.workspaceSwitch(reflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
-		go w.setCwd()
+		w.setCwd()
 	case "gonvim_workspace_redrawSideItem":
-	 go func() {
-		fl := editor.wsSide.items[editor.active].Filelist
-		if fl.active != -1 {
-			if fl.Fileitems != nil {
-				fl.Fileitems[fl.active].updateModifiedbadge()
+		go func() {
+			fl := editor.wsSide.items[editor.active].Filelist
+			if fl.active != -1 {
+				if fl.Fileitems != nil {
+					fl.Fileitems[fl.active].updateModifiedbadge()
+				}
 			}
-		}
-	 }()
+		}()
 	case "gonvim_workspace_redrawSideItems":
 		go editor.wsSide.items[editor.active].setCurrentFileLabel()
 	case GonvimMarkdownNewBufferEvent:
