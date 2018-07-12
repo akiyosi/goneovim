@@ -2,7 +2,9 @@ package editor
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
+	"runtime"
 
 	"github.com/shurcooL/github_flavored_markdown"
 	"github.com/therecipe/qt/core"
@@ -81,6 +83,7 @@ func newMarkdown(workspace *Workspace) *Markdown {
 		}
 		return m.webview.EventDefault(event)
 	})
+	m.webview.ConnectWheelEvent(m.wheelEvent)
 
 	m.webview.SetPage(m.webpage)
 	m.container = widgets.NewQPlainTextEdit(nil)
@@ -91,6 +94,24 @@ func newMarkdown(workspace *Workspace) *Markdown {
 	m.hide()
 	// m.webview.SetEnabled(false)
 	return m
+}
+
+func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
+	var horiz int
+
+	switch runtime.GOOS {
+	case "darwin":
+		pixels := event.PixelDelta()
+		if pixels != nil {
+			horiz = int(math.Trunc(float64(pixels.Y())))
+		}
+		m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %v)", horiz*(-1)))
+	default:
+		horiz = event.AngleDelta().Y()
+		m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %v)", horiz))
+	}
+
+	event.Accept()
 }
 
 func (m *Markdown) updatePos() {
