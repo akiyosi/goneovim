@@ -457,6 +457,7 @@ type Plugin struct {
 	info          *widgets.QWidget
 	installButton *widgets.QWidget
 	repo          string
+	readme        string
 }
 
 type Searchresult struct {
@@ -691,9 +692,11 @@ func drawSearchresults(pagenum int) {
 			info:          pluginInfo,
 			installButton: pluginInstall,
 			repo:          p.GithubOwner + "/" + p.GithubRepoName,
+			readme:        p.GithubReadmeFilename,
 		}
 		plugin.widget.ConnectEnterEvent(plugin.enterWidget)
 		plugin.widget.ConnectLeaveEvent(plugin.leaveWidget)
+		plugin.widget.ConnectMousePressEvent(plugin.pressPluginWidget)
 
 		plugin.installButton.ConnectEnterEvent(plugin.enterButton)
 		plugin.installButton.ConnectLeaveEvent(plugin.leaveButton)
@@ -749,6 +752,10 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 
 func (p *Plugin) pressButton(event *gui.QMouseEvent) {
 	editor.workspaces[editor.active].nvim.Command(":silent! call dein#direct_install('" + p.repo + "')")
+}
+
+func (p *Plugin) pressPluginWidget(event *gui.QMouseEvent) {
+	go editor.workspaces[editor.active].markdown.openReadme(p.repo, p.readme)
 }
 
 func (d *DeinSide) enterConfigIcon(event *core.QEvent) {
