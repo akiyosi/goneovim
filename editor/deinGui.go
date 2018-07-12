@@ -73,6 +73,9 @@ func readDeinCache() (map[interface{}]interface{}, error) {
 		return nil, err
 	}
 
+	if isFileExist(basePath+"/cache_nvim") == false {
+		editor.workspaces[editor.active].nvim.Command("call dein#util#_save_cache(g:dein#_vimrcs, 1, 1)")
+	}
 	file, err := os.Open(basePath + "/cache_nvim")
 	if err != nil {
 		return nil, err
@@ -151,7 +154,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginWidget := widgets.NewQWidget(nil, 0)
 		installedPluginLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, installedPluginWidget)
 		installedPluginLayout.SetContentsMargins(20, 5, 20, 5)
-		installedPluginLayout.SetSpacing(0)
+		installedPluginLayout.SetSpacing(3)
 		// installedPluginWidget.SetFixedWidth(editor.config.sideWidth)
 		// installedPluginWidget.SetMaximumWidth(editor.config.sideWidth - 55)
 		// installedPluginWidget.SetMinimumWidth(editor.config.sideWidth - 55)
@@ -164,6 +167,20 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginName.SetText(i.name)
 		fg := editor.fgcolor
 		installedPluginName.SetStyleSheet(fmt.Sprintf(" .QLabel {font: bold; color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
+
+		// plugin desc
+		installedPluginDescLabel := widgets.NewQLabel(nil, 0)
+		installedPluginDescLabel.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
+		go func() {
+			desc := getRepoDesc(strings.ToLower(strings.Split(i.repo, "/")[0]), i.name)
+			installedPluginDescLabel.SetText(desc)
+		}()
+		installedPluginDescLabel.SetWordWrap(true)
+		installedPluginDesc := widgets.NewQWidget(nil, 0)
+		installedPluginDescLayout := widgets.NewQHBoxLayout()
+		installedPluginDescLayout.AddWidget(installedPluginDescLabel, 0, 0)
+		installedPluginDescLayout.SetContentsMargins(0, 0, 0, 0)
+		installedPluginDesc.SetLayout(installedPluginDescLayout)
 
 		// * plugin install button
 		updateButtonLabel := widgets.NewQLabel(nil, 0)
@@ -248,21 +265,50 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginStatusLayout.AddWidget(installedPluginLazy, 0, 0)
 		installedPluginStatusLayout.AddWidget(installedPluginSourced, 0, 0)
 		installedPluginStatusLayout.AddWidget(installedPluginSettings, 0, 0)
-		installedPluginLayout.SetAlignment(installedPluginStatus, core.Qt__AlignRight)
-		// installedPluginStatusLayout.SetAlignment(installedPluginSourced, core.Qt__AlignRight)
-		// installedPluginStatusLayout.SetAlignment(installedPluginSettings, core.Qt__AlignRight)
+
+		// ** installedPlugin foot
+		installedPluginFoot := widgets.NewQWidget(nil, 0)
+		installedPluginFootLayout := widgets.NewQHBoxLayout()
+		installedPluginFootLayout.SetContentsMargins(0, 0, 0, 0)
+		installedPluginFootLayout.AddWidget(installedPluginDesc, 0, 0)
+		installedPluginFootLayout.AddWidget(installedPluginStatus, 0, 0)
+		installedPluginFoot.SetLayout(installedPluginFootLayout)
 
 		installedPluginHeadLayout.AddWidget(installedPluginName, 0, 0)
 		installedPluginHeadLayout.AddWidget(updateButton, 0, 0)
 
 		installedPluginLayout.AddWidget(installedPluginHead, 0, 0)
-		installedPluginLayout.AddWidget(installedPluginStatus, 0, 0)
+		installedPluginLayout.AddWidget(installedPluginFoot, 0, 0)
 		i.widget = installedPluginWidget
 
 		installedPlugins = append(installedPlugins, i)
 	}
 
 	return installedPlugins
+}
+
+func getRepoDesc(owner string, name string) string {
+	var results PluginSearchResults
+	response, _ := http.Get(fmt.Sprintf("http://vimawesome.com/api/plugins?query=%v", name))
+	defer response.Body.Close()
+
+	if err := json.NewDecoder(response.Body).Decode(&results); err != nil {
+		fmt.Println("JSON decode error:", err)
+		return ""
+	}
+
+	var text string
+	for _, p := range results.Plugins {
+		if strings.ToLower(p.GithubOwner) != owner {
+			continue
+		}
+		if strings.ToLower(p.GithubOwner) == owner {
+			text = p.ShortDesc
+			break
+		}
+	}
+
+	return text
 }
 
 func newDeinSide() *DeinSide {
@@ -387,12 +433,12 @@ func newInstalledPlugins() *InstalledPlugins {
 
 	installedWidget := widgets.NewQWidget(nil, 0)
 	installedLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, installedWidget)
-	installedLayout.SetSpacing(0)
+	installedLayout.SetSpacing(10)
 
 	installedHeader := widgets.NewQLabel(nil, 0)
 	installedHeader.SetContentsMargins(20, 2, 20, 1)
 	installedHeader.SetText("INSTALLED")
-	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 10px; margin-bottom: 10px; background: rgba(%d, %d, %d, 1); font-size: 11px; color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
+	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 10px; margin-bottom: 0px; background: rgba(%d, %d, %d, 1); font-size: 11px; color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
 	installedLayout.AddWidget(installedHeader, 0, 0)
 
 	cache := loadDeinCashe()
@@ -717,7 +763,6 @@ func drawSearchresults(pagenum int) {
 		parentLayout.AddWidget(readMoreButton, 0, 0)
 		readMoreButton.ConnectPressed(func() {
 			pos := editor.deinSide.scrollarea.VerticalScrollBar().Value()
-			fmt.Println(pos)
 			editor.deinSide.searchresult.readmore.DestroyQPushButton()
 			editor.deinSide.searchresult.pagenum = editor.deinSide.searchresult.pagenum + 1
 			drawSearchresults(editor.deinSide.searchresult.pagenum)
