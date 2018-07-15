@@ -9,6 +9,7 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+// Activity is the Activity bar
 type Activity struct {
 	widget   *widgets.QWidget
 	layout   *widgets.QVBoxLayout
@@ -18,6 +19,7 @@ type Activity struct {
 	sideArea *widgets.QStackedWidget
 }
 
+// ActivityItem is the item in Activity bar
 type ActivityItem struct {
 	widget *widgets.QWidget
 	text   string
@@ -174,6 +176,9 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 
 func deinSideResize(event *gui.QResizeEvent) {
 	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+	if width <= 0 {
+		return
+	}
 
 	editor.deinSide.header.SetMinimumWidth(width)
 	editor.deinSide.header.SetMaximumWidth(width)

@@ -163,18 +163,17 @@ func (m *Markdown) scrollDown() {
 }
 
 func (m *Markdown) openReadme(reponame string, readme string) {
-	//m.ws.nvim.Command(`silent keepalt vertical topleft split e https://raw.githubusercontent.com/` + reponame + "/master/" + readme)
-	m.ws.nvim.Command(`silent vertical split https://raw.githubusercontent.com/` + reponame + "/master/" + readme)
-	m.ws.nvim.Command(`e ` + GonvimMarkdownBufName)
 	for _, win := range m.ws.screen.curWins {
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
-			fmt.Println("hoge")
 			m.ws.nvim.SetCurrentWindow(win.win)
 			m.ws.nvim.Command("close")
 			m.htmlSet = false
-			return
+			if editor.deinSide.preDisplayedReadme == reponame {
+				return
+			}
 		}
 	}
+	m.ws.nvim.Command(`silent vertical split https://raw.githubusercontent.com/` + reponame + "/master/" + readme)
 	m.ws.nvim.Command(`e ` + GonvimMarkdownBufName)
 	m.ws.nvim.Command("setlocal filetype=" + GonvimMarkdownBufName)
 	m.ws.nvim.Command("setlocal buftype=nofile")
@@ -193,6 +192,8 @@ func (m *Markdown) openReadme(reponame string, readme string) {
 		GonvimMarkdownScrollUpEvent,
 	))
 	m.ws.nvim.Command("wincmd p")
+
+	editor.deinSide.preDisplayedReadme = reponame
 }
 
 func (m *Markdown) toggle() {

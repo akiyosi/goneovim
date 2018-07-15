@@ -18,6 +18,7 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+// DeinSide is the side bar witch is GUI for Shougo/dein.vim
 type DeinSide struct {
 	widget       *widgets.QWidget
 	layout       *widgets.QLayout
@@ -25,26 +26,31 @@ type DeinSide struct {
 	scrollarea   *widgets.QScrollArea
 	searchlayout *widgets.QBoxLayout
 	// searchbox        *widgets.QLineEdit
-	combobox         *SearchComboBox
-	searchbox        *Searchbox
-	plugincontent    *widgets.QStackedWidget
-	searchresult     *Searchresult
-	installedplugins *InstalledPlugins
-	config           *svg.QSvgWidget
+	combobox           *SearchComboBox
+	searchbox          *Searchbox
+	plugincontent      *widgets.QStackedWidget
+	searchresult       *Searchresult
+	installedplugins   *InstalledPlugins
+	config             *svg.QSvgWidget
+	preSearchKeyword   string
+	preDisplayedReadme string
 }
 
+// SearchComboBox is the ComboBox widget for DeinSide
 type SearchComboBox struct {
 	widget   *widgets.QWidget
 	layout   *widgets.QHBoxLayout
 	comboBox *widgets.QComboBox
 }
 
+// Searchbox is the search box widget for DeinSide
 type Searchbox struct {
 	widget  *widgets.QWidget
 	layout  *widgets.QHBoxLayout
 	editBox *widgets.QLineEdit
 }
 
+// DeinPluginItem is the item structure witch is installed plugin of Shougo/dein.vim
 type DeinPluginItem struct {
 	widget *widgets.QWidget
 
@@ -61,6 +67,7 @@ type DeinPluginItem struct {
 	name           string
 }
 
+// InstalledPlugins is the widget witch displays installed plugins in DeinSide
 type InstalledPlugins struct {
 	widget *widgets.QWidget
 	items  []*DeinPluginItem
@@ -148,7 +155,7 @@ func loadDeinCashe() []*DeinPluginItem {
 			}
 		}
 
-		width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+		// width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
 
 		// make widgets
 		installedPluginWidget := widgets.NewQWidget(nil, 0)
@@ -158,8 +165,8 @@ func loadDeinCashe() []*DeinPluginItem {
 		// installedPluginWidget.SetFixedWidth(editor.config.sideWidth)
 		// installedPluginWidget.SetMaximumWidth(editor.config.sideWidth - 55)
 		// installedPluginWidget.SetMinimumWidth(editor.config.sideWidth - 55)
-		installedPluginWidget.SetMaximumWidth(width)
-		installedPluginWidget.SetMinimumWidth(width)
+		// installedPluginWidget.SetMaximumWidth(width)
+		// installedPluginWidget.SetMinimumWidth(width)
 
 		// plugin mame
 		installedPluginName := widgets.NewQLabel(nil, 0)
@@ -195,8 +202,16 @@ func loadDeinCashe() []*DeinPluginItem {
 		updateButton.SetObjectName("updatebutton")
 		updateButtonLabel.SetText("Update")
 		updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", labelColor))
+
 		updateButton.ConnectMousePressEvent(func(*gui.QMouseEvent) {
 			editor.workspaces[editor.active].nvim.Command("call dein#update('" + i.name + "')")
+		})
+		updateButton.ConnectEnterEvent(func(event *core.QEvent) {
+			updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", editor.config.accentColor))
+		})
+		updateButton.ConnectLeaveEvent(func(event *core.QEvent) {
+			labelColor := darkenHex(editor.config.accentColor)
+			updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 		})
 
 		// ** Lazy plugin icon
@@ -206,7 +221,8 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginLazyLayout.SetContentsMargins(0, 0, 0, 0)
 		installedPluginLazyLayout.SetSpacing(1)
 		installedPluginLazyIcon := svg.NewQSvgWidget(nil)
-		installedPluginLazyIcon.SetFixedSize2(12, 12)
+		iconSize := 14
+		installedPluginLazyIcon.SetFixedSize2(iconSize, iconSize)
 		var svgLazyContent string
 		if i.lazy == false {
 			svgLazyContent = w.getSvg("timer", shiftColor(bg, -5))
@@ -223,7 +239,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginSourcedLayout.SetContentsMargins(0, 0, 0, 0)
 		installedPluginSourcedLayout.SetSpacing(1)
 		installedPluginSourcedIcon := svg.NewQSvgWidget(nil)
-		installedPluginSourcedIcon.SetFixedSize2(12, 12)
+		installedPluginSourcedIcon.SetFixedSize2(iconSize-1, iconSize-1)
 		var svgSourcedContent string
 		if i.sourced == false {
 			svgSourcedContent = w.getSvg("puzzle", shiftColor(bg, -5))
@@ -240,7 +256,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginSettingsLayout.SetContentsMargins(0, 0, 0, 0)
 		installedPluginSettingsLayout.SetSpacing(1)
 		installedPluginSettingsIcon := svg.NewQSvgWidget(nil)
-		installedPluginSettingsIcon.SetFixedSize2(12, 12)
+		installedPluginSettingsIcon.SetFixedSize2(iconSize+1, iconSize+1)
 		svgSettingsContent := w.getSvg("settings", fg)
 		installedPluginSettingsIcon.Load2(core.NewQByteArray2(svgSettingsContent, len(svgSettingsContent)))
 		installedPluginSettingsLayout.AddWidget(installedPluginSettingsIcon, 0, 0)
@@ -256,8 +272,8 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginHead.SetLayout(installedPluginHeadLayout)
 
 		installedPluginStatus := widgets.NewQWidget(nil, 0)
-		installedPluginStatus.SetMaximumWidth(35)
-		installedPluginStatus.SetMinimumWidth(35)
+		installedPluginStatus.SetMaximumWidth(4 + 3*iconSize)
+		installedPluginStatus.SetMinimumWidth(4 + 3*iconSize)
 		installedPluginStatusLayout := widgets.NewQHBoxLayout2(nil)
 		installedPluginStatus.SetLayout(installedPluginStatusLayout)
 		installedPluginStatusLayout.SetSpacing(0)
@@ -280,6 +296,9 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginLayout.AddWidget(installedPluginHead, 0, 0)
 		installedPluginLayout.AddWidget(installedPluginFoot, 0, 0)
 		i.widget = installedPluginWidget
+
+		i.widget.ConnectEnterEvent(i.enterWidget)
+		i.widget.ConnectLeaveEvent(i.leaveWidget)
 
 		installedPlugins = append(installedPlugins, i)
 	}
@@ -315,7 +334,7 @@ func newDeinSide() *DeinSide {
 	w := editor.workspaces[editor.active]
 	fg := editor.fgcolor
 	bg := editor.bgcolor
-	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+	// width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
 
 	layout := newHFlowLayout(0, 0, 0, 0, 20)
 	layout.SetContentsMargins(0, 0, 0, 0)
@@ -351,6 +370,7 @@ func newDeinSide() *DeinSide {
 	comboBoxMenu := widgets.NewQComboBox(nil)
 	comboBoxMenu.AddItems([]string{"ALL", "Language", "Completion", "Code-display", "Integrations", "Interface", "Commands", "Other"})
 	comboBoxMenu.SetFocusPolicy(core.Qt__ClickFocus)
+	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" QComboBox { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); }", editor.config.accentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, bg.R, bg.G, bg.B))
 	comboBoxLayout.AddWidget(comboBoxMenu, 0, 0)
 	comboBoxWidget := widgets.NewQWidget(nil, 0)
 	comboBoxWidget.SetLayout(comboBoxLayout)
@@ -369,7 +389,7 @@ func newDeinSide() *DeinSide {
 	searchboxEdit.SetStyleSheet(" #LineEdit {font-size: 9px;} ")
 	searchboxEdit.SetFocusPolicy(core.Qt__ClickFocus)
 	// searchboxEdit.SetFixedWidth(editor.config.sideWidth - (20 + 20))
-	searchboxEdit.SetFixedWidth(width - (20 + 20))
+	// searchboxEdit.SetFixedWidth(width - (20 + 20))
 	searchBoxLayout.AddWidget(searchboxEdit, 0, 0)
 	searchBoxWidget := widgets.NewQWidget(nil, 0)
 	searchBoxWidget.SetLayout(searchBoxLayout)
@@ -422,7 +442,7 @@ func newDeinSide() *DeinSide {
 
 	deinSideStyle := fmt.Sprintf("QWidget {	color: rgba(%d, %d, %d, 1);		border-right: 0px solid;	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
 	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget {padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + deinSideStyle)
-	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid	%s; border-radius: 1px; background: rgba(%d, %d, %d, 1); selection-background-color: rgba(%d, %d, %d, 1); }	", editor.config.accentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + deinSideStyle)
+	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid	%s; border-radius: 1px; background: rgba(%d, %d, %d, 1); selection-background-color: rgba(%d, %d, %d, 1); }	", editor.config.accentColor, bg.R, bg.G, bg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + deinSideStyle)
 
 	return side
 }
@@ -455,6 +475,7 @@ func newInstalledPlugins() *InstalledPlugins {
 	return installedPlugins
 }
 
+// PluginSearchResults is the structure for storing json witch is the search result in vim-awesome
 type PluginSearchResults struct {
 	TotalResults   int `json:"total_results"`
 	ResultsPerPage int `json:"results_per_page"`
@@ -496,6 +517,7 @@ type PluginSearchResults struct {
 	} `json:"plugins"`
 }
 
+// Pligin is the item structure witch is the search result in vim-awesome
 type Plugin struct {
 	widget        *widgets.QWidget
 	head          *widgets.QWidget
@@ -506,6 +528,7 @@ type Plugin struct {
 	readme        string
 }
 
+// Searchresult is the structure witch displays the search result of plugins in DeinSide
 type Searchresult struct {
 	widget   *widgets.QWidget
 	layout   *widgets.QBoxLayout
@@ -515,6 +538,9 @@ type Searchresult struct {
 }
 
 func doPluginSearch() {
+	if len(editor.deinSide.searchbox.editBox.Text()) == 0 && editor.deinSide.preSearchKeyword == "" {
+		return
+	}
 	if len(editor.deinSide.searchbox.editBox.Text()) == 0 {
 		editor.deinSide.plugincontent.RemoveWidget(editor.deinSide.searchresult.widget)
 		editor.deinSide.installedplugins = newInstalledPlugins()
@@ -540,7 +566,6 @@ func doPluginSearch() {
 	editor.deinSide.plugincontent.SetCurrentWidget(editor.deinSide.searchresult.widget)
 
 	drawSearchresults(editor.deinSide.searchresult.pagenum)
-
 }
 
 func setSearchWord() string {
@@ -557,6 +582,7 @@ func setSearchWord() string {
 	if category != "ALL" {
 		searchWord += "+cat:" + category
 	}
+	editor.deinSide.preSearchKeyword = searchWord
 
 	return searchWord
 }
@@ -774,6 +800,16 @@ func drawSearchresults(pagenum int) {
 		})
 	}
 
+}
+
+func (d *DeinPluginItem) enterWidget(event *core.QEvent) {
+	bg := editor.bgcolor
+	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+}
+
+func (d *DeinPluginItem) leaveWidget(event *core.QEvent) {
+	bg := editor.bgcolor
+	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
 }
 
 func (p *Plugin) enterWidget(event *core.QEvent) {

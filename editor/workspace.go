@@ -382,7 +382,7 @@ func (w *Workspace) setCwd() {
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
 			editor.wsSide.items[i].cwdpath = path
 
-			if editor.activity.deinItem.active == false && editor.activity.editItem.active == false {
+			if editor.activity.editItem.active == false {
 				return
 			}
 
