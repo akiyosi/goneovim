@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -370,7 +371,7 @@ func newDeinSide() *DeinSide {
 	comboBoxMenu := widgets.NewQComboBox(nil)
 	comboBoxMenu.AddItems([]string{"ALL", "Language", "Completion", "Code-display", "Integrations", "Interface", "Commands", "Other"})
 	comboBoxMenu.SetFocusPolicy(core.Qt__ClickFocus)
-	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" QComboBox { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); }", editor.config.accentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, bg.R, bg.G, bg.B))
+	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" * { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } ", editor.config.accentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, bg.R, bg.G, bg.B, editor.config.accentColor))
 	comboBoxLayout.AddWidget(comboBoxMenu, 0, 0)
 	comboBoxWidget := widgets.NewQWidget(nil, 0)
 	comboBoxWidget.SetLayout(comboBoxLayout)
@@ -526,6 +527,7 @@ type Plugin struct {
 	installButton *widgets.QWidget
 	repo          string
 	readme        string
+	installed     bool
 }
 
 // Searchresult is the structure witch displays the search result of plugins in DeinSide
@@ -705,15 +707,39 @@ func drawSearchresults(pagenum int) {
 
 		pluginAuthor.SetLayout(pluginAuthorLayout)
 
+		// ** plugin update time
+		pluginUpdated := widgets.NewQWidget(nil, 0)
+		pluginUpdatedLayout := widgets.NewQHBoxLayout()
+		pluginUpdatedLayout.SetContentsMargins(0, 0, 0, 0)
+		pluginUpdatedLayout.SetSpacing(1)
+
+		pluginUpdatedIcon := svg.NewQSvgWidget(nil)
+		pluginUpdatedIcon.SetFixedSize2(11, 11)
+		svgUpdatedContent := w.getSvg("progress", fg)
+		pluginUpdatedIcon.Load2(core.NewQByteArray2(svgUpdatedContent, len(svgUpdatedContent)))
+
+		pluginUpdatedNum := widgets.NewQLabel(nil, 0)
+
+		pluginUpdatedNum.SetText(fmt.Sprintf("%v", sinceUpdate(p.UpdatedAt)))
+		pluginUpdatedNum.SetContentsMargins(0, 0, 0, 0)
+		pluginUpdatedNum.SetStyleSheet(" .QLabel {font-size: 10px;} ")
+
+		pluginUpdatedLayout.AddWidget(pluginUpdatedIcon, 0, 0)
+		pluginUpdatedLayout.AddWidget(pluginUpdatedNum, 0, 0)
+
+		pluginUpdated.SetLayout(pluginUpdatedLayout)
+
 		// * plugin info
 		pluginStars.AdjustSize()
 		pluginDownloads.AdjustSize()
 		pluginAuthor.AdjustSize()
+		pluginUpdated.AdjustSize()
 		pluginInfoLayout.AddWidget(pluginStars, 0, 0)
 		pluginInfoLayout.AddWidget(pluginDownloads, 0, 0)
 		pluginInfoLayout.AddWidget(pluginAuthor, 0, 0)
+		pluginInfoLayout.AddWidget(pluginUpdated, 0, 0)
 		pluginInfo.SetLayout(pluginInfoLayout)
-		pluginInfo.SetFixedWidth(pluginStars.Width() + pluginDownloads.Width() + pluginAuthor.Width() + 3*10)
+		pluginInfo.SetFixedWidth(pluginStars.Width() + pluginDownloads.Width() + pluginAuthor.Width() + pluginUpdated.Width() + 2*10)
 
 		// * plugin install button
 		pluginInstallLabel := widgets.NewQLabel(nil, 0)
@@ -726,17 +752,6 @@ func drawSearchresults(pagenum int) {
 		pluginInstallLayout.AddWidget(pluginInstallLabel, 0, 0)
 		pluginInstall.SetLayout(pluginInstallLayout)
 		pluginInstall.SetObjectName("installbutton")
-
-		// ret, _ := editor.workspaces[editor.active].nvim.CommandOutput(":call dein#check_install('" + p.GithubRepoName + "')")
-		// bg := editor.bgcolor
-		// if ret != "0" {
-		pluginInstallLabel.SetText("Install")
-		// pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { margin-top: 1px; margin-bottom: 1px; color: rgba(%d, %d, %d, 1); background: %s;} ", fg.R, fg.G, fg.B, labelColor))
-		pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
-		// } else {
-		//   pluginInstallLabel.SetText("Installed")
-		//   pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
-		// }
 
 		// * plugin name & button
 		pluginHead := widgets.NewQWidget(nil, 0)
@@ -766,13 +781,30 @@ func drawSearchresults(pagenum int) {
 			repo:          p.GithubOwner + "/" + p.GithubRepoName,
 			readme:        p.GithubReadmeFilename,
 		}
+
+		for _, item := range editor.deinSide.installedplugins.items {
+			if strings.ToLower(plugin.repo) == strings.ToLower(item.repo) {
+				plugin.installed = true
+				break
+			}
+		}
+
+		if plugin.installed == true {
+			pluginInstallLabel.SetText("Installed")
+			bg := editor.bgcolor
+			pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+		} else {
+			pluginInstallLabel.SetText("Install")
+			pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
+			plugin.installButton.ConnectMousePressEvent(plugin.pressButton)
+		}
+
 		plugin.widget.ConnectEnterEvent(plugin.enterWidget)
 		plugin.widget.ConnectLeaveEvent(plugin.leaveWidget)
 		plugin.widget.ConnectMousePressEvent(plugin.pressPluginWidget)
 
 		plugin.installButton.ConnectEnterEvent(plugin.enterButton)
 		plugin.installButton.ConnectLeaveEvent(plugin.leaveButton)
-		plugin.installButton.ConnectMousePressEvent(plugin.pressButton)
 
 		resultplugins = append(resultplugins, plugin)
 
@@ -802,6 +834,32 @@ func drawSearchresults(pagenum int) {
 
 }
 
+func sinceUpdate(t int) string {
+	s := time.Since(time.Unix(int64(t), 0))
+	years := s.Hours() / 24 / 30.41 / 12
+	if years >= 1 {
+		return fmt.Sprintf("%v years ago", math.Trunc(years))
+	}
+	months := s.Hours() / 24 / 30.41
+	if months >= 1 {
+		return fmt.Sprintf("%v months ago", math.Trunc(months))
+	}
+	days := s.Hours() / 24
+	if days >= 1 {
+		return fmt.Sprintf("%v days ago", math.Trunc(days))
+	}
+	hours := s.Hours()
+	if hours >= 1 {
+		return fmt.Sprintf("%v hours ago", math.Trunc(hours))
+	}
+	minutes := s.Minutes()
+	if minutes >= 1 {
+		return fmt.Sprintf("%v minutes ago", math.Trunc(minutes))
+	}
+
+	return fmt.Sprintf("%v seconds ago", math.Trunc(s.Seconds()))
+}
+
 func (d *DeinPluginItem) enterWidget(event *core.QEvent) {
 	bg := editor.bgcolor
 	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
@@ -823,10 +881,16 @@ func (p *Plugin) leaveWidget(event *core.QEvent) {
 }
 
 func (p *Plugin) enterButton(event *core.QEvent) {
+	if p.installed == true {
+		return
+	}
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", editor.config.accentColor))
 }
 
 func (p *Plugin) leaveButton(event *core.QEvent) {
+	if p.installed == true {
+		return
+	}
 	labelColor := darkenHex(editor.config.accentColor)
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 }

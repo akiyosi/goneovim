@@ -185,6 +185,9 @@ func deinSideResize(event *gui.QResizeEvent) {
 	editor.deinSide.searchresult.widget.SetMinimumWidth(width)
 	editor.deinSide.searchresult.widget.SetMaximumWidth(width)
 
+	editor.deinSide.combobox.widget.SetMinimumWidth(width)
+	editor.deinSide.combobox.widget.SetMaximumWidth(width)
+
 	editor.deinSide.searchbox.widget.SetMinimumWidth(width)
 	editor.deinSide.searchbox.widget.SetMaximumWidth(width)
 	editor.deinSide.searchbox.editBox.SetFixedWidth(width - (20 + 20))
