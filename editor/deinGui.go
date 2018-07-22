@@ -459,7 +459,7 @@ func newInstalledPlugins() *InstalledPlugins {
 	installedHeader := widgets.NewQLabel(nil, 0)
 	installedHeader.SetContentsMargins(20, 2, 20, 1)
 	installedHeader.SetText("INSTALLED")
-	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 10px; margin-bottom: 0px; background: rgba(%d, %d, %d, 1); font-size: 11px; color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
+	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { padding-left: 15px; margin-top: 10px; margin-bottom: 0px; background: rgba(%d, %d, %d, 1); font-size: 11px; color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
 	installedLayout.AddWidget(installedHeader, 0, 0)
 
 	cache := loadDeinCashe()

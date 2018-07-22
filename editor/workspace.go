@@ -353,6 +353,7 @@ func (w *Workspace) initCwd() {
 func (w *Workspace) setCwd() {
 	cwd := ""
 	w.nvim.Eval("getcwd()", &cwd)
+	if cwd == "" { return }
 
 	// if cwd == w.cwd {
 	// 	return
@@ -383,20 +384,24 @@ func (w *Workspace) setCwd() {
 			editor.wsSide.items[i].cwdpath = path
 
 			if editor.activity.editItem.active == false {
-				return
+				continue
 			}
 
 			filelist := newFilelistwidget(path)
 			editor.wsSide.items[i].setFilelistwidget(filelist)
-			return
+			continue
 		}
 	}
 }
 
 func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
+    var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
+
 	if i.Filelistwidget != nil {
-		i.layout.RemoveWidget(i.Filelistwidget)
-	}
+	  i.Filelistwidget.DestroyQWidget()
+    }
 	i.layout.AddWidget(f.widget, 0, 0)
 	i.Filelistwidget = f.widget
 	i.Filelist = f
@@ -868,10 +873,10 @@ func (i *WorkspaceSideItem) setActive() {
 	fg := i.side.fgcolor
 	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.accentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
-	//if i.Filelist.isload == false && editor.config.showSide == false && len(editor.workspaces) > 1 {
-	//	filelist := newFilelistwidget(i.cwdpath)
-	//	i.setFilelistwidget(filelist)
-	//}
+	if i.Filelist.isload == false && editor.activity.editItem.active == true {
+		filelist := newFilelistwidget(i.cwdpath)
+		i.setFilelistwidget(filelist)
+	}
 
 	i.Filelistwidget.Show()
 }

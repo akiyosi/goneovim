@@ -86,7 +86,7 @@ func newFilelistwidget(path string) *Filelist {
 		file.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 		//file.SetContentsMargins(0, 5, 10, 5)
 		file.SetContentsMargins(0, 0, 0, 0)
-		file.SetFont(editor.workspaces[editor.active].font.fontNew)
+		// file.SetFont(editor.workspaces[editor.active].font.fontNew)
 
 		fileModified := svg.NewQSvgWidget(nil)
 		fileModified.SetFixedWidth(11)
@@ -152,10 +152,12 @@ func newFilelistwidget(path string) *Filelist {
 	filelist.isload = true
 
 	editor.wsSide.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
+	    if editor.activity.editItem.active == false { return }
 		filewidgetLeftMargin := 35
+		currFileItem := editor.wsSide.items[editor.active].Filelist.Fileitems[0]
 		width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
 		charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
-		length := float64(width - editor.wsSide.items[0].Filelist.Fileitems[0].fileIcon.Width() - editor.wsSide.items[0].Filelist.Fileitems[0].fileModified.Width() - filewidgetLeftMargin - charWidth - 35)
+		length := float64(width - currFileItem.fileIcon.Width() - currFileItem.fileModified.Width() - filewidgetLeftMargin - charWidth - 35)
 
 		for _, item := range editor.wsSide.items {
 			item.label.SetMaximumWidth(editor.activity.sideArea.Width())
