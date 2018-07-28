@@ -152,7 +152,9 @@ func newFilelistwidget(path string) *Filelist {
 	filelist.isload = true
 
 	editor.wsSide.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
-	    if editor.activity.editItem.active == false { return }
+		if editor.activity.editItem.active == false {
+			return
+		}
 		filewidgetLeftMargin := 35
 		currFileItem := editor.wsSide.items[editor.active].Filelist.Fileitems[0]
 		width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()

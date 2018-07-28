@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
+	"github.com/akiyosi/tomlwriter"
 	"gopkg.in/yaml.v2"
 
 	"github.com/therecipe/qt/core"
@@ -29,12 +32,15 @@ type DeinSide struct {
 	// searchbox        *widgets.QLineEdit
 	combobox           *SearchComboBox
 	searchbox          *Searchbox
+	progressbar        *widgets.QProgressBar
 	plugincontent      *widgets.QStackedWidget
 	searchresult       *Searchresult
 	installedplugins   *InstalledPlugins
-	config             *svg.QSvgWidget
+	configIcon         *svg.QSvgWidget
 	preSearchKeyword   string
 	preDisplayedReadme string
+	deintoml           DeinTomlConfig
+	deintomlfile       []byte
 }
 
 // SearchComboBox is the ComboBox widget for DeinSide
@@ -163,6 +169,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, installedPluginWidget)
 		installedPluginLayout.SetContentsMargins(20, 5, 20, 5)
 		installedPluginLayout.SetSpacing(3)
+		installedPluginWidget.Hide()
 		// installedPluginWidget.SetFixedWidth(editor.config.sideWidth)
 		// installedPluginWidget.SetMaximumWidth(editor.config.sideWidth - 55)
 		// installedPluginWidget.SetMinimumWidth(editor.config.sideWidth - 55)
@@ -182,6 +189,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		go func() {
 			desc := getRepoDesc(strings.ToLower(strings.Split(i.repo, "/")[0]), i.name)
 			installedPluginDescLabel.SetText(desc)
+			installedPluginWidget.Show()
 		}()
 		installedPluginDescLabel.SetWordWrap(true)
 		installedPluginDesc := widgets.NewQWidget(nil, 0)
@@ -331,6 +339,17 @@ func getRepoDesc(owner string, name string) string {
 	return text
 }
 
+type DeinTomlConfig struct {
+	Plugins DeinPlugins
+}
+type DeinPlugin struct {
+	Repo    string
+	HookAdd string
+}
+type DeinPlugins struct {
+	Plugin []DeinPlugin
+}
+
 func newDeinSide() *DeinSide {
 	w := editor.workspaces[editor.active]
 	fg := editor.fgcolor
@@ -383,7 +402,7 @@ func newDeinSide() *DeinSide {
 	}
 
 	searchBoxLayout := widgets.NewQHBoxLayout()
-	searchBoxLayout.SetContentsMargins(20, 0, 20, 5)
+	searchBoxLayout.SetContentsMargins(20, 0, 20, 0)
 	searchBoxLayout.SetSpacing(0)
 	searchboxEdit := widgets.NewQLineEdit(nil)
 	searchboxEdit.SetPlaceholderText("Search Plugins in VimAwesome")
@@ -395,8 +414,12 @@ func newDeinSide() *DeinSide {
 	searchBoxWidget := widgets.NewQWidget(nil, 0)
 	searchBoxWidget.SetLayout(searchBoxLayout)
 
-	// searchbox.ConnectReturnPressed(doPluginSearch)
-	searchboxEdit.ConnectEditingFinished(doPluginSearch)
+	// searchboxEdit.ConnectReturnPressed(func() {
+	//   editor.deinSide.progressbar.Show()
+	// })
+	searchboxEdit.ConnectReturnPressed(func() {
+		doPluginSearch()
+	})
 
 	searchbox := &Searchbox{
 		widget:  searchBoxWidget,
@@ -407,11 +430,25 @@ func newDeinSide() *DeinSide {
 	searchLayout.AddWidget(combobox.widget, 0, 0)
 	searchLayout.AddWidget(searchbox.widget, 0, 0)
 
+	waitingWidget := widgets.NewQWidget(nil, 0)
+	// waitingWidget.SetMaximumWidth(100)
+	// waitingWidget.SetMinimumWidth(100)
+	waitingLayout := widgets.NewQHBoxLayout()
+	waitingLayout.SetContentsMargins(10, 0, 20, 5)
+	waitingWidget.SetLayout(waitingLayout)
+	pbar := widgets.NewQProgressBar(nil)
+	pbar.SetStyleSheet(fmt.Sprintf(" QProgressBar { padding: 20 1 0 1; height: 1px; border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, editor.config.accentColor))
+	pbar.SetRange(0, 0)
+	pbar.SetValue(5)
+	waitingLayout.AddWidget(pbar, 0, 0)
+	pbar.Hide()
+
 	content := widgets.NewQStackedWidget(nil)
 	content.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Minimum)
 
 	layout.AddWidget(headerWidget)
 	layout.AddWidget(searchWidget)
+	layout.AddWidget(waitingWidget)
 	layout.AddWidget(content)
 
 	installed := newInstalledPlugins()
@@ -419,6 +456,12 @@ func newDeinSide() *DeinSide {
 	searchresult := &Searchresult{
 		widget: searchresultWidget,
 	}
+
+	// load dein toml
+	file := "/Users/akiyoshi/.config/nvim/dein.toml"
+	var deinToml DeinTomlConfig
+	_, _ = toml.DecodeFile(file, &deinToml)
+	deinTomlfile, _ := ioutil.ReadFile(file)
 
 	// make DeinSide
 	side := &DeinSide{
@@ -428,10 +471,13 @@ func newDeinSide() *DeinSide {
 		combobox:         combobox,
 		searchbox:        searchbox,
 		searchlayout:     searchLayout,
+		progressbar:      pbar,
 		plugincontent:    content,
 		searchresult:     searchresult,
 		installedplugins: installed,
-		config:           configIcon,
+		configIcon:       configIcon,
+		deintoml:         deinToml,
+		deintomlfile:     deinTomlfile,
 	}
 	content.AddWidget(side.searchresult.widget)
 	content.AddWidget(side.installedplugins.widget)
@@ -459,7 +505,7 @@ func newInstalledPlugins() *InstalledPlugins {
 	installedHeader := widgets.NewQLabel(nil, 0)
 	installedHeader.SetContentsMargins(20, 2, 20, 1)
 	installedHeader.SetText("INSTALLED")
-	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { padding-left: 15px; margin-top: 10px; margin-bottom: 0px; background: rgba(%d, %d, %d, 1); font-size: 11px; color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
+	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 10px; margin-bottom: 0px; background: rgba(%d, %d, %d, 1); font-size: 11px; color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
 	installedLayout.AddWidget(installedHeader, 0, 0)
 
 	cache := loadDeinCashe()
@@ -591,6 +637,14 @@ func setSearchWord() string {
 
 func drawSearchresults(pagenum int) {
 	var results PluginSearchResults
+	w := editor.workspaces[editor.active]
+	fg := editor.fgcolor
+	resultplugins := []*Plugin{}
+	labelColor := darkenHex(editor.config.accentColor)
+	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+	parentLayout := editor.deinSide.searchresult.layout
+
+	// Search
 	searchWord := setSearchWord()
 	response, _ := http.Get(fmt.Sprintf("http://vimawesome.com/api/plugins?page=%v&query=%v", pagenum, searchWord))
 	defer response.Body.Close()
@@ -600,17 +654,10 @@ func drawSearchresults(pagenum int) {
 		return
 	}
 
-	w := editor.workspaces[editor.active]
-	fg := editor.fgcolor
-	resultplugins := []*Plugin{}
-	labelColor := darkenHex(editor.config.accentColor)
-	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
-	parentLayout := editor.deinSide.searchresult.layout
-
 	for _, p := range results.Plugins {
 		pluginWidget := widgets.NewQWidget(nil, 0)
 		pluginLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, pluginWidget)
-		pluginLayout.SetContentsMargins(20, 10, 20, 10)
+		pluginLayout.SetContentsMargins(15, 10, 20, 10)
 		pluginLayout.SetSpacing(1)
 		pluginLayout.SetAlignment(pluginWidget, core.Qt__AlignTop)
 		pluginWidget.SetMinimumWidth(width)
@@ -831,7 +878,7 @@ func drawSearchresults(pagenum int) {
 			}()
 		})
 	}
-
+	editor.deinSide.progressbar.Hide()
 }
 
 func sinceUpdate(t int) string {
@@ -896,7 +943,24 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 }
 
 func (p *Plugin) pressButton(event *gui.QMouseEvent) {
-	editor.workspaces[editor.active].nvim.Command(":silent! call dein#direct_install('" + p.repo + "')")
+	b := editor.deinSide.deintomlfile
+	b, _ = tomlwriter.WriteValue(`'`+p.repo+`'`, b, "[plugins]", "repo", nil)
+	_ = ioutil.WriteFile("/Users/akiyoshi/.config/nvim/dein.toml", b, 0755)
+
+	text, _ := editor.workspaces[editor.active].nvim.CommandOutput(":set nomore | :silent !nvim -c ':q'")
+	i := strings.Index(text, "^[")
+	var messages string
+	for i, message := range strings.Split(text[17:i], "\n") {
+		if i == 0 {
+			continue
+		}
+		if i == 1 {
+			message = message[:44]
+		}
+		message = strings.Replace(message, "\x13", "", -1)
+		messages += ` | echomsg "` + message + `"`
+	}
+	editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
 
 func (p *Plugin) pressPluginWidget(event *gui.QMouseEvent) {
@@ -907,14 +971,14 @@ func (d *DeinSide) enterConfigIcon(event *core.QEvent) {
 	w := editor.workspaces[editor.active]
 	fg := editor.fgcolor
 	svgConfigContent := w.getSvg("configfile", newRGBA(warpColor(fg, -20).R, warpColor(fg, -20).G, warpColor(fg, -20).B, 1))
-	d.config.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
+	d.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 }
 
 func (d *DeinSide) leaveConfigIcon(event *core.QEvent) {
 	w := editor.workspaces[editor.active]
 	bg := editor.bgcolor
 	svgConfigContent := w.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
-	d.config.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
+	d.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 }
 
 func pressConfigIcon(event *gui.QMouseEvent) {

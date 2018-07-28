@@ -353,7 +353,9 @@ func (w *Workspace) initCwd() {
 func (w *Workspace) setCwd() {
 	cwd := ""
 	w.nvim.Eval("getcwd()", &cwd)
-	if cwd == "" { return }
+	if cwd == "" {
+		return
+	}
 
 	// if cwd == w.cwd {
 	// 	return
@@ -395,13 +397,13 @@ func (w *Workspace) setCwd() {
 }
 
 func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
-    var mu sync.Mutex
+	var mu sync.Mutex
 	mu.Lock()
 	defer mu.Unlock()
 
 	if i.Filelistwidget != nil {
-	  i.Filelistwidget.DestroyQWidget()
-    }
+		i.Filelistwidget.DestroyQWidget()
+	}
 	i.layout.AddWidget(f.widget, 0, 0)
 	i.Filelistwidget = f.widget
 	i.Filelist = f
