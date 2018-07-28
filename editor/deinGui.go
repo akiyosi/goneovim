@@ -22,8 +22,19 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+type deinsideSignal struct {
+	core.QObject
+	_ func() `signal:"searchSignal"`
+	_ func() `signal:"deinSignal"`
+}
+
 // DeinSide is the side bar witch is GUI for Shougo/dein.vim
 type DeinSide struct {
+	signal            *deinsideSignal
+	searchUpdates     chan PluginSearchResults
+	searchPageUpdates chan int
+	deinUpdate        chan string
+
 	widget       *widgets.QWidget
 	layout       *widgets.QLayout
 	header       *widgets.QWidget
@@ -414,9 +425,6 @@ func newDeinSide() *DeinSide {
 	searchBoxWidget := widgets.NewQWidget(nil, 0)
 	searchBoxWidget.SetLayout(searchBoxLayout)
 
-	// searchboxEdit.ConnectReturnPressed(func() {
-	//   editor.deinSide.progressbar.Show()
-	// })
 	searchboxEdit.ConnectReturnPressed(func() {
 		doPluginSearch()
 	})
@@ -465,6 +473,11 @@ func newDeinSide() *DeinSide {
 
 	// make DeinSide
 	side := &DeinSide{
+		signal:            NewDeinsideSignal(nil),
+		searchUpdates:     make(chan PluginSearchResults, 1000),
+		searchPageUpdates: make(chan int, 1000),
+		deinUpdate:        make(chan string, 20000),
+
 		widget:           widget,
 		layout:           layout,
 		header:           headerWidget,
@@ -479,6 +492,16 @@ func newDeinSide() *DeinSide {
 		deintoml:         deinToml,
 		deintomlfile:     deinTomlfile,
 	}
+	side.signal.ConnectSearchSignal(func() {
+		updates := <-side.searchUpdates
+		pagenum := <-side.searchPageUpdates
+		drawSearchresults(updates, pagenum)
+	})
+	side.signal.ConnectDeinSignal(func() {
+		result := <-side.deinUpdate
+		fmt.Println(result)
+		side.deinInstallPost(result)
+	})
 	content.AddWidget(side.searchresult.widget)
 	content.AddWidget(side.installedplugins.widget)
 	content.SetCurrentWidget(side.installedplugins.widget)
@@ -613,7 +636,8 @@ func doPluginSearch() {
 	editor.deinSide.plugincontent.AddWidget(editor.deinSide.searchresult.widget)
 	editor.deinSide.plugincontent.SetCurrentWidget(editor.deinSide.searchresult.widget)
 
-	drawSearchresults(editor.deinSide.searchresult.pagenum)
+	editor.deinSide.progressbar.Show()
+	go editor.deinSide.DoSearch(editor.deinSide.searchresult.pagenum)
 }
 
 func setSearchWord() string {
@@ -635,14 +659,8 @@ func setSearchWord() string {
 	return searchWord
 }
 
-func drawSearchresults(pagenum int) {
+func (side *DeinSide) DoSearch(pagenum int) {
 	var results PluginSearchResults
-	w := editor.workspaces[editor.active]
-	fg := editor.fgcolor
-	resultplugins := []*Plugin{}
-	labelColor := darkenHex(editor.config.accentColor)
-	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
-	parentLayout := editor.deinSide.searchresult.layout
 
 	// Search
 	searchWord := setSearchWord()
@@ -653,6 +671,19 @@ func drawSearchresults(pagenum int) {
 		fmt.Println("JSON decode error:", err)
 		return
 	}
+
+	side.searchUpdates <- results
+	side.searchPageUpdates <- pagenum
+	side.signal.SearchSignal()
+}
+
+func drawSearchresults(results PluginSearchResults, pagenum int) {
+	w := editor.workspaces[editor.active]
+	fg := editor.fgcolor
+	resultplugins := []*Plugin{}
+	labelColor := darkenHex(editor.config.accentColor)
+	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+	parentLayout := editor.deinSide.searchresult.layout
 
 	for _, p := range results.Plugins {
 		pluginWidget := widgets.NewQWidget(nil, 0)
@@ -870,7 +901,7 @@ func drawSearchresults(pagenum int) {
 			pos := editor.deinSide.scrollarea.VerticalScrollBar().Value()
 			editor.deinSide.searchresult.readmore.DestroyQPushButton()
 			editor.deinSide.searchresult.pagenum = editor.deinSide.searchresult.pagenum + 1
-			drawSearchresults(editor.deinSide.searchresult.pagenum)
+			editor.deinSide.DoSearch(editor.deinSide.searchresult.pagenum)
 			// It is workaround that scroll bar returns to the top, only the first load
 			go func() {
 				time.Sleep(10 * time.Millisecond)
@@ -942,15 +973,10 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 }
 
-func (p *Plugin) pressButton(event *gui.QMouseEvent) {
-	b := editor.deinSide.deintomlfile
-	b, _ = tomlwriter.WriteValue(`'`+p.repo+`'`, b, "[plugins]", "repo", nil)
-	_ = ioutil.WriteFile("/Users/akiyoshi/.config/nvim/dein.toml", b, 0755)
-
-	text, _ := editor.workspaces[editor.active].nvim.CommandOutput(":set nomore | :silent !nvim -c ':q'")
-	i := strings.Index(text, "^[")
+func (side *DeinSide) deinInstallPost(result string) {
+	i := strings.Index(result, "^[")
 	var messages string
-	for i, message := range strings.Split(text[17:i], "\n") {
+	for i, message := range strings.Split(result[17:i], "\n") {
 		if i == 0 {
 			continue
 		}
@@ -961,6 +987,22 @@ func (p *Plugin) pressButton(event *gui.QMouseEvent) {
 		messages += ` | echomsg "` + message + `"`
 	}
 	editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
+}
+
+func (side *DeinSide) deinInstallPre(reponame string) {
+	side.progressbar.Show()
+	b := editor.deinSide.deintomlfile
+	b, _ = tomlwriter.WriteValue(`'`+reponame+`'`, b, "[plugins]", "repo", nil)
+	_ = ioutil.WriteFile("/Users/akiyoshi/.config/nvim/dein.toml", b, 0755)
+
+	text, _ := editor.workspaces[editor.active].nvim.CommandOutput(":set nomore | :silent !nvim -c ':q'")
+	side.deinUpdate <- text
+	side.signal.DeinSignal()
+	side.progressbar.Hide()
+}
+
+func (p *Plugin) pressButton(event *gui.QMouseEvent) {
+	go editor.deinSide.deinInstallPre(p.repo)
 }
 
 func (p *Plugin) pressPluginWidget(event *gui.QMouseEvent) {
