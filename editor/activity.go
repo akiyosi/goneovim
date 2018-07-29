@@ -196,6 +196,7 @@ func deinSideResize(event *gui.QResizeEvent) {
 	editor.deinSide.installedplugins.widget.SetMaximumWidth(width)
 
 	for _, item := range editor.deinSide.installedplugins.items {
+		item.nameLabel.SetFixedWidth(width)
 		item.widget.SetMaximumWidth(width)
 		item.widget.SetMinimumWidth(width)
 	}
@@ -203,6 +204,7 @@ func deinSideResize(event *gui.QResizeEvent) {
 	for _, item := range editor.deinSide.searchresult.plugins {
 		item.widget.SetMaximumWidth(width)
 		item.widget.SetMinimumWidth(width)
+		item.nameLabel.SetFixedWidth(width)
 		item.head.SetMaximumWidth(width)
 		item.head.SetMaximumWidth(width)
 		item.desc.SetMinimumWidth(width - 20)

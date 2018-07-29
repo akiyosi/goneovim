@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -20,12 +21,14 @@ import (
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
+	// "github.com/neovim/go-client/nvim"
 )
 
 type deinsideSignal struct {
 	core.QObject
 	_ func() `signal:"searchSignal"`
-	_ func() `signal:"deinSignal"`
+	_ func() `signal:"deinInstallSignal"`
+	_ func() `signal:"deinUpdateSignal"`
 }
 
 // DeinSide is the side bar witch is GUI for Shougo/dein.vim
@@ -33,6 +36,7 @@ type DeinSide struct {
 	signal            *deinsideSignal
 	searchUpdates     chan PluginSearchResults
 	searchPageUpdates chan int
+	deinInstall       chan string
 	deinUpdate        chan string
 
 	widget       *widgets.QWidget
@@ -70,7 +74,12 @@ type Searchbox struct {
 
 // DeinPluginItem is the item structure witch is installed plugin of Shougo/dein.vim
 type DeinPluginItem struct {
-	widget *widgets.QWidget
+	widget          *widgets.QWidget
+	updateLabel     *widgets.QStackedWidget
+	updateLabelName *widgets.QLabel
+	updateButton    *widgets.QWidget
+	waitingLabel    *widgets.QWidget
+	nameLabel       *widgets.QLabel
 
 	itemname       string
 	lazy           bool
@@ -131,6 +140,8 @@ func loadDeinCashe() []*DeinPluginItem {
 
 	m, _ := readDeinCache()
 	installedPlugins := []*DeinPluginItem{}
+	// width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+	width := editor.config.sideWidth
 
 	for name, item := range m {
 		s, _ := item.(map[interface{}]interface{})
@@ -189,10 +200,13 @@ func loadDeinCashe() []*DeinPluginItem {
 
 		// plugin mame
 		installedPluginName := widgets.NewQLabel(nil, 0)
-		installedPluginName.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 		installedPluginName.SetText(i.name)
+		installedPluginName.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 		fg := editor.fgcolor
 		installedPluginName.SetStyleSheet(fmt.Sprintf(" .QLabel {font: bold; color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
+		installedPluginName.SetFixedWidth(width)
+
+		i.nameLabel = installedPluginName
 
 		// plugin desc
 		installedPluginDescLabel := widgets.NewQLabel(nil, 0)
@@ -224,7 +238,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 
 		updateButton.ConnectMousePressEvent(func(*gui.QMouseEvent) {
-			editor.workspaces[editor.active].nvim.Command("call dein#update('" + i.name + "')")
+			i.deinUpdatePre(i.name)
 		})
 		updateButton.ConnectEnterEvent(func(event *core.QEvent) {
 			updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", editor.config.accentColor))
@@ -233,6 +247,27 @@ func loadDeinCashe() []*DeinPluginItem {
 			labelColor := darkenHex(editor.config.accentColor)
 			updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 		})
+		i.updateButton = updateButton
+
+		// waiting label while update pugin
+		updateWaiting := widgets.NewQWidget(nil, 0)
+		updateWaiting.SetMaximumWidth(65)
+		updateWaiting.SetMinimumWidth(65)
+		updateWaitingLayout := widgets.NewQHBoxLayout()
+		updateWaitingLayout.SetContentsMargins(5, 0, 5, 0)
+		updateWaiting.SetLayout(updateWaitingLayout)
+		waitingLabel := widgets.NewQProgressBar(nil)
+		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, editor.config.accentColor))
+		waitingLabel.SetRange(0, 0)
+		updateWaitingLayout.AddWidget(waitingLabel, 0, 0)
+
+		i.waitingLabel = updateWaiting
+
+		// stack installButton & waitingLabel
+		updateLabel := widgets.NewQStackedWidget(nil)
+		updateLabel.SetContentsMargins(0, 0, 0, 0)
+
+		i.updateLabel = updateLabel
 
 		// ** Lazy plugin icon
 		bg := editor.bgcolor
@@ -311,7 +346,11 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginFoot.SetLayout(installedPluginFootLayout)
 
 		installedPluginHeadLayout.AddWidget(installedPluginName, 0, 0)
-		installedPluginHeadLayout.AddWidget(updateButton, 0, 0)
+		installedPluginHeadLayout.AddWidget(i.updateLabel, 0, 0)
+
+		i.updateLabel.AddWidget(i.updateButton)
+		i.updateLabel.AddWidget(i.waitingLabel)
+		i.updateLabel.SetCurrentWidget(i.updateButton)
 
 		installedPluginLayout.AddWidget(installedPluginHead, 0, 0)
 		installedPluginLayout.AddWidget(installedPluginFoot, 0, 0)
@@ -442,12 +481,11 @@ func newDeinSide() *DeinSide {
 	// waitingWidget.SetMaximumWidth(100)
 	// waitingWidget.SetMinimumWidth(100)
 	waitingLayout := widgets.NewQHBoxLayout()
-	waitingLayout.SetContentsMargins(10, 0, 20, 5)
+	waitingLayout.SetContentsMargins(20, 0, 20, 5)
 	waitingWidget.SetLayout(waitingLayout)
 	pbar := widgets.NewQProgressBar(nil)
 	pbar.SetStyleSheet(fmt.Sprintf(" QProgressBar { padding: 20 1 0 1; height: 1px; border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, editor.config.accentColor))
 	pbar.SetRange(0, 0)
-	pbar.SetValue(5)
 	waitingLayout.AddWidget(pbar, 0, 0)
 	pbar.Hide()
 
@@ -476,6 +514,7 @@ func newDeinSide() *DeinSide {
 		signal:            NewDeinsideSignal(nil),
 		searchUpdates:     make(chan PluginSearchResults, 1000),
 		searchPageUpdates: make(chan int, 1000),
+		deinInstall:       make(chan string, 20000),
 		deinUpdate:        make(chan string, 20000),
 
 		widget:           widget,
@@ -497,10 +536,13 @@ func newDeinSide() *DeinSide {
 		pagenum := <-side.searchPageUpdates
 		drawSearchresults(updates, pagenum)
 	})
-	side.signal.ConnectDeinSignal(func() {
+	side.signal.ConnectDeinInstallSignal(func() {
+		result := <-side.deinInstall
+		deinInstallPost(result)
+	})
+	side.signal.ConnectDeinUpdateSignal(func() {
 		result := <-side.deinUpdate
-		fmt.Println(result)
-		side.deinInstallPost(result)
+		deinUpdatePost(result)
 	})
 	content.AddWidget(side.searchresult.widget)
 	content.AddWidget(side.installedplugins.widget)
@@ -589,14 +631,19 @@ type PluginSearchResults struct {
 
 // Pligin is the item structure witch is the search result in vim-awesome
 type Plugin struct {
-	widget        *widgets.QWidget
-	head          *widgets.QWidget
-	desc          *widgets.QWidget
-	info          *widgets.QWidget
-	installButton *widgets.QWidget
-	repo          string
-	readme        string
-	installed     bool
+	repo      string
+	readme    string
+	installed bool
+
+	widget           *widgets.QWidget
+	nameLabel        *widgets.QLabel
+	head             *widgets.QWidget
+	desc             *widgets.QWidget
+	info             *widgets.QWidget
+	installLabel     *widgets.QStackedWidget
+	installLabelName *widgets.QLabel
+	installButton    *widgets.QWidget
+	waitingLabel     *widgets.QWidget
 }
 
 // Searchresult is the structure witch displays the search result of plugins in DeinSide
@@ -686,6 +733,9 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 	parentLayout := editor.deinSide.searchresult.layout
 
 	for _, p := range results.Plugins {
+		if p.GithubRepoName == "" {
+			continue
+		}
 		pluginWidget := widgets.NewQWidget(nil, 0)
 		pluginLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, pluginWidget)
 		pluginLayout.SetContentsMargins(15, 10, 20, 10)
@@ -696,6 +746,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 
 		// * plugin name
 		pluginName := widgets.NewQLabel(nil, 0)
+		pluginName.SetFixedWidth(width)
 		pluginName.SetText(p.Name)
 		pluginName.SetStyleSheet(fmt.Sprintf(" .QLabel {font: bold; color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
 		pluginName.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Fixed)
@@ -831,6 +882,22 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginInstall.SetLayout(pluginInstallLayout)
 		pluginInstall.SetObjectName("installbutton")
 
+		// waiting label while install pugin
+		pluginWaiting := widgets.NewQWidget(nil, 0)
+		pluginWaiting.SetMaximumWidth(65)
+		pluginWaiting.SetMinimumWidth(65)
+		pluginWaitingLayout := widgets.NewQHBoxLayout()
+		pluginWaitingLayout.SetContentsMargins(5, 0, 5, 0)
+		pluginWaiting.SetLayout(pluginWaitingLayout)
+		waitingLabel := widgets.NewQProgressBar(nil)
+		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, editor.config.accentColor))
+		waitingLabel.SetRange(0, 0)
+		pluginWaitingLayout.AddWidget(waitingLabel, 0, 0)
+
+		// stack installButton & waitingLabel
+		installLabel := widgets.NewQStackedWidget(nil)
+		installLabel.SetContentsMargins(0, 0, 0, 0)
+
 		// * plugin name & button
 		pluginHead := widgets.NewQWidget(nil, 0)
 		pluginHeadLayout := widgets.NewQHBoxLayout()
@@ -841,7 +908,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		// pluginHead.SetMaximumWidth(editor.config.sideWidth)
 		pluginHead.SetLayout(pluginHeadLayout)
 		pluginHeadLayout.AddWidget(pluginName, 0, 0)
-		pluginHeadLayout.AddWidget(pluginInstall, 0, 0)
+		pluginHeadLayout.AddWidget(installLabel, 0, 0)
 
 		// make widget
 		pluginLayout.AddWidget(pluginHead, 0, 0)
@@ -851,14 +918,21 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginLayout.AddWidget(pluginInfo, 0, 0)
 
 		plugin := &Plugin{
-			widget:        pluginWidget,
-			head:          pluginHead,
-			desc:          pluginDesc,
-			info:          pluginInfo,
-			installButton: pluginInstall,
-			repo:          p.GithubOwner + "/" + p.GithubRepoName,
-			readme:        p.GithubReadmeFilename,
+			widget:           pluginWidget,
+			nameLabel:        pluginName,
+			head:             pluginHead,
+			desc:             pluginDesc,
+			info:             pluginInfo,
+			repo:             p.GithubOwner + "/" + p.GithubRepoName,
+			readme:           p.GithubReadmeFilename,
+			installLabel:     installLabel,
+			installLabelName: pluginInstallLabel,
+			installButton:    pluginInstall,
+			waitingLabel:     pluginWaiting,
 		}
+		installLabel.AddWidget(plugin.installButton)
+		installLabel.AddWidget(plugin.waitingLabel)
+		installLabel.SetCurrentWidget(plugin.installButton)
 
 		for _, item := range editor.deinSide.installedplugins.items {
 			if strings.ToLower(plugin.repo) == strings.ToLower(item.repo) {
@@ -973,36 +1047,108 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 }
 
-func (side *DeinSide) deinInstallPost(result string) {
-	i := strings.Index(result, "^[")
+func deinInstallPost(result string) {
+
+	re0 := regexp.MustCompile(`\^\[\[[M0-9;\?]*\s?[abhlmtrqABJH][0-9]*`)
+	result = re0.ReplaceAllLiteralString(result, "")
+	result = strings.Replace(result, "^[(B", "\n", -1)
+	fmt.Println(result)
+
 	var messages string
-	for i, message := range strings.Split(result[17:i], "\n") {
-		if i == 0 {
+	for _, message := range strings.Split(result, "\n") {
+		re1 := regexp.MustCompile(`^\s\+`)
+		result = re1.ReplaceAllLiteralString(message, "")
+		re2 := regexp.MustCompile(`\s\+$`)
+		result = re2.ReplaceAllLiteralString(message, "")
+		if strings.Contains(message, "Not installed plugins") {
 			continue
 		}
-		if i == 1 {
-			message = message[:44]
+		if strings.Contains(message, "check_install()") {
+			continue
 		}
+		if strings.Contains(message, "install()") {
+			continue
+		}
+		if !strings.Contains(message, "[dein]") {
+			continue
+		}
+		if strings.Contains(message, "Update started: ") {
+			if len(message) > 44 {
+				message = message[:44]
+			}
+		}
+		message = strings.Replace(message, "^[=", "", -1)
+		message = strings.Replace(message, "^M", "", -1)
 		message = strings.Replace(message, "\x13", "", -1)
 		messages += ` | echomsg "` + message + `"`
+		fmt.Println("message: ", message)
 	}
 	editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
 
-func (side *DeinSide) deinInstallPre(reponame string) {
-	side.progressbar.Show()
+func (p *Plugin) deinInstallPre(reponame string) {
+	fg := editor.fgcolor
+	bg := editor.bgcolor
+	p.installLabel.SetCurrentWidget(p.waitingLabel)
 	b := editor.deinSide.deintomlfile
 	b, _ = tomlwriter.WriteValue(`'`+reponame+`'`, b, "[plugins]", "repo", nil)
 	_ = ioutil.WriteFile("/Users/akiyoshi/.config/nvim/dein.toml", b, 0755)
 
-	text, _ := editor.workspaces[editor.active].nvim.CommandOutput(":set nomore | :silent !nvim -c ':q'")
-	side.deinUpdate <- text
-	side.signal.DeinSignal()
-	side.progressbar.Hide()
+	// Dein install
+	text, _ := editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim -c 'sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q' `)
+	// v, err := nvim.NewChildProcess(nvim.ChildProcessArgs("--cmd", "if dein#check_install() | call dein#install() | endif | q"))
+	// editor.deinSide.deinInstall <- "Installation Complete."
+	// time.Sleep(900 * time.Millisecond)
+	// fmt.Println("2", v.cmd.Process)
+	// editor.deinSide.deinInstall <- "The added plugin can be used in a new workspace session."
+	// editor.deinSide.signal.DeinInstallSignal()
+
+	editor.deinSide.deinInstall <- text
+	editor.deinSide.signal.DeinInstallSignal()
+
+	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+	p.installButton.DisconnectMousePressEvent()
+	p.installed = true
+	p.installLabelName.SetText("Installed")
+	deinTomlfile, _ := ioutil.ReadFile("/Users/akiyoshi/.config/nvim/dein.toml")
+	editor.deinSide.deintomlfile = deinTomlfile
+	p.installLabel.SetCurrentWidget(p.installButton)
+}
+
+func deinUpdatePost(result string) {
+	fmt.Println("print: ", result)
+	// var messages string
+	// for _, message := range strings.Split(result, "\n") {
+	// 	message = strings.Replace(message, "\x13", "", -1)
+	// 	messages += ` | echomsg "` + message + `"`
+	// 	fmt.Println("message: ", message)
+	// }
+	// editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
+}
+
+func (d *DeinPluginItem) deinUpdatePre(pluginName string) {
+	d.updateLabel.SetCurrentWidget(d.waitingLabel)
+
+	// update plugin
+	go func() {
+		var result string
+		editor.workspaces[editor.active].nvim.Call("dein#update", &result, pluginName)
+		// text, _ := editor.workspaces[editor.active].nvim.CommandOutput("call dein#update('" + pluginName + "')")
+		// $ vim -c "try | call dein#update() | finally | qall! | endtry" \
+		// text, _ := editor.workspaces[editor.active].nvim.CommandOutput("try | call dein#update('" + pluginName + "') | finally | echo \"Gonvim updates plugin.\" | endtry")
+
+		editor.deinSide.deinUpdate <- result
+		editor.deinSide.signal.DeinUpdateSignal()
+		// d.updateLabel.SetCurrentWidget(d.updateButton)
+		// if strings.Contains(result, "[dein] Done:") {
+		// }
+	}()
+
+	d.updateButton.DisconnectMousePressEvent()
 }
 
 func (p *Plugin) pressButton(event *gui.QMouseEvent) {
-	go editor.deinSide.deinInstallPre(p.repo)
+	go p.deinInstallPre(p.repo)
 }
 
 func (p *Plugin) pressPluginWidget(event *gui.QMouseEvent) {
