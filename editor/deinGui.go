@@ -238,7 +238,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 
 		updateButton.ConnectMousePressEvent(func(*gui.QMouseEvent) {
-			i.deinUpdatePre(i.name)
+			go i.deinUpdatePre(i.name)
 		})
 		updateButton.ConnectEnterEvent(func(event *core.QEvent) {
 			updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", editor.config.accentColor))
@@ -948,7 +948,10 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		} else {
 			pluginInstallLabel.SetText("Install")
 			pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
-			plugin.installButton.ConnectMousePressEvent(plugin.pressButton)
+			plugin.installButton.ConnectMousePressEvent(func(*gui.QMouseEvent) {
+				go plugin.deinInstallPre(plugin.repo)
+			})
+			// }plugin.pressButton)
 		}
 
 		plugin.widget.ConnectEnterEvent(plugin.enterWidget)
@@ -1049,10 +1052,13 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 
 func deinInstallPost(result string) {
 
+	fmt.Println(result)
+	fmt.Println("----------------")
+	// TODO Should be more simpler implementation
 	re0 := regexp.MustCompile(`\^\[\[[M0-9;\?]*\s?[abhlmtrqABJH][0-9]*`)
 	result = re0.ReplaceAllLiteralString(result, "")
 	result = strings.Replace(result, "^[(B", "\n", -1)
-	fmt.Println(result)
+	result = strings.Replace(result, "\r", "\n", -1)
 
 	var messages string
 	for _, message := range strings.Split(result, "\n") {
@@ -1069,7 +1075,10 @@ func deinInstallPost(result string) {
 		if strings.Contains(message, "install()") {
 			continue
 		}
-		if !strings.Contains(message, "[dein]") {
+		if strings.Contains(message, "[dein] Updated plugins") {
+			message = "[dein] Updated plugins:"
+		}
+		if !(strings.Contains(message, "[dein]") || strings.Contains(message, "[Gonvim]")) {
 			continue
 		}
 		if strings.Contains(message, "Update started: ") {
@@ -1078,15 +1087,15 @@ func deinInstallPost(result string) {
 			}
 		}
 		message = strings.Replace(message, "^[=", "", -1)
-		message = strings.Replace(message, "^M", "", -1)
-		message = strings.Replace(message, "\x13", "", -1)
 		messages += ` | echomsg "` + message + `"`
-		fmt.Println("message: ", message)
+		fmt.Println(message)
 	}
-	editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
+	go editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
 
 func (p *Plugin) deinInstallPre(reponame string) {
+	p.installButton.DisconnectMousePressEvent()
+
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 	p.installLabel.SetCurrentWidget(p.waitingLabel)
@@ -1096,59 +1105,74 @@ func (p *Plugin) deinInstallPre(reponame string) {
 
 	// Dein install
 	text, _ := editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim -c 'sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q' `)
-	// v, err := nvim.NewChildProcess(nvim.ChildProcessArgs("--cmd", "if dein#check_install() | call dein#install() | endif | q"))
-	// editor.deinSide.deinInstall <- "Installation Complete."
-	// time.Sleep(900 * time.Millisecond)
-	// fmt.Println("2", v.cmd.Process)
-	// editor.deinSide.deinInstall <- "The added plugin can be used in a new workspace session."
-	// editor.deinSide.signal.DeinInstallSignal()
 
 	editor.deinSide.deinInstall <- text
 	editor.deinSide.signal.DeinInstallSignal()
 
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
-	p.installButton.DisconnectMousePressEvent()
 	p.installed = true
 	p.installLabelName.SetText("Installed")
 	deinTomlfile, _ := ioutil.ReadFile("/Users/akiyoshi/.config/nvim/dein.toml")
 	editor.deinSide.deintomlfile = deinTomlfile
 	p.installLabel.SetCurrentWidget(p.installButton)
+
+	time.Sleep(900 * time.Millisecond)
+	editor.deinSide.deinInstall <- "[Gonvim] The added plugin can be used in a new workspace session."
+	editor.deinSide.signal.DeinInstallSignal()
 }
 
 func deinUpdatePost(result string) {
 	fmt.Println("print: ", result)
+
 	// var messages string
 	// for _, message := range strings.Split(result, "\n") {
 	// 	message = strings.Replace(message, "\x13", "", -1)
 	// 	messages += ` | echomsg "` + message + `"`
 	// 	fmt.Println("message: ", message)
 	// }
-	// editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
+
+	// TODO Should be more simpler implementation
+	re0 := regexp.MustCompile(`\^\[\[[MC0-9;\?]*\s?[abhlmtrqABJH][0-9]*`)
+	result = re0.ReplaceAllLiteralString(result, "")
+	result = strings.Replace(result, "^[(B", "\n", -1)
+	result = strings.Replace(result, "\r", "\n", -1)
+
+	var messages string
+	for _, message := range strings.Split(result, "\n") {
+		re1 := regexp.MustCompile(`^\s\+`)
+		result = re1.ReplaceAllLiteralString(message, "")
+		re2 := regexp.MustCompile(`\s\+$`)
+		result = re2.ReplaceAllLiteralString(message, "")
+		if !strings.Contains(message, "[dein]") {
+			continue
+		}
+		if strings.Contains(message, "[dein]") {
+			index := strings.Index(message, "[dein]")
+			message = message[index:]
+		}
+		if strings.Contains(message, "changes)") {
+			index := strings.Index(message, "changes)")
+			message = message[:index+8]
+		}
+		message = strings.Replace(message, "^[=", "", -1)
+		messages += ` | echomsg "` + message + `"`
+		fmt.Print("|", message, "|\n")
+	}
+
+	editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
 
 func (d *DeinPluginItem) deinUpdatePre(pluginName string) {
+	d.updateButton.DisconnectMousePressEvent()
 	d.updateLabel.SetCurrentWidget(d.waitingLabel)
 
-	// update plugin
-	go func() {
-		var result string
-		editor.workspaces[editor.active].nvim.Call("dein#update", &result, pluginName)
-		// text, _ := editor.workspaces[editor.active].nvim.CommandOutput("call dein#update('" + pluginName + "')")
-		// $ vim -c "try | call dein#update() | finally | qall! | endtry" \
-		// text, _ := editor.workspaces[editor.active].nvim.CommandOutput("try | call dein#update('" + pluginName + "') | finally | echo \"Gonvim updates plugin.\" | endtry")
+	// Dein update
+	text, _ := editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim -c 'sleep 500m | call dein\#update("` + pluginName + `") | q' `)
 
-		editor.deinSide.deinUpdate <- result
-		editor.deinSide.signal.DeinUpdateSignal()
-		// d.updateLabel.SetCurrentWidget(d.updateButton)
-		// if strings.Contains(result, "[dein] Done:") {
-		// }
-	}()
+	d.updateLabel.SetCurrentWidget(d.updateButton)
 
-	d.updateButton.DisconnectMousePressEvent()
-}
-
-func (p *Plugin) pressButton(event *gui.QMouseEvent) {
-	go p.deinInstallPre(p.repo)
+	editor.deinSide.deinUpdate <- text
+	editor.deinSide.signal.DeinUpdateSignal()
 }
 
 func (p *Plugin) pressPluginWidget(event *gui.QMouseEvent) {
