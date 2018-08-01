@@ -1050,15 +1050,20 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 }
 
+func launderingString(s string) string {
+	// TODO Should be more simpler implementation
+	s = strings.Replace(s, "\r", "\n", -1)
+	re0 := regexp.MustCompile(`\^\[\[[MC0-9;\?]*\s?[abhlmtrqABJH][0-9]*`)
+	s = re0.ReplaceAllLiteralString(s, "")
+	s = strings.Replace(s, "^[(B", "\n", -1)
+	s = strings.Replace(s, "\r", "\n", -1)
+
+	return s
+}
+
 func deinInstallPost(result string) {
 
-	fmt.Println(result)
-	fmt.Println("----------------")
-	// TODO Should be more simpler implementation
-	re0 := regexp.MustCompile(`\^\[\[[M0-9;\?]*\s?[abhlmtrqABJH][0-9]*`)
-	result = re0.ReplaceAllLiteralString(result, "")
-	result = strings.Replace(result, "^[(B", "\n", -1)
-	result = strings.Replace(result, "\r", "\n", -1)
+	result = launderingString(result)
 
 	var messages string
 	for _, message := range strings.Split(result, "\n") {
@@ -1075,20 +1080,10 @@ func deinInstallPost(result string) {
 		if strings.Contains(message, "install()") {
 			continue
 		}
-		if strings.Contains(message, "[dein] Updated plugins") {
-			message = "[dein] Updated plugins:"
-		}
 		if !(strings.Contains(message, "[dein]") || strings.Contains(message, "[Gonvim]")) {
 			continue
 		}
-		if strings.Contains(message, "Update started: ") {
-			if len(message) > 44 {
-				message = message[:44]
-			}
-		}
-		message = strings.Replace(message, "^[=", "", -1)
 		messages += ` | echomsg "` + message + `"`
-		fmt.Println(message)
 	}
 	go editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
@@ -1122,20 +1117,8 @@ func (p *Plugin) deinInstallPre(reponame string) {
 }
 
 func deinUpdatePost(result string) {
-	fmt.Println("print: ", result)
 
-	// var messages string
-	// for _, message := range strings.Split(result, "\n") {
-	// 	message = strings.Replace(message, "\x13", "", -1)
-	// 	messages += ` | echomsg "` + message + `"`
-	// 	fmt.Println("message: ", message)
-	// }
-
-	// TODO Should be more simpler implementation
-	re0 := regexp.MustCompile(`\^\[\[[MC0-9;\?]*\s?[abhlmtrqABJH][0-9]*`)
-	result = re0.ReplaceAllLiteralString(result, "")
-	result = strings.Replace(result, "^[(B", "\n", -1)
-	result = strings.Replace(result, "\r", "\n", -1)
+	result = launderingString(result)
 
 	var messages string
 	for _, message := range strings.Split(result, "\n") {
@@ -1150,13 +1133,7 @@ func deinUpdatePost(result string) {
 			index := strings.Index(message, "[dein]")
 			message = message[index:]
 		}
-		if strings.Contains(message, "changes)") {
-			index := strings.Index(message, "changes)")
-			message = message[:index+8]
-		}
-		message = strings.Replace(message, "^[=", "", -1)
 		messages += ` | echomsg "` + message + `"`
-		fmt.Print("|", message, "|\n")
 	}
 
 	editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
