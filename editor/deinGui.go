@@ -21,7 +21,6 @@ import (
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
-	// "github.com/neovim/go-client/nvim"
 )
 
 type deinsideSignal struct {
@@ -1128,10 +1127,6 @@ func deinUpdatePost(result string) {
 		result = re2.ReplaceAllLiteralString(message, "")
 		if !strings.Contains(message, "[dein]") {
 			continue
-		}
-		if strings.Contains(message, "[dein]") {
-			index := strings.Index(message, "[dein]")
-			message = message[index:]
 		}
 		messages += ` | echomsg "` + message + `"`
 	}
