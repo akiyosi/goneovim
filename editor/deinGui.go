@@ -123,6 +123,14 @@ func readDeinCache() (map[interface{}]interface{}, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
+	filesString := strings.Replace(lines[0], `['`, "", 1)
+	filesString = strings.Replace(filesString, `']`, "", 1)
+	filesString = strings.Replace(filesString, `', '`, ",", -1)
+	for _, file := range strings.Split(filesString, ",") {
+		if strings.Contains(file[len(file)-5:], ".toml") && !strings.Contains(file, "lazy") {
+			fmt.Println("Gonvim detect the toml file: ", file)
+		}
+	}
 
 	m := make(map[interface{}]interface{})
 	err = yaml.Unmarshal([]byte(lines[1]), &m)
