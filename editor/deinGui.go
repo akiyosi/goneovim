@@ -123,14 +123,7 @@ func readDeinCache() (map[interface{}]interface{}, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-	filesString := strings.Replace(lines[0], `['`, "", 1)
-	filesString = strings.Replace(filesString, `']`, "", 1)
-	filesString = strings.Replace(filesString, `', '`, ",", -1)
-	for _, file := range strings.Split(filesString, ",") {
-		if strings.Contains(file[len(file)-5:], ".toml") && !strings.Contains(file, "lazy") {
-			fmt.Println("Gonvim detect the toml file: ", file)
-		}
-	}
+	detectTomlFile(lines[0])
 
 	m := make(map[interface{}]interface{})
 	err = yaml.Unmarshal([]byte(lines[1]), &m)
@@ -140,6 +133,24 @@ func readDeinCache() (map[interface{}]interface{}, error) {
 
 	return m, nil
 }
+
+func detectTomlFile(s string) {
+	filesString := strings.Replace(s, `['`, "", 1)
+	filesString = strings.Replace(filesString, `']`, "", 1)
+	filesString = strings.Replace(filesString, `', '`, ",", -1)
+	for i, file := range strings.Split(filesString, ",") {
+		if strings.Contains(file[len(file)-5:], ".toml") && !strings.Contains(file, "lazy") {
+			message := fmt.Sprintf("[Gonvim] Detect the dein.vim toml file: %s", file)
+			editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg | echomsg "` + message + `"`)
+			break
+		}
+		if i == len(strings.Split(filesString, ","))-1 {
+			message := "[Gonvim] I can't find the dein.vim toml file."
+			editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg | echomsg "` + message + `"`)
+		}
+	}
+}
+
 
 func loadDeinCashe() []*DeinPluginItem {
 	w := editor.workspaces[editor.active]
@@ -1060,10 +1071,14 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 func launderingString(s string) string {
 	// TODO Should be more simpler implementation
 	s = strings.Replace(s, "\r", "\n", -1)
-	re0 := regexp.MustCompile(`\^\[\[[MC0-9;\?]*\s?[abhlmtrqABJH][0-9]*`)
+	// re0 := regexp.MustCompile(`\^\[\[[MC0-9;\?]*\s?[abhlmtrqABJH][0-9]*`)
+	re0 := regexp.MustCompile(`\^\[\[?[MC0-9;\?]*\s?[abhlmtrqABCJH0-9]*[0-9]*`)
 	s = re0.ReplaceAllLiteralString(s, "")
-	s = strings.Replace(s, "^[(B", "\n", -1)
-	s = strings.Replace(s, "\r", "\n", -1)
+	s = strings.Replace(s, "\x0a\x7e", "\x20", -1)
+	s = strings.Replace(s, "\x7e", "\x20", -1)
+	s = strings.Replace(s, "\x0a", "\x20", -1)
+	re1 := regexp.MustCompile(`\s\s+`)
+	s = re1.ReplaceAllLiteralString(s, "")
 
 	return s
 }
@@ -1128,14 +1143,16 @@ func deinUpdatePost(result string) {
 	result = launderingString(result)
 
 	var messages string
-	for _, message := range strings.Split(result, "\n") {
-		re1 := regexp.MustCompile(`^\s\+`)
-		result = re1.ReplaceAllLiteralString(message, "")
-		re2 := regexp.MustCompile(`\s\+$`)
-		result = re2.ReplaceAllLiteralString(message, "")
-		if !strings.Contains(message, "[dein]") {
+	var isStartUpdate bool
+	for _, message := range strings.Split(result, "[dein]") {
+		if strings.Contains(message, `neovim.io/`) {
+			isStartUpdate = true
 			continue
 		}
+		if !isStartUpdate {
+			continue
+		}
+		message = "[dein]" + message
 		messages += ` | echomsg "` + message + `"`
 	}
 
