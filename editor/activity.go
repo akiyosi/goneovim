@@ -56,7 +56,7 @@ func newActivity() *Activity {
 		widget: editWidget,
 		text:   "activityedit",
 		icon:   editIcon,
-		active: editor.config.showSide,
+		active: editor.config.SideBar.Visible,
 		id:     1,
 	}
 

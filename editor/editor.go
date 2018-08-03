@@ -16,7 +16,8 @@ import (
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 
-	ini "gopkg.in/go-ini/ini.v1"
+	"github.com/BurntSushi/toml"
+	// ini "gopkg.in/go-ini/ini.v1"
 )
 
 var editor *Editor
@@ -73,7 +74,7 @@ type Editor struct {
 	keyAlt          core.Qt__Key
 	keyShift        core.Qt__Key
 
-	config *gonvimConfig
+	config gonvimConfig
 }
 
 type editorSignal struct {
@@ -87,16 +88,63 @@ type editorSignal struct {
 	_ func() `signal:"messageSignal"`
 }
 
+// gonvimConfig is the following toml file
+// [editor]
+// clipboard = true
+//
+// [activityBar]
+// visible = true
+// dropshadow = true
+//
+// [sideBar]
+// visible = false
+// dropshadow = true
+// width = 360
+// accentColor
+//
+// [workspace]
+// # Path style
+// #   full: fullpath,
+// #   name: directory name only,
+// #   minimum: only the last directory is full name, middle directory is short form
+// pathStyle = minimum
+//
+// # restore the previous sessions if there are exists.
+// restoreSession = false
+//
+// [dein]
+// tomlFile
 type gonvimConfig struct {
-	clipboard      bool
-	accentColor    string
-	showActivity   bool
-	activityShadow bool
-	showSide       bool
-	restoreSession bool
-	sideShadow     bool
-	sideWidth      int
-	pathFormat     string
+	Editor      editorConfig
+	ActivityBar activityBarConfig
+	SideBar     sideBarConfig
+	Workspace   workspaceConfig
+	Dein        deinConfig
+}
+
+type editorConfig struct {
+	Clipboard bool
+}
+
+type activityBarConfig struct {
+	Visible    bool
+	DropShadow bool
+}
+
+type sideBarConfig struct {
+	Visible     bool
+	DropShadow  bool
+	Width       int
+	AccentColor string
+}
+
+type workspaceConfig struct {
+	RestoreSession bool
+	PathStyle      string
+}
+
+type deinConfig struct {
+	TomlFile string
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -177,7 +225,7 @@ func InitEditor() {
 	e.workspaces = []*Workspace{}
 	sessionExists := false
 	if err == nil {
-		if e.config.restoreSession == true {
+		if e.config.Workspace.RestoreSession == true {
 			for i := 0; i < 20; i++ {
 				path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
 				_, err := os.Stat(path)
@@ -214,7 +262,7 @@ func InitEditor() {
 	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
 	splitter.AddWidget(e.activity.sideArea)
 	splitter.AddWidget(e.wsWidget)
-	splitter.SetSizes([]int{editor.config.sideWidth, editor.width - editor.config.sideWidth})
+	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
 	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
 	e.splitter = splitter
@@ -224,7 +272,7 @@ func InitEditor() {
 	e.workspaceUpdate()
 
 	// Drop shadow to Side Bar
-	if e.config.sideShadow == true {
+	if e.config.SideBar.DropShadow == true {
 		go func() {
 			shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 			shadow.SetBlurRadius(60)
@@ -235,7 +283,7 @@ func InitEditor() {
 	}
 
 	// Drop shadow for Activity Bar
-	if e.config.activityShadow == true {
+	if e.config.ActivityBar.DropShadow == true {
 		go func() {
 			shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 			shadow.SetBlurRadius(60)
@@ -246,10 +294,10 @@ func InitEditor() {
 	}
 	//
 
-	if e.config.showActivity == false {
+	if e.config.ActivityBar.Visible == false {
 		e.activity.widget.Hide()
 	}
-	if e.config.showSide == false {
+	if e.config.SideBar.Visible == false {
 		e.activity.sideArea.Hide()
 	}
 
@@ -291,56 +339,14 @@ func InitEditor() {
 	widgets.QApplication_Exec()
 }
 
-func newGonvimConfig(home string) *gonvimConfig {
-	cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
-	var cfgActivityDisplay, cfgSideDisplay, cfgWSRestoresession bool
-	var cfgActivityDropShadow, cfgSideDropShadow bool
-	var cfgWSPath string
-	var cfgSideWidth int
-	var cfgClipBoard bool
-	var cfgAccentColor string
-	var errGetWidth error
-	if cfgerr != nil {
-		cfgActivityDisplay = true
-		cfgActivityDropShadow = true
-		cfgSideDisplay = true
-		cfgSideDropShadow = true
-		cfgWSRestoresession = false
-		cfgWSPath = "minimum"
-		cfgSideWidth = 250
-		cfgClipBoard = true
-		cfgAccentColor = "#519aba"
-	} else {
-		cfgActivityDisplay = cfg.Section("activity").Key("display").MustBool()
-		cfgSideDisplay = cfg.Section("side").Key("display").MustBool()
-		cfgActivityDropShadow = cfg.Section("activity").Key("dropshadow").MustBool()
-		cfgSideDropShadow = cfg.Section("side").Key("dropshadow").MustBool()
-		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
-		cfgWSPath = cfg.Section("workspace").Key("path").String()
-		if cfgWSPath == "" {
-			cfgWSPath = "minimum"
-		}
-		cfgSideWidth, errGetWidth = cfg.Section("side").Key("width").Int()
-		if errGetWidth != nil {
-			cfgSideWidth = 250
-		}
-		cfgClipBoard = cfg.Section("").Key("clipboard").MustBool()
-		if cfgAccentColor == "" {
-			cfgAccentColor = "#519aba"
-		}
+func newGonvimConfig(home string) gonvimConfig {
+	var config gonvimConfig
+	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
+		config.ActivityBar.Visible = true
+		config.SideBar.Width = 300
+		config.SideBar.AccentColor = "#519aba"
+		config.Workspace.PathStyle = "minimum"
 	}
-	config := &gonvimConfig{
-		restoreSession: cfgWSRestoresession,
-		showActivity:   cfgActivityDisplay,
-		showSide:       cfgSideDisplay,
-		activityShadow: cfgActivityDropShadow,
-		sideShadow:     cfgSideDropShadow,
-		pathFormat:     cfgWSPath,
-		sideWidth:      cfgSideWidth,
-		clipboard:      cfgClipBoard,
-		accentColor:    cfgAccentColor,
-	}
-
 	return config
 }
 

@@ -335,7 +335,7 @@ func (w *Workspace) workspaceCommands(path string) {
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
-	if editor.config.clipboard == true {
+	if editor.config.Editor.Clipboard == true {
 		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
 	}
 	w.nvim.Command(`command! GonvimWorkspaceNew call rpcnotify(0, 'Gui', 'gonvim_workspace_new')`)
@@ -364,7 +364,7 @@ func (w *Workspace) setCwd() {
 	w.cwd = cwd
 
 	var labelpath string
-	switch editor.config.pathFormat {
+	switch editor.config.Workspace.PathStyle {
 	case "name":
 		labelpath = filepath.Base(cwd)
 	case "minimum":
@@ -829,8 +829,8 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(15, 6, 10, 6)
-	label.SetMaximumWidth(editor.config.sideWidth)
-	label.SetMinimumWidth(editor.config.sideWidth)
+	label.SetMaximumWidth(editor.config.SideBar.Width)
+	label.SetMinimumWidth(editor.config.SideBar.Width)
 
 	// flwidget := widgets.NewQWidget(nil, 0)
 
@@ -873,7 +873,7 @@ func (i *WorkspaceSideItem) setActive() {
 	}
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.accentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
 	if i.Filelist.isload == false && editor.activity.editItem.active == true {
 		filelist := newFilelistwidget(i.cwdpath)
@@ -995,13 +995,13 @@ func (w *Workspace) setGuiColor() {
 func noGoodBadNoWay() {
 	fg := editor.fgcolor
 	bg := editor.bgcolor
-	if (len(editor.workspaces) == 1 || len(editor.wsSide.items) == 1) || (editor.config.restoreSession == true) {
+	if (len(editor.workspaces) == 1 || len(editor.wsSide.items) == 1) || (editor.config.Workspace.RestoreSession == true) {
 		for i, item := range editor.wsSide.items {
 			if i >= len(editor.workspaces) {
 				break
 			}
 			if i == editor.active {
-				item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.accentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+				item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 			} else {
 				item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 15px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 				item.active = false

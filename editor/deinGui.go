@@ -151,15 +151,14 @@ func detectTomlFile(s string) {
 	}
 }
 
-
 func loadDeinCashe() []*DeinPluginItem {
 	w := editor.workspaces[editor.active]
-	labelColor := darkenHex(editor.config.accentColor)
+	labelColor := darkenHex(editor.config.SideBar.AccentColor)
 
 	m, _ := readDeinCache()
 	installedPlugins := []*DeinPluginItem{}
 	// width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
-	width := editor.config.sideWidth
+	width := editor.config.SideBar.Width
 
 	for name, item := range m {
 		s, _ := item.(map[interface{}]interface{})
@@ -259,10 +258,10 @@ func loadDeinCashe() []*DeinPluginItem {
 			go i.deinUpdatePre(i.name)
 		})
 		updateButton.ConnectEnterEvent(func(event *core.QEvent) {
-			updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", editor.config.accentColor))
+			updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", editor.config.SideBar.AccentColor))
 		})
 		updateButton.ConnectLeaveEvent(func(event *core.QEvent) {
-			labelColor := darkenHex(editor.config.accentColor)
+			labelColor := darkenHex(editor.config.SideBar.AccentColor)
 			updateButton.SetStyleSheet(fmt.Sprintf(" #updatebutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 		})
 		i.updateButton = updateButton
@@ -275,7 +274,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		updateWaitingLayout.SetContentsMargins(5, 0, 5, 0)
 		updateWaiting.SetLayout(updateWaitingLayout)
 		waitingLabel := widgets.NewQProgressBar(nil)
-		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, editor.config.accentColor))
+		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, editor.config.SideBar.AccentColor))
 		waitingLabel.SetRange(0, 0)
 		updateWaitingLayout.AddWidget(waitingLabel, 0, 0)
 
@@ -458,7 +457,7 @@ func newDeinSide() *DeinSide {
 	comboBoxMenu := widgets.NewQComboBox(nil)
 	comboBoxMenu.AddItems([]string{"ALL", "Language", "Completion", "Code-display", "Integrations", "Interface", "Commands", "Other"})
 	comboBoxMenu.SetFocusPolicy(core.Qt__ClickFocus)
-	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" * { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } ", editor.config.accentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, bg.R, bg.G, bg.B, editor.config.accentColor))
+	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" * { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } ", editor.config.SideBar.AccentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, bg.R, bg.G, bg.B, editor.config.SideBar.AccentColor))
 	comboBoxLayout.AddWidget(comboBoxMenu, 0, 0)
 	comboBoxWidget := widgets.NewQWidget(nil, 0)
 	comboBoxWidget.SetLayout(comboBoxLayout)
@@ -502,7 +501,7 @@ func newDeinSide() *DeinSide {
 	waitingLayout.SetContentsMargins(20, 0, 20, 5)
 	waitingWidget.SetLayout(waitingLayout)
 	pbar := widgets.NewQProgressBar(nil)
-	pbar.SetStyleSheet(fmt.Sprintf(" QProgressBar { padding: 20 1 0 1; height: 1px; border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, editor.config.accentColor))
+	pbar.SetStyleSheet(fmt.Sprintf(" QProgressBar { padding: 20 1 0 1; height: 1px; border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, editor.config.SideBar.AccentColor))
 	pbar.SetRange(0, 0)
 	waitingLayout.AddWidget(pbar, 0, 0)
 	pbar.Hide()
@@ -572,7 +571,7 @@ func newDeinSide() *DeinSide {
 
 	deinSideStyle := fmt.Sprintf("QWidget {	color: rgba(%d, %d, %d, 1);		border-right: 0px solid;	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
 	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget {padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + deinSideStyle)
-	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid	%s; border-radius: 1px; background: rgba(%d, %d, %d, 1); selection-background-color: rgba(%d, %d, %d, 1); }	", editor.config.accentColor, bg.R, bg.G, bg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + deinSideStyle)
+	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid	%s; border-radius: 1px; background: rgba(%d, %d, %d, 1); selection-background-color: rgba(%d, %d, %d, 1); }	", editor.config.SideBar.AccentColor, bg.R, bg.G, bg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + deinSideStyle)
 
 	return side
 }
@@ -746,7 +745,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 	w := editor.workspaces[editor.active]
 	fg := editor.fgcolor
 	resultplugins := []*Plugin{}
-	labelColor := darkenHex(editor.config.accentColor)
+	labelColor := darkenHex(editor.config.SideBar.AccentColor)
 	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
 	parentLayout := editor.deinSide.searchresult.layout
 
@@ -908,7 +907,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginWaitingLayout.SetContentsMargins(5, 0, 5, 0)
 		pluginWaiting.SetLayout(pluginWaitingLayout)
 		waitingLabel := widgets.NewQProgressBar(nil)
-		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, editor.config.accentColor))
+		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, editor.config.SideBar.AccentColor))
 		waitingLabel.SetRange(0, 0)
 		pluginWaitingLayout.AddWidget(waitingLabel, 0, 0)
 
@@ -1057,14 +1056,14 @@ func (p *Plugin) enterButton(event *core.QEvent) {
 	if p.installed == true {
 		return
 	}
-	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", editor.config.accentColor))
+	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", editor.config.SideBar.AccentColor))
 }
 
 func (p *Plugin) leaveButton(event *core.QEvent) {
 	if p.installed == true {
 		return
 	}
-	labelColor := darkenHex(editor.config.accentColor)
+	labelColor := darkenHex(editor.config.SideBar.AccentColor)
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 }
 
