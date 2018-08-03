@@ -123,7 +123,9 @@ func readDeinCache() (map[interface{}]interface{}, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-	detectTomlFile(lines[0])
+	if editor.config.Dein.TomlFile == "" {
+		detectTomlFile(lines[0])
+	}
 
 	m := make(map[interface{}]interface{})
 	err = yaml.Unmarshal([]byte(lines[1]), &m)
@@ -142,6 +144,7 @@ func detectTomlFile(s string) {
 		if strings.Contains(file[len(file)-5:], ".toml") && !strings.Contains(file, "lazy") {
 			message := fmt.Sprintf("[Gonvim] Detect the dein.vim toml file: %s", file)
 			editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg | echomsg "` + message + `"`)
+			editor.config.Dein.TomlFile = file
 			break
 		}
 		if i == len(strings.Split(filesString, ","))-1 {
@@ -521,10 +524,9 @@ func newDeinSide() *DeinSide {
 	}
 
 	// load dein toml
-	file := "/Users/akiyoshi/.config/nvim/dein.toml"
 	var deinToml DeinTomlConfig
-	_, _ = toml.DecodeFile(file, &deinToml)
-	deinTomlfile, _ := ioutil.ReadFile(file)
+	_, _ = toml.DecodeFile(editor.config.Dein.TomlFile, &deinToml)
+	deinTomlfile, _ := ioutil.ReadFile(editor.config.Dein.TomlFile)
 
 	// make DeinSide
 	side := &DeinSide{
@@ -1087,11 +1089,10 @@ func deinInstallPost(result string) {
 	result = launderingString(result)
 
 	var messages string
-	for _, message := range strings.Split(result, "\n") {
-		re1 := regexp.MustCompile(`^\s\+`)
-		result = re1.ReplaceAllLiteralString(message, "")
-		re2 := regexp.MustCompile(`\s\+$`)
-		result = re2.ReplaceAllLiteralString(message, "")
+	for _, message := range strings.Split(result, "[dein]") {
+		if !strings.Contains(message, "[Gonvim]") {
+			message = "[dein]" + message
+		}
 		if strings.Contains(message, "Not installed plugins") {
 			continue
 		}
@@ -1104,6 +1105,7 @@ func deinInstallPost(result string) {
 		if !(strings.Contains(message, "[dein]") || strings.Contains(message, "[Gonvim]")) {
 			continue
 		}
+		fmt.Println(message)
 		messages += ` | echomsg "` + message + `"`
 	}
 	go editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
@@ -1117,7 +1119,10 @@ func (p *Plugin) deinInstallPre(reponame string) {
 	p.installLabel.SetCurrentWidget(p.waitingLabel)
 	b := editor.deinSide.deintomlfile
 	b, _ = tomlwriter.WriteValue(`'`+reponame+`'`, b, "[plugins]", "repo", nil)
-	_ = ioutil.WriteFile("/Users/akiyoshi/.config/nvim/dein.toml", b, 0755)
+	err := ioutil.WriteFile(editor.config.Dein.TomlFile, b, 0755)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	// Dein install
 	text, _ := editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim -c 'sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q' `)
@@ -1128,7 +1133,7 @@ func (p *Plugin) deinInstallPre(reponame string) {
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 	p.installed = true
 	p.installLabelName.SetText("Installed")
-	deinTomlfile, _ := ioutil.ReadFile("/Users/akiyoshi/.config/nvim/dein.toml")
+	deinTomlfile, _ := ioutil.ReadFile(editor.config.Dein.TomlFile)
 	editor.deinSide.deintomlfile = deinTomlfile
 	p.installLabel.SetCurrentWidget(p.installButton)
 
