@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -1035,6 +1036,9 @@ func sinceUpdate(t int) string {
 }
 
 func (d *DeinPluginItem) enterWidget(event *core.QEvent) {
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__PointingHandCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 	bg := editor.bgcolor
 	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 }
@@ -1042,9 +1046,13 @@ func (d *DeinPluginItem) enterWidget(event *core.QEvent) {
 func (d *DeinPluginItem) leaveWidget(event *core.QEvent) {
 	bg := editor.bgcolor
 	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+	gui.QGuiApplication_RestoreOverrideCursor()
 }
 
 func (p *Plugin) enterWidget(event *core.QEvent) {
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__PointingHandCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 	bg := editor.bgcolor
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 }
@@ -1052,6 +1060,7 @@ func (p *Plugin) enterWidget(event *core.QEvent) {
 func (p *Plugin) leaveWidget(event *core.QEvent) {
 	bg := editor.bgcolor
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+	gui.QGuiApplication_RestoreOverrideCursor()
 }
 
 func (p *Plugin) enterButton(event *core.QEvent) {
@@ -1073,13 +1082,20 @@ func launderingString(s string) string {
 	// TODO Should be more simpler implementation
 	s = strings.Replace(s, "\r", "\n", -1)
 	// re0 := regexp.MustCompile(`\^\[\[[MC0-9;\?]*\s?[abhlmtrqABJH][0-9]*`)
-	re0 := regexp.MustCompile(`\^\[\[?[MC0-9;\?]*\s?[abhlmtrqABCJH0-9]*[0-9]*`)
+	// re0 := regexp.MustCompile(`\^\[\[?[MC0-9;\?]*\s?[abhlmtrqABCJH0-9]*[0-9]*`)
+	re0 := regexp.MustCompile(`\^\[\[?[MC0-9;\?(>]*\s?[abhlmtrqABCJH0-9]*[0-9]*`)
 	s = re0.ReplaceAllLiteralString(s, "")
 	s = strings.Replace(s, "\x0a\x7e", "\x20", -1)
 	s = strings.Replace(s, "\x7e", "\x20", -1)
 	s = strings.Replace(s, "\x0a", "\x20", -1)
 	re1 := regexp.MustCompile(`\s\s+`)
 	s = re1.ReplaceAllLiteralString(s, "")
+	re2 := regexp.MustCompile(`\[dein\]\([^\s]\)`)
+	s = re2.ReplaceAllLiteralString(s, `[dein]  \1`)
+	s = strings.Replace(s, "NVIM", "\nNVIM", -1)
+	s = strings.Replace(s, "[dein]", "\n[dein]", -1)
+
+	fmt.Println([]byte(s))
 
 	return s
 }
@@ -1089,10 +1105,7 @@ func deinInstallPost(result string) {
 	result = launderingString(result)
 
 	var messages string
-	for _, message := range strings.Split(result, "[dein]") {
-		if !strings.Contains(message, "[Gonvim]") {
-			message = "[dein]" + message
-		}
+	for _, message := range strings.Split(result, "\n") {
 		if strings.Contains(message, "Not installed plugins") {
 			continue
 		}
@@ -1105,7 +1118,6 @@ func deinInstallPost(result string) {
 		if !(strings.Contains(message, "[dein]") || strings.Contains(message, "[Gonvim]")) {
 			continue
 		}
-		fmt.Println(message)
 		messages += ` | echomsg "` + message + `"`
 	}
 	go editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
@@ -1148,17 +1160,22 @@ func deinUpdatePost(result string) {
 
 	var messages string
 	var isStartUpdate bool
-	for _, message := range strings.Split(result, "[dein]") {
-		if strings.Contains(message, `neovim.io/`) {
-			isStartUpdate = true
+	for _, message := range strings.Split(result, "\n") {
+		if runtime.GOOS == "linux" {
+			if strings.Contains(message, `neovim.io/`) {
+				isStartUpdate = true
+				continue
+			}
+			if !isStartUpdate {
+				continue
+			}
+		}
+		if !strings.Contains(message, "[dein] ") {
 			continue
 		}
-		if !isStartUpdate {
-			continue
-		}
-		message = "[dein]" + message
 		messages += ` | echomsg "` + message + `"`
 	}
+	fmt.Println(messages)
 
 	editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
@@ -1181,6 +1198,9 @@ func (p *Plugin) pressPluginWidget(event *gui.QMouseEvent) {
 }
 
 func (d *DeinSide) enterConfigIcon(event *core.QEvent) {
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__PointingHandCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 	w := editor.workspaces[editor.active]
 	fg := editor.fgcolor
 	svgConfigContent := w.getSvg("configfile", newRGBA(warpColor(fg, -20).R, warpColor(fg, -20).G, warpColor(fg, -20).B, 1))
@@ -1192,6 +1212,7 @@ func (d *DeinSide) leaveConfigIcon(event *core.QEvent) {
 	bg := editor.bgcolor
 	svgConfigContent := w.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	d.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
+	gui.QGuiApplication_RestoreOverrideCursor()
 }
 
 func pressConfigIcon(event *gui.QMouseEvent) {

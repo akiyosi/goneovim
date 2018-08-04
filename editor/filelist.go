@@ -214,6 +214,9 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 		}
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__PointingHandCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 }
 
 func (f *Fileitem) leaveEvent(event *core.QEvent) {
@@ -226,6 +229,7 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
+	gui.QGuiApplication_RestoreOverrideCursor()
 }
 
 func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {

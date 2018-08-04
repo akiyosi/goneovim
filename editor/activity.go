@@ -109,6 +109,9 @@ func newActivity() *Activity {
 }
 
 func (n *ActivityItem) enterEvent(event *core.QEvent) {
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__PointingHandCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 	fg := editor.fgcolor
 	n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
 	svgContent := editor.workspaces[editor.active].getSvg(n.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
@@ -127,6 +130,7 @@ func (n *ActivityItem) leaveEvent(event *core.QEvent) {
 		svgContent = editor.workspaces[editor.active].getSvg(n.text, newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	}
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	gui.QGuiApplication_RestoreOverrideCursor()
 }
 
 func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {

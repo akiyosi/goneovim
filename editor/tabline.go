@@ -467,6 +467,9 @@ func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
 	t.closeIcon.SetFixedHeight(14)
 	svgContent := t.t.ws.getSvg("hoverclose", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__PointingHandCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 }
 
 func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
@@ -474,4 +477,5 @@ func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
 	t.closeIcon.SetFixedHeight(14)
 	svgContent := t.t.ws.getSvg("cross", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	gui.QGuiApplication_RestoreOverrideCursor()
 }
