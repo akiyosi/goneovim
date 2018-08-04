@@ -388,7 +388,10 @@ func loadDeinCashe() []*DeinPluginItem {
 
 func getRepoDesc(owner string, name string) string {
 	var results PluginSearchResults
-	response, _ := http.Get(fmt.Sprintf("http://vimawesome.com/api/plugins?query=%v", name))
+	response, err := http.Get(fmt.Sprintf("http://vimawesome.com/api/plugins?query=%v", name))
+	if err != nil {
+		return ""
+	}
 	defer response.Body.Close()
 
 	if err := json.NewDecoder(response.Body).Decode(&results); err != nil {
