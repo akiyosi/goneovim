@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -337,6 +338,18 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginSettingsIcon.Load2(core.NewQByteArray2(svgSettingsContent, len(svgSettingsContent)))
 		installedPluginSettingsLayout.AddWidget(installedPluginSettingsIcon, 0, 0)
 		installedPluginSettings.SetLayout(installedPluginSettingsLayout)
+		installedPluginSettings.ConnectMousePressEvent(func(*gui.QMouseEvent) {
+			b := editor.deinSide.deintomlfile
+			_, ln := tomlwriter.WriteValue("hoge", b, "[plugins]", "repo", i.repo)
+
+			path, _ := w.nvim.CommandOutput(`echo expand("%:p")`)
+			path, _ = filepath.EvalSymlinks(path)
+			tomlpath, _ := filepath.EvalSymlinks(editor.config.Dein.TomlFile)
+			if path != tomlpath {
+				w.nvim.Command(fmt.Sprintf("tabnew %s", editor.config.Dein.TomlFile))
+			}
+			w.nvim.Command(fmt.Sprintf("call cursor(%v, 0)", ln-1))
+		})
 
 		// * installedPlugin name & some option icon
 		installedPluginHead := widgets.NewQWidget(nil, 0)
@@ -1219,16 +1232,6 @@ func (d *DeinSide) leaveConfigIcon(event *core.QEvent) {
 }
 
 func pressConfigIcon(event *gui.QMouseEvent) {
-	w := editor.workspaces[editor.active]
-	var userPath, basePath string
-	userPath, _ = w.nvim.CommandOutput("echo g:dein#cache_directory")
-	basePath, _ = w.nvim.CommandOutput("echo g:dein#_base_path")
-	var deinDirectInstallPath string
-	if userPath == "" {
-		deinDirectInstallPath = basePath
-	} else {
-		deinDirectInstallPath = userPath
-	}
-	editor.workspaces[editor.active].nvim.Command(":tabnew " + deinDirectInstallPath + "/direct_install.vim")
+	editor.workspaces[editor.active].nvim.Command(":tabnew " + editor.config.Dein.TomlFile)
 
 }
