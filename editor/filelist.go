@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 	"unicode/utf8"
 
 	"github.com/therecipe/qt/core"
@@ -23,16 +22,18 @@ type Filelist struct {
 }
 
 type Fileitem struct {
-	fl           *Filelist
-	widget       *widgets.QWidget
-	fileIcon     *svg.QSvgWidget
-	fileType     string
-	file         *widgets.QLabel
-	fileText     string
-	fileName     string
-	path         string
-	fileModified *svg.QSvgWidget
-	isOpened     bool
+	fl             *Filelist
+	widget         *widgets.QWidget
+	fileIcon       *svg.QSvgWidget
+	fileType       string
+	file           *widgets.QLabel
+	fileText       string
+	fileName       string
+	filenameWidget *widgets.QWidget
+	path           string
+	fileModified   *svg.QSvgWidget
+	isOpened       bool
+	isModified     string
 }
 
 func newFilelistwidget(path string) *Filelist {
@@ -43,23 +44,30 @@ func newFilelistwidget(path string) *Filelist {
 	filelist.active = -1
 
 	filelistwidget := widgets.NewQWidget(nil, 0)
+	// filelistwidget.SetSizePolicy2(widgets.QSizePolicy__Maximum, widgets.QSizePolicy__Maximum)
+	filelistwidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 	filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
 	filelistlayout.SetContentsMargins(0, 0, 0, 0)
 	filelistlayout.SetSpacing(1)
 	bg := editor.bgcolor
-	width := editor.config.sideWidth
+
 	filewidgetLeftMargin := 35
-	var filewidgetMarginBuf int
-	if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
-		filewidgetMarginBuf = 55
-	} else {
-		filewidgetMarginBuf = 70
-	}
-	maxfilenameLength := int(float64(width-(filewidgetLeftMargin+filewidgetMarginBuf)) / float64(editor.workspaces[editor.active].font.truewidth))
+
+	// var filewidgetMarginBuf int
+	// if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
+	// 	filewidgetMarginBuf = 55
+	// } else {
+	// 	filewidgetMarginBuf = 70
+	// }
+	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
 
 	for _, f := range lsfiles {
 
 		filewidget := widgets.NewQWidget(nil, 0)
+		filewidget.SetMaximumWidth(width)
+		filewidget.SetMinimumWidth(width)
+		filewidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
+		// filewidget.SetSizePolicy2(widgets.QSizePolicy__Maximum, widgets.QSizePolicy__Maximum)
 
 		filelayout := widgets.NewQHBoxLayout()
 		filelayout.SetContentsMargins(filewidgetLeftMargin, 0, 10, 0)
@@ -69,47 +77,29 @@ func newFilelistwidget(path string) *Filelist {
 		fileIcon.SetFixedHeight(11)
 
 		filenameWidget := widgets.NewQWidget(nil, 0)
+		filenameWidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
+		// filenameWidget.SetSizePolicy2(widgets.QSizePolicy__Maximum, widgets.QSizePolicy__Maximum)
 		filenameLayout := widgets.NewQHBoxLayout()
-		filenameLayout.SetContentsMargins(0, 5, 10, 5)
+		filenameLayout.SetContentsMargins(0, 5, 5, 5)
 		filenameLayout.SetSpacing(0)
 		file := widgets.NewQLabel(nil, 0)
+		file.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 		//file.SetContentsMargins(0, 5, 10, 5)
 		file.SetContentsMargins(0, 0, 0, 0)
-		file.SetFont(editor.workspaces[editor.active].font.fontNew)
+		// file.SetFont(editor.workspaces[editor.active].font.fontNew)
 
 		fileModified := svg.NewQSvgWidget(nil)
 		fileModified.SetFixedWidth(11)
 		fileModified.SetFixedHeight(11)
 		fileModified.SetContentsMargins(0, 0, 0, 0)
+		// Hide with the same color as the background
+		svgModified := editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+		fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 
 		filename := f.Name()
-		multibyteCharNum := unicodeCount(filename)
-		filenamerune := []rune(filename)
-		filenameDisplayLength := len(filenamerune) + multibyteCharNum
 
-		if filenameDisplayLength > maxfilenameLength {
-			if multibyteCharNum > 0 {
-				for filenameDisplayLength > maxfilenameLength {
-					filename = string(filenamerune[:(len(filenamerune) - 1)])
-					filenamerune = []rune(filename)
-					multibyteCharNum = unicodeCount(filename)
-					filenameDisplayLength = len(filenamerune) + multibyteCharNum
-				}
-			} else {
-				filename = filename[:maxfilenameLength]
-			}
-			moreIcon := svg.NewQSvgWidget(nil)
-			moreIcon.SetFixedWidth(11)
-			moreIcon.SetFixedHeight(11)
-			svgMoreDotsContent := editor.workspaces[editor.active].getSvg("moredots", nil)
-			moreIcon.Load2(core.NewQByteArray2(svgMoreDotsContent, len(svgMoreDotsContent)))
-			file.SetText(filename)
-			filenameLayout.AddWidget(file, 0, 0)
-			filenameLayout.AddWidget(moreIcon, 0, 0)
-		} else {
-			file.SetText(filename)
-			filenameLayout.AddWidget(file, 0, 0)
-		}
+		filenameLayout.AddWidget(file, 0, 0)
+
 		filenameWidget.SetLayout(filenameLayout)
 
 		filepath := filepath.Join(path, f.Name())
@@ -126,9 +116,6 @@ func newFilelistwidget(path string) *Filelist {
 			fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		}
 
-		svgModified := editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
-		fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
-
 		filelayout.AddWidget(fileIcon, 0, 0)
 		filelayout.AddWidget(filenameWidget, 0, 0)
 		filelayout.AddWidget(fileModified, 0, 0)
@@ -136,16 +123,20 @@ func newFilelistwidget(path string) *Filelist {
 		filewidget.SetAttribute(core.Qt__WA_Hover, true)
 
 		fileitem := &Fileitem{
-			fl:           filelist,
-			widget:       filewidget,
-			fileText:     filename,
-			fileName:     f.Name(),
-			file:         file,
-			fileIcon:     fileIcon,
-			fileType:     filetype,
-			path:         filepath,
-			fileModified: fileModified,
+			fl:             filelist,
+			widget:         filewidget,
+			fileText:       filename,
+			fileName:       f.Name(),
+			filenameWidget: filenameWidget,
+			file:           file,
+			fileIcon:       fileIcon,
+			fileType:       filetype,
+			path:           filepath,
+			fileModified:   fileModified,
 		}
+		charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
+		maxfilenameLength := float64(width - fileIcon.Width() - fileModified.Width() - filewidgetLeftMargin - charWidth - 35)
+		fileitem.setFilename(maxfilenameLength)
 
 		fileitem.widget.ConnectEnterEvent(fileitem.enterEvent)
 		fileitem.widget.ConnectLeaveEvent(fileitem.leaveEvent)
@@ -160,23 +151,72 @@ func newFilelistwidget(path string) *Filelist {
 	filelist.Fileitems = fileitems
 	filelist.isload = true
 
+	editor.wsSide.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
+		if editor.activity.editItem.active == false {
+			return
+		}
+		filewidgetLeftMargin := 35
+		currFileItem := editor.wsSide.items[editor.active].Filelist.Fileitems[0]
+		width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+		charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
+		length := float64(width - currFileItem.fileIcon.Width() - currFileItem.fileModified.Width() - filewidgetLeftMargin - charWidth - 35)
+
+		for _, item := range editor.wsSide.items {
+			item.label.SetMaximumWidth(editor.activity.sideArea.Width())
+			item.label.SetMinimumWidth(editor.activity.sideArea.Width())
+			for _, fileitem := range item.Filelist.Fileitems {
+				fileitem.widget.SetMaximumWidth(width)
+				fileitem.widget.SetMinimumWidth(width)
+				fileitem.setFilename(length)
+			}
+		}
+	})
+
 	return filelist
 }
 
+func (f *Fileitem) setFilename(length float64) {
+	metrics := gui.NewQFontMetricsF(gui.NewQFont())
+	elidedfilename := metrics.ElidedText(f.fileText, core.Qt__ElideRight, length, 0)
+	f.file.Clear()
+	f.file.SetText(elidedfilename)
+}
+
+// func (f *Fileitem) resizeEvent(event *gui.QResizeEvent) {
+// width := editor.config.sideWidth
+// maxfilenameLength := float64(width-(filewidgetLeftMargin+filewidgetMarginBuf))
+// metrics := gui.NewQFontMetricsF(gui.NewQFont())
+// elidedfilename := metrics.ElidedText(filename, core.Qt__ElideRight, maxfilenameLength, 0)
+// file.SetText(elidedfilename)
+// filenameLayout.AddWidget(file, 0, 0)
+// }
+
 func (f *Fileitem) enterEvent(event *core.QEvent) {
+	fg := editor.fgcolor
 	bg := editor.bgcolor
 	var svgModified string
 	cfn := ""
 	editor.workspaces[editor.active].nvim.Eval("expand('%:t')", &cfn)
 	if cfn == f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
-		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+		if f.isModified == "1" {
+			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+		} else {
+			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+		}
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	} else {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); text-decoration: underline; } ", shiftColor(bg, -9).R, shiftColor(bg, -9).G, shiftColor(bg, -9).B))
-		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -9).R, shiftColor(bg, -9).G, shiftColor(bg, -9).B, 1))
+		if f.isModified == "1" {
+			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+		} else {
+			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -9).R, shiftColor(bg, -9).G, shiftColor(bg, -9).B, 1))
+		}
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__PointingHandCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 }
 
 func (f *Fileitem) leaveEvent(event *core.QEvent) {
@@ -189,6 +229,7 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
+	gui.QGuiApplication_RestoreOverrideCursor()
 }
 
 func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
@@ -235,6 +276,7 @@ func (f *Fileitem) updateModifiedbadge() {
 		}
 	}
 	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+	f.isModified = isModified
 }
 
 func unicodeCount(str string) int {

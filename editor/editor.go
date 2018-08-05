@@ -15,7 +15,6 @@ import (
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
-	ini "gopkg.in/go-ini/ini.v1"
 )
 
 var editor *Editor
@@ -39,12 +38,15 @@ type Char struct {
 type Editor struct {
 	version    string
 	app        *widgets.QApplication
+	activity   *Activity
+	splitter   *widgets.QSplitter
 	workspaces []*Workspace
 	active     int
 	nvim       *nvim.Nvim
 	window     *widgets.QMainWindow
 	wsWidget   *widgets.QWidget
 	wsSide     *WorkspaceSide
+	deinSide   *DeinSide
 
 	statuslineHeight int
 	width            int
@@ -69,7 +71,7 @@ type Editor struct {
 	keyAlt          core.Qt__Key
 	keyShift        core.Qt__Key
 
-	config *gonvimConfig
+	config gonvimConfig
 }
 
 type editorSignal struct {
@@ -81,14 +83,6 @@ type editorSignal struct {
 	_ func() `signal:"lintSignal"`
 	_ func() `signal:"gitSignal"`
 	_ func() `signal:"messageSignal"`
-}
-
-type gonvimConfig struct {
-	restoreSession bool
-	showSide       bool
-	pathFormat     string
-	sideWidth      int
-	clipboard      bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -148,46 +142,28 @@ func InitEditor() {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 
-	//// Drop Shadow to wsWidget
-	//layout := widgets.NewQHBoxLayout()
-	//widget.SetLayout(layout)
-	//
-	//// Drop Shadow to wsSide.widget
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, widget)
+	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(0)
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
 
-	wsSideScrollArea := widgets.NewQScrollArea(nil)
-	wsSideScrollArea.SetWidgetResizable(true)
-	wsSideScrollArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
-	wsSideScrollArea.SetFocusProxy(e.window)
-	wsSideScrollArea.SetWidget(e.wsSide.widget)
-	wsSideScrollArea.SetFrameShape(widgets.QFrame__NoFrame)
-	wsSideScrollArea.SetMaximumWidth(e.config.sideWidth)
-	wsSideScrollArea.SetMinimumWidth(e.config.sideWidth)
-	e.wsSide.scrollarea = wsSideScrollArea
-
-	layout.AddWidget(e.wsWidget, 1, 0)
-	//layout.AddWidget(e.wsSide.widget, 0, 0)
-	layout.AddWidget(e.wsSide.scrollarea, 0, 0)
-	layout.SetContentsMargins(0, 0, 0, 0)
-	layout.SetSpacing(0)
-
-	// Drop shadow to wsSide
-	go func() {
-		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		shadow.SetBlurRadius(60)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-		shadow.SetOffset3(6, 2)
-		//e.wsSide.widget.SetGraphicsEffect(shadow)
-		e.wsSide.scrollarea.SetGraphicsEffect(shadow)
-	}()
+	sideArea := widgets.NewQScrollArea(nil)
+	sideArea.SetWidgetResizable(true)
+	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
+	sideArea.SetWidget(e.wsSide.widget)
+	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
+	// sideArea.SetMaximumWidth(e.config.sideWidth)
+	// sideArea.SetMinimumWidth(e.config.sideWidth)
+	// sideArea.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
+	e.wsSide.scrollarea = sideArea
 
 	e.workspaces = []*Workspace{}
 	sessionExists := false
 	if err == nil {
-		if e.config.restoreSession == true {
+		if e.config.Workspace.RestoreSession == true {
 			for i := 0; i < 20; i++ {
 				path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
 				_, err := os.Stat(path)
@@ -200,7 +176,6 @@ func InitEditor() {
 					break
 				}
 				e.workspaces = append(e.workspaces, ws)
-				e.workspaceUpdate()
 			}
 		}
 	}
@@ -210,7 +185,58 @@ func InitEditor() {
 			return
 		}
 		e.workspaces = append(e.workspaces, ws)
-		e.workspaceUpdate()
+	}
+
+	activityWidget := widgets.NewQWidget(nil, 0)
+	activity := newActivity()
+	activity.widget = activityWidget
+	activityWidget.SetLayout(activity.layout)
+	e.activity = activity
+	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
+	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
+
+	// layout.AddWidget(e.activity.sideArea, 0, 0)
+
+	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+	splitter.AddWidget(e.activity.sideArea)
+	splitter.AddWidget(e.wsWidget)
+	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
+	splitter.SetStretchFactor(1, 100)
+	splitter.SetObjectName("splitter")
+	e.splitter = splitter
+
+	layout.AddWidget(splitter, 1, 0)
+	layout.AddWidget(e.activity.widget, 0, 0)
+	e.workspaceUpdate()
+
+	// Drop shadow to Side Bar
+	if e.config.SideBar.DropShadow == true {
+		go func() {
+			shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+			shadow.SetBlurRadius(60)
+			shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
+			shadow.SetOffset3(6, 2)
+			e.activity.sideArea.SetGraphicsEffect(shadow)
+		}()
+	}
+
+	// Drop shadow for Activity Bar
+	if e.config.ActivityBar.DropShadow == true {
+		go func() {
+			shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+			shadow.SetBlurRadius(60)
+			shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
+			shadow.SetOffset3(6, 2)
+			e.activity.widget.SetGraphicsEffect(shadow)
+		}()
+	}
+	//
+
+	if e.config.ActivityBar.Visible == false {
+		e.activity.widget.Hide()
+	}
+	if e.config.SideBar.Visible == false {
+		e.activity.sideArea.Hide()
 	}
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
@@ -251,41 +277,33 @@ func InitEditor() {
 	widgets.QApplication_Exec()
 }
 
-func newGonvimConfig(home string) *gonvimConfig {
-	cfg, cfgerr := ini.Load(filepath.Join(home, ".gonvim", "gonvimrc"))
-	var cfgWSDisplay, cfgWSRestoresession bool
-	var cfgWSPath string
-	var cfgWSWidth int
-	var cfgClipBoard bool
-	var errGetWidth error
-	if cfgerr != nil {
-		cfgWSDisplay = false
-		cfgWSRestoresession = false
-		cfgWSPath = "minimum"
-		cfgWSWidth = 250
-		cfgClipBoard = true
-	} else {
-		cfgWSDisplay = cfg.Section("workspace").Key("display").MustBool()
-		cfgWSRestoresession = cfg.Section("workspace").Key("restoresession").MustBool()
-		cfgWSPath = cfg.Section("workspace").Key("path").String()
-		if cfgWSPath == "" {
-			cfgWSPath = "minimum"
-		}
-		cfgWSWidth, errGetWidth = cfg.Section("workspace").Key("width").Int()
-		if errGetWidth != nil {
-			cfgWSWidth = 250
-		}
-		cfgClipBoard = cfg.Section("").Key("clipboard").MustBool()
+func hexToRGBA(hex string) *RGBA {
+	format := "#%02x%02x%02x"
+	if len(hex) == 4 {
+		format = "#%1x%1x%1x"
 	}
-	config := &gonvimConfig{
-		restoreSession: cfgWSRestoresession,
-		showSide:       cfgWSDisplay,
-		pathFormat:     cfgWSPath,
-		sideWidth:      cfgWSWidth,
-		clipboard:      cfgClipBoard,
+	var r, g, b uint8
+	n, err := fmt.Sscanf(hex, format, &r, &g, &b)
+	if err != nil {
+		return nil
+	}
+	if n != 3 {
+		return nil
+	}
+	rgba := &RGBA{
+		R: (int)(r),
+		G: (int)(g),
+		B: (int)(b),
+		A: 1,
 	}
 
-	return config
+	return rgba
+}
+
+func darkenHex(hex string) string {
+	c := hexToRGBA(hex)
+	d := shiftColor(c, 20)
+	return fmt.Sprintf("#%02x%02x%02x", (int)(d.R*255.0), (int)(d.G*255.0), (int)(d.B*255.0))
 }
 
 func isFileExist(filename string) bool {
@@ -360,12 +378,12 @@ func (e *Editor) workspaceUpdate() {
 	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
 		if i == e.active {
 			e.wsSide.items[i].setActive()
-			e.wsSide.title.Show()
+			//e.wsSide.title.Show()
 			//}
 		} else {
 			e.wsSide.items[i].setInactive()
 		}
-		e.wsSide.scrollarea.Show()
+		//e.wsSide.scrollarea.Show()
 		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
 		e.wsSide.items[i].show()
 	}
@@ -374,18 +392,19 @@ func (e *Editor) workspaceUpdate() {
 		e.wsSide.items[i].hide()
 	}
 
-	if len(e.workspaces) == 1 || len(e.wsSide.items) == 1 {
-		if e.config.showSide == false {
-			e.wsSide.scrollarea.Hide()
-			e.wsSide.items[0].hide()
-			e.wsSide.title.Hide()
-		} else {
-			e.wsSide.scrollarea.Show()
-			e.wsSide.title.Show()
-			e.wsSide.items[0].setActive()
-			e.wsSide.items[0].show()
-		}
-	}
+	//if len(e.workspaces) == 1 || len(e.wsSide.items) == 1 {
+	//	if e.config.showSide == false {
+	//		//e.wsSide.scrollarea.Hide()
+	//		e.wsSide.items[0].hide()
+	//		//e.wsSide.title.Hide()
+	//	} else {
+	//		//e.wsSide.scrollarea.Show()
+	//		//e.wsSide.title.Show()
+	//		e.wsSide.items[0].setActive()
+	//		e.wsSide.items[0].show()
+	//	}
+	//}
+
 }
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {

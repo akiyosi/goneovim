@@ -329,19 +329,19 @@ func (w *Workspace) attachUI(path string) error {
 }
 
 func (w *Workspace) workspaceCommands(path string) {
+	if path != "" {
+		w.nvim.Command("so " + path)
+	}
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
-	if editor.config.clipboard == true {
+	if editor.config.Editor.Clipboard == true {
 		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
 	}
 	w.nvim.Command(`command! GonvimWorkspaceNew call rpcnotify(0, 'Gui', 'gonvim_workspace_new')`)
 	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
 	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
 	w.nvim.Command(`command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, 'Gui', 'gonvim_workspace_switch', <args>)`)
-	if path != "" {
-		w.nvim.Command("so " + path)
-	}
 }
 
 func (w *Workspace) initCwd() {
@@ -353,14 +353,18 @@ func (w *Workspace) initCwd() {
 func (w *Workspace) setCwd() {
 	cwd := ""
 	w.nvim.Eval("getcwd()", &cwd)
-	if cwd == w.cwd {
+	if cwd == "" {
 		return
 	}
+
+	// if cwd == w.cwd {
+	// 	return
+	// }
 
 	w.cwd = cwd
 
 	var labelpath string
-	switch editor.config.pathFormat {
+	switch editor.config.Workspace.PathStyle {
 	case "name":
 		labelpath = filepath.Base(cwd)
 	case "minimum":
@@ -381,20 +385,25 @@ func (w *Workspace) setCwd() {
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
 			editor.wsSide.items[i].cwdpath = path
 
-			if (len(editor.workspaces) == 1) && (editor.config.showSide == false) {
-				return
+			if editor.activity.editItem.active == false {
+				continue
 			}
 
 			filelist := newFilelistwidget(path)
 			editor.wsSide.items[i].setFilelistwidget(filelist)
-
-			return
+			continue
 		}
 	}
 }
 
 func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
-	i.layout.RemoveWidget(i.Filelistwidget)
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
+
+	if i.Filelistwidget != nil {
+		i.Filelistwidget.DestroyQWidget()
+	}
 	i.layout.AddWidget(f.widget, 0, 0)
 	i.Filelistwidget = f.widget
 	i.Filelist = f
@@ -634,7 +643,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "signature_hide":
 		w.signature.hide()
 	case "gonvim_copy_clipboard":
-		editor.copyClipBoard()
+		go editor.copyClipBoard()
 	case "gonvim_workspace_new":
 		editor.workspaceNew()
 	case "gonvim_workspace_next":
@@ -646,14 +655,16 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_cwd":
 		w.setCwd()
 	case "gonvim_workspace_redrawSideItem":
-		fl := editor.wsSide.items[editor.active].Filelist
-		if fl.active != -1 {
-			if editor.config.showSide == true || (editor.config.showSide == false && len(editor.workspaces) > 1) {
-				fl.Fileitems[fl.active].updateModifiedbadge()
+		go func() {
+			fl := editor.wsSide.items[editor.active].Filelist
+			if fl.active != -1 {
+				if fl.Fileitems != nil {
+					fl.Fileitems[fl.active].updateModifiedbadge()
+				}
 			}
-		}
+		}()
 	case "gonvim_workspace_redrawSideItems":
-		editor.wsSide.items[editor.active].setCurrentFileLabel()
+		go editor.wsSide.items[editor.active].setCurrentFileLabel()
 	case GonvimMarkdownNewBufferEvent:
 		go w.markdown.newBuffer()
 	case GonvimMarkdownUpdateEvent:
@@ -765,12 +776,14 @@ func newWorkspaceSide() *WorkspaceSide {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 100)
 	widget.SetLayout(layout)
+	widget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 
 	side := &WorkspaceSide{
 		widget: widget,
 		title:  header,
 	}
 	layout.AddWidget(header)
+	side.title.Show()
 
 	items := []*WorkspaceSideItem{}
 	side.items = items
@@ -811,49 +824,30 @@ type WorkspaceSideItem struct {
 func newWorkspaceSideItem() *WorkspaceSideItem {
 	widget := widgets.NewQWidget(nil, 0)
 
-	//layout := widgets.NewQVBoxLayout()
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
 	layout.SetContentsMargins(0, 5, 0, 5)
 
-	//items := []*widgets.QLayoutItem{}
-
-	//layout.ConnectSizeHint(func() *core.QSize {
-	//	size := core.NewQSize()
-	//	for _, item := range items {
-	//		size = size.ExpandedTo(item.MinimumSize())
-	//	}
-	//	return size
-	//})
-	//layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
-	//	items = append(items, item)
-	//})
-	//layout.ConnectSetGeometry(func(r *core.QRect) {
-	//	for i := 0; i < len(items); i++ {
-	//		items[i].SetGeometry(core.NewQRect4(width*i, 0, width, r.Height()))
-	//	}
-	//})
-
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(15, 6, 10, 6)
-	label.SetMaximumWidth(editor.config.sideWidth)
-	label.SetMinimumWidth(editor.config.sideWidth)
+	label.SetMaximumWidth(editor.config.SideBar.Width)
+	label.SetMinimumWidth(editor.config.SideBar.Width)
 
-	flwidget := widgets.NewQWidget(nil, 0)
+	// flwidget := widgets.NewQWidget(nil, 0)
 
-	filelist := &Filelist{
-		widget: flwidget,
-	}
+	filelist := &Filelist{}
+	// filelist := &Filelist{
+	// 	widget: flwidget,
+	// }
 
 	layout.AddWidget(label, 0, 0)
-	layout.AddWidget(flwidget, 0, 0)
-	//sideitem.Filelist.widget.Hide()
+	// layout.AddWidget(flwidget, 0, 0)
 
 	sideitem := &WorkspaceSideItem{
-		widget:         widget,
-		layout:         layout,
-		label:          label,
-		Filelist:       filelist,
-		Filelistwidget: flwidget,
+		widget:   widget,
+		layout:   layout,
+		label:    label,
+		Filelist: filelist,
+		// Filelistwidget: flwidget,
 	}
 	sideitem.Filelist.WSitem = sideitem
 
@@ -879,9 +873,9 @@ func (i *WorkspaceSideItem) setActive() {
 	}
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
-	if i.Filelist.isload == false && editor.config.showSide == false && len(editor.workspaces) > 1 {
+	if i.Filelist.isload == false && editor.activity.editItem.active == true {
 		filelist := newFilelistwidget(i.cwdpath)
 		i.setFilelistwidget(filelist)
 	}
@@ -929,7 +923,6 @@ func (w *Workspace) setGuiColor() {
 	if w.setGuiFgColor == true && w.setGuiBgColor == true {
 		return
 	}
-
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 
@@ -971,17 +964,50 @@ func (w *Workspace) setGuiColor() {
 	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border-color: rgba(%d, %d, %d, 1); padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + wsSideStyle)
 	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: rgb(%d, %d, %d); width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: rgb(%d, %d, %d); min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 
-	// for WorkspaceSideItem
-	if (len(editor.workspaces) == 1 || len(editor.wsSide.items) == 1) || (editor.config.restoreSession == true) {
+	// for splitter
+	editor.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+
+	// some style break the file list style
+	noGoodBadNoWay()
+
+	// for Activity Bar
+	editor.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
+
+	var svgEditContent string
+	if editor.activity.editItem.active == true {
+		svgEditContent = w.getSvg("activityedit", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+	} else {
+		svgEditContent = w.getSvg("activityedit", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+	}
+	editor.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
+
+	var svgDeinContent string
+	if editor.activity.deinItem.active == true {
+		svgDeinContent = w.getSvg("activitydein", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+	} else {
+		svgDeinContent = w.getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+	}
+	editor.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
+
+}
+
+// qscrollarea broken contentmargin of first item
+func noGoodBadNoWay() {
+	fg := editor.fgcolor
+	bg := editor.bgcolor
+	if (len(editor.workspaces) == 1 || len(editor.wsSide.items) == 1) || (editor.config.Workspace.RestoreSession == true) {
 		for i, item := range editor.wsSide.items {
+			if i >= len(editor.workspaces) {
+				break
+			}
 			if i == editor.active {
-				item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid rgba(81, 154, 186, 1);	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+				item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 			} else {
 				item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 15px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+				item.active = false
 			}
 			//// scrollarea's setWidget is brokean some magins
 			item.label.SetContentsMargins(15+15, 6, 0, 6)
 		}
 	}
-
 }

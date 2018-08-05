@@ -54,6 +54,66 @@ func (w *Workspace) initSVGS() {
 	blue := newRGBA(81, 154, 186, 1)
 	w.svgs = map[string]*SvgXML{}
 
+	w.svgs["progress"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><g transform="translate(0,2)"><path fill="%s" d="M13 2.03V2.05L13 4.05C17.39 4.59 20.5 8.58 19.96 12.97C19.5 16.61 16.64 19.5 13 19.93V21.93C18.5 21.38 22.5 16.5 21.95 11C21.5 6.25 17.73 2.5 13 2.03M11 2.06C9.05 2.25 7.19 3 5.67 4.26L7.1 5.74C8.22 4.84 9.57 4.26 11 4.06V2.06M4.26 5.67C3 7.19 2.25 9.04 2.05 11H4.05C4.24 9.58 4.8 8.23 5.69 7.1L4.26 5.67M2.06 13C2.26 14.96 3.03 16.81 4.27 18.33L5.69 16.9C4.81 15.77 4.24 14.42 4.06 13H2.06M7.1 18.37L5.67 19.74C7.18 21 9.04 21.79 11 22V20C9.58 19.82 8.23 19.25 7.1 18.37M12.5 7V12.25L17 14.92L16.25 16.15L11 13V7H12.5Z" /></g></svg>`,
+	}
+
+	w.svgs["settings"] = &SvgXML{
+		width:  128,
+		height: 128,
+		xml:    `<svg width="24" height="24" viewBox="0 0 16 16"><path fill="%s" d="M14 8.77v-1.6l-1.94-.64-.45-1.09.88-1.84-1.13-1.13-1.81.91-1.09-.45-.69-1.92h-1.6l-.63 1.94-1.11.45-1.84-.88-1.13 1.13.91 1.81-.45 1.09L0 7.23v1.59l1.94.64.45 1.09-.88 1.84 1.13 1.13 1.81-.91 1.09.45.69 1.92h1.59l.63-1.94 1.11-.45 1.84.88 1.13-1.13-.92-1.81.47-1.09L14 8.75v.02zM7 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"></path></svg>`,
+	}
+
+	w.svgs["puzzle"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M20.5 11H19V7C19 5.89 18.1 5 17 5H13V3.5A2.5 2.5 0 0 0 10.5 1A2.5 2.5 0 0 0 8 3.5V5H4A2 2 0 0 0 2 7V10.8H3.5C5 10.8 6.2 12 6.2 13.5C6.2 15 5 16.2 3.5 16.2H2V20A2 2 0 0 0 4 22H7.8V20.5C7.8 19 9 17.8 10.5 17.8C12 17.8 13.2 19 13.2 20.5V22H17A2 2 0 0 0 19 20V16H20.5A2.5 2.5 0 0 0 23 13.5A2.5 2.5 0 0 0 20.5 11Z" /></svg>`,
+	}
+
+	w.svgs["timer"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M12 20A7 7 0 0 1 5 13A7 7 0 0 1 12 6A7 7 0 0 1 19 13A7 7 0 0 1 12 20M19.03 7.39L20.45 5.97C20 5.46 19.55 5 19.04 4.56L17.62 6C16.07 4.74 14.12 4 12 4A9 9 0 0 0 3 13A9 9 0 0 0 12 22C17 22 21 17.97 21 13C21 10.88 20.26 8.93 19.03 7.39M11 14H13V8H11M15 1H9V3H15V1Z" /></svg>`,
+	}
+
+	w.svgs["configfile"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M5 3C3.89 3 3 3.89 3 5V19C3 20.11 3.89 21 5 21H19C20.11 21 21 20.11 21 19V5C21 3.89 20.11 3 19 3H5M5 5H19V19H5V5M7 7V9H17V7H7M7 11V13H17V11H7M7 15V17H14V15H7Z" /></svg>`,
+	}
+
+	w.svgs["download"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><g transform="translate(0,2)"><path fill="%s" d="M5 20H19V18H5M19 9H15V3H9V9H5L12 16L19 9Z" /></g></svg>`,
+	}
+
+	w.svgs["user"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><g transform="translate(0,2)"><path fill="%s" d="M12 4A4 4 0 0 1 16 8A4 4 0 0 1 12 12A4 4 0 0 1 8 8A4 4 0 0 1 12 4M12 14C16.42 14 20 15.79 20 18V20H4V18C4 15.79 7.58 14 12 14Z" /></g></svg>`,
+	}
+
+	w.svgs["star"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><g transform="translate(0,1)"><path fill="%s" d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.62L12 2L9.19 8.62L2 9.24L7.45 13.97L5.82 21L12 17.27Z" /></g></svg>`,
+	}
+
+	w.svgs["activityedit"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M6 2A2 2 0 0 0 4 4V20A2 2 0 0 0 6 22H18A2 2 0 0 0 20 20V8L14 2H6M6 4H13V9H18V20H6V4M8 12V14H16V12H8M8 16V18H13V16H8Z" /></svg>`,
+	}
+
+	w.svgs["activitydein"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M7 2V13H10V22L17 10H13L17 2H7Z" /></svg>`,
+	}
+
 	w.svgs["moredots"] = &SvgXML{
 		width:  24,
 		height: 24,

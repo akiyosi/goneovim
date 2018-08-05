@@ -195,7 +195,8 @@ func (p *Palette) setPattern(text string) {
 }
 
 func (p *Palette) cursorMove(x int) {
-	p.cursorX = int(p.ws.font.defaultFontMetrics.Width(string(p.patternText[:x])))
+	//p.cursorX = int(p.ws.font.defaultFontMetrics.Width(string(p.patternText[:x])))
+	p.cursorX = int(p.ws.font.defaultFontMetrics.HorizontalAdvance(string(p.patternText[:x]), -1))
 	p.cursor.Move2(p.cursorX+p.patternPadding, p.patternPadding)
 }
 

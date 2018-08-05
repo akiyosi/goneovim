@@ -2,7 +2,9 @@ package editor
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
+	"runtime"
 
 	"github.com/shurcooL/github_flavored_markdown"
 	"github.com/therecipe/qt/core"
@@ -81,15 +83,35 @@ func newMarkdown(workspace *Workspace) *Markdown {
 		}
 		return m.webview.EventDefault(event)
 	})
+	m.webview.ConnectWheelEvent(m.wheelEvent)
 
 	m.webview.SetPage(m.webpage)
 	m.container = widgets.NewQPlainTextEdit(nil)
 	channel := webchannel.NewQWebChannel(nil)
 	channel.RegisterObject("content", m.container)
-	m.webpage.SetWebChannel2(channel)
+	//m.webpage.SetWebChannel2(channel)
+	m.webpage.SetWebChannel(channel)
 	m.hide()
 	// m.webview.SetEnabled(false)
 	return m
+}
+
+func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
+	var horiz int
+
+	switch runtime.GOOS {
+	case "darwin":
+		pixels := event.PixelDelta()
+		if pixels != nil {
+			horiz = int(math.Trunc(float64(pixels.Y())))
+		}
+		m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %v)", horiz*(-1)))
+	default:
+		horiz = event.AngleDelta().Y()
+		m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %v)", horiz))
+	}
+
+	event.Accept()
 }
 
 func (m *Markdown) updatePos() {
@@ -133,11 +155,45 @@ func (m *Markdown) commands() {
 }
 
 func (m *Markdown) scrollUp() {
-	m.webpage.RunJavaScript4("window.scrollBy(0, -20)")
+	m.webpage.RunJavaScript("window.scrollBy(0, -20)")
 }
 
 func (m *Markdown) scrollDown() {
-	m.webpage.RunJavaScript4("window.scrollBy(0, 20)")
+	m.webpage.RunJavaScript("window.scrollBy(0, 20)")
+}
+
+func (m *Markdown) openReadme(reponame string, readme string) {
+	for _, win := range m.ws.screen.curWins {
+		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
+			m.ws.nvim.SetCurrentWindow(win.win)
+			m.ws.nvim.Command("close")
+			m.htmlSet = false
+			if editor.deinSide.preDisplayedReadme == reponame {
+				return
+			}
+		}
+	}
+	m.ws.nvim.Command(`silent vertical split https://raw.githubusercontent.com/` + reponame + "/master/" + readme)
+	m.ws.nvim.Command(`e ` + GonvimMarkdownBufName)
+	m.ws.nvim.Command("setlocal filetype=" + GonvimMarkdownBufName)
+	m.ws.nvim.Command("setlocal buftype=nofile")
+	m.ws.nvim.Command("setlocal bufhidden=hide")
+	m.ws.nvim.Command("setlocal noswapfile")
+	m.ws.nvim.Command("setlocal nobuflisted")
+	m.ws.nvim.Command("setlocal nomodifiable")
+	m.ws.nvim.Command("setlocal nolist")
+	m.ws.nvim.Command("setlocal nowrap")
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> j :call rpcnotify(0, 'Gui', '%s')<CR>",
+		GonvimMarkdownScrollDownEvent,
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> k :call rpcnotify(0, 'Gui', '%s')<CR>",
+		GonvimMarkdownScrollUpEvent,
+	))
+	m.ws.nvim.Command("wincmd p")
+
+	editor.deinSide.preDisplayedReadme = reponame
 }
 
 func (m *Markdown) toggle() {
