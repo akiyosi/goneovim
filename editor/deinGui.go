@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -1111,8 +1110,6 @@ func launderingString(s string) string {
 	s = strings.Replace(s, "NVIM", "\nNVIM", -1)
 	s = strings.Replace(s, "[dein]", "\n[dein]", -1)
 
-	fmt.Println([]byte(s))
-
 	return s
 }
 
@@ -1175,23 +1172,32 @@ func deinUpdatePost(result string) {
 	result = launderingString(result)
 
 	var messages string
-	var isStartUpdate bool
+	var isUpdateStarted, isUpdatePlugins, isUpdateChange, isUpdateURL, isUpdateDone bool
 	for _, message := range strings.Split(result, "\n") {
-		if runtime.GOOS == "linux" {
-			if strings.Contains(message, `neovim.io/`) {
-				isStartUpdate = true
-				continue
-			}
-			if !isStartUpdate {
-				continue
-			}
-		}
-		if !strings.Contains(message, "[dein] ") {
+		if !strings.Contains(message, "[dein]") {
 			continue
 		}
-		messages += ` | echomsg "` + message + `"`
+		if strings.Contains(message, "Update started:") && !isUpdateStarted {
+			isUpdateStarted = true
+			messages += ` | echomsg "` + message + `"`
+		}
+		if strings.Contains(message, "Update plugins:") && !isUpdatePlugins {
+			isUpdatePlugins = true
+			messages += ` | echomsg "` + message + `"`
+		}
+		if strings.Contains(message, " change)") && !isUpdateChange {
+			isUpdateChange = true
+			messages += ` | echomsg "` + message + `"`
+		}
+		if strings.Contains(message, "https://github") && !isUpdateURL {
+			isUpdateURL = true
+			messages += ` | echomsg "` + message + `"`
+		}
+		if strings.Contains(message, "Done: (") && !isUpdateDone {
+			isUpdateDone = true
+			messages += ` | echomsg "` + message + `"`
+		}
 	}
-	fmt.Println(messages)
 
 	editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
