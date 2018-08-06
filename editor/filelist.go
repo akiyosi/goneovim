@@ -155,11 +155,16 @@ func newFilelistwidget(path string) *Filelist {
 		if editor.activity.editItem.active == false {
 			return
 		}
-		filewidgetLeftMargin := 35
-		currFileItem := editor.wsSide.items[editor.active].Filelist.Fileitems[0]
-		width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
-		charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
-		length := float64(width - currFileItem.fileIcon.Width() - currFileItem.fileModified.Width() - filewidgetLeftMargin - charWidth - 35)
+
+                ws := editor.wsSide.items[editor.active]
+                if len(ws.Filelist.Fileitems) == 0 {
+                        return
+                }
+                filewidgetLeftMargin := 35
+                currFileItem := ws.Filelist.Fileitems[0]
+                width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+                charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
+                length := float64(width - currFileItem.fileIcon.Width() - currFileItem.fileModified.Width() - filewidgetLeftMargin - charWidth - 35)
 
 		for _, item := range editor.wsSide.items {
 			item.label.SetMaximumWidth(editor.activity.sideArea.Width())
