@@ -234,9 +234,10 @@ func (w *Workspace) show() {
 }
 
 func (w *Workspace) startNvim(path string) error {
-	neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
-		Args: os.Args[1:],
-	})
+	// neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
+	// 	Args: os.Args[1:],
+	// })
+	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs(append([]string{"--embed"}, os.Args[1:]...)...))
 	if err != nil {
 		return err
 	}
@@ -249,6 +250,7 @@ func (w *Workspace) startNvim(path string) error {
 		w.redrawUpdates <- updates
 		w.signal.RedrawSignal()
 	})
+
 	go func() {
 		err := w.nvim.Serve()
 		if err != nil {
@@ -260,9 +262,11 @@ func (w *Workspace) startNvim(path string) error {
 		w.signal.StopSignal()
 	}()
 
-	w.configure()
-	w.attachUI(path)
-	w.initCwd()
+	go func() {
+		w.configure()
+		w.attachUI(path)
+		w.initCwd()
+	}()
 
 	return nil
 }
