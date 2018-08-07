@@ -658,7 +658,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		go func() {
 			fl := editor.wsSide.items[editor.active].Filelist
 			if fl.active != -1 {
-				if fl.Fileitems != nil {
+				if len(fl.Fileitems) != 0 {
 					fl.Fileitems[fl.active].updateModifiedbadge()
 				}
 			}
