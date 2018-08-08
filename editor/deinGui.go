@@ -10,10 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
-	"runtime"
 
 	"github.com/BurntSushi/toml"
 	"github.com/akiyosi/tomlwriter"
@@ -279,7 +279,8 @@ func loadDeinCashe() []*DeinPluginItem {
 		updateWaitingLayout.SetContentsMargins(5, 0, 5, 0)
 		updateWaiting.SetLayout(updateWaitingLayout)
 		waitingLabel := widgets.NewQProgressBar(nil)
-		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, editor.config.SideBar.AccentColor))
+		bg := editor.bgcolor
+		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: %s; } QProgressBar::chunk { background-color: %s; } ", shiftHex(editor.config.SideBar.AccentColor, 25), editor.config.SideBar.AccentColor))
 		waitingLabel.SetRange(0, 0)
 		updateWaitingLayout.AddWidget(waitingLabel, 0, 0)
 
@@ -292,7 +293,6 @@ func loadDeinCashe() []*DeinPluginItem {
 		i.updateLabel = updateLabel
 
 		// ** Lazy plugin icon
-		bg := editor.bgcolor
 		installedPluginLazy := widgets.NewQWidget(nil, 0)
 		installedPluginLazyLayout := widgets.NewQHBoxLayout()
 		installedPluginLazyLayout.SetContentsMargins(0, 0, 0, 0)
@@ -926,7 +926,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginWaitingLayout.SetContentsMargins(5, 0, 5, 0)
 		pluginWaiting.SetLayout(pluginWaitingLayout)
 		waitingLabel := widgets.NewQProgressBar(nil)
-		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: rgba(%d, %d, %d, 1); } QProgressBar::chunk { background-color: %s; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, editor.config.SideBar.AccentColor))
+		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: %s; } QProgressBar::chunk { background-color: %s; } ", shiftHex(editor.config.SideBar.AccentColor, 25), editor.config.SideBar.AccentColor))
 		waitingLabel.SetRange(0, 0)
 		pluginWaitingLayout.AddWidget(waitingLabel, 0, 0)
 
@@ -1134,6 +1134,7 @@ func deinInstallPost(result string) {
 		}
 		messages += ` | echomsg "` + message + `"`
 	}
+
 	go editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
 

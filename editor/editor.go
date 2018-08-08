@@ -306,6 +306,12 @@ func darkenHex(hex string) string {
 	return fmt.Sprintf("#%02x%02x%02x", (int)(d.R*255.0), (int)(d.G*255.0), (int)(d.B*255.0))
 }
 
+func shiftHex(hex string, v int) string {
+	c := hexToRGBA(hex)
+	d := shiftColor(c, v)
+	return fmt.Sprintf("#%02x%02x%02x", (int)(d.R*255.0), (int)(d.G*255.0), (int)(d.B*255.0))
+}
+
 func isFileExist(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
