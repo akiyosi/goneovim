@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"runtime"
 
 	"github.com/BurntSushi/toml"
 	"github.com/akiyosi/tomlwriter"
@@ -1150,7 +1151,12 @@ func (p *Plugin) deinInstallPre(reponame string) {
 	}
 
 	// Dein install
-	text, _ := editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim -c 'sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q' `)
+	var text string
+	if runtime.GOOS == "windows" {
+		text, _ = editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim.exe -c "sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q" `)
+	} else {
+		text, _ = editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim -c 'sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q' `)
+	}
 
 	editor.deinSide.deinInstall <- text
 	editor.deinSide.signal.DeinInstallSignal()
@@ -1207,7 +1213,12 @@ func (d *DeinPluginItem) deinUpdatePre(pluginName string) {
 	d.updateLabel.SetCurrentWidget(d.waitingLabel)
 
 	// Dein update
-	text, _ := editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim -c 'sleep 500m | call dein\#update("` + pluginName + `") | q' `)
+	var text string
+	if runtime.GOOS == "windows" {
+		text, _ = editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim.exe -c "sleep 500m | call dein\#update('` + pluginName + `') | q" `)
+	} else {
+		text, _ = editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim -c 'sleep 500m | call dein\#update("` + pluginName + `") | q' `)
+	}
 
 	d.updateLabel.SetCurrentWidget(d.updateButton)
 
