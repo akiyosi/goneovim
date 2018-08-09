@@ -403,11 +403,11 @@ func (s *Screen) put(args []interface{}) {
 	if row >= s.ws.rows {
 		return
 	}
-	if len(s.content[row])-1 < x {
-		return
-	}
 	line := s.content[row]
 	oldFirstNormal := true
+	if x >= len(line) {
+		return
+	}
 	char := line[x] // sometimes crash at this line
 	if char != nil && !char.normalWidth {
 		oldFirstNormal = false
