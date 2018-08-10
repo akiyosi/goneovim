@@ -157,6 +157,10 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 }
 
 func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
+	var m sync.Mutex
+	m.Lock()
+	defer m.Unlock()
+
 	var v, h, vert, horiz int
 	var horizKey string
 	var accel int
@@ -225,11 +229,18 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	if vert == 0 && horiz == 0 {
 		return
 	}
+
+	mode := s.ws.mode
+	if mode == "insert" {
+		s.ws.nvim.Input(fmt.Sprintf("<Esc>"))
+	}
+
 	if vert > 0 {
 		s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
 	} else if vert < 0 {
 		s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
 	}
+
 	if horiz != 0 {
 		s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
 	}
