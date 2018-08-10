@@ -489,11 +489,11 @@ func (w *Workspace) updateSize() {
 
 	rows := height / w.font.lineHeight
 	remainingHeight := height - rows*w.font.lineHeight
-	remainingHeightBottom := remainingHeight / 2
-	remainingHeightTop := remainingHeight - remainingHeightBottom
-	w.tabline.marginTop = w.tabline.marginDefault + remainingHeightTop
-	w.tabline.marginBottom = w.tabline.marginDefault + remainingHeightBottom
-	w.tabline.updateMargin()
+	// remainingHeightBottom := remainingHeight / 2
+	// remainingHeightTop := remainingHeight - remainingHeightBottom
+	// w.tabline.marginTop = w.tabline.marginDefault + remainingHeightTop
+	// w.tabline.marginBottom = w.tabline.marginDefault + remainingHeightBottom
+	// w.tabline.updateMargin()
 	w.screen.height = height - remainingHeight
 
 	w.screen.updateSize()
