@@ -29,25 +29,27 @@ type Window struct {
 
 // Screen is the main editor area
 type Screen struct {
-	bg              *RGBA
-	width           int
-	height          int
-	widget          *widgets.QWidget
-	ws              *Workspace
-	wins            map[nvim.Window]*Window
-	cursor          [2]int
-	lastCursor      [2]int
-	content         [][]*Char
-	scrollRegion    []int
-	curtab          nvim.Tabpage
-	cmdheight       int
-	highlight       Highlight
-	curWins         map[nvim.Window]*Window
-	queueRedrawArea [4]int
-	paintMutex      sync.Mutex
-	redrawMutex     sync.Mutex
-	drawSplit       bool
-	tooltip         *widgets.QLabel
+	bg               *RGBA
+	width            int
+	height           int
+	widget           *widgets.QWidget
+	ws               *Workspace
+	wins             map[nvim.Window]*Window
+	cursor           [2]int
+	lastCursor       [2]int
+	content          [][]*Char
+	scrollRegion     []int
+	scrollDust       [2]int
+	scrollDustDeltaY int
+	curtab           nvim.Tabpage
+	cmdheight        int
+	highlight        Highlight
+	curWins          map[nvim.Window]*Window
+	queueRedrawArea  [4]int
+	paintMutex       sync.Mutex
+	redrawMutex      sync.Mutex
+	drawSplit        bool
+	tooltip          *widgets.QLabel
 }
 
 func newScreen() *Screen {
@@ -155,49 +157,83 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 }
 
 func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
-	var horiz, vert int
-	var horizKey, vertKey string
+	var v, h, vert, horiz int
+	var horizKey string
+	var accel int
+	font := s.ws.font
 
 	switch runtime.GOOS {
 	case "darwin":
 		pixels := event.PixelDelta()
 		if pixels != nil {
-			horiz = int(math.Trunc(float64(pixels.Y())))
-			vert = int(math.Trunc(float64(pixels.X())))
+			v = pixels.Y()
+			h = pixels.X()
 		}
+		if pixels.X() < 0 && s.scrollDust[0] > 0 {
+			s.scrollDust[0] = 0
+		}
+		if pixels.Y() < 0 && s.scrollDust[1] > 0 {
+			s.scrollDust[1] = 0
+		}
+
+		dx := math.Abs(float64(s.scrollDust[0]))
+		dy := math.Abs(float64(s.scrollDust[1]))
+
+		fontheight := float64(float64(font.lineHeight))
+		fontwidth := float64(font.truewidth)
+
+		s.scrollDust[0] += h
+		s.scrollDust[1] += v
+
+		if dx >= fontwidth {
+			horiz = int(math.Trunc(float64(s.scrollDust[0]) / fontheight))
+			s.scrollDust[0] = 0
+		}
+		if dy >= fontwidth {
+			vert = int(math.Trunc(float64(s.scrollDust[1]) / fontwidth))
+			s.scrollDust[1] = 0
+		}
+
+		s.scrollDustDeltaY = int(math.Abs(float64(vert)) - float64(s.scrollDustDeltaY))
+		if s.scrollDustDeltaY < 1 {
+			s.scrollDustDeltaY = 0
+		}
+		if s.scrollDustDeltaY <= 2 {
+			accel = 1
+		} else if s.scrollDustDeltaY > 2 {
+			accel = int(float64(s.scrollDustDeltaY) / float64(4))
+		}
+
 	default:
-		horiz = event.AngleDelta().Y()
-		vert = event.AngleDelta().X()
+		vert = event.AngleDelta().Y()
+		horiz = event.AngleDelta().X()
+		accel = 2
 	}
 
 	mod := event.Modifiers()
 
 	if horiz > 0 {
-		horizKey = "Up"
+		horizKey = "Left"
 	} else {
-		horizKey = "Down"
+		horizKey = "Right"
 	}
 
-	if vert > 0 {
-		vertKey = "Left"
-	} else {
-		vertKey = "Right"
-	}
-
-	font := s.ws.font
 	x := int(float64(event.X()) / font.truewidth)
 	y := int(float64(event.Y()) / float64(font.lineHeight))
 	pos := []int{x, y}
 
-	if horiz == 0 && vert == 0 {
+	if vert == 0 && horiz == 0 {
 		return
+	}
+	if vert > 0 {
+		s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
+	} else if vert < 0 {
+		s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
 	}
 	if horiz != 0 {
 		s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
 	}
-	if vert != 0 {
-		s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), vertKey, pos[0], pos[1]))
-	}
+
 	event.Accept()
 }
 
