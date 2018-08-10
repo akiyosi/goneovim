@@ -350,6 +350,14 @@ func loadDeinCashe() []*DeinPluginItem {
 			}
 			w.nvim.Command(fmt.Sprintf("call cursor(%v, 0)", ln-1))
 		})
+		installedPluginSettings.ConnectEnterEvent(func(event *core.QEvent) {
+			svgSettingsContent := w.getSvg("settings", hexToRGBA(editor.config.SideBar.AccentColor))
+			installedPluginSettingsIcon.Load2(core.NewQByteArray2(svgSettingsContent, len(svgSettingsContent)))
+		})
+		installedPluginSettings.ConnectLeaveEvent(func(event *core.QEvent) {
+			svgSettingsContent := w.getSvg("settings", fg)
+			installedPluginSettingsIcon.Load2(core.NewQByteArray2(svgSettingsContent, len(svgSettingsContent)))
+		})
 
 		// * installedPlugin name & some option icon
 		installedPluginHead := widgets.NewQWidget(nil, 0)
