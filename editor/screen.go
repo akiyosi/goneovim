@@ -233,6 +233,8 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	mode := s.ws.mode
 	if mode == "insert" {
 		s.ws.nvim.Input(fmt.Sprintf("<Esc>"))
+	} else if mode == "terminal-input" {
+		s.ws.nvim.Input(fmt.Sprintf(`<C-\><C-n>`))
 	}
 
 	if vert > 0 {

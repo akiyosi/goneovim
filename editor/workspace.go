@@ -553,6 +553,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "cursor_goto":
 			s.cursorGoto(args)
 		case "put":
+			w.detectMode()
 			s.put(args)
 		case "eol_clear":
 			s.eolClear(args)
@@ -706,6 +707,24 @@ func (w *Workspace) guiFont(args ...interface{}) {
 	w.updateSize()
 	w.popup.updateFont(w.font)
 	w.screen.toolTipFont(w.font)
+}
+
+func (w *Workspace) detectMode() {
+	mode, _ := w.nvim.Mode()
+	switch mode.Mode {
+	case "t":
+		w.mode = "terminal-input"
+	case "n":
+		w.mode = "normal"
+	case "c":
+		w.mode = "cmdline_normal"
+	case "i":
+		w.mode = "insert"
+	case "v":
+		w.mode = "visual"
+	case "R":
+		w.mode = "replace"
+	}
 }
 
 func (w *Workspace) guiLinespace(args ...interface{}) {
