@@ -14,8 +14,6 @@ type Cursor struct {
 	mode   string
 	x      int
 	y      int
-	row    int
-	col    int
 }
 
 func initCursorNew() *Cursor {
@@ -52,7 +50,7 @@ func (c *Cursor) update() {
 	}
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
-	if c.row != row || c.col != col {
+	if c.x != row || c.y != col {
 		c.x = int(float64(col) * c.ws.font.truewidth)
 		c.y = row * c.ws.font.lineHeight
 		c.move()
