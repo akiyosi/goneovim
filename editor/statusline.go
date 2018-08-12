@@ -377,6 +377,11 @@ func (s *StatusMode) redraw() {
 		svgContent := s.s.ws.getSvg("replace", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	case "terminal-input":
+		text = "terminal-input"
+		svgContent := s.s.ws.getSvg("terminal", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	if s.mode == "normal" {
 		//s.modeIcon.Hide()

@@ -14,15 +14,16 @@ import (
 
 // Tabline of the editor
 type Tabline struct {
-	ws            *Workspace
-	widget        *widgets.QWidget
-	layout        *widgets.QLayout
-	CurrentID     int
-	Tabs          []*Tab
-	marginDefault int
-	marginTop     int
-	marginBottom  int
-	height        int
+	ws              *Workspace
+	widget          *widgets.QWidget
+	layout          *widgets.QLayout
+	CurrentID       int
+	currentFileText string
+	Tabs            []*Tab
+	marginDefault   int
+	marginTop       int
+	marginBottom    int
+	height          int
 }
 
 // Tab in the tabline
@@ -408,6 +409,9 @@ func (t *Tabline) update(args []interface{}) {
 		}
 
 		tab.setActive(tab.ID == t.CurrentID)
+		if tab.ID == t.CurrentID {
+			t.currentFileText = text
+		}
 		tab.show()
 	}
 	for i := len(tabs); i < len(t.Tabs); i++ {
