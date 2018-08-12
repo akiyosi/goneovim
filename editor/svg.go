@@ -149,10 +149,9 @@ func (w *Workspace) initSVGS() {
 
 	// terminal
 	w.svgs["terminal"] = &SvgXML{
-		width:  24,
-		height: 24,
-		xml: `<?xml version="1.0" encoding="utf-8"?>
-<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%s" d="M20 19V7H4V19H20M20 3A2 2 0 0 1 22 5V19A2 2 0 0 1 20 21H4A2 2 0 0 1 2 19V5C2 3.89 2.9 3 4 3H20M13 17V15H18V17H13M9.58 13L5.57 9H8.4L11.7 12.3C12.09 12.69 12.09 13.33 11.7 13.72L8.42 17H5.59L9.58 13Z" /></svg>`,
+		width:  112,
+		height: 128,
+		xml: `<svg height="128" viewBox="0 0 14 16" version="1.1" width="112" aria-hidden="true"><path fill="%s" fill-rule="evenodd" d="M7 10h4v1H7v-1zm-3 1l3-3-3-3-.75.75L5.5 8l-2.25 2.25L4 11zm10-8v10c0 .55-.45 1-1 1H1c-.55 0-1-.45-1-1V3c0-.55.45-1 1-1h12c.55 0 1 .45 1 1zm-1 0H1v10h12V3z"></path></svg>`,
 	}
 
 	// for Insert Mode
