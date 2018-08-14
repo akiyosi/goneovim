@@ -208,32 +208,8 @@ func InitEditor() {
 	layout.AddWidget(splitter, 1, 0)
 	layout.AddWidget(e.activity.widget, 0, 0)
 
-	notifyWidget := widgets.NewQWidget(nil, 0)
-	notifyLayout := widgets.NewQHBoxLayout()
-	notifyWidget.SetLayout(notifyLayout)
-	notifyWidget.SetParent(widget)
-	notifyWidget.SetFixedWidth(200)
-	notifyWidget.SetFixedHeight(100)
-	notify := widgets.NewQLabel(nil, 0)
-	notify.SetText("It is Alerm!")
-	notifyLayout.AddWidget(notify, 0, 0)
-	notifyWidget.SetStyleSheet(" * { background: #444; }")
-
-	var isDrag bool
-	var startPos *core.QPoint
-	notifyWidget.ConnectMousePressEvent(func(*gui.QMouseEvent) {
-		isDrag = true
-		startPos = core.NewQPoint2(0, 0)
-	})
-	notifyWidget.ConnectMouseReleaseEvent(func(*gui.QMouseEvent) {
-		isDrag = false
-		startPos = core.NewQPoint2(0, 0)
-	})
-	notifyWidget.ConnectMouseMoveEvent(func(event *gui.QMouseEvent) {
-		if isDrag == true {
-			notifyWidget.Move2(event.Pos().X()-startPos.X(), event.Pos().Y()-startPos.Y())
-		}
-	})
+	notification := newNotification()
+	notification.widget.SetParent(widget)
 
 	e.workspaceUpdate()
 
