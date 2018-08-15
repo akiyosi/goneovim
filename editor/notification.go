@@ -14,6 +14,7 @@ type Notification struct {
 	closeIcon *svg.QSvgWidget
 	pos       *core.QPoint
 	isDrag    bool
+	isDragged bool
 }
 
 func newNotification(message string) *Notification {
@@ -66,6 +67,7 @@ func newNotification(message string) *Notification {
 	layout.SetAlignment(closeIcon, core.Qt__AlignTop)
 
 	isDrag := false
+	isDragged := false
 	startPos := editor.notifyStartPos
 
 	notification := &Notification{
@@ -73,12 +75,32 @@ func newNotification(message string) *Notification {
 		closeIcon: closeIcon,
 		pos:       startPos,
 		isDrag:    isDrag,
+		isDragged: isDragged,
 	}
 	notification.widget.Hide()
 
 	notification.closeIcon.ConnectMouseReleaseEvent(func(event *gui.QMouseEvent) {
-		notification.widget.Hide()
-		editor.notifyStartPos = core.NewQPoint2(editor.width-400-10, editor.height-30)
+		var newNotifications []*Notification
+		var del int
+		dropHeight := 0
+		for i, item := range editor.notifications {
+			if notification == item {
+				del = i
+				dropHeight = item.widget.Height() + 8
+				item.widget.DestroyQWidget()
+				continue
+			}
+			if i > del && !item.isDragged {
+				x := item.widget.Pos().X()
+				y := item.widget.Pos().Y() + dropHeight
+				item.widget.Move2(x, y)
+				item.widget.Hide()
+				item.widget.Show()
+			}
+			newNotifications = append(newNotifications, item)
+		}
+		editor.notifications = newNotifications
+		editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
 	})
 	notification.widget.ConnectEnterEvent(func(event *core.QEvent) {
 		fg := editor.fgcolor
@@ -104,6 +126,7 @@ func newNotification(message string) *Notification {
 			trans := notification.widget.MapToParent(newPos)
 			notification.widget.Move(trans)
 		}
+		notification.isDragged = true
 	})
 
 	return notification

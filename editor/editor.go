@@ -77,7 +77,8 @@ type Editor struct {
 	keyAlt          core.Qt__Key
 	keyShift        core.Qt__Key
 
-	config gonvimConfig
+	config        gonvimConfig
+	notifications []*Notification
 }
 
 type editorSignal struct {
@@ -281,11 +282,27 @@ func InitEditor() {
 	// go func() {
 	// 	time.Sleep(2 * time.Second)
 	// 	newmessage := "hoge!"
-	// 	e.notify <-newmessage
+	// 	e.notify <- newmessage
 	// 	e.signal.NotifySignal()
+
 	// 	time.Sleep(3 * time.Second)
 	// 	newmessage = "Help poor Children in Uganda. Help poor Children in Uganda. Help poor Children in Uganda. "
-	// 	e.notify <-newmessage
+	// 	e.notify <- newmessage
+	// 	e.signal.NotifySignal()
+
+	// 	time.Sleep(4 * time.Second)
+	// 	newmessage = "Help!"
+	// 	e.notify <- newmessage
+	// 	e.signal.NotifySignal()
+
+	// 	time.Sleep(1 * time.Second)
+	// 	newmessage = "any some body"
+	// 	e.notify <- newmessage
+	// 	e.signal.NotifySignal()
+
+	// 	time.Sleep(1 * time.Second)
+	// 	newmessage = "Help!"
+	// 	e.notify <- newmessage
 	// 	e.signal.NotifySignal()
 	// }()
 
@@ -305,6 +322,7 @@ func (e *Editor) popupNotification(message string) {
 	y := e.notifyStartPos.Y() - notification.widget.Height() - 8
 	notification.widget.Move2(x, y)
 	e.notifyStartPos = core.NewQPoint2(x, y)
+	e.notifications = append(e.notifications, notification)
 	notification.show()
 }
 
