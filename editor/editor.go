@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
@@ -34,17 +35,27 @@ type Char struct {
 	highlight   Highlight
 }
 
+type NotifyButton struct {
+	action func()
+	text   string
+}
+
+type Notify struct {
+	level   NotifyLevel
+	message string
+	buttons []*NotifyButton
+}
+
 // Editor is the editor
 type Editor struct {
-	signal *editorSignal
-
+	signal  *editorSignal
 	version string
 	app     *widgets.QApplication
 
 	activity       *Activity
 	splitter       *widgets.QSplitter
 	notifyStartPos *core.QPoint
-	notify         chan string
+	notify         chan *Notify
 
 	workspaces []*Workspace
 	active     int
@@ -107,7 +118,7 @@ func InitEditor() {
 	editor = &Editor{
 		version:    "v0.2.3",
 		signal:     NewEditorSignal(nil),
-		notify:     make(chan string, 10),
+		notify:     make(chan *Notify, 10),
 		selectedBg: newRGBA(81, 154, 186, 0.5),
 		matchFg:    newRGBA(81, 154, 186, 1),
 		bgcolor:    nil,
@@ -117,8 +128,13 @@ func InitEditor() {
 	}
 	e := editor
 	e.signal.ConnectNotifySignal(func() {
-		notifyMessage := <-e.notify
-		e.popupNotification(notifyMessage)
+		// Is there a smarter implementation ?
+		notify := <-e.notify
+		if notify.buttons == nil {
+			e.popupNotification(notify.level, notify.message)
+		} else {
+			e.popupNotification(notify.level, notify.message, notifyOptionArg(notify.buttons))
+		}
 	})
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
@@ -278,44 +294,64 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
-	// // notification test
-	// go func() {
-	// 	time.Sleep(2 * time.Second)
-	// 	newmessage := "hoge!"
-	// 	e.notify <- newmessage
-	// 	e.signal.NotifySignal()
+	// notification test
+	go func() {
+		time.Sleep(2 * time.Second)
+		e.pushNotification(NotifyInfo, "hoge hoge!")
 
-	// 	time.Sleep(3 * time.Second)
-	// 	newmessage = "Help poor Children in Uganda. Help poor Children in Uganda. Help poor Children in Uganda. "
-	// 	e.notify <- newmessage
-	// 	e.signal.NotifySignal()
+		time.Sleep(2 * time.Second)
+		e.pushNotification(NotifyInfo, "hoge hoge!")
+		opts0 := []*NotifyButton{}
+		optArg0 := &NotifyButton{
+			action: func() {
+				fmt.Println("Yes")
+			},
+			text: "yes!",
+		}
+		opts0 = append(opts0, optArg0)
+		e.pushNotification(NotifyWarn, "vim !", notifyOptionArg(opts0))
 
-	// 	time.Sleep(4 * time.Second)
-	// 	newmessage = "Help!"
-	// 	e.notify <- newmessage
-	// 	e.signal.NotifySignal()
+		time.Sleep(2 * time.Second)
+		opts := []*NotifyButton{}
+		optArg := &NotifyButton{
+			action: func() {
+				fmt.Println("pushed!")
+			},
+			text: "push!",
+		}
+		opts = append(opts, optArg)
 
-	// 	time.Sleep(1 * time.Second)
-	// 	newmessage = "any some body"
-	// 	e.notify <- newmessage
-	// 	e.signal.NotifySignal()
-
-	// 	time.Sleep(1 * time.Second)
-	// 	newmessage = "Help!"
-	// 	e.notify <- newmessage
-	// 	e.signal.NotifySignal()
-	// }()
+		optArg2 := &NotifyButton{
+			action: func() {
+				fmt.Println("popped!")
+			},
+			text: "pop!",
+		}
+		opts = append(opts, optArg2)
+		e.pushNotification(NotifyWarn, "hoge hoge fuga fuga !", notifyOptionArg(opts))
+	}()
 
 	e.window.Show()
-	// for i := len(e.workspaces) - 1; i >= 0; i-- {
-	// 	e.active = i
-	// }
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
 }
 
-func (e *Editor) popupNotification(message string) {
-	notification := newNotification(message)
+func (e *Editor) pushNotification(level NotifyLevel, message string, opt ...NotifyOptionArg) {
+	opts := NotifyOptions{}
+	for _, o := range opt {
+		o(&opts)
+	}
+	n := &Notify{
+		level:   level,
+		message: message,
+		buttons: opts.buttons,
+	}
+	e.notify <- n
+	e.signal.NotifySignal()
+}
+
+func (e *Editor) popupNotification(level NotifyLevel, message string, opt ...NotifyOptionArg) {
+	notification := newNotification(level, message, opt...)
 	notification.widget.SetParent(e.window)
 	notification.widget.AdjustSize()
 	x := e.notifyStartPos.X()
