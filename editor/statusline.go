@@ -9,6 +9,7 @@ import (
 
 	"github.com/akiyosi/gonvim/osdepend"
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
@@ -39,11 +40,11 @@ type Statusline struct {
 
 // StatuslineNotify
 type StatuslineNotify struct {
-	s        *Statusline
-	widget   *widgets.QWidget
-	icon     *svg.QSvgWidget
-	label    *widgets.QLabel
-	num      int
+	s      *Statusline
+	widget *widgets.QWidget
+	icon   *svg.QSvgWidget
+	label  *widgets.QLabel
+	num    int
 }
 
 // StatuslineLint is
@@ -231,16 +232,36 @@ func initStatuslineNew() *Statusline {
 	notifyWidget := widgets.NewQWidget(nil, 0)
 	notifyWidget.SetLayout(notifyLayout)
 	notifyLabel := widgets.NewQLabel(nil, 0)
+	notifyLabel.Hide()
 	notifyicon := svg.NewQSvgWidget(nil)
 	notifyicon.SetFixedSize2(14, 14)
 	notifyLayout.AddWidget(notifyicon, 0, 0)
 	notifyLayout.AddWidget(notifyLabel, 0, 0)
+	notifyLayout.SetContentsMargins(0, 0, 0, 0)
+	notifyLayout.SetSpacing(2)
 	notify := &StatuslineNotify{
 		widget: notifyWidget,
-		label: notifyLabel,
-		icon: notifyicon,
+		label:  notifyLabel,
+		icon:   notifyicon,
 	}
 	s.notify = notify
+	notifyWidget.ConnectEnterEvent(func(event *core.QEvent) {
+		bg := editor.bgcolor
+		notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1); }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+	})
+	notifyWidget.ConnectLeaveEvent(func(event *core.QEvent) {
+		notifyWidget.SetStyleSheet("")
+	})
+	notifyWidget.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
+		switch editor.displayNotifications {
+		case true:
+			editor.hideNotifications()
+		case false:
+			editor.showNotifications()
+		}
+	})
+	// notifyWidget.ConnectMouseReleaseEvent(func(*gui.QMouseEvent) {
+	// })
 
 	okIcon := svg.NewQSvgWidget(nil)
 	okIcon.SetFixedSize2(14, 14)
@@ -581,7 +602,12 @@ func (s *StatuslineFiletype) redraw(filetype string) {
 
 func (s *StatuslineNotify) update() {
 	s.num = len(editor.notifications)
-	fmt.Println(fmt.Sprintf("%v", s.num))
+	if s.num == 0 {
+		s.label.Hide()
+		return
+	} else {
+		s.label.Show()
+	}
 	s.label.SetText(fmt.Sprintf("%v", s.num))
 }
 

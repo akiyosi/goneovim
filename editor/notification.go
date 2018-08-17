@@ -252,9 +252,16 @@ func (n *Notification) hideNotification() {
 	}
 	editor.notifications = newNotifications
 	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
+
+	editor.displayNotifications = false
+	for _, item := range editor.notifications {
+		if item.hide == false {
+			editor.displayNotifications = true
+		}
+	}
 }
 
-func (e *Editor) redrawNotifications() {
+func (e *Editor) showNotifications() {
 	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
 	x := e.notifyStartPos.X()
 	y := e.notifyStartPos.Y()
@@ -270,6 +277,7 @@ func (e *Editor) redrawNotifications() {
 		newNotifications = append(newNotifications, item)
 	}
 	e.notifications = newNotifications
+	e.displayNotifications = true
 }
 
 func (e *Editor) hideNotifications() {
@@ -281,6 +289,7 @@ func (e *Editor) hideNotifications() {
 	}
 	e.notifications = newNotifications
 	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	e.displayNotifications = false
 }
 
 func (n *Notification) show() {

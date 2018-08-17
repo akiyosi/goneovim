@@ -88,8 +88,9 @@ type Editor struct {
 	keyAlt          core.Qt__Key
 	keyShift        core.Qt__Key
 
-	config        gonvimConfig
-	notifications []*Notification
+	config               gonvimConfig
+	notifications        []*Notification
+	displayNotifications bool
 }
 
 type editorSignal struct {
@@ -334,7 +335,7 @@ func InitEditor() {
 		e.pushNotification(NotifyWarn, "hoge hoge fuga fuga !", notifyOptionArg(opts))
 
 		time.Sleep(6 * time.Second)
-		go e.redrawNotifications()
+		go e.showNotifications()
 		// time.Sleep(4 * time.Second)
 		// go e.hideNotifications()
 	}()
