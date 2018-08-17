@@ -173,6 +173,7 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 		notification.closeIcon.Hide()
 	})
 	notification.widget.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
+		notification.widget.Raise()
 		notification.isDrag = true
 		notification.pos = event.Pos()
 	})
