@@ -203,6 +203,7 @@ func (n *Notification) closeNotification(event *gui.QMouseEvent) {
 	var del int
 	dropHeight := 0
 	for i, item := range editor.notifications {
+		newNotifications = append(newNotifications, item)
 		if n == item {
 			del = i
 			dropHeight = item.widget.Height() + 8
@@ -218,7 +219,6 @@ func (n *Notification) closeNotification(event *gui.QMouseEvent) {
 				item.widget.Show()
 			}
 		}
-		newNotifications = append(newNotifications, item)
 	}
 	editor.notifications = newNotifications
 	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
@@ -229,6 +229,7 @@ func (n *Notification) hideNotification() {
 	var hide int
 	dropHeight := 0
 	for i, item := range editor.notifications {
+		newNotifications = append(newNotifications, item)
 		if n == item {
 			hide = i
 			dropHeight = item.widget.Height() + 8
@@ -245,30 +246,27 @@ func (n *Notification) hideNotification() {
 				item.widget.Show()
 			}
 		}
-		newNotifications = append(newNotifications, item)
 	}
 	editor.notifications = newNotifications
 	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
 }
 
 func (e *Editor) redrawNotifications() {
-	fmt.Println("In!")
 	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
 	x := e.notifyStartPos.X()
 	y := e.notifyStartPos.Y()
-	// var newNotifications []*Notification
+	var newNotifications []*Notification
 	for _, item := range e.notifications {
-		// item.widget.SetParent(e.window)
-		item.widget.AdjustSize()
+		x = e.notifyStartPos.X()
+		y = e.notifyStartPos.Y() - item.widget.Height() - 4
+		fmt.Println(x, y)
 		item.widget.Move2(x, y)
 		item.hide = false
 		item.widget.Show()
-		x = e.notifyStartPos.X()
-		y = e.notifyStartPos.Y() - item.widget.Height() - 8
 		e.notifyStartPos = core.NewQPoint2(x, y)
-		// newNotifications = append(newNotifications, item)
+		newNotifications = append(newNotifications, item)
 	}
-	// e.notifications = newNotifications
+	e.notifications = newNotifications
 }
 
 func (n *Notification) show() {

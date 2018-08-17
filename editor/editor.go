@@ -52,11 +52,10 @@ type Editor struct {
 	version string
 	app     *widgets.QApplication
 
-	activity           *Activity
-	splitter           *widgets.QSplitter
-	notifyStartPos     *core.QPoint
-	notify             chan *Notify
-	redrawNotification chan bool
+	activity       *Activity
+	splitter       *widgets.QSplitter
+	notifyStartPos *core.QPoint
+	notify         chan *Notify
 
 	workspaces []*Workspace
 	active     int
@@ -96,7 +95,6 @@ type Editor struct {
 type editorSignal struct {
 	core.QObject
 	_ func() `signal:"notifySignal"`
-	_ func() `signal:"redrawNotificationSignal"`
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -118,16 +116,15 @@ func InitEditor() {
 	home, err := homedir.Dir()
 	config := newGonvimConfig(home)
 	editor = &Editor{
-		version:            "v0.2.3",
-		signal:             NewEditorSignal(nil),
-		notify:             make(chan *Notify, 10),
-		redrawNotification: make(chan bool, 10),
-		selectedBg:         newRGBA(81, 154, 186, 0.5),
-		matchFg:            newRGBA(81, 154, 186, 1),
-		bgcolor:            nil,
-		fgcolor:            nil,
-		stop:               make(chan struct{}),
-		config:             config,
+		version:    "v0.2.3",
+		signal:     NewEditorSignal(nil),
+		notify:     make(chan *Notify, 10),
+		selectedBg: newRGBA(81, 154, 186, 0.5),
+		matchFg:    newRGBA(81, 154, 186, 1),
+		bgcolor:    nil,
+		fgcolor:    nil,
+		stop:       make(chan struct{}),
+		config:     config,
 	}
 	e := editor
 	e.signal.ConnectNotifySignal(func() {
@@ -137,13 +134,6 @@ func InitEditor() {
 			e.popupNotification(notify.level, notify.message)
 		} else {
 			e.popupNotification(notify.level, notify.message, notifyOptionArg(notify.buttons))
-		}
-	})
-	e.signal.ConnectRedrawNotificationSignal(func() {
-		// Is there a smarter implementation ?
-		redraw := <-e.redrawNotification
-		if redraw {
-			e.redrawNotifications()
 		}
 	})
 	e.app = widgets.NewQApplication(0, nil)
@@ -340,9 +330,8 @@ func InitEditor() {
 		opts = append(opts, optArg2)
 		e.pushNotification(NotifyWarn, "hoge hoge fuga fuga !", notifyOptionArg(opts))
 
-		time.Sleep(20 * time.Second)
-		e.redrawNotification <- true
-		e.signal.RedrawNotificationSignal()
+		time.Sleep(6 * time.Second)
+		go e.redrawNotifications()
 	}()
 
 	e.window.Show()
