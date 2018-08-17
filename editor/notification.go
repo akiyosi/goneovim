@@ -270,6 +270,17 @@ func (e *Editor) redrawNotifications() {
 	e.notifications = newNotifications
 }
 
+func (e *Editor) hideNotifications() {
+	var newNotifications []*Notification
+	for _, item := range e.notifications {
+		item.hide = true
+		item.widget.Hide()
+		newNotifications = append(newNotifications, item)
+	}
+	e.notifications = newNotifications
+	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+}
+
 func (n *Notification) show() {
 	fg := editor.fgcolor
 	bg := editor.bgcolor

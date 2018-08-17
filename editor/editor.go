@@ -332,6 +332,8 @@ func InitEditor() {
 
 		time.Sleep(6 * time.Second)
 		go e.redrawNotifications()
+		time.Sleep(4 * time.Second)
+		go e.hideNotifications()
 	}()
 
 	e.window.Show()
