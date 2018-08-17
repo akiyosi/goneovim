@@ -28,12 +28,22 @@ type Statusline struct {
 	pos        *StatuslinePos
 	mode       *StatusMode
 	file       *StatuslineFile
+	notify     *StatuslineNotify
 	filetype   *StatuslineFiletype
 	git        *StatuslineGit
 	encoding   *StatuslineEncoding
 	fileFormat *StatuslineFileFormat
 	lint       *StatuslineLint
 	updates    chan []interface{}
+}
+
+// StatuslineNotify
+type StatuslineNotify struct {
+	s        *Statusline
+	widget   *widgets.QWidget
+	icon     *svg.QSvgWidget
+	label    *widgets.QLabel
+	num      int
 }
 
 // StatuslineLint is
@@ -217,6 +227,21 @@ func initStatuslineNew() *Statusline {
 	s.filetype = filetype
 	s.filetype.label.Hide()
 
+	notifyLayout := widgets.NewQHBoxLayout()
+	notifyWidget := widgets.NewQWidget(nil, 0)
+	notifyWidget.SetLayout(notifyLayout)
+	notifyLabel := widgets.NewQLabel(nil, 0)
+	notifyicon := svg.NewQSvgWidget(nil)
+	notifyicon.SetFixedSize2(14, 14)
+	notifyLayout.AddWidget(notifyicon, 0, 0)
+	notifyLayout.AddWidget(notifyLabel, 0, 0)
+	notify := &StatuslineNotify{
+		widget: notifyWidget,
+		label: notifyLabel,
+		icon: notifyicon,
+	}
+	s.notify = notify
+
 	okIcon := svg.NewQSvgWidget(nil)
 	okIcon.SetFixedSize2(14, 14)
 	okLabel := widgets.NewQLabel(nil, 0)
@@ -262,6 +287,7 @@ func initStatuslineNew() *Statusline {
 
 	layout.AddWidget(modeWidget)
 	layout.AddWidget(fileWidget)
+	layout.AddWidget(notifyWidget)
 	layout.AddWidget(gitWidget)
 	layout.AddWidget(filetypeLabel)
 	layout.AddWidget(fileFormatLabel)
@@ -276,6 +302,7 @@ func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 	s.pos.label.SetContentsMargins(l, u, r, d)
 	s.mode.label.SetContentsMargins(l, u, r, d)
 	s.file.widget.SetContentsMargins(l, u, r, d)
+	s.notify.widget.SetContentsMargins(l, u, r, d)
 	s.filetype.label.SetContentsMargins(l, u, r, d)
 	s.git.widget.SetContentsMargins(l, u, r, d)
 	s.fileFormat.label.SetContentsMargins(l, u, r, d)
@@ -301,6 +328,9 @@ func (s *Statusline) subscribe() {
 	s.ws.nvim.RegisterHandler("statusline", func(updates ...interface{}) {
 		s.updates <- updates
 		s.ws.signal.StatuslineSignal()
+	})
+	editor.signal.ConnectNotifySignal(func() {
+		s.notify.update()
 	})
 	s.ws.nvim.Subscribe("statusline")
 	s.ws.nvim.Command(`autocmd BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
@@ -547,6 +577,12 @@ func (s *StatuslineFiletype) redraw(filetype string) {
 	}
 	s.label.SetText(typetext)
 	s.label.Show()
+}
+
+func (s *StatuslineNotify) update() {
+	s.num = len(editor.notifications)
+	fmt.Println(fmt.Sprintf("%v", s.num))
+	s.label.SetText(fmt.Sprintf("%v", s.num))
 }
 
 func (s *StatuslineLint) update() {

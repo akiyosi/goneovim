@@ -968,6 +968,8 @@ func (w *Workspace) setGuiColor() {
 	//w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + statusStyle)
 	svgContent := w.getSvg("git", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 	w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	svgContent = w.getSvg("bell", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+	w.statusline.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
 	// for Gonvim UI Color form colorscheme
 	tooltipStyle := fmt.Sprintf("color: rgba(%d, %d, %d, 1); }", shiftColor(fg, -40).R, shiftColor(fg, -40).G, shiftColor(fg, -40).B)

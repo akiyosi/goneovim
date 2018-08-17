@@ -204,7 +204,6 @@ func (n *Notification) closeNotification(event *gui.QMouseEvent) {
 	var del int
 	dropHeight := 0
 	for i, item := range editor.notifications {
-		newNotifications = append(newNotifications, item)
 		if n == item {
 			del = i
 			dropHeight = item.widget.Height() + 8
@@ -220,9 +219,12 @@ func (n *Notification) closeNotification(event *gui.QMouseEvent) {
 				item.widget.Show()
 			}
 		}
+		newNotifications = append(newNotifications, item)
 	}
 	editor.notifications = newNotifications
 	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
+	editor.pushNotification(NotifyInfo, "") // dummy push
+	fmt.Println(len(editor.notifications))
 }
 
 func (n *Notification) hideNotification() {

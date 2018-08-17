@@ -130,6 +130,9 @@ func InitEditor() {
 	e.signal.ConnectNotifySignal(func() {
 		// Is there a smarter implementation ?
 		notify := <-e.notify
+		if notify.message == "" {
+			return
+		}
 		if notify.buttons == nil {
 			e.popupNotification(notify.level, notify.message)
 		} else {
@@ -332,8 +335,8 @@ func InitEditor() {
 
 		time.Sleep(6 * time.Second)
 		go e.redrawNotifications()
-		time.Sleep(4 * time.Second)
-		go e.hideNotifications()
+		// time.Sleep(4 * time.Second)
+		// go e.hideNotifications()
 	}()
 
 	e.window.Show()
