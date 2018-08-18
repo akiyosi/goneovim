@@ -1126,7 +1126,7 @@ func deinInstallPost(result string) {
 
 	result = launderingString(result)
 
-	var messages string
+	// var messages string
 	for _, message := range strings.Split(result, "\n") {
 		if strings.Contains(message, "Not installed plugins") {
 			continue
@@ -1140,10 +1140,10 @@ func deinInstallPost(result string) {
 		if !(strings.Contains(message, "[dein]") || strings.Contains(message, "[Gonvim]")) {
 			continue
 		}
-		messages += ` | echomsg "` + message + `"`
+		message = strings.TrimRight(message, ".")
+		editor.pushNotification(NotifyInfo, message)
 	}
-
-	go editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
+	// go editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
 
 func (p *Plugin) deinInstallPre(reponame string) {
@@ -1186,7 +1186,6 @@ func deinUpdatePost(result string) {
 
 	result = launderingString(result)
 
-	var messages string
 	var isUpdateStarted, isUpdatePlugins, isUpdateChange, isUpdateURL, isUpdateDone bool
 	for _, message := range strings.Split(result, "\n") {
 		if !strings.Contains(message, "[dein]") {
@@ -1194,27 +1193,31 @@ func deinUpdatePost(result string) {
 		}
 		if strings.Contains(message, "Update started:") && !isUpdateStarted {
 			isUpdateStarted = true
-			messages += ` | echomsg "` + message + `"`
+			message = strings.TrimRight(message, ".")
+			editor.pushNotification(NotifyInfo, message)
 		}
 		if strings.Contains(message, "Update plugins:") && !isUpdatePlugins {
 			isUpdatePlugins = true
-			messages += ` | echomsg "` + message + `"`
+			message = strings.TrimRight(message, ".")
+			editor.pushNotification(NotifyInfo, message)
 		}
 		if strings.Contains(message, " change)") && !isUpdateChange {
 			isUpdateChange = true
-			messages += ` | echomsg "` + message + `"`
+			message = strings.TrimRight(message, ".")
+			editor.pushNotification(NotifyInfo, message)
 		}
 		if strings.Contains(message, "https://github") && !isUpdateURL {
 			isUpdateURL = true
-			messages += ` | echomsg "` + message + `"`
+			message = strings.TrimRight(message, ".")
+			editor.pushNotification(NotifyInfo, message)
 		}
 		if strings.Contains(message, "Done: (") && !isUpdateDone {
 			isUpdateDone = true
-			messages += ` | echomsg "` + message + `"`
+			message = strings.TrimRight(message, ".")
+			editor.pushNotification(NotifyInfo, message)
 		}
 	}
-
-	editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
+	// editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
 
 func (d *DeinPluginItem) deinUpdatePre(pluginName string) {

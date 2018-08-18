@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
+	// "time"
 
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
@@ -153,6 +153,11 @@ func InitEditor() {
 	e.window.SetWindowTitle("Gonvim")
 	e.window.SetContentsMargins(0, 0, 0, 0)
 	e.window.SetMinimumSize2(e.width, e.height)
+	e.window.ConnectResizeEvent(func(*gui.QResizeEvent) {
+		e.width = e.window.Width()
+		e.height = e.window.Height()
+		e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	})
 
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
@@ -298,47 +303,47 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
-	// notification test
-	go func() {
-		time.Sleep(2 * time.Second)
-		e.pushNotification(NotifyInfo, "hoge hoge!")
+	// // notification test
+	// go func() {
+	// 	time.Sleep(2 * time.Second)
+	// 	e.pushNotification(NotifyInfo, "hoge hoge!")
 
-		time.Sleep(2 * time.Second)
-		e.pushNotification(NotifyInfo, "hoge hoge!")
-		opts0 := []*NotifyButton{}
-		optArg0 := &NotifyButton{
-			action: func() {
-				fmt.Println("Yes")
-			},
-			text: "yes!",
-		}
-		opts0 = append(opts0, optArg0)
-		e.pushNotification(NotifyWarn, "vim !", notifyOptionArg(opts0))
+	// 	time.Sleep(2 * time.Second)
+	// 	e.pushNotification(NotifyInfo, "hoge hoge!")
+	// 	opts0 := []*NotifyButton{}
+	// 	optArg0 := &NotifyButton{
+	// 		action: func() {
+	// 			fmt.Println("Yes")
+	// 		},
+	// 		text: "yes!",
+	// 	}
+	// 	opts0 = append(opts0, optArg0)
+	// 	e.pushNotification(NotifyWarn, "vim !", notifyOptionArg(opts0))
 
-		time.Sleep(2 * time.Second)
-		opts := []*NotifyButton{}
-		optArg := &NotifyButton{
-			action: func() {
-				fmt.Println("pushed!")
-			},
-			text: "push!",
-		}
-		opts = append(opts, optArg)
+	// 	time.Sleep(2 * time.Second)
+	// 	opts := []*NotifyButton{}
+	// 	optArg := &NotifyButton{
+	// 		action: func() {
+	// 			fmt.Println("pushed!")
+	// 		},
+	// 		text: "push!",
+	// 	}
+	// 	opts = append(opts, optArg)
 
-		optArg2 := &NotifyButton{
-			action: func() {
-				fmt.Println("popped!")
-			},
-			text: "pop!",
-		}
-		opts = append(opts, optArg2)
-		e.pushNotification(NotifyWarn, "hoge hoge fuga fuga !", notifyOptionArg(opts))
+	// 	optArg2 := &NotifyButton{
+	// 		action: func() {
+	// 			fmt.Println("popped!")
+	// 		},
+	// 		text: "pop!",
+	// 	}
+	// 	opts = append(opts, optArg2)
+	// 	e.pushNotification(NotifyWarn, "hoge hoge fuga fuga !", notifyOptionArg(opts))
 
-		time.Sleep(6 * time.Second)
-		go e.showNotifications()
-		// time.Sleep(4 * time.Second)
-		// go e.hideNotifications()
-	}()
+	// 	time.Sleep(6 * time.Second)
+	// 	go e.showNotifications()
+	// 	// time.Sleep(4 * time.Second)
+	// 	// go e.hideNotifications()
+	// }()
 
 	e.window.Show()
 	e.wsWidget.SetFocus2()
@@ -364,7 +369,7 @@ func (e *Editor) popupNotification(level NotifyLevel, message string, opt ...Not
 	notification.widget.SetParent(e.window)
 	notification.widget.AdjustSize()
 	x := e.notifyStartPos.X()
-	y := e.notifyStartPos.Y() - notification.widget.Height() - 8
+	y := e.notifyStartPos.Y() - notification.widget.Height() - 4
 	notification.widget.Move2(x, y)
 	e.notifyStartPos = core.NewQPoint2(x, y)
 	e.notifications = append(e.notifications, notification)
