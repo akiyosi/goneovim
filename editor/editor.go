@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
@@ -34,12 +35,28 @@ type Char struct {
 	highlight   Highlight
 }
 
+type NotifyButton struct {
+	action func()
+	text   string
+}
+
+type Notify struct {
+	level   NotifyLevel
+	message string
+	buttons []*NotifyButton
+}
+
 // Editor is the editor
 type Editor struct {
-	version    string
-	app        *widgets.QApplication
-	activity   *Activity
-	splitter   *widgets.QSplitter
+	signal  *editorSignal
+	version string
+	app     *widgets.QApplication
+
+	activity       *Activity
+	splitter       *widgets.QSplitter
+	notifyStartPos *core.QPoint
+	notify         chan *Notify
+
 	workspaces []*Workspace
 	active     int
 	nvim       *nvim.Nvim
@@ -71,18 +88,14 @@ type Editor struct {
 	keyAlt          core.Qt__Key
 	keyShift        core.Qt__Key
 
-	config gonvimConfig
+	config               gonvimConfig
+	notifications        []*Notification
+	displayNotifications bool
 }
 
 type editorSignal struct {
 	core.QObject
-	_ func() `signal:"redrawSignal"`
-	_ func() `signal:"guiSignal"`
-	_ func() `signal:"statuslineSignal"`
-	_ func() `signal:"locpopupSignal"`
-	_ func() `signal:"lintSignal"`
-	_ func() `signal:"gitSignal"`
-	_ func() `signal:"messageSignal"`
+	_ func() `signal:"notifySignal"`
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -105,6 +118,8 @@ func InitEditor() {
 	config := newGonvimConfig(home)
 	editor = &Editor{
 		version:    "v0.2.3",
+		signal:     NewEditorSignal(nil),
+		notify:     make(chan *Notify, 10),
 		selectedBg: newRGBA(81, 154, 186, 0.5),
 		matchFg:    newRGBA(81, 154, 186, 1),
 		bgcolor:    nil,
@@ -113,6 +128,18 @@ func InitEditor() {
 		config:     config,
 	}
 	e := editor
+	e.signal.ConnectNotifySignal(func() {
+		// Is there a smarter implementation ?
+		notify := <-e.notify
+		if notify.message == "" {
+			return
+		}
+		if notify.buttons == nil {
+			e.popupNotification(notify.level, notify.message)
+		} else {
+			e.popupNotification(notify.level, notify.message, notifyOptionArg(notify.buttons))
+		}
+	})
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
@@ -207,7 +234,9 @@ func InitEditor() {
 
 	layout.AddWidget(splitter, 1, 0)
 	layout.AddWidget(e.activity.widget, 0, 0)
+
 	e.workspaceUpdate()
+	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
 
 	// Drop shadow to Side Bar
 	if e.config.SideBar.DropShadow == true {
@@ -269,12 +298,77 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
+	// notification test
+	go func() {
+		time.Sleep(2 * time.Second)
+		e.pushNotification(NotifyInfo, "hoge hoge!")
+
+		time.Sleep(2 * time.Second)
+		e.pushNotification(NotifyInfo, "hoge hoge!")
+		opts0 := []*NotifyButton{}
+		optArg0 := &NotifyButton{
+			action: func() {
+				fmt.Println("Yes")
+			},
+			text: "yes!",
+		}
+		opts0 = append(opts0, optArg0)
+		e.pushNotification(NotifyWarn, "vim !", notifyOptionArg(opts0))
+
+		time.Sleep(2 * time.Second)
+		opts := []*NotifyButton{}
+		optArg := &NotifyButton{
+			action: func() {
+				fmt.Println("pushed!")
+			},
+			text: "push!",
+		}
+		opts = append(opts, optArg)
+
+		optArg2 := &NotifyButton{
+			action: func() {
+				fmt.Println("popped!")
+			},
+			text: "pop!",
+		}
+		opts = append(opts, optArg2)
+		e.pushNotification(NotifyWarn, "hoge hoge fuga fuga !", notifyOptionArg(opts))
+
+		time.Sleep(6 * time.Second)
+		go e.showNotifications()
+		// time.Sleep(4 * time.Second)
+		// go e.hideNotifications()
+	}()
+
 	e.window.Show()
-	// for i := len(e.workspaces) - 1; i >= 0; i-- {
-	// 	e.active = i
-	// }
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
+}
+
+func (e *Editor) pushNotification(level NotifyLevel, message string, opt ...NotifyOptionArg) {
+	opts := NotifyOptions{}
+	for _, o := range opt {
+		o(&opts)
+	}
+	n := &Notify{
+		level:   level,
+		message: message,
+		buttons: opts.buttons,
+	}
+	e.notify <- n
+	e.signal.NotifySignal()
+}
+
+func (e *Editor) popupNotification(level NotifyLevel, message string, opt ...NotifyOptionArg) {
+	notification := newNotification(level, message, opt...)
+	notification.widget.SetParent(e.window)
+	notification.widget.AdjustSize()
+	x := e.notifyStartPos.X()
+	y := e.notifyStartPos.Y() - notification.widget.Height() - 8
+	notification.widget.Move2(x, y)
+	e.notifyStartPos = core.NewQPoint2(x, y)
+	e.notifications = append(e.notifications, notification)
+	notification.show()
 }
 
 func hexToRGBA(hex string) *RGBA {
