@@ -153,11 +153,6 @@ func InitEditor() {
 	e.window.SetWindowTitle("Gonvim")
 	e.window.SetContentsMargins(0, 0, 0, 0)
 	e.window.SetMinimumSize2(e.width, e.height)
-	e.window.ConnectResizeEvent(func(*gui.QResizeEvent) {
-		e.width = e.window.Width()
-		e.height = e.window.Height()
-		e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
-	})
 
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
@@ -242,6 +237,24 @@ func InitEditor() {
 
 	e.workspaceUpdate()
 	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	var notifications []*Notification
+	e.notifications = notifications
+	e.window.ConnectResizeEvent(func(*gui.QResizeEvent) {
+		e.width = e.window.Width()
+		e.height = e.window.Height()
+		e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+		x := e.notifyStartPos.X()
+		y := e.notifyStartPos.Y()
+		var newNotifications []*Notification
+		for _, item := range e.notifications {
+			x = e.notifyStartPos.X()
+			y = e.notifyStartPos.Y() - item.widget.Height() - 4
+			item.widget.Move2(x, y)
+			e.notifyStartPos = core.NewQPoint2(x, y)
+			newNotifications = append(newNotifications, item)
+		}
+		e.notifications = newNotifications
+	})
 
 	// Drop shadow to Side Bar
 	if e.config.SideBar.DropShadow == true {
