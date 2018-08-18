@@ -191,6 +191,15 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 		notification.isDragged = true
 	})
 
+	// Drop shadow to widget
+	go func() {
+		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+		shadow.SetBlurRadius(40)
+		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
+		shadow.SetOffset3(2, 2)
+		widget.SetGraphicsEffect(shadow)
+	}()
+
 	timer := core.NewQTimer(nil)
 	timer.SetSingleShot(true)
 	timer.ConnectTimeout(notification.hideNotification)

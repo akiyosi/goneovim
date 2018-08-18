@@ -127,7 +127,7 @@ type StatuslineFileFormat struct {
 
 func initStatuslineNew() *Statusline {
 	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 0, 0, 0)
+	widget.SetContentsMargins(0, 0, 8, 0)
 
 	// spacing, padding, paddingtop, rightitemnum, width
 	layout := newVFlowLayout(16, 10, 1, 2, 0)
@@ -237,7 +237,7 @@ func initStatuslineNew() *Statusline {
 	notifyicon.SetFixedSize2(14, 14)
 	notifyLayout.AddWidget(notifyicon, 0, 0)
 	notifyLayout.AddWidget(notifyLabel, 0, 0)
-	notifyLayout.SetContentsMargins(0, 0, 0, 0)
+	notifyLayout.SetContentsMargins(2, 0, 2, 0)
 	notifyLayout.SetSpacing(2)
 	notify := &StatuslineNotify{
 		widget: notifyWidget,
@@ -247,7 +247,7 @@ func initStatuslineNew() *Statusline {
 	s.notify = notify
 	notifyWidget.ConnectEnterEvent(func(event *core.QEvent) {
 		bg := editor.bgcolor
-		notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1); }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+		notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1); }", shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
 	})
 	notifyWidget.ConnectLeaveEvent(func(event *core.QEvent) {
 		notifyWidget.SetStyleSheet("")
