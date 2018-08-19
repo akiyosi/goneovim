@@ -42,6 +42,7 @@ type NotifyButton struct {
 
 type Notify struct {
 	level   NotifyLevel
+	period  int
 	message string
 	buttons []*NotifyButton
 }
@@ -115,6 +116,9 @@ func (hl *Highlight) copy() Highlight {
 // InitEditor is
 func InitEditor() {
 	home, err := homedir.Dir()
+	if err != nil {
+		home = "~"
+	}
 	config := newGonvimConfig(home)
 	editor = &Editor{
 		version:    "v0.2.3",
@@ -135,9 +139,9 @@ func InitEditor() {
 			return
 		}
 		if notify.buttons == nil {
-			e.popupNotification(notify.level, notify.message)
+			e.popupNotification(notify.level, notify.period, notify.message)
 		} else {
-			e.popupNotification(notify.level, notify.message, notifyOptionArg(notify.buttons))
+			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
 	e.app = widgets.NewQApplication(0, nil)
@@ -363,13 +367,14 @@ func InitEditor() {
 	widgets.QApplication_Exec()
 }
 
-func (e *Editor) pushNotification(level NotifyLevel, message string, opt ...NotifyOptionArg) {
+func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
 	opts := NotifyOptions{}
 	for _, o := range opt {
 		o(&opts)
 	}
 	n := &Notify{
 		level:   level,
+		period:  p,
 		message: message,
 		buttons: opts.buttons,
 	}
@@ -377,8 +382,8 @@ func (e *Editor) pushNotification(level NotifyLevel, message string, opt ...Noti
 	e.signal.NotifySignal()
 }
 
-func (e *Editor) popupNotification(level NotifyLevel, message string, opt ...NotifyOptionArg) {
-	notification := newNotification(level, message, opt...)
+func (e *Editor) popupNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
+	notification := newNotification(level, p, message, opt...)
 	notification.widget.SetParent(e.window)
 	notification.widget.AdjustSize()
 	x := e.notifyStartPos.X()

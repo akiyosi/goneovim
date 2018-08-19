@@ -37,7 +37,7 @@ func notifyOptionArg(b []*NotifyButton) NotifyOptionArg {
 	}
 }
 
-func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) *Notification {
+func newNotification(l NotifyLevel, p int, message string, options ...NotifyOptionArg) *Notification {
 	ws := editor.workspaces[editor.active]
 
 	widget := widgets.NewQWidget(nil, 0)
@@ -110,6 +110,7 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 	bottomlayout.SetSpacing(10)
 	bottomwidget.SetLayout(bottomlayout)
 
+	notification := &Notification{}
 	opts := NotifyOptions{}
 	for _, o := range options {
 		o(&opts)
@@ -133,6 +134,7 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 			fn := opt.action
 			button.ConnectMousePressEvent(func(*gui.QMouseEvent) {
 				go fn()
+				notification.closeNotification()
 			})
 			button.ConnectEnterEvent(func(event *core.QEvent) {
 				hoverColor := "#1177bb"
@@ -153,16 +155,16 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 	isDragged := false
 	startPos := editor.notifyStartPos
 
-	notification := &Notification{
-		widget:    widget,
-		closeIcon: closeIcon,
-		pos:       startPos,
-		isDrag:    isDrag,
-		isDragged: isDragged,
-	}
+	notification.widget = widget
+	notification.closeIcon = closeIcon
+	notification.pos = startPos
+	notification.isDrag = isDrag
+	notification.isDragged = isDragged
 	notification.widget.Hide()
 
-	notification.closeIcon.ConnectMouseReleaseEvent(notification.closeNotification)
+	notification.closeIcon.ConnectMouseReleaseEvent(func(event *gui.QMouseEvent) {
+		notification.closeNotification()
+	})
 	notification.widget.ConnectEnterEvent(func(event *core.QEvent) {
 		fg := editor.fgcolor
 		svgContent := ws.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
@@ -200,15 +202,25 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 		widget.SetGraphicsEffect(shadow)
 	}()
 
-	timer := core.NewQTimer(nil)
-	timer.SetSingleShot(true)
-	timer.ConnectTimeout(notification.hideNotification)
-	timer.Start(6000)
+	var displayPeriod int
+	if p < 0 { // default display period is 6 seconds
+		displayPeriod = 6
+	} else if p == 0 {
+		displayPeriod = 0
+	} else {
+		displayPeriod = p
+	}
+	if displayPeriod > 0 {
+		timer := core.NewQTimer(nil)
+		timer.SetSingleShot(true)
+		timer.ConnectTimeout(notification.hideNotification)
+		timer.Start(displayPeriod * 1000)
+	}
 
 	return notification
 }
 
-func (n *Notification) closeNotification(event *gui.QMouseEvent) {
+func (n *Notification) closeNotification() {
 	var newNotifications []*Notification
 	var del int
 	dropHeight := 0
@@ -232,7 +244,7 @@ func (n *Notification) closeNotification(event *gui.QMouseEvent) {
 	}
 	editor.notifications = newNotifications
 	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
-	editor.pushNotification(NotifyInfo, "") // dummy push
+	editor.pushNotification(NotifyInfo, -1, "") // dummy push
 }
 
 func (n *Notification) hideNotification() {

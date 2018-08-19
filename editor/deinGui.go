@@ -17,6 +17,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/akiyosi/tomlwriter"
+	homedir "github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
 
 	"github.com/therecipe/qt/core"
@@ -144,16 +145,48 @@ func detectTomlFile(s string) {
 	filesString = strings.Replace(filesString, `', '`, ",", -1)
 	for i, file := range strings.Split(filesString, ",") {
 		if strings.Contains(file[len(file)-5:], ".toml") && !strings.Contains(file, "lazy") {
-			message := fmt.Sprintf("[Gonvim] Detect the dein.vim toml file: %s", file)
-			editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg | echomsg "` + message + `"`)
-			editor.config.Dein.TomlFile = file
+			confirmDeinGUITomlFile(file)
 			break
 		}
 		if i == len(strings.Split(filesString, ","))-1 {
-			message := "[Gonvim] I can't find the dein.vim toml file."
-			editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg | echomsg "` + message + `"`)
+			editor.pushNotification(NotifyWarn, -1, "[Gonvim] I can't find the dein.vim toml file. Please specify loading of toml file in dein.vim setting.")
 		}
 	}
+}
+
+func confirmDeinGUITomlFile(file string) {
+	outputGonvimConfig()
+	home, err := homedir.Dir()
+	if err != nil {
+		home = "~"
+	}
+	filepath := filepath.Join(home, ".gonvim", "setting.toml")
+
+	message := fmt.Sprintf("[Gonvim] Detect the dein.vim toml file: %s, Would you like to use this file with Dein.vim GUI?", file)
+	opts := []*NotifyButton{}
+	opt1 := &NotifyButton{
+		action: func() {
+			b, _ := ioutil.ReadFile(filepath)
+			b, _ = tomlwriter.WriteValue(`'`+filepath+`'`, b, "dein", "tomlFile", editor.config.Dein.TomlFile)
+			editor.config.Dein.TomlFile = file
+			err := ioutil.WriteFile(filepath, b, 0755)
+			if err != nil {
+				fmt.Println(err)
+			}
+		},
+		text: "Yes",
+	}
+	opts = append(opts, opt1)
+
+	opt2 := &NotifyButton{
+		action: func() {
+			go editor.workspaces[editor.active].nvim.Command(fmt.Sprintf(":-1tabnew %s", filepath))
+		},
+		text: "No, I will use another file",
+	}
+	opts = append(opts, opt2)
+
+	editor.pushNotification(NotifyWarn, 0, message, notifyOptionArg(opts))
 }
 
 func loadDeinCashe() []*DeinPluginItem {
@@ -248,6 +281,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		// * plugin install button
 		updateButtonLabel := widgets.NewQLabel(nil, 0)
 		updateButtonLabel.SetFixedWidth(65)
+		updateButtonLabel.SetFixedHeight(20)
 		updateButtonLabel.SetContentsMargins(5, 0, 5, 0)
 		updateButtonLabel.SetAlignment(core.Qt__AlignCenter)
 		updateButton := widgets.NewQWidget(nil, 0)
@@ -917,6 +951,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		// * plugin install button
 		pluginInstallLabel := widgets.NewQLabel(nil, 0)
 		pluginInstallLabel.SetFixedWidth(65)
+		pluginInstallLabel.SetFixedHeight(20)
 		pluginInstallLabel.SetContentsMargins(5, 0, 5, 0)
 		pluginInstallLabel.SetAlignment(core.Qt__AlignCenter)
 		pluginInstall := widgets.NewQWidget(nil, 0)
@@ -1141,7 +1176,7 @@ func deinInstallPost(result string) {
 			continue
 		}
 		message = strings.TrimRight(message, ".")
-		editor.pushNotification(NotifyInfo, message)
+		editor.pushNotification(NotifyInfo, -1, message)
 	}
 	// go editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
@@ -1194,27 +1229,27 @@ func deinUpdatePost(result string) {
 		if strings.Contains(message, "Update started:") && !isUpdateStarted {
 			isUpdateStarted = true
 			message = strings.TrimRight(message, ".")
-			editor.pushNotification(NotifyInfo, message)
+			editor.pushNotification(NotifyInfo, -1, message)
 		}
 		if strings.Contains(message, "Update plugins:") && !isUpdatePlugins {
 			isUpdatePlugins = true
 			message = strings.TrimRight(message, ".")
-			editor.pushNotification(NotifyInfo, message)
+			editor.pushNotification(NotifyInfo, -1, message)
 		}
 		if strings.Contains(message, " change)") && !isUpdateChange {
 			isUpdateChange = true
 			message = strings.TrimRight(message, ".")
-			editor.pushNotification(NotifyInfo, message)
+			editor.pushNotification(NotifyInfo, -1, message)
 		}
 		if strings.Contains(message, "https://github") && !isUpdateURL {
 			isUpdateURL = true
 			message = strings.TrimRight(message, ".")
-			editor.pushNotification(NotifyInfo, message)
+			editor.pushNotification(NotifyInfo, -1, message)
 		}
 		if strings.Contains(message, "Done: (") && !isUpdateDone {
 			isUpdateDone = true
 			message = strings.TrimRight(message, ".")
-			editor.pushNotification(NotifyInfo, message)
+			editor.pushNotification(NotifyInfo, -1, message)
 		}
 	}
 	// editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
