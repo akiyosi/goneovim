@@ -183,6 +183,9 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		notification.isDrag = false
 	})
 	notification.widget.ConnectMouseMoveEvent(func(event *gui.QMouseEvent) {
+		if !notification.isDragged {
+			notification.dropNotifications()
+		}
 		if notification.isDrag == true {
 			x := event.Pos().X() - notification.pos.X()
 			y := event.Pos().Y() - notification.pos.Y()
@@ -220,6 +223,31 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	return notification
 }
 
+func (n *Notification) dropNotifications() {
+	var newNotifications []*Notification
+	var self int
+	dropHeight := 0
+	for i, item := range editor.notifications {
+		newNotifications = append(newNotifications, item)
+		if n == item {
+			self = i
+			dropHeight = item.widget.Height() + 4
+			continue
+		}
+		if i > self && !item.isDragged {
+			x := item.widget.Pos().X()
+			y := item.widget.Pos().Y() + dropHeight
+			item.widget.Move2(x, y)
+			item.widget.Hide()
+			if !item.hide {
+				item.widget.Show()
+			}
+		}
+	}
+	editor.notifications = newNotifications
+	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
+}
+
 func (n *Notification) closeNotification() {
 	var newNotifications []*Notification
 	var del int
@@ -231,7 +259,7 @@ func (n *Notification) closeNotification() {
 			item.widget.DestroyQWidget()
 			continue
 		}
-		if i > del && !item.isDragged {
+		if i > del && !item.isDragged && !n.isDragged {
 			x := item.widget.Pos().X()
 			y := item.widget.Pos().Y() + dropHeight
 			item.widget.Move2(x, y)
@@ -260,7 +288,7 @@ func (n *Notification) hideNotification() {
 			item.hide = true
 			continue
 		}
-		if i > hide && !item.isDragged {
+		if i > hide && !item.isDragged && !n.isDragged {
 			x := item.widget.Pos().X()
 			y := item.widget.Pos().Y() + dropHeight
 			item.widget.Move2(x, y)
@@ -291,6 +319,7 @@ func (e *Editor) showNotifications() {
 		y = e.notifyStartPos.Y() - item.widget.Height() - 4
 		item.widget.Move2(x, y)
 		item.hide = false
+		item.isDragged = false
 		item.widget.Show()
 		e.notifyStartPos = core.NewQPoint2(x, y)
 		newNotifications = append(newNotifications, item)
