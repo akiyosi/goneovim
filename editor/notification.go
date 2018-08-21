@@ -21,8 +21,8 @@ type Notification struct {
 	closeIcon *svg.QSvgWidget
 	pos       *core.QPoint
 	isDrag    bool
-	isDragged bool
-	hide      bool
+	isMoved   bool
+	isHide    bool
 }
 
 type NotifyOptions struct {
@@ -152,14 +152,14 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	layout.SetAlignment(bottomwidget, core.Qt__AlignRight)
 
 	isDrag := false
-	isDragged := false
+	isMoved := false
 	startPos := editor.notifyStartPos
 
 	notification.widget = widget
 	notification.closeIcon = closeIcon
 	notification.pos = startPos
 	notification.isDrag = isDrag
-	notification.isDragged = isDragged
+	notification.isMoved = isMoved
 	notification.widget.Hide()
 
 	notification.closeIcon.ConnectMouseReleaseEvent(func(event *gui.QMouseEvent) {
@@ -183,7 +183,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		notification.isDrag = false
 	})
 	notification.widget.ConnectMouseMoveEvent(func(event *gui.QMouseEvent) {
-		if !notification.isDragged {
+		if !notification.isMoved {
 			notification.dropNotifications()
 		}
 		if notification.isDrag == true {
@@ -193,7 +193,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 			trans := notification.widget.MapToParent(newPos)
 			notification.widget.Move(trans)
 		}
-		notification.isDragged = true
+		notification.isMoved = true
 	})
 
 	// Drop shadow to widget
@@ -205,6 +205,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		widget.SetGraphicsEffect(shadow)
 	}()
 
+	// Notification hiding
 	var displayPeriod int
 	if p < 0 { // default display period is 6 seconds
 		displayPeriod = 6
@@ -223,87 +224,65 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	return notification
 }
 
-func (n *Notification) dropNotifications() {
+func (n *Notification) dropNotifications(fn ...func(*Notification)) {
+	e := editor
 	var newNotifications []*Notification
-	var self int
+	var x, y, self int
+	var isClose bool
+	var dropOK bool
 	dropHeight := 0
-	for i, item := range editor.notifications {
-		newNotifications = append(newNotifications, item)
+	for i, item := range e.notifications {
 		if n == item {
 			self = i
 			dropHeight = item.widget.Height() + 4
-			continue
+			if len(fn) > 0 {
+				for _, f := range fn {
+					f(item)
+				}
+			}
 		}
-		if i > self && !item.isDragged {
-			x := item.widget.Pos().X()
-			y := item.widget.Pos().Y() + dropHeight
+
+		isClose = fmt.Sprintf("%v", item.widget) == "&{{<nil>} {<nil>}}"
+		// Skip if widget is broken
+		if !isClose {
+			newNotifications = append(newNotifications, item)
+		}
+
+		// set drop flag when n == item
+		if n == item {
+			dropOK = (n.isDrag && !n.isHide && !isClose) || (!n.isMoved && n.isHide && !isClose) || (!n.isMoved && !n.isHide && isClose)
+		}
+		if n != item && i > self && !item.isMoved && dropOK {
+			x = item.widget.Pos().X()
+			y = item.widget.Pos().Y() + dropHeight
 			item.widget.Move2(x, y)
 			item.widget.Hide()
-			if !item.hide {
+			if !item.isHide {
 				item.widget.Show()
 			}
 		}
 	}
-	editor.notifications = newNotifications
-	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
+	if dropOK {
+		e.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
+	}
+	e.notifications = newNotifications
 }
 
 func (n *Notification) closeNotification() {
-	var newNotifications []*Notification
-	var del int
-	dropHeight := 0
-	for i, item := range editor.notifications {
-		if n == item {
-			del = i
-			dropHeight = item.widget.Height() + 4
-			item.widget.DestroyQWidget()
-			continue
-		}
-		if i > del && !item.isDragged && !n.isDragged {
-			x := item.widget.Pos().X()
-			y := item.widget.Pos().Y() + dropHeight
-			item.widget.Move2(x, y)
-			item.widget.Hide()
-			if !item.hide {
-				item.widget.Show()
-			}
-		}
-		newNotifications = append(newNotifications, item)
-	}
-	editor.notifications = newNotifications
-	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
+	n.dropNotifications(func(item *Notification) {
+		item.widget.DestroyQWidget()
+	})
 	editor.pushNotification(NotifyInfo, -1, "") // dummy push
 }
 
 func (n *Notification) hideNotification() {
-	var newNotifications []*Notification
-	var hide int
-	dropHeight := 0
-	for i, item := range editor.notifications {
-		newNotifications = append(newNotifications, item)
-		if n == item {
-			hide = i
-			dropHeight = item.widget.Height() + 4
-			item.widget.Hide()
-			item.hide = true
-			continue
-		}
-		if i > hide && !item.isDragged && !n.isDragged {
-			x := item.widget.Pos().X()
-			y := item.widget.Pos().Y() + dropHeight
-			item.widget.Move2(x, y)
-			item.widget.Hide()
-			if !item.hide {
-				item.widget.Show()
-			}
-		}
-	}
-	editor.notifications = newNotifications
-	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
-
+	n.dropNotifications(func(item *Notification) {
+		item.widget.Hide()
+		item.isHide = true
+	})
 	editor.displayNotifications = false
 	for _, item := range editor.notifications {
-		if item.hide == false {
+		if item.isHide == false {
 			editor.displayNotifications = true
 		}
 	}
@@ -318,9 +297,7 @@ func (e *Editor) showNotifications() {
 		x = e.notifyStartPos.X()
 		y = e.notifyStartPos.Y() - item.widget.Height() - 4
 		item.widget.Move2(x, y)
-		item.hide = false
-		item.isDragged = false
-		item.widget.Show()
+		item.statusReset()
 		e.notifyStartPos = core.NewQPoint2(x, y)
 		newNotifications = append(newNotifications, item)
 	}
@@ -331,13 +308,19 @@ func (e *Editor) showNotifications() {
 func (e *Editor) hideNotifications() {
 	var newNotifications []*Notification
 	for _, item := range e.notifications {
-		item.hide = true
+		item.isHide = true
 		item.widget.Hide()
 		newNotifications = append(newNotifications, item)
 	}
 	e.notifications = newNotifications
 	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
 	e.displayNotifications = false
+}
+
+func (n *Notification) statusReset() {
+	n.isHide = false
+	n.isMoved = false
+	n.widget.Show()
 }
 
 func (n *Notification) show() {
