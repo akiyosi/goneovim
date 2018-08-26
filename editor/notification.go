@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -42,8 +43,6 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 
 	widget := widgets.NewQWidget(nil, 0)
 	layout := widgets.NewQVBoxLayout()
-	layout.SetContentsMargins(10, 10, 10, 15)
-	layout.SetSpacing(8)
 	widget.SetLayout(layout)
 	widget.SetFixedWidth(400)
 
@@ -69,13 +68,18 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	levelIcon.Load2(core.NewQByteArray2(level, len(level)))
 
 	label := widgets.NewQLabel(nil, 0)
-	label.SetWordWrap(true)
+	if utf8.RuneCountInString(message) > 50 {
+		label.SetWordWrap(true)
+	}
+	label.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 	label.SetText(message)
 
 	closeIcon := svg.NewQSvgWidget(nil)
+	bg := editor.bgcolor
+	svgContent := ws.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
+	closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	closeIcon.SetFixedWidth(14)
 	closeIcon.SetFixedHeight(14)
-	closeIcon.Hide()
 
 	closeIcon.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 		fg := editor.fgcolor
@@ -147,9 +151,15 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 			bottomlayout.SetAlignment(button, core.Qt__AlignRight)
 		}
 	}
-	bottomwidget.AdjustSize()
-	layout.AddWidget(bottomwidget, 0, 0)
-	layout.SetAlignment(bottomwidget, core.Qt__AlignRight)
+	if len(opts.buttons) > 0 {
+		layout.SetSpacing(8)
+		bottomlayout.SetContentsMargins(0, 0, 0, 0)
+		bottomlayout.SetSpacing(10)
+		bottomwidget.AdjustSize()
+		layout.AddWidget(bottomwidget, 0, 0)
+		layout.SetAlignment(bottomwidget, core.Qt__AlignRight)
+	}
+	layout.SetContentsMargins(10, 10, 10, 10)
 
 	isDrag := false
 	isMoved := false
@@ -169,10 +179,10 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		fg := editor.fgcolor
 		svgContent := ws.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
 		notification.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		notification.closeIcon.Show()
 	})
 	notification.widget.ConnectLeaveEvent(func(event *core.QEvent) {
-		notification.closeIcon.Hide()
+		svgContent := ws.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
+		notification.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	})
 	notification.widget.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 		notification.widget.Raise()

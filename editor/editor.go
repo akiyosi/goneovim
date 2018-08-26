@@ -253,8 +253,10 @@ func InitEditor() {
 		for _, item := range e.notifications {
 			x = e.notifyStartPos.X()
 			y = e.notifyStartPos.Y() - item.widget.Height() - 4
-			item.widget.Move2(x, y)
-			e.notifyStartPos = core.NewQPoint2(x, y)
+			if !item.isHide && !item.isMoved {
+				item.widget.Move2(x, y)
+				e.notifyStartPos = core.NewQPoint2(x, y)
+			}
 			newNotifications = append(newNotifications, item)
 		}
 		e.notifications = newNotifications
@@ -323,10 +325,10 @@ func InitEditor() {
 	// // notification test
 	// go func() {
 	// 	time.Sleep(2 * time.Second)
-	// 	e.pushNotification(NotifyInfo, "hoge hoge!")
+	// 	e.pushNotification(NotifyInfo, -1, "This is a very long text message with lots of words that might get cut off with word wrap. ")
 
 	// 	time.Sleep(2 * time.Second)
-	// 	e.pushNotification(NotifyInfo, "hoge hoge!")
+	// 	e.pushNotification(NotifyInfo, -1, "hoge hoge!")
 	// 	opts0 := []*NotifyButton{}
 	// 	optArg0 := &NotifyButton{
 	// 		action: func() {
@@ -335,7 +337,7 @@ func InitEditor() {
 	// 		text: "yes!",
 	// 	}
 	// 	opts0 = append(opts0, optArg0)
-	// 	e.pushNotification(NotifyWarn, "vim !", notifyOptionArg(opts0))
+	// 	e.pushNotification(NotifyWarn, -1, "vim !", notifyOptionArg(opts0))
 
 	// 	time.Sleep(2 * time.Second)
 	// 	opts := []*NotifyButton{}
@@ -354,7 +356,7 @@ func InitEditor() {
 	// 		text: "pop!",
 	// 	}
 	// 	opts = append(opts, optArg2)
-	// 	e.pushNotification(NotifyWarn, "hoge hoge fuga fuga !", notifyOptionArg(opts))
+	// 	e.pushNotification(NotifyWarn, -1, "hoge hoge fuga fuga !", notifyOptionArg(opts))
 
 	// 	time.Sleep(6 * time.Second)
 	// 	go e.showNotifications()
