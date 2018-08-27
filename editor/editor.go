@@ -315,6 +315,10 @@ func InitEditor() {
 			}
 			return true
 		})
+		e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
+			e.app.DisconnectEvent()
+			event.Accept()
+		})
 	}
 
 	e.window.SetCentralWidget(widget)
