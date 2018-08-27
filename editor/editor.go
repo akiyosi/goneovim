@@ -157,6 +157,8 @@ func InitEditor() {
 	e.window.SetWindowTitle("Gonvim")
 	e.window.SetContentsMargins(0, 0, 0, 0)
 	e.window.SetMinimumSize2(e.width, e.height)
+	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
+	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
 
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
@@ -219,6 +221,7 @@ func InitEditor() {
 	}
 
 	activityWidget := widgets.NewQWidget(nil, 0)
+	activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	activity := newActivity()
 	activity.widget = activityWidget
 	activityWidget.SetLayout(activity.layout)
@@ -229,6 +232,7 @@ func InitEditor() {
 	// layout.AddWidget(e.activity.sideArea, 0, 0)
 
 	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
 	splitter.AddWidget(e.activity.sideArea)
 	splitter.AddWidget(e.wsWidget)
 	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
