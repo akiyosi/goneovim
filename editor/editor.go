@@ -159,6 +159,7 @@ func InitEditor() {
 	e.window.SetMinimumSize2(e.width, e.height)
 	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
 	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
+	e.window.SetWindowOpacity(0.0)
 
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)

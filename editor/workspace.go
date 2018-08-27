@@ -1022,6 +1022,7 @@ func (w *Workspace) setGuiColor() {
 	}
 	editor.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
 
+	editor.window.SetWindowOpacity(1.0)
 }
 
 // qscrollarea broken contentmargin of first item
