@@ -506,14 +506,7 @@ func (e *Editor) workspaceUpdate() {
 	}
 
 	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
-		if i == e.active {
-			e.wsSide.items[i].setActive()
-			//e.wsSide.title.Show()
-			//}
-		} else {
-			e.wsSide.items[i].setInactive()
-		}
-		//e.wsSide.scrollarea.Show()
+		e.wsSide.items[i].setSideItemLabel(i)
 		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
 		e.wsSide.items[i].show()
 	}
