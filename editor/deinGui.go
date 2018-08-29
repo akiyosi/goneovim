@@ -18,6 +18,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/akiyosi/tomlwriter"
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/neovim/go-client/nvim"
 	"gopkg.in/yaml.v2"
 
 	"github.com/therecipe/qt/core"
@@ -160,16 +161,16 @@ func confirmDeinGUITomlFile(file string) {
 	if err != nil {
 		home = "~"
 	}
-	filepath := filepath.Join(home, ".gonvim", "setting.toml")
+	setting := filepath.Join(home, ".gonvim", "setting.toml")
 
 	message := fmt.Sprintf("[Gonvim] Detect the dein.vim toml file: %s, Would you like to use this file with Dein.vim GUI?", file)
 	opts := []*NotifyButton{}
 	opt1 := &NotifyButton{
 		action: func() {
-			b, _ := ioutil.ReadFile(filepath)
-			b, _ = tomlwriter.WriteValue(`'`+filepath+`'`, b, "dein", "tomlFile", editor.config.Dein.TomlFile)
+			b, _ := ioutil.ReadFile(setting)
+			b, _ = tomlwriter.WriteValue(`'`+file+`'`, b, "dein", "tomlFile", editor.config.Dein.TomlFile)
 			editor.config.Dein.TomlFile = file
-			err := ioutil.WriteFile(filepath, b, 0755)
+			err := ioutil.WriteFile(setting, b, 0755)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -180,7 +181,7 @@ func confirmDeinGUITomlFile(file string) {
 
 	opt2 := &NotifyButton{
 		action: func() {
-			go editor.workspaces[editor.active].nvim.Command(fmt.Sprintf(":-1tabnew %s", filepath))
+			go editor.workspaces[editor.active].nvim.Command(fmt.Sprintf(":-1tabnew %s", setting))
 		},
 		text: "No, I will use another file",
 	}
@@ -1140,17 +1141,13 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 func launderingString(s string) string {
 	// TODO Should be more simpler implementation
 	s = strings.Replace(s, "\r", "\n", -1)
-	// re0 := regexp.MustCompile(`\^\[\[[MC0-9;\?]*\s?[abhlmtrqABJH][0-9]*`)
-	// re0 := regexp.MustCompile(`\^\[\[?[MC0-9;\?]*\s?[abhlmtrqABCJH0-9]*[0-9]*`)
-	re0 := regexp.MustCompile(`\^\[\[?[MC0-9;\?(>]*\s?[abhlmtrqABCJH0-9]*[0-9]*`)
+	re0 := regexp.MustCompile("\x1b[?[MC0-9;\\?\\(>]*\\s?[abhlmtrqABCJH0-9]*[0-9]*")
 	s = re0.ReplaceAllLiteralString(s, "")
 	s = strings.Replace(s, "\x0a\x7e", "\x20", -1)
 	s = strings.Replace(s, "\x7e", "\x20", -1)
 	s = strings.Replace(s, "\x0a", "\x20", -1)
-	re1 := regexp.MustCompile(`\s\s+`)
-	s = re1.ReplaceAllLiteralString(s, "")
-	re2 := regexp.MustCompile(`\[dein\]\([^\s]\)`)
-	s = re2.ReplaceAllLiteralString(s, `[dein]  \1`)
+	re1 := regexp.MustCompile(`([^\]^\)])\s\s+`)
+	s = re1.ReplaceAllString(s, "$1")
 	s = strings.Replace(s, "NVIM", "\nNVIM", -1)
 	s = strings.Replace(s, "[dein]", "\n[dein]", -1)
 
@@ -1178,15 +1175,15 @@ func deinInstallPost(result string) {
 		message = strings.TrimRight(message, ".")
 		editor.pushNotification(NotifyInfo, -1, message)
 	}
-	// go editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
 
 func (p *Plugin) deinInstallPre(reponame string) {
 	p.installButton.DisconnectMousePressEvent()
-
-	fg := editor.fgcolor
-	bg := editor.bgcolor
 	p.installLabel.SetCurrentWidget(p.waitingLabel)
+
+	v, cleanup := newNvimProcess()
+	defer cleanup()
+
 	b := editor.deinSide.deintomlfile
 	b, _ = tomlwriter.WriteValue(`'`+reponame+`'`, b, "[plugins]", "repo", nil)
 	err := ioutil.WriteFile(editor.config.Dein.TomlFile, b, 0755)
@@ -1195,17 +1192,33 @@ func (p *Plugin) deinInstallPre(reponame string) {
 	}
 
 	// Dein install
-	var text string
 	if runtime.GOOS == "windows" {
-		text, _ = editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim.exe -c "sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q" `)
+		v.Command(`silent r!nvim.exe -c "sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q" `)
 	} else {
-		text, _ = editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim -c 'sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q' `)
+		v.Command(`silent r!nvim -c 'sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q' `)
+	}
+
+	buf, err := v.CurrentBuffer()
+	if err != nil {
+		fmt.Println(err)
+	}
+	var lines [][]byte
+	lines, err = v.BufferLines(buf, 0, -1, false)
+	if err != nil {
+		fmt.Println(err)
+	}
+	var text string
+	for _, line := range lines {
+		text = text + fmt.Sprintf("%s", line)
 	}
 
 	editor.deinSide.deinInstall <- text
 	editor.deinSide.signal.DeinInstallSignal()
 
+	fg := editor.fgcolor
+	bg := editor.bgcolor
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+
 	p.installed = true
 	p.installLabelName.SetText("Installed")
 	deinTomlfile, _ := ioutil.ReadFile(editor.config.Dein.TomlFile)
@@ -1252,25 +1265,59 @@ func deinUpdatePost(result string) {
 			editor.pushNotification(NotifyInfo, -1, message)
 		}
 	}
-	// editor.workspaces[editor.active].nvim.Command(`:echohl WarningMsg` + messages)
 }
 
 func (d *DeinPluginItem) deinUpdatePre(pluginName string) {
 	d.updateButton.DisconnectMousePressEvent()
 	d.updateLabel.SetCurrentWidget(d.waitingLabel)
 
+	v, cleanup := newNvimProcess()
+	defer cleanup()
+
 	// Dein update
-	var text string
 	if runtime.GOOS == "windows" {
-		text, _ = editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim.exe -c "sleep 500m | call dein\#update('` + pluginName + `') | q" `)
+		v.Command(`r!nvim.exe -c 'call dein\#update("` + pluginName + `") | q' `)
 	} else {
-		text, _ = editor.workspaces[editor.active].nvim.CommandOutput(`silent !nvim -c 'sleep 500m | call dein\#update("` + pluginName + `") | q' `)
+		v.Command(`r!nvim -c 'call dein\#update("` + pluginName + `") | q' `)
+	}
+
+	buf, err := v.CurrentBuffer()
+	if err != nil {
+		fmt.Println(err)
+	}
+	var lines [][]byte
+	lines, err = v.BufferLines(buf, 0, -1, false)
+	if err != nil {
+		fmt.Println(err)
+	}
+	var text string
+	for _, line := range lines {
+		text = text + fmt.Sprintf("%s", line)
 	}
 
 	d.updateLabel.SetCurrentWidget(d.updateButton)
 
 	editor.deinSide.deinUpdate <- text
 	editor.deinSide.signal.DeinUpdateSignal()
+}
+
+func newNvimProcess() (*nvim.Nvim, func()) {
+	v, err := nvim.NewChildProcess(nvim.ChildProcessArgs("-n", "--embed"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- v.Serve()
+	}()
+
+	return v, func() {
+		v.Command(`qa!`)
+		if err := v.Close(); err != nil {
+			fmt.Println(err)
+		}
+	}
 }
 
 func (p *Plugin) pressPluginWidget(event *gui.QMouseEvent) {
