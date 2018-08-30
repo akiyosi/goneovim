@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -197,10 +198,18 @@ func loadDeinCashe() []*DeinPluginItem {
 	// width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
 	width := editor.config.SideBar.Width
 
-	for name, item := range m {
+	var keys []string
+	for k, _ := range m {
+		keys = append(keys, k.(string))
+	}
+	sort.Strings(keys)
+
+	// for name, item := range m {
+	for _, k := range keys {
+		item := m[k]
 		s, _ := item.(map[interface{}]interface{})
 		i := &DeinPluginItem{}
-		i.itemname = name.(string)
+		i.itemname = k
 		for key, value := range s {
 			switch key {
 			case "lazy":
@@ -1177,7 +1186,6 @@ func (p *Plugin) deinInstallPre(reponame string) {
 		text, _ = v.CommandOutput("messages")
 		time.Sleep(200 * time.Millisecond)
 	}
-	fmt.Println(text)
 
 	editor.deinSide.deinInstall <- text
 	editor.deinSide.signal.DeinInstallSignal()
@@ -1246,7 +1254,6 @@ func (d *DeinPluginItem) deinUpdatePre(pluginName string) {
 		text, _ = v.CommandOutput("messages")
 		time.Sleep(200 * time.Millisecond)
 	}
-	fmt.Println(text)
 
 	d.updateLabel.SetCurrentWidget(d.updateButton)
 
