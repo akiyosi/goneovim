@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -1138,27 +1136,7 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
 }
 
-func launderingString(s string) string {
-	// TODO Should be more simpler implementation
-	s = strings.Replace(s, "\r", "\n", -1)
-	re0 := regexp.MustCompile("\x1b[?[MC0-9;\\?\\(>]*\\s?[abhlmtrqABCJH0-9]*[0-9]*")
-	s = re0.ReplaceAllLiteralString(s, "")
-	s = strings.Replace(s, "\x0a\x7e", "\x20", -1)
-	s = strings.Replace(s, "\x7e", "\x20", -1)
-	s = strings.Replace(s, "\x0a", "\x20", -1)
-	re1 := regexp.MustCompile(`([^\]^\)])\s\s+`)
-	s = re1.ReplaceAllString(s, "$1")
-	s = strings.Replace(s, "NVIM", "\nNVIM", -1)
-	s = strings.Replace(s, "[dein]", "\n[dein]", -1)
-
-	return s
-}
-
 func deinInstallPost(result string) {
-
-	result = launderingString(result)
-
-	// var messages string
 	for _, message := range strings.Split(result, "\n") {
 		if strings.Contains(message, "Not installed plugins") {
 			continue
@@ -1181,9 +1159,6 @@ func (p *Plugin) deinInstallPre(reponame string) {
 	p.installButton.DisconnectMousePressEvent()
 	p.installLabel.SetCurrentWidget(p.waitingLabel)
 
-	v, cleanup := newNvimProcess()
-	defer cleanup()
-
 	b := editor.deinSide.deintomlfile
 	b, _ = tomlwriter.WriteValue(`'`+reponame+`'`, b, "[plugins]", "repo", nil)
 	err := ioutil.WriteFile(editor.config.Dein.TomlFile, b, 0755)
@@ -1191,26 +1166,18 @@ func (p *Plugin) deinInstallPre(reponame string) {
 		fmt.Println(err)
 	}
 
-	// Dein install
-	if runtime.GOOS == "windows" {
-		v.Command(`silent r!nvim.exe -c "sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q" `)
-	} else {
-		v.Command(`silent r!nvim -c 'sleep 1000m | if dein\#check_install() | call dein\#install() | endif | q' `)
-	}
+	v, cleanup := newNvimProcess()
+	defer cleanup()
 
-	buf, err := v.CurrentBuffer()
-	if err != nil {
-		fmt.Println(err)
-	}
-	var lines [][]byte
-	lines, err = v.BufferLines(buf, 0, -1, false)
-	if err != nil {
-		fmt.Println(err)
-	}
+	// Dein install
+	v.Command(`sleep 1000m | if dein#check_install() | call dein#install() | endif`)
+
 	var text string
-	for _, line := range lines {
-		text = text + fmt.Sprintf("%s", line)
+	for !strings.Contains(text, "[dein] Done") {
+		text, _ = v.CommandOutput("messages")
+		time.Sleep(200 * time.Millisecond)
 	}
+	fmt.Println(text)
 
 	editor.deinSide.deinInstall <- text
 	editor.deinSide.signal.DeinInstallSignal()
@@ -1231,9 +1198,6 @@ func (p *Plugin) deinInstallPre(reponame string) {
 }
 
 func deinUpdatePost(result string) {
-
-	result = launderingString(result)
-
 	var isUpdateStarted, isUpdatePlugins, isUpdateChange, isUpdateURL, isUpdateDone bool
 	for _, message := range strings.Split(result, "\n") {
 		if !strings.Contains(message, "[dein]") {
@@ -1275,25 +1239,14 @@ func (d *DeinPluginItem) deinUpdatePre(pluginName string) {
 	defer cleanup()
 
 	// Dein update
-	if runtime.GOOS == "windows" {
-		v.Command(`r!nvim.exe -c 'call dein\#update("` + pluginName + `") | q' `)
-	} else {
-		v.Command(`r!nvim -c 'call dein\#update("` + pluginName + `") | q' `)
-	}
+	v.Command(`call dein#update("` + pluginName + `")`)
 
-	buf, err := v.CurrentBuffer()
-	if err != nil {
-		fmt.Println(err)
-	}
-	var lines [][]byte
-	lines, err = v.BufferLines(buf, 0, -1, false)
-	if err != nil {
-		fmt.Println(err)
-	}
 	var text string
-	for _, line := range lines {
-		text = text + fmt.Sprintf("%s", line)
+	for !strings.Contains(text, "[dein] Done") {
+		text, _ = v.CommandOutput("messages")
+		time.Sleep(200 * time.Millisecond)
 	}
+	fmt.Println(text)
 
 	d.updateLabel.SetCurrentWidget(d.updateButton)
 
