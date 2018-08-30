@@ -1184,7 +1184,7 @@ func (p *Plugin) deinInstallPre(reponame string) {
 	var text string
 	for !strings.Contains(text, "[dein] Done") {
 		text, _ = v.CommandOutput("messages")
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	editor.deinSide.deinInstall <- text
@@ -1252,7 +1252,7 @@ func (d *DeinPluginItem) deinUpdatePre(pluginName string) {
 	var text string
 	for !strings.Contains(text, "[dein] Done") {
 		text, _ = v.CommandOutput("messages")
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	d.updateLabel.SetCurrentWidget(d.updateButton)
