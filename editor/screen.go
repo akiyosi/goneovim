@@ -584,21 +584,9 @@ func (s *Screen) scroll(args []interface{}) {
 
 	s.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
 
-	// length of s.content col
-	var contentColLen int
-	for ci, contentCol := range s.content {
-		contentColLen = len(contentCol)
-		if ci > 0 {
-			break
-		}
-	}
-
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
 			for col := left; col <= right; col++ {
-				if contentColLen < col-1 || len(s.content) < row+count-1 {
-					continue
-				}
 				s.content[row][col] = s.content[row+count][col]
 			}
 		}
