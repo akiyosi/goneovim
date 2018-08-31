@@ -599,7 +599,8 @@ func (s *Screen) scroll(args []interface{}) {
 				if contentColLen < col-1 || len(s.content) < row+count-1 {
 					continue
 				}
-				s.content[row][col] = s.content[row+count][col]
+				newcontent := s.content[row+count][col]
+				s.content[row][col] = newcontent
 			}
 		}
 		for row := bot - count + 1; row <= bot; row++ {
@@ -614,7 +615,11 @@ func (s *Screen) scroll(args []interface{}) {
 	} else {
 		for row := bot; row >= top-count; row-- {
 			for col := left; col <= right; col++ {
-				s.content[row][col] = s.content[row+count][col]
+				if contentColLen < col-1 || len(s.content) < row+count-1 {
+					continue
+				}
+				newcontent := s.content[row+count][col]
+				s.content[row][col] = newcontent
 			}
 		}
 		for row := top; row < top-count; row++ {
