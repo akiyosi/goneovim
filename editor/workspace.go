@@ -60,6 +60,7 @@ type Workspace struct {
 	background *RGBA
 	special    *RGBA
 	mode       string
+	filepath   string
 	cwd        string
 	cwdBase    string
 	cwdlabel   string
@@ -670,6 +671,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		}()
 	case "gonvim_workspace_redrawSideItems":
 		go editor.wsSide.items[editor.active].setCurrentFileLabel()
+		go editor.workspaces[editor.active].setFilepath()
 	case GonvimMarkdownNewBufferEvent:
 		go w.markdown.newBuffer()
 	case GonvimMarkdownUpdateEvent:
@@ -709,8 +711,15 @@ func (w *Workspace) guiFont(args ...interface{}) {
 	w.screen.toolTipFont(w.font)
 }
 
+func (w *Workspace) setFilepath() {
+	cfp := ""
+	editor.workspaces[editor.active].nvim.Eval("expand('%')", &cfp)
+	editor.workspaces[editor.active].filepath = cfp
+}
+
 func (w *Workspace) detectTerminalMode() {
-	if !strings.Contains(w.tabline.currentFileText, `term://`) {
+	fmt.Println(w.filepath)
+	if !strings.Contains(w.filepath, `term://`) {
 		return
 	}
 	m := new(sync.Mutex)
