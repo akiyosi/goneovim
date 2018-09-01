@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/BurntSushi/toml"
 	"github.com/akiyosi/tomlwriter"
@@ -57,7 +58,7 @@ type DeinSide struct {
 	preSearchKeyword   string
 	preDisplayedReadme string
 	deintoml           DeinTomlConfig
-	deintomlfile       []byte
+	deintomlbare       []byte
 }
 
 // SearchComboBox is the ComboBox widget for DeinSide
@@ -82,6 +83,7 @@ type DeinPluginItem struct {
 	updateButton    *widgets.QWidget
 	waitingLabel    *widgets.QWidget
 	nameLabel       *widgets.QLabel
+	contextMenu     *widgets.QMenu
 
 	itemname       string
 	lazy           bool
@@ -380,17 +382,21 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginSettingsIcon.Load2(core.NewQByteArray2(svgSettingsContent, len(svgSettingsContent)))
 		installedPluginSettingsLayout.AddWidget(installedPluginSettingsIcon, 0, 0)
 		installedPluginSettings.SetLayout(installedPluginSettingsLayout)
-		installedPluginSettings.ConnectMousePressEvent(func(*gui.QMouseEvent) {
-			b := editor.deinSide.deintomlfile
-			_, ln := tomlwriter.WriteValue("hoge", b, "[plugins]", "repo", i.repo)
-
-			path, _ := w.nvim.CommandOutput(`echo expand("%:p")`)
-			path, _ = filepath.EvalSymlinks(path)
-			tomlpath, _ := filepath.EvalSymlinks(editor.config.Dein.TomlFile)
-			if path != tomlpath {
-				w.nvim.Command(fmt.Sprintf("tabnew %s", editor.config.Dein.TomlFile))
+		installedPluginSettings.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
+			if i.contextMenu == nil {
+				i.contextMenu = widgets.NewQMenu(installedPluginSettings)
+				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 7px 0px 7px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1)} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, bg.R, bg.G, bg.B))
+				// Example menu and action
+				// menuActionExit := i.contextMenu.AddAction("E&xit")
+				// menuActionExit.SetShortcut(gui.NewQKeySequence2("Ctrl+X", gui.QKeySequence__NativeText))
+				// menuActionExit.ConnectTriggered(func(checked bool) { fmt.Println("some action") })
+				menuActionDisable := i.contextMenu.AddAction("Disable")
+				menuActionDisable.ConnectTriggered(i.disable)
+				menuActionEditToml := i.contextMenu.AddAction("Configure the toml file")
+				menuActionEditToml.ConnectTriggered(i.editToml)
 			}
-			w.nvim.Command(fmt.Sprintf("call cursor(%v, 0)", ln-1))
+			p := event.Pos()
+			i.contextMenu.Exec2(installedPluginSettings.MapToGlobal(p), nil)
 		})
 		installedPluginSettings.ConnectEnterEvent(func(event *core.QEvent) {
 			svgSettingsContent := w.getSvg("settings", hexToRGBA(editor.config.SideBar.AccentColor))
@@ -477,15 +483,24 @@ func getRepoDesc(owner string, name string) string {
 }
 
 type DeinTomlConfig struct {
-	Plugins DeinPlugins
+	Plugins []DeinPlugin
 }
 type DeinPlugin struct {
-	Repo    string
-	HookAdd string
+	Repo           string
+	Build          string
+	Depends        []string
+	Frozen         int
+	If             interface{}
+	Lazy           int
+	Marged         int
+	Name           string
+	NormalizedName string
+	// TODO There is more options to implement
 }
-type DeinPlugins struct {
-	Plugin []DeinPlugin
-}
+
+// type DeinPlugins struct {
+// 	Plugin []DeinPlugin
+// }
 
 func newDeinSide() *DeinSide {
 	w := editor.workspaces[editor.active]
@@ -592,8 +607,11 @@ func newDeinSide() *DeinSide {
 
 	// load dein toml
 	var deinToml DeinTomlConfig
-	_, _ = toml.DecodeFile(editor.config.Dein.TomlFile, &deinToml)
-	deinTomlfile, _ := ioutil.ReadFile(editor.config.Dein.TomlFile)
+	_, err := toml.DecodeFile(editor.config.Dein.TomlFile, &deinToml)
+	if err != nil {
+		editor.pushNotification(NotifyInfo, -1, "Something is wrong with the dein toml file.")
+	}
+	deinTomlBare, _ := ioutil.ReadFile(editor.config.Dein.TomlFile)
 
 	// make DeinSide
 	side := &DeinSide{
@@ -615,7 +633,7 @@ func newDeinSide() *DeinSide {
 		installedplugins: installed,
 		configIcon:       configIcon,
 		deintoml:         deinToml,
-		deintomlfile:     deinTomlfile,
+		deintomlbare:     deinTomlBare,
 	}
 	side.signal.ConnectSearchSignal(func() {
 		updates := <-side.searchUpdates
@@ -1168,7 +1186,7 @@ func (p *Plugin) deinInstallPre(reponame string) {
 	p.installButton.DisconnectMousePressEvent()
 	p.installLabel.SetCurrentWidget(p.waitingLabel)
 
-	b := editor.deinSide.deintomlfile
+	b := editor.deinSide.deintomlbare
 	b, _ = tomlwriter.WriteValue(`'`+reponame+`'`, b, "[plugins]", "repo", nil)
 	err := ioutil.WriteFile(editor.config.Dein.TomlFile, b, 0755)
 	if err != nil {
@@ -1196,8 +1214,8 @@ func (p *Plugin) deinInstallPre(reponame string) {
 
 	p.installed = true
 	p.installLabelName.SetText("Installed")
-	deinTomlfile, _ := ioutil.ReadFile(editor.config.Dein.TomlFile)
-	editor.deinSide.deintomlfile = deinTomlfile
+	deinTomlBare, _ := ioutil.ReadFile(editor.config.Dein.TomlFile)
+	editor.deinSide.deintomlbare = deinTomlBare
 	p.installLabel.SetCurrentWidget(p.installButton)
 
 	time.Sleep(900 * time.Millisecond)
@@ -1278,6 +1296,75 @@ func newNvimProcess() (*nvim.Nvim, func()) {
 			fmt.Println(err)
 		}
 	}
+}
+
+func containPluginsStr(s string) bool {
+	return strings.Contains(s, "[[") && strings.Contains(s, "]]") && strings.Contains(s, "plugins")
+}
+
+func (d *DeinPluginItem) disablePluginInToml() {
+	b := editor.deinSide.deintomlbare
+	filestr := string(b)
+
+	strings.NewReplacer("\r\n", "\n", "\r", "\n", "\n", "\n").Replace(filestr)
+	lines := strings.Split(filestr, "\n")
+
+	var pluginSnips []([]byte)
+	var pluginSnip []byte
+	var i int
+
+	// make pluginSnips
+	for j, line := range lines {
+		// Output pluginSnip to pluginSnips
+		if containPluginsStr(line) || j+1 == len(lines) {
+			i++
+			if containPluginsStr(string(pluginSnip)) {
+				if i-1 >= 1 {
+					pluginSnips = append(pluginSnips, pluginSnip)
+				}
+			}
+			pluginSnip = []byte{}
+		}
+
+		line += "\n"
+		// push lines to pluginSnip
+		pluginSnip = append(pluginSnip, *(*[]byte)(unsafe.Pointer(&line))...)
+	}
+
+	var writebyte []byte
+	for _, p := range pluginSnips {
+		_, ln := tomlwriter.WriteValue("dummy", p, "[plugins]", "repo", d.repo)
+		if ln != 0 {
+			var ifvalue interface{}
+			for _, pluginSetting := range editor.deinSide.deintoml.Plugins {
+				if pluginSetting.Repo == d.repo {
+					ifvalue = pluginSetting.If
+				}
+			}
+			p, _ = tomlwriter.WriteValue("0", p, "[plugins]", "if", ifvalue)
+		}
+		writebyte = append(writebyte, *(*[]byte)(unsafe.Pointer(&p))...)
+	}
+	_ = ioutil.WriteFile(editor.config.Dein.TomlFile, writebyte, 0755)
+}
+
+func (d *DeinPluginItem) disable(dummy bool) {
+	d.disablePluginInToml()
+	editor.pushNotification(NotifyInfo, -1, "[Gonvim] Disable settings are applied in the new workspace session.")
+}
+
+func (d *DeinPluginItem) editToml(dummy bool) {
+	w := editor.workspaces[editor.active]
+	b := editor.deinSide.deintomlbare
+	_, ln := tomlwriter.WriteValue("dummy", b, "[plugins]", "repo", d.repo)
+
+	path, _ := w.nvim.CommandOutput(`echo expand("%:p")`)
+	path, _ = filepath.EvalSymlinks(path)
+	tomlpath, _ := filepath.EvalSymlinks(editor.config.Dein.TomlFile)
+	if path != tomlpath {
+		w.nvim.Command(fmt.Sprintf("-1tabnew %s", editor.config.Dein.TomlFile))
+	}
+	w.nvim.Command(fmt.Sprintf("call cursor(%v, 0)", ln-1))
 }
 
 func (p *Plugin) pressPluginWidget(event *gui.QMouseEvent) {
