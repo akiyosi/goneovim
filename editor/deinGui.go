@@ -390,8 +390,11 @@ func loadDeinCashe() []*DeinPluginItem {
 				// menuActionExit := i.contextMenu.AddAction("E&xit")
 				// menuActionExit.SetShortcut(gui.NewQKeySequence2("Ctrl+X", gui.QKeySequence__NativeText))
 				// menuActionExit.ConnectTriggered(func(checked bool) { fmt.Println("some action") })
-				menuActionDisable := i.contextMenu.AddAction("Disable")
-				menuActionDisable.ConnectTriggered(i.disable)
+
+				// menuActionDisable := i.contextMenu.AddAction("Disable")
+				// menuActionDisable.ConnectTriggered(i.disable)
+				menuActionRemove := i.contextMenu.AddAction("Remove this plugin")
+				menuActionRemove.ConnectTriggered(i.remove)
 				menuActionEditToml := i.contextMenu.AddAction("Configure the toml file")
 				menuActionEditToml.ConnectTriggered(i.editToml)
 			}
@@ -497,10 +500,6 @@ type DeinPlugin struct {
 	NormalizedName string
 	// TODO There is more options to implement
 }
-
-// type DeinPlugins struct {
-// 	Plugin []DeinPlugin
-// }
 
 func newDeinSide() *DeinSide {
 	w := editor.workspaces[editor.active]
@@ -1335,22 +1334,37 @@ func (d *DeinPluginItem) disablePluginInToml() {
 	for _, p := range pluginSnips {
 		_, ln := tomlwriter.WriteValue("dummy", p, "[plugins]", "repo", d.repo)
 		if ln != 0 {
-			var ifvalue interface{}
-			for _, pluginSetting := range editor.deinSide.deintoml.Plugins {
-				if pluginSetting.Repo == d.repo {
-					ifvalue = pluginSetting.If
-				}
-			}
-			p, _ = tomlwriter.WriteValue("0", p, "[plugins]", "if", ifvalue)
+			// var ifvalue interface{}
+			// for _, pluginSetting := range editor.deinSide.deintoml.Plugins {
+			// 	if pluginSetting.Repo == d.repo {
+			// 		ifvalue = pluginSetting.If
+			// 	}
+			// }
+			// p, _ = tomlwriter.WriteValue("0", p, "[plugins]", "if", ifvalue)
+			continue
 		}
 		writebyte = append(writebyte, *(*[]byte)(unsafe.Pointer(&p))...)
 	}
 	_ = ioutil.WriteFile(editor.config.Dein.TomlFile, writebyte, 0755)
 }
 
-func (d *DeinPluginItem) disable(dummy bool) {
-	d.disablePluginInToml()
-	editor.pushNotification(NotifyInfo, -1, "[Gonvim] Disable settings are applied in the new workspace session.")
+// func (d *DeinPluginItem) disable(dummy bool) {
+// 	d.disablePluginInToml()
+// 	editor.pushNotification(NotifyInfo, -1, "[Gonvim] Disable settings are applied in the new workspace session.")
+// }
+
+func (d *DeinPluginItem) remove(dummy bool) {
+	go func() {
+		d.disablePluginInToml()
+
+		v, cleanup := newNvimProcess()
+		defer cleanup()
+
+		v.Command(`call map(dein#check_clean(), "delete(v:val, 'rf')")`)
+		v.Command(`call dein#recache_runtimepath()`)
+		editor.pushNotification(NotifyInfo, -1, "[Gonvim] Rmoving the plugin done.")
+		editor.pushNotification(NotifyInfo, -1, "[Gonvim] New settings are applied in the new workspace session.")
+	}()
 }
 
 func (d *DeinPluginItem) editToml(dummy bool) {
