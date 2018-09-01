@@ -384,6 +384,7 @@ func (w *Workspace) setCwd() {
 		if i >= len(editor.wsSide.items) {
 			return
 		}
+
 		if ws == w {
 			path, _ := filepath.Abs(cwd)
 			editor.wsSide.items[i].label.SetText(w.cwdlabel)
@@ -894,6 +895,15 @@ func (i *WorkspaceSideItem) setText(text string) {
 	i.widget.Show()
 }
 
+func (i *WorkspaceSideItem) setSideItemLabel(n int) {
+	if n == editor.active {
+		i.setActive()
+	} else {
+		i.setInactive()
+	}
+	i.label.SetContentsMargins(15+15, 6, 0, 6)
+}
+
 func (i *WorkspaceSideItem) setActive() {
 	if i.active {
 		return
@@ -957,6 +967,28 @@ func (w *Workspace) setGuiColor() {
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 
+	// for splitter
+	editor.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+
+	// for Activity Bar
+	editor.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
+
+	var svgEditContent string
+	if editor.activity.editItem.active == true {
+		svgEditContent = w.getSvg("activityedit", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+	} else {
+		svgEditContent = w.getSvg("activityedit", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+	}
+	editor.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
+
+	var svgDeinContent string
+	if editor.activity.deinItem.active == true {
+		svgDeinContent = w.getSvg("activitydein", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+	} else {
+		svgDeinContent = w.getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+	}
+	editor.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
+
 	// tab
 	tabStyle := fmt.Sprintf("QWidget { color: rgba(%d, %d, %d, 0.8);	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
 	w.tabline.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border-left: 8px solid rgba(%d, %d, %d, 1); border-bottom: 0px solid;	border-right: 0px solid;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + tabStyle)
@@ -997,50 +1029,5 @@ func (w *Workspace) setGuiColor() {
 	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border-color: rgba(%d, %d, %d, 1); padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + wsSideStyle)
 	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: rgb(%d, %d, %d); width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: rgb(%d, %d, %d); min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 
-	// for splitter
-	editor.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
-
-	// some style break the file list style
-	noGoodBadNoWay()
-
-	// for Activity Bar
-	editor.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
-
-	var svgEditContent string
-	if editor.activity.editItem.active == true {
-		svgEditContent = w.getSvg("activityedit", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
-	} else {
-		svgEditContent = w.getSvg("activityedit", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
-	}
-	editor.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
-
-	var svgDeinContent string
-	if editor.activity.deinItem.active == true {
-		svgDeinContent = w.getSvg("activitydein", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
-	} else {
-		svgDeinContent = w.getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
-	}
-	editor.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
-
-}
-
-// qscrollarea broken contentmargin of first item
-func noGoodBadNoWay() {
-	fg := editor.fgcolor
-	bg := editor.bgcolor
-	if (len(editor.workspaces) == 1 || len(editor.wsSide.items) == 1) || (editor.config.Workspace.RestoreSession == true) {
-		for i, item := range editor.wsSide.items {
-			if i >= len(editor.workspaces) {
-				break
-			}
-			if i == editor.active {
-				item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
-			} else {
-				item.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 15px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
-				item.active = false
-			}
-			//// scrollarea's setWidget is brokean some magins
-			item.label.SetContentsMargins(15+15, 6, 0, 6)
-		}
-	}
+	editor.window.SetWindowOpacity(1.0)
 }

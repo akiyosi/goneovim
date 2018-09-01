@@ -56,6 +56,7 @@ func newScreen() *Screen {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
 	tooltip := widgets.NewQLabel(widget, 0)
 	tooltip.SetVisible(false)

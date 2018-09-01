@@ -1,6 +1,9 @@
 package editor
 
 import (
+	"fmt"
+	homedir "github.com/mitchellh/go-homedir"
+	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
@@ -85,4 +88,37 @@ func newGonvimConfig(home string) gonvimConfig {
 	}
 
 	return config
+}
+
+func outputGonvimConfig() {
+	home, err := homedir.Dir()
+	if err != nil {
+		home = "~"
+	}
+	filepath := filepath.Join(home, ".gonvim", "setting.toml")
+	if isFileExist(filepath) {
+		return
+	}
+	file, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		editor.pushNotification(NotifyWarn, -1, "[Gonvim] I can't Open the setting.toml file at ~/.gonvim/setting.toml")
+	}
+	defer file.Close()
+	fmt.Fprintln(file, "")
+
+	fmt.Fprint(file, "[editor]\n")
+	fmt.Fprint(file, "clipboard = ", editor.config.Editor.Clipboard, "\n")
+	fmt.Fprint(file, "[activityBar]", "\n")
+	fmt.Fprint(file, "visible = ", editor.config.ActivityBar.Visible, "\n")
+	fmt.Fprint(file, "dropshadow = ", editor.config.ActivityBar.DropShadow, "\n")
+	fmt.Fprint(file, "[sideBar]", "\n")
+	fmt.Fprint(file, "visible = ", editor.config.SideBar.Visible, "\n")
+	fmt.Fprint(file, "dropshadow = ", editor.config.SideBar.DropShadow, "\n")
+	fmt.Fprint(file, "width = ", editor.config.SideBar.Width, "\n")
+	fmt.Fprint(file, `accentColor = "`, editor.config.SideBar.AccentColor, `"`, "\n")
+	fmt.Fprint(file, "[workspace]", "\n")
+	fmt.Fprint(file, `pathStyle = "`, editor.config.Workspace.PathStyle, `"`, "\n")
+	fmt.Fprint(file, "restoreSession = ", editor.config.Workspace.RestoreSession, "\n")
+	fmt.Fprint(file, "[dein]", "\n")
+	fmt.Fprint(file, `tomlFile = '`, editor.config.Dein.TomlFile, `'`, "\n")
 }

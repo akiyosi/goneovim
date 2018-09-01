@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -21,8 +22,8 @@ type Notification struct {
 	closeIcon *svg.QSvgWidget
 	pos       *core.QPoint
 	isDrag    bool
-	isDragged bool
-	hide      bool
+	isMoved   bool
+	isHide    bool
 }
 
 type NotifyOptions struct {
@@ -37,13 +38,11 @@ func notifyOptionArg(b []*NotifyButton) NotifyOptionArg {
 	}
 }
 
-func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) *Notification {
+func newNotification(l NotifyLevel, p int, message string, options ...NotifyOptionArg) *Notification {
 	ws := editor.workspaces[editor.active]
 
 	widget := widgets.NewQWidget(nil, 0)
 	layout := widgets.NewQVBoxLayout()
-	layout.SetContentsMargins(10, 10, 10, 15)
-	layout.SetSpacing(8)
 	widget.SetLayout(layout)
 	widget.SetFixedWidth(400)
 
@@ -69,13 +68,18 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 	levelIcon.Load2(core.NewQByteArray2(level, len(level)))
 
 	label := widgets.NewQLabel(nil, 0)
-	label.SetWordWrap(true)
+	if utf8.RuneCountInString(message) > 50 {
+		label.SetWordWrap(true)
+	}
+	label.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 	label.SetText(message)
 
 	closeIcon := svg.NewQSvgWidget(nil)
+	bg := editor.bgcolor
+	svgContent := ws.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
+	closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	closeIcon.SetFixedWidth(14)
 	closeIcon.SetFixedHeight(14)
-	closeIcon.Hide()
 
 	closeIcon.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 		fg := editor.fgcolor
@@ -110,6 +114,7 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 	bottomlayout.SetSpacing(10)
 	bottomwidget.SetLayout(bottomlayout)
 
+	notification := &Notification{}
 	opts := NotifyOptions{}
 	for _, o := range options {
 		o(&opts)
@@ -133,6 +138,7 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 			fn := opt.action
 			button.ConnectMousePressEvent(func(*gui.QMouseEvent) {
 				go fn()
+				notification.closeNotification()
 			})
 			button.ConnectEnterEvent(func(event *core.QEvent) {
 				hoverColor := "#1177bb"
@@ -145,32 +151,38 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 			bottomlayout.SetAlignment(button, core.Qt__AlignRight)
 		}
 	}
-	bottomwidget.AdjustSize()
-	layout.AddWidget(bottomwidget, 0, 0)
-	layout.SetAlignment(bottomwidget, core.Qt__AlignRight)
+	if len(opts.buttons) > 0 {
+		layout.SetSpacing(8)
+		bottomlayout.SetContentsMargins(0, 0, 0, 0)
+		bottomlayout.SetSpacing(10)
+		bottomwidget.AdjustSize()
+		layout.AddWidget(bottomwidget, 0, 0)
+		layout.SetAlignment(bottomwidget, core.Qt__AlignRight)
+	}
+	layout.SetContentsMargins(10, 10, 10, 10)
 
 	isDrag := false
-	isDragged := false
+	isMoved := false
 	startPos := editor.notifyStartPos
 
-	notification := &Notification{
-		widget:    widget,
-		closeIcon: closeIcon,
-		pos:       startPos,
-		isDrag:    isDrag,
-		isDragged: isDragged,
-	}
+	notification.widget = widget
+	notification.closeIcon = closeIcon
+	notification.pos = startPos
+	notification.isDrag = isDrag
+	notification.isMoved = isMoved
 	notification.widget.Hide()
 
-	notification.closeIcon.ConnectMouseReleaseEvent(notification.closeNotification)
+	notification.closeIcon.ConnectMouseReleaseEvent(func(event *gui.QMouseEvent) {
+		notification.closeNotification()
+	})
 	notification.widget.ConnectEnterEvent(func(event *core.QEvent) {
 		fg := editor.fgcolor
 		svgContent := ws.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
 		notification.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		notification.closeIcon.Show()
 	})
 	notification.widget.ConnectLeaveEvent(func(event *core.QEvent) {
-		notification.closeIcon.Hide()
+		svgContent := ws.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
+		notification.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	})
 	notification.widget.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 		notification.widget.Raise()
@@ -181,6 +193,9 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 		notification.isDrag = false
 	})
 	notification.widget.ConnectMouseMoveEvent(func(event *gui.QMouseEvent) {
+		if !notification.isMoved {
+			notification.dropNotifications()
+		}
 		if notification.isDrag == true {
 			x := event.Pos().X() - notification.pos.X()
 			y := event.Pos().Y() - notification.pos.Y()
@@ -188,7 +203,7 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 			trans := notification.widget.MapToParent(newPos)
 			notification.widget.Move(trans)
 		}
-		notification.isDragged = true
+		notification.isMoved = true
 	})
 
 	// Drop shadow to widget
@@ -200,71 +215,84 @@ func newNotification(l NotifyLevel, message string, options ...NotifyOptionArg) 
 		widget.SetGraphicsEffect(shadow)
 	}()
 
-	timer := core.NewQTimer(nil)
-	timer.SetSingleShot(true)
-	timer.ConnectTimeout(notification.hideNotification)
-	timer.Start(6000)
+	// Notification hiding
+	var displayPeriod int
+	if p < 0 { // default display period is 6 seconds
+		displayPeriod = 6
+	} else if p == 0 {
+		displayPeriod = 0
+	} else {
+		displayPeriod = p
+	}
+	if displayPeriod > 0 {
+		timer := core.NewQTimer(nil)
+		timer.SetSingleShot(true)
+		timer.ConnectTimeout(notification.hideNotification)
+		timer.Start(displayPeriod * 1000)
+	}
 
 	return notification
 }
 
-func (n *Notification) closeNotification(event *gui.QMouseEvent) {
+func (n *Notification) dropNotifications(fn ...func(*Notification)) {
+	e := editor
 	var newNotifications []*Notification
-	var del int
+	var x, y, self int
+	var isClose bool
+	var dropOK bool
 	dropHeight := 0
-	for i, item := range editor.notifications {
+	for i, item := range e.notifications {
 		if n == item {
-			del = i
-			dropHeight = item.widget.Height() + 8
-			item.widget.DestroyQWidget()
-			continue
+			self = i
+			dropHeight = item.widget.Height() + 4
+			if len(fn) > 0 {
+				for _, f := range fn {
+					f(item)
+				}
+			}
 		}
-		if i > del && !item.isDragged {
-			x := item.widget.Pos().X()
-			y := item.widget.Pos().Y() + dropHeight
+
+		isClose = fmt.Sprintf("%v", item.widget) == "&{{<nil>} {<nil>}}"
+		// Skip if widget is broken
+		if !isClose {
+			newNotifications = append(newNotifications, item)
+		}
+
+		// set drop flag when n == item
+		if n == item {
+			dropOK = (n.isDrag && !n.isHide && !isClose) || (!n.isMoved && n.isHide && !isClose) || (!n.isMoved && !n.isHide && isClose)
+		}
+		if n != item && i > self && !item.isMoved && dropOK {
+			x = item.widget.Pos().X()
+			y = item.widget.Pos().Y() + dropHeight
 			item.widget.Move2(x, y)
 			item.widget.Hide()
-			if !item.hide {
+			if !item.isHide {
 				item.widget.Show()
 			}
 		}
-		newNotifications = append(newNotifications, item)
 	}
-	editor.notifications = newNotifications
-	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
-	editor.pushNotification(NotifyInfo, "") // dummy push
-	fmt.Println(len(editor.notifications))
+	if dropOK {
+		e.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
+	}
+	e.notifications = newNotifications
+}
+
+func (n *Notification) closeNotification() {
+	n.dropNotifications(func(item *Notification) {
+		item.widget.DestroyQWidget()
+	})
+	editor.pushNotification(NotifyInfo, -1, "") // dummy push
 }
 
 func (n *Notification) hideNotification() {
-	var newNotifications []*Notification
-	var hide int
-	dropHeight := 0
-	for i, item := range editor.notifications {
-		newNotifications = append(newNotifications, item)
-		if n == item {
-			hide = i
-			dropHeight = item.widget.Height() + 8
-			item.widget.Hide()
-			item.hide = true
-			continue
-		}
-		if i > hide && !item.isDragged {
-			x := item.widget.Pos().X()
-			y := item.widget.Pos().Y() + dropHeight
-			item.widget.Move2(x, y)
-			item.widget.Hide()
-			if !item.hide {
-				item.widget.Show()
-			}
-		}
-	}
-	editor.notifications = newNotifications
-	editor.notifyStartPos = core.NewQPoint2(editor.notifyStartPos.X(), editor.notifyStartPos.Y()+dropHeight)
-
+	n.dropNotifications(func(item *Notification) {
+		item.widget.Hide()
+		item.isHide = true
+	})
 	editor.displayNotifications = false
 	for _, item := range editor.notifications {
-		if item.hide == false {
+		if item.isHide == false {
 			editor.displayNotifications = true
 		}
 	}
@@ -278,10 +306,8 @@ func (e *Editor) showNotifications() {
 	for _, item := range e.notifications {
 		x = e.notifyStartPos.X()
 		y = e.notifyStartPos.Y() - item.widget.Height() - 4
-		fmt.Println(x, y)
 		item.widget.Move2(x, y)
-		item.hide = false
-		item.widget.Show()
+		item.statusReset()
 		e.notifyStartPos = core.NewQPoint2(x, y)
 		newNotifications = append(newNotifications, item)
 	}
@@ -292,13 +318,19 @@ func (e *Editor) showNotifications() {
 func (e *Editor) hideNotifications() {
 	var newNotifications []*Notification
 	for _, item := range e.notifications {
-		item.hide = true
+		item.isHide = true
 		item.widget.Hide()
 		newNotifications = append(newNotifications, item)
 	}
 	e.notifications = newNotifications
 	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
 	e.displayNotifications = false
+}
+
+func (n *Notification) statusReset() {
+	n.isHide = false
+	n.isMoved = false
+	n.widget.Show()
 }
 
 func (n *Notification) show() {

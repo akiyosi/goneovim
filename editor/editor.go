@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
+	// "time"
 
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
@@ -42,6 +42,7 @@ type NotifyButton struct {
 
 type Notify struct {
 	level   NotifyLevel
+	period  int
 	message string
 	buttons []*NotifyButton
 }
@@ -115,6 +116,9 @@ func (hl *Highlight) copy() Highlight {
 // InitEditor is
 func InitEditor() {
 	home, err := homedir.Dir()
+	if err != nil {
+		home = "~"
+	}
 	config := newGonvimConfig(home)
 	editor = &Editor{
 		version:    "v0.2.3",
@@ -135,9 +139,9 @@ func InitEditor() {
 			return
 		}
 		if notify.buttons == nil {
-			e.popupNotification(notify.level, notify.message)
+			e.popupNotification(notify.level, notify.period, notify.message)
 		} else {
-			e.popupNotification(notify.level, notify.message, notifyOptionArg(notify.buttons))
+			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
 	e.app = widgets.NewQApplication(0, nil)
@@ -153,6 +157,9 @@ func InitEditor() {
 	e.window.SetWindowTitle("Gonvim")
 	e.window.SetContentsMargins(0, 0, 0, 0)
 	e.window.SetMinimumSize2(e.width, e.height)
+	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
+	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
+	e.window.SetWindowOpacity(0.0)
 
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
@@ -215,6 +222,7 @@ func InitEditor() {
 	}
 
 	activityWidget := widgets.NewQWidget(nil, 0)
+	activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	activity := newActivity()
 	activity.widget = activityWidget
 	activityWidget.SetLayout(activity.layout)
@@ -225,6 +233,7 @@ func InitEditor() {
 	// layout.AddWidget(e.activity.sideArea, 0, 0)
 
 	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
 	splitter.AddWidget(e.activity.sideArea)
 	splitter.AddWidget(e.wsWidget)
 	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
@@ -237,6 +246,26 @@ func InitEditor() {
 
 	e.workspaceUpdate()
 	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	var notifications []*Notification
+	e.notifications = notifications
+	e.window.ConnectResizeEvent(func(*gui.QResizeEvent) {
+		e.width = e.window.Width()
+		e.height = e.window.Height()
+		e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+		x := e.notifyStartPos.X()
+		y := e.notifyStartPos.Y()
+		var newNotifications []*Notification
+		for _, item := range e.notifications {
+			x = e.notifyStartPos.X()
+			y = e.notifyStartPos.Y() - item.widget.Height() - 4
+			if !item.isHide && !item.isMoved {
+				item.widget.Move2(x, y)
+				e.notifyStartPos = core.NewQPoint2(x, y)
+			}
+			newNotifications = append(newNotifications, item)
+		}
+		e.notifications = newNotifications
+	})
 
 	// Drop shadow to Side Bar
 	if e.config.SideBar.DropShadow == true {
@@ -286,6 +315,10 @@ func InitEditor() {
 			}
 			return true
 		})
+		e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
+			e.app.DisconnectEvent()
+			event.Accept()
+		})
 	}
 
 	e.window.SetCentralWidget(widget)
@@ -298,60 +331,61 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
-	// notification test
-	go func() {
-		time.Sleep(2 * time.Second)
-		e.pushNotification(NotifyInfo, "hoge hoge!")
+	// // notification test
+	// go func() {
+	// 	time.Sleep(2 * time.Second)
+	// 	e.pushNotification(NotifyInfo, -1, "This is a very long text message with lots of words that might get cut off with word wrap. ")
 
-		time.Sleep(2 * time.Second)
-		e.pushNotification(NotifyInfo, "hoge hoge!")
-		opts0 := []*NotifyButton{}
-		optArg0 := &NotifyButton{
-			action: func() {
-				fmt.Println("Yes")
-			},
-			text: "yes!",
-		}
-		opts0 = append(opts0, optArg0)
-		e.pushNotification(NotifyWarn, "vim !", notifyOptionArg(opts0))
+	// 	time.Sleep(2 * time.Second)
+	// 	e.pushNotification(NotifyInfo, -1, "hoge hoge!")
+	// 	opts0 := []*NotifyButton{}
+	// 	optArg0 := &NotifyButton{
+	// 		action: func() {
+	// 			fmt.Println("Yes")
+	// 		},
+	// 		text: "yes!",
+	// 	}
+	// 	opts0 = append(opts0, optArg0)
+	// 	e.pushNotification(NotifyWarn, -1, "vim !", notifyOptionArg(opts0))
 
-		time.Sleep(2 * time.Second)
-		opts := []*NotifyButton{}
-		optArg := &NotifyButton{
-			action: func() {
-				fmt.Println("pushed!")
-			},
-			text: "push!",
-		}
-		opts = append(opts, optArg)
+	// 	time.Sleep(2 * time.Second)
+	// 	opts := []*NotifyButton{}
+	// 	optArg := &NotifyButton{
+	// 		action: func() {
+	// 			fmt.Println("pushed!")
+	// 		},
+	// 		text: "push!",
+	// 	}
+	// 	opts = append(opts, optArg)
 
-		optArg2 := &NotifyButton{
-			action: func() {
-				fmt.Println("popped!")
-			},
-			text: "pop!",
-		}
-		opts = append(opts, optArg2)
-		e.pushNotification(NotifyWarn, "hoge hoge fuga fuga !", notifyOptionArg(opts))
+	// 	optArg2 := &NotifyButton{
+	// 		action: func() {
+	// 			fmt.Println("popped!")
+	// 		},
+	// 		text: "pop!",
+	// 	}
+	// 	opts = append(opts, optArg2)
+	// 	e.pushNotification(NotifyWarn, -1, "hoge hoge fuga fuga !", notifyOptionArg(opts))
 
-		time.Sleep(6 * time.Second)
-		go e.showNotifications()
-		// time.Sleep(4 * time.Second)
-		// go e.hideNotifications()
-	}()
+	// 	time.Sleep(6 * time.Second)
+	// 	go e.showNotifications()
+	// 	// time.Sleep(4 * time.Second)
+	// 	// go e.hideNotifications()
+	// }()
 
 	e.window.Show()
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
 }
 
-func (e *Editor) pushNotification(level NotifyLevel, message string, opt ...NotifyOptionArg) {
+func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
 	opts := NotifyOptions{}
 	for _, o := range opt {
 		o(&opts)
 	}
 	n := &Notify{
 		level:   level,
+		period:  p,
 		message: message,
 		buttons: opts.buttons,
 	}
@@ -359,12 +393,12 @@ func (e *Editor) pushNotification(level NotifyLevel, message string, opt ...Noti
 	e.signal.NotifySignal()
 }
 
-func (e *Editor) popupNotification(level NotifyLevel, message string, opt ...NotifyOptionArg) {
-	notification := newNotification(level, message, opt...)
+func (e *Editor) popupNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
+	notification := newNotification(level, p, message, opt...)
 	notification.widget.SetParent(e.window)
 	notification.widget.AdjustSize()
 	x := e.notifyStartPos.X()
-	y := e.notifyStartPos.Y() - notification.widget.Height() - 8
+	y := e.notifyStartPos.Y() - notification.widget.Height() - 4
 	notification.widget.Move2(x, y)
 	e.notifyStartPos = core.NewQPoint2(x, y)
 	e.notifications = append(e.notifications, notification)
@@ -476,14 +510,7 @@ func (e *Editor) workspaceUpdate() {
 	}
 
 	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
-		if i == e.active {
-			e.wsSide.items[i].setActive()
-			//e.wsSide.title.Show()
-			//}
-		} else {
-			e.wsSide.items[i].setInactive()
-		}
-		//e.wsSide.scrollarea.Show()
+		e.wsSide.items[i].setSideItemLabel(i)
 		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
 		e.wsSide.items[i].show()
 	}
