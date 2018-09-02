@@ -248,9 +248,15 @@ func InitEditor() {
 	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
 	var notifications []*Notification
 	e.notifications = notifications
+
 	e.window.ConnectResizeEvent(func(*gui.QResizeEvent) {
 		e.width = e.window.Width()
 		e.height = e.window.Height()
+
+		// palette
+		e.workspaces[e.active].palette.resize()
+
+		// notification
 		e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
 		x := e.notifyStartPos.X()
 		y := e.notifyStartPos.Y()

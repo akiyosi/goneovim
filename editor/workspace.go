@@ -147,7 +147,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.finder = initFinder()
 	w.finder.ws = w
 	w.palette = initPalette()
-	w.palette.widget.SetParent(w.screen.widget)
+	// w.palette.widget.SetParent(w.screen.widget)
+	w.palette.widget.SetParent(editor.window)
 	w.palette.ws = w
 	w.loc = initLocpopup()
 	w.loc.widget.SetParent(w.screen.widget)

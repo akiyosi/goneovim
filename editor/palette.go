@@ -2,6 +2,8 @@ package editor
 
 import (
 	"fmt"
+	"math"
+	"sync"
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	"github.com/therecipe/qt/core"
@@ -12,6 +14,8 @@ import (
 
 // Palette is the popup for fuzzy finder, cmdline etc
 type Palette struct {
+	mu               sync.Mutex
+	procCount        int
 	ws               *Workspace
 	hidden           bool
 	widget           *widgets.QWidget
@@ -159,18 +163,54 @@ func initPalette() *Palette {
 }
 
 func (p *Palette) resize() {
-	x := (p.ws.width - p.width) / 2
-	p.widget.Move2(x, 0)
-	itemHeight := p.resultItems[0].widget.SizeHint().Height()
-	p.itemHeight = itemHeight
-	p.showTotal = int(float64(p.ws.height)/float64(itemHeight)*0.5) - 1
-	if p.ws.uiAttached {
-		fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
+	if p.procCount > 0 {
+		return
 	}
+	go func() {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		p.procCount = 1
+		defer func() { p.procCount = 0 }()
 
-	for i := p.showTotal; i < len(p.resultItems); i++ {
-		p.resultItems[i].hide()
-	}
+		padding := 8
+		p.width = int(math.Trunc(float64(editor.width) * 0.7))
+		cursorBoundary := p.cursor.Pos().X() + 35
+
+		if cursorBoundary > p.width {
+			p.width = cursorBoundary
+		}
+		if p.width > editor.width {
+			p.width = editor.width
+			p.pattern.SetAlignment(core.Qt__AlignRight | core.Qt__AlignCenter)
+			return
+		} else if p.width <= editor.width {
+			if p.pattern.Alignment() != core.Qt__AlignLeft {
+				p.pattern.SetAlignment(core.Qt__AlignLeft)
+				return
+			}
+		}
+
+		p.pattern.SetFixedWidth(p.width - padding*2)
+		p.widget.SetMaximumWidth(p.width)
+		p.widget.SetMinimumWidth(p.width)
+
+		x := editor.width - p.width
+		if x < 0 {
+			x = 0
+		}
+		p.widget.Move2(x/2, 0)
+
+		itemHeight := p.resultItems[0].widget.SizeHint().Height()
+		p.itemHeight = itemHeight
+		p.showTotal = int(float64(p.ws.height)/float64(itemHeight)*0.5) - 1
+		if p.ws.uiAttached {
+			fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
+		}
+
+		for i := p.showTotal; i < len(p.resultItems); i++ {
+			p.resultItems[i].hide()
+		}
+	}()
 }
 
 func (p *Palette) show() {
@@ -178,6 +218,8 @@ func (p *Palette) show() {
 		return
 	}
 	p.hidden = false
+	p.widget.Raise()
+	p.widget.SetWindowOpacity(1.0)
 	p.widget.Show()
 }
 

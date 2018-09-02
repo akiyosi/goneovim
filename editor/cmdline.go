@@ -49,6 +49,7 @@ func (c *Cmdline) getText(ch string) string {
 	if c.pos > len(c.content.content) {
 		c.pos = len(c.content.content) - 1
 	}
+	editor.workspaces[editor.active].palette.resize()
 	return fmt.Sprintf("%s%s%s", c.content.firstc, indentStr, c.content.content[:c.pos]+ch+c.content.content[c.pos:])
 }
 
