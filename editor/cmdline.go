@@ -49,7 +49,6 @@ func (c *Cmdline) getText(ch string) string {
 	if c.pos > len(c.content.content) {
 		c.pos = len(c.content.content) - 1
 	}
-	editor.workspaces[editor.active].palette.resize()
 	return fmt.Sprintf("%s%s%s", c.content.firstc, indentStr, c.content.content[:c.pos]+ch+c.content.content[c.pos:])
 }
 
@@ -72,6 +71,7 @@ func (c *Cmdline) show(args []interface{}) {
 	palette := c.ws.palette
 	palette.setPattern(text)
 	c.cursorMove()
+	palette.resize()
 	if !c.wildmenuShown {
 		c.showAddition()
 		palette.scrollCol.Hide()
