@@ -127,7 +127,7 @@ type StatuslineFileFormat struct {
 
 func initStatuslineNew() *Statusline {
 	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 0, 8, 0)
+	widget.SetContentsMargins(0, 0, 6, 0)
 
 	// spacing, padding, paddingtop, rightitemnum, width
 	layout := newVFlowLayout(16, 10, 1, 2, 0)
