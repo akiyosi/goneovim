@@ -134,7 +134,7 @@ func initPalette() *Palette {
 	for i := 0; i < max; i++ {
 		itemWidget := widgets.NewQWidget(nil, 0)
 		itemWidget.SetContentsMargins(0, 0, 0, 0)
-		itemLayout := newVFlowLayout(padding, padding*2, 0, 0, width)
+		itemLayout := newVFlowLayout(padding, padding*2, 0, 0, 9999)
 		itemLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 		itemWidget.SetLayout(itemLayout)
 		resultLayout.AddWidget(itemWidget, 0, 0)
@@ -206,7 +206,6 @@ func (p *Palette) resize() {
 		if p.ws.uiAttached {
 			fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
 		}
-
 		for i := p.showTotal; i < len(p.resultItems); i++ {
 			p.resultItems[i].hide()
 		}
