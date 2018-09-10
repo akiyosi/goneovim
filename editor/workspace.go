@@ -719,7 +719,6 @@ func (w *Workspace) setFilepath() {
 }
 
 func (w *Workspace) detectTerminalMode() {
-	fmt.Println(w.filepath)
 	if !strings.Contains(w.filepath, `term://`) {
 		return
 	}
