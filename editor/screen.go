@@ -81,19 +81,39 @@ func newScreen() *Screen {
 	return screen
 }
 
-func (s *Screen) updateSize() {
+func (s *Screen) updateRows() bool {
+	var ret bool
+	w := s.ws
+	rows := s.height / w.font.lineHeight
+
+	if rows != w.rows {
+		ret = true
+	}
+	w.rows = rows
+	return ret
+}
+
+func (s *Screen) updateCols() bool {
+	var ret bool
 	w := s.ws
 	s.width = s.widget.Width()
 	cols := int(float64(s.width) / w.font.truewidth)
-	rows := s.height / w.font.lineHeight
 
-	if w.uiAttached {
-		if cols != w.cols || rows != w.rows {
-			w.nvim.TryResizeUI(cols, rows)
-		}
+	if cols != w.cols {
+		ret = true
 	}
 	w.cols = cols
-	w.rows = rows
+	return ret
+}
+
+func (s *Screen) updateSize() {
+	w := s.ws
+	isColDiff := s.updateCols()
+	isRowDiff := s.updateRows()
+	isTryResize := isColDiff || isRowDiff
+	if w.uiAttached && isTryResize {
+		w.nvim.TryResizeUI(w.cols, w.rows)
+	}
 }
 
 func (s *Screen) toolTipFont(font *Font) {
@@ -570,6 +590,13 @@ func (s *Screen) setScrollRegion(args []interface{}) {
 
 func (s *Screen) scroll(args []interface{}) {
 	count := int(args[0].([]interface{})[0].(int64))
+
+	w := s.ws
+	isRowDiff := s.updateRows()
+	if w.uiAttached && isRowDiff {
+		w.nvim.TryResizeUI(w.cols, w.rows)
+	}
+
 	top := s.scrollRegion[0]
 	bot := s.scrollRegion[1]
 	left := s.scrollRegion[2]

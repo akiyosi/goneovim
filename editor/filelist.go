@@ -134,6 +134,7 @@ func newFilelistwidget(path string) *Filelist {
 			path:           filepath,
 			fileModified:   fileModified,
 		}
+		// charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.Width("W"))
 		charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
 		maxfilenameLength := float64(width - fileIcon.Width() - fileModified.Width() - filewidgetLeftMargin - charWidth - 35)
 		fileitem.setFilename(maxfilenameLength)
@@ -163,6 +164,7 @@ func newFilelistwidget(path string) *Filelist {
 		filewidgetLeftMargin := 35
 		currFileItem := ws.Filelist.Fileitems[0]
 		width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+		// charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.Width("W"))
 		charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
 		length := float64(width - currFileItem.fileIcon.Width() - currFileItem.fileModified.Width() - filewidgetLeftMargin - charWidth - 35)
 
