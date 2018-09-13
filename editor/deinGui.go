@@ -490,6 +490,7 @@ type DeinTomlConfig struct {
 }
 type DeinPlugin struct {
 	Repo           string
+	AuGroup        string `toml:"augroup"`
 	Build          string
 	Depends        []string
 	Frozen         int
@@ -497,8 +498,30 @@ type DeinPlugin struct {
 	Lazy           int
 	Marged         int
 	Name           string
-	NormalizedName string
-	// TODO There is more options to implement
+	NormalizedName string      `toml:"normalized_name"`
+	OnCmd          interface{} `toml:"on_cmd"`
+	OnEvent        interface{} `toml:"on_event"`
+	OnFunc         interface{} `toml:"on_func"`
+	OnFt           interface{} `toml:"on_ft"`
+	OnI            int         `toml:"on_i"`
+	OnIdle         int         `toml:"on_idle"`
+	OnIf           string      `toml:"on_if"`
+	OnMap          interface{} `toml:"on_map"`
+	OnPath         interface{} `toml:"on_path"`
+	OnSource       interface{} `toml:"on_source"`
+	Path           string
+	Rev            string
+	Rtp            string
+	ScriptType     string `toml:"script_type"`
+	Timeout        int
+	Trusted        int
+	Type           string
+	TypeDepth      int         `toml:"type__depth"`
+	HookAdd        interface{} `toml:"hook_add"`
+	HookDoneUpdate interface{} `toml:"hook_done_update"`
+	HookPostSource interface{} `toml:"hook_post_source"`
+	HookPostUpdate interface{} `toml:"hook_post_update"`
+	HookSource     interface{} `toml:"hook_source"`
 }
 
 func newDeinSide() *DeinSide {
@@ -606,11 +629,14 @@ func newDeinSide() *DeinSide {
 
 	// load dein toml
 	var deinToml DeinTomlConfig
-	_, err := toml.DecodeFile(editor.config.Dein.TomlFile, &deinToml)
-	if err != nil {
-		editor.pushNotification(NotifyInfo, -1, "Something is wrong with the dein toml file.")
+	var deinTomlBare []byte
+	if editor.config.Dein.TomlFile != "" {
+		_, err := toml.DecodeFile(editor.config.Dein.TomlFile, &deinToml)
+		if err != nil {
+			editor.pushNotification(NotifyInfo, -1, "Something is wrong with the dein toml file.")
+		}
+		deinTomlBare, _ = ioutil.ReadFile(editor.config.Dein.TomlFile)
 	}
-	deinTomlBare, _ := ioutil.ReadFile(editor.config.Dein.TomlFile)
 
 	// make DeinSide
 	side := &DeinSide{
