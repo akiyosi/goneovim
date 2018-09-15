@@ -385,7 +385,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginSettings.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 			if i.contextMenu == nil {
 				i.contextMenu = widgets.NewQMenu(installedPluginSettings)
-				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 7px 0px 7px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1)} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, bg.R, bg.G, bg.B))
+				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 7px 0px 7px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1);} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, bg.R, bg.G, bg.B))
 				// Example menu and action
 				// menuActionExit := i.contextMenu.AddAction("E&xit")
 				// menuActionExit.SetShortcut(gui.NewQKeySequence2("Ctrl+X", gui.QKeySequence__NativeText))
@@ -394,9 +394,20 @@ func loadDeinCashe() []*DeinPluginItem {
 				// menuActionDisable := i.contextMenu.AddAction("Disable")
 				// menuActionDisable.ConnectTriggered(i.disable)
 				menuActionRemove := i.contextMenu.AddAction("Remove this plugin")
-				menuActionRemove.ConnectTriggered(i.remove)
 				menuActionEditToml := i.contextMenu.AddAction("Configure the toml file")
-				menuActionEditToml.ConnectTriggered(i.editToml)
+				var invalidConfigure bool
+				for _, pluginSetting := range editor.deinSide.deintoml.Plugins {
+					if pluginSetting.Repo == i.repo {
+						invalidConfigure = true
+						break
+					}
+				}
+				if !invalidConfigure {
+					i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 7px 0px 7px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1); } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, shiftColor(fg, 55).R, shiftColor(fg, 55).G, shiftColor(fg, 55).B))
+				} else {
+					menuActionRemove.ConnectTriggered(i.remove)
+					menuActionEditToml.ConnectTriggered(i.editToml)
+				}
 			}
 			p := event.Pos()
 			i.contextMenu.Exec2(installedPluginSettings.MapToGlobal(p), nil)
