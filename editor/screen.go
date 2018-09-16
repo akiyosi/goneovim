@@ -68,6 +68,7 @@ func newScreen() *Screen {
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
 	}
+
 	widget.ConnectPaintEvent(screen.paint)
 	widget.ConnectMousePressEvent(screen.mouseEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)

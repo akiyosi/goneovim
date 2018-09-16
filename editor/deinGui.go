@@ -575,7 +575,7 @@ func newDeinSide() *DeinSide {
 	comboBoxMenu := widgets.NewQComboBox(nil)
 	comboBoxMenu.AddItems([]string{"ALL", "Language", "Completion", "Code-display", "Integrations", "Interface", "Commands", "Other"})
 	comboBoxMenu.SetFocusPolicy(core.Qt__ClickFocus)
-	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" * { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } ", editor.config.SideBar.AccentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, bg.R, bg.G, bg.B, editor.config.SideBar.AccentColor))
+	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" * { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } ", editor.config.SideBar.AccentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, bg.R, bg.G, bg.B))
 	comboBoxLayout.AddWidget(comboBoxMenu, 0, 0)
 	comboBoxWidget := widgets.NewQWidget(nil, 0)
 	comboBoxWidget.SetLayout(comboBoxLayout)
