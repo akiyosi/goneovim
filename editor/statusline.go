@@ -560,6 +560,8 @@ func (s *StatuslinePos) redraw(ln, col int) {
 		return
 	}
 	text := fmt.Sprintf("%d,%d", ln, col)
+	s.ln = ln
+	s.col = col
 	if text != s.text {
 		s.text = text
 		s.label.SetText(text)

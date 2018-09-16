@@ -38,6 +38,7 @@ type Workspace struct {
 	tabline    *Tabline
 	statusline *Statusline
 	screen     *Screen
+	scrollBar  *ScrollBar
 	markdown   *Markdown
 	finder     *Finder
 	palette    *Palette
@@ -64,6 +65,7 @@ type Workspace struct {
 	cwd        string
 	cwdBase    string
 	cwdlabel   string
+	maxLine    int
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -136,6 +138,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.screen = newScreen()
 	w.screen.toolTipFont(w.font)
 	w.screen.ws = w
+	w.scrollBar = newScrollBar()
+	w.scrollBar.ws = w
 	w.markdown = newMarkdown(w)
 	w.markdown.webview.SetParent(w.screen.widget)
 	w.cursor = initCursorNew()
@@ -182,8 +186,20 @@ func newWorkspace(path string) (*Workspace, error) {
 	editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	editor.wsWidget.ConnectInputMethodEvent(w.InputMethodEvent)
 	editor.wsWidget.ConnectInputMethodQuery(w.InputMethodQuery)
+
+	// screen widget and scrollBar widget
+	scrWidget := widgets.NewQWidget(nil, 0)
+	scrWidget.SetContentsMargins(0, 0, 0, 0)
+	scrWidget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	scrLayout := widgets.NewQHBoxLayout()
+	scrLayout.SetContentsMargins(0, 0, 0, 0)
+	scrLayout.SetSpacing(0)
+	scrLayout.AddWidget(w.screen.widget, 0, 0)
+	scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
+	scrWidget.SetLayout(scrLayout)
+
 	layout.AddWidget(w.tabline.widget, 0, 0)
-	layout.AddWidget(w.screen.widget, 1, 0)
+	layout.AddWidget(scrWidget, 1, 0)
 	layout.AddWidget(w.statusline.widget, 0, 0)
 
 	//// Drop shadow to statusline
@@ -341,6 +357,7 @@ func (w *Workspace) workspaceCommands(path string) {
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
+	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_file_maxline")`)
 	if editor.config.Editor.Clipboard == true {
 		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
 	}
@@ -557,6 +574,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.cursorGoto(args)
 		case "put":
 			s.put(args)
+			w.scrollBar.update()
 		case "eol_clear":
 			s.eolClear(args)
 		case "clear":
@@ -651,6 +669,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.signature.hide()
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
+	case "gonvim_file_maxline":
+		go w.nvim.Eval("line('$')", &w.maxLine)
+		go w.nvim.Input("<ScrollWheelDown>")
+		go w.nvim.Input("<ScrollWheelUp>")
 	case "gonvim_workspace_new":
 		editor.workspaceNew()
 	case "gonvim_workspace_next":
@@ -1011,6 +1033,10 @@ func (w *Workspace) setGuiColor() {
 	w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	svgContent = w.getSvg("bell", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 	w.statusline.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+
+	// scrollBar
+	w.scrollBar.thumb.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1);}", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+	w.scrollBar.widget.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1);}", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
 
 	// for Gonvim UI Color form colorscheme
 	tooltipStyle := fmt.Sprintf("color: rgba(%d, %d, %d, 1); }", shiftColor(fg, -40).R, shiftColor(fg, -40).G, shiftColor(fg, -40).B)
