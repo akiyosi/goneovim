@@ -357,7 +357,9 @@ func (w *Workspace) workspaceCommands(path string) {
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
-	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline")`)
+	if editor.config.ScrollBar.Visible == true {
+		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline")`)
+	}
 	if editor.config.Editor.Clipboard == true {
 		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
 	}
@@ -640,7 +642,9 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	}
 	s.update()
 	w.cursor.update()
-	w.scrollBar.update()
+	if editor.config.ScrollBar.Visible == true {
+		w.scrollBar.update()
+	}
 	w.statusline.mode.redraw()
 }
 

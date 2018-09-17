@@ -13,6 +13,9 @@ import (
 // [editor]
 // clipboard = true
 //
+// [scrollBar]
+// visible = true
+//
 // [activityBar]
 // visible = true
 // dropshadow = true
@@ -37,6 +40,7 @@ import (
 // tomlFile
 type gonvimConfig struct {
 	Editor      editorConfig
+	ScrollBar   scrollBarConfig
 	ActivityBar activityBarConfig
 	SideBar     sideBarConfig
 	Workspace   workspaceConfig
@@ -45,6 +49,10 @@ type gonvimConfig struct {
 
 type editorConfig struct {
 	Clipboard bool
+}
+
+type scrollBarConfig struct {
+	Visible bool
 }
 
 type activityBarConfig struct {
@@ -72,6 +80,7 @@ func newGonvimConfig(home string) gonvimConfig {
 	var config gonvimConfig
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
 		config.ActivityBar.Visible = true
+		config.ScrollBar.Visible = true
 		config.SideBar.Width = 300
 		config.SideBar.AccentColor = "#519aba"
 		config.Workspace.PathStyle = "minimum"
@@ -108,6 +117,8 @@ func outputGonvimConfig() {
 
 	fmt.Fprint(file, "[editor]\n")
 	fmt.Fprint(file, "clipboard = ", editor.config.Editor.Clipboard, "\n")
+	fmt.Fprint(file, "[scrollBar]", "\n")
+	fmt.Fprint(file, "visible = ", editor.config.ScrollBar.Visible, "\n")
 	fmt.Fprint(file, "[activityBar]", "\n")
 	fmt.Fprint(file, "visible = ", editor.config.ActivityBar.Visible, "\n")
 	fmt.Fprint(file, "dropshadow = ", editor.config.ActivityBar.DropShadow, "\n")
