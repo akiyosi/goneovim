@@ -1,8 +1,6 @@
 package editor
 
 import (
-	"sync"
-
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -13,8 +11,6 @@ type ScrollBar struct {
 	thumb  *widgets.QWidget
 	pos    int
 	height int
-	mu     sync.Mutex
-	isMove int
 }
 
 func newScrollBar() *ScrollBar {
@@ -34,39 +30,23 @@ func newScrollBar() *ScrollBar {
 }
 
 func (s *ScrollBar) update() {
-	if s.isMove > 0 {
-		return
-	}
-	s.mu.Lock()
-
-	defer s.mu.Unlock()
-	defer func() { s.isMove = 0 }()
-	s.isMove++
-
 	top := s.ws.screen.scrollRegion[0]
 	bot := s.ws.screen.scrollRegion[1]
 	if top == 0 && bot == 0 {
-		return
+		top = 0
+		bot = s.ws.rows - 1
+	}
+	relativeCursorY := int(float64(s.ws.cursor.y) / float64(s.ws.font.lineHeight))
+	if s.ws.maxLine == 0 {
+		s.ws.nvim.Eval("line('$')", &s.ws.maxLine)
 	}
 	if s.ws.maxLine > bot-top {
 		s.height = int(float64(bot-top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		s.thumb.SetFixedHeight(s.height)
-		s.pos = int(float64(s.ws.statusline.pos.ln) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
-		s.move()
+		s.pos = int(float64(s.ws.statusline.pos.ln-relativeCursorY) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+		s.thumb.Move2(0, s.pos)
 		s.widget.Show()
 	} else {
 		s.widget.Hide()
 	}
-}
-
-func (s *ScrollBar) move() {
-	var pos int
-	pos = s.pos - s.height/2
-	screenHeight := s.ws.screen.widget.Height()
-	if pos < 0 {
-		pos = 0
-	} else if pos > screenHeight-s.height {
-		pos = screenHeight - s.height
-	}
-	s.thumb.Move2(0, pos)
 }
