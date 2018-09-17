@@ -466,7 +466,9 @@ func (t *Tab) closeIconReleaseEvent(event *gui.QMouseEvent) {
 	if t.ID == 1 {
 		t.t.ws.nvim.Command(fmt.Sprintf("q"))
 	} else {
-		t.t.ws.nvim.Command(fmt.Sprintf("tabc %d", t.ID))
+		targetTab := nvim.Tabpage(t.ID)
+		t.t.ws.nvim.SetCurrentTabpage(targetTab)
+		t.t.ws.nvim.Command("tabclose!")
 	}
 }
 
