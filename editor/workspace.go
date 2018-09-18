@@ -276,6 +276,10 @@ func (w *Workspace) startNvim(path string) error {
 	done := make(chan error, 1)
 	go func() {
 		done <- w.nvim.Serve()
+		w.stopOnce.Do(func() {
+			close(w.stop)
+		})
+		w.signal.StopSignal()
 	}()
 
 	go w.init(path)
@@ -285,10 +289,6 @@ func (w *Workspace) startNvim(path string) error {
 			if err != nil {
 				fmt.Println(err)
 			}
-			w.stopOnce.Do(func() {
-				close(w.stop)
-			})
-			w.signal.StopSignal()
 		case <-time.After(10 * time.Second):
 			errDialog := widgets.NewQMessageBox(nil)
 			errDialog.SetText("Neovim is taking too long to respond")
