@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	shortpath "github.com/akiyosi/short_path"
@@ -70,6 +71,7 @@ type Workspace struct {
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
 	guiUpdates    chan []interface{}
+	isUpdate      chan bool
 	stopOnce      sync.Once
 	stop          chan struct{}
 
@@ -87,12 +89,14 @@ func newWorkspace(path string) (*Workspace, error) {
 		signal:        NewWorkspaceSignal(nil),
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
+		isUpdate:      make(chan bool, 1000),
 		setGuiFgColor: false,
 		setGuiBgColor: false,
 	}
 	w.signal.ConnectRedrawSignal(func() {
 		updates := <-w.redrawUpdates
 		w.handleRedraw(updates)
+		go func() { w.isUpdate <- true }()
 	})
 	w.signal.ConnectGuiSignal(func() {
 		updates := <-w.guiUpdates
@@ -269,24 +273,37 @@ func (w *Workspace) startNvim(path string) error {
 		w.signal.RedrawSignal()
 	})
 
+	done := make(chan error, 1)
 	go func() {
-		err := w.nvim.Serve()
-		if err != nil {
-			fmt.Println(err)
-		}
-		w.stopOnce.Do(func() {
-			close(w.stop)
-		})
-		w.signal.StopSignal()
+		done <- w.nvim.Serve()
 	}()
 
+	go w.init(path)
 	go func() {
-		w.configure()
-		w.attachUI(path)
-		w.initCwd()
+		select {
+		case err := <-done:
+			if err != nil {
+				fmt.Println(err)
+			}
+			w.stopOnce.Do(func() {
+				close(w.stop)
+			})
+			w.signal.StopSignal()
+		case <-time.After(10 * time.Second):
+			errDialog := widgets.NewQMessageBox(nil)
+			errDialog.SetText("Neovim is taking too long to respond")
+			errDialog.Exec()
+		case <-w.isUpdate:
+		}
 	}()
 
 	return nil
+}
+
+func (w *Workspace) init(path string) {
+	w.configure()
+	w.attachUI(path)
+	w.initCwd()
 }
 
 func (w *Workspace) configure() {
