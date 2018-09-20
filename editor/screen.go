@@ -78,8 +78,75 @@ func newScreen() *Screen {
 		screen.updateSize()
 	})
 	widget.SetAttribute(core.Qt__WA_KeyCompression, false)
+	widget.SetAcceptDrops(true)
+
+	widget.ConnectDragEnterEvent(screen.dragEnterEvent)
+	widget.ConnectDragMoveEvent(screen.dragMoveEvent)
+	widget.ConnectDropEvent(screen.dropEvent)
 
 	return screen
+}
+
+func (s *Screen) dragEnterEvent(e *gui.QDragEnterEvent) {
+	e.AcceptProposedAction()
+}
+
+func (s *Screen) dragMoveEvent(e *gui.QDragMoveEvent) {
+	e.AcceptProposedAction()
+}
+
+func (s *Screen) dropEvent(e *gui.QDropEvent) {
+	e.SetDropAction(core.Qt__CopyAction)
+	e.AcceptProposedAction()
+	e.SetAccepted(true)
+
+	for _, i := range strings.Split(e.MimeData().Text(), "\n") {
+		data := strings.Split(i, "://")
+		if i != "" {
+			switch data[0] {
+			case "file":
+				buf, _ := s.ws.nvim.CurrentBuffer()
+				bufName, _ := s.ws.nvim.BufferName(buf)
+				if bufName != "" {
+					s.howToOpen(data[1])
+				} else {
+					fileOpenInBuf(data[1])
+				}
+			default:
+			}
+		}
+	}
+}
+
+func fileOpenInBuf(file string) {
+	isModified, _ := editor.workspaces[editor.active].nvim.CommandOutput("echo &modified")
+	if isModified == "1" {
+		editor.workspaces[editor.active].nvim.Command(fmt.Sprintf(":tabnew %s", file))
+	} else {
+		editor.workspaces[editor.active].nvim.Command(fmt.Sprintf(":e %s", file))
+	}
+}
+
+func (s *Screen) howToOpen(file string) {
+	message := fmt.Sprintf("[Gonvvim] Do you want to diff between the file being dropped and the current buffer?")
+	opts := []*NotifyButton{}
+	opt1 := &NotifyButton{
+		action: func() {
+			editor.workspaces[editor.active].nvim.Command(fmt.Sprintf(":vertical diffsplit %s", file))
+		},
+		text: "Yes",
+	}
+	opts = append(opts, opt1)
+
+	opt2 := &NotifyButton{
+		action: func() {
+			fileOpenInBuf(file)
+		},
+		text: "No, I want to open with a new buffer",
+	}
+	opts = append(opts, opt2)
+
+	editor.pushNotification(NotifyWarn, 0, message, notifyOptionArg(opts))
 }
 
 func (s *Screen) updateRows() bool {
