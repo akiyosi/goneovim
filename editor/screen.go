@@ -107,10 +107,26 @@ func (s *Screen) dropEvent(e *gui.QDropEvent) {
 			case "file":
 				buf, _ := s.ws.nvim.CurrentBuffer()
 				bufName, _ := s.ws.nvim.BufferName(buf)
+				var filepath string
+				switch data[1][0] {
+				case '/':
+					if runtime.GOOS == "windows" {
+						filepath = strings.Trim(data[1], `/`)
+					} else {
+						filepath = data[1]
+					}
+				default:
+					if runtime.GOOS == "windows" {
+						filepath = fmt.Sprintf(`//%s`, data[1])
+					} else {
+						filepath = data[1]
+					}
+				}
+
 				if bufName != "" {
-					s.howToOpen(data[1])
+					s.howToOpen(filepath)
 				} else {
-					fileOpenInBuf(data[1])
+					fileOpenInBuf(filepath)
 				}
 			default:
 			}
