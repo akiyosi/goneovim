@@ -173,7 +173,7 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 		s.drawText(p, y, col, cols, [2]int{0, 0})
 	}
 
-	s.drawBorder(p, row, col, rows, cols)
+	s.drawWindows(p, row, col, rows, cols)
 	p.DestroyQPainter()
 	s.ws.markdown.updatePos()
 }
@@ -330,7 +330,7 @@ func (s *Screen) convertMouse(event *gui.QMouseEvent) string {
 	return fmt.Sprintf("<%s%s%s><%d,%d>", editor.modPrefix(mod), buttonName, evType, pos[0], pos[1])
 }
 
-func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
+func (s *Screen) drawWindows(p *gui.QPainter, row, col, rows, cols int) {
 	done := make(chan struct{}, 1000)
 	go func() {
 		s.getWindows()
@@ -340,15 +340,15 @@ func (s *Screen) drawBorder(p *gui.QPainter, row, col, rows, cols int) {
 	case <-done:
 	case <-time.After(1 * time.Millisecond):
 	}
-	for _, win := range s.curWins {
-		if win.pos[0]+win.height < row && (win.pos[1]+win.width+1) < col {
-			continue
-		}
-		if win.pos[0] > (row+rows) && (win.pos[1]+win.width) > (col+cols) {
-			continue
-		}
-		//win.drawBorder(p, s)
-	}
+	// for _, win := range s.curWins {
+	// 	if win.pos[0]+win.height < row && (win.pos[1]+win.width+1) < col {
+	// 		continue
+	// 	}
+	// 	if win.pos[0] > (row+rows) && (win.pos[1]+win.width) > (col+cols) {
+	// 		continue
+	// 	}
+	// 	win.drawBorder(p, s)
+	// }
 }
 
 func (s *Screen) getWindows() {
