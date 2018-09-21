@@ -68,6 +68,7 @@ type Workspace struct {
 	cwdBase    string
 	cwdlabel   string
 	maxLine    int
+	curLine    int
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -385,11 +386,13 @@ func (w *Workspace) workspaceCommands(path string) {
 	if editor.config.Editor.Clipboard == true {
 		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
 	}
+	w.nvim.Command(`autocmd BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
+	w.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))`)
+
 	w.nvim.Command(`command! GonvimWorkspaceNew call rpcnotify(0, 'Gui', 'gonvim_workspace_new')`)
 	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
 	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
 	w.nvim.Command(`command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, 'Gui', 'gonvim_workspace_switch', <args>)`)
-	w.nvim.Command(`autocmd BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 }
 
 func (w *Workspace) initCwd() {
@@ -582,7 +585,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			}
 			if w.setGuiBgColor == false {
 				go w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
-				go w.nvim.Command(`call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
+				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
 				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 
 				if editor.wsSide.bgcolor == nil {
@@ -619,6 +622,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.setScrollRegion(args)
 		case "scroll":
 			s.scroll(args)
+			w.minimap.mapScroll()
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
@@ -702,6 +706,12 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.signature.pos(updates[1:])
 	case "signature_hide":
 		w.signature.hide()
+	case "gonvim_cursormoved":
+		pos := updates[1].([]interface{})
+		ln := reflectToInt(pos[1])
+		col := reflectToInt(pos[2]) + reflectToInt(pos[3])
+		w.statusline.pos.redraw(ln, col)
+		w.curLine = ln
 	case "gonvim_minimap_update":
 		go w.minimap.bufUpdate()
 	case "gonvim_copy_clipboard":

@@ -43,7 +43,7 @@ func (s *ScrollBar) update() {
 	if s.ws.maxLine > bot-top {
 		s.height = int(float64(bot-top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		s.thumb.SetFixedHeight(s.height)
-		s.pos = int(float64(s.ws.statusline.pos.ln-relativeCursorY) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+		s.pos = int(float64(s.ws.curLine-relativeCursorY) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		s.thumb.Move2(0, s.pos)
 		s.widget.Show()
 	} else {

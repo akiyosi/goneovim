@@ -57,6 +57,7 @@ type MiniMap struct {
 	uiAttached bool
 	rows       int
 	cols       int
+	curLine    int
 
 	foreground *RGBA
 	background *RGBA
@@ -70,11 +71,15 @@ func newMiniMap() *MiniMap {
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	widget.SetFixedWidth(120)
 
-	//curRegion := widgets.NewQWidget(widget, 0)
+	curRegion := widgets.NewQWidget(widget, 0)
+	curRegion.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	curRegion.SetStyleSheet(" * { background-color: rgba(255, 255, 255, 30);}")
+	curRegion.SetFixedWidth(120)
+	curRegion.SetFixedHeight(80)
 
 	m := &MiniMap{
-		widget: widget,
-		// curRegion: curRegion,
+		widget:        widget,
+		curRegion:     curRegion,
 		scrollRegion:  []int{0, 0, 0, 0},
 		stop:          make(chan struct{}),
 		signal:        NewMiniMapSignal(nil),
@@ -84,7 +89,6 @@ func newMiniMap() *MiniMap {
 	m.signal.ConnectRedrawSignal(func() {
 		updates := <-m.redrawUpdates
 		m.handleRedraw(updates)
-		fmt.Println("minimap: update")
 	})
 	m.signal.ConnectGuiSignal(func() {
 		updates := <-m.guiUpdates
@@ -96,6 +100,8 @@ func newMiniMap() *MiniMap {
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		m.updateSize()
 	})
+	widget.ConnectWheelEvent(m.wheelEvent)
+
 	fontFamily := ""
 	switch runtime.GOOS {
 	case "windows":
@@ -141,8 +147,10 @@ func newMiniMap() *MiniMap {
 	}
 	m.uiAttached = true
 
+	m.nvim.Subscribe("Gui")
 	m.nvim.Command(":set laststatus=0 | set noruler")
 	m.nvim.Command(":syntax on")
+	m.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "minimap_cursormoved", getpos("."))`)
 
 	return m
 }
@@ -307,6 +315,7 @@ func (m *MiniMap) getWindows() {
 
 func (m *MiniMap) updateRows() bool {
 	var ret bool
+	m.height = m.widget.Height()
 	rows := m.height / m.font.lineHeight
 
 	if rows != m.rows {
@@ -341,11 +350,53 @@ func (m *MiniMap) bufUpdate() {
 	buf, _ := m.ws.nvim.CurrentBuffer()
 	bufName, _ := m.ws.nvim.BufferName(buf)
 	m.nvim.Command(":e " + bufName)
-	fmt.Println("minimap: bufUpdate")
+	bot := m.ws.screen.scrollRegion[1]
+	if bot == 0 {
+		bot = m.ws.rows - 1
+	}
+	m.curRegion.SetFixedHeight(int(float64(bot) * float64(m.font.lineHeight)))
+}
+
+func (m *MiniMap) mapScroll() {
+	curRegionBot := m.ws.screen.scrollRegion[1]
+	if curRegionBot == 0 {
+		curRegionBot = m.ws.rows - 1
+	}
+	minimapBot := m.scrollRegion[1]
+	if minimapBot == 0 {
+		minimapBot = m.rows - 1
+	}
+	// absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
+	var absScreenTop int
+	m.ws.nvim.Eval("line('w0')", &absScreenTop)
+	absScreenBot := absScreenTop + curRegionBot - 1
+	// absMapTop := m.curLine - m.cursor[0]
+	var absMapTop int
+	m.nvim.Eval("line('w0')", &absMapTop)
+	absMapBot := absMapTop + minimapBot - 1
+
+	// fmt.Println("screen top", absScreenTop)
+	// fmt.Println("screen bot", absScreenBot)
+	// fmt.Println("top", absMapTop)
+	// fmt.Println("bot", absMapBot)
+
+	// fmt.Println("Abs screen top", absScreenTop)
+	// fmt.Println("Abs screen bot", absScreenBot)
+	// fmt.Println("Abs top", absMapTop)
+	// fmt.Println("Abs bot", absMapBot)
+
+	regionHeight := absScreenBot - absScreenTop
+	m.curRegion.SetFixedHeight(int(float64(regionHeight) * float64(m.font.lineHeight)))
+	fmt.Println("cursor:", m.cursor[0])
+	fmt.Println("Abs mapTop", absMapTop)
+	fmt.Println("Abs mapBot", absMapBot)
+	//pos := int(float64(m.height) * float64(absScreenTop-absMapTop) / float64(absMapBot))
+	pos := int(float64(m.font.lineHeight) * float64(absScreenTop-absMapTop))
+	fmt.Println("pos", pos)
+	m.curRegion.Move2(0, pos)
 }
 
 func (m *MiniMap) handleRedraw(updates [][]interface{}) {
-	fmt.Println("minimap: handleredraw")
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -359,6 +410,7 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 			// 	m.foreground = calcColor(reflectToInt(args[0]))
 			// }
 		case "update_bg":
+			go m.nvim.Command(`call rpcnotify(0, "Gui", "minimap_cursormoved",  getpos("."))`)
 			// args := update[1].([]interface{})
 			// color := reflectToInt(args[0])
 			// if color == -1 {
@@ -391,6 +443,7 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 			m.setScrollRegion(args)
 		case "scroll":
 			m.scroll(args)
+			m.mapScroll()
 		case "mode_change":
 		case "popupmenu_show":
 		case "popupmenu_hide":
@@ -420,67 +473,15 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 }
 
 func (m *MiniMap) handleRPCGui(updates []interface{}) {
-	//event := updates[0].(string)
-	//switch event {
-	//case "Font":
-	//	w.guiFont(updates[1:])
-	//case "Linespace":
-	//	w.guiLinespace(updates[1:])
-	//case "finder_pattern":
-	//	w.finder.showPattern(updates[1:])
-	//case "finder_pattern_pos":
-	//	w.finder.cursorPos(updates[1:])
-	//case "finder_show_result":
-	//	w.finder.showResult(updates[1:])
-	//case "finder_hide":
-	//	w.finder.hide()
-	//case "finder_select":
-	//	w.finder.selectResult(updates[1:])
-	//case "signature_show":
-	//	w.signature.showItem(updates[1:])
-	//case "signature_pos":
-	//	w.signature.pos(updates[1:])
-	//case "signature_hide":
-	//	w.signature.hide()
-	//case "gonvim_copy_clipboard":
-	//	go editor.copyClipBoard()
-	//case "gonvim_get_maxline":
-	//	go w.nvim.Eval("line('$')", &w.maxLine)
-	//case "gonvim_workspace_new":
-	//	editor.workspaceNew()
-	//case "gonvim_workspace_next":
-	//	editor.workspaceNext()
-	//case "gonvim_workspace_previous":
-	//	editor.workspacePrevious()
-	//case "gonvim_workspace_switch":
-	//	editor.workspaceSwitch(reflectToInt(updates[1]))
-	//case "gonvim_workspace_cwd":
-	//	w.setCwd()
-	//case "gonvim_workspace_redrawSideItem":
-	//	go func() {
-	//		fl := editor.wsSide.items[editor.active].Filelist
-	//		if fl.active != -1 {
-	//			if len(fl.Fileitems) != 0 {
-	//				fl.Fileitems[fl.active].updateModifiedbadge()
-	//			}
-	//		}
-	//	}()
-	//case "gonvim_workspace_redrawSideItems":
-	//	go editor.wsSide.items[editor.active].setCurrentFileLabel()
-	//	go editor.workspaces[editor.active].setFilepath()
-	//case GonvimMarkdownNewBufferEvent:
-	//	go w.markdown.newBuffer()
-	//case GonvimMarkdownUpdateEvent:
-	//	go w.markdown.update()
-	//case GonvimMarkdownToggleEvent:
-	//	go w.markdown.toggle()
-	//case GonvimMarkdownScrollDownEvent:
-	//	w.markdown.scrollDown()
-	//case GonvimMarkdownScrollUpEvent:
-	//	w.markdown.scrollUp()
-	//default:
-	//	fmt.Println("unhandled Gui event", event)
-	//}
+	event := updates[0].(string)
+	switch event {
+	case "minimap_cursormoved":
+		pos := updates[1].([]interface{})
+		ln := reflectToInt(pos[1])
+		m.curLine = ln
+	default:
+		fmt.Println("unhandled Gui event", event)
+	}
 }
 
 func (m *MiniMap) put(args []interface{}) {
@@ -608,7 +609,17 @@ func (m *MiniMap) setScrollRegion(args []interface{}) {
 }
 
 func (m *MiniMap) scroll(args []interface{}) {
-	count := int(args[0].([]interface{})[0].(int64))
+	var count int
+	var ucount uint
+	switch args[0].([]interface{})[0].(type) {
+	case int64:
+		count = int(args[0].([]interface{})[0].(int64))
+	case uint64:
+		ucount = uint(args[0].([]interface{})[0].(uint64))
+	}
+	if ucount > 0 {
+		count = int(ucount)
+	}
 
 	isRowDiff := m.updateRows()
 	if m.uiAttached && isRowDiff {
@@ -943,4 +954,73 @@ func (m *MiniMap) isNormalWidth(char string) bool {
 	}
 	//return s.ws.font.fontMetrics.Width(char) == s.ws.font.truewidth
 	return m.font.fontMetrics.HorizontalAdvance(char, -1) == m.font.truewidth
+}
+
+func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
+
+	var v, h, vert, horiz int
+	var accel int
+	font := m.font
+
+	switch runtime.GOOS {
+	case "darwin":
+		pixels := event.PixelDelta()
+		if pixels != nil {
+			v = pixels.Y()
+			h = pixels.X()
+		}
+		if pixels.X() < 0 && m.scrollDust[0] > 0 {
+			m.scrollDust[0] = 0
+		}
+		if pixels.Y() < 0 && m.scrollDust[1] > 0 {
+			m.scrollDust[1] = 0
+		}
+
+		dx := math.Abs(float64(m.scrollDust[0]))
+		dy := math.Abs(float64(m.scrollDust[1]))
+
+		fontheight := float64(float64(font.lineHeight))
+		fontwidth := float64(font.truewidth)
+
+		m.scrollDust[0] += h
+		m.scrollDust[1] += v
+
+		if dx >= fontwidth {
+			horiz = int(math.Trunc(float64(m.scrollDust[0]) / fontheight))
+			m.scrollDust[0] = 0
+		}
+		if dy >= fontwidth {
+			vert = int(math.Trunc(float64(m.scrollDust[1]) / fontwidth))
+			m.scrollDust[1] = 0
+		}
+
+		m.scrollDustDeltaY = int(math.Abs(float64(vert)) - float64(m.scrollDustDeltaY))
+		if m.scrollDustDeltaY < 1 {
+			m.scrollDustDeltaY = 0
+		}
+		if m.scrollDustDeltaY <= 2 {
+			accel = 1
+		} else if m.scrollDustDeltaY > 2 {
+			accel = int(float64(m.scrollDustDeltaY) / float64(4))
+		}
+
+	default:
+		vert = event.AngleDelta().Y()
+		accel = 2
+	}
+
+	if vert == 0 && horiz == 0 {
+		return
+	}
+
+	if vert > 0 {
+		m.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
+	} else if vert < 0 {
+		m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
+	}
+
+	event.Accept()
 }
