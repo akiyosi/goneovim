@@ -355,7 +355,6 @@ func (s *Statusline) subscribe() {
 	})
 	s.ws.nvim.Subscribe("statusline")
 	s.ws.nvim.Command(`autocmd BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
-	s.ws.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
 }
 
 func (s *Statusline) handleUpdates(updates []interface{}) {
@@ -371,11 +370,6 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		s.encoding.redraw(encoding)
 		s.fileFormat.redraw(fileFormat)
 		go s.git.redraw(file)
-	case "cursormoved":
-		pos := updates[1].([]interface{})
-		ln := reflectToInt(pos[1])
-		col := reflectToInt(pos[2]) + reflectToInt(pos[3])
-		s.pos.redraw(ln, col)
 	default:
 		fmt.Println("unhandled statusline event", event)
 	}

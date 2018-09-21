@@ -492,15 +492,15 @@ func (s *Screen) getWindows() {
 	}
 }
 
-func (s *Screen) updateBg(args []interface{}) {
-	color := reflectToInt(args[0])
-	if color == -1 {
-		s.ws.background = newRGBA(0, 0, 0, 1)
-	} else {
-		bg := calcColor(reflectToInt(args[0]))
-		s.ws.background = bg
-	}
-}
+// func (s *Screen) updateBg(args []interface{}) {
+// 	color := reflectToInt(args[0])
+// 	if color == -1 {
+// 		s.ws.background = newRGBA(0, 0, 0, 1)
+// 	} else {
+// 		bg := calcColor(reflectToInt(args[0]))
+// 		s.ws.background = bg
+// 	}
+// }
 
 func (s *Screen) size() (int, int) {
 	geo := s.widget.Geometry()
@@ -560,7 +560,7 @@ func (s *Screen) put(args []interface{}) {
 	line := s.content[row]
 	oldFirstNormal := true
 	if x >= len(line) {
-		return
+		x = len(line) - 1
 	}
 	char := line[x] // sometimes crash at this line
 	if char != nil && !char.normalWidth {
@@ -657,6 +657,7 @@ func (s *Screen) highlightSet(args []interface{}) {
 			highlight.background = s.ws.background
 		}
 		s.highlight = highlight
+		//s.ws.minimap.highlight = highlight
 	}
 }
 

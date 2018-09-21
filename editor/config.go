@@ -20,6 +20,9 @@ import (
 // visible = true
 // dropshadow = true
 //
+// [miniMap]
+// visible = true
+//
 // [sideBar]
 // visible = false
 // dropshadow = true
@@ -42,6 +45,7 @@ type gonvimConfig struct {
 	Editor      editorConfig
 	ScrollBar   scrollBarConfig
 	ActivityBar activityBarConfig
+	MiniMap     miniMapConfig
 	SideBar     sideBarConfig
 	Workspace   workspaceConfig
 	Dein        deinConfig
@@ -49,6 +53,10 @@ type gonvimConfig struct {
 
 type editorConfig struct {
 	Clipboard bool
+}
+
+type miniMapConfig struct {
+	Visible bool
 }
 
 type scrollBarConfig struct {
@@ -122,6 +130,8 @@ func outputGonvimConfig() {
 	fmt.Fprint(file, "[activityBar]", "\n")
 	fmt.Fprint(file, "visible = ", editor.config.ActivityBar.Visible, "\n")
 	fmt.Fprint(file, "dropshadow = ", editor.config.ActivityBar.DropShadow, "\n")
+	fmt.Fprint(file, "[miniMap]", "\n")
+	fmt.Fprint(file, "visible = ", editor.config.MiniMap.Visible, "\n")
 	fmt.Fprint(file, "[sideBar]", "\n")
 	fmt.Fprint(file, "visible = ", editor.config.SideBar.Visible, "\n")
 	fmt.Fprint(file, "dropshadow = ", editor.config.SideBar.DropShadow, "\n")

@@ -48,6 +48,7 @@ type Workspace struct {
 	cmdline    *Cmdline
 	signature  *Signature
 	message    *Message
+	minimap    *MiniMap
 	svgs       map[string]*SvgXML
 	svgsOnce   sync.Once
 	width      int
@@ -67,6 +68,7 @@ type Workspace struct {
 	cwdBase    string
 	cwdlabel   string
 	maxLine    int
+	curLine    int
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -169,6 +171,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.message.ws = w
 	w.cmdline = initCmdline()
 	w.cmdline.ws = w
+	w.minimap = newMiniMap()
+	w.minimap.ws = w
 
 	// screenLayout := widgets.NewQHBoxLayout()
 	// screenLayout.SetContentsMargins(0, 0, 0, 0)
@@ -199,6 +203,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	scrLayout.SetContentsMargins(0, 0, 0, 0)
 	scrLayout.SetSpacing(0)
 	scrLayout.AddWidget(w.screen.widget, 0, 0)
+	scrLayout.AddWidget(w.minimap.widget, 0, 0)
 	scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
 	scrWidget.SetLayout(scrLayout)
 
@@ -374,12 +379,17 @@ func (w *Workspace) workspaceCommands(path string) {
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
+	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	if editor.config.ScrollBar.Visible == true {
 		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline")`)
 	}
 	if editor.config.Editor.Clipboard == true {
 		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
 	}
+	w.nvim.Command(`autocmd BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
+	w.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))`)
+
+	w.nvim.Command(`command! GonvimMiniMap call rpcnotify(0, 'Gui', 'gonvim_minimap_toggle')`)
 	w.nvim.Command(`command! GonvimWorkspaceNew call rpcnotify(0, 'Gui', 'gonvim_workspace_new')`)
 	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
 	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
@@ -553,6 +563,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.foreground = newRGBA(255, 255, 255, 1)
 			} else {
 				w.foreground = calcColor(reflectToInt(args[0]))
+				w.minimap.foreground = calcColor(reflectToInt(args[0]))
 			}
 			if w.setGuiFgColor == false {
 				if editor.wsSide.fgcolor == nil {
@@ -566,11 +577,18 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			}
 		case "update_bg":
 			args := update[1].([]interface{})
-			s.updateBg(args)
+			color := reflectToInt(args[0])
+			if color == -1 {
+				w.background = newRGBA(0, 0, 0, 1)
+			} else {
+				w.background = calcColor(reflectToInt(args[0]))
+				w.minimap.background = calcColor(reflectToInt(args[0]))
+			}
 			if w.setGuiBgColor == false {
 				go w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
-				go w.nvim.Command(`call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
+				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
 				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
+				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 
 				if editor.wsSide.bgcolor == nil {
 					editor.wsSide.bgcolor = editor.workspaces[0].background
@@ -588,9 +606,11 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.special = newRGBA(255, 255, 255, 1)
 			} else {
 				w.special = calcColor(reflectToInt(args[0]))
+				w.minimap.special = calcColor(reflectToInt(args[0]))
 			}
 		case "cursor_goto":
 			s.cursorGoto(args)
+			w.minimap.mapScroll()
 		case "put":
 			s.put(args)
 		case "eol_clear":
@@ -605,6 +625,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.setScrollRegion(args)
 		case "scroll":
 			s.scroll(args)
+			w.minimap.mapScroll()
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
@@ -688,6 +709,16 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.signature.pos(updates[1:])
 	case "signature_hide":
 		w.signature.hide()
+	case "gonvim_cursormoved":
+		pos := updates[1].([]interface{})
+		ln := reflectToInt(pos[1])
+		col := reflectToInt(pos[2]) + reflectToInt(pos[3])
+		w.statusline.pos.redraw(ln, col)
+		w.curLine = ln
+	case "gonvim_minimap_update":
+		go w.minimap.bufUpdate()
+	case "gonvim_minimap_toggle":
+		go w.minimap.toggle()
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
 	case "gonvim_get_maxline":
