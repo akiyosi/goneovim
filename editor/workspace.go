@@ -48,6 +48,7 @@ type Workspace struct {
 	cmdline    *Cmdline
 	signature  *Signature
 	message    *Message
+	miniMap    *MiniMap
 	svgs       map[string]*SvgXML
 	svgsOnce   sync.Once
 	width      int
@@ -169,6 +170,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.message.ws = w
 	w.cmdline = initCmdline()
 	w.cmdline.ws = w
+	w.miniMap = newMiniMap()
 
 	// screenLayout := widgets.NewQHBoxLayout()
 	// screenLayout.SetContentsMargins(0, 0, 0, 0)
@@ -199,6 +201,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	scrLayout.SetContentsMargins(0, 0, 0, 0)
 	scrLayout.SetSpacing(0)
 	scrLayout.AddWidget(w.screen.widget, 0, 0)
+	scrLayout.AddWidget(w.miniMap.widget, 0, 0)
 	scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
 	scrWidget.SetLayout(scrLayout)
 
@@ -373,6 +376,7 @@ func (w *Workspace) workspaceCommands(path string) {
 	}
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
+	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	if editor.config.ScrollBar.Visible == true {
 		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline")`)
