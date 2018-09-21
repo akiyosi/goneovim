@@ -16,7 +16,7 @@ type ScrollBar struct {
 func newScrollBar() *ScrollBar {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
-	widget.SetFixedWidth(5)
+	widget.SetFixedWidth(10)
 	thumb := widgets.NewQWidget(widget, 0)
 	thumb.SetFixedWidth(5)
 
@@ -42,6 +42,9 @@ func (s *ScrollBar) update() {
 	}
 	if s.ws.maxLine > bot-top {
 		s.height = int(float64(bot-top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+		if s.height < 20 {
+			s.height = 20
+		}
 		s.thumb.SetFixedHeight(s.height)
 		s.pos = int(float64(s.ws.curLine-relativeCursorY) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		s.thumb.Move2(0, s.pos)

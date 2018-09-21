@@ -1086,7 +1086,7 @@ func (w *Workspace) setGuiColor() {
 
 	// scrollBar
 	w.scrollBar.thumb.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1);}", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
-	w.scrollBar.widget.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1);}", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+	w.scrollBar.widget.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1);}", bg.R, bg.G, bg.B))
 
 	// for Gonvim UI Color form colorscheme
 	tooltipStyle := fmt.Sprintf("color: rgba(%d, %d, %d, 1); }", shiftColor(fg, -40).R, shiftColor(fg, -40).G, shiftColor(fg, -40).B)
