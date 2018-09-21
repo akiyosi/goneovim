@@ -48,7 +48,7 @@ type Workspace struct {
 	cmdline    *Cmdline
 	signature  *Signature
 	message    *Message
-	miniMap    *MiniMap
+	minimap    *MiniMap
 	svgs       map[string]*SvgXML
 	svgsOnce   sync.Once
 	width      int
@@ -170,7 +170,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.message.ws = w
 	w.cmdline = initCmdline()
 	w.cmdline.ws = w
-	w.miniMap = newMiniMap()
+	w.minimap = newMiniMap()
+	w.minimap.ws = w
 
 	// screenLayout := widgets.NewQHBoxLayout()
 	// screenLayout.SetContentsMargins(0, 0, 0, 0)
@@ -201,7 +202,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	scrLayout.SetContentsMargins(0, 0, 0, 0)
 	scrLayout.SetSpacing(0)
 	scrLayout.AddWidget(w.screen.widget, 0, 0)
-	scrLayout.AddWidget(w.miniMap.widget, 0, 0)
+	scrLayout.AddWidget(w.minimap.widget, 0, 0)
 	scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
 	scrWidget.SetLayout(scrLayout)
 
@@ -388,6 +389,7 @@ func (w *Workspace) workspaceCommands(path string) {
 	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
 	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
 	w.nvim.Command(`command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, 'Gui', 'gonvim_workspace_switch', <args>)`)
+	w.nvim.Command(`autocmd BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 }
 
 func (w *Workspace) initCwd() {
@@ -557,6 +559,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.foreground = newRGBA(255, 255, 255, 1)
 			} else {
 				w.foreground = calcColor(reflectToInt(args[0]))
+				w.minimap.foreground = calcColor(reflectToInt(args[0]))
 			}
 			if w.setGuiFgColor == false {
 				if editor.wsSide.fgcolor == nil {
@@ -570,7 +573,13 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			}
 		case "update_bg":
 			args := update[1].([]interface{})
-			s.updateBg(args)
+			color := reflectToInt(args[0])
+			if color == -1 {
+				w.background = newRGBA(0, 0, 0, 1)
+			} else {
+				w.background = calcColor(reflectToInt(args[0]))
+				w.minimap.background = calcColor(reflectToInt(args[0]))
+			}
 			if w.setGuiBgColor == false {
 				go w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
 				go w.nvim.Command(`call rpcnotify(0, "statusline", "cursormoved", getpos("."))`)
@@ -592,6 +601,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.special = newRGBA(255, 255, 255, 1)
 			} else {
 				w.special = calcColor(reflectToInt(args[0]))
+				w.minimap.special = calcColor(reflectToInt(args[0]))
 			}
 		case "cursor_goto":
 			s.cursorGoto(args)
@@ -692,6 +702,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.signature.pos(updates[1:])
 	case "signature_hide":
 		w.signature.hide()
+	case "gonvim_minimap_update":
+		go w.minimap.bufUpdate()
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
 	case "gonvim_get_maxline":

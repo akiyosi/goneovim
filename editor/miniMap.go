@@ -60,6 +60,7 @@ type MiniMap struct {
 
 	foreground *RGBA
 	background *RGBA
+	special    *RGBA
 }
 
 func newMiniMap() *MiniMap {
@@ -67,7 +68,7 @@ func newMiniMap() *MiniMap {
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
-	widget.SetFixedWidth(80)
+	widget.SetFixedWidth(120)
 
 	//curRegion := widgets.NewQWidget(widget, 0)
 
@@ -83,6 +84,7 @@ func newMiniMap() *MiniMap {
 	m.signal.ConnectRedrawSignal(func() {
 		updates := <-m.redrawUpdates
 		m.handleRedraw(updates)
+		fmt.Println("minimap: update")
 	})
 	m.signal.ConnectGuiSignal(func() {
 		updates := <-m.guiUpdates
@@ -103,7 +105,7 @@ func newMiniMap() *MiniMap {
 	default:
 		fontFamily = "Monospace"
 	}
-	m.font = initFontNew(fontFamily, 4, 6)
+	m.font = initFontNew(fontFamily, 2, 0)
 
 	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--noplugin"))
 	if err != nil {
@@ -118,6 +120,9 @@ func newMiniMap() *MiniMap {
 		m.redrawUpdates <- updates
 		m.signal.RedrawSignal()
 	})
+	m.width = m.widget.Width()
+	m.height = m.widget.Height()
+	m.updateSize()
 
 	go func() {
 		err := m.nvim.Serve()
@@ -135,6 +140,9 @@ func newMiniMap() *MiniMap {
 		fmt.Println(err)
 	}
 	m.uiAttached = true
+
+	m.nvim.Command(":set laststatus=0 | set noruler")
+	m.nvim.Command(":syntax on")
 
 	return m
 }
@@ -329,21 +337,54 @@ func (m *MiniMap) updateSize() {
 	}
 }
 
+func (m *MiniMap) bufUpdate() {
+	buf, _ := m.ws.nvim.CurrentBuffer()
+	bufName, _ := m.ws.nvim.BufferName(buf)
+	m.nvim.Command(":e " + bufName)
+	fmt.Println("minimap: bufUpdate")
+}
+
 func (m *MiniMap) handleRedraw(updates [][]interface{}) {
+	fmt.Println("minimap: handleredraw")
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
 		switch event {
 		case "update_fg":
+			// args := update[1].([]interface{})
+			// color := reflectToInt(args[0])
+			// if color == -1 {
+			// 	m.foreground = newRGBA(255, 255, 255, 1)
+			// } else {
+			// 	m.foreground = calcColor(reflectToInt(args[0]))
+			// }
 		case "update_bg":
+			// args := update[1].([]interface{})
+			// color := reflectToInt(args[0])
+			// if color == -1 {
+			// 	m.background = newRGBA(0, 0, 0, 1)
+			// } else {
+			// 	bg := calcColor(reflectToInt(args[0]))
+			// 	m.background = bg
+			// }
 		case "update_sp":
+			// args := update[1].([]interface{})
+			// color := reflectToInt(args[0])
+			// if color == -1 {
+			// 	m.special = newRGBA(255, 255, 255, 1)
+			// } else {
+			// 	m.special = calcColor(reflectToInt(args[0]))
+			// }
 		case "cursor_goto":
+			m.cursorGoto(args)
 		case "put":
 			m.put(args)
 		case "eol_clear":
+			m.eolClear(args)
 		case "clear":
+			m.clear(args)
 		case "resize":
-			//m.resize(args)
+			m.resize(args)
 		case "highlight_set":
 			m.highlightSet(args)
 		case "set_scroll_region":
@@ -454,7 +495,7 @@ func (m *MiniMap) put(args []interface{}) {
 	line := m.content[row]
 	oldFirstNormal := true
 	if x >= len(line) {
-		return
+		x = len(line) - 1
 	}
 	char := line[x] // sometimes crash at this line
 	if char != nil && !char.normalWidth {
@@ -850,6 +891,47 @@ func (m *MiniMap) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos 
 			gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
 		)
 	}
+}
+
+func (m *MiniMap) resize(args []interface{}) {
+	m.cursor[0] = 0
+	m.cursor[1] = 0
+	m.content = make([][]*Char, m.rows)
+	for i := 0; i < m.rows; i++ {
+		m.content[i] = make([]*Char, m.cols)
+	}
+	m.queueRedrawAll()
+}
+
+func (m *MiniMap) clear(args []interface{}) {
+	m.cursor[0] = 0
+	m.cursor[1] = 0
+	m.content = make([][]*Char, m.rows)
+	for i := 0; i < m.rows; i++ {
+		m.content[i] = make([]*Char, m.cols)
+	}
+	m.queueRedrawAll()
+}
+
+func (m *MiniMap) eolClear(args []interface{}) {
+	row := m.cursor[0]
+	col := m.cursor[1]
+	if row >= m.rows {
+		return
+	}
+	line := m.content[row]
+	numChars := 0
+	for x := col; x < len(line); x++ {
+		line[x] = nil
+		numChars++
+	}
+	m.queueRedraw(col, row, numChars+1, 1)
+}
+
+func (m *MiniMap) cursorGoto(args []interface{}) {
+	pos, _ := args[0].([]interface{})
+	m.cursor[0] = reflectToInt(pos[0])
+	m.cursor[1] = reflectToInt(pos[1])
 }
 
 func (m *MiniMap) isNormalWidth(char string) bool {
