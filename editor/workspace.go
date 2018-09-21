@@ -386,9 +386,10 @@ func (w *Workspace) workspaceCommands(path string) {
 	if editor.config.Editor.Clipboard == true {
 		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
 	}
-	w.nvim.Command(`autocmd BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
+	w.nvim.Command(`autocmd BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 	w.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))`)
 
+	w.nvim.Command(`command! GonvimMiniMap call rpcnotify(0, 'Gui', 'gonvim_minimap_toggle')`)
 	w.nvim.Command(`command! GonvimWorkspaceNew call rpcnotify(0, 'Gui', 'gonvim_workspace_new')`)
 	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
 	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
@@ -587,6 +588,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				go w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
 				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
 				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
+				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 
 				if editor.wsSide.bgcolor == nil {
 					editor.wsSide.bgcolor = editor.workspaces[0].background
@@ -608,6 +610,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			}
 		case "cursor_goto":
 			s.cursorGoto(args)
+			w.minimap.mapScroll()
 		case "put":
 			s.put(args)
 		case "eol_clear":
@@ -714,6 +717,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.curLine = ln
 	case "gonvim_minimap_update":
 		go w.minimap.bufUpdate()
+	case "gonvim_minimap_toggle":
+		go w.minimap.toggle()
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
 	case "gonvim_get_maxline":

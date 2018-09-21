@@ -31,6 +31,8 @@ type MiniMap struct {
 	width     int
 	height    int
 
+	visible bool
+
 	font             *Font
 	content          [][]*Char
 	scrollRegion     []int
@@ -100,6 +102,7 @@ func newMiniMap() *MiniMap {
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		m.updateSize()
 	})
+	widget.ConnectMousePressEvent(m.mouseEvent)
 	widget.ConnectWheelEvent(m.wheelEvent)
 
 	fontFamily := ""
@@ -146,6 +149,7 @@ func newMiniMap() *MiniMap {
 		fmt.Println(err)
 	}
 	m.uiAttached = true
+	m.visible = editor.config.MiniMap.Visible
 
 	m.nvim.Subscribe("Gui")
 	m.nvim.Command(":set laststatus=0 | set noruler")
@@ -199,6 +203,15 @@ func (m *MiniMap) attachUIOption() map[string]interface{} {
 		}
 	}
 	return o
+}
+
+func (m *MiniMap) toggle() {
+	if m.visible {
+		m.visible = false
+	} else {
+		m.visible = true
+	}
+	m.bufUpdate()
 }
 
 func (m *MiniMap) paint(vqp *gui.QPaintEvent) {
@@ -347,9 +360,17 @@ func (m *MiniMap) updateSize() {
 }
 
 func (m *MiniMap) bufUpdate() {
+	if !m.visible {
+		m.widget.Hide()
+		return
+	}
+	m.widget.Show()
 	buf, _ := m.ws.nvim.CurrentBuffer()
 	bufName, _ := m.ws.nvim.BufferName(buf)
-	m.nvim.Command(":e " + bufName)
+	if bufName == "" {
+		bufName = "[No Name]"
+	}
+	m.nvim.Command(":e! " + bufName)
 	bot := m.ws.screen.scrollRegion[1]
 	if bot == 0 {
 		bot = m.ws.rows - 1
@@ -366,33 +387,19 @@ func (m *MiniMap) mapScroll() {
 	if minimapBot == 0 {
 		minimapBot = m.rows - 1
 	}
-	// absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
-	var absScreenTop int
-	m.ws.nvim.Eval("line('w0')", &absScreenTop)
+	absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
+	// var absScreenTop int
+	// m.ws.nvim.Eval("line('w0')", &absScreenTop)
 	absScreenBot := absScreenTop + curRegionBot - 1
 	// absMapTop := m.curLine - m.cursor[0]
 	var absMapTop int
 	m.nvim.Eval("line('w0')", &absMapTop)
-	absMapBot := absMapTop + minimapBot - 1
-
-	// fmt.Println("screen top", absScreenTop)
-	// fmt.Println("screen bot", absScreenBot)
-	// fmt.Println("top", absMapTop)
-	// fmt.Println("bot", absMapBot)
-
-	// fmt.Println("Abs screen top", absScreenTop)
-	// fmt.Println("Abs screen bot", absScreenBot)
-	// fmt.Println("Abs top", absMapTop)
-	// fmt.Println("Abs bot", absMapBot)
+	// absMapBot := absMapTop + minimapBot - 1
 
 	regionHeight := absScreenBot - absScreenTop
 	m.curRegion.SetFixedHeight(int(float64(regionHeight) * float64(m.font.lineHeight)))
-	fmt.Println("cursor:", m.cursor[0])
-	fmt.Println("Abs mapTop", absMapTop)
-	fmt.Println("Abs mapBot", absMapBot)
 	//pos := int(float64(m.height) * float64(absScreenTop-absMapTop) / float64(absMapBot))
 	pos := int(float64(m.font.lineHeight) * float64(absScreenTop-absMapTop))
-	fmt.Println("pos", pos)
 	m.curRegion.Move2(0, pos)
 }
 
@@ -402,31 +409,9 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 		args := update[1:]
 		switch event {
 		case "update_fg":
-			// args := update[1].([]interface{})
-			// color := reflectToInt(args[0])
-			// if color == -1 {
-			// 	m.foreground = newRGBA(255, 255, 255, 1)
-			// } else {
-			// 	m.foreground = calcColor(reflectToInt(args[0]))
-			// }
 		case "update_bg":
 			go m.nvim.Command(`call rpcnotify(0, "Gui", "minimap_cursormoved",  getpos("."))`)
-			// args := update[1].([]interface{})
-			// color := reflectToInt(args[0])
-			// if color == -1 {
-			// 	m.background = newRGBA(0, 0, 0, 1)
-			// } else {
-			// 	bg := calcColor(reflectToInt(args[0]))
-			// 	m.background = bg
-			// }
 		case "update_sp":
-			// args := update[1].([]interface{})
-			// color := reflectToInt(args[0])
-			// if color == -1 {
-			// 	m.special = newRGBA(255, 255, 255, 1)
-			// } else {
-			// 	m.special = calcColor(reflectToInt(args[0]))
-			// }
 		case "cursor_goto":
 			m.cursorGoto(args)
 		case "put":
@@ -1023,4 +1008,13 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	event.Accept()
+}
+
+func (m *MiniMap) mouseEvent(event *gui.QMouseEvent) {
+	font := m.font
+	y := int(float64(event.Y()) / float64(font.lineHeight))
+	var absMapTop int
+	m.nvim.Eval("line('w0')", &absMapTop)
+	targetPos := absMapTop + y
+	m.ws.nvim.Command(fmt.Sprintf("%d", targetPos))
 }
