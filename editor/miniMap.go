@@ -114,7 +114,7 @@ func newMiniMap() *MiniMap {
 	default:
 		fontFamily = "Monospace"
 	}
-	if rutime.GOOS == "darwin" {
+	if runtime.GOOS == "darwin" {
 		m.font = initFontNew(fontFamily, 2, 0)
 	} else {
 		m.font = initFontNew(fontFamily, 1, 0)
