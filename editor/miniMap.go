@@ -114,7 +114,11 @@ func newMiniMap() *MiniMap {
 	default:
 		fontFamily = "Monospace"
 	}
-	m.font = initFontNew(fontFamily, 2, 0)
+	if rutime.GOOS == "darwin" {
+		m.font = initFontNew(fontFamily, 2, 0)
+	} else {
+		m.font = initFontNew(fontFamily, 1, 0)
+	}
 
 	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--noplugin"))
 	if err != nil {
