@@ -513,7 +513,7 @@ func (e *Editor) workspaceUpdate() {
 			ws.hide()
 		}
 	}
-	for i := 0; i < len(e.workspaces) && i < len(e.workspaces); i++ {
+	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
 		e.wsSide.items[i].setSideItemLabel(i)
 		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
 		e.wsSide.items[i].show()
