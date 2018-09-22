@@ -505,7 +505,6 @@ func (e *Editor) workspacePrevious() {
 }
 
 func (e *Editor) workspaceUpdate() {
-
 	for i, ws := range e.workspaces {
 		if i == e.active {
 			ws.hide()
@@ -514,30 +513,14 @@ func (e *Editor) workspaceUpdate() {
 			ws.hide()
 		}
 	}
-
-	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
+	for i := 0; i < len(e.workspaces) && i < len(e.workspaces); i++ {
 		e.wsSide.items[i].setSideItemLabel(i)
 		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
 		e.wsSide.items[i].show()
 	}
-
 	for i := len(e.workspaces); i < len(e.wsSide.items); i++ {
 		e.wsSide.items[i].hide()
 	}
-
-	//if len(e.workspaces) == 1 || len(e.wsSide.items) == 1 {
-	//	if e.config.showSide == false {
-	//		//e.wsSide.scrollarea.Hide()
-	//		e.wsSide.items[0].hide()
-	//		//e.wsSide.title.Hide()
-	//	} else {
-	//		//e.wsSide.scrollarea.Show()
-	//		//e.wsSide.title.Show()
-	//		e.wsSide.items[0].setActive()
-	//		e.wsSide.items[0].show()
-	//	}
-	//}
-
 }
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
