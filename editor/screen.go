@@ -421,7 +421,8 @@ func (s *Screen) drawWindows(p *gui.QPainter, row, col, rows, cols int) {
 	}()
 	select {
 	case <-done:
-	case <-time.After(1 * time.Millisecond):
+	//case <-time.After(1 * time.Millisecond):
+	case <-time.After(500 * time.Microsecond):
 	}
 	// for _, win := range s.curWins {
 	// 	if win.pos[0]+win.height < row && (win.pos[1]+win.width+1) < col {

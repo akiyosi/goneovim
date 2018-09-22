@@ -5,6 +5,7 @@ import (
 	"math"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/shurcooL/github_flavored_markdown"
 	"github.com/therecipe/qt/core"
@@ -116,6 +117,9 @@ func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
 
 func (m *Markdown) updatePos() {
 	for _, win := range m.ws.screen.curWins {
+		if win.bufName == "" {
+			time.Sleep(500 * time.Microsecond)
+		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
 			m.webview.Resize2(
 				int(float64(win.width)*m.ws.font.truewidth),
@@ -164,6 +168,9 @@ func (m *Markdown) scrollDown() {
 
 func (m *Markdown) openReadme(reponame string, readme string) {
 	for _, win := range m.ws.screen.curWins {
+		if win.bufName == "" {
+			time.Sleep(500 * time.Microsecond)
+		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
 			m.ws.nvim.SetCurrentWindow(win.win)
 			m.ws.nvim.Command("close")
