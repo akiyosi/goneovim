@@ -317,7 +317,14 @@ func InitEditor() {
 			case core.QEvent__FileOpen:
 				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
 				macosArg = fileOpenEvent.File()
-				go e.workspaces[e.active].nvim.Command(fmt.Sprintf(":tabe %s", macosArg))
+				gonvim := e.workspaces[e.active].nvim
+				var isModified string
+				isModified, _ = gonvim.CommandOutput("echo &modified")
+				if isModified == "1" {
+					gonvim.Command(fmt.Sprintf(":tabe %s", macosArg))
+				} else {
+					gonvim.Command(fmt.Sprintf(":e %s", macosArg))
+				}
 			}
 			return true
 		})
