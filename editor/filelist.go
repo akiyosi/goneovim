@@ -103,7 +103,10 @@ func newFilelistwidget(path string) *Filelist {
 		filenameWidget.SetLayout(filenameLayout)
 
 		filepath := filepath.Join(path, f.Name())
-		finfo, _ := os.Stat(filepath)
+		finfo, err := os.Stat(filepath)
+		if err != nil {
+			continue
+		}
 		var filetype string
 
 		if finfo.IsDir() {
