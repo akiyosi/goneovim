@@ -116,9 +116,6 @@ func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
 
 func (m *Markdown) updatePos() {
 	for _, win := range m.ws.screen.curWins {
-		if win.bufName == "" {
-			return
-		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
 			m.webview.Resize2(
 				int(float64(win.width)*m.ws.font.truewidth),
