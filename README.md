@@ -10,7 +10,7 @@ Gonvim is a Neovim GUI written in Golang, using a [Golang qt backend](https://gi
  
 This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
 
-![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/top.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/0.3.0.png)
 
 ## Features
 
