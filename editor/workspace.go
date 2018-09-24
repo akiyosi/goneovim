@@ -386,7 +386,7 @@ func (w *Workspace) workspaceCommands(path string) {
 	if editor.config.Editor.Clipboard == true {
 		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
 	}
-	w.nvim.Command(`autocmd BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
+	w.nvim.Command(`autocmd BufEnter,BufWinEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 	w.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))`)
 
 	w.nvim.Command(`command! GonvimMiniMap call rpcnotify(0, 'Gui', 'gonvim_minimap_toggle')`)
@@ -552,6 +552,7 @@ func (w *Workspace) updateSize() {
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
+	var doMinimapScroll bool
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -610,7 +611,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			}
 		case "cursor_goto":
 			s.cursorGoto(args)
-			w.minimap.mapScroll()
+			doMinimapScroll = true
 		case "put":
 			s.put(args)
 		case "eol_clear":
@@ -625,7 +626,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.setScrollRegion(args)
 		case "scroll":
 			s.scroll(args)
-			w.minimap.mapScroll()
+			doMinimapScroll = true
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
@@ -682,6 +683,9 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	w.cursor.update()
 	if editor.config.ScrollBar.Visible == true {
 		w.scrollBar.update()
+	}
+	if doMinimapScroll {
+		w.minimap.mapScroll()
 	}
 	w.statusline.mode.redraw()
 }

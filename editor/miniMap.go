@@ -375,11 +375,7 @@ func (m *MiniMap) bufUpdate() {
 		bufName = "[No Name]"
 	}
 	m.nvim.Command(":e! " + bufName)
-	bot := m.ws.screen.scrollRegion[1]
-	if bot == 0 {
-		bot = m.ws.rows - 1
-	}
-	m.curRegion.SetFixedHeight(int(float64(bot) * float64(m.font.lineHeight)))
+	m.mapScroll()
 }
 
 func (m *MiniMap) mapScroll() {
@@ -392,18 +388,20 @@ func (m *MiniMap) mapScroll() {
 		minimapBot = m.rows - 1
 	}
 	absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
-	// var absScreenTop int
-	// m.ws.nvim.Eval("line('w0')", &absScreenTop)
-	absScreenBot := absScreenTop + curRegionBot - 1
-	// absMapTop := m.curLine - m.cursor[0]
 	var absMapTop int
 	m.nvim.Eval("line('w0')", &absMapTop)
-	// absMapBot := absMapTop + minimapBot - 1
 
-	regionHeight := absScreenBot - absScreenTop
+	var regionHeight int
+	var winpos [2]int
+	for _, win := range m.ws.screen.curWins {
+		if win.pos[0] <= m.ws.screen.cursor[0] && m.ws.screen.cursor[0] <= win.pos[0]+win.height {
+			regionHeight = win.height
+			winpos = win.pos
+			break
+		}
+	}
 	m.curRegion.SetFixedHeight(int(float64(regionHeight) * float64(m.font.lineHeight)))
-	//pos := int(float64(m.height) * float64(absScreenTop-absMapTop) / float64(absMapBot))
-	pos := int(float64(m.font.lineHeight) * float64(absScreenTop-absMapTop))
+	pos := int(float64(m.font.lineHeight) * float64(absScreenTop-absMapTop+winpos[0]))
 	m.curRegion.Move2(0, pos)
 }
 
