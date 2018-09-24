@@ -410,10 +410,10 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 		event := update[0].(string)
 		args := update[1:]
 		switch event {
-		case "update_fg":
-		case "update_bg":
-			// go m.nvim.Command(`call rpcnotify(0, "Gui", "minimap_cursormoved",  getpos("."))`)
-		case "update_sp":
+		// case "update_fg":
+		// case "update_bg":
+		//	// go m.nvim.Command(`call rpcnotify(0, "Gui", "minimap_cursormoved",  getpos("."))`)
+		// case "update_sp":
 		case "cursor_goto":
 			m.cursorGoto(args)
 		case "put":
@@ -431,29 +431,28 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 		case "scroll":
 			m.scroll(args)
 			m.mapScroll()
-		case "mode_change":
-		case "popupmenu_show":
-		case "popupmenu_hide":
-		case "popupmenu_select":
-		case "tabline_update":
-		case "cmdline_show":
-		case "cmdline_pos":
-		case "cmdline_char":
-		case "cmdline_hide":
-		case "cmdline_function_show":
-		case "cmdline_function_hide":
-		case "wildmenu_show":
-		case "wildmenu_select":
-		case "wildmenu_hide":
-		case "msg_start_kind":
-		case "msg_chunk":
-		case "msg_end":
-		case "msg_showcmd":
-		case "messages":
-		case "busy_start":
-		case "busy_stop":
+		// case "mode_change":
+		// case "popupmenu_show":
+		// case "popupmenu_hide":
+		// case "popupmenu_select":
+		// case "tabline_update":
+		// case "cmdline_show":
+		// case "cmdline_pos":
+		// case "cmdline_char":
+		// case "cmdline_hide":
+		// case "cmdline_function_show":
+		// case "cmdline_function_hide":
+		// case "wildmenu_show":
+		// case "wildmenu_select":
+		// case "wildmenu_hide":
+		// case "msg_start_kind":
+		// case "msg_chunk":
+		// case "msg_end":
+		// case "msg_showcmd":
+		// case "messages":
+		// case "busy_start":
+		// case "busy_stop":
 		default:
-			fmt.Println("Unhandle event", event)
 		}
 	}
 	m.update()
@@ -467,7 +466,6 @@ func (m *MiniMap) handleRPCGui(updates []interface{}) {
 	// 	ln := reflectToInt(pos[1])
 	// 	m.curLine = ln
 	default:
-		fmt.Println("unhandled Gui event", event)
 	}
 }
 
