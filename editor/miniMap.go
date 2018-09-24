@@ -2,7 +2,9 @@ package editor
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -162,6 +164,35 @@ func (m *MiniMap) startMinimapProc() {
 	m.nvim.Subscribe("Gui")
 	m.nvim.Command(":set laststatus=0 | set noruler")
 	m.nvim.Command(":syntax on")
+	basepath, _ := m.ws.nvim.CommandOutput("echo g:dein#_base_path")
+	packpath := basepath + `/repos/github.com/`
+	// m.nvim.Command(":set packpath=" + packpath)
+	colo, _ := m.ws.nvim.CommandOutput("colo")
+	lsDirs, _ := ioutil.ReadDir(packpath)
+	var runtimeDir string
+	for _, d := range lsDirs {
+		dirname := d.Name()
+		finfo, err := os.Stat(packpath + dirname)
+		if err != nil {
+			continue
+		}
+		if finfo.IsDir() {
+			packDirs, _ := ioutil.ReadDir(packpath + dirname)
+			for _, p := range packDirs {
+				plugname := p.Name()
+				if strings.Contains(plugname, colo) {
+					runtimeDir = dirname + "/" + plugname
+					break
+				}
+			}
+			if runtimeDir != "" {
+				break
+			}
+		}
+	}
+	m.nvim.Command("set runtimepath^=" + packpath + runtimeDir)
+	m.nvim.Command(":runtime! " + colo + ".vim")
+	m.nvim.Command(":colorscheme " + colo)
 }
 
 func (m *MiniMap) attachUIOption() map[string]interface{} {
