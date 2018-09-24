@@ -59,7 +59,7 @@ type MiniMap struct {
 	uiAttached bool
 	rows       int
 	cols       int
-	curLine    int
+	// curLine    int
 
 	foreground *RGBA
 	background *RGBA
@@ -158,7 +158,7 @@ func newMiniMap() *MiniMap {
 	m.nvim.Subscribe("Gui")
 	m.nvim.Command(":set laststatus=0 | set noruler")
 	m.nvim.Command(":syntax on")
-	m.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "minimap_cursormoved", getpos("."))`)
+	// m.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "minimap_cursormoved", getpos("."))`)
 
 	return m
 }
@@ -414,7 +414,7 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 		switch event {
 		case "update_fg":
 		case "update_bg":
-			go m.nvim.Command(`call rpcnotify(0, "Gui", "minimap_cursormoved",  getpos("."))`)
+			// go m.nvim.Command(`call rpcnotify(0, "Gui", "minimap_cursormoved",  getpos("."))`)
 		case "update_sp":
 		case "cursor_goto":
 			m.cursorGoto(args)
@@ -464,10 +464,10 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 func (m *MiniMap) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
-	case "minimap_cursormoved":
-		pos := updates[1].([]interface{})
-		ln := reflectToInt(pos[1])
-		m.curLine = ln
+	// case "minimap_cursormoved":
+	// 	pos := updates[1].([]interface{})
+	// 	ln := reflectToInt(pos[1])
+	// 	m.curLine = ln
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}
