@@ -120,7 +120,11 @@ func newMiniMap() *MiniMap {
 		m.font = initFontNew(fontFamily, 1, 0)
 	}
 
-	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--noplugin"))
+	return m
+}
+
+func (m *MiniMap) startMinimapProc() {
+	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed"))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -158,9 +162,6 @@ func newMiniMap() *MiniMap {
 	m.nvim.Subscribe("Gui")
 	m.nvim.Command(":set laststatus=0 | set noruler")
 	m.nvim.Command(":syntax on")
-	// m.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "minimap_cursormoved", getpos("."))`)
-
-	return m
 }
 
 func (m *MiniMap) attachUIOption() map[string]interface{} {
