@@ -824,7 +824,7 @@ func doPluginSearch() {
 	editor.deinSide.plugincontent.SetCurrentWidget(editor.deinSide.searchresult.widget)
 
 	editor.deinSide.progressbar.Show()
-	go editor.deinSide.DoSearch(editor.deinSide.searchresult.pagenum)
+	go editor.deinSide.doSearch(editor.deinSide.searchresult.pagenum)
 }
 
 func setSearchWord() string {
@@ -846,12 +846,15 @@ func setSearchWord() string {
 	return searchWord
 }
 
-func (side *DeinSide) DoSearch(pagenum int) {
+func (side *DeinSide) doSearch(pagenum int) {
 	var results PluginSearchResults
 
 	// Search
 	searchWord := setSearchWord()
-	response, _ := http.Get(fmt.Sprintf("http://vimawesome.com/api/plugins?page=%v&query=%v", pagenum, searchWord))
+	response, err := http.Get(fmt.Sprintf("http://vimawesome.com/api/plugins?page=%v&query=%v", pagenum, searchWord))
+	if err != nil {
+		return
+	}
 	defer response.Body.Close()
 
 	if err := json.NewDecoder(response.Body).Decode(&results); err != nil {
@@ -1119,7 +1122,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 			pos := editor.deinSide.scrollarea.VerticalScrollBar().Value()
 			editor.deinSide.searchresult.readmore.DestroyQPushButton()
 			editor.deinSide.searchresult.pagenum = editor.deinSide.searchresult.pagenum + 1
-			editor.deinSide.DoSearch(editor.deinSide.searchresult.pagenum)
+			editor.deinSide.doSearch(editor.deinSide.searchresult.pagenum)
 			// It is workaround that scroll bar returns to the top, only the first load
 			go func() {
 				time.Sleep(10 * time.Millisecond)
