@@ -69,6 +69,7 @@ type Workspace struct {
 	cwdlabel   string
 	maxLine    int
 	curLine    int
+	curColm    int
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -686,6 +687,9 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		w.scrollBar.update()
 	}
 	if doMinimapScroll {
+		ln := w.curLine
+		col := w.curColm
+		w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", ln, col))
 		w.minimap.mapScroll()
 	}
 	w.statusline.mode.redraw()
@@ -720,6 +724,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		col := reflectToInt(pos[2]) + reflectToInt(pos[3])
 		w.statusline.pos.redraw(ln, col)
 		w.curLine = ln
+		w.curColm = col
 	case "gonvim_minimap_update":
 		go w.minimap.bufUpdate()
 	case "gonvim_minimap_toggle":
