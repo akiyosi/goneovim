@@ -680,7 +680,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	if doMinimapScroll {
 		ln := w.curLine
 		col := w.curColm
-		w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", ln, col))
+		go w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", ln, col))
 		w.minimap.mapScroll()
 	}
 	w.statusline.mode.redraw()
