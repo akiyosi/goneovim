@@ -230,15 +230,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.Move2(0, 0)
 	w.updateSize()
 
-	// err := w.startNvim()
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	//go w.startNvim(path)
-	w.startNvim(path) // fix: akiyosi/gonvim/issues/1
+	w.startNvim(path)
 	w.minimap.startMinimapProc()
-	fmt.Println("1")
 
 	return w, nil
 }
