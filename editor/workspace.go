@@ -238,6 +238,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	//go w.startNvim(path)
 	w.startNvim(path) // fix: akiyosi/gonvim/issues/1
 	w.minimap.startMinimapProc()
+	fmt.Println("1")
 
 	return w, nil
 }

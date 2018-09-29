@@ -167,13 +167,6 @@ func InitEditor() {
 	//e.window.ConnectKeyReleaseEvent(e.keyRelease)
 	e.window.SetAcceptDrops(true)
 
-	// output log
-	// tfile, terr := os.OpenFile("/Users/akiyoshi/test.log", os.O_WRONLY | os.O_CREATE, 0666)
-	// if terr != nil {
-	//     panic(terr)
-	// }
-	// defer tfile.Close()
-
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 
@@ -190,9 +183,6 @@ func InitEditor() {
 	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
 	sideArea.SetWidget(e.wsSide.widget)
 	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
-	// sideArea.SetMaximumWidth(e.config.sideWidth)
-	// sideArea.SetMinimumWidth(e.config.sideWidth)
-	// sideArea.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 	e.wsSide.scrollarea = sideArea
 
 	e.workspaces = []*Workspace{}
@@ -230,8 +220,6 @@ func InitEditor() {
 	e.activity = activity
 	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
 	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
-
-	// layout.AddWidget(e.activity.sideArea, 0, 0)
 
 	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
 	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
@@ -344,48 +332,6 @@ func InitEditor() {
 		}
 		e.app.Quit()
 	}()
-
-	// // notification test
-	// go func() {
-	// 	time.Sleep(2 * time.Second)
-	// 	e.pushNotification(NotifyInfo, -1, "This is a very long text message with lots of words that might get cut off with word wrap. ")
-
-	// 	time.Sleep(2 * time.Second)
-	// 	e.pushNotification(NotifyInfo, -1, "hoge hoge!")
-	// 	opts0 := []*NotifyButton{}
-	// 	optArg0 := &NotifyButton{
-	// 		action: func() {
-	// 			fmt.Println("Yes")
-	// 		},
-	// 		text: "yes!",
-	// 	}
-	// 	opts0 = append(opts0, optArg0)
-	// 	e.pushNotification(NotifyWarn, -1, "vim !", notifyOptionArg(opts0))
-
-	// 	time.Sleep(2 * time.Second)
-	// 	opts := []*NotifyButton{}
-	// 	optArg := &NotifyButton{
-	// 		action: func() {
-	// 			fmt.Println("pushed!")
-	// 		},
-	// 		text: "push!",
-	// 	}
-	// 	opts = append(opts, optArg)
-
-	// 	optArg2 := &NotifyButton{
-	// 		action: func() {
-	// 			fmt.Println("popped!")
-	// 		},
-	// 		text: "pop!",
-	// 	}
-	// 	opts = append(opts, optArg2)
-	// 	e.pushNotification(NotifyWarn, -1, "hoge hoge fuga fuga !", notifyOptionArg(opts))
-
-	// 	time.Sleep(6 * time.Second)
-	// 	go e.showNotifications()
-	// 	// time.Sleep(4 * time.Second)
-	// 	// go e.hideNotifications()
-	// }()
 
 	e.window.Show()
 	e.wsWidget.SetFocus2()
