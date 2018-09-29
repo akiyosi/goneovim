@@ -351,7 +351,6 @@ func (w *Workspace) configure() {
 }
 
 func (w *Workspace) attachUI(path string) error {
-	w.initGonvim()
 	w.workspaceCommands(path)
 	w.markdown.commands()
 	fuzzy.RegisterPlugin(w.nvim)
@@ -364,11 +363,11 @@ func (w *Workspace) attachUI(path string) error {
 	if err != nil {
 		return err
 	}
+	w.initGonvim()
 	return nil
 }
 
 func (w *Workspace) initGonvim() {
-	time.Sleep(100 * time.Millisecond) // After neovim 0.3.2, need a little sleep to load ginit.vim. Why??
 	w.nvim.Subscribe("Gui")
 	w.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	w.nvim.Command("let g:gonvim_running=1")
@@ -408,11 +407,17 @@ func (w *Workspace) initCwd() {
 
 func (w *Workspace) setCwd() {
 	cwd := ""
-	w.nvim.Eval("getcwd()", &cwd)
-	if cwd == "" {
-		return
+	done := make(chan string, 1)
+	go func() {
+	  w.nvim.Eval("getcwd()", &cwd)
+	  done<-cwd
+	}()
+	select {
+		case cwdstr := <-done:
+			if cwdstr == "" {
+				return
+			}
 	}
-
 	// if cwd == w.cwd {
 	// 	return
 	// }
