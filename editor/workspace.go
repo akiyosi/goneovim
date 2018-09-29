@@ -82,8 +82,7 @@ type Workspace struct {
 	drawTabline    bool
 	drawLint       bool
 
-	setGuiFgColor bool
-	setGuiBgColor bool
+	isSetGuiColor bool
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -93,8 +92,6 @@ func newWorkspace(path string) (*Workspace, error) {
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
 		isUpdate:      make(chan bool, 1000),
-		setGuiFgColor: false,
-		setGuiBgColor: false,
 	}
 	w.signal.ConnectRedrawSignal(func() {
 		updates := <-w.redrawUpdates
@@ -568,15 +565,11 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.foreground = calcColor(reflectToInt(args[0]))
 				w.minimap.foreground = calcColor(reflectToInt(args[0]))
 			}
-			if w.setGuiFgColor == false {
-				if editor.wsSide.fgcolor == nil {
+			if w.isSetGuiColor == false {
+				if color != -1 {
 					editor.wsSide.fgcolor = editor.workspaces[0].foreground
-				}
-				if editor.fgcolor == nil {
 					editor.fgcolor = editor.workspaces[0].foreground
 				}
-				w.setGuiColor()
-				w.setGuiFgColor = true
 			}
 		case "update_bg":
 			args := update[1].([]interface{})
@@ -587,20 +580,11 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.background = calcColor(reflectToInt(args[0]))
 				w.minimap.background = calcColor(reflectToInt(args[0]))
 			}
-			if w.setGuiBgColor == false {
-				go w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
-				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
-				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
-				go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
-
-				if editor.wsSide.bgcolor == nil {
+			if w.isSetGuiColor == false {
+				if color != -1 {
 					editor.wsSide.bgcolor = editor.workspaces[0].background
-				}
-				if editor.bgcolor == nil {
 					editor.bgcolor = editor.workspaces[0].background
 				}
-				w.setGuiColor()
-				w.setGuiBgColor = true
 			}
 		case "update_sp":
 			args := update[1].([]interface{})
@@ -680,6 +664,13 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		default:
 			fmt.Println("Unhandle event", event)
 		}
+	}
+	if !w.isSetGuiColor {
+		w.setGuiColor()
+		go w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
+		go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
+		go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
+		go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 	}
 	s.update()
 	w.cursor.update()
@@ -1052,9 +1043,10 @@ func (w *Workspace) setGuiColor() {
 	if editor.fgcolor == nil || editor.bgcolor == nil {
 		return
 	}
-	if w.setGuiFgColor == true && w.setGuiBgColor == true {
+	if w.isSetGuiColor == true {
 		return
 	}
+	w.isSetGuiColor = true
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 

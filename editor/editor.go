@@ -74,6 +74,7 @@ type Editor struct {
 	matchFg          *RGBA
 	bgcolor          *RGBA
 	fgcolor          *RGBA
+	isSetGuiColor    bool
 
 	stop     chan struct{}
 	stopOnce sync.Once
