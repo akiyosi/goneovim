@@ -122,7 +122,7 @@ func InitEditor() {
 	}
 	config := newGonvimConfig(home)
 	editor = &Editor{
-		version:    "v0.2.3",
+		version:    "v0.3.0",
 		signal:     NewEditorSignal(nil),
 		notify:     make(chan *Notify, 10),
 		selectedBg: newRGBA(81, 154, 186, 0.5),
