@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -230,7 +231,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.Move2(0, 0)
 	w.updateSize()
 
-	w.startNvim(path)
+	go w.startNvim(path)
 	w.minimap.startMinimapProc()
 
 	return w, nil
@@ -271,9 +272,12 @@ func (w *Workspace) startNvim(path string) error {
 		w.signal.RedrawSignal()
 	})
 
-	done := make(chan error, 1)
+	// done := make(chan error, 1)
 	go func() {
-		done <- w.nvim.Serve()
+		err := w.nvim.Serve()
+		if err != nil {
+			fmt.Println(err)
+		}
 		w.stopOnce.Do(func() {
 			close(w.stop)
 		})
@@ -281,19 +285,19 @@ func (w *Workspace) startNvim(path string) error {
 	}()
 
 	go w.init(path)
-	go func() {
-		select {
-		case err := <-done:
-			if err != nil {
-				fmt.Println(err)
-			}
-		case <-time.After(10 * time.Second):
-			errDialog := widgets.NewQMessageBox(nil)
-			errDialog.SetText("Neovim is taking too long to respond")
-			errDialog.Exec()
-		case <-w.isUpdate:
-		}
-	}()
+	// go func() {
+	// 	select {
+	// 	case err := <-done:
+	// 		if err != nil {
+	// 			fmt.Println(err)
+	// 		}
+	// 	case <-time.After(10 * time.Second):
+	// 		errDialog := widgets.NewQMessageBox(nil)
+	// 		errDialog.SetText("Neovim is taking too long to respond")
+	// 		errDialog.Exec()
+	// 	case <-w.isUpdate:
+	// 	}
+	// }()
 
 	return nil
 }
@@ -393,32 +397,59 @@ func (w *Workspace) workspaceCommands(path string) {
 	w.nvim.Command(`command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, 'Gui', 'gonvim_workspace_switch', <args>)`)
 }
 
+func (w *Workspace) nvimCommandOutput(s string) (string, error) {
+	doneChannel := make(chan string, 5)
+	var result string
+	go func() {
+		result, _ = w.nvim.CommandOutput(s)
+		doneChannel <- result
+	}()
+	select {
+	case done := <-doneChannel:
+		return done, nil
+	case <-time.After(200 * time.Millisecond):
+		err := errors.New("neovim busy")
+		return "", err
+	}
+}
+
+func (w *Workspace) nvimEval(s string) (interface{}, error) {
+	doneChannel := make(chan interface{}, 5)
+	var result interface{}
+	go func() {
+		w.nvim.Eval(s, &result)
+		doneChannel <- result
+	}()
+	select {
+	case done := <-doneChannel:
+		return done, nil
+	case <-time.After(200 * time.Millisecond):
+		err := errors.New("neovim busy")
+		return nil, err
+	}
+}
+
 func (w *Workspace) initCwd() {
-	cwd := ""
-	w.nvim.Eval("getcwd()", &cwd)
+	cwdITF, err := w.nvimEval("getcwd()")
+	if err != nil {
+		return
+	}
+	cwd := cwdITF.(string)
+	if cwd == "" {
+		return
+	}
 	w.nvim.Command("cd " + cwd)
 }
 
 func (w *Workspace) setCwd() {
-	cwd := ""
-	done := make(chan string, 1)
-	go func() {
-		w.nvim.Eval("getcwd()", &cwd)
-		done <- cwd
-	}()
-	select {
-	case cwdstr := <-done:
-		if cwdstr == "" {
-			return
-		}
-	// if screen's row and col is small, neovim output "press ENTER or type command to continue"
-	case <-time.After(200 * time.Millisecond):
+	cwdITF, err := w.nvimEval("getcwd()")
+	if err != nil {
 		return
 	}
-	// if cwd == w.cwd {
-	// 	return
-	// }
-
+	cwd := cwdITF.(string)
+	if cwd == "" {
+		return
+	}
 	w.cwd = cwd
 
 	var labelpath string
@@ -730,7 +761,14 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
 	case "gonvim_get_maxline":
-		go w.nvim.Eval("line('$')", &w.maxLine)
+		go func() {
+			lnITF, err := w.nvimEval("line('$')")
+			if err != nil {
+				w.maxLine = 0
+			}
+			w.maxLine = lnITF.(int)
+		}()
+
 	case "gonvim_workspace_new":
 		editor.workspaceNew()
 	case "gonvim_workspace_next":
@@ -793,8 +831,14 @@ func (w *Workspace) guiFont(args ...interface{}) {
 }
 
 func (w *Workspace) setFilepath() {
-	cfp := ""
-	editor.workspaces[editor.active].nvim.Eval("expand('%')", &cfp)
+	cfpITF, err := w.nvimEval("expand('%')")
+	if err != nil {
+		return
+	}
+	cfp := cfpITF.(string)
+	if cfp == "" {
+		return
+	}
 	editor.workspaces[editor.active].filepath = cfp
 }
 

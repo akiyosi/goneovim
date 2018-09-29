@@ -206,7 +206,12 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 	bg := editor.bgcolor
 	var svgModified string
 	cfn := ""
-	editor.workspaces[editor.active].nvim.Eval("expand('%:t')", &cfn)
+	cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
+	if err != nil {
+		cfn = ""
+	}
+	cfn = cfnITF.(string)
+
 	if cfn == f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
 		if f.isModified == "1" {
@@ -232,8 +237,14 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 func (f *Fileitem) leaveEvent(event *core.QEvent) {
 	bg := editor.bgcolor
 	var svgModified string
+
 	cfn := ""
-	editor.workspaces[editor.active].nvim.Eval("expand('%:t')", &cfn)
+	cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
+	if err != nil {
+		cfn = ""
+	}
+	cfn = cfnITF.(string)
+
 	if cfn != f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); text-decoration: none; } ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
 		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
@@ -250,8 +261,13 @@ func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
 func (i *WorkspaceSideItem) setCurrentFileLabel() {
 	bg := editor.bgcolor
 	var svgModified string
+
 	cfn := ""
-	editor.workspaces[editor.active].nvim.Eval("expand('%:t')", &cfn)
+	cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
+	if err != nil {
+		cfn = ""
+	}
+	cfn = cfnITF.(string)
 
 	for j, fileitem := range i.Filelist.Fileitems {
 		if fileitem.fileName != cfn {
@@ -271,7 +287,13 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 
 func (f *Fileitem) updateModifiedbadge() {
 	var isModified string
-	isModified, _ = editor.workspaces[editor.active].nvim.CommandOutput("echo &modified")
+	isModified, err := editor.workspaces[editor.active].nvimCommandOutput("echo &modified")
+	if err != nil {
+		isModified = ""
+	}
+	if isModified == "" {
+		return
+	}
 
 	fg := editor.fgcolor
 	bg := editor.bgcolor
