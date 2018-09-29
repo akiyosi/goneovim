@@ -409,14 +409,17 @@ func (w *Workspace) setCwd() {
 	cwd := ""
 	done := make(chan string, 1)
 	go func() {
-	  w.nvim.Eval("getcwd()", &cwd)
-	  done<-cwd
+		w.nvim.Eval("getcwd()", &cwd)
+		done <- cwd
 	}()
 	select {
-		case cwdstr := <-done:
-			if cwdstr == "" {
-				return
-			}
+	case cwdstr := <-done:
+		if cwdstr == "" {
+			return
+		}
+	// if screen's row and col is small, neovim output "press ENTER or type command to continue"
+	case <-time.After(200 * time.Millisecond):
+		return
 	}
 	// if cwd == w.cwd {
 	// 	return
