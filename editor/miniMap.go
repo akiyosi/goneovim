@@ -49,6 +49,7 @@ type MiniMap struct {
 	cmdheight        int
 	curWins          map[nvim.Window]*Window
 	highlight        Highlight
+	isSetColorscheme bool
 
 	sync          sync.Mutex
 	signal        *miniMapSignal
@@ -164,35 +165,6 @@ func (m *MiniMap) startMinimapProc() {
 	m.nvim.Subscribe("Gui")
 	m.nvim.Command(":set laststatus=0 | set noruler")
 	m.nvim.Command(":syntax on")
-	basepath, _ := m.ws.nvim.CommandOutput("echo g:dein#_base_path")
-	packpath := basepath + `/repos/github.com/`
-	// m.nvim.Command(":set packpath=" + packpath)
-	colo, _ := m.ws.nvim.CommandOutput("colo")
-	lsDirs, _ := ioutil.ReadDir(packpath)
-	var runtimeDir string
-	for _, d := range lsDirs {
-		dirname := d.Name()
-		finfo, err := os.Stat(packpath + dirname)
-		if err != nil {
-			continue
-		}
-		if finfo.IsDir() {
-			packDirs, _ := ioutil.ReadDir(packpath + dirname)
-			for _, p := range packDirs {
-				plugname := p.Name()
-				if strings.Contains(plugname, colo) {
-					runtimeDir = dirname + "/" + plugname
-					break
-				}
-			}
-			if runtimeDir != "" {
-				break
-			}
-		}
-	}
-	m.nvim.Command("set runtimepath^=" + packpath + runtimeDir)
-	m.nvim.Command(":runtime! " + colo + ".vim")
-	m.nvim.Command(":colorscheme " + colo)
 }
 
 func (m *MiniMap) attachUIOption() map[string]interface{} {
@@ -400,6 +372,9 @@ func (m *MiniMap) bufUpdate() {
 		m.widget.Hide()
 		return
 	}
+	if !m.isSetColorscheme {
+		m.setColorscheme()
+	}
 	m.widget.Show()
 	buf, _ := m.ws.nvim.CurrentBuffer()
 	bufName, _ := m.ws.nvim.BufferName(buf)
@@ -408,6 +383,41 @@ func (m *MiniMap) bufUpdate() {
 	}
 	m.nvim.Command(":e! " + bufName)
 	m.mapScroll()
+}
+
+func (m *MiniMap) setColorscheme() {
+	basepath, _ := m.ws.nvim.CommandOutput("echo g:dein#_base_path")
+	packpath := basepath + `/repos/github.com/`
+	colo, _ := m.ws.nvim.CommandOutput("colo")
+	lsDirs, _ := ioutil.ReadDir(packpath)
+
+	// Search colorscheme repo in dein.vim plugin directory
+	//  and set the repository to runtimepath
+	var runtimeDir string
+	for _, d := range lsDirs {
+		dirname := d.Name()
+		finfo, err := os.Stat(packpath + dirname)
+		if err != nil {
+			continue
+		}
+		if finfo.IsDir() {
+			packDirs, _ := ioutil.ReadDir(packpath + dirname)
+			for _, p := range packDirs {
+				plugname := p.Name()
+				if strings.Contains(plugname, colo) {
+					runtimeDir = dirname + "/" + plugname
+					break
+				}
+			}
+			if runtimeDir != "" {
+				break
+			}
+		}
+	}
+	m.nvim.Command("set runtimepath^=" + packpath + runtimeDir)
+	m.nvim.Command(":runtime! " + colo + ".vim")
+	m.nvim.Command(":colorscheme " + colo)
+	m.isSetColorscheme = true
 }
 
 func (m *MiniMap) mapScroll() {
