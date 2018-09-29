@@ -351,8 +351,8 @@ func (w *Workspace) configure() {
 }
 
 func (w *Workspace) attachUI(path string) error {
-	go w.initGonvim()
-	go w.workspaceCommands(path)
+	w.initGonvim()
+	w.workspaceCommands(path)
 	w.markdown.commands()
 	fuzzy.RegisterPlugin(w.nvim)
 	w.tabline.subscribe()
