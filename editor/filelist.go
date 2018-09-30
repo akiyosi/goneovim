@@ -266,8 +266,9 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 	cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
 	if err != nil {
 		cfn = ""
+	} else {
+		cfn = cfnITF.(string)
 	}
-	cfn = cfnITF.(string)
 
 	for j, fileitem := range i.Filelist.Fileitems {
 		if fileitem.fileName != cfn {

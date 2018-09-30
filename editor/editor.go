@@ -213,7 +213,6 @@ func InitEditor() {
 	}
 
 	activityWidget := widgets.NewQWidget(nil, 0)
-	activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	activity := newActivity()
 	activity.widget = activityWidget
 	activityWidget.SetLayout(activity.layout)
@@ -222,7 +221,6 @@ func InitEditor() {
 	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
 
 	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
-	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
 	splitter.AddWidget(e.activity.sideArea)
 	splitter.AddWidget(e.wsWidget)
 	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})

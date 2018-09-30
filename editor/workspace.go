@@ -97,7 +97,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.signal.ConnectRedrawSignal(func() {
 		updates := <-w.redrawUpdates
 		w.handleRedraw(updates)
-		go func() { w.isUpdate <- true }()
 	})
 	w.signal.ConnectGuiSignal(func() {
 		updates := <-w.guiUpdates
@@ -231,8 +230,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.Move2(0, 0)
 	w.updateSize()
 
-	go w.startNvim(path)
 	w.minimap.startMinimapProc()
+	go w.startNvim(path)
 
 	return w, nil
 }
@@ -272,12 +271,9 @@ func (w *Workspace) startNvim(path string) error {
 		w.signal.RedrawSignal()
 	})
 
-	// done := make(chan error, 1)
+	done := make(chan error, 1)
 	go func() {
-		err := w.nvim.Serve()
-		if err != nil {
-			fmt.Println(err)
-		}
+		done <- w.nvim.Serve()
 		w.stopOnce.Do(func() {
 			close(w.stop)
 		})
@@ -285,24 +281,12 @@ func (w *Workspace) startNvim(path string) error {
 	}()
 
 	go w.init(path)
-	// go func() {
-	// 	select {
-	// 	case err := <-done:
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 		}
-	// 	case <-time.After(10 * time.Second):
-	// 		errDialog := widgets.NewQMessageBox(nil)
-	// 		errDialog.SetText("Neovim is taking too long to respond")
-	// 		errDialog.Exec()
-	// 	case <-w.isUpdate:
-	// 	}
-	// }()
 
 	return nil
 }
 
 func (w *Workspace) init(path string) {
+	time.Sleep(50 * time.Millisecond)
 	w.configure()
 	w.attachUI(path)
 	w.initCwd()
@@ -589,7 +573,7 @@ func (w *Workspace) updateSize() {
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
-	var doMinimapScroll bool
+	doMinimapScroll := false
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -765,10 +749,15 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			lnITF, err := w.nvimEval("line('$')")
 			if err != nil {
 				w.maxLine = 0
+			} else {
+				switch lnITF.(type) {
+				case int64:
+					w.maxLine = int(lnITF.(int64))
+				case int:
+					w.maxLine = lnITF.(int)
+				}
 			}
-			w.maxLine = lnITF.(int)
 		}()
-
 	case "gonvim_workspace_new":
 		editor.workspaceNew()
 	case "gonvim_workspace_next":

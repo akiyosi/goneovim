@@ -38,7 +38,19 @@ func (s *ScrollBar) update() {
 	}
 	relativeCursorY := int(float64(s.ws.cursor.y) / float64(s.ws.font.lineHeight))
 	if s.ws.maxLine == 0 {
-		s.ws.nvim.Eval("line('$')", &s.ws.maxLine)
+		//s.ws.nvim.Eval("line('$')", &s.ws.maxLine)
+		lnITF, err := s.ws.nvimEval("line('$')")
+		if err != nil {
+			s.ws.maxLine = 0
+		} else {
+			switch lnITF.(type) {
+			case int64:
+				s.ws.maxLine = int(lnITF.(int64))
+			case int:
+				s.ws.maxLine = lnITF.(int)
+			}
+		}
+
 	}
 	if s.ws.maxLine > bot-top {
 		s.height = int(float64(bot-top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
