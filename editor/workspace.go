@@ -276,9 +276,11 @@ func (w *Workspace) startNvim(path string) error {
 		w.signal.RedrawSignal()
 	})
 
-	done := make(chan error, 1)
 	go func() {
-		done <- w.nvim.Serve()
+		err := w.nvim.Serve()
+		if err != nil {
+			fmt.Println(err)
+		}
 		w.stopOnce.Do(func() {
 			close(w.stop)
 		})
@@ -293,7 +295,7 @@ func (w *Workspace) startNvim(path string) error {
 }
 
 func (w *Workspace) init(path string) {
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	w.configure()
 	w.attachUI(path)
 	w.initCwd()
