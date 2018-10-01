@@ -760,6 +760,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 				w.maxLine = 0
 			} else {
 				switch lnITF.(type) {
+				case uint64:
+					w.maxLine = int(lnITF.(uint64))
+				case uint:
+					w.maxLine = int(lnITF.(uint))
 				case int64:
 					w.maxLine = int(lnITF.(int64))
 				case int:
