@@ -75,7 +75,7 @@ type Workspace struct {
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
 	guiUpdates    chan []interface{}
-	isUpdate      chan bool
+	doneNvimStart chan bool
 	stopOnce      sync.Once
 	stop          chan struct{}
 
@@ -92,7 +92,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		signal:        NewWorkspaceSignal(nil),
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
-		isUpdate:      make(chan bool, 1000),
+		doneNvimStart: make(chan bool, 1000),
 	}
 	w.signal.ConnectRedrawSignal(func() {
 		updates := <-w.redrawUpdates
@@ -233,6 +233,11 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.minimap.startMinimapProc()
 	go w.startNvim(path)
 
+	// wait for start nvim process
+	select {
+	case <-w.doneNvimStart:
+	}
+
 	return w, nil
 }
 
@@ -281,6 +286,8 @@ func (w *Workspace) startNvim(path string) error {
 	}()
 
 	go w.init(path)
+
+	w.doneNvimStart <- true
 
 	return nil
 }
