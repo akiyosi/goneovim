@@ -1036,7 +1036,7 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 
 	default:
 		vert = event.AngleDelta().Y()
-		accel = 2
+		accel = 16
 	}
 
 	if vert == 0 && horiz == 0 {
