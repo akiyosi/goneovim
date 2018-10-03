@@ -1329,6 +1329,10 @@ func newNvimProcess() (*nvim.Nvim, func()) {
 		done <- v.Serve()
 	}()
 
+	// Fix the issue akiyosi/gonvim #6
+	dummy := 0
+	v.Eval("0", &dummy)
+
 	return v, func() {
 		v.Command(`qa!`)
 		if err := v.Close(); err != nil {
