@@ -1319,7 +1319,7 @@ func (d *DeinPluginItem) deinUpdatePre(pluginName string) {
 }
 
 func newNvimProcess() (*nvim.Nvim, func()) {
-	v, err := nvim.NewChildProcess(nvim.ChildProcessArgs("-n", "--embed"))
+	v, err := nvim.NewChildProcess(nvim.ChildProcessArgs("-n", "--embed", "--headless"))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -1328,10 +1328,6 @@ func newNvimProcess() (*nvim.Nvim, func()) {
 	go func() {
 		done <- v.Serve()
 	}()
-
-	// Fix the issue akiyosi/gonvim #6
-	dummy := 0
-	v.Eval("0", &dummy)
 
 	return v, func() {
 		v.Command(`qa!`)

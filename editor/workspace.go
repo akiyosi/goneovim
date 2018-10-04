@@ -295,7 +295,11 @@ func (w *Workspace) startNvim(path string) error {
 }
 
 func (w *Workspace) init(path string) {
-	time.Sleep(100 * time.Millisecond)
+	if !editor.doneGuiInit {
+		select {
+		case editor.doneGuiInit = <-editor.guiInit:
+		}
+	}
 	w.configure()
 	w.attachUI(path)
 	w.initCwd()

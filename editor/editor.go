@@ -57,6 +57,8 @@ type Editor struct {
 	splitter       *widgets.QSplitter
 	notifyStartPos *core.QPoint
 	notify         chan *Notify
+	guiInit        chan bool
+	doneGuiInit    bool
 
 	workspaces []*Workspace
 	active     int
@@ -131,6 +133,7 @@ func InitEditor() {
 		fgcolor:    nil,
 		stop:       make(chan struct{}),
 		config:     config,
+		guiInit:    make(chan bool, 1),
 	}
 	e := editor
 	e.signal.ConnectNotifySignal(func() {
@@ -334,6 +337,7 @@ func InitEditor() {
 	}()
 
 	e.window.Show()
+	e.guiInit <- true
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
 }
