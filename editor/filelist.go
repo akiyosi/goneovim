@@ -209,8 +209,9 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 	cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
 	if err != nil {
 		cfn = ""
+	} else {
+		cfn = cfnITF.(string)
 	}
-	cfn = cfnITF.(string)
 
 	if cfn == f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
