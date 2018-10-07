@@ -192,6 +192,7 @@ func InitEditor() {
 	sessionExists := false
 	if err == nil {
 		if e.config.Workspace.RestoreSession == true {
+			e.doneGuiInit = true // Need to excute the second or more workspaces
 			for i := 0; i < 20; i++ {
 				path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
 				_, err := os.Stat(path)

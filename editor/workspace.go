@@ -50,12 +50,12 @@ type Workspace struct {
 	signature  *Signature
 	// Need https://github.com/neovim/neovim/pull/7466 to be merged
 	// message    *Message
-	minimap    *MiniMap
-	svgs       map[string]*SvgXML
-	svgsOnce   sync.Once
-	width      int
-	height     int
-	hidden     bool
+	minimap  *MiniMap
+	svgs     map[string]*SvgXML
+	svgsOnce sync.Once
+	width    int
+	height   int
+	hidden   bool
 
 	nvim       *nvim.Nvim
 	rows       int
