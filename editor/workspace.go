@@ -824,14 +824,17 @@ func (w *Workspace) guiFont(args ...interface{}) {
 }
 
 func (w *Workspace) setFilepath() {
-	cfpITF, err := w.nvimEval("expand('%')")
-	if err != nil {
-		return
+	retchan := make(chan string, 5)
+	var cfp, result string
+	go func() {
+		w.nvim.Eval("expand('%')", &result)
+		retchan <- result
+	}()
+	select {
+	case cfp = <-retchan:
+	case <-time.After(500 * time.Millisecond):
 	}
-	cfp := cfpITF.(string)
-	if cfp == "" {
-		return
-	}
+
 	editor.workspaces[editor.active].filepath = cfp
 }
 
