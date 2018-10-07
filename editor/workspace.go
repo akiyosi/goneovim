@@ -213,7 +213,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.Move2(0, 0)
 	w.updateSize()
 
-	w.minimap.startMinimapProc()
+	go w.minimap.startMinimapProc()
 	go w.startNvim(path)
 
 	// wait for start nvim process
