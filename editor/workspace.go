@@ -48,7 +48,8 @@ type Workspace struct {
 	loc        *Locpopup
 	cmdline    *Cmdline
 	signature  *Signature
-	message    *Message
+	// Need https://github.com/neovim/neovim/pull/7466 to be merged
+	// message    *Message
 	minimap    *MiniMap
 	svgs       map[string]*SvgXML
 	svgsOnce   sync.Once
@@ -163,9 +164,10 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.signature = initSignature()
 	w.signature.widget.SetParent(w.screen.widget)
 	w.signature.ws = w
-	w.message = initMessage()
-	w.message.widget.SetParent(w.screen.widget)
-	w.message.ws = w
+	// Need https://github.com/neovim/neovim/pull/7466 to be merged
+	// w.message = initMessage()
+	// w.message.widget.SetParent(w.screen.widget)
+	// w.message.ws = w
 	w.cmdline = initCmdline()
 	w.cmdline.ws = w
 	w.minimap = newMiniMap()
@@ -333,7 +335,8 @@ func (w *Workspace) attachUI(path string) error {
 	w.tabline.subscribe()
 	w.statusline.subscribe()
 	w.loc.subscribe()
-	w.message.subscribe()
+	// Need https://github.com/neovim/neovim/pull/7466 to be merged
+	// w.message.subscribe()
 	w.uiAttached = true
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
 	if err != nil {
@@ -562,7 +565,8 @@ func (w *Workspace) updateSize() {
 
 	w.screen.updateSize()
 	w.palette.resize()
-	w.message.resize()
+	// Need https://github.com/neovim/neovim/pull/7466 to be merged
+	// w.message.resize()
 }
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
@@ -659,19 +663,21 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "wildmenu_hide":
 			w.cmdline.wildmenuHide()
 		case "msg_start_kind":
-			if len(args) > 0 {
-				kinds, ok := args[len(args)-1].([]interface{})
-				if ok {
-					if len(kinds) > 0 {
-						kind, ok := kinds[len(kinds)-1].(string)
-						if ok {
-							w.message.kind = kind
-						}
-					}
-				}
-			}
+			// Need https://github.com/neovim/neovim/pull/7466 to be merged
+			// if len(args) > 0 {
+			// 	kinds, ok := args[len(args)-1].([]interface{})
+			// 	if ok {
+			// 		if len(kinds) > 0 {
+			// 			kind, ok := kinds[len(kinds)-1].(string)
+			// 			if ok {
+			// 				w.message.kind = kind
+			// 			}
+			// 		}
+			// 	}
+			// }
 		case "msg_chunk":
-			w.message.chunk(args)
+			// Need https://github.com/neovim/neovim/pull/7466 to be merged
+			// w.message.chunk(args)
 		case "msg_end":
 		case "msg_showcmd":
 		case "messages":
