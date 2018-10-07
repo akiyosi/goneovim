@@ -155,7 +155,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.finder = initFinder()
 	w.finder.ws = w
 	w.palette = initPalette()
-	// w.palette.widget.SetParent(w.screen.widget)
 	w.palette.widget.SetParent(editor.window)
 	w.palette.ws = w
 	w.loc = initLocpopup()
@@ -171,15 +170,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.cmdline.ws = w
 	w.minimap = newMiniMap()
 	w.minimap.ws = w
-
-	// screenLayout := widgets.NewQHBoxLayout()
-	// screenLayout.SetContentsMargins(0, 0, 0, 0)
-	// screenLayout.SetSpacing(0)
-	// screenWidget := widgets.NewQWidget(nil, 0)
-	// screenWidget.SetContentsMargins(0, 0, 0, 0)
-	// screenWidget.SetLayout(screenLayout)
-	// screenLayout.AddWidget(w.screen.widget, 1, 0)
-	// screenLayout.AddWidget(w.markdown.webview, 0, 0)
 
 	layout := widgets.NewQVBoxLayout()
 	w.widget = widgets.NewQWidget(nil, 0)
@@ -208,15 +198,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	layout.AddWidget(w.tabline.widget, 0, 0)
 	layout.AddWidget(scrWidget, 1, 0)
 	layout.AddWidget(w.statusline.widget, 0, 0)
-
-	//// Drop shadow to statusline
-	//go func() {
-	// shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	// shadow.SetBlurRadius(120)
-	// shadow.SetColor(gui.NewQColor3(0, 0, 0, 50))
-	// shadow.SetOffset3(0, -8)
-	// w.statusline.widget.SetGraphicsEffect(shadow)
-	//}()
 
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
