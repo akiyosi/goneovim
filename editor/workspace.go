@@ -404,9 +404,16 @@ func (w *Workspace) nvimEval(s string) (interface{}, error) {
 	select {
 	case done := <-doneChannel:
 		return done, nil
-	case <-time.After(200 * time.Millisecond):
-		err := errors.New("neovim busy")
-		return nil, err
+	case <-time.After(250 * time.Millisecond):
+		// Press ENTER or type command to continue
+		go w.nvim.Input("<Enter>")
+		select {
+		case doing := <-doneChannel:
+			return doing, nil
+		case <-time.After(250 * time.Millisecond):
+			err := errors.New("neovim busy")
+			return nil, err
+		}
 	}
 }
 
