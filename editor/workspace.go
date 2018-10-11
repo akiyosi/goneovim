@@ -709,10 +709,13 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	}
 	if !w.isSetGuiColor {
 		w.setGuiColor()
-		go w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
-		go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
-		go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
-		go w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
+			w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
+			w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
+			w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
+		}()
 	}
 	s.update()
 	w.cursor.update()
