@@ -677,12 +677,6 @@ func (s *Screen) setScrollRegion(args []interface{}) {
 func (s *Screen) scroll(args []interface{}) {
 	count := int(args[0].([]interface{})[0].(int64))
 
-	w := s.ws
-	isRowDiff := s.updateRows()
-	if w.uiAttached && isRowDiff {
-		w.nvim.TryResizeUI(w.cols, w.rows)
-	}
-
 	top := s.scrollRegion[0]
 	bot := s.scrollRegion[1]
 	left := s.scrollRegion[2]
@@ -700,6 +694,14 @@ func (s *Screen) scroll(args []interface{}) {
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
 			for col := left; col <= right; col++ {
+				if len(s.content) <= row+count {
+					continue
+				}
+				for _, line := range s.content {
+					if len(line) <= col {
+						return
+					}
+				}
 				s.content[row][col] = s.content[row+count][col]
 			}
 		}

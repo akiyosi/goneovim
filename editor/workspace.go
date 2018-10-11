@@ -241,9 +241,6 @@ func (w *Workspace) show() {
 }
 
 func (w *Workspace) startNvim(path string) error {
-	// neovim, err := nvim.NewEmbedded(&nvim.EmbedOptions{
-	// 	Args: os.Args[1:],
-	// })
 	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs(append([]string{"--embed"}, os.Args[1:]...)...))
 	if err != nil {
 		return err
@@ -332,17 +329,18 @@ func (w *Workspace) attachUI(path string) error {
 	// NOTE: Need https://github.com/neovim/neovim/pull/7466 to be merged
 	// w.message.subscribe()
 
+	w.uiAttached = true
 	option := w.attachUIOption()
 	err := w.nvim.AttachUI(w.cols, w.rows, option)
 	if err != nil {
 		return err
 	}
-	w.uiAttached = true
 	w.initGonvim()
 	return nil
 }
 
 func (w *Workspace) initGonvim() {
+	_, _ = w.nvimEval("0")
 	w.nvim.Subscribe("Gui")
 	w.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	w.nvim.Command("let g:gonvim_running=1")
@@ -533,6 +531,8 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 
 func (w *Workspace) updateSize() {
 	e := editor
+	e.width = e.window.Width()
+	e.height = e.window.Height()
 	width := e.wsWidget.Width()
 	height := e.wsWidget.Height()
 	if width != w.width || height != w.height {
@@ -555,7 +555,7 @@ func (w *Workspace) updateSize() {
 		w.statusline.height = w.statusline.widget.Height()
 	}
 
-	height = w.height - w.tabline.height - w.statusline.height
+	// height = w.height - w.tabline.height - w.statusline.height
 	// rows := height / w.font.lineHeight
 
 	// remainingHeight := height - rows*w.font.lineHeight
@@ -565,7 +565,8 @@ func (w *Workspace) updateSize() {
 	// w.tabline.marginBottom = w.tabline.marginDefault + remainingHeightBottom
 	// w.tabline.updateMargin()
 	// w.screen.height = height - remainingHeight
-	w.screen.height = height
+
+	w.screen.height = w.height - w.tabline.height - w.statusline.height
 
 	w.screen.updateSize()
 	w.palette.resize()
@@ -1181,6 +1182,6 @@ func (w *Workspace) setGuiColor() {
 		editor.wsSide.items[0].active = true
 		editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 	}
-	
+
 	editor.window.SetWindowOpacity(1.0)
 }

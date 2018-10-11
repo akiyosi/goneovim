@@ -136,18 +136,6 @@ func InitEditor() {
 		guiInit:    make(chan bool, 1),
 	}
 	e := editor
-	e.signal.ConnectNotifySignal(func() {
-		// Is there a smarter implementation ?
-		notify := <-e.notify
-		if notify.message == "" {
-			return
-		}
-		if notify.buttons == nil {
-			e.popupNotification(notify.level, notify.period, notify.message)
-		} else {
-			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
-		}
-	})
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
@@ -178,34 +166,6 @@ func InitEditor() {
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
-
-	e.workspaces = []*Workspace{}
-	sessionExists := false
-	if err == nil {
-		if e.config.Workspace.RestoreSession == true {
-			for i := 0; i < 20; i++ {
-				path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
-				_, err := os.Stat(path)
-				if err != nil {
-					break
-				}
-				sessionExists = true
-				ws, err := newWorkspace(path)
-				if err != nil {
-					break
-				}
-				e.workspaces = append(e.workspaces, ws)
-			}
-		}
-	}
-	if !sessionExists {
-		ws, err := newWorkspace("")
-		if err != nil {
-			return
-		}
-		e.workspaces = append(e.workspaces, ws)
-	}
-
 	sideArea := widgets.NewQScrollArea(nil)
 	sideArea.SetWidgetResizable(true)
 	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
@@ -222,24 +182,6 @@ func InitEditor() {
 	e.activity = activity
 	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
 	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
-
-	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
-	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
-	splitter.AddWidget(e.activity.sideArea)
-	splitter.AddWidget(e.wsWidget)
-	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
-	splitter.SetStretchFactor(1, 100)
-	splitter.SetObjectName("splitter")
-	e.splitter = splitter
-
-	layout.AddWidget(splitter, 1, 0)
-	layout.AddWidget(e.activity.widget, 0, 0)
-
-	e.workspaceUpdate()
-
-	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
-	var notifications []*Notification
-	e.notifications = notifications
 
 	// Drop shadow to Side Bar
 	if e.config.SideBar.DropShadow == true {
@@ -270,14 +212,68 @@ func InitEditor() {
 		e.activity.sideArea.Hide()
 	}
 
+	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
+	splitter.AddWidget(e.activity.sideArea)
+	splitter.AddWidget(e.wsWidget)
+	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
+	splitter.SetStretchFactor(1, 100)
+	splitter.SetObjectName("splitter")
+	e.splitter = splitter
+
+	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	var notifications []*Notification
+	e.notifications = notifications
+
+	layout.AddWidget(splitter, 1, 0)
+	layout.AddWidget(e.activity.widget, 0, 0)
+
+	e.workspaces = []*Workspace{}
+	sessionExists := false
+	if err == nil {
+		if e.config.Workspace.RestoreSession == true {
+			for i := 0; i < 20; i++ {
+				path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
+				_, err := os.Stat(path)
+				if err != nil {
+					break
+				}
+				sessionExists = true
+				ws, err := newWorkspace(path)
+				if err != nil {
+					break
+				}
+				e.workspaces = append(e.workspaces, ws)
+			}
+		}
+	}
+	if !sessionExists {
+		ws, err := newWorkspace("")
+		if err != nil {
+			return
+		}
+		e.workspaces = append(e.workspaces, ws)
+	}
+	e.workspaceUpdate()
+
+	e.signal.ConnectNotifySignal(func() {
+		notify := <-e.notify
+		if notify.message == "" {
+			return
+		}
+		if notify.buttons == nil {
+			e.popupNotification(notify.level, notify.period, notify.message)
+		} else {
+			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
+		}
+	})
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
 			ws.updateSize()
 		}
 	})
-
 	// for macos, open file via Finder
-	var macosArg string
+	macosArg := ""
 	if runtime.GOOS == "darwin" {
 		e.app.ConnectEvent(func(event *core.QEvent) bool {
 			switch event.Type() {
@@ -285,7 +281,7 @@ func InitEditor() {
 				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
 				macosArg = fileOpenEvent.File()
 				gonvim := e.workspaces[e.active].nvim
-				var isModified string
+				isModified := ""
 				isModified, _ = gonvim.CommandOutput("echo &modified")
 				if isModified == "1" {
 					gonvim.Command(fmt.Sprintf(":tabe %s", macosArg))
