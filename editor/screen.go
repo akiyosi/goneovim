@@ -162,7 +162,7 @@ func (s *Screen) howToOpen(file string) {
 	}
 	opts = append(opts, opt2)
 
-	editor.pushNotification(NotifyWarn, 0, message, notifyOptionArg(opts))
+	editor.pushNotification(NotifyInfo, 0, message, notifyOptionArg(opts))
 }
 
 func (s *Screen) updateRows() bool {
