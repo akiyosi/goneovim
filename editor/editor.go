@@ -167,7 +167,6 @@ func InitEditor() {
 
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
-	//e.window.ConnectKeyReleaseEvent(e.keyRelease)
 	e.window.SetAcceptDrops(true)
 
 	widget := widgets.NewQWidget(nil, 0)
@@ -180,19 +179,10 @@ func InitEditor() {
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
 
-	sideArea := widgets.NewQScrollArea(nil)
-	sideArea.SetWidgetResizable(true)
-	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
-	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
-	sideArea.SetWidget(e.wsSide.widget)
-	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
-	e.wsSide.scrollarea = sideArea
-
 	e.workspaces = []*Workspace{}
 	sessionExists := false
 	if err == nil {
 		if e.config.Workspace.RestoreSession == true {
-			e.doneGuiInit = true // Need to excute the second or more workspaces
 			for i := 0; i < 20; i++ {
 				path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
 				_, err := os.Stat(path)
@@ -216,6 +206,14 @@ func InitEditor() {
 		e.workspaces = append(e.workspaces, ws)
 	}
 
+	sideArea := widgets.NewQScrollArea(nil)
+	sideArea.SetWidgetResizable(true)
+	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
+	sideArea.SetWidget(e.wsSide.widget)
+	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
+	e.wsSide.scrollarea = sideArea
+
 	activityWidget := widgets.NewQWidget(nil, 0)
 	activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	activity := newActivity()
@@ -238,33 +236,10 @@ func InitEditor() {
 	layout.AddWidget(e.activity.widget, 0, 0)
 
 	e.workspaceUpdate()
+
 	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
 	var notifications []*Notification
 	e.notifications = notifications
-
-	e.window.ConnectResizeEvent(func(*gui.QResizeEvent) {
-		e.width = e.window.Width()
-		e.height = e.window.Height()
-
-		// palette
-		e.workspaces[e.active].palette.resize()
-
-		// notification
-		e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
-		x := e.notifyStartPos.X()
-		y := e.notifyStartPos.Y()
-		var newNotifications []*Notification
-		for _, item := range e.notifications {
-			x = e.notifyStartPos.X()
-			y = e.notifyStartPos.Y() - item.widget.Height() - 4
-			if !item.isHide && !item.isMoved {
-				item.widget.Move2(x, y)
-				e.notifyStartPos = core.NewQPoint2(x, y)
-			}
-			newNotifications = append(newNotifications, item)
-		}
-		e.notifications = newNotifications
-	})
 
 	// Drop shadow to Side Bar
 	if e.config.SideBar.DropShadow == true {
@@ -287,7 +262,6 @@ func InitEditor() {
 			e.activity.widget.SetGraphicsEffect(shadow)
 		}()
 	}
-	//
 
 	if e.config.ActivityBar.Visible == false {
 		e.activity.widget.Hide()
@@ -338,7 +312,6 @@ func InitEditor() {
 	}()
 
 	e.window.Show()
-	e.guiInit <- true
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
 }

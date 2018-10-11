@@ -216,7 +216,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	go w.minimap.startMinimapProc()
 	go w.startNvim(path)
 
-	// wait for start nvim process
 	select {
 	case <-w.doneNvimStart:
 	}
@@ -278,25 +277,12 @@ func (w *Workspace) startNvim(path string) error {
 }
 
 func (w *Workspace) init(path string) {
-	if !editor.doneGuiInit {
-		select {
-		case editor.doneGuiInit = <-editor.guiInit:
-		}
-	}
 	w.configure()
 	w.attachUI(path)
 	w.initCwd()
 }
 
 func (w *Workspace) configure() {
-	var drawSplit interface{}
-	w.nvim.Var("gonvim_draw_split", &drawSplit)
-	if isZero(drawSplit) {
-		w.screen.drawSplit = false
-	} else {
-		w.screen.drawSplit = true
-	}
-
 	var drawStatusline interface{}
 	w.nvim.Var("gonvim_draw_statusline", &drawStatusline)
 	if isZero(drawStatusline) {
@@ -326,6 +312,14 @@ func (w *Workspace) configure() {
 	if isTrue(startFullscreen) {
 		editor.window.ShowFullScreen()
 	}
+
+	// var drawSplit interface{}
+	// w.nvim.Var("gonvim_draw_split", &drawSplit)
+	// if isZero(drawSplit) {
+	// 	w.screen.drawSplit = false
+	// } else {
+	// 	w.screen.drawSplit = true
+	// }
 }
 
 func (w *Workspace) attachUI(path string) error {
@@ -335,13 +329,15 @@ func (w *Workspace) attachUI(path string) error {
 	w.tabline.subscribe()
 	w.statusline.subscribe()
 	w.loc.subscribe()
-	// Need https://github.com/neovim/neovim/pull/7466 to be merged
+	// NOTE: Need https://github.com/neovim/neovim/pull/7466 to be merged
 	// w.message.subscribe()
-	w.uiAttached = true
-	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
+
+	option := w.attachUIOption()
+	err := w.nvim.AttachUI(w.cols, w.rows, option)
 	if err != nil {
 		return err
 	}
+	w.uiAttached = true
 	w.initGonvim()
 	return nil
 }
@@ -365,10 +361,10 @@ func (w *Workspace) workspaceCommands(path string) {
 	if editor.config.ScrollBar.Visible == true {
 		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline")`)
 	}
+	w.nvim.Command(`autocmd BufEnter,BufWinEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 	if editor.config.Editor.Clipboard == true {
 		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
 	}
-	w.nvim.Command(`autocmd BufEnter,BufWinEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 	w.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))`)
 
 	w.nvim.Command(`command! GonvimMiniMap call rpcnotify(0, 'Gui', 'gonvim_minimap_toggle')`)
@@ -560,20 +556,36 @@ func (w *Workspace) updateSize() {
 	}
 
 	height = w.height - w.tabline.height - w.statusline.height
+	// rows := height / w.font.lineHeight
 
-	rows := height / w.font.lineHeight
-	remainingHeight := height - rows*w.font.lineHeight
+	// remainingHeight := height - rows*w.font.lineHeight
 	// remainingHeightBottom := remainingHeight / 2
 	// remainingHeightTop := remainingHeight - remainingHeightBottom
 	// w.tabline.marginTop = w.tabline.marginDefault + remainingHeightTop
 	// w.tabline.marginBottom = w.tabline.marginDefault + remainingHeightBottom
 	// w.tabline.updateMargin()
-	w.screen.height = height - remainingHeight
+	// w.screen.height = height - remainingHeight
+	w.screen.height = height
 
 	w.screen.updateSize()
 	w.palette.resize()
-	// Need https://github.com/neovim/neovim/pull/7466 to be merged
-	// w.message.resize()
+	// w.message.resize() // Need https://github.com/neovim/neovim/pull/7466 to be merged
+
+	// notification
+	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	x := e.notifyStartPos.X()
+	y := e.notifyStartPos.Y()
+	var newNotifications []*Notification
+	for _, item := range e.notifications {
+		x = e.notifyStartPos.X()
+		y = e.notifyStartPos.Y() - item.widget.Height() - 4
+		if !item.isHide && !item.isMoved {
+			item.widget.Move2(x, y)
+			e.notifyStartPos = core.NewQPoint2(x, y)
+		}
+		newNotifications = append(newNotifications, item)
+	}
+	e.notifications = newNotifications
 }
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
@@ -963,11 +975,6 @@ func newWorkspaceSide() *WorkspaceSide {
 		side.items[len(side.items)-1].hide()
 	}
 
-	//footer := widgets.NewQLabel(nil, 0)
-	//footer.SetContentsMargins(20, 15, 20, 10)
-	//footer.SetText("WorkspaceFooter")
-	//layout.AddWidget(footer)
-
 	return side
 }
 
@@ -1174,6 +1181,6 @@ func (w *Workspace) setGuiColor() {
 		editor.wsSide.items[0].active = true
 		editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 	}
-
+	
 	editor.window.SetWindowOpacity(1.0)
 }

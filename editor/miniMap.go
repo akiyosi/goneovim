@@ -101,33 +101,28 @@ func newMiniMap() *MiniMap {
 	})
 	m.signal.ConnectStopSignal(func() {
 	})
-	widget.ConnectPaintEvent(m.paint)
-	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+	m.widget.ConnectPaintEvent(m.paint)
+	m.widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		m.updateSize()
 	})
-	widget.ConnectMousePressEvent(m.mouseEvent)
-	widget.ConnectWheelEvent(m.wheelEvent)
+	m.widget.ConnectMousePressEvent(m.mouseEvent)
+	m.widget.ConnectWheelEvent(m.wheelEvent)
+	m.widget.Hide()
 
-	fontFamily := ""
 	switch runtime.GOOS {
 	case "windows":
-		fontFamily = "Consolas"
+		m.font = initFontNew("Consolas", 2, 0)
 	case "darwin":
-		fontFamily = "Courier New"
+		m.font = initFontNew("Courier New", 1, 0)
 	default:
-		fontFamily = "Monospace"
-	}
-	if runtime.GOOS == "darwin" {
-		m.font = initFontNew(fontFamily, 2, 0)
-	} else {
-		m.font = initFontNew(fontFamily, 1, 0)
+		m.font = initFontNew("Monospace", 2, 0)
 	}
 
 	return m
 }
 
 func (m *MiniMap) startMinimapProc() {
-	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed"))
+	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--headless"))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -142,6 +137,7 @@ func (m *MiniMap) startMinimapProc() {
 	})
 	m.width = m.widget.Width()
 	m.height = m.widget.Height()
+
 	m.updateSize()
 
 	go func() {
