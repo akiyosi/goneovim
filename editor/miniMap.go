@@ -113,7 +113,7 @@ func newMiniMap() *MiniMap {
 	case "windows":
 		m.font = initFontNew("Consolas", 2, 0)
 	case "darwin":
-		m.font = initFontNew("Courier New", 1, 0)
+		m.font = initFontNew("Courier New", 2, 0)
 	default:
 		m.font = initFontNew("Monospace", 2, 0)
 	}
@@ -368,6 +368,7 @@ func (m *MiniMap) bufUpdate() {
 		m.widget.Hide()
 		return
 	}
+	fmt.Println("bufUpdate 1")
 	if !m.isSetColorscheme {
 		m.setColorscheme()
 	}
@@ -387,9 +388,25 @@ func (m *MiniMap) setColorscheme() {
 	colo, _ := m.ws.nvim.CommandOutput("colo")
 	lsDirs, _ := ioutil.ReadDir(packpath)
 
+	// Set coloDir and
+	//  some exceptional color scheme names and plugin directory names
+	coloDir := ""
+	switch colo {
+	case "one":
+		coloDir = "vim-one"
+	case "primery":
+		coloDir = "vim-colorscheme-primary"
+	case "github":
+		coloDir = "vim-github-colorscheme"
+	case "OceanicNext":
+		coloDir = "oceanic-next"
+	default:
+		coloDir = colo
+	}
+
 	// Search colorscheme repo in dein.vim plugin directory
 	//  and set the repository to runtimepath
-	var runtimeDir string
+	runtimeDir := ""
 	for _, d := range lsDirs {
 		dirname := d.Name()
 		finfo, err := os.Stat(packpath + dirname)
@@ -400,7 +417,7 @@ func (m *MiniMap) setColorscheme() {
 			packDirs, _ := ioutil.ReadDir(packpath + dirname)
 			for _, p := range packDirs {
 				plugname := p.Name()
-				if strings.Contains(plugname, colo) {
+				if strings.Contains(plugname, coloDir) {
 					runtimeDir = dirname + "/" + plugname
 					break
 				}
@@ -410,7 +427,9 @@ func (m *MiniMap) setColorscheme() {
 			}
 		}
 	}
+	fmt.Println("runtime dir:", runtimeDir)
 	m.nvim.Command("set runtimepath^=" + packpath + runtimeDir)
+	m.nvim.Command("set runtimepath^=" + packpath + runtimeDir + "/colors")
 	m.nvim.Command(":runtime! " + colo + ".vim")
 	m.nvim.Command(":colorscheme " + colo)
 	m.isSetColorscheme = true
