@@ -265,6 +265,7 @@ func (w *Workspace) init(path string) {
 	w.configure()
 	w.attachUI(path)
 	w.initCwd()
+	w.updateSize()
 }
 
 func (w *Workspace) configure() {
