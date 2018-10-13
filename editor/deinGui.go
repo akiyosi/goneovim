@@ -393,8 +393,8 @@ func loadDeinCashe() []*DeinPluginItem {
 
 				// menuActionDisable := i.contextMenu.AddAction("Disable")
 				// menuActionDisable.ConnectTriggered(i.disable)
-				menuActionRemove := i.contextMenu.AddAction("Remove this plugin")
 				menuActionEditToml := i.contextMenu.AddAction("Configure the toml file")
+				menuActionRemove := i.contextMenu.AddAction("Remove this plugin")
 				var invalidConfigure bool
 				for _, pluginSetting := range editor.deinSide.deintoml.Plugins {
 					if pluginSetting.Repo == i.repo {
@@ -717,7 +717,7 @@ func newInstalledPlugins() *InstalledPlugins {
 	for _, c := range cache {
 		installedLayout.AddWidget(c.widget, 0, 0)
 	}
-	installedLayout.SetContentsMargins(0, 0, 0, 8*len(cache))
+	installedLayout.SetContentsMargins(0, 0, 0, 12*len(cache))
 
 	installedPlugins := &InstalledPlugins{
 		widget: installedWidget,

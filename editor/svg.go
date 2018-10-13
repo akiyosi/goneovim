@@ -99,7 +99,7 @@ func (w *Workspace) initSVGS() {
 	w.svgs["configfile"] = &SvgXML{
 		width:  24,
 		height: 24,
-		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M5 3C3.89 3 3 3.89 3 5V19C3 20.11 3.89 21 5 21H19C20.11 21 21 20.11 21 19V5C21 3.89 20.11 3 19 3H5M5 5H19V19H5V5M7 7V9H17V7H7M7 11V13H17V11H7M7 15V17H14V15H7Z" /></svg>`,
+		xml:    `<svg width="256" height="256" viewBox="0 0 16 16" version="1.1" aria-hidden="true"><path fill="%s" d="M11.41 9H.59C0 9 0 8.59 0 8c0-.59 0-1 .59-1H11.4c.59 0 .59.41.59 1 0 .59 0 1-.59 1h.01zm0-4H.59C0 5 0 4.59 0 4c0-.59 0-1 .59-1H11.4c.59 0 .59.41.59 1 0 .59 0 1-.59 1h.01zM.59 11H11.4c.59 0 .59.41.59 1 0 .59 0 1-.59 1H.59C0 13 0 12.59 0 12c0-.59 0-1 .59-1z"></path></svg>`,
 	}
 
 	w.svgs["download"] = &SvgXML{
