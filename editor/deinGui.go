@@ -41,6 +41,7 @@ type DeinSide struct {
 	searchPageUpdates chan int
 	deinInstall       chan string
 	deinUpdate        chan string
+	installing        bool
 
 	widget       *widgets.QWidget
 	layout       *widgets.QLayout
@@ -1230,11 +1231,16 @@ func deinInstallPost(result string) {
 		message = strings.TrimRight(message, ".")
 		editor.pushNotification(NotifyInfo, -1, message)
 	}
+	editor.deinSide.installing = false
 }
 
 func (p *Plugin) deinInstallPre(reponame string) {
+	if editor.deinSide.installing {
+		return
+	}
 	p.installButton.DisconnectMousePressEvent()
 	p.installLabel.SetCurrentWidget(p.waitingLabel)
+	editor.deinSide.installing = true
 
 	b := editor.deinSide.deintomlbare
 	b, _ = tomlwriter.WriteValue(`'`+reponame+`'`, b, "[plugins]", "repo", nil)
