@@ -363,7 +363,6 @@ func (w *Workspace) workspaceCommands(path string) {
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
-	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	if editor.config.ScrollBar.Visible == true {
 		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,TabEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline")`)
 	}
@@ -763,7 +762,9 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.curLine = ln
 		w.curColm = col
 	case "gonvim_minimap_update":
-		go w.minimap.bufUpdate()
+		if editor.config.MiniMap.Visible {
+			go w.minimap.bufUpdate()
+		}
 	case "gonvim_minimap_toggle":
 		go w.minimap.toggle()
 	case "gonvim_copy_clipboard":

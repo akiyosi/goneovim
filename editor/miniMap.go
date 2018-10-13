@@ -368,7 +368,6 @@ func (m *MiniMap) bufUpdate() {
 		m.widget.Hide()
 		return
 	}
-	fmt.Println("bufUpdate 1")
 	if !m.isSetColorscheme {
 		m.setColorscheme()
 	}
@@ -427,7 +426,6 @@ func (m *MiniMap) setColorscheme() {
 			}
 		}
 	}
-	fmt.Println("runtime dir:", runtimeDir)
 	m.nvim.Command("set runtimepath^=" + packpath + runtimeDir)
 	m.nvim.Command("set runtimepath^=" + packpath + runtimeDir + "/colors")
 	m.nvim.Command(":runtime! " + colo + ".vim")
