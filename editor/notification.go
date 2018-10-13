@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"time"
 	"unicode/utf8"
 
 	"github.com/therecipe/qt/core"
@@ -334,6 +335,13 @@ func (n *Notification) statusReset() {
 }
 
 func (n *Notification) show() {
+	for {
+		if editor.workspaces[editor.active].isSetGuiColor {
+			break
+		} else {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 	n.widget.SetStyleSheet(fmt.Sprintf(" * {color: rgb(%d, %d, %d); background: rgb(%d, %d, %d);}", fg.R, fg.G, fg.B, shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
