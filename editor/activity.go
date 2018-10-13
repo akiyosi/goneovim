@@ -38,7 +38,7 @@ func newActivity() *Activity {
 	activitySubLayout.SetContentsMargins(0, 0, 0, 0)
 	activitySubLayout.SetSpacing(15)
 
-	fg := editor.fgcolor
+	// fg := editor.fgcolor
 
 	editLayout := widgets.NewQVBoxLayout()
 	editLayout.SetContentsMargins(12, 5, 12, 5)
@@ -46,9 +46,8 @@ func newActivity() *Activity {
 	editIcon := svg.NewQSvgWidget(nil)
 	editIcon.SetFixedWidth(22)
 	editIcon.SetFixedHeight(22)
-	svgContent := editor.workspaces[editor.active].getSvg("activityedit", newRGBA(warpColor(fg, 5).R, warpColor(fg, 5).G, warpColor(fg, 5).B, 1))
-	//svgContent := editor.workspaces[editor.active].getSvg("activityedit", nil)
-	editIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	// svgContent := editor.workspaces[editor.active].getSvg("activityedit", newRGBA(warpColor(fg, 5).R, warpColor(fg, 5).G, warpColor(fg, 5).B, 1))
+	// editIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	editLayout.AddWidget(editIcon, 0, 0)
 	editWidget := widgets.NewQWidget(nil, 0)
 	editWidget.SetLayout(editLayout)
@@ -60,7 +59,7 @@ func newActivity() *Activity {
 		id:     1,
 	}
 
-	bg := editor.bgcolor
+	// bg := editor.bgcolor
 
 	deinLayout := widgets.NewQVBoxLayout()
 	deinLayout.SetContentsMargins(12, 5, 12, 5)
@@ -68,9 +67,8 @@ func newActivity() *Activity {
 	deinIcon := svg.NewQSvgWidget(nil)
 	deinIcon.SetFixedWidth(22)
 	deinIcon.SetFixedHeight(22)
-	svgDeinContent := editor.workspaces[editor.active].getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
-	//svgDeinContent := editor.workspaces[editor.active].getSvg("activitydein", nil)
-	deinIcon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
+	// svgDeinContent := editor.workspaces[editor.active].getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+	// deinIcon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
 	deinLayout.AddWidget(deinIcon, 0, 0)
 	deinWidget := widgets.NewQWidget(nil, 0)
 	deinWidget.SetLayout(deinLayout)
