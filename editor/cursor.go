@@ -14,6 +14,7 @@ type Cursor struct {
 	mode   string
 	x      int
 	y      int
+	isShut bool
 }
 
 func initCursorNew() *Cursor {
@@ -21,7 +22,28 @@ func initCursorNew() *Cursor {
 	cursor := &Cursor{
 		widget: widget,
 	}
+
+	if editor.config.Editor.CursorBlink {
+		timer := core.NewQTimer(nil)
+		timer.ConnectTimeout(cursor.blink)
+		timer.Start(1000)
+		timer.SetInterval(500)
+	}
+
 	return cursor
+}
+
+func (c *Cursor) blink() {
+	bg := c.ws.background
+	if c.isShut {
+		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.1)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
+		c.isShut = false
+	} else {
+		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
+		c.isShut = true
+	}
+	c.widget.Hide()
+	c.widget.Show()
 }
 
 func (c *Cursor) move() {

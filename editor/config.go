@@ -12,6 +12,7 @@ import (
 // gonvimConfig is the following toml file
 // [editor]
 // clipboard = true
+// cursorBlink = true
 //
 // [scrollBar]
 // visible = true
@@ -52,7 +53,8 @@ type gonvimConfig struct {
 }
 
 type editorConfig struct {
-	Clipboard bool
+	Clipboard   bool
+	CursorBlink bool
 }
 
 type miniMapConfig struct {
@@ -125,21 +127,28 @@ func outputGonvimConfig() {
 
 	fmt.Fprint(file, "[editor]\n")
 	fmt.Fprint(file, "clipboard = ", editor.config.Editor.Clipboard, "\n")
+	fmt.Fprint(file, "cursorBlink = ", editor.config.Editor.CursorBlink, "\n")
+	fmt.Fprint(file, "\n")
 	fmt.Fprint(file, "[scrollBar]", "\n")
 	fmt.Fprint(file, "visible = ", editor.config.ScrollBar.Visible, "\n")
+	fmt.Fprint(file, "\n")
 	fmt.Fprint(file, "[activityBar]", "\n")
 	fmt.Fprint(file, "visible = ", editor.config.ActivityBar.Visible, "\n")
 	fmt.Fprint(file, "dropshadow = ", editor.config.ActivityBar.DropShadow, "\n")
+	fmt.Fprint(file, "\n")
 	fmt.Fprint(file, "[miniMap]", "\n")
 	fmt.Fprint(file, "visible = ", editor.config.MiniMap.Visible, "\n")
+	fmt.Fprint(file, "\n")
 	fmt.Fprint(file, "[sideBar]", "\n")
 	fmt.Fprint(file, "visible = ", editor.config.SideBar.Visible, "\n")
 	fmt.Fprint(file, "dropshadow = ", editor.config.SideBar.DropShadow, "\n")
 	fmt.Fprint(file, "width = ", editor.config.SideBar.Width, "\n")
 	fmt.Fprint(file, `accentColor = "`, editor.config.SideBar.AccentColor, `"`, "\n")
+	fmt.Fprint(file, "\n")
 	fmt.Fprint(file, "[workspace]", "\n")
 	fmt.Fprint(file, `pathStyle = "`, editor.config.Workspace.PathStyle, `"`, "\n")
 	fmt.Fprint(file, "restoreSession = ", editor.config.Workspace.RestoreSession, "\n")
+	fmt.Fprint(file, "\n")
 	fmt.Fprint(file, "[dein]", "\n")
 	fmt.Fprint(file, `tomlFile = '`, editor.config.Dein.TomlFile, `'`, "\n")
 }
