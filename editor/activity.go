@@ -46,7 +46,7 @@ func newActivity() *Activity {
 	editIcon := svg.NewQSvgWidget(nil)
 	editIcon.SetFixedWidth(22)
 	editIcon.SetFixedHeight(22)
-	// svgContent := editor.workspaces[editor.active].getSvg("activityedit", newRGBA(warpColor(fg, 5).R, warpColor(fg, 5).G, warpColor(fg, 5).B, 1))
+	// svgContent := editor.getSvg("activityedit", newRGBA(warpColor(fg, 5).R, warpColor(fg, 5).G, warpColor(fg, 5).B, 1))
 	// editIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	editLayout.AddWidget(editIcon, 0, 0)
 	editWidget := widgets.NewQWidget(nil, 0)
@@ -67,7 +67,7 @@ func newActivity() *Activity {
 	deinIcon := svg.NewQSvgWidget(nil)
 	deinIcon.SetFixedWidth(22)
 	deinIcon.SetFixedHeight(22)
-	// svgDeinContent := editor.workspaces[editor.active].getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+	// svgDeinContent := editor.getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	// deinIcon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
 	deinLayout.AddWidget(deinIcon, 0, 0)
 	deinWidget := widgets.NewQWidget(nil, 0)
@@ -112,7 +112,7 @@ func (n *ActivityItem) enterEvent(event *core.QEvent) {
 	gui.QGuiApplication_SetOverrideCursor(cursor)
 	fg := editor.fgcolor
 	n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
-	svgContent := editor.workspaces[editor.active].getSvg(n.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+	svgContent := editor.getSvg(n.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
@@ -122,10 +122,10 @@ func (n *ActivityItem) leaveEvent(event *core.QEvent) {
 	var svgContent string
 	if n.active == true {
 		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
-		svgContent = editor.workspaces[editor.active].getSvg(n.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+		svgContent = editor.getSvg(n.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	} else {
 		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
-		svgContent = editor.workspaces[editor.active].getSvg(n.text, newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+		svgContent = editor.getSvg(n.text, newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	}
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	gui.QGuiApplication_RestoreOverrideCursor()
@@ -225,10 +225,10 @@ func setActivityItemColor() {
 	for _, item := range items {
 		if item.active == true {
 			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
-			svgContent = editor.workspaces[editor.active].getSvg(item.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+			svgContent = editor.getSvg(item.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 		} else {
 			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
-			svgContent = editor.workspaces[editor.active].getSvg(item.text, newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+			svgContent = editor.getSvg(item.text, newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 		}
 		item.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}

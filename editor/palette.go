@@ -315,7 +315,7 @@ func (f *PaletteResultItem) setItem(text string, itemType string, match []int) {
 }
 
 func (f *PaletteResultItem) updateIcon() {
-	svgContent := f.p.ws.getSvg(f.iconType, nil)
+	svgContent := editor.getSvg(f.iconType, nil)
 	f.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 

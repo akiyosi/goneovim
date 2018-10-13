@@ -41,7 +41,7 @@ func (e *Editor) getSvg(name string, color *RGBA) string {
 		color = svg.color
 	}
 	if color == nil {
-		color = e.foreground
+		color = e.fgcolor
 	}
 	if color == nil {
 		color = newRGBA(255, 255, 255, 1)

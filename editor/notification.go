@@ -40,7 +40,7 @@ func notifyOptionArg(b []*NotifyButton) NotifyOptionArg {
 }
 
 func newNotification(l NotifyLevel, p int, message string, options ...NotifyOptionArg) *Notification {
-	ws := editor.workspaces[editor.active]
+	e := editor
 
 	widget := widgets.NewQWidget(nil, 0)
 	layout := widgets.NewQVBoxLayout()
@@ -60,11 +60,11 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	var level string
 	switch l {
 	case NotifyInfo:
-		level = ws.getSvg("info", newRGBA(27, 161, 226, 1))
+		level = e.getSvg("info", newRGBA(27, 161, 226, 1))
 	case NotifyWarn:
-		level = ws.getSvg("warn", newRGBA(255, 205, 0, 1))
+		level = e.getSvg("warn", newRGBA(255, 205, 0, 1))
 	default:
-		level = ws.getSvg("info", newRGBA(27, 161, 226, 1))
+		level = e.getSvg("info", newRGBA(27, 161, 226, 1))
 	}
 	levelIcon.Load2(core.NewQByteArray2(level, len(level)))
 
@@ -77,25 +77,25 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 
 	closeIcon := svg.NewQSvgWidget(nil)
 	bg := editor.bgcolor
-	svgContent := ws.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
+	svgContent := e.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
 	closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	closeIcon.SetFixedWidth(14)
 	closeIcon.SetFixedHeight(14)
 
 	closeIcon.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 		fg := editor.fgcolor
-		svgContent := ws.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+		svgContent := e.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
 		closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	})
 	closeIcon.ConnectEnterEvent(func(event *core.QEvent) {
-		svgContent := ws.getSvg("hoverclose", nil)
+		svgContent := e.getSvg("hoverclose", nil)
 		closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		cursor := gui.NewQCursor()
 		cursor.SetShape(core.Qt__PointingHandCursor)
 		gui.QGuiApplication_SetOverrideCursor(cursor)
 	})
 	closeIcon.ConnectLeaveEvent(func(event *core.QEvent) {
-		svgContent := ws.getSvg("cross", nil)
+		svgContent := e.getSvg("cross", nil)
 		closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		gui.QGuiApplication_RestoreOverrideCursor()
 	})
@@ -178,11 +178,11 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	})
 	notification.widget.ConnectEnterEvent(func(event *core.QEvent) {
 		fg := editor.fgcolor
-		svgContent := ws.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
+		svgContent := e.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
 		notification.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	})
 	notification.widget.ConnectLeaveEvent(func(event *core.QEvent) {
-		svgContent := ws.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
+		svgContent := e.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
 		notification.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	})
 	notification.widget.ConnectMousePressEvent(func(event *gui.QMouseEvent) {

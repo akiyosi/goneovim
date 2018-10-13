@@ -49,10 +49,10 @@ type Workspace struct {
 	signature  *Signature
 	// Need https://github.com/neovim/neovim/pull/7466 to be merged
 	// message    *Message
-	minimap  *MiniMap
-	width    int
-	height   int
-	hidden   bool
+	minimap *MiniMap
+	width   int
+	height  int
+	hidden  bool
 
 	nvim       *nvim.Nvim
 	rows       int
@@ -1113,17 +1113,17 @@ func (w *Workspace) setGuiColor() {
 
 	var svgEditContent string
 	if editor.activity.editItem.active == true {
-		svgEditContent = w.getSvg("activityedit", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+		svgEditContent = editor.getSvg("activityedit", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	} else {
-		svgEditContent = w.getSvg("activityedit", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+		svgEditContent = editor.getSvg("activityedit", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	}
 	editor.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
 
 	var svgDeinContent string
 	if editor.activity.deinItem.active == true {
-		svgDeinContent = w.getSvg("activitydein", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+		svgDeinContent = editor.getSvg("activitydein", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	} else {
-		svgDeinContent = w.getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+		svgDeinContent = editor.getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	}
 	editor.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
 
@@ -1136,9 +1136,9 @@ func (w *Workspace) setGuiColor() {
 	w.statusline.file.folderLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d, %d, %d, 0.8);", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
 	w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 0).R, shiftColor(bg, 0).G, shiftColor(bg, 0).B, shiftColor(bg, 0).R, shiftColor(bg, 0).G, shiftColor(bg, 0).B) + statusStyle)
 	//w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + statusStyle)
-	svgContent := w.getSvg("git", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+	svgContent := editor.getSvg("git", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 	w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	svgContent = w.getSvg("bell", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+	svgContent = editor.getSvg("bell", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 	w.statusline.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
 	// scrollBar

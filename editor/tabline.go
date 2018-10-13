@@ -332,11 +332,11 @@ func (t *Tab) updateActive() {
 	if t.active {
 		activeStyle := fmt.Sprintf(".QWidget { border-top: 8px solid rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } QWidget{color: rgba(%d, %d, %d, 1);} ", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, bg.R, bg.G, bg.B, fg.R, fg.G, fg.B)
 		t.widget.SetStyleSheet(activeStyle)
-		svgContent := t.t.ws.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
+		svgContent := editor.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else {
 		t.widget.SetStyleSheet("")
-		svgContent := t.t.ws.getSvg("cross", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 0.6))
+		svgContent := editor.getSvg("cross", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 0.6))
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 }
@@ -371,7 +371,7 @@ func (t *Tab) updateFileText() {
 }
 
 func (t *Tab) updateFileIcon() {
-	svgContent := t.t.ws.getSvg(t.fileType, nil)
+	svgContent := editor.getSvg(t.fileType, nil)
 	t.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
@@ -458,7 +458,7 @@ func (t *Tab) closeIconPressEvent(event *gui.QMouseEvent) {
 	fg := editor.fgcolor
 	t.closeIcon.SetFixedWidth(14)
 	t.closeIcon.SetFixedHeight(14)
-	svgContent := t.t.ws.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+	svgContent := editor.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
@@ -475,7 +475,7 @@ func (t *Tab) closeIconReleaseEvent(event *gui.QMouseEvent) {
 func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
 	t.closeIcon.SetFixedWidth(14)
 	t.closeIcon.SetFixedHeight(14)
-	svgContent := t.t.ws.getSvg("hoverclose", nil)
+	svgContent := editor.getSvg("hoverclose", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
@@ -485,7 +485,7 @@ func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
 func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
 	t.closeIcon.SetFixedWidth(14)
 	t.closeIcon.SetFixedHeight(14)
-	svgContent := t.t.ws.getSvg("cross", nil)
+	svgContent := editor.getSvg("cross", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	gui.QGuiApplication_RestoreOverrideCursor()
 }
