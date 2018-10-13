@@ -775,15 +775,16 @@ type Plugin struct {
 	readme    string
 	installed bool
 
-	widget           *widgets.QWidget
-	nameLabel        *widgets.QLabel
-	head             *widgets.QWidget
-	desc             *widgets.QWidget
-	info             *widgets.QWidget
-	installLabel     *widgets.QStackedWidget
-	installLabelName *widgets.QLabel
-	installButton    *widgets.QWidget
-	waitingLabel     *widgets.QWidget
+	widget            *widgets.QWidget
+	nameLabel         *widgets.QLabel
+	head              *widgets.QWidget
+	desc              *widgets.QWidget
+	info              *widgets.QWidget
+	installLabel      *widgets.QStackedWidget
+	installLabelName  *widgets.QLabel
+	installButton     *widgets.QWidget
+	installButtonIcon *svg.QSvgWidget
+	waitingLabel      *widgets.QWidget
 }
 
 // Searchresult is the structure witch displays the search result of plugins in DeinSide
@@ -945,7 +946,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 
 		pluginDownloadsIcon := svg.NewQSvgWidget(nil)
 		pluginDownloadsIcon.SetFixedSize2(11, 11)
-		svgDownloadContent := w.getSvg("download", fg)
+		svgDownloadContent := w.getSvg("downloaded", fg)
 		pluginDownloadsIcon.Load2(core.NewQByteArray2(svgDownloadContent, len(svgDownloadContent)))
 
 		pluginDownloadsNum := widgets.NewQLabel(nil, 0)
@@ -1015,21 +1016,21 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 
 		// * plugin install button
 		pluginInstallLabel := widgets.NewQLabel(nil, 0)
-		pluginInstallLabel.SetFixedWidth(65)
-		pluginInstallLabel.SetFixedHeight(20)
-		pluginInstallLabel.SetContentsMargins(5, 0, 5, 0)
+		pluginInstallLabel.SetContentsMargins(0, 0, 5, 0)
 		pluginInstallLabel.SetAlignment(core.Qt__AlignCenter)
 		pluginInstall := widgets.NewQWidget(nil, 0)
+		pluginInstall.SetFixedWidth(75)
+		pluginInstall.SetFixedHeight(20)
 		pluginInstallLayout := widgets.NewQHBoxLayout()
-		pluginInstallLayout.SetContentsMargins(0, 0, 0, 0)
-		pluginInstallLayout.AddWidget(pluginInstallLabel, 0, 0)
+		pluginInstallLayout.SetContentsMargins(10, 0, 0, 0)
+		pluginInstallLayout.SetSpacing(0)
 		pluginInstall.SetLayout(pluginInstallLayout)
 		pluginInstall.SetObjectName("installbutton")
 
 		// waiting label while install pugin
 		pluginWaiting := widgets.NewQWidget(nil, 0)
-		pluginWaiting.SetMaximumWidth(65)
-		pluginWaiting.SetMinimumWidth(65)
+		pluginWaiting.SetMaximumWidth(75)
+		pluginWaiting.SetMinimumWidth(75)
 		pluginWaitingLayout := widgets.NewQHBoxLayout()
 		pluginWaitingLayout.SetContentsMargins(5, 0, 5, 0)
 		pluginWaiting.SetLayout(pluginWaitingLayout)
@@ -1074,6 +1075,16 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 			installButton:    pluginInstall,
 			waitingLabel:     pluginWaiting,
 		}
+
+		pluginInstallIcon := svg.NewQSvgWidget(nil)
+		iconSize := 14
+		pluginInstallIcon.SetFixedSize2(iconSize, iconSize)
+		svgContent := w.getSvg("download", newRGBA(255, 255, 255, 1))
+		pluginInstallIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		pluginInstallLayout.AddWidget(pluginInstallIcon, 0, 0)
+		plugin.installButtonIcon = pluginInstallIcon
+		pluginInstallLayout.AddWidget(pluginInstallLabel, 0, 0)
+
 		installLabel.AddWidget(plugin.installButton)
 		installLabel.AddWidget(plugin.waitingLabel)
 		installLabel.SetCurrentWidget(plugin.installButton)
@@ -1086,16 +1097,16 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		}
 
 		if plugin.installed == true {
+			plugin.installButtonIcon.Hide()
 			pluginInstallLabel.SetText("Installed")
 			bg := editor.bgcolor
-			pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+			pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton { background: rgba(%d, %d, %d, 1);}  #installbutton QLabel { color: rgba(%d, %d, %d, 1); }", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
 		} else {
 			pluginInstallLabel.SetText("Install")
-			pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
+			pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton { background: %s;}  #installbutton QLabel { color: #ffffff; }", labelColor))
 			plugin.installButton.ConnectMousePressEvent(func(*gui.QMouseEvent) {
 				go plugin.deinInstallPre(plugin.repo)
 			})
-			// }plugin.pressButton)
 		}
 
 		plugin.widget.ConnectEnterEvent(plugin.enterWidget)
@@ -1191,7 +1202,7 @@ func (p *Plugin) enterButton(event *core.QEvent) {
 	if p.installed == true {
 		return
 	}
-	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", editor.config.SideBar.AccentColor))
+	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton { background: %s;} #installbutton QLabel { color: #ffffff; }", editor.config.SideBar.AccentColor))
 }
 
 func (p *Plugin) leaveButton(event *core.QEvent) {
@@ -1199,7 +1210,7 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 		return
 	}
 	labelColor := darkenHex(editor.config.SideBar.AccentColor)
-	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: #ffffff; background: %s;} ", labelColor))
+	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton { background: %s;} #installbutton QLabel { color: #ffffff; }", labelColor))
 }
 
 func deinInstallPost(result string) {
@@ -1249,7 +1260,8 @@ func (p *Plugin) deinInstallPre(reponame string) {
 
 	fg := editor.fgcolor
 	bg := editor.bgcolor
-	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton QLabel { color: rgba(%d, %d, %d, 1); background: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton { background: rgba(%d, %d, %d, 1);} #installbutton QLabel { color: rgba(%d, %d, %d, 1);", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
+	p.installButtonIcon.Hide()
 
 	p.installed = true
 	p.installLabelName.SetText("Installed")
