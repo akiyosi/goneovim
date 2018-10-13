@@ -2,15 +2,22 @@ package editor
 
 import (
 	"fmt"
-	homedir "github.com/mitchellh/go-homedir"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/BurntSushi/toml"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 // gonvimConfig is the following toml file
+// # Gonvim config toml
 // [editor]
+// width = 1000  # >= 800
+// height = 800  # >= 600
+// fontFamily = "FuraCode Nerd Font Mono"
+// fontsize = 14
+// linespace = 10
 // clipboard = true
 // cursorBlink = true
 //
@@ -53,6 +60,11 @@ type gonvimConfig struct {
 }
 
 type editorConfig struct {
+	Width       int
+	Height      int
+	FontFamily  string
+	FontSize    int
+	Linespace   int
 	Clipboard   bool
 	CursorBlink bool
 }
@@ -89,11 +101,37 @@ type deinConfig struct {
 func newGonvimConfig(home string) gonvimConfig {
 	var config gonvimConfig
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
+		config.Editor.Width = 800
+		config.Editor.Height = 600
 		config.ActivityBar.Visible = true
 		config.ScrollBar.Visible = true
 		config.SideBar.Width = 300
 		config.SideBar.AccentColor = "#519aba"
 		config.Workspace.PathStyle = "minimum"
+	}
+
+	if config.Editor.Width <= 800 {
+		config.Editor.Width = 800
+	}
+	if config.Editor.Height <= 600 {
+		config.Editor.Height = 600
+	}
+
+	if config.Editor.FontFamily == "" {
+		switch runtime.GOOS {
+		case "windows":
+			config.Editor.FontFamily = "Consolas"
+		case "darwin":
+			config.Editor.FontFamily = "Courier New"
+		default:
+			config.Editor.FontFamily = "Monospace"
+		}
+	}
+	if config.Editor.FontSize <= 0 {
+		config.Editor.FontSize = 14
+	}
+	if config.Editor.Linespace < 0 {
+		config.Editor.Linespace = 6
 	}
 
 	if config.SideBar.Width == 0 {

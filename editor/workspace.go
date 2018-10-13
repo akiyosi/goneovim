@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -126,16 +125,7 @@ func newWorkspace(path string) (*Workspace, error) {
 			editor.workspaceUpdate()
 		}
 	})
-	fontFamily := ""
-	switch runtime.GOOS {
-	case "windows":
-		fontFamily = "Consolas"
-	case "darwin":
-		fontFamily = "Courier New"
-	default:
-		fontFamily = "Monospace"
-	}
-	w.font = initFontNew(fontFamily, 14, 6)
+	w.font = initFontNew(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, editor.config.Editor.Linespace)
 	w.tabline = newTabline()
 	w.tabline.ws = w
 	w.statusline = initStatuslineNew()

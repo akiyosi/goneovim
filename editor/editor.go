@@ -122,7 +122,6 @@ func InitEditor() {
 	if err != nil {
 		home = "~"
 	}
-	config := newGonvimConfig(home)
 	editor = &Editor{
 		version:    "v0.3.0",
 		signal:     NewEditorSignal(nil),
@@ -132,17 +131,30 @@ func InitEditor() {
 		bgcolor:    nil,
 		fgcolor:    nil,
 		stop:       make(chan struct{}),
-		config:     config,
 		guiInit:    make(chan bool, 1),
 	}
 	e := editor
+	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	e.notifications = []*Notification{}
+	e.signal.ConnectNotifySignal(func() {
+		notify := <-e.notify
+		if notify.message == "" {
+			return
+		}
+		if notify.buttons == nil {
+			e.popupNotification(notify.level, notify.period, notify.message)
+		} else {
+			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
+		}
+	})
+	e.config = newGonvimConfig(home)
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
 	})
 
-	e.width = 800
-	e.height = 600
+	e.width = e.config.Editor.Width
+	e.height = e.config.Editor.Height
 
 	//create a window
 	e.window = widgets.NewQMainWindow(nil, 0)
@@ -221,10 +233,6 @@ func InitEditor() {
 	splitter.SetObjectName("splitter")
 	e.splitter = splitter
 
-	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
-	var notifications []*Notification
-	e.notifications = notifications
-
 	layout.AddWidget(splitter, 1, 0)
 	layout.AddWidget(e.activity.widget, 0, 0)
 
@@ -256,17 +264,6 @@ func InitEditor() {
 	}
 	e.workspaceUpdate()
 
-	e.signal.ConnectNotifySignal(func() {
-		notify := <-e.notify
-		if notify.message == "" {
-			return
-		}
-		if notify.buttons == nil {
-			e.popupNotification(notify.level, notify.period, notify.message)
-		} else {
-			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
-		}
-	})
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
 			ws.updateSize()
