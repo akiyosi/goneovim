@@ -50,8 +50,6 @@ type Workspace struct {
 	// Need https://github.com/neovim/neovim/pull/7466 to be merged
 	// message    *Message
 	minimap  *MiniMap
-	svgs     map[string]*SvgXML
-	svgsOnce sync.Once
 	width    int
 	height   int
 	hidden   bool

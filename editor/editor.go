@@ -95,6 +95,9 @@ type Editor struct {
 	config               gonvimConfig
 	notifications        []*Notification
 	displayNotifications bool
+
+	svgs     map[string]*SvgXML
+	svgsOnce sync.Once
 }
 
 type editorSignal struct {
