@@ -1062,7 +1062,7 @@ func (i *WorkspaceSideItem) setActive() {
 	i.active = true
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 3px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 
 	if i.Filelist.isload == false && editor.activity.editItem.active == true {
 		filelist := newFilelistwidget(i.cwdpath)
@@ -1184,7 +1184,7 @@ func (w *Workspace) setGuiColor() {
 
 	if len(editor.workspaces) == 1 {
 		editor.wsSide.items[0].active = true
-		editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 5px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+		editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 3px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
 	}
 
 	editor.window.SetWindowOpacity(1.0)
