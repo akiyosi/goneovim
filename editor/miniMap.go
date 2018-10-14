@@ -683,6 +683,14 @@ func (m *MiniMap) scroll(args []interface{}) {
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
 			for col := left; col <= right; col++ {
+				if len(m.content) <= row+count {
+					continue
+				}
+				for _, line := range m.content {
+					if len(line) <= col {
+						return
+					}
+				}
 				m.content[row][col] = m.content[row+count][col]
 			}
 		}
