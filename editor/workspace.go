@@ -711,18 +711,21 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	if editor.config.ScrollBar.Visible == true {
 		w.scrollBar.update()
 	}
-	if doMinimapScroll {
-		var absMapTop int
-		w.minimap.nvim.Eval("line('w0')", &absMapTop)
-		var absMapBottom int
-		w.minimap.nvim.Eval("line('w$')", &absMapBottom)
-		go w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, w.curColm))
-		switch {
-		case w.curLine >= absMapBottom:
-			go w.minimap.nvim.Input("<C-d>")
-		case absMapTop >= w.curLine:
-			go w.minimap.nvim.Input("<C-u>")
-		}
+	if doMinimapScroll && w.minimap.visible {
+		go func() {
+			var absMapTop int
+			w.minimap.nvim.Eval("line('w0')", &absMapTop)
+			var absMapBottom int
+			w.minimap.nvim.Eval("line('w$')", &absMapBottom)
+			w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, w.curColm))
+			switch {
+			case w.curLine >= absMapBottom:
+				w.minimap.nvim.Input("<C-d>")
+			case absMapTop >= w.curLine:
+				w.minimap.nvim.Input("<C-u>")
+			default:
+			}
+		}()
 		w.minimap.mapScroll()
 	}
 	w.statusline.mode.redraw()
