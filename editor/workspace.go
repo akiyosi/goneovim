@@ -864,7 +864,7 @@ func (w *Workspace) setFilepath() {
 }
 
 func (w *Workspace) detectTerminalMode() {
-	if !strings.Contains(w.filepath, `term://`) {
+	if !strings.HasPrefix(w.filepath, `term://`) {
 		return
 	}
 	m := new(sync.Mutex)
