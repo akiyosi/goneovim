@@ -62,7 +62,6 @@ type MiniMap struct {
 	uiAttached bool
 	rows       int
 	cols       int
-	// curLine    int
 
 	foreground *RGBA
 	background *RGBA
@@ -659,11 +658,6 @@ func (m *MiniMap) scroll(args []interface{}) {
 	}
 	if ucount > 0 {
 		count = int(ucount)
-	}
-
-	isRowDiff := m.updateRows()
-	if m.uiAttached && isRowDiff {
-		m.nvim.TryResizeUI(m.cols, m.rows)
 	}
 
 	top := m.scrollRegion[0]

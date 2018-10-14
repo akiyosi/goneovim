@@ -712,9 +712,17 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		w.scrollBar.update()
 	}
 	if doMinimapScroll {
-		ln := w.curLine
-		col := w.curColm
-		go w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", ln, col))
+		var absMapTop int
+		w.minimap.nvim.Eval("line('w0')", &absMapTop)
+		var absMapBottom int
+		w.minimap.nvim.Eval("line('w$')", &absMapBottom)
+		go w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, w.curColm))
+		switch {
+		case w.curLine >= absMapBottom:
+			go w.minimap.nvim.Input("<C-d>")
+		case absMapTop >= w.curLine:
+			go w.minimap.nvim.Input("<C-u>")
+		}
 		w.minimap.mapScroll()
 	}
 	w.statusline.mode.redraw()
@@ -1191,9 +1199,7 @@ func (w *Workspace) setGuiColor() {
 	// for Gonvim UI Color form colorscheme
 
 	w.palette.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteFgColor.print()))
-	fmt.Println("debug 1")
 	w.palette.widget.SetStyleSheet(fmt.Sprintf(" QWidget#palette { border: 1px solid %s; } .QWidget { background-color: %s; } * { color: %s; } ", paletteBorderColor.print(), paletteBgColor.print(), paletteFgColor.print()))
-	fmt.Println("debug 2")
 	w.palette.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteLightBgColor.print()))
 	w.palette.pattern.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteLightBgColor.print()))
 
