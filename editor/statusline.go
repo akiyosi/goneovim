@@ -394,37 +394,37 @@ func (s *StatusMode) redraw() {
 	case "normal":
 		text = "normal"
 		//bg = newRGBA(102, 153, 204, 1)
-		//svgContent := s.s.ws.getSvg(s.s.file.fileType, nil)
+		//svgContent := editor.getSvg(s.s.file.fileType, nil)
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		//s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "cmdline_normal":
 		text = "normal"
 		//bg = newRGBA(102, 153, 204, 1)
-		svgContent := s.s.ws.getSvg("command", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		//svgContent := s.s.ws.getSvg(s.s.file.fileType, nil)
+		svgContent := editor.getSvg("command", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		//svgContent := editor.getSvg(s.s.file.fileType, nil)
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "insert":
 		text = "insert"
 		//bg = newRGBA(153, 199, 148, 1)
-		svgContent := s.s.ws.getSvg("edit", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgContent := editor.getSvg("edit", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "visual":
 		text = "visual"
 		//bg = newRGBA(250, 200, 99, 1)
-		svgContent := s.s.ws.getSvg("select", newRGBA(warpColor(fg, 30).R, warpColor(fg, 30).G, warpColor(fg, 30).B, 1))
+		svgContent := editor.getSvg("select", newRGBA(warpColor(fg, 30).R, warpColor(fg, 30).G, warpColor(fg, 30).B, 1))
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "replace":
 		text = "replace"
 		//bg = newRGBA(250, 200, 99, 1)
-		svgContent := s.s.ws.getSvg("replace", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgContent := editor.getSvg("replace", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "terminal-input":
 		text = "terminal-input"
-		svgContent := s.s.ws.getSvg("terminal", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgContent := editor.getSvg("terminal", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
@@ -456,7 +456,7 @@ func (s *StatuslineGit) update() {
 	s.label.SetText(s.branch)
 	//if !s.svgLoaded {
 	//	s.svgLoaded = true
-	//	svgContent := s.s.ws.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
+	//	svgContent := editor.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
 	//	s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	//}
 	s.widget.Show()
@@ -510,7 +510,7 @@ func (s *StatuslineGit) redraw(file string) {
 }
 
 func (s *StatuslineFile) updateIcon() {
-	svgContent := s.s.ws.getSvg(s.fileType, nil)
+	svgContent := editor.getSvg(s.fileType, nil)
 	s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
@@ -610,18 +610,18 @@ func (s *StatuslineNotify) update() {
 func (s *StatuslineLint) update() {
 	if !s.svgLoaded {
 		s.svgLoaded = true
-		//svgContent := s.s.ws.getSvg("check", newRGBA(141, 193, 73, 1))
+		//svgContent := editor.getSvg("check", newRGBA(141, 193, 73, 1))
 		//s.okIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		var svgErrContent, svgWrnContent string
 		if s.errors != 0 {
-			svgErrContent = s.s.ws.getSvg("bad", newRGBA(204, 62, 68, 1))
+			svgErrContent = editor.getSvg("bad", newRGBA(204, 62, 68, 1))
 		} else {
-			svgErrContent = s.s.ws.getSvg("bad", nil)
+			svgErrContent = editor.getSvg("bad", nil)
 		}
 		if s.warnings != 0 {
-			svgWrnContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
+			svgWrnContent = editor.getSvg("exclamation", newRGBA(203, 203, 65, 1))
 		} else {
-			svgWrnContent = s.s.ws.getSvg("exclamation", nil)
+			svgWrnContent = editor.getSvg("exclamation", nil)
 		}
 		s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
 		s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
@@ -653,14 +653,14 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 	}
 	var svgErrContent, svgWrnContent string
 	if errors != 0 {
-		svgErrContent = s.s.ws.getSvg("bad", newRGBA(204, 62, 68, 1))
+		svgErrContent = editor.getSvg("bad", newRGBA(204, 62, 68, 1))
 	} else {
-		svgErrContent = s.s.ws.getSvg("bad", nil)
+		svgErrContent = editor.getSvg("bad", nil)
 	}
 	if warnings != 0 {
-		svgWrnContent = s.s.ws.getSvg("exclamation", newRGBA(203, 203, 65, 1))
+		svgWrnContent = editor.getSvg("exclamation", newRGBA(203, 203, 65, 1))
 	} else {
-		svgWrnContent = s.s.ws.getSvg("exclamation", nil)
+		svgWrnContent = editor.getSvg("exclamation", nil)
 	}
 	s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
 	s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))

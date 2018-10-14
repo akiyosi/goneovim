@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	homedir "github.com/mitchellh/go-homedir"
@@ -108,6 +109,10 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.SideBar.Width = 300
 		config.SideBar.AccentColor = "#519aba"
 		config.Workspace.PathStyle = "minimum"
+		go func() {
+			time.Sleep(2000 * time.Millisecond)
+			editor.pushNotification(NotifyWarn, -1, "[Gonvim] Error detected while parsing setting.toml: "+fmt.Sprintf("%s", err))
+		}()
 	}
 
 	if config.Editor.Width <= 800 {

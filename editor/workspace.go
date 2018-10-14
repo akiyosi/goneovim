@@ -49,12 +49,10 @@ type Workspace struct {
 	signature  *Signature
 	// Need https://github.com/neovim/neovim/pull/7466 to be merged
 	// message    *Message
-	minimap  *MiniMap
-	svgs     map[string]*SvgXML
-	svgsOnce sync.Once
-	width    int
-	height   int
-	hidden   bool
+	minimap *MiniMap
+	width   int
+	height  int
+	hidden  bool
 
 	nvim       *nvim.Nvim
 	rows       int
@@ -267,6 +265,7 @@ func (w *Workspace) init(path string) {
 	w.configure()
 	w.attachUI(path)
 	w.initCwd()
+	w.updateSize()
 }
 
 func (w *Workspace) configure() {
@@ -1107,75 +1106,114 @@ func (w *Workspace) setGuiColor() {
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 
+	activityBarColor := shiftColor(bg, -8)
+	sideBarColor := shiftColor(bg, -5)
+	STRONGFg := warpColor(fg, 15)
+	strongFg := warpColor(fg, 10)
+	weakBg := gradColor(bg)
+	//weakFg := gradColor(fg)
+	//darkerBg := shiftColor(bg, 10)
+
+	tablineFgColor := gradColor(fg)
+	tablineBgColor := shiftColor(bg, 10)
+
+	statuslineFolderLabelColor := gradColor(fg)
+	statuslineBorderColor := bg
+	statuslineBgColor := bg
+	statuslineFgColor := strongFg
+
+	scrollBarThumbColor := weakBg
+	scrollBarColor := bg
+
+	paletteFgColor := shiftColor(fg, -30)
+	paletteBorderColor := shiftColor(bg, 25)
+	paletteBgColor := shiftColor(bg, 15)
+	paletteLightBgColor := shiftColor(bg, -15)
+
+	popFgColor := shiftColor(fg, 5)
+	popFgDetailColor := gradColor(fg)
+	popBgColor := shiftColor(bg, 15)
+	popScrollBarColor := gradColor(bg)
+
+	locFgColor := shiftColor(fg, 5)
+	locBorderColor := shiftColor(bg, 20)
+	locBgColor := shiftColor(bg, 10)
+
+	tooltipFgColor := shiftColor(fg, -40)
+	tooltipBgColor := weakBg
+
+	wsSideColor := gradColor(fg)
+	wsSideBorderColor := shiftColor(bg, 10)
+	wsSideBgColor := shiftColor(bg, -5)
+
+	wsSideScrollBarHandleColor := gradColor(bg)
+
+	wsSideitemActiveBgColor := shiftColor(bg, 5)
+
 	// for splitter
-	editor.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
+	editor.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", sideBarColor.print()))
 
 	// for Activity Bar
-	editor.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
+	editor.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; } ", activityBarColor.print()))
 
 	var svgEditContent string
 	if editor.activity.editItem.active == true {
-		svgEditContent = w.getSvg("activityedit", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+		svgEditContent = editor.getSvg("activityedit", STRONGFg)
 	} else {
-		svgEditContent = w.getSvg("activityedit", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+		svgEditContent = editor.getSvg("activityedit", weakBg)
 	}
 	editor.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
 
 	var svgDeinContent string
 	if editor.activity.deinItem.active == true {
-		svgDeinContent = w.getSvg("activitydein", newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+		svgDeinContent = editor.getSvg("activitydein", STRONGFg)
 	} else {
-		svgDeinContent = w.getSvg("activitydein", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+		svgDeinContent = editor.getSvg("activitydein", weakBg)
 	}
 	editor.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
 
 	// tab
-	tabStyle := fmt.Sprintf("QWidget { color: rgba(%d, %d, %d, 0.8);	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
-	w.tabline.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border-left: 8px solid rgba(%d, %d, %d, 1); border-bottom: 0px solid;	border-right: 0px solid;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + tabStyle)
+	w.tabline.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-left: 8px solid %s; border-bottom: 0px solid; border-right: 0px solid; background-color: %s; } QWidget { color: %s; } ", tablineBgColor.print(), tablineBgColor.print(), tablineFgColor.print()))
 
 	// statusline
-	statusStyle := fmt.Sprintf("	* {	color: rgba(%d, %d, %d, 1);	}", warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B)
-	w.statusline.file.folderLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d, %d, %d, 0.8);", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
-	w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 0).R, shiftColor(bg, 0).G, shiftColor(bg, 0).B, shiftColor(bg, 0).R, shiftColor(bg, 0).G, shiftColor(bg, 0).B) + statusStyle)
-	//w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid rgba(%d, %d, %d, 1);	background-color: rgba(%d, %d, %d, 1);	}", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + statusStyle)
-	svgContent := w.getSvg("git", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+	w.statusline.file.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", statuslineFolderLabelColor.print()))
+	w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid %s; background-color: %s; } * { color: %s; }", statuslineBorderColor.print(), statuslineBgColor.print(), statuslineFgColor.print()))
+
+	svgContent := editor.getSvg("git", statuslineFgColor)
 	w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	svgContent = w.getSvg("bell", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+	svgContent = editor.getSvg("bell", statuslineFgColor)
 	w.statusline.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
 	// scrollBar
-	w.scrollBar.thumb.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1);}", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
-	w.scrollBar.widget.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1);}", bg.R, bg.G, bg.B))
+	w.scrollBar.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", scrollBarThumbColor.print()))
+	w.scrollBar.widget.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", scrollBarColor.print()))
 
 	// for Gonvim UI Color form colorscheme
-	tooltipStyle := fmt.Sprintf("color: rgba(%d, %d, %d, 1); }", shiftColor(fg, -40).R, shiftColor(fg, -40).G, shiftColor(fg, -40).B)
 
-	paletteStyle := fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); }", shiftColor(fg, -30).R, shiftColor(fg, -30).G, shiftColor(fg, -30).B)
-	w.palette.cursor.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", shiftColor(fg, -30).R, shiftColor(fg, -30).G, shiftColor(fg, -30).B))
-	w.palette.widget.SetStyleSheet(fmt.Sprintf("QWidget#palette {border: 1px solid rgba(%d, %d, %d, 1);} .QWidget {background-color: rgba(%d, %d, %d, 1); }", shiftColor(bg, 25).R, shiftColor(bg, 25).G, shiftColor(bg, 25).B, shiftColor(bg, 15).R, shiftColor(bg, 15).G, shiftColor(bg, 15).B) + paletteStyle)
-	w.palette.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
-	w.palette.pattern.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
+	w.palette.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteFgColor.print()))
+	fmt.Println("debug 1")
+	w.palette.widget.SetStyleSheet(fmt.Sprintf(" QWidget#palette { border: 1px solid %s; } .QWidget { background-color: %s; } * { color: %s; } ", paletteBorderColor.print(), paletteBgColor.print(), paletteFgColor.print()))
+	fmt.Println("debug 2")
+	w.palette.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteLightBgColor.print()))
+	w.palette.pattern.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteLightBgColor.print()))
 
 	// popup
-	popupStyle := fmt.Sprintf("color: rgba(%d, %d, %d, 1);} #detailpopup {	color: rgba(%d, %d, %d, 1); }", shiftColor(fg, 5).R, shiftColor(fg, 5).G, shiftColor(fg, 5).B, gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
-	w.popup.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 1);", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
-	w.popup.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, 1); ", shiftColor(bg, 15).R, shiftColor(bg, 15).G, shiftColor(bg, 15).B) + popupStyle)
+	w.popup.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", popScrollBarColor.print()))
+	w.popup.widget.SetStyleSheet(fmt.Sprintf("* {background-color: %s; color: %s;} #detailpopup { color: %s; }", popBgColor.print(), popFgColor.print(), popFgDetailColor.print()))
 
 	// loc
-	locpopupStyle := fmt.Sprintf(" color: rgba(%d, %d, %d, 1); }", shiftColor(fg, 5).R, shiftColor(fg, 5).G, shiftColor(fg, 5).B)
-	w.loc.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid rgba(%d, %d, %d, 1); } * {background-color: rgba(%d, %d, %d, 1);", shiftColor(bg, 20).R, shiftColor(bg, 20).G, shiftColor(bg, 20).B, shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B) + locpopupStyle)
+	w.loc.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } * { background-color: %s;  color: %s; }", locBorderColor.print(), locBgColor.print(), locFgColor.print()))
 
 	// screan tooltip
-	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: rgba(%d, %d, %d, 1); text-decoration: underline;", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + tooltipStyle)
+	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: %s; text-decoration: underline; color: %s; }", tooltipBgColor.print(), tooltipFgColor.print()))
 
 	// for Workspaceside
-	wsSideStyle := fmt.Sprintf("QWidget {	color: rgba(%d, %d, %d, 1);		border-right: 0px solid;	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
-	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget {	border-color: rgba(%d, %d, %d, 1); padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + wsSideStyle)
-	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: rgb(%d, %d, %d); width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: rgb(%d, %d, %d); min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
+	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-color: %s; padding-top: 5px; background-color: %s; } QWidget { color: %s; border-right: 0px solid; }", wsSideBorderColor.print(), wsSideBgColor.print(), wsSideColor.print()))
+	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", wsSideBgColor.print(), wsSideScrollBarHandleColor.print()))
 
 	if len(editor.workspaces) == 1 {
 		editor.wsSide.items[0].active = true
-		editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 3px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+		editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 3px solid %s; background-color: %s; color: %s; ", editor.config.SideBar.AccentColor, wsSideitemActiveBgColor.print(), fg.print()))
 	}
 
 	editor.window.SetWindowOpacity(1.0)

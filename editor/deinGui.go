@@ -193,7 +193,6 @@ func confirmDeinGUITomlFile(file string) {
 }
 
 func loadDeinCashe() []*DeinPluginItem {
-	w := editor.workspaces[editor.active]
 	labelColor := darkenHex(editor.config.SideBar.AccentColor)
 
 	m, _ := readDeinCache()
@@ -347,9 +346,9 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginLazyIcon.SetFixedSize2(iconSize, iconSize)
 		var svgLazyContent string
 		if i.lazy == false {
-			svgLazyContent = w.getSvg("timer", shiftColor(bg, -5))
+			svgLazyContent = editor.getSvg("timer", shiftColor(bg, -5))
 		} else {
-			svgLazyContent = w.getSvg("timer", fg)
+			svgLazyContent = editor.getSvg("timer", fg)
 		}
 		installedPluginLazyIcon.Load2(core.NewQByteArray2(svgLazyContent, len(svgLazyContent)))
 		installedPluginLazyLayout.AddWidget(installedPluginLazyIcon, 0, 0)
@@ -364,9 +363,9 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginSourcedIcon.SetFixedSize2(iconSize-1, iconSize-1)
 		var svgSourcedContent string
 		if i.sourced == false {
-			svgSourcedContent = w.getSvg("puzzle", shiftColor(bg, -5))
+			svgSourcedContent = editor.getSvg("puzzle", shiftColor(bg, -5))
 		} else {
-			svgSourcedContent = w.getSvg("puzzle", fg)
+			svgSourcedContent = editor.getSvg("puzzle", fg)
 		}
 		installedPluginSourcedIcon.Load2(core.NewQByteArray2(svgSourcedContent, len(svgSourcedContent)))
 		installedPluginSourcedLayout.AddWidget(installedPluginSourcedIcon, 0, 0)
@@ -379,7 +378,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginSettingsLayout.SetSpacing(1)
 		installedPluginSettingsIcon := svg.NewQSvgWidget(nil)
 		installedPluginSettingsIcon.SetFixedSize2(iconSize+1, iconSize+1)
-		svgSettingsContent := w.getSvg("settings", fg)
+		svgSettingsContent := editor.getSvg("settings", fg)
 		installedPluginSettingsIcon.Load2(core.NewQByteArray2(svgSettingsContent, len(svgSettingsContent)))
 		installedPluginSettingsLayout.AddWidget(installedPluginSettingsIcon, 0, 0)
 		installedPluginSettings.SetLayout(installedPluginSettingsLayout)
@@ -414,11 +413,11 @@ func loadDeinCashe() []*DeinPluginItem {
 			i.contextMenu.Exec2(installedPluginSettings.MapToGlobal(p), nil)
 		})
 		installedPluginSettings.ConnectEnterEvent(func(event *core.QEvent) {
-			svgSettingsContent := w.getSvg("settings", hexToRGBA(editor.config.SideBar.AccentColor))
+			svgSettingsContent := editor.getSvg("settings", hexToRGBA(editor.config.SideBar.AccentColor))
 			installedPluginSettingsIcon.Load2(core.NewQByteArray2(svgSettingsContent, len(svgSettingsContent)))
 		})
 		installedPluginSettings.ConnectLeaveEvent(func(event *core.QEvent) {
-			svgSettingsContent := w.getSvg("settings", fg)
+			svgSettingsContent := editor.getSvg("settings", fg)
 			installedPluginSettingsIcon.Load2(core.NewQByteArray2(svgSettingsContent, len(svgSettingsContent)))
 		})
 
@@ -537,7 +536,6 @@ type DeinPlugin struct {
 }
 
 func newDeinSide() *DeinSide {
-	w := editor.workspaces[editor.active]
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 	// width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
@@ -555,7 +553,7 @@ func newDeinSide() *DeinSide {
 	header.SetText("Dein.vim")
 	configIcon := svg.NewQSvgWidget(nil)
 	configIcon.SetFixedSize2(13, 13)
-	svgConfigContent := w.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+	svgConfigContent := editor.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 	headerLayout.AddWidget(header, 0, 0)
 	headerLayout.AddWidget(configIcon, 0, 0)
@@ -870,7 +868,6 @@ func (side *DeinSide) doSearch(pagenum int) {
 }
 
 func drawSearchresults(results PluginSearchResults, pagenum int) {
-	w := editor.workspaces[editor.active]
 	fg := editor.fgcolor
 	resultplugins := []*Plugin{}
 	labelColor := darkenHex(editor.config.SideBar.AccentColor)
@@ -926,7 +923,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 
 		pluginStarsIcon := svg.NewQSvgWidget(nil)
 		pluginStarsIcon.SetFixedSize2(11, 11)
-		svgStarContent := w.getSvg("star", fg)
+		svgStarContent := editor.getSvg("star", fg)
 		pluginStarsIcon.Load2(core.NewQByteArray2(svgStarContent, len(svgStarContent)))
 
 		pluginStarsNum := widgets.NewQLabel(nil, 0)
@@ -947,7 +944,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 
 		pluginDownloadsIcon := svg.NewQSvgWidget(nil)
 		pluginDownloadsIcon.SetFixedSize2(11, 11)
-		svgDownloadContent := w.getSvg("downloaded", fg)
+		svgDownloadContent := editor.getSvg("downloaded", fg)
 		pluginDownloadsIcon.Load2(core.NewQByteArray2(svgDownloadContent, len(svgDownloadContent)))
 
 		pluginDownloadsNum := widgets.NewQLabel(nil, 0)
@@ -968,7 +965,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 
 		pluginAuthorIcon := svg.NewQSvgWidget(nil)
 		pluginAuthorIcon.SetFixedSize2(11, 11)
-		svgUserContent := w.getSvg("user", fg)
+		svgUserContent := editor.getSvg("user", fg)
 		pluginAuthorIcon.Load2(core.NewQByteArray2(svgUserContent, len(svgUserContent)))
 
 		pluginAuthorNum := widgets.NewQLabel(nil, 0)
@@ -989,7 +986,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 
 		pluginUpdatedIcon := svg.NewQSvgWidget(nil)
 		pluginUpdatedIcon.SetFixedSize2(11, 11)
-		svgUpdatedContent := w.getSvg("progress", fg)
+		svgUpdatedContent := editor.getSvg("progress", fg)
 		pluginUpdatedIcon.Load2(core.NewQByteArray2(svgUpdatedContent, len(svgUpdatedContent)))
 
 		pluginUpdatedNum := widgets.NewQLabel(nil, 0)
@@ -1080,7 +1077,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginInstallIcon := svg.NewQSvgWidget(nil)
 		iconSize := 14
 		pluginInstallIcon.SetFixedSize2(iconSize, iconSize)
-		svgContent := w.getSvg("download", newRGBA(255, 255, 255, 1))
+		svgContent := editor.getSvg("download", newRGBA(255, 255, 255, 1))
 		pluginInstallIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		pluginInstallLayout.AddWidget(pluginInstallIcon, 0, 0)
 		plugin.installButtonIcon = pluginInstallIcon
@@ -1447,16 +1444,14 @@ func (d *DeinSide) enterConfigIcon(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
-	w := editor.workspaces[editor.active]
 	fg := editor.fgcolor
-	svgConfigContent := w.getSvg("configfile", newRGBA(warpColor(fg, -20).R, warpColor(fg, -20).G, warpColor(fg, -20).B, 1))
+	svgConfigContent := editor.getSvg("configfile", newRGBA(warpColor(fg, -20).R, warpColor(fg, -20).G, warpColor(fg, -20).B, 1))
 	d.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 }
 
 func (d *DeinSide) leaveConfigIcon(event *core.QEvent) {
-	w := editor.workspaces[editor.active]
 	bg := editor.bgcolor
-	svgConfigContent := w.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+	svgConfigContent := editor.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	d.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 	gui.QGuiApplication_RestoreOverrideCursor()
 }

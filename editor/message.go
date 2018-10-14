@@ -228,11 +228,11 @@ func (i *MessageItem) setKind(kind string) {
 	switch i.kind {
 	case "emsg":
 		style += "color: rgba(204, 62, 68, 1);"
-		svgContent := i.m.ws.getSvg("fire", newRGBA(204, 62, 68, 1))
+		svgContent := editor.getSvg("fire", newRGBA(204, 62, 68, 1))
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	default:
 		style += "color: rgba(81, 154, 186, 1);"
-		svgContent := i.m.ws.getSvg("comment", nil)
+		svgContent := editor.getSvg("comment", nil)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	i.label.SetStyleSheet(style)

@@ -93,7 +93,7 @@ func newFilelistwidget(path string) *Filelist {
 		fileModified.SetFixedHeight(11)
 		fileModified.SetContentsMargins(0, 0, 0, 0)
 		// Hide with the same color as the background
-		svgModified := editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+		svgModified := editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 		fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 
 		filename := f.Name()
@@ -111,11 +111,11 @@ func newFilelistwidget(path string) *Filelist {
 
 		if finfo.IsDir() {
 			filetype = "/"
-			svgContent := editor.workspaces[editor.active].getSvg("directory", nil)
+			svgContent := editor.getSvg("directory", nil)
 			fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		} else {
 			filetype = getFileType(filename)
-			svgContent := editor.workspaces[editor.active].getSvg(filetype, nil)
+			svgContent := editor.getSvg(filetype, nil)
 			fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		}
 
@@ -216,17 +216,17 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 	if cfn == f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
 		if f.isModified == "1" {
-			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+			svgModified = editor.getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
 		} else {
-			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
 		}
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	} else {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); text-decoration: underline; } ", shiftColor(bg, -9).R, shiftColor(bg, -9).G, shiftColor(bg, -9).B))
 		if f.isModified == "1" {
-			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+			svgModified = editor.getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
 		} else {
-			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -9).R, shiftColor(bg, -9).G, shiftColor(bg, -9).B, 1))
+			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -9).R, shiftColor(bg, -9).G, shiftColor(bg, -9).B, 1))
 		}
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
@@ -248,7 +248,7 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 
 	if cfn != f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); text-decoration: none; } ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
-		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+		svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
 	gui.QGuiApplication_RestoreOverrideCursor()
@@ -274,12 +274,12 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 	for j, fileitem := range i.Filelist.Fileitems {
 		if fileitem.fileName != cfn {
 			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
-			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 			fileitem.isOpened = false
 		} else {
 			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
-			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
 			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 			fileitem.isOpened = true
 			i.Filelist.active = j
@@ -301,12 +301,12 @@ func (f *Fileitem) updateModifiedbadge() {
 	bg := editor.bgcolor
 	var svgModified string
 	if isModified == "1" {
-		svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+		svgModified = editor.getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
 	} else {
 		if f.isOpened {
-			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
 		} else {
-			svgModified = editor.workspaces[editor.active].getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 		}
 	}
 	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))

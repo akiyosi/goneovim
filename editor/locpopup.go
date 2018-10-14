@@ -81,12 +81,12 @@ func (l *Locpopup) updateLocpopup() {
 	if l.typeText == "E" {
 		//l.typeLabel.SetText("Error")
 		//l.typeLabel.SetStyleSheet("background-color: rgba(204, 62, 68, 1);")
-		svgContent := l.ws.getSvg("linterr", newRGBA(204, 62, 68, 1))
+		svgContent := editor.getSvg("linterr", newRGBA(204, 62, 68, 1))
 		l.typeLabel.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else if l.typeText == "W" {
 		//l.typeLabel.SetText("Warning")
 		//l.typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1);")
-		svgContent := l.ws.getSvg("lintwrn", newRGBA(204, 203, 65, 1))
+		svgContent := editor.getSvg("lintwrn", newRGBA(204, 203, 65, 1))
 		l.typeLabel.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	l.widget.Hide()
