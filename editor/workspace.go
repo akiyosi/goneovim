@@ -652,6 +652,16 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
+			if editor.config.Editor.DisableImeInNormal {
+				switch w.mode {
+				case "normal":
+					w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
+					editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
+				case "insert":
+					w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+					editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+				}
+			}
 		case "popupmenu_show":
 			w.popup.showItems(args)
 		case "popupmenu_hide":

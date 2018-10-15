@@ -21,6 +21,7 @@ import (
 // linespace = 10
 // clipboard = true
 // cursorBlink = true
+// disableIMEinNormal = true
 //
 // [scrollBar]
 // visible = true
@@ -61,13 +62,14 @@ type gonvimConfig struct {
 }
 
 type editorConfig struct {
-	Width       int
-	Height      int
-	FontFamily  string
-	FontSize    int
-	Linespace   int
-	Clipboard   bool
-	CursorBlink bool
+	Width              int
+	Height             int
+	FontFamily         string
+	FontSize           int
+	Linespace          int
+	Clipboard          bool
+	CursorBlink        bool
+	DisableImeInNormal bool
 }
 
 type miniMapConfig struct {
