@@ -46,6 +46,7 @@ type DeinSide struct {
 	widget       *widgets.QWidget
 	layout       *widgets.QLayout
 	header       *widgets.QWidget
+	contextMenu  *widgets.QMenu
 	scrollarea   *widgets.QScrollArea
 	searchlayout *widgets.QBoxLayout
 	// searchbox        *widgets.QLineEdit
@@ -385,7 +386,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginSettings.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 			if i.contextMenu == nil {
 				i.contextMenu = widgets.NewQMenu(installedPluginSettings)
-				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 7px 0px 7px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1);} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, bg.R, bg.G, bg.B))
+				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1);} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, bg.R, bg.G, bg.B))
 				// Example menu and action
 				// menuActionExit := i.contextMenu.AddAction("E&xit")
 				// menuActionExit.SetShortcut(gui.NewQKeySequence2("Ctrl+X", gui.QKeySequence__NativeText))
@@ -403,7 +404,7 @@ func loadDeinCashe() []*DeinPluginItem {
 					}
 				}
 				if !invalidConfigure {
-					i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 7px 0px 7px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1); } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, shiftColor(fg, 55).R, shiftColor(fg, 55).G, shiftColor(fg, 55).B))
+					i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1); } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, shiftColor(fg, 55).R, shiftColor(fg, 55).G, shiftColor(fg, 55).B))
 				} else {
 					menuActionRemove.ConnectTriggered(i.remove)
 					menuActionEditToml.ConnectTriggered(i.editToml)
@@ -689,7 +690,7 @@ func newDeinSide() *DeinSide {
 
 	configIcon.ConnectEnterEvent(side.enterConfigIcon)
 	configIcon.ConnectLeaveEvent(side.leaveConfigIcon)
-	configIcon.ConnectMousePressEvent(pressConfigIcon)
+	configIcon.ConnectMousePressEvent(side.pressConfigIcon)
 
 	deinSideStyle := fmt.Sprintf("QWidget {	color: rgba(%d, %d, %d, 1);		border-right: 0px solid;	}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B)
 	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget {padding-top: 5px;	background-color: rgba(%d, %d, %d, 1);	}	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B) + deinSideStyle)
@@ -1440,23 +1441,42 @@ func (p *Plugin) pressPluginWidget(event *gui.QMouseEvent) {
 	go editor.workspaces[editor.active].markdown.openReadme(p.repo, p.readme)
 }
 
-func (d *DeinSide) enterConfigIcon(event *core.QEvent) {
+func (side *DeinSide) enterConfigIcon(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
 	fg := editor.fgcolor
 	svgConfigContent := editor.getSvg("configfile", newRGBA(warpColor(fg, -20).R, warpColor(fg, -20).G, warpColor(fg, -20).B, 1))
-	d.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
+	side.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 }
 
-func (d *DeinSide) leaveConfigIcon(event *core.QEvent) {
+func (side *DeinSide) leaveConfigIcon(event *core.QEvent) {
 	bg := editor.bgcolor
 	svgConfigContent := editor.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
-	d.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
+	side.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 	gui.QGuiApplication_RestoreOverrideCursor()
 }
 
-func pressConfigIcon(event *gui.QMouseEvent) {
-	editor.workspaces[editor.active].nvim.Command(":tabnew " + editor.config.Dein.TomlFile)
+func (side *DeinSide) pressConfigIcon(event *gui.QMouseEvent) {
+	fg := editor.fgcolor
+	bg := editor.bgcolor
+	if side.contextMenu == nil {
+		side.contextMenu = widgets.NewQMenu(side.widget)
+		side.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1);} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, bg.R, bg.G, bg.B))
+		menuActionUpdateRemotePlugins := side.contextMenu.AddAction("UpdateRemotePlugins")
+		menuActionUpdateRemotePlugins.ConnectTriggered(func(dummy bool) {
+			go editor.workspaces[editor.active].nvim.Command(":UpdateRemotePlugins")
+		})
+		menuActionRecacheRuntmepath := side.contextMenu.AddAction("Recache runtimepath")
+		menuActionRecacheRuntmepath.ConnectTriggered(func(dummy bool) {
+			go editor.workspaces[editor.active].nvim.Command(":call dein#recache_runtimepath()")
+		})
+		menuActionOpenToml := side.contextMenu.AddAction("Open toml file")
+		menuActionOpenToml.ConnectTriggered(func(dummy bool) {
+			go editor.workspaces[editor.active].nvim.Command(":tabnew " + editor.config.Dein.TomlFile)
+		})
+	}
+	p := event.Pos()
+	side.contextMenu.Exec2(side.configIcon.MapToGlobal(p), nil)
 
 }
