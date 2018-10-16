@@ -367,6 +367,9 @@ func (m *MiniMap) bufUpdate() {
 		m.widget.Hide()
 		return
 	}
+	if m.ws.nvim == nil || m.nvim == nil {
+		return
+	}
 	if !m.isSetColorscheme {
 		m.setColorscheme()
 	}
