@@ -1553,7 +1553,7 @@ function getMethods(obj) {
                 if (diffs.length === 0) {
                     // Last check if the elements really are the same now.
                     // If not, remove all info about being done and start over.
-                    // Somtimes a node can be marked as done, but the creation of subsequent diffs means that it has to be changed anyway.
+                    // Sometimes a node can be marked as done, but the creation of subsequent diffs means that it has to be changed anyway.
                     if (!isEqual(t1, t2)) {
                         removeDone(t1);
                         diffs = this.findNextDiff(t1, t2, []);
