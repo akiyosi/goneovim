@@ -957,7 +957,7 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 type WorkspaceSide struct {
 	widget     *widgets.QWidget
 	scrollarea *widgets.QScrollArea
-	title      *widgets.QLabel
+	header     *widgets.QLabel
 	items      []*WorkspaceSideItem
 	fgcolor    *RGBA
 	bgcolor    *RGBA
@@ -968,8 +968,9 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 	header := widgets.NewQLabel(nil, 0)
-	header.SetContentsMargins(20, 15, 20, 10)
-	header.SetText("Workspace")
+	header.SetContentsMargins(22, 15, 20, 10)
+	header.SetStyleSheet(" .QLabel { font-size: 11px; } ")
+	header.SetText("WORKSPACE")
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 100)
 	widget.SetLayout(layout)
@@ -977,10 +978,10 @@ func newWorkspaceSide() *WorkspaceSide {
 
 	side := &WorkspaceSide{
 		widget: widget,
-		title:  header,
+		header: header,
 	}
 	layout.AddWidget(header)
-	side.title.Show()
+	side.header.Show()
 
 	items := []*WorkspaceSideItem{}
 	side.items = items
@@ -1020,7 +1021,7 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	layout.SetContentsMargins(0, 5, 0, 5)
 
 	label := widgets.NewQLabel(nil, 0)
-	label.SetContentsMargins(15, 6, 10, 6)
+	label.SetContentsMargins(15, 1, 10, 1)
 	label.SetMaximumWidth(editor.config.SideBar.Width)
 	label.SetMinimumWidth(editor.config.SideBar.Width)
 
@@ -1061,7 +1062,7 @@ func (i *WorkspaceSideItem) setSideItemLabel(n int) {
 	} else {
 		i.setInactive()
 	}
-	i.label.SetContentsMargins(15+15, 6, 0, 6)
+	i.label.SetContentsMargins(15+15, 3, 0, 3)
 }
 
 func (i *WorkspaceSideItem) setActive() {
@@ -1074,7 +1075,7 @@ func (i *WorkspaceSideItem) setActive() {
 	i.active = true
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 3px solid %s;	background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", editor.config.SideBar.AccentColor, shiftColor(bg, 5).R, shiftColor(bg, 5).G, shiftColor(bg, 5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 0px 0px 0px; background-color: %s; color: %s; ", shiftColor(bg, -15).print(), shiftColor(fg, 0).print()))
 
 	if i.Filelist.isload == false && editor.activity.editItem.active == true {
 		filelist := newFilelistwidget(i.cwdpath)
@@ -1094,7 +1095,7 @@ func (i *WorkspaceSideItem) setInactive() {
 	i.active = false
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 15px; background-color: rgba(%d, %d, %d, 1);	color: rgba(%d, %d, %d, 1);	", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, shiftColor(fg, 0).R, shiftColor(fg, 0).G, shiftColor(fg, 0).B))
+	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 0px 0px 0px; background-color: %s; color: %s; ", shiftColor(bg, -5).print(), shiftColor(fg, 0).print()))
 
 	i.Filelistwidget.Hide()
 }
@@ -1164,13 +1165,14 @@ func (w *Workspace) setGuiColor() {
 	tooltipFgColor := shiftColor(fg, -40)
 	tooltipBgColor := weakBg
 
+	wsHeaderColor := fg
 	wsSideColor := gradColor(fg)
 	wsSideBorderColor := shiftColor(bg, 10)
 	wsSideBgColor := shiftColor(bg, -5)
 
 	wsSideScrollBarHandleColor := gradColor(bg)
 
-	wsSideitemActiveBgColor := shiftColor(bg, 5)
+	wsSideitemActiveBgColor := shiftColor(bg, -15)
 
 	// for splitter
 	editor.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", sideBarColor.print()))
@@ -1228,12 +1230,13 @@ func (w *Workspace) setGuiColor() {
 	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: %s; text-decoration: underline; color: %s; }", tooltipBgColor.print(), tooltipFgColor.print()))
 
 	// for Workspaceside
+	editor.wsSide.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ font-size: 11px; color: %s;} ", wsHeaderColor.print()))
 	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-color: %s; padding-top: 5px; background-color: %s; } QWidget { color: %s; border-right: 0px solid; }", wsSideBorderColor.print(), wsSideBgColor.print(), wsSideColor.print()))
 	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", wsSideBgColor.print(), wsSideScrollBarHandleColor.print()))
 
 	if len(editor.workspaces) == 1 {
 		editor.wsSide.items[0].active = true
-		editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: 0px 10px 0px 10px; border-left: 3px solid %s; background-color: %s; color: %s; ", editor.config.SideBar.AccentColor, wsSideitemActiveBgColor.print(), fg.print()))
+		editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: 0px 0px 0px 0px; background-color: %s; color: %s; ", wsSideitemActiveBgColor.print(), fg.print()))
 	}
 
 	editor.window.SetWindowOpacity(1.0)

@@ -183,7 +183,13 @@ func InitEditor() {
 	e.wsSide = newWorkspaceSide()
 	sideArea := widgets.NewQScrollArea(nil)
 	sideArea.SetWidgetResizable(true)
-	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+	sideArea.ConnectEnterEvent(func(event *core.QEvent) {
+		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+	})
+	sideArea.ConnectLeaveEvent(func(event *core.QEvent) {
+		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+	})
 	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
 	sideArea.SetWidget(e.wsSide.widget)
 	sideArea.SetFrameShape(widgets.QFrame__NoFrame)

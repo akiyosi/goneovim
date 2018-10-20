@@ -551,7 +551,7 @@ func newDeinSide() *DeinSide {
 	header := widgets.NewQLabel(nil, 0)
 	//header.SetContentsMargins(20, 15, 20, 5)
 	header.SetContentsMargins(0, 0, 0, 0)
-	header.SetText("Dein.vim")
+	header.SetText("DEIN.VIM")
 	configIcon := svg.NewQSvgWidget(nil)
 	configIcon.SetFixedSize2(13, 13)
 	svgConfigContent := editor.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
@@ -559,6 +559,7 @@ func newDeinSide() *DeinSide {
 	headerLayout.AddWidget(header, 0, 0)
 	headerLayout.AddWidget(configIcon, 0, 0)
 	headerWidget.SetLayout(headerLayout)
+	header.SetStyleSheet(fmt.Sprintf(" .QLabel{ font-size: 11px; color: %s;} ", fg.print()))
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
@@ -708,9 +709,9 @@ func newInstalledPlugins() *InstalledPlugins {
 	installedLayout.SetSpacing(10)
 
 	installedHeader := widgets.NewQLabel(nil, 0)
-	installedHeader.SetContentsMargins(20, 2, 20, 1)
+	installedHeader.SetContentsMargins(20, 2, 20, 2)
 	installedHeader.SetText("INSTALLED")
-	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 10px; margin-bottom: 0px; background: rgba(%d, %d, %d, 1); font-size: 11px; color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
+	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 11px; margin-bottom: 0px; background: %s; font-size: 12px; color: %s; } ", shiftColor(bg, -15).print(), fg.print()))
 	installedLayout.AddWidget(installedHeader, 0, 0)
 
 	cache := loadDeinCashe()

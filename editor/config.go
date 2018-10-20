@@ -37,7 +37,7 @@ import (
 // visible = false
 // dropshadow = true
 // width = 360
-// accentColor
+// accentColor = "#5596ea"
 //
 // [workspace]
 // # Path style
@@ -109,7 +109,7 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.ActivityBar.Visible = true
 		config.ScrollBar.Visible = true
 		config.SideBar.Width = 300
-		config.SideBar.AccentColor = "#519aba"
+		config.SideBar.AccentColor = "#5596ea"
 		config.Workspace.PathStyle = "minimum"
 		go func() {
 			time.Sleep(2000 * time.Millisecond)

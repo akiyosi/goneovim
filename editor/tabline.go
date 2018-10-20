@@ -262,8 +262,8 @@ func newTabline() *Tabline {
 	widget.SetLayout(layout)
 
 	marginDefault := 10
-	marginTop := 10
-	marginBottom := 10
+	marginTop := 5    // No effect now
+	marginBottom := 5 // No effect now
 	tabline := &Tabline{
 		widget:        widget,
 		layout:        layout,
@@ -277,26 +277,26 @@ func newTabline() *Tabline {
 		w := widgets.NewQWidget(nil, 0)
 		w.SetContentsMargins(10, 0, 10, 0)
 		l := widgets.NewQHBoxLayout()
-		l.SetContentsMargins(8, 6, 0, 0)
+		l.SetContentsMargins(8, 2, 0, 2) // tab margins
 		l.SetSpacing(10)
-		fileIcon := svg.NewQSvgWidget(nil)
-		fileIcon.SetFixedWidth(12)
-		fileIcon.SetFixedHeight(12)
+		// fileIcon := svg.NewQSvgWidget(nil)
+		// fileIcon.SetFixedWidth(12)
+		// fileIcon.SetFixedHeight(12)
 		file := widgets.NewQLabel(nil, 0)
 		file.SetContentsMargins(0, marginTop, 0, marginBottom)
 		closeIcon := svg.NewQSvgWidget(nil)
 		closeIcon.SetFixedWidth(14)
 		closeIcon.SetFixedHeight(14)
-		l.AddWidget(fileIcon, 0, 0)
+		// l.AddWidget(fileIcon, 0, 0)
 		l.AddWidget(file, 1, 0)
 		l.AddWidget(closeIcon, 0, 0)
 		w.SetLayout(l)
 		tab := &Tab{
-			t:         tabline,
-			widget:    w,
-			layout:    l,
-			file:      file,
-			fileIcon:  fileIcon,
+			t:      tabline,
+			widget: w,
+			layout: l,
+			file:   file,
+			// fileIcon:  fileIcon,
 			closeIcon: closeIcon,
 		}
 		tab.closeIcon.Hide()
@@ -330,7 +330,7 @@ func (t *Tab) updateActive() {
 	bg := editor.bgcolor
 	fg := editor.fgcolor
 	if t.active {
-		activeStyle := fmt.Sprintf(".QWidget { border-top: 8px solid rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } QWidget{color: rgba(%d, %d, %d, 1);} ", shiftColor(bg, 10).R, shiftColor(bg, 10).G, shiftColor(bg, 10).B, bg.R, bg.G, bg.B, fg.R, fg.G, fg.B)
+		activeStyle := fmt.Sprintf(".QWidget { border-left: 2px solid %s; background-color: %s; } QWidget{ color: %s; } ", editor.config.SideBar.AccentColor, bg.print(), fg.print())
 		t.widget.SetStyleSheet(activeStyle)
 		svgContent := editor.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -404,7 +404,7 @@ func (t *Tabline) update(args []interface{}) {
 		fileType := getFileType(text)
 		if fileType != tab.fileType {
 			tab.fileType = fileType
-			tab.updateFileIcon()
+			// tab.updateFileIcon()
 		}
 
 		if text != tab.fileText {

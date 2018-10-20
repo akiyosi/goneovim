@@ -159,6 +159,12 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 			sideArea.SetFocusPolicy(core.Qt__ClickFocus)
 			sideArea.SetWidget(editor.deinSide.widget)
 			sideArea.SetFrameShape(widgets.QFrame__NoFrame)
+			sideArea.ConnectEnterEvent(func(event *core.QEvent) {
+				sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+			})
+			sideArea.ConnectLeaveEvent(func(event *core.QEvent) {
+				sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+			})
 			editor.deinSide.scrollarea = sideArea
 			editor.deinSide.scrollarea.ConnectResizeEvent(deinSideResize)
 
