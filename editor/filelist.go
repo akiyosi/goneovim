@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/therecipe/qt/core"
@@ -263,16 +264,18 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 	bg := editor.bgcolor
 	var svgModified string
 
-	cfn := ""
-	cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
-	if err != nil {
-		cfn = ""
-	} else {
-		cfn = cfnITF.(string)
-	}
+	//cfn := ""
+	//cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
+	//if err != nil {
+	//	cfn = ""
+	//} else {
+	//	cfn = cfnITF.(string)
+	//}
+
+	currFilepath := editor.workspaces[editor.active].filepath
 
 	for j, fileitem := range i.Filelist.Fileitems {
-		if fileitem.fileName != cfn {
+		if !strings.HasSuffix(currFilepath, fileitem.fileName) {
 			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
 			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
