@@ -500,6 +500,7 @@ func getRepoDesc(owner string, name string) string {
 type DeinTomlConfig struct {
 	Plugins []DeinPlugin
 }
+
 type DeinPlugin struct {
 	Repo           string
 	AuGroup        string `toml:"augroup"`
@@ -1123,7 +1124,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 	parentLayout.Update()
 	editor.deinSide.searchresult.plugins = append(editor.deinSide.searchresult.plugins, resultplugins...)
 	editor.deinSide.searchresult.layout.Update()
-	parentLayout.SetContentsMargins(0, 0, 0, 12*len(editor.deinSide.searchresult.plugins))
+	parentLayout.SetContentsMargins(0, 0, 0, 18*len(editor.deinSide.searchresult.plugins))
 
 	if pagenum < results.TotalPages {
 		readMoreButton := widgets.NewQPushButton2("read more", nil)
