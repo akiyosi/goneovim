@@ -809,7 +809,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
 	case "gonvim_get_maxline":
-		fmt.Println("get_maxline")
 		go func() {
 			lnITF, err := w.nvimEval("line('$')")
 			if err != nil {
@@ -838,7 +837,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_cwd":
 		w.setCwd()
 	case "gonvim_workspace_redrawSideItem":
-		fmt.Println("gonvim_workspace_redrawSideItem")
 		fl := editor.wsSide.items[editor.active].Filelist
 		if fl.active != -1 {
 			if len(fl.Fileitems) != 0 {
@@ -846,7 +844,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			}
 		}
 	case "gonvim_workspace_redrawSideItems":
-		fmt.Println("workspace_redrawSideItems")
 		editor.workspaces[editor.active].setFilepath()
 		editor.wsSide.items[editor.active].setCurrentFileLabel()
 	case GonvimMarkdownNewBufferEvent:
