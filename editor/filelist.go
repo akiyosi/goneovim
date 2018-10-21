@@ -18,7 +18,6 @@ type Filelist struct {
 	WSitem    *WorkspaceSideItem
 	widget    *widgets.QWidget
 	Fileitems []*Fileitem
-	isload    bool
 	active    int
 }
 
@@ -154,7 +153,6 @@ func newFilelistwidget(path string) *Filelist {
 
 	filelist.widget = filelistwidget
 	filelist.Fileitems = fileitems
-	filelist.isload = true
 
 	editor.wsSide.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
 		if editor.activity.editItem.active == false {

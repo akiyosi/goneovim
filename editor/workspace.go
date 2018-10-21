@@ -15,6 +15,7 @@ import (
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -458,6 +459,7 @@ func (w *Workspace) setCwd() {
 			}
 
 			filelist := newFilelistwidget(path)
+			editor.wsSide.items[i].isload = true
 			editor.wsSide.items[i].setFilelistwidget(filelist)
 			continue
 		}
@@ -477,6 +479,33 @@ func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
 	i.Filelist = f
 	i.Filelist.WSitem = i
 	i.active = true
+	if i.isFilelistHide {
+		i.hideFilelist()
+	} else {
+		i.showFilelist()
+	}
+}
+
+func (i *WorkspaceSideItem) toggleFilelist(event *gui.QMouseEvent) {
+	if i.isFilelistHide {
+		i.showFilelist()
+	} else {
+		i.hideFilelist()
+	}
+}
+
+func (i *WorkspaceSideItem) showFilelist() {
+	i.Filelistwidget.Show()
+	i.openIcon.Show()
+	i.closeIcon.Hide()
+	i.isFilelistHide = false
+}
+
+func (i *WorkspaceSideItem) hideFilelist() {
+	i.Filelistwidget.Hide()
+	i.openIcon.Hide()
+	i.closeIcon.Show()
+	i.isFilelistHide = true
 }
 
 func (w *Workspace) attachUIOption() map[string]interface{} {
@@ -998,9 +1027,11 @@ func newWorkspaceSide() *WorkspaceSide {
 
 // WorkspaceSideItem is
 type WorkspaceSideItem struct {
-	hidden bool
-	active bool
-	side   *WorkspaceSide
+	hidden    bool
+	active    bool
+	side      *WorkspaceSide
+	openIcon  *svg.QSvgWidget
+	closeIcon *svg.QSvgWidget
 
 	widget *widgets.QWidget
 	layout *widgets.QBoxLayout
@@ -1010,8 +1041,11 @@ type WorkspaceSideItem struct {
 	cwdpath string
 
 	Filelist       *Filelist
+	isload         bool
+	labelWidget    *widgets.QWidget
 	label          *widgets.QLabel
 	Filelistwidget *widgets.QWidget
+	isFilelistHide bool
 }
 
 func newWorkspaceSideItem() *WorkspaceSideItem {
@@ -1020,10 +1054,27 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
 	layout.SetContentsMargins(0, 5, 0, 5)
 
+	labelWidget := widgets.NewQWidget(nil, 0)
+	labelLayout := widgets.NewQHBoxLayout()
+	labelWidget.SetLayout(labelLayout)
+	labelLayout.SetContentsMargins(15, 1, 1, 1)
+
 	label := widgets.NewQLabel(nil, 0)
-	label.SetContentsMargins(15, 1, 10, 1)
+	label.SetContentsMargins(0, 0, 0, 0)
 	label.SetMaximumWidth(editor.config.SideBar.Width)
 	label.SetMinimumWidth(editor.config.SideBar.Width)
+
+	openIcon := svg.NewQSvgWidget(nil)
+	openIcon.SetFixedWidth(11)
+	openIcon.SetFixedHeight(11)
+	svgContent := editor.getSvg("chevron-down", nil)
+	openIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+
+	closeIcon := svg.NewQSvgWidget(nil)
+	closeIcon.SetFixedWidth(11)
+	closeIcon.SetFixedHeight(11)
+	svgContent = editor.getSvg("chevron-right", nil)
+	closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
 	// flwidget := widgets.NewQWidget(nil, 0)
 
@@ -1032,17 +1083,28 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	// 	widget: flwidget,
 	// }
 
-	layout.AddWidget(label, 0, 0)
+	labelLayout.AddWidget(openIcon, 0, 0)
+	labelLayout.AddWidget(closeIcon, 0, 0)
+	labelLayout.AddWidget(label, 0, 0)
 	// layout.AddWidget(flwidget, 0, 0)
 
+	layout.AddWidget(labelWidget, 0, 0)
+	openIcon.Hide()
+	closeIcon.Hide()
+
 	sideitem := &WorkspaceSideItem{
-		widget:   widget,
-		layout:   layout,
-		label:    label,
-		Filelist: filelist,
+		widget:      widget,
+		layout:      layout,
+		labelWidget: labelWidget,
+		label:       label,
+		openIcon:    openIcon,
+		closeIcon:   closeIcon,
+		Filelist:    filelist,
 		// Filelistwidget: flwidget,
 	}
 	sideitem.Filelist.WSitem = sideitem
+
+	sideitem.widget.ConnectMousePressEvent(sideitem.toggleFilelist)
 
 	return sideitem
 }
@@ -1062,7 +1124,7 @@ func (i *WorkspaceSideItem) setSideItemLabel(n int) {
 	} else {
 		i.setInactive()
 	}
-	i.label.SetContentsMargins(15+15, 3, 0, 3)
+	i.label.SetContentsMargins(1, 3, 0, 3)
 }
 
 func (i *WorkspaceSideItem) setActive() {
@@ -1075,14 +1137,17 @@ func (i *WorkspaceSideItem) setActive() {
 	i.active = true
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 0px 0px 0px; background-color: %s; color: %s; ", shiftColor(bg, -15).print(), shiftColor(fg, 0).print()))
+	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", shiftColor(bg, -15).print(), shiftColor(fg, 0).print()))
 
-	if i.Filelist.isload == false && editor.activity.editItem.active == true {
+	if !i.isload && editor.activity.editItem.active {
 		filelist := newFilelistwidget(i.cwdpath)
 		i.setFilelistwidget(filelist)
 	}
-
-	i.Filelistwidget.Show()
+	if !i.isFilelistHide {
+		i.Filelistwidget.Show()
+	} else {
+		i.Filelistwidget.Hide()
+	}
 }
 
 func (i *WorkspaceSideItem) setInactive() {
@@ -1095,7 +1160,7 @@ func (i *WorkspaceSideItem) setInactive() {
 	i.active = false
 	bg := i.side.bgcolor
 	fg := i.side.fgcolor
-	i.label.SetStyleSheet(fmt.Sprintf("margin: 0px 0px 0px 0px; background-color: %s; color: %s; ", shiftColor(bg, -5).print(), shiftColor(fg, 0).print()))
+	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", shiftColor(bg, -5).print(), shiftColor(fg, 0).print()))
 
 	i.Filelistwidget.Hide()
 }
@@ -1236,7 +1301,7 @@ func (w *Workspace) setGuiColor() {
 
 	if len(editor.workspaces) == 1 {
 		editor.wsSide.items[0].active = true
-		editor.wsSide.items[0].label.SetStyleSheet(fmt.Sprintf("margin: 0px 0px 0px 0px; background-color: %s; color: %s; ", wsSideitemActiveBgColor.print(), fg.print()))
+		editor.wsSide.items[0].labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", wsSideitemActiveBgColor.print(), fg.print()))
 	}
 
 	editor.window.SetWindowOpacity(1.0)

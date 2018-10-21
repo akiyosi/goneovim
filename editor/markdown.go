@@ -120,6 +120,17 @@ func (m *Markdown) updatePos() {
 		if win.bufName == "" {
 			time.Sleep(500 * time.Microsecond)
 		}
+
+		// * FIXME *
+		// * > path/filepath.Base() /Users/akiyoshi/.goenv/versions/1.10.4/src/path/filepath/path.go:436 (PC: 0x4204b38)
+		// * Command failed: bad access
+		// * (dlv) bt
+		// *  0  0x0000000004204b38 in path/filepath.Base
+		// *     at /Users/akiyoshi/.goenv/versions/1.10.4/src/path/filepath/path.go:436
+		// *  1  0x0000000005c0bd2c in github.com/akiyosi/gonvim/editor.(*Markdown).updatePos
+		// *     at /Users/akiyoshi/go/src/github.com/akiyosi/gonvim/editor/markdown.go:123
+		// *  2  0x0000000005c23ae5 in github.com/akiyosi/gonvim/editor.(*Screen).paint
+		// *     at /Users/akiyoshi/go/src/github.com/akiyosi/gonvim/editor/screen.go:261
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
 			m.webview.Resize2(
 				int(float64(win.width)*m.ws.font.truewidth),
