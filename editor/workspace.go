@@ -480,28 +480,28 @@ func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
 	i.Filelist.WSitem = i
 	i.active = true
 	if i.isFilelistHide {
-		i.hideFilelist()
+		i.closeFilelist()
 	} else {
-		i.showFilelist()
+		i.openFilelist()
 	}
 }
 
 func (i *WorkspaceSideItem) toggleFilelist(event *gui.QMouseEvent) {
 	if i.isFilelistHide {
-		i.showFilelist()
+		i.openFilelist()
 	} else {
-		i.hideFilelist()
+		i.closeFilelist()
 	}
 }
 
-func (i *WorkspaceSideItem) showFilelist() {
+func (i *WorkspaceSideItem) openFilelist() {
 	i.Filelistwidget.Show()
 	i.openIcon.Show()
 	i.closeIcon.Hide()
 	i.isFilelistHide = false
 }
 
-func (i *WorkspaceSideItem) hideFilelist() {
+func (i *WorkspaceSideItem) closeFilelist() {
 	i.Filelistwidget.Hide()
 	i.openIcon.Hide()
 	i.closeIcon.Show()
@@ -1171,7 +1171,15 @@ func (i *WorkspaceSideItem) show() {
 	}
 	i.hidden = false
 	i.label.Show()
-	i.Filelistwidget.Show()
+	if !i.isFilelistHide {
+		i.Filelistwidget.Show()
+		i.openIcon.Show()
+		i.closeIcon.Hide()
+	} else {
+		i.Filelistwidget.Hide()
+		i.openIcon.Hide()
+		i.closeIcon.Show()
+	}
 }
 
 func (i *WorkspaceSideItem) hide() {
@@ -1181,6 +1189,8 @@ func (i *WorkspaceSideItem) hide() {
 	i.hidden = true
 	i.label.Hide()
 	i.Filelistwidget.Hide()
+	i.openIcon.Hide()
+	i.closeIcon.Hide()
 }
 
 func (w *Workspace) setGuiColor() {
