@@ -452,7 +452,7 @@ func (w *Workspace) setCwd() {
 		if ws == w {
 			path, _ := filepath.Abs(cwd)
 			sideItem := editor.wsSide.items[i]
-			if sideItem.cwdpath == path && !sideItem.isload {
+			if sideItem.cwdpath == path && sideItem.isload {
 				continue
 			}
 
