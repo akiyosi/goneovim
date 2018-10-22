@@ -451,16 +451,21 @@ func (w *Workspace) setCwd() {
 
 		if ws == w {
 			path, _ := filepath.Abs(cwd)
-			editor.wsSide.items[i].label.SetText(w.cwdlabel)
-			editor.wsSide.items[i].cwdpath = path
+			sideItem := editor.wsSide.items[i]
+			if sideItem.cwdpath == path && !sideItem.isload {
+				continue
+			}
+
+			sideItem.label.SetText(w.cwdlabel)
+			sideItem.cwdpath = path
 
 			if editor.activity.editItem.active == false {
 				continue
 			}
 
 			filelist := newFilelistwidget(path)
-			editor.wsSide.items[i].isload = true
-			editor.wsSide.items[i].setFilelistwidget(filelist)
+			sideItem.isload = true
+			sideItem.setFilelistwidget(filelist)
 			continue
 		}
 	}
