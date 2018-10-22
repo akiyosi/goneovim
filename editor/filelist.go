@@ -262,26 +262,34 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 	bg := editor.bgcolor
 	var svgModified string
 
-	//cfn := ""
-	//cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
-	//if err != nil {
-	//	cfn = ""
-	//} else {
-	//	cfn = cfnITF.(string)
-	//}
-
 	currFilepath := editor.workspaces[editor.active].filepath
+	workspaceCwd, _ := filepath.Split(currFilepath)
+	fmt.Println("workspaceCwd", workspaceCwd)
+	if workspaceCwd != "" {
+		return
+	}
 
+	breakOk1 := false
+	breakOk2 := false
 	for j, fileitem := range i.Filelist.Fileitems {
+		if breakOk1 && breakOk2 {
+			break
+		}
 		if !strings.HasSuffix(currFilepath, fileitem.fileName) {
 			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
 			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
 			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+			if fileitem.isOpened {
+				breakOk1 = true
+			}
 			fileitem.isOpened = false
 		} else {
 			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
 			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
 			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+			if !fileitem.isOpened {
+				breakOk2 = true
+			}
 			fileitem.isOpened = true
 			i.Filelist.active = j
 		}

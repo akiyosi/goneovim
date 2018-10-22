@@ -351,8 +351,8 @@ func (w *Workspace) workspaceCommands(path string) {
 		w.nvim.Command("so " + path)
 	}
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
-	w.nvim.Command(`autocmd BufEnter * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
-	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
+	w.nvim.Command(`autocmd BufEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
+	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	if editor.config.ScrollBar.Visible == true {
 		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline")`)
 	}
