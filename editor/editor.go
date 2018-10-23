@@ -460,9 +460,6 @@ func (e *Editor) workspaceUpdate() {
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event.Text(), event.Key(), event.Modifiers())
 	if input != "" {
-		if input == "¥" {
-			input = `\`
-		}
 		e.workspaces[e.active].nvim.Input(input)
 		e.workspaces[e.active].detectTerminalMode()
 	}
@@ -523,7 +520,7 @@ func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 		return fmt.Sprintf("<%s%s>", e.modPrefix(mod), specialKey)
 	}
 
-	if text == "\\" {
+	if text == "\\" || text == "¥" {
 		return fmt.Sprintf("<%s%s>", e.modPrefix(mod), "Bslash")
 	}
 
