@@ -110,11 +110,11 @@ func newMiniMap() *MiniMap {
 
 	switch runtime.GOOS {
 	case "windows":
-		m.font = initFontNew("Consolas", 2, 0)
+		m.font = initFontNew("Consolas", 1, 0)
 	case "darwin":
 		m.font = initFontNew("Courier New", 2, 0)
 	default:
-		m.font = initFontNew("Monospace", 2, 0)
+		m.font = initFontNew("Monospace", 1, 0)
 	}
 
 	return m
@@ -160,6 +160,7 @@ func (m *MiniMap) startMinimapProc() {
 	m.nvim.Subscribe("Gui")
 	m.nvim.Command(":set laststatus=0 | set noruler")
 	m.nvim.Command(":syntax on")
+	m.nvim.Command(":set nowrap")
 }
 
 func (m *MiniMap) attachUIOption() map[string]interface{} {
