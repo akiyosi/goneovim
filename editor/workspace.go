@@ -626,6 +626,9 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		event := update[0].(string)
 		args := update[1:]
 		switch event {
+		case "set_title":
+			titleString := (update[1].([]interface{}))[0].(string)
+			editor.window.SetWindowTitle(titleString)
 		case "update_fg":
 			args := update[1].([]interface{})
 			color := reflectToInt(args[0])
