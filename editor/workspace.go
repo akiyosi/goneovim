@@ -626,6 +626,26 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		event := update[0].(string)
 		args := update[1:]
 		switch event {
+		case "set_title":
+			titleString := (update[1].([]interface{}))[0].(string)
+			editor.window.SetWindowTitle(titleString)
+		case "option_set":
+			optKey := (update[1].([]interface{}))[0].(string)
+			optValue := (update[1].([]interface{}))[1]
+			switch optKey {
+			case "arabicshape":
+			case "ambiwidth":
+			case "emoji":
+			case "guifont":
+				w.guiFont(optValue.(string))
+			case "guifontset":
+			case "guifontwide":
+			case "linespace":
+				w.guiLinespace(optValue)
+			case "showtabline":
+			case "termguicolors":
+			default:
+			}
 		case "update_fg":
 			args := update[1].([]interface{})
 			color := reflectToInt(args[0])
@@ -779,9 +799,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "Font":
-		w.guiFont(updates[1:])
+		w.guiFont(updates[1].(string))
 	case "Linespace":
-		w.guiLinespace(updates[1:])
+		//w.guiLinespace(updates[1:])
+		w.guiLinespace(updates[1])
 	case "finder_pattern":
 		w.finder.showPattern(updates[1:])
 	case "finder_pattern_pos":
@@ -866,9 +887,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	}
 }
 
-func (w *Workspace) guiFont(args ...interface{}) {
-	fontArg := args[0].([]interface{})
-	parts := strings.Split(fontArg[0].(string), ":")
+func (w *Workspace) guiFont(args string) {
+	parts := strings.Split(args, ":")
 	if len(parts) < 1 {
 		return
 	}
@@ -932,11 +952,11 @@ func (w *Workspace) detectTerminalMode() {
 	}()
 }
 
-func (w *Workspace) guiLinespace(args ...interface{}) {
-	fontArg := args[0].([]interface{})
+func (w *Workspace) guiLinespace(args interface{}) {
+	// fontArg := args[0].([]interface{})
 	var lineSpace int
 	var err error
-	switch arg := fontArg[0].(type) {
+	switch arg := args.(type) {
 	case string:
 		lineSpace, err = strconv.Atoi(arg)
 		if err != nil {
