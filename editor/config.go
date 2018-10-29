@@ -145,7 +145,7 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.SideBar.Width = 300
 	}
 	if config.SideBar.AccentColor == "" {
-		config.SideBar.AccentColor = "#519aba"
+		config.SideBar.AccentColor = "#5596ea"
 	}
 	if config.Workspace.PathStyle == "" {
 		config.Workspace.PathStyle = "minimum"
