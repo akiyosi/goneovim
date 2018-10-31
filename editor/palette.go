@@ -3,7 +3,6 @@ package editor
 import (
 	"fmt"
 	"math"
-	"sync"
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	"github.com/therecipe/qt/core"
