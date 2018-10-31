@@ -64,6 +64,7 @@ func (c *Cmdline) show(args []interface{}) {
 
 	c.pos = pos
 	c.content.firstc = firstc
+	isResize := c.content.content != content
 	c.content.content = content
 	c.content.indent = indent
 	c.content.prompt = prompt
@@ -71,7 +72,9 @@ func (c *Cmdline) show(args []interface{}) {
 	palette := c.ws.palette
 	palette.setPattern(text)
 	c.cursorMove()
-	palette.resize()
+	if isResize {
+		palette.resize()
+	}
 	if !c.wildmenuShown {
 		c.showAddition()
 		palette.scrollCol.Hide()
