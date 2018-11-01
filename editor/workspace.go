@@ -494,6 +494,9 @@ func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
 }
 
 func (i *WorkspaceSideItem) toggleFilelist(event *gui.QMouseEvent) {
+	if i.hidden {
+		return
+	}
 	if i.isFilelistHide {
 		i.openFilelist()
 	} else {
