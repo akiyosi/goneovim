@@ -273,11 +273,11 @@ func InitEditor() {
 	}
 	e.workspaceUpdate()
 
-	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		for _, ws := range e.workspaces {
-			ws.updateSize()
-		}
-	})
+	// e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+	// 	for _, ws := range e.workspaces {
+	// 		ws.updateSize()
+	// 	}
+	// })
 	// for macos, open file via Finder
 	macosArg := ""
 	if runtime.GOOS == "darwin" {

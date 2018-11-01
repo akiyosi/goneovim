@@ -336,7 +336,7 @@ func (n *Notification) statusReset() {
 
 func (n *Notification) show() {
 	for {
-		if editor.workspaces[editor.active].isSetGuiColor {
+		if editor.workspaces[editor.active].isSetGuiColorFromColorscheme {
 			break
 		} else {
 			time.Sleep(100 * time.Millisecond)

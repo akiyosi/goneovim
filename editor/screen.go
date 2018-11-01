@@ -493,16 +493,6 @@ func (s *Screen) getWindows() {
 	}
 }
 
-// func (s *Screen) updateBg(args []interface{}) {
-// 	color := reflectToInt(args[0])
-// 	if color == -1 {
-// 		s.ws.background = newRGBA(0, 0, 0, 1)
-// 	} else {
-// 		bg := calcColor(reflectToInt(args[0]))
-// 		s.ws.background = bg
-// 	}
-// }
-
 func (s *Screen) size() (int, int) {
 	geo := s.widget.Geometry()
 	return geo.Width(), geo.Height()
@@ -951,7 +941,9 @@ func (s *Screen) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 		}
 		if text != "" {
 			fg := highlight.foreground
-			p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
+			if fg != nil {
+				p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
+			}
 			pointF.SetX(float64(col-pos[1]) * s.ws.font.truewidth)
 			pointF.SetY(float64((y-pos[0])*s.ws.font.lineHeight + s.ws.font.shift))
 			font.SetBold(highlight.bold)

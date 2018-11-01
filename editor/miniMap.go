@@ -837,7 +837,9 @@ func (m *MiniMap) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int
 		}
 		if text != "" {
 			fg := highlight.foreground
-			p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
+			if fg != nil {
+				p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
+			}
 			pointF.SetX(float64(col-pos[1]) * m.font.truewidth)
 			pointF.SetY(float64((y-pos[0])*m.font.lineHeight + m.font.shift))
 			font.SetBold(highlight.bold)
