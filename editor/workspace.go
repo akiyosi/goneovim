@@ -116,6 +116,11 @@ func newWorkspace(path string) (*Workspace, error) {
 			editor.close()
 			return
 		}
+		for i := 0; i <= len(editor.wsSide.items) && i <= len(editor.workspaces); i++ {
+			if i >= index {
+				editor.wsSide.items[i].cwdpath = editor.wsSide.items[i+1].cwdpath
+			}
+		}
 		editor.workspaces = workspaces
 		w.hide()
 		if editor.active == index {
@@ -1173,9 +1178,9 @@ func (i *WorkspaceSideItem) setSideItemLabel(n int) {
 }
 
 func (i *WorkspaceSideItem) setActive() {
-	if i.active {
-		return
-	}
+	// if i.active {
+	// 	return
+	// }
 	if editor.fgcolor == nil || editor.bgcolor == nil {
 		return
 	}
@@ -1184,7 +1189,9 @@ func (i *WorkspaceSideItem) setActive() {
 	fg := editor.fgcolor
 	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", shiftColor(bg, -15).print(), shiftColor(fg, 0).print()))
 
-	if !i.isload && editor.activity.editItem.active {
+	reloadFilelist := i.cwdpath != i.Filelist.cwdpath
+
+	if reloadFilelist && editor.activity.editItem.active {
 		filelist := newFilelistwidget(i.cwdpath)
 		i.setFilelistwidget(filelist)
 	}

@@ -19,6 +19,7 @@ type Filelist struct {
 	widget    *widgets.QWidget
 	Fileitems []*Fileitem
 	active    int
+	cwdpath   string
 }
 
 type Fileitem struct {
@@ -42,6 +43,7 @@ func newFilelistwidget(path string) *Filelist {
 
 	filelist := &Filelist{}
 	filelist.active = -1
+	filelist.cwdpath = path
 
 	filelistwidget := widgets.NewQWidget(nil, 0)
 	// filelistwidget.SetSizePolicy2(widgets.QSizePolicy__Maximum, widgets.QSizePolicy__Maximum)
