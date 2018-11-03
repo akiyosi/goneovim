@@ -163,6 +163,10 @@ func (m *MiniMap) startMinimapProc() {
 	m.nvim.Command(":set nowrap")
 }
 
+func (m *MiniMap) exit() {
+	go m.nvim.Command(":q!")
+}
+
 func (m *MiniMap) attachUIOption() map[string]interface{} {
 	o := make(map[string]interface{})
 	o["rgb"] = true
@@ -375,11 +379,26 @@ func (m *MiniMap) bufUpdate() {
 		m.setColorscheme()
 	}
 	m.widget.Show()
-	buf, _ := m.ws.nvim.CurrentBuffer()
-	bufName, _ := m.ws.nvim.BufferName(buf)
-	if bufName == "" {
+
+	doneC := make(chan string, 5)
+	bufName := ""
+	go func() {
+		buf, _ := m.ws.nvim.CurrentBuffer()
+		result, _ := m.ws.nvim.BufferName(buf)
+		doneC <- result
+	}()
+
+	select {
+	case done := <-doneC:
+		bufName = done
+	case <-time.After(80 * time.Millisecond):
+		bufName = ""
+	}
+
+	if !isFileExist(bufName) {
 		bufName = "[No Name]"
 	}
+
 	m.nvim.Command(":e! " + bufName)
 	m.mapScroll()
 }

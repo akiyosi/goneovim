@@ -49,6 +49,9 @@ func (c *Cmdline) getText(ch string) string {
 	if c.pos > len(c.content.content) {
 		c.pos = len(c.content.content) - 1
 	}
+	if len(c.content.content) == 0 {
+		c.pos = 0
+	}
 	return fmt.Sprintf("%s%s%s", c.content.firstc, indentStr, c.content.content[:c.pos]+ch+c.content.content[c.pos:])
 }
 

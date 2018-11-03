@@ -352,13 +352,14 @@ func (w *Workspace) workspaceCommands(path string) {
 		w.nvim.Command("so " + path)
 	}
 	w.nvim.Command(`autocmd VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")`)
+	w.nvim.Command(`autocmd VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")`)
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
-	w.nvim.Command(`autocmd BufEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
+	w.nvim.Command(`autocmd BufEnter,TabEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	if editor.config.ScrollBar.Visible == true {
 		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline")`)
 	}
-	w.nvim.Command(`autocmd BufEnter,BufWinEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
+	w.nvim.Command(`autocmd BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 	if editor.config.Editor.Clipboard == true {
 		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
 	}
@@ -381,7 +382,7 @@ func (w *Workspace) nvimCommandOutput(s string) (string, error) {
 	select {
 	case done := <-doneChannel:
 		return done, nil
-	case <-time.After(200 * time.Millisecond):
+	case <-time.After(40 * time.Millisecond):
 		err := errors.New("neovim busy")
 		return "", err
 	}
@@ -397,16 +398,9 @@ func (w *Workspace) nvimEval(s string) (interface{}, error) {
 	select {
 	case done := <-doneChannel:
 		return done, nil
-	case <-time.After(250 * time.Millisecond):
-		// Press ENTER or type command to continue
-		go w.nvim.Input("<Enter>")
-		select {
-		case doing := <-doneChannel:
-			return doing, nil
-		case <-time.After(250 * time.Millisecond):
-			err := errors.New("neovim busy")
-			return nil, err
-		}
+	case <-time.After(40 * time.Millisecond):
+		err := errors.New("neovim busy")
+		return nil, err
 	}
 }
 
@@ -806,6 +800,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	switch event {
 	case "gonvim_enter":
 		editor.window.SetWindowOpacity(1.0)
+	case "gonvim_exit":
+		editor.workspaces[editor.active].minimap.exit()
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
@@ -846,7 +842,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		go func() {
 			lnITF, err := w.nvimEval("line('$')")
 			if err != nil {
-				w.maxLine = 0
+				// w.maxLine = 0    // denite is not working if uncomment this line
 			} else {
 				switch lnITF.(type) {
 				case uint64:
@@ -857,6 +853,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 					w.maxLine = int(lnITF.(int64))
 				case int:
 					w.maxLine = lnITF.(int)
+				default:
 				}
 			}
 		}()
@@ -947,7 +944,7 @@ func (w *Workspace) setFilepath() {
 	}()
 	select {
 	case cfp = <-retchan:
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(200 * time.Millisecond):
 	}
 
 	editor.workspaces[editor.active].filepath = cfp
