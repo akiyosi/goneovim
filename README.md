@@ -25,9 +25,26 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 ## Getting Started
 Pre-built packages for Windows, macOS, and Linux are found at the [Releases](https://github.com/akiyosi/gonvim/releases) page.
 
-For macOS and linux environment, you need to deploy Neovim (v0.2.2 or later) under the `$PATH`.
+### MacOS
+gonvim.app looks for the nvim process from the following.
 
-For Windows, you need to add Gonvim `bin` path to `$PATH` environment variable.
+```
+/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/local/bin:/opt/local/sbin
+```
+
+Deployment example:
+```
+cd /path/to
+curl -LO https://github.com/neovim/neovim/releases/download/nightly/nvim-macos.tar.gz
+tar xf nvim-macos.tar.gz
+ln -s /path/to/bin/nvim /usr/local/bin/nvim
+```
+
+### Linux
+Deploy Neovim under the `$PATH`.
+
+### Windows
+Add Gonvim `bin` path to `%PATH%` environment variable.
 
 
 <br>
