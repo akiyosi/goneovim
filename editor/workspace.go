@@ -802,6 +802,13 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	switch event {
 	case "gonvim_enter":
 		editor.window.SetWindowOpacity(1.0)
+		go func() {
+			time.Sleep(2000 * time.Millisecond)
+			msg, _ := w.nvimCommandOutput("messages")
+			if msg != "" {
+				editor.pushNotification(NotifyWarn, -1, msg)
+			}
+		}()
 	case "gonvim_exit":
 		editor.workspaces[editor.active].minimap.exit()
 	case "gonvim_set_colorscheme":
