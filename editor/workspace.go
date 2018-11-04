@@ -82,8 +82,8 @@ type Workspace struct {
 	drawTabline    bool
 	drawLint       bool
 
-	isSetGuiColorFromColorscheme bool
-	noColorschemeCount           int
+	isSetGuiColor      bool
+	noColorschemeCount int
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -346,10 +346,6 @@ func (w *Workspace) initGonvim() {
 	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
 	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
-	msg, _ := w.nvimCommandOutput("messages")
-	if msg != "" {
-		editor.pushNotification(NotifyWarn, -1, msg)
-	}
 }
 
 func (w *Workspace) workspaceCommands(path string) {
@@ -358,6 +354,7 @@ func (w *Workspace) workspaceCommands(path string) {
 	}
 	w.nvim.Command(`autocmd VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")`)
 	w.nvim.Command(`autocmd VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")`)
+	w.nvim.Command(`autocmd ColorScheme * call rpcnotify(1, "Gui", "gonvim_set_colorscheme")`)
 	w.nvim.Command(`autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
 	w.nvim.Command(`autocmd BufEnter,TabEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
@@ -655,12 +652,12 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			args := update[1].([]interface{})
 			fgcolor = reflectToInt(args[0])
 			if fgcolor == -1 {
-				w.foreground = newRGBA(255, 255, 255, 1)
+				w.foreground = newRGBA(170, 175, 190, 1)
 			} else {
 				w.foreground = calcColor(reflectToInt(args[0]))
 				w.minimap.foreground = calcColor(reflectToInt(args[0]))
 			}
-			if w.isSetGuiColorFromColorscheme == false {
+			if w.isSetGuiColor == false {
 				if fgcolor != -1 {
 					editor.fgcolor = editor.workspaces[0].foreground
 				}
@@ -669,12 +666,12 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			args := update[1].([]interface{})
 			bgcolor = reflectToInt(args[0])
 			if bgcolor == -1 {
-				w.background = newRGBA(0, 0, 0, 1)
+				w.background = newRGBA(5, 10, 15, 1)
 			} else {
 				w.background = calcColor(reflectToInt(args[0]))
 				w.minimap.background = calcColor(reflectToInt(args[0]))
 			}
-			if w.isSetGuiColorFromColorscheme == false {
+			if w.isSetGuiColor == false {
 				if bgcolor != -1 {
 					editor.bgcolor = editor.workspaces[0].background
 				}
@@ -807,6 +804,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.window.SetWindowOpacity(1.0)
 	case "gonvim_exit":
 		editor.workspaces[editor.active].minimap.exit()
+	case "gonvim_set_colorscheme":
+		w.setGuiColor(editor.fgcolor, editor.bgcolor)
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
@@ -898,11 +897,11 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 }
 
 func (w *Workspace) drawGuiColor() {
-	if w.isSetGuiColorFromColorscheme {
+	if w.isSetGuiColor {
 		return
 	}
 	// If colorscheme is not set, enable default color
-	if w.noColorschemeCount >= 3 {
+	if w.noColorschemeCount >= 2 {
 		editor.fgcolor = newRGBA(170, 175, 190, 1)
 		editor.bgcolor = newRGBA(5, 10, 15, 1)
 		w.foreground = editor.fgcolor
@@ -912,9 +911,6 @@ func (w *Workspace) drawGuiColor() {
 	}
 
 	w.setGuiColor(editor.fgcolor, editor.bgcolor)
-	if editor.fgcolor != nil && editor.bgcolor != nil {
-		w.isSetGuiColorFromColorscheme = true
-	}
 }
 
 func (w *Workspace) guiFont(args string) {
@@ -1249,9 +1245,10 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 	if fg == nil || bg == nil {
 		return
 	}
-	if w.isSetGuiColorFromColorscheme == true {
+	if w.isSetGuiColor == true {
 		return
 	}
+	w.isSetGuiColor = true
 
 	activityBarColor := shiftColor(bg, -8)
 	sideBarColor := shiftColor(bg, -5)

@@ -613,15 +613,23 @@ func (s *StatuslineLint) update() {
 		//svgContent := editor.getSvg("check", newRGBA(141, 193, 73, 1))
 		//s.okIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		var svgErrContent, svgWrnContent string
+
+		var lintNoErrColor *RGBA
+		if editor.fgcolor == nil {
+			lintNoErrColor = newRGBA(170, 175, 190, 1)
+		} else {
+			lintNoErrColor = editor.fgcolor
+		}
+
 		if s.errors != 0 {
 			svgErrContent = editor.getSvg("bad", newRGBA(204, 62, 68, 1))
 		} else {
-			svgErrContent = editor.getSvg("bad", nil)
+			svgErrContent = editor.getSvg("bad", lintNoErrColor)
 		}
 		if s.warnings != 0 {
 			svgWrnContent = editor.getSvg("exclamation", newRGBA(203, 203, 65, 1))
 		} else {
-			svgWrnContent = editor.getSvg("exclamation", nil)
+			svgWrnContent = editor.getSvg("exclamation", lintNoErrColor)
 		}
 		s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
 		s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
@@ -655,12 +663,12 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 	if errors != 0 {
 		svgErrContent = editor.getSvg("bad", newRGBA(204, 62, 68, 1))
 	} else {
-		svgErrContent = editor.getSvg("bad", nil)
+		svgErrContent = editor.getSvg("bad", editor.fgcolor)
 	}
 	if warnings != 0 {
 		svgWrnContent = editor.getSvg("exclamation", newRGBA(203, 203, 65, 1))
 	} else {
-		svgWrnContent = editor.getSvg("exclamation", nil)
+		svgWrnContent = editor.getSvg("exclamation", editor.fgcolor)
 	}
 	s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
 	s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
