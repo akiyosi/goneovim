@@ -262,8 +262,8 @@ func newTabline() *Tabline {
 	widget.SetLayout(layout)
 
 	marginDefault := 10
-	marginTop := 5    // No effect now
-	marginBottom := 5 // No effect now
+	marginTop := editor.config.Editor.FontSize / 3    // No effect now
+	marginBottom := editor.config.Editor.FontSize / 3 // No effect now
 	tabline := &Tabline{
 		widget:        widget,
 		layout:        layout,
@@ -284,9 +284,10 @@ func newTabline() *Tabline {
 		// fileIcon.SetFixedHeight(12)
 		file := widgets.NewQLabel(nil, 0)
 		file.SetContentsMargins(0, marginTop, 0, marginBottom)
+		file.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		closeIcon := svg.NewQSvgWidget(nil)
-		closeIcon.SetFixedWidth(14)
-		closeIcon.SetFixedHeight(14)
+		closeIcon.SetFixedWidth(editor.config.Editor.FontSize)
+		closeIcon.SetFixedHeight(editor.config.Editor.FontSize)
 		// l.AddWidget(fileIcon, 0, 0)
 		l.AddWidget(file, 1, 0)
 		l.AddWidget(closeIcon, 0, 0)
@@ -456,8 +457,8 @@ func (t *Tab) pressEvent(event *gui.QMouseEvent) {
 
 func (t *Tab) closeIconPressEvent(event *gui.QMouseEvent) {
 	fg := editor.fgcolor
-	t.closeIcon.SetFixedWidth(14)
-	t.closeIcon.SetFixedHeight(14)
+	t.closeIcon.SetFixedWidth(editor.config.Editor.FontSize)
+	t.closeIcon.SetFixedHeight(editor.config.Editor.FontSize)
 	svgContent := editor.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
@@ -473,8 +474,8 @@ func (t *Tab) closeIconReleaseEvent(event *gui.QMouseEvent) {
 }
 
 func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
-	t.closeIcon.SetFixedWidth(14)
-	t.closeIcon.SetFixedHeight(14)
+	t.closeIcon.SetFixedWidth(editor.config.Editor.FontSize)
+	t.closeIcon.SetFixedHeight(editor.config.Editor.FontSize)
 	svgContent := editor.getSvg("hoverclose", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	cursor := gui.NewQCursor()
@@ -483,8 +484,8 @@ func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
 }
 
 func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
-	t.closeIcon.SetFixedWidth(14)
-	t.closeIcon.SetFixedHeight(14)
+	t.closeIcon.SetFixedWidth(editor.config.Editor.FontSize)
+	t.closeIcon.SetFixedHeight(editor.config.Editor.FontSize)
 	svgContent := editor.getSvg("cross", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	gui.QGuiApplication_RestoreOverrideCursor()

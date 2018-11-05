@@ -104,6 +104,7 @@ type deinConfig struct {
 func newGonvimConfig(home string) gonvimConfig {
 	var config gonvimConfig
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
+		config.Editor.FontSize = 14
 		config.Editor.Width = 800
 		config.Editor.Height = 600
 		config.ActivityBar.Visible = true
@@ -134,7 +135,7 @@ func newGonvimConfig(home string) gonvimConfig {
 			config.Editor.FontFamily = "Monospace"
 		}
 	}
-	if config.Editor.FontSize <= 0 {
+	if config.Editor.FontSize <= 4 {
 		config.Editor.FontSize = 14
 	}
 	if config.Editor.Linespace < 0 {

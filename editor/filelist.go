@@ -75,8 +75,8 @@ func newFilelistwidget(path string) *Filelist {
 		filelayout.SetContentsMargins(filewidgetLeftMargin, 0, 10, 0)
 
 		fileIcon := svg.NewQSvgWidget(nil)
-		fileIcon.SetFixedWidth(11)
-		fileIcon.SetFixedHeight(11)
+		fileIcon.SetFixedWidth(editor.config.Editor.FontSize)
+		fileIcon.SetFixedHeight(editor.config.Editor.FontSize)
 
 		filenameWidget := widgets.NewQWidget(nil, 0)
 		filenameWidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
@@ -88,11 +88,11 @@ func newFilelistwidget(path string) *Filelist {
 		file.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 		//file.SetContentsMargins(0, 5, 10, 5)
 		file.SetContentsMargins(0, 0, 0, 0)
-		// file.SetFont(editor.workspaces[editor.active].font.fontNew)
+		file.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 
 		fileModified := svg.NewQSvgWidget(nil)
-		fileModified.SetFixedWidth(11)
-		fileModified.SetFixedHeight(11)
+		fileModified.SetFixedWidth(editor.config.Editor.FontSize)
+		fileModified.SetFixedHeight(editor.config.Editor.FontSize)
 		fileModified.SetContentsMargins(0, 0, 0, 0)
 		// Hide with the same color as the background
 		svgModified := editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
