@@ -54,8 +54,8 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	// messageWidget.SetFixedWidth(400)
 
 	levelIcon := svg.NewQSvgWidget(nil)
-	levelIcon.SetFixedWidth(14)
-	levelIcon.SetFixedHeight(14)
+	levelIcon.SetFixedWidth(editor.config.Editor.FontSize - 1)
+	levelIcon.SetFixedHeight(editor.config.Editor.FontSize - 1)
 	levelIcon.SetContentsMargins(0, 0, 0, 0)
 	var level string
 	switch l {
@@ -69,6 +69,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	levelIcon.Load2(core.NewQByteArray2(level, len(level)))
 
 	label := widgets.NewQLabel(nil, 0)
+	label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	if utf8.RuneCountInString(message) > 50 {
 		label.SetWordWrap(true)
 	}
@@ -79,8 +80,8 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	bg := editor.bgcolor
 	svgContent := e.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
 	closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	closeIcon.SetFixedWidth(14)
-	closeIcon.SetFixedHeight(14)
+	closeIcon.SetFixedWidth(editor.config.Editor.FontSize - 1)
+	closeIcon.SetFixedHeight(editor.config.Editor.FontSize - 1)
 
 	closeIcon.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 		fg := editor.fgcolor
@@ -124,6 +125,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		if opt.text != "" {
 			// * plugin install button
 			buttonLabel := widgets.NewQLabel(nil, 0)
+			buttonLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 			buttonLabel.SetFixedHeight(28)
 			buttonLabel.SetContentsMargins(10, 5, 10, 5)
 			buttonLabel.SetAlignment(core.Qt__AlignCenter)

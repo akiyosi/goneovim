@@ -34,9 +34,11 @@ func initLocpopup() *Locpopup {
 	//typeLabel := widgets.NewQLabel(nil, 0)
 	//typeLabel.SetContentsMargins(4, 1, 4, 1)
 	typeLabel := svg.NewQSvgWidget(nil)
-	typeLabel.SetFixedSize2(14, 14)
+	typeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
+	typeLabel.SetFixedSize2(editor.config.Editor.FontSize-1, editor.config.Editor.FontSize-1)
 
 	contentLabel := widgets.NewQLabel(nil, 0)
+	contentLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	contentLabel.SetContentsMargins(0, 0, 0, 0)
 
 	layout.AddWidget(typeLabel, 0, 0)

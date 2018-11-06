@@ -455,6 +455,7 @@ func (w *Workspace) setCwd() {
 			}
 
 			sideItem.label.SetText(w.cwdlabel)
+			sideItem.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 			sideItem.cwdpath = path
 
 			if editor.activity.editItem.active == false {
@@ -1055,8 +1056,8 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout.SetSpacing(0)
 	header := widgets.NewQLabel(nil, 0)
 	header.SetContentsMargins(22, 15, 20, 10)
-	header.SetStyleSheet(" .QLabel { font-size: 11px; } ")
 	header.SetText("WORKSPACE")
+	header.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 100)
 	widget.SetLayout(layout)
@@ -1362,7 +1363,7 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: %s; text-decoration: underline; color: %s; }", tooltipBgColor.print(), tooltipFgColor.print()))
 
 	// for Workspaceside
-	editor.wsSide.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ font-size: 11px; color: %s;} ", wsHeaderColor.print()))
+	editor.wsSide.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", wsHeaderColor.print()))
 	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-color: %s; padding-top: 5px; background-color: %s; } QWidget { color: %s; border-right: 0px solid; }", wsSideBorderColor.print(), wsSideBgColor.print(), wsSideColor.print()))
 	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", wsSideBgColor.print(), wsSideScrollBarHandleColor.print()))
 

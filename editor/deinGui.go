@@ -269,7 +269,8 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginName.SetText(i.name)
 		installedPluginName.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 		fg := editor.fgcolor
-		installedPluginName.SetStyleSheet(fmt.Sprintf(" .QLabel {font: bold; color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
+		installedPluginName.SetStyleSheet(fmt.Sprintf(" .QLabel { color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
+		installedPluginName.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 3, false))
 		installedPluginName.SetFixedWidth(width)
 
 		i.nameLabel = installedPluginName
@@ -283,6 +284,7 @@ func loadDeinCashe() []*DeinPluginItem {
 			installedPluginWidget.Show()
 		}()
 		installedPluginDescLabel.SetWordWrap(true)
+		installedPluginDescLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		installedPluginDesc := widgets.NewQWidget(nil, 0)
 		installedPluginDescLayout := widgets.NewQHBoxLayout()
 		installedPluginDescLayout.AddWidget(installedPluginDescLabel, 0, 0)
@@ -291,9 +293,10 @@ func loadDeinCashe() []*DeinPluginItem {
 
 		// * plugin install button
 		updateButtonLabel := widgets.NewQLabel(nil, 0)
-		updateButtonLabel.SetFixedWidth(65)
-		updateButtonLabel.SetFixedHeight(20)
-		updateButtonLabel.SetContentsMargins(5, 0, 5, 0)
+		updateButtonLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
+		updateButtonLabel.SetFixedWidth(7 * editor.config.Editor.FontSize)
+		updateButtonLabel.SetFixedHeight(2 * (editor.config.Editor.FontSize - 2))
+		updateButtonLabel.SetContentsMargins(editor.config.Editor.FontSize/2, 0, editor.config.Editor.FontSize/2, 0)
 		updateButtonLabel.SetAlignment(core.Qt__AlignCenter)
 		updateButton := widgets.NewQWidget(nil, 0)
 		updateButtonLayout := widgets.NewQHBoxLayout()
@@ -318,10 +321,10 @@ func loadDeinCashe() []*DeinPluginItem {
 
 		// waiting label while update pugin
 		updateWaiting := widgets.NewQWidget(nil, 0)
-		updateWaiting.SetMaximumWidth(65)
-		updateWaiting.SetMinimumWidth(65)
+		updateWaiting.SetFixedWidth(7 * editor.config.Editor.FontSize)
+		updateWaiting.SetFixedHeight(2 * (editor.config.Editor.FontSize - 2))
 		updateWaitingLayout := widgets.NewQHBoxLayout()
-		updateWaitingLayout.SetContentsMargins(5, 0, 5, 0)
+		updateWaitingLayout.SetContentsMargins(editor.config.Editor.FontSize/2, 0, editor.config.Editor.FontSize/2, 0)
 		updateWaiting.SetLayout(updateWaitingLayout)
 		waitingLabel := widgets.NewQProgressBar(nil)
 		bg := editor.bgcolor
@@ -343,7 +346,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginLazyLayout.SetContentsMargins(0, 0, 0, 0)
 		installedPluginLazyLayout.SetSpacing(1)
 		installedPluginLazyIcon := svg.NewQSvgWidget(nil)
-		iconSize := 14
+		iconSize := editor.config.Editor.FontSize
 		installedPluginLazyIcon.SetFixedSize2(iconSize, iconSize)
 		var svgLazyContent string
 		if i.lazy == false {
@@ -387,6 +390,7 @@ func loadDeinCashe() []*DeinPluginItem {
 			if i.contextMenu == nil {
 				i.contextMenu = widgets.NewQMenu(installedPluginSettings)
 				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1);} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, bg.R, bg.G, bg.B))
+				i.contextMenu.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 				// Example menu and action
 				// menuActionExit := i.contextMenu.AddAction("E&xit")
 				// menuActionExit.SetShortcut(gui.NewQKeySequence2("Ctrl+X", gui.QKeySequence__NativeText))
@@ -554,13 +558,14 @@ func newDeinSide() *DeinSide {
 	header.SetContentsMargins(0, 0, 0, 0)
 	header.SetText("DEIN.VIM")
 	configIcon := svg.NewQSvgWidget(nil)
-	configIcon.SetFixedSize2(13, 13)
+	configIcon.SetFixedSize2(editor.config.Editor.FontSize-1, editor.config.Editor.FontSize-1)
 	svgConfigContent := editor.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 	headerLayout.AddWidget(header, 0, 0)
 	headerLayout.AddWidget(configIcon, 0, 0)
 	headerWidget.SetLayout(headerLayout)
-	header.SetStyleSheet(fmt.Sprintf(" .QLabel{ font-size: 11px; color: %s;} ", fg.print()))
+	header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg.print()))
+	header.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
@@ -575,6 +580,8 @@ func newDeinSide() *DeinSide {
 	comboBoxLayout.SetContentsMargins(20, 5, 20, 0)
 	comboBoxLayout.SetSpacing(0)
 	comboBoxMenu := widgets.NewQComboBox(nil)
+	comboBoxMenu.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
+	comboBoxMenu.SetMinimumHeight(editor.config.Editor.FontSize + 3)
 	comboBoxMenu.AddItems([]string{"ALL", "Language", "Completion", "Code-display", "Integrations", "Interface", "Commands", "Other"})
 	comboBoxMenu.SetFocusPolicy(core.Qt__ClickFocus)
 	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" * { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } ", editor.config.SideBar.AccentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, bg.R, bg.G, bg.B))
@@ -592,8 +599,9 @@ func newDeinSide() *DeinSide {
 	searchBoxLayout.SetContentsMargins(20, 0, 20, 0)
 	searchBoxLayout.SetSpacing(0)
 	searchboxEdit := widgets.NewQLineEdit(nil)
+	searchboxEdit.SetMinimumHeight(editor.config.Editor.FontSize + 3)
 	searchboxEdit.SetPlaceholderText("Search Plugins in VimAwesome")
-	searchboxEdit.SetStyleSheet(" #LineEdit {font-size: 9px;} ")
+	searchboxEdit.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	searchboxEdit.SetFocusPolicy(core.Qt__ClickFocus)
 	// searchboxEdit.SetFixedWidth(editor.config.sideWidth - (20 + 20))
 	// searchboxEdit.SetFixedWidth(width - (20 + 20))
@@ -712,7 +720,8 @@ func newInstalledPlugins() *InstalledPlugins {
 	installedHeader := widgets.NewQLabel(nil, 0)
 	installedHeader.SetContentsMargins(20, 2, 20, 2)
 	installedHeader.SetText("INSTALLED")
-	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 11px; margin-bottom: 0px; background: %s; font-size: 12px; color: %s; } ", shiftColor(bg, -15).print(), fg.print()))
+	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 11px; margin-bottom: 0px; background: %s; color: %s; } ", shiftColor(bg, -15).print(), fg.print()))
+	installedHeader.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	installedLayout.AddWidget(installedHeader, 0, 0)
 
 	cache := loadDeinCashe()
@@ -893,7 +902,8 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginName := widgets.NewQLabel(nil, 0)
 		pluginName.SetFixedWidth(width)
 		pluginName.SetText(p.Name)
-		pluginName.SetStyleSheet(fmt.Sprintf(" .QLabel {font: bold; color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
+		pluginName.SetStyleSheet(fmt.Sprintf(" .QLabel { color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
+		pluginName.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 3, false))
 		pluginName.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Fixed)
 
 		// * plugin description
@@ -909,6 +919,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 			pluginDescLabel.SetWordWrap(true)
 			pluginDescLayout.AddWidget(pluginDescLabel, 0, 0)
 			pluginDesc.SetLayout(pluginDescLayout)
+			pluginDescLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		}
 
 		// * plugin info
@@ -925,14 +936,14 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginStarsLayout.SetSpacing(1)
 
 		pluginStarsIcon := svg.NewQSvgWidget(nil)
-		pluginStarsIcon.SetFixedSize2(11, 11)
+		pluginStarsIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
 		svgStarContent := editor.getSvg("star", fg)
 		pluginStarsIcon.Load2(core.NewQByteArray2(svgStarContent, len(svgStarContent)))
 
 		pluginStarsNum := widgets.NewQLabel(nil, 0)
 		pluginStarsNum.SetText(strconv.Itoa(p.GithubStars))
 		pluginStarsNum.SetContentsMargins(0, 0, 0, 0)
-		pluginStarsNum.SetStyleSheet(" .QLabel {font-size: 10px;} ")
+		pluginStarsNum.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-2, 1, false))
 
 		pluginStarsLayout.AddWidget(pluginStarsIcon, 0, 0)
 		pluginStarsLayout.AddWidget(pluginStarsNum, 0, 0)
@@ -946,14 +957,14 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginDownloadsLayout.SetSpacing(1)
 
 		pluginDownloadsIcon := svg.NewQSvgWidget(nil)
-		pluginDownloadsIcon.SetFixedSize2(11, 11)
+		pluginDownloadsIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
 		svgDownloadContent := editor.getSvg("downloaded", fg)
 		pluginDownloadsIcon.Load2(core.NewQByteArray2(svgDownloadContent, len(svgDownloadContent)))
 
 		pluginDownloadsNum := widgets.NewQLabel(nil, 0)
 		pluginDownloadsNum.SetText(strconv.Itoa(p.PluginManagerUsers))
 		pluginDownloadsNum.SetContentsMargins(0, 0, 0, 0)
-		pluginDownloadsNum.SetStyleSheet(" .QLabel {font-size: 10px;} ")
+		pluginDownloadsNum.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-2, 1, false))
 
 		pluginDownloadsLayout.AddWidget(pluginDownloadsIcon, 0, 0)
 		pluginDownloadsLayout.AddWidget(pluginDownloadsNum, 0, 0)
@@ -967,14 +978,14 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginAuthorLayout.SetSpacing(1)
 
 		pluginAuthorIcon := svg.NewQSvgWidget(nil)
-		pluginAuthorIcon.SetFixedSize2(11, 11)
+		pluginAuthorIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
 		svgUserContent := editor.getSvg("user", fg)
 		pluginAuthorIcon.Load2(core.NewQByteArray2(svgUserContent, len(svgUserContent)))
 
 		pluginAuthorNum := widgets.NewQLabel(nil, 0)
 		pluginAuthorNum.SetText(p.GithubAuthor)
 		pluginAuthorNum.SetContentsMargins(0, 0, 0, 0)
-		pluginAuthorNum.SetStyleSheet(" .QLabel {font-size: 10px;} ")
+		pluginAuthorNum.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-2, 1, false))
 
 		pluginAuthorLayout.AddWidget(pluginAuthorIcon, 0, 0)
 		pluginAuthorLayout.AddWidget(pluginAuthorNum, 0, 0)
@@ -988,7 +999,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginUpdatedLayout.SetSpacing(1)
 
 		pluginUpdatedIcon := svg.NewQSvgWidget(nil)
-		pluginUpdatedIcon.SetFixedSize2(11, 11)
+		pluginUpdatedIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
 		svgUpdatedContent := editor.getSvg("progress", fg)
 		pluginUpdatedIcon.Load2(core.NewQByteArray2(svgUpdatedContent, len(svgUpdatedContent)))
 
@@ -996,7 +1007,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 
 		pluginUpdatedNum.SetText(fmt.Sprintf("%v", sinceUpdate(p.UpdatedAt)))
 		pluginUpdatedNum.SetContentsMargins(0, 0, 0, 0)
-		pluginUpdatedNum.SetStyleSheet(" .QLabel {font-size: 10px;} ")
+		pluginUpdatedNum.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-2, 1, false))
 
 		pluginUpdatedLayout.AddWidget(pluginUpdatedIcon, 0, 0)
 		pluginUpdatedLayout.AddWidget(pluginUpdatedNum, 0, 0)
@@ -1019,19 +1030,20 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginInstallLabel := widgets.NewQLabel(nil, 0)
 		pluginInstallLabel.SetContentsMargins(0, 0, 5, 0)
 		pluginInstallLabel.SetAlignment(core.Qt__AlignCenter)
+		pluginInstallLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		pluginInstall := widgets.NewQWidget(nil, 0)
-		pluginInstall.SetFixedWidth(75)
-		pluginInstall.SetFixedHeight(20)
+		pluginInstall.SetFixedWidth(7 * editor.config.Editor.FontSize)
+		pluginInstall.SetFixedHeight(2 * (editor.config.Editor.FontSize - 2))
 		pluginInstallLayout := widgets.NewQHBoxLayout()
-		pluginInstallLayout.SetContentsMargins(10, 0, 0, 0)
+		pluginInstallLayout.SetContentsMargins(editor.config.Editor.FontSize, 0, 0, 0)
 		pluginInstallLayout.SetSpacing(0)
 		pluginInstall.SetLayout(pluginInstallLayout)
 		pluginInstall.SetObjectName("installbutton")
 
 		// waiting label while install pugin
 		pluginWaiting := widgets.NewQWidget(nil, 0)
-		pluginWaiting.SetMaximumWidth(75)
-		pluginWaiting.SetMinimumWidth(75)
+		pluginWaiting.SetFixedWidth(7 * editor.config.Editor.FontSize)
+		pluginWaiting.SetFixedHeight(2 * (editor.config.Editor.FontSize - 2))
 		pluginWaitingLayout := widgets.NewQHBoxLayout()
 		pluginWaitingLayout.SetContentsMargins(5, 0, 5, 0)
 		pluginWaiting.SetLayout(pluginWaitingLayout)
@@ -1078,7 +1090,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		}
 
 		pluginInstallIcon := svg.NewQSvgWidget(nil)
-		iconSize := 14
+		iconSize := editor.config.Editor.FontSize
 		pluginInstallIcon.SetFixedSize2(iconSize, iconSize)
 		svgContent := editor.getSvg("download", newRGBA(255, 255, 255, 1))
 		pluginInstallIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -1204,6 +1216,7 @@ func (p *Plugin) enterButton(event *core.QEvent) {
 		return
 	}
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton { background: %s;} #installbutton QLabel { color: #ffffff; }", editor.config.SideBar.AccentColor))
+	p.installButton.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 }
 
 func (p *Plugin) leaveButton(event *core.QEvent) {
@@ -1212,6 +1225,7 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 	}
 	labelColor := darkenHex(editor.config.SideBar.AccentColor)
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton { background: %s;} #installbutton QLabel { color: #ffffff; }", labelColor))
+	p.installButton.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 }
 
 func deinInstallPost(result string) {
@@ -1464,6 +1478,7 @@ func (side *DeinSide) pressConfigIcon(event *gui.QMouseEvent) {
 	bg := editor.bgcolor
 	if side.contextMenu == nil {
 		side.contextMenu = widgets.NewQMenu(side.widget)
+		side.contextMenu.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		side.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1);} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, bg.R, bg.G, bg.B))
 		menuActionUpdateRemotePlugins := side.contextMenu.AddAction("UpdateRemotePlugins")
 		menuActionUpdateRemotePlugins.ConnectTriggered(func(dummy bool) {
