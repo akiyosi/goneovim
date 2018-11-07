@@ -130,13 +130,13 @@ func newGonvimConfig(home string) gonvimConfig {
 		case "windows":
 			config.Editor.FontFamily = "Consolas"
 		case "darwin":
-			config.Editor.FontFamily = "Courier New"
+			config.Editor.FontFamily = "Monaco"
 		default:
 			config.Editor.FontFamily = "Monospace"
 		}
 	}
 	if config.Editor.FontSize <= 4 {
-		config.Editor.FontSize = 14
+		config.Editor.FontSize = 13
 	}
 	if config.Editor.Linespace < 0 {
 		config.Editor.Linespace = 6
