@@ -130,7 +130,7 @@ func initStatuslineNew() *Statusline {
 	widget.SetContentsMargins(0, 0, 6, 0)
 
 	// spacing, padding, paddingtop, rightitemnum, width
-	layout := newVFlowLayout(16, 10, 1, 2, 0)
+	layout := newVFlowLayout(16, 10, 1, 1, 0)
 	widget.SetLayout(layout)
 	widget.SetObjectName("statusline")
 
@@ -139,22 +139,21 @@ func initStatuslineNew() *Statusline {
 		updates: make(chan []interface{}, 1000),
 	}
 
-	modeIcon := svg.NewQSvgWidget(nil)
-	modeIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
+	//modeIcon := svg.NewQSvgWidget(nil)
+	//modeIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	modeLabel := widgets.NewQLabel(nil, 0)
 	modeLabel.SetContentsMargins(0, 0, 0, 0)
-	modeLayout := widgets.NewQHBoxLayout()
+	//modeLayout := widgets.NewQHBoxLayout()
 	// mode displayed as a fileicon
 	//modeLayout.AddWidget(modeIcon, 0, 0)
 	//modeLayout.AddWidget(modeLabel, 0, 0)
-	modeLayout.SetContentsMargins(0, 0, 0, 0)
-	modeWidget := widgets.NewQWidget(nil, 0)
-	modeWidget.SetLayout(modeLayout)
+	//modeLayout.SetContentsMargins(0, 0, 0, 0)
+	//modeWidget := widgets.NewQWidget(nil, 0)
+	//modeWidget.SetLayout(modeLayout)
 
 	mode := &StatusMode{
-		s:        s,
-		label:    modeLabel,
-		modeIcon: modeIcon,
+		s:     s,
+		label: modeLabel,
 	}
 	s.mode = mode
 
@@ -187,9 +186,10 @@ func initStatuslineNew() *Statusline {
 	folderLabel := widgets.NewQLabel(nil, 0)
 	folderLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	folderLabel.SetContentsMargins(0, 0, 0, 1)
+	folderLabel.Hide()
 	fileLayout := widgets.NewQHBoxLayout()
 	fileLayout.SetContentsMargins(0, 0, 0, 1)
-	fileLayout.SetSpacing(3)
+	fileLayout.SetSpacing(6)
 	fileLayout.AddWidget(fileIcon, 0, 0)
 	fileLayout.AddWidget(folderLabel, 0, 0)
 	fileLayout.AddWidget(fileLabel, 0, 0)
@@ -317,7 +317,7 @@ func initStatuslineNew() *Statusline {
 
 	s.setContentsMarginsForWidgets(0, 7, 0, 9)
 
-	layout.AddWidget(modeWidget)
+	//layout.AddWidget(modeWidget)
 	layout.AddWidget(fileWidget)
 	layout.AddWidget(notifyWidget)
 	layout.AddWidget(gitWidget)
@@ -332,7 +332,6 @@ func initStatuslineNew() *Statusline {
 
 func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 	s.pos.label.SetContentsMargins(l, u, r, d)
-	s.mode.label.SetContentsMargins(l, u, r, d)
 	s.file.widget.SetContentsMargins(l, u, r, d)
 	s.notify.widget.SetContentsMargins(l, u, r, d)
 	s.filetype.label.SetContentsMargins(l, u, r, d)
@@ -404,10 +403,13 @@ func (s *StatusMode) redraw() {
 	switch s.mode {
 	case "normal":
 		text = "normal"
+		//s.s.file.icon.Hide()
 		//bg = newRGBA(102, 153, 204, 1)
 		//svgContent := editor.getSvg(s.s.file.fileType, nil)
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		//s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent := editor.getSvg("hjkl", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "cmdline_normal":
 		text = "normal"
 		//bg = newRGBA(102, 153, 204, 1)
@@ -438,10 +440,10 @@ func (s *StatusMode) redraw() {
 		svgContent := editor.getSvg("terminal", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		//s.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.file.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	default:
 	}
 	if s.mode == "normal" {
 		//s.modeIcon.Hide()
-		s.s.file.icon.Hide()
 	} else {
 		//s.modeIcon.Show()
 		s.s.file.icon.Show()
@@ -541,14 +543,19 @@ func (s *StatuslineFile) redraw(file string) {
 	if dir == "." {
 		dir = ""
 	}
-	fileType := getFileType(file)
-	if s.fileType != fileType {
-		s.fileType = fileType
-		s.updateIcon()
-	}
+	//fileType := getFileType(file)
+	//if s.fileType != fileType {
+	//	s.fileType = fileType
+	//	s.updateIcon()
+	//}
 	if strings.HasPrefix(file, "term://") {
 		base = file
 		dir = ""
+	}
+	if dir != "" {
+		s.folderLabel.Show()
+	} else {
+		s.folderLabel.Hide()
 	}
 	if s.base != base {
 		s.base = base
