@@ -286,8 +286,8 @@ func newTabline() *Tabline {
 		file.SetContentsMargins(0, marginTop, 0, marginBottom)
 		file.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		closeIcon := svg.NewQSvgWidget(nil)
-		closeIcon.SetFixedWidth(editor.config.Editor.FontSize)
-		closeIcon.SetFixedHeight(editor.config.Editor.FontSize)
+		closeIcon.SetFixedWidth(editor.iconSize)
+		closeIcon.SetFixedHeight(editor.iconSize)
 		// l.AddWidget(fileIcon, 0, 0)
 		l.AddWidget(file, 1, 0)
 		l.AddWidget(closeIcon, 0, 0)
@@ -457,8 +457,8 @@ func (t *Tab) pressEvent(event *gui.QMouseEvent) {
 
 func (t *Tab) closeIconPressEvent(event *gui.QMouseEvent) {
 	fg := editor.fgcolor
-	t.closeIcon.SetFixedWidth(editor.config.Editor.FontSize)
-	t.closeIcon.SetFixedHeight(editor.config.Editor.FontSize)
+	t.closeIcon.SetFixedWidth(editor.iconSize)
+	t.closeIcon.SetFixedHeight(editor.iconSize)
 	svgContent := editor.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
@@ -474,8 +474,8 @@ func (t *Tab) closeIconReleaseEvent(event *gui.QMouseEvent) {
 }
 
 func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
-	t.closeIcon.SetFixedWidth(editor.config.Editor.FontSize)
-	t.closeIcon.SetFixedHeight(editor.config.Editor.FontSize)
+	t.closeIcon.SetFixedWidth(editor.iconSize)
+	t.closeIcon.SetFixedHeight(editor.iconSize)
 	svgContent := editor.getSvg("hoverclose", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	cursor := gui.NewQCursor()
@@ -484,8 +484,8 @@ func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
 }
 
 func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
-	t.closeIcon.SetFixedWidth(editor.config.Editor.FontSize)
-	t.closeIcon.SetFixedHeight(editor.config.Editor.FontSize)
+	t.closeIcon.SetFixedWidth(editor.iconSize)
+	t.closeIcon.SetFixedHeight(editor.iconSize)
 	svgContent := editor.getSvg("cross", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	gui.QGuiApplication_RestoreOverrideCursor()

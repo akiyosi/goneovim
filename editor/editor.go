@@ -71,6 +71,7 @@ type Editor struct {
 	statuslineHeight int
 	width            int
 	height           int
+	iconSize         int
 	tablineHeight    int
 	selectedBg       *RGBA
 	matchFg          *RGBA
@@ -158,6 +159,9 @@ func InitEditor() {
 
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
+
+	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-3, 1, false))
+	e.iconSize = int(font.Height())
 
 	//create a window
 	e.window = widgets.NewQMainWindow(nil, 0)

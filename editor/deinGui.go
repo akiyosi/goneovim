@@ -346,7 +346,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginLazyLayout.SetContentsMargins(0, 0, 0, 0)
 		installedPluginLazyLayout.SetSpacing(1)
 		installedPluginLazyIcon := svg.NewQSvgWidget(nil)
-		iconSize := editor.config.Editor.FontSize
+		iconSize := editor.iconSize
 		installedPluginLazyIcon.SetFixedSize2(iconSize, iconSize)
 		var svgLazyContent string
 		if i.lazy == false {
@@ -558,7 +558,7 @@ func newDeinSide() *DeinSide {
 	header.SetContentsMargins(0, 0, 0, 0)
 	header.SetText("DEIN.VIM")
 	configIcon := svg.NewQSvgWidget(nil)
-	configIcon.SetFixedSize2(editor.config.Editor.FontSize-1, editor.config.Editor.FontSize-1)
+	configIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	svgConfigContent := editor.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 	headerLayout.AddWidget(header, 0, 0)
@@ -936,7 +936,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginStarsLayout.SetSpacing(1)
 
 		pluginStarsIcon := svg.NewQSvgWidget(nil)
-		pluginStarsIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+		pluginStarsIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		svgStarContent := editor.getSvg("star", fg)
 		pluginStarsIcon.Load2(core.NewQByteArray2(svgStarContent, len(svgStarContent)))
 
@@ -957,7 +957,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginDownloadsLayout.SetSpacing(1)
 
 		pluginDownloadsIcon := svg.NewQSvgWidget(nil)
-		pluginDownloadsIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+		pluginDownloadsIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		svgDownloadContent := editor.getSvg("downloaded", fg)
 		pluginDownloadsIcon.Load2(core.NewQByteArray2(svgDownloadContent, len(svgDownloadContent)))
 
@@ -978,7 +978,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginAuthorLayout.SetSpacing(1)
 
 		pluginAuthorIcon := svg.NewQSvgWidget(nil)
-		pluginAuthorIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+		pluginAuthorIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		svgUserContent := editor.getSvg("user", fg)
 		pluginAuthorIcon.Load2(core.NewQByteArray2(svgUserContent, len(svgUserContent)))
 
@@ -999,7 +999,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginUpdatedLayout.SetSpacing(1)
 
 		pluginUpdatedIcon := svg.NewQSvgWidget(nil)
-		pluginUpdatedIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+		pluginUpdatedIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		svgUpdatedContent := editor.getSvg("progress", fg)
 		pluginUpdatedIcon.Load2(core.NewQByteArray2(svgUpdatedContent, len(svgUpdatedContent)))
 

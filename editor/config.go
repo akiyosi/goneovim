@@ -135,7 +135,7 @@ func newGonvimConfig(home string) gonvimConfig {
 			config.Editor.FontFamily = "Monospace"
 		}
 	}
-	if config.Editor.FontSize <= 4 {
+	if config.Editor.FontSize <= 5 {
 		config.Editor.FontSize = 13
 	}
 	if config.Editor.Linespace < 0 {

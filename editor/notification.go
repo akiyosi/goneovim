@@ -54,8 +54,8 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	// messageWidget.SetFixedWidth(400)
 
 	levelIcon := svg.NewQSvgWidget(nil)
-	levelIcon.SetFixedWidth(editor.config.Editor.FontSize - 1)
-	levelIcon.SetFixedHeight(editor.config.Editor.FontSize - 1)
+	levelIcon.SetFixedWidth(editor.iconSize)
+	levelIcon.SetFixedHeight(editor.iconSize)
 	levelIcon.SetContentsMargins(0, 0, 0, 0)
 	var level string
 	switch l {
@@ -80,8 +80,8 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	bg := editor.bgcolor
 	svgContent := e.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
 	closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	closeIcon.SetFixedWidth(editor.config.Editor.FontSize - 1)
-	closeIcon.SetFixedHeight(editor.config.Editor.FontSize - 1)
+	closeIcon.SetFixedWidth(editor.iconSize - 1)
+	closeIcon.SetFixedHeight(editor.iconSize - 1)
 
 	closeIcon.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 		fg := editor.fgcolor

@@ -140,7 +140,7 @@ func initStatuslineNew() *Statusline {
 	}
 
 	modeIcon := svg.NewQSvgWidget(nil)
-	modeIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+	modeIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	modeLabel := widgets.NewQLabel(nil, 0)
 	modeLabel.SetContentsMargins(0, 0, 0, 0)
 	modeLayout := widgets.NewQHBoxLayout()
@@ -159,7 +159,7 @@ func initStatuslineNew() *Statusline {
 	s.mode = mode
 
 	gitIcon := svg.NewQSvgWidget(nil)
-	gitIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+	gitIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	gitLabel := widgets.NewQLabel(nil, 0)
 	gitLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	gitLabel.SetContentsMargins(0, 0, 0, 0)
@@ -180,7 +180,7 @@ func initStatuslineNew() *Statusline {
 	s.git = git
 
 	fileIcon := svg.NewQSvgWidget(nil)
-	fileIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+	fileIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	fileLabel := widgets.NewQLabel(nil, 0)
 	fileLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	fileLabel.SetContentsMargins(0, 0, 0, 1)
@@ -228,6 +228,7 @@ func initStatuslineNew() *Statusline {
 	s.pos = pos
 
 	filetypeLabel := widgets.NewQLabel(nil, 0)
+	filetypeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	filetype := &StatuslineFiletype{
 		label: filetypeLabel,
 	}
@@ -241,7 +242,7 @@ func initStatuslineNew() *Statusline {
 	notifyLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	notifyLabel.Hide()
 	notifyicon := svg.NewQSvgWidget(nil)
-	notifyicon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+	notifyicon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	notifyLayout.AddWidget(notifyicon, 0, 0)
 	notifyLayout.AddWidget(notifyLabel, 0, 0)
 	notifyLayout.SetContentsMargins(2, 0, 2, 0)
@@ -271,19 +272,19 @@ func initStatuslineNew() *Statusline {
 	// })
 
 	okIcon := svg.NewQSvgWidget(nil)
-	okIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+	okIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	okLabel := widgets.NewQLabel(nil, 0)
 	okLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	okLabel.SetContentsMargins(0, 0, 0, 0)
 	errorIcon := svg.NewQSvgWidget(nil)
-	errorIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+	errorIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	//errorIcon.Show()
 	errorLabel := widgets.NewQLabel(nil, 0)
 	errorLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	errorLabel.SetContentsMargins(0, 0, 0, 0)
 	//errorLabel.Show()
 	warnIcon := svg.NewQSvgWidget(nil)
-	warnIcon.SetFixedSize2(editor.config.Editor.FontSize, editor.config.Editor.FontSize)
+	warnIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	//warnIcon.Show()
 	warnLabel := widgets.NewQLabel(nil, 0)
 	warnLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
