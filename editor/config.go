@@ -23,6 +23,16 @@ import (
 // cursorBlink = true
 // disableIMEinNormal = true
 //
+// [statusLine]
+// # textLabel / icon / background / none
+// modeIndicatorType = "icon"
+// normalModeColor = "#123456"
+// commandModeColor = "#123456"
+// insertModeColor = "#123456"
+// replaceModeColor = "#123456"
+// visualModeColor = "#123456"
+// termnalModeColor = "#123456"
+//
 // [scrollBar]
 // visible = true
 //
@@ -53,6 +63,7 @@ import (
 // tomlFile
 type gonvimConfig struct {
 	Editor      editorConfig
+	Statusline  statusLineConfig
 	ScrollBar   scrollBarConfig
 	ActivityBar activityBarConfig
 	MiniMap     miniMapConfig
@@ -70,6 +81,16 @@ type editorConfig struct {
 	Clipboard          bool
 	CursorBlink        bool
 	DisableImeInNormal bool
+}
+
+type statusLineConfig struct {
+	ModeIndicatorType string
+	NormalModeColor   string
+	CommandModeColor  string
+	InsertModeColor   string
+	ReplaceModeColor  string
+	VisualModeColor   string
+	TerminalModeColor string
 }
 
 type miniMapConfig struct {
@@ -107,6 +128,7 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Editor.FontSize = 14
 		config.Editor.Width = 800
 		config.Editor.Height = 600
+		config.Statusline.ModeIndicatorType = "textLabel"
 		config.ActivityBar.Visible = true
 		config.ScrollBar.Visible = true
 		config.SideBar.Width = 300
@@ -123,6 +145,9 @@ func newGonvimConfig(home string) gonvimConfig {
 	}
 	if config.Editor.Height <= 600 {
 		config.Editor.Height = 600
+	}
+	if config.Statusline.ModeIndicatorType == "" {
+		config.Statusline.ModeIndicatorType = "textLabel"
 	}
 
 	if config.Editor.FontFamily == "" {
