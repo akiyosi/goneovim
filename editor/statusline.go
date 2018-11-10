@@ -674,6 +674,8 @@ func (s *StatuslineNotify) update() {
 }
 
 func (s *StatuslineLint) update() {
+	s.errorLabel.SetText(strconv.Itoa(s.errors))
+	s.warnLabel.SetText(strconv.Itoa(s.warnings))
 	if !s.svgLoaded {
 		s.svgLoaded = true
 		//svgContent := editor.getSvg("check", newRGBA(141, 193, 73, 1))
@@ -682,7 +684,7 @@ func (s *StatuslineLint) update() {
 
 		var lintNoErrColor *RGBA
 		if editor.fgcolor == nil {
-			lintNoErrColor = newRGBA(170, 175, 190, 1)
+			return
 		} else {
 			if editor.config.Statusline.ModeIndicatorType == "background" {
 				lintNoErrColor = newRGBA(255, 255, 255, 1)
@@ -716,8 +718,6 @@ func (s *StatuslineLint) update() {
 	//} else {
 	s.okIcon.Hide()
 	s.okLabel.Hide()
-	s.errorLabel.SetText(strconv.Itoa(s.errors))
-	s.warnLabel.SetText(strconv.Itoa(s.warnings))
 	s.errorIcon.Show()
 	s.errorLabel.Show()
 	s.warnIcon.Show()
