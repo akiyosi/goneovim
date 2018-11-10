@@ -393,7 +393,7 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 
 func (s *StatusMode) update() {
 	s.s.main.modeLabel.SetText(s.text)
-	s.s.main.modeLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
+	s.s.main.modeLabel.SetStyleSheet(fmt.Sprintf("color: #ffffff; background-color: %s;", s.bg.String()))
 }
 
 func (s *StatusMode) updateStatusline() {
@@ -417,7 +417,7 @@ func (s *StatusMode) redraw() {
 		if editor.config.Statusline.NormalModeColor != "" {
 			bg = hexToRGBA(editor.config.Statusline.NormalModeColor)
 		} else {
-			bg = newRGBA(102, 153, 204, 1)
+			bg = newRGBA(60, 171, 235, 1)
 		}
 		svgContent := editor.getSvg("hjkl", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -426,7 +426,7 @@ func (s *StatusMode) redraw() {
 		if editor.config.Statusline.CommandModeColor != "" {
 			bg = hexToRGBA(editor.config.Statusline.CommandModeColor)
 		} else {
-			bg = newRGBA(102, 153, 204, 1)
+			bg = newRGBA(82, 133, 184, 1)
 		}
 		svgContent := editor.getSvg("command", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -435,7 +435,7 @@ func (s *StatusMode) redraw() {
 		if editor.config.Statusline.InsertModeColor != "" {
 			bg = hexToRGBA(editor.config.Statusline.InsertModeColor)
 		} else {
-			bg = newRGBA(153, 199, 148, 1)
+			bg = newRGBA(42, 188, 180, 1)
 		}
 		svgContent := editor.getSvg("edit", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -444,7 +444,7 @@ func (s *StatusMode) redraw() {
 		if editor.config.Statusline.VisualModeColor != "" {
 			bg = hexToRGBA(editor.config.Statusline.VisualModeColor)
 		} else {
-			bg = newRGBA(250, 200, 99, 1)
+			bg = newRGBA(153, 50, 204, 1)
 		}
 		svgContent := editor.getSvg("select", newRGBA(warpColor(fg, 30).R, warpColor(fg, 30).G, warpColor(fg, 30).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -453,7 +453,7 @@ func (s *StatusMode) redraw() {
 		if editor.config.Statusline.ReplaceModeColor != "" {
 			bg = hexToRGBA(editor.config.Statusline.ReplaceModeColor)
 		} else {
-			bg = newRGBA(250, 200, 99, 1)
+			bg = newRGBA(255, 140, 10, 1)
 		}
 		svgContent := editor.getSvg("replace", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -462,7 +462,7 @@ func (s *StatusMode) redraw() {
 		if editor.config.Statusline.TerminalModeColor != "" {
 			bg = hexToRGBA(editor.config.Statusline.TerminalModeColor)
 		} else {
-			bg = newRGBA(50, 50, 50, 1)
+			bg = newRGBA(119, 136, 153, 1)
 		}
 		svgContent := editor.getSvg("terminal", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
