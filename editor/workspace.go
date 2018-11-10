@@ -1333,13 +1333,15 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 	w.tabline.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-left: 8px solid %s; border-bottom: 0px solid; border-right: 0px solid; background-color: %s; } QWidget { color: %s; } ", tablineBgColor.print(), tablineBgColor.print(), tablineFgColor.print()))
 
 	// statusline
-	w.statusline.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", statuslineFolderLabelColor.print()))
-	w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid %s; background-color: %s; } * { color: %s; }", statuslineBorderColor.print(), statuslineBgColor.print(), statuslineFgColor.print()))
+	if editor.config.Statusline.ModeIndicatorType != "background" {
+		w.statusline.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", statuslineFolderLabelColor.print()))
+		w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid %s; background-color: %s; } * { color: %s; }", statuslineBorderColor.print(), statuslineBgColor.print(), statuslineFgColor.print()))
 
-	svgContent := editor.getSvg("git", statuslineFgColor)
-	w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	svgContent = editor.getSvg("bell", statuslineFgColor)
-	w.statusline.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent := editor.getSvg("git", statuslineFgColor)
+		w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		svgContent = editor.getSvg("bell", statuslineFgColor)
+		w.statusline.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	}
 
 	// scrollBar
 	w.scrollBar.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", scrollBarThumbColor.print()))

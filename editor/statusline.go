@@ -397,8 +397,27 @@ func (s *StatusMode) update() {
 }
 
 func (s *StatusMode) updateStatusline() {
+	s.s.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", newRGBA(230, 230, 230, 1)))
 	s.s.widget.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
-	s.s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {     border-top: 0px solid %s; background-color: %s; } * { color: %s; }", s.bg.String(), s.bg.String(), "#ffffff"))
+	s.s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { border-top: 0px solid %s; background-color: %s; } * { color: %s; }", s.bg.String(), s.bg.String(), "#ffffff"))
+	svgContent := editor.getSvg("git", newRGBA(255, 255, 255, 1))
+	s.s.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	svgContent = editor.getSvg("bell", newRGBA(255, 255, 255, 1))
+	s.s.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+
+	var svgErrContent, svgWrnContent string
+	if s.s.lint.errors != 0 {
+		svgErrContent = editor.getSvg("bad", newRGBA(204, 62, 68, 1))
+	} else {
+		svgErrContent = editor.getSvg("bad", newRGBA(255, 255, 255, 1))
+	}
+	if s.s.lint.warnings != 0 {
+		svgWrnContent = editor.getSvg("exclamation", newRGBA(203, 203, 65, 1))
+	} else {
+		svgWrnContent = editor.getSvg("exclamation", newRGBA(255, 255, 255, 1))
+	}
+	s.s.lint.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
+	s.s.lint.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 }
 
 func (s *StatusMode) redraw() {
@@ -665,7 +684,11 @@ func (s *StatuslineLint) update() {
 		if editor.fgcolor == nil {
 			lintNoErrColor = newRGBA(170, 175, 190, 1)
 		} else {
-			lintNoErrColor = editor.fgcolor
+			if editor.config.Statusline.ModeIndicatorType == "background" {
+				lintNoErrColor = newRGBA(255, 255, 255, 1)
+			} else {
+				lintNoErrColor = editor.fgcolor
+			}
 		}
 
 		if s.errors != 0 {
