@@ -788,7 +788,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.minimap.nvim.Eval("line('w0')", &absMapTop)
 			var absMapBottom int
 			w.minimap.nvim.Eval("line('w$')", &absMapBottom)
-			w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, w.curColm))
+			w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
 			switch {
 			case w.curLine >= absMapBottom:
 				w.minimap.nvim.Input("<C-d>")
