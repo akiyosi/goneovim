@@ -683,9 +683,10 @@ func (s *StatuslineLint) update() {
 		var svgErrContent, svgWrnContent string
 
 		var lintNoErrColor *RGBA
-		if editor.fgcolor == nil {
+		switch editor.fgcolor {
+		case nil:
 			return
-		} else {
+		default:
 			if editor.config.Statusline.ModeIndicatorType == "background" {
 				lintNoErrColor = newRGBA(255, 255, 255, 1)
 			} else {
