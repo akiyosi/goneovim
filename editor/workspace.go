@@ -55,21 +55,22 @@ type Workspace struct {
 	height  int
 	hidden  bool
 
-	nvim       *nvim.Nvim
-	rows       int
-	cols       int
-	uiAttached bool
-	foreground *RGBA
-	background *RGBA
-	special    *RGBA
-	mode       string
-	filepath   string
-	cwd        string
-	cwdBase    string
-	cwdlabel   string
-	maxLine    int
-	curLine    int
-	curColm    int
+	nvim             *nvim.Nvim
+	rows             int
+	cols             int
+	uiAttached       bool
+	uiInitialResized bool
+	foreground       *RGBA
+	background       *RGBA
+	special          *RGBA
+	mode             string
+	filepath         string
+	cwd              string
+	cwdBase          string
+	cwdlabel         string
+	maxLine          int
+	curLine          int
+	curColm          int
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}

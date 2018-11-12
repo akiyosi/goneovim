@@ -195,20 +195,23 @@ func (s *Screen) updateSize() {
 	isColDiff := s.updateCols()
 	isRowDiff := s.updateRows()
 	isTryResize := isColDiff || isRowDiff
-	if w.uiAttached && isTryResize {
-		done := make(chan error, 5)
-		var result error
-		go func() {
+	done := make(chan error, 5)
+	var result error
+	go func() {
+		if (w.uiAttached && isTryResize) || w.uiInitialResized {
 			result = w.nvim.TryResizeUI(w.cols, w.rows)
 			done <- result
-		}()
-		select {
-		case <-done:
-		case <-time.After(10 * time.Millisecond):
-			// In this case, assuming that nvim is returning an error at startup and the TryResizeUI() function hangs up.
-			w.nvim.Input("<Enter>")
-			w.nvim.TryResizeUI(w.cols, w.rows)
+		} else {
+			done <- nil
 		}
+	}()
+	select {
+	case <-done:
+		w.uiInitialResized = true
+	case <-time.After(10 * time.Millisecond):
+		// In this case, assuming that nvim is returning an error at startup and the TryResizeUI() function hangs up.
+		w.nvim.Input("<Enter>")
+		w.updateSize()
 	}
 }
 
