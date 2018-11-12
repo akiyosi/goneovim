@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -24,22 +27,22 @@ type Signature struct {
 func initSignature() *Signature {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(8, 8, 8, 8)
-	widget.SetStyleSheet(`
-	.QWidget {
-		border: 1px solid #000;
-	}
-	QWidget {
-		background-color: rgba(24, 29, 34, 1);
-	}
-	* {
-		color: rgba(205, 211, 222, 1);
-	}
-	`)
 	layout := widgets.NewQVBoxLayout()
 	layout.SetContentsMargins(0, 0, 0, 0)
 
+	icon := svg.NewQSvgWidget(nil)
+	icon.SetFixedWidth(editor.iconSize)
+	icon.SetFixedHeight(editor.iconSize)
+	icon.SetContentsMargins(0, 0, 0, 0)
+	svgContent := editor.getSvg("flag", hexToRGBA(editor.config.SideBar.AccentColor))
+	icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+
 	label := widgets.NewQLabel(nil, 0)
+	label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+
+	layout.AddWidget(icon, 0, 0)
 	layout.AddWidget(label, 0, 0)
+
 	widget.SetLayout(layout)
 	signature := &Signature{
 		cusor:  []int{0, 0},

@@ -1295,6 +1295,10 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 	locBorderColor := shiftColor(bg, 20)
 	locBgColor := shiftColor(bg, 10)
 
+	signatureFgColor := shiftColor(fg, 5)
+	signatureBorderColor := shiftColor(bg, 20)
+	signatureBgColor := shiftColor(bg, 10)
+
 	tooltipFgColor := shiftColor(fg, -40)
 	tooltipBgColor := weakBg
 
@@ -1360,6 +1364,9 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 
 	// loc
 	w.loc.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } * { background-color: %s;  color: %s; }", locBorderColor.print(), locBgColor.print(), locFgColor.print()))
+
+	// signature
+	w.signature.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } QWidget { background-color: %s; } * { color: %s; }", signatureBorderColor.print(), signatureBgColor.print(), signatureFgColor.print()))
 
 	// screan tooltip
 	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: %s; text-decoration: underline; color: %s; }", tooltipBgColor.print(), tooltipFgColor.print()))
