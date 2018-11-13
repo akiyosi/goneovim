@@ -198,7 +198,7 @@ func (s *Screen) updateSize() {
 	done := make(chan error, 5)
 	var result error
 	go func() {
-		if (w.uiAttached && isTryResize) || w.uiInitialResized {
+		if w.uiAttached && (isTryResize || !w.uiInitialResized) {
 			result = w.nvim.TryResizeUI(w.cols, w.rows)
 			done <- result
 		} else {
