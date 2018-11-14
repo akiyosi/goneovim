@@ -59,7 +59,7 @@ func (c *Cursor) updateShape() {
 		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.5)")
 		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
 	} else if mode == "insert" {
-		c.widget.Resize2(1, c.ws.font.height+2)
+		c.widget.Resize2(2, c.ws.font.height+2)
 		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
 		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.9)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
 	}

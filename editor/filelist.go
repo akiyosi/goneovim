@@ -244,8 +244,9 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 	cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
 	if err != nil {
 		cfn = ""
+	} else {
+		cfn = cfnITF.(string)
 	}
-	cfn = cfnITF.(string)
 
 	if cfn != f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: none; } ", shiftColor(bg, -5).print()))
