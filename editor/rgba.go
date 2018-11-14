@@ -112,7 +112,6 @@ func warpColor(rgba *RGBA, v int) *RGBA {
 		return &RGBA{0, 0, 0, 1}
 	}
 	var r, g, b int
-	fmt.Println("warp", rgba.R, rgba.G, rgba.B)
 
 	if rgba.R > 128 {
 		r = rgba.R + v
@@ -152,7 +151,6 @@ func warpColor(rgba *RGBA, v int) *RGBA {
 		b = 255
 	}
 
-	fmt.Println("warp:", r, g, b)
 	return &RGBA{
 		R: r,
 		G: g,

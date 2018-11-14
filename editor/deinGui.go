@@ -720,7 +720,7 @@ func newInstalledPlugins() *InstalledPlugins {
 	installedHeader := widgets.NewQLabel(nil, 0)
 	installedHeader.SetContentsMargins(20, 2, 20, 2)
 	installedHeader.SetText("INSTALLED")
-	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 11px; margin-bottom: 0px; background: %s; color: %s; } ", shiftColor(bg, -15).print(), fg.print()))
+	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 11px; margin-bottom: 0px; background: %s; color: %s; } ", warpColor(bg, -6).print(), fg.print()))
 	installedHeader.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	installedLayout.AddWidget(installedHeader, 0, 0)
 
