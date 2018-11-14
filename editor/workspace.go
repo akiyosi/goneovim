@@ -1383,4 +1383,5 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 		editor.wsSide.items[0].labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", wsSideitemActiveBgColor.print(), fg.print()))
 	}
 
+	editor.window.SetWindowOpacity(1.0)
 }
