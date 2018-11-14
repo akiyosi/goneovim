@@ -95,7 +95,7 @@ func newFilelistwidget(path string) *Filelist {
 		fileModified.SetFixedHeight(editor.iconSize)
 		fileModified.SetContentsMargins(0, 0, 0, 0)
 		// Hide with the same color as the background
-		svgModified := editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+		svgModified := editor.getSvg("circle", shiftColor(bg, -5))
 		fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 
 		filename := f.Name()
@@ -215,19 +215,19 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 	}
 
 	if cfn == f.fileName {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", warpColor(bg, -6).print()))
 		if f.isModified == "1" {
-			svgModified = editor.getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+			svgModified = editor.getSvg("circle", gradColor(fg))
 		} else {
-			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+			svgModified = editor.getSvg("circle", warpColor(bg, -6))
 		}
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	} else {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); text-decoration: underline; } ", shiftColor(bg, -9).R, shiftColor(bg, -9).G, shiftColor(bg, -9).B))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", warpColor(bg, -6).print()))
 		if f.isModified == "1" {
-			svgModified = editor.getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+			svgModified = editor.getSvg("circle", gradColor(fg))
 		} else {
-			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -9).R, shiftColor(bg, -9).G, shiftColor(bg, -9).B, 1))
+			svgModified = editor.getSvg("circle", warpColor(bg, -6))
 		}
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
@@ -248,8 +248,8 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 	cfn = cfnITF.(string)
 
 	if cfn != f.fileName {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); text-decoration: none; } ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
-		svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: none; } ", shiftColor(bg, -5).print()))
+		svgModified = editor.getSvg("circle", shiftColor(bg, -5))
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
 	gui.QGuiApplication_RestoreOverrideCursor()
@@ -276,14 +276,14 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 			if !fileitem.isOpened {
 				continue
 			}
-			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
-			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", shiftColor(bg, -5).print()))
+			svgModified = editor.getSvg("circle", shiftColor(bg, -5))
 			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 			breakOk1 = true
 			fileitem.isOpened = false
 		} else {
-			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d); }", shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B))
-			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", warpColor(bg, -5).print()))
+			svgModified = editor.getSvg("circle", warpColor(bg, -15))
 			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 			if !fileitem.isOpened {
 				breakOk2 = true
@@ -308,12 +308,12 @@ func (f *Fileitem) updateModifiedbadge() {
 	bg := editor.bgcolor
 	var svgModified string
 	if isModified == "1" {
-		svgModified = editor.getSvg("circle", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+		svgModified = editor.getSvg("circle", gradColor(fg))
 	} else {
 		if f.isOpened {
-			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -15).R, shiftColor(bg, -15).G, shiftColor(bg, -15).B, 1))
+			svgModified = editor.getSvg("circle", warpColor(bg, -6))
 		} else {
-			svgModified = editor.getSvg("circle", newRGBA(shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B, 1))
+			svgModified = editor.getSvg("circle", shiftColor(bg, -5))
 		}
 	}
 	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))

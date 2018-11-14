@@ -1196,7 +1196,8 @@ func (i *WorkspaceSideItem) setActive() {
 	i.active = true
 	bg := editor.bgcolor
 	fg := editor.fgcolor
-	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", shiftColor(bg, -15).print(), shiftColor(fg, 0).print()))
+	wsSideitemActiveBgColor := warpColor(bg, -6)
+	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", wsSideitemActiveBgColor.print(), fg.print()))
 
 	reloadFilelist := i.cwdpath != i.Filelist.cwdpath
 
@@ -1310,7 +1311,7 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 
 	wsSideScrollBarHandleColor := gradColor(bg)
 
-	wsSideitemActiveBgColor := shiftColor(bg, -15)
+	wsSideitemActiveBgColor := warpColor(bg, -6)
 
 	// for splitter
 	editor.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", sideBarColor.print()))
