@@ -202,12 +202,14 @@ func (s *Screen) updateSize() {
 			result = w.nvim.TryResizeUI(w.cols, w.rows)
 			done <- result
 		} else {
-			done <- nil
+			done <- fmt.Errorf("Through resizing")
 		}
 	}()
 	select {
-	case <-done:
-		w.uiInitialResized = true
+	case initUI := <-done:
+		if initUI == nil {
+			w.uiInitialResized = true
+		}
 	case <-time.After(10 * time.Millisecond):
 		// In this case, assuming that nvim is returning an error at startup and the TryResizeUI() function hangs up.
 		w.nvim.Input("<Enter>")
