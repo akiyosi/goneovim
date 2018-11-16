@@ -1426,6 +1426,7 @@ func (d *DeinPluginItem) disablePluginInToml() {
 // }
 
 func (d *DeinPluginItem) remove(dummy bool) {
+	editor.pushNotification(NotifyInfo, -1, "[Gonvim] Start removing plugin.")
 	go func() {
 		d.disablePluginInToml()
 
@@ -1433,6 +1434,7 @@ func (d *DeinPluginItem) remove(dummy bool) {
 		defer cleanup()
 
 		v.Command(`call map(dein#check_clean(), "delete(v:val, 'rf')")`)
+		time.Sleep(1000 * time.Millisecond)
 		v.Command(`call dein#recache_runtimepath()`)
 		editor.pushNotification(NotifyInfo, -1, "[Gonvim] Rmoving the plugin done.")
 		editor.pushNotification(NotifyInfo, -1, "[Gonvim] New settings are applied in the new workspace session.")
