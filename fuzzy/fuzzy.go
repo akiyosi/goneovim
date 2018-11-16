@@ -16,6 +16,7 @@ import (
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/util"
 	"github.com/neovim/go-client/nvim"
+	"github.com/denormal/go-gitignore"
 )
 
 const (
@@ -292,6 +293,7 @@ func (s *Fuzzy) processSource() {
 			}
 			files, _ := ioutil.ReadDir(pwd)
 			folders := []string{}
+			ignore, _ := gitignore.NewRepository(pwd)
 			for {
 				for _, f := range files {
 					if s.cancelled {
@@ -299,12 +301,16 @@ func (s *Fuzzy) processSource() {
 					}
 					if f.IsDir() {
 						if f.Name() == ".git" {
-							continue
+						        continue
 						}
 						folders = append(folders, filepath.Join(pwd, f.Name()))
 						continue
 					}
 					file := filepath.Join(pwd, f.Name())
+					match := ignore.Relative(file, true)
+					if match != nil {
+						continue
+					}
 					if homeDir != "" && strings.HasPrefix(file, homeDir) {
 						file = "~" + file[len(homeDir):]
 					}
