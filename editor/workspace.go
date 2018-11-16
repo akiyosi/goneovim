@@ -1124,14 +1124,14 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	label.SetMinimumWidth(editor.config.SideBar.Width)
 
 	openIcon := svg.NewQSvgWidget(nil)
-	openIcon.SetFixedWidth(11)
-	openIcon.SetFixedHeight(11)
+	openIcon.SetFixedWidth(editor.iconSize - 1)
+	openIcon.SetFixedHeight(editor.iconSize - 1)
 	svgContent := editor.getSvg("chevron-down", nil)
 	openIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
 	closeIcon := svg.NewQSvgWidget(nil)
-	closeIcon.SetFixedWidth(11)
-	closeIcon.SetFixedHeight(11)
+	closeIcon.SetFixedWidth(editor.iconSize - 1)
+	closeIcon.SetFixedHeight(editor.iconSize - 1)
 	svgContent = editor.getSvg("chevron-right", nil)
 	closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
@@ -1198,6 +1198,10 @@ func (i *WorkspaceSideItem) setActive() {
 	fg := editor.fgcolor
 	wsSideitemActiveBgColor := warpColor(bg, -6)
 	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", wsSideitemActiveBgColor.print(), fg.print()))
+	svgOpenContent := editor.getSvg("chevron-down", fg)
+	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
+	svgCloseContent := editor.getSvg("chevron-right", fg)
+	i.closeIcon.Load2(core.NewQByteArray2(svgCloseContent, len(svgCloseContent)))
 
 	reloadFilelist := i.cwdpath != i.Filelist.cwdpath
 
@@ -1223,6 +1227,10 @@ func (i *WorkspaceSideItem) setInactive() {
 	bg := editor.bgcolor
 	fg := editor.fgcolor
 	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", shiftColor(bg, -5).print(), shiftColor(fg, 0).print()))
+	svgOpenContent := editor.getSvg("chevron-down", fg)
+	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
+	svgCloseContent := editor.getSvg("chevron-right", fg)
+	i.closeIcon.Load2(core.NewQByteArray2(svgCloseContent, len(svgCloseContent)))
 
 	i.Filelistwidget.Hide()
 }
@@ -1353,8 +1361,9 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 	w.scrollBar.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", scrollBarThumbColor.print()))
 	w.scrollBar.widget.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", scrollBarColor.print()))
 
-	// for Gonvim UI Color form colorscheme
+	w.minimap.curRegion.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 35);}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
 
+	// for Gonvim UI Color form colorscheme
 	w.palette.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteFgColor.print()))
 	w.palette.widget.SetStyleSheet(fmt.Sprintf(" QWidget#palette { border: 1px solid %s; } .QWidget { background-color: %s; } * { color: %s; } ", paletteBorderColor.print(), paletteBgColor.print(), paletteFgColor.print()))
 	w.palette.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteLightBgColor.print()))

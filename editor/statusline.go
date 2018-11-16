@@ -731,15 +731,28 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 		return
 	}
 	var svgErrContent, svgWrnContent string
+
+	var lintNoErrColor *RGBA
+	switch editor.fgcolor {
+	case nil:
+		return
+	default:
+		if editor.config.Statusline.ModeIndicatorType == "background" {
+			lintNoErrColor = newRGBA(255, 255, 255, 1)
+		} else {
+			lintNoErrColor = editor.fgcolor
+		}
+	}
+
 	if errors != 0 {
 		svgErrContent = editor.getSvg("bad", newRGBA(204, 62, 68, 1))
 	} else {
-		svgErrContent = editor.getSvg("bad", editor.fgcolor)
+		svgErrContent = editor.getSvg("bad", lintNoErrColor)
 	}
 	if warnings != 0 {
 		svgWrnContent = editor.getSvg("exclamation", newRGBA(203, 203, 65, 1))
 	} else {
-		svgWrnContent = editor.getSvg("exclamation", editor.fgcolor)
+		svgWrnContent = editor.getSvg("exclamation", lintNoErrColor)
 	}
 	s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
 	s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
