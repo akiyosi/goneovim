@@ -648,16 +648,7 @@ func newDeinSide() *DeinSide {
 		widget: searchresultWidget,
 	}
 
-	// load dein toml
-	var deinToml DeinTomlConfig
-	var deinTomlBare []byte
-	if editor.config.Dein.TomlFile != "" {
-		_, err := toml.DecodeFile(editor.config.Dein.TomlFile, &deinToml)
-		if err != nil {
-			editor.pushNotification(NotifyInfo, -1, "Something is wrong with the dein toml file.")
-		}
-		deinTomlBare, _ = ioutil.ReadFile(editor.config.Dein.TomlFile)
-	}
+	deinTomlBare, deinToml := readDeinToml()
 
 	// make DeinSide
 	side := &DeinSide{
@@ -707,6 +698,21 @@ func newDeinSide() *DeinSide {
 	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid	%s; border-radius: 1px; background: rgba(%d, %d, %d, 1); selection-background-color: rgba(%d, %d, %d, 1); }	", editor.config.SideBar.AccentColor, bg.R, bg.G, bg.B, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B) + deinSideStyle)
 
 	return side
+}
+
+func readDeinToml() ([]byte, DeinTomlConfig) {
+	var deinToml DeinTomlConfig
+	var deinTomlBare []byte
+	if editor.config.Dein.TomlFile != "" {
+		_, err := toml.DecodeFile(editor.config.Dein.TomlFile, &deinToml)
+		if err != nil {
+			editor.pushNotification(NotifyInfo, -1, "Something is wrong with the dein toml file.")
+		} else {
+			deinTomlBare, _ = ioutil.ReadFile(editor.config.Dein.TomlFile)
+		}
+	}
+
+	return deinTomlBare, deinToml
 }
 
 func newInstalledPlugins() *InstalledPlugins {
@@ -1440,6 +1446,7 @@ func (d *DeinPluginItem) remove(dummy bool) {
 		v.Command(`call dein#recache_runtimepath()`)
 		editor.pushNotification(NotifyInfo, -1, "[Gonvim] Rmoving the plugin done.")
 		editor.pushNotification(NotifyInfo, -1, "[Gonvim] New settings are applied in the new workspace session.")
+		editor.deinSide.deintomlbare, editor.deinSide.deintoml = readDeinToml()
 	}()
 }
 
