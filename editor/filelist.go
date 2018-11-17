@@ -262,6 +262,7 @@ func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
 }
 
 func (i *WorkspaceSideItem) setCurrentFileLabel() {
+	fg := editor.fgcolor
 	bg := editor.bgcolor
 	var svgModified string
 
@@ -284,7 +285,11 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 			fileitem.isOpened = false
 		} else {
 			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", warpColor(bg, -5).print()))
-			svgModified = editor.getSvg("circle", warpColor(bg, -15))
+			if fileitem.isModified == "1" {
+				svgModified = editor.getSvg("circle", gradColor(fg))
+			} else {
+				svgModified = editor.getSvg("circle", warpColor(bg, -6))
+			}
 			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 			if !fileitem.isOpened {
 				breakOk2 = true
