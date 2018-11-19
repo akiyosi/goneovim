@@ -1058,7 +1058,7 @@ func newWorkspaceSide() *WorkspaceSide {
 	header := widgets.NewQLabel(nil, 0)
 	header.SetContentsMargins(22, 15, 20, 10)
 	header.SetText("WORKSPACE")
-	header.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
+	header.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 100)
 	widget.SetLayout(layout)

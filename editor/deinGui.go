@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -1032,6 +1033,12 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginInfo.SetLayout(pluginInfoLayout)
 		pluginInfo.SetFixedWidth(pluginStars.Width() + pluginDownloads.Width() + pluginAuthor.Width() + pluginUpdated.Width() + 2*10)
 
+		var buttonWidth float64
+		if runtime.GOOS == "darwin" {
+			buttonWidth = 2.0
+		} else {
+			buttonWidth = 1.8
+		}
 		// * plugin install button
 		pluginInstallLabel := widgets.NewQLabel(nil, 0)
 		pluginInstallLabel.SetContentsMargins(0, 0, 5, 0)
@@ -1040,8 +1047,8 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginInstall := widgets.NewQWidget(nil, 0)
 		font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 		fontwidth := int(font.HorizontalAdvance("install", -1))
-		pluginInstall.SetFixedWidth(2 * fontwidth)
-		pluginInstall.SetFixedHeight(2 * editor.iconSize)
+		pluginInstall.SetFixedWidth(int(buttonWidth * float64(fontwidth)))
+		pluginInstall.SetFixedHeight(int(2.0 * float64(editor.iconSize)))
 		pluginInstallLayout := widgets.NewQHBoxLayout()
 		pluginInstallLayout.SetContentsMargins(editor.config.Editor.FontSize, 0, 0, 0)
 		pluginInstallLayout.SetSpacing(0)
@@ -1050,8 +1057,8 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 
 		// waiting label while install pugin
 		pluginWaiting := widgets.NewQWidget(nil, 0)
-		pluginWaiting.SetFixedWidth(7 * editor.config.Editor.FontSize)
-		pluginWaiting.SetFixedHeight(2 * (editor.config.Editor.FontSize - 2))
+		pluginWaiting.SetFixedWidth(int(buttonWidth * float64(fontwidth)))
+		pluginWaiting.SetFixedHeight(int(2.0 * float64(editor.iconSize)))
 		pluginWaitingLayout := widgets.NewQHBoxLayout()
 		pluginWaitingLayout.SetContentsMargins(5, 0, 5, 0)
 		pluginWaiting.SetLayout(pluginWaitingLayout)
@@ -1098,7 +1105,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		}
 
 		pluginInstallIcon := svg.NewQSvgWidget(nil)
-		iconSize := editor.config.Editor.FontSize
+		iconSize := editor.iconSize
 		pluginInstallIcon.SetFixedSize2(iconSize, iconSize)
 		svgContent := editor.getSvg("download", newRGBA(255, 255, 255, 1))
 		pluginInstallIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
