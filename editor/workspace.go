@@ -1385,7 +1385,7 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 	// for Workspaceside
 	editor.wsSide.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", wsHeaderColor.print()))
 	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-color: %s; padding-top: 5px; background-color: %s; } QWidget { color: %s; border-right: 0px solid; }", wsSideBorderColor.print(), wsSideBgColor.print(), wsSideColor.print()))
-	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", wsSideBgColor.print(), wsSideScrollBarHandleColor.print()))
+	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", wsSideBgColor.print(), wsSideScrollBarHandleColor.print(), editor.config.SideBar.AccentColor))
 
 	if len(editor.workspaces) == 1 {
 		editor.wsSide.items[0].active = true
