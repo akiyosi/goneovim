@@ -167,6 +167,25 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Editor.Linespace = 6
 	}
 
+	if config.Statusline.NormalModeColor == "" {
+		config.Statusline.NormalModeColor = newRGBA(60, 171, 235, 1).Hex()
+	}
+	if config.Statusline.CommandModeColor == "" {
+		config.Statusline.CommandModeColor = newRGBA(82, 133, 184, 1).Hex()
+	}
+	if config.Statusline.InsertModeColor == "" {
+		config.Statusline.InsertModeColor = newRGBA(42, 188, 180, 1).Hex()
+	}
+	if config.Statusline.VisualModeColor == "" {
+		config.Statusline.VisualModeColor = newRGBA(153, 50, 204, 1).Hex()
+	}
+	if config.Statusline.ReplaceModeColor == "" {
+		config.Statusline.ReplaceModeColor = newRGBA(255, 140, 10, 1).Hex()
+	}
+	if config.Statusline.TerminalModeColor == "" {
+		config.Statusline.TerminalModeColor = newRGBA(119, 136, 153, 1).Hex()
+	}
+
 	if config.SideBar.Width == 0 {
 		config.SideBar.Width = 300
 	}

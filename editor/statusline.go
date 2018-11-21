@@ -262,7 +262,24 @@ func initStatuslineNew() *Statusline {
 	s.notify = notify
 	notifyWidget.ConnectEnterEvent(func(event *core.QEvent) {
 		bg := editor.bgcolor
-		notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: rgba(%d, %d, %d, 1); }", shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
+		if editor.config.Statusline.ModeIndicatorType == "background" {
+			switch editor.workspaces[editor.active].mode {
+			case "normal":
+				notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", darkenHex(editor.config.Statusline.NormalModeColor)))
+			case "cmdline_normal":
+				notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", darkenHex(editor.config.Statusline.CommandModeColor)))
+			case "insert":
+				notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", darkenHex(editor.config.Statusline.InsertModeColor)))
+			case "visual":
+				notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", darkenHex(editor.config.Statusline.VisualModeColor)))
+			case "replace":
+				notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", darkenHex(editor.config.Statusline.ReplaceModeColor)))
+			case "terminal-input":
+				notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", darkenHex(editor.config.Statusline.TerminalModeColor)))
+			}
+		} else {
+			notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", warpColor(bg, -10).print()))
+		}
 	})
 	notifyWidget.ConnectLeaveEvent(func(event *core.QEvent) {
 		notifyWidget.SetStyleSheet("")
@@ -433,58 +450,40 @@ func (s *StatusMode) redraw() {
 	switch s.mode {
 	case "normal":
 		text = "Normal"
-		if editor.config.Statusline.NormalModeColor != "" {
-			bg = hexToRGBA(editor.config.Statusline.NormalModeColor)
-		} else {
-			bg = newRGBA(60, 171, 235, 1)
-		}
+		bg = hexToRGBA(editor.config.Statusline.NormalModeColor)
 		svgContent := editor.getSvg("hjkl", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "cmdline_normal":
 		text = "Normal"
-		if editor.config.Statusline.CommandModeColor != "" {
-			bg = hexToRGBA(editor.config.Statusline.CommandModeColor)
-		} else {
-			bg = newRGBA(82, 133, 184, 1)
-		}
+		bg = hexToRGBA(editor.config.Statusline.CommandModeColor)
 		svgContent := editor.getSvg("command", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "insert":
 		text = "Insert"
-		if editor.config.Statusline.InsertModeColor != "" {
-			bg = hexToRGBA(editor.config.Statusline.InsertModeColor)
-		} else {
-			bg = newRGBA(42, 188, 180, 1)
-		}
+		bg = hexToRGBA(editor.config.Statusline.InsertModeColor)
 		svgContent := editor.getSvg("edit", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "visual":
 		text = "Visual"
-		if editor.config.Statusline.VisualModeColor != "" {
-			bg = hexToRGBA(editor.config.Statusline.VisualModeColor)
-		} else {
-			bg = newRGBA(153, 50, 204, 1)
-		}
+		bg = hexToRGBA(editor.config.Statusline.VisualModeColor)
 		svgContent := editor.getSvg("select", newRGBA(warpColor(fg, 30).R, warpColor(fg, 30).G, warpColor(fg, 30).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "replace":
 		text = "Replace"
-		if editor.config.Statusline.ReplaceModeColor != "" {
-			bg = hexToRGBA(editor.config.Statusline.ReplaceModeColor)
-		} else {
-			bg = newRGBA(255, 140, 10, 1)
-		}
+		bg = hexToRGBA(editor.config.Statusline.ReplaceModeColor)
 		svgContent := editor.getSvg("replace", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-3, 1, false))
 	case "terminal-input":
 		text = "Terminal"
-		if editor.config.Statusline.TerminalModeColor != "" {
-			bg = hexToRGBA(editor.config.Statusline.TerminalModeColor)
-		} else {
-			bg = newRGBA(119, 136, 153, 1)
-		}
+		bg = hexToRGBA(editor.config.Statusline.TerminalModeColor)
 		svgContent := editor.getSvg("terminal", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-4, 1, false))
 	default:
 	}
 
