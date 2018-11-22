@@ -17,13 +17,21 @@ import (
 // width = 1000  # >= 800
 // height = 800  # >= 600
 // fontFamily = "FuraCode Nerd Font Mono"
-// fontsize = 14
+// fontsize = 18
 // linespace = 10
 // clipboard = true
 // cursorBlink = true
 // disableIMEinNormal = true
+// startFullScreen = true
+// ginitvim = '''
+//   set guifont=FuraCode\ Nerd\ Font\ Mono:h14
+//   if g:gonvim_running == 1
+//     set laststatus=0
+//   endif
+// '''
 //
 // [statusLine]
+// visible = true
 // # textLabel / icon / background / none
 // modeIndicatorType = "icon"
 // normalModeColor = "#123456"
@@ -32,6 +40,12 @@ import (
 // replaceModeColor = "#123456"
 // visualModeColor = "#123456"
 // termnalModeColor = "#123456"
+//
+// [tabline]
+// visible = true
+//
+// [lint]
+// visible = true
 //
 // [scrollBar]
 // visible = true
@@ -141,7 +155,10 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Editor.FontSize = 14
 		config.Editor.Width = 800
 		config.Editor.Height = 600
+		config.Statusline.Visible = true
 		config.Statusline.ModeIndicatorType = "textLabel"
+		config.Tabline.Visible = true
+		config.Lint.Visible = true
 		config.ActivityBar.Visible = true
 		config.ScrollBar.Visible = true
 		config.SideBar.Width = 300
