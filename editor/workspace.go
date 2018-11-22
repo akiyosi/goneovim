@@ -277,47 +277,31 @@ func (w *Workspace) init(path string) {
 }
 
 func (w *Workspace) configure() {
-	var drawStatusline interface{}
-	w.nvim.Var("gonvim_draw_statusline", &drawStatusline)
-	if isZero(drawStatusline) {
-		w.drawStatusline = false
-	} else {
+	if editor.config.Statusline.Visible {
 		w.drawStatusline = true
+	} else {
+		w.drawStatusline = false
 	}
 
-	var drawTabline interface{}
-	w.nvim.Var("gonvim_draw_tabline", &drawTabline)
-	if isZero(drawTabline) {
-		w.drawTabline = false
-	} else {
+	if editor.config.Tabline.Visible {
 		w.drawTabline = true
-	}
-
-	var drawLint interface{}
-	w.nvim.Var("gonvim_draw_lint", &drawLint)
-	if isZero(drawLint) {
-		w.drawLint = false
 	} else {
-		w.drawLint = true
+		w.drawTabline = false
 	}
 
-	var startFullscreen interface{}
-	w.nvim.Var("gonvim_start_fullscreen", &startFullscreen)
-	if isTrue(startFullscreen) {
+	if editor.config.Lint.Visible {
+		w.drawLint = true
+	} else {
+		w.drawLint = false
+	}
+
+	if editor.config.Editor.StartFullscreen {
 		editor.window.ShowFullScreen()
 	}
-
-	// var drawSplit interface{}
-	// w.nvim.Var("gonvim_draw_split", &drawSplit)
-	// if isZero(drawSplit) {
-	// 	w.screen.drawSplit = false
-	// } else {
-	// 	w.screen.drawSplit = true
-	// }
 }
 
 func (w *Workspace) attachUI(path string) error {
-	w.workspaceCommands(path)
+	w.initGonvimCommands(path)
 	w.markdown.commands()
 	fuzzy.RegisterPlugin(w.nvim)
 	w.tabline.subscribe()
@@ -342,14 +326,22 @@ func (w *Workspace) initGonvim() {
 	w.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 	w.nvim.Command("let g:gonvim_running=1")
 	w.nvim.Command(fmt.Sprintf("command! GonvimVersion echo \"%s\"", editor.version))
-	w.nvim.Command("runtime! ginit.vim")
 	w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
 	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
 	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
+	w.loadGinitVim()
 }
 
-func (w *Workspace) workspaceCommands(path string) {
+func (w *Workspace) loadGinitVim() {
+	w.nvim.Command("runtime! ginit.vim") // ginit.vim is deprecated and will be removed in a future
+	if editor.config.Editor.GinitVim != "" {
+		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, editor.config.Editor.GinitVim)
+		w.nvim.Command(execGinitVim)
+	}
+}
+
+func (w *Workspace) initGonvimCommands(path string) {
 	if path != "" {
 		w.nvim.Command("so " + path)
 	}

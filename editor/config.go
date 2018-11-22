@@ -64,6 +64,8 @@ import (
 type gonvimConfig struct {
 	Editor      editorConfig
 	Statusline  statusLineConfig
+	Tabline     tabLineConfig
+	Lint        lintConfig
 	ScrollBar   scrollBarConfig
 	ActivityBar activityBarConfig
 	MiniMap     miniMapConfig
@@ -81,9 +83,12 @@ type editorConfig struct {
 	Clipboard          bool
 	CursorBlink        bool
 	DisableImeInNormal bool
+	GinitVim           string
+	StartFullscreen    bool
 }
 
 type statusLineConfig struct {
+	Visible           bool
 	ModeIndicatorType string
 	NormalModeColor   string
 	CommandModeColor  string
@@ -91,6 +96,14 @@ type statusLineConfig struct {
 	ReplaceModeColor  string
 	VisualModeColor   string
 	TerminalModeColor string
+}
+
+type tabLineConfig struct {
+	Visible bool
+}
+
+type lintConfig struct {
+	Visible bool
 }
 
 type miniMapConfig struct {
