@@ -145,13 +145,13 @@ func initStatuslineNew() *Statusline {
 	s.mode = mode
 
 	gitIcon := svg.NewQSvgWidget(nil)
-	gitIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
+	gitIcon.SetFixedSize2(editor.iconSize+1, editor.iconSize+1)
 	gitLabel := widgets.NewQLabel(nil, 0)
 	gitLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	gitLabel.SetContentsMargins(0, 0, 0, 0)
 	gitLayout := widgets.NewQHBoxLayout()
 	gitLayout.SetContentsMargins(0, 0, 0, 0)
-	gitLayout.SetSpacing(0)
+	gitLayout.SetSpacing(editor.iconSize / 3)
 	gitLayout.AddWidget(gitIcon, 0, 0)
 	gitLayout.AddWidget(gitLabel, 0, 0)
 	gitWidget := widgets.NewQWidget(nil, 0)
