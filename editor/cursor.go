@@ -39,7 +39,13 @@ func (c *Cursor) blink() {
 		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.1)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
 		c.isShut = false
 	} else {
-		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
+		switch c.ws.mode {
+		case "normal":
+			c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
+		case "visual":
+			visualColor := hexToRGBA(editor.config.SideBar.AccentColor)
+			c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", visualColor.R, visualColor.G, visualColor.B))
+		}
 		c.isShut = true
 	}
 	c.widget.Hide()
@@ -54,14 +60,20 @@ func (c *Cursor) move() {
 func (c *Cursor) updateShape() {
 	mode := c.ws.mode
 	bg := c.ws.background
-	if mode == "normal" {
+	switch mode {
+	case "normal":
 		c.widget.Resize2(c.ws.font.width, c.ws.font.height+2)
 		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.5)")
 		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
-	} else if mode == "insert" {
+	case "insert":
 		c.widget.Resize2(2, c.ws.font.height+2)
 		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
 		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.9)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
+	case "visual":
+		c.widget.Resize2(c.ws.font.width, c.ws.font.height+2)
+		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
+		visualColor := hexToRGBA(editor.config.SideBar.AccentColor)
+		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", visualColor.R, visualColor.G, visualColor.B))
 	}
 }
 
