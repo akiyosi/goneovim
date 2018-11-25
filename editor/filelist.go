@@ -262,6 +262,9 @@ func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
 }
 
 func (i *WorkspaceSideItem) setCurrentFileLabel() {
+	if !editor.activity.editItem.active {
+		return
+	}
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 	var svgModified string
@@ -301,6 +304,9 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 }
 
 func (f *Fileitem) updateModifiedbadge() {
+	if !editor.activity.editItem.active {
+		return
+	}
 	var isModified string
 	isModified, err := editor.workspaces[editor.active].nvimCommandOutput("echo &modified")
 	if err != nil {

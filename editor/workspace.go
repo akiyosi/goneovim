@@ -841,7 +841,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.curLine = ln
 		w.curColm = col
 	case "gonvim_minimap_update":
-		if editor.config.MiniMap.Visible {
+		if w.minimap.visible {
 			w.minimap.bufUpdate()
 		}
 	case "gonvim_minimap_toggle":
