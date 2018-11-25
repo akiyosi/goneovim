@@ -1156,6 +1156,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 	if pagenum < results.TotalPages {
 		readMoreButton := widgets.NewQPushButton2("read more", nil)
 		editor.deinSide.searchresult.readmore = readMoreButton
+		editor.deinSide.searchresult.readmore.SetFocusPolicy(core.Qt__NoFocus)
 		parentLayout.AddWidget(readMoreButton, 0, 0)
 		readMoreButton.ConnectPressed(func() {
 			pos := editor.deinSide.scrollarea.VerticalScrollBar().Value()
