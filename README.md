@@ -1,5 +1,4 @@
 
-
 # <img src="https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/gopher-with-neovim.png" width="40"> Gonvim
 
 [![Join the chat at https://gitter.im/gonvim/gonvim](https://badges.gitter.im/gonvim/gonvim.svg)](https://gitter.im/gonvim/gonvim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -25,10 +24,10 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](https://github.com/akiyosi/gonvim/releases) page.
 
 
-#### Prerequisites
+### Prerequisites
 MacOS or Linux users need to install neovim. See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
-##### MacOS
+### MacOS
 gonvim.app looks for the nvim process from the following.
 
 ```
@@ -44,10 +43,10 @@ tar xf nvim-macos.tar.gz
 ln -s /path/to/bin/nvim /usr/local/bin/nvim
 ```
 
-#### Linux
+### Linux
 Deploy Neovim under the `$PATH`.
 
-#### Windows
+### Windows
 Add Gonvim `bin` path to `%PATH%` environment variable.
 
 
@@ -104,6 +103,6 @@ Gonvim is released under MIT license
 ## Credits
 
 * Gonvim was created by dzhou121 ([https://github.com/dzhou121/gonvim](https://github.com/dzhou121/gonvim))
-* Gonvim logo was made using [gopher-vector](https://github.com/golang-samples/gopher-vector) made by Takuya Ueda ([https://twitter.com/tenntenn](https://twitter.com/tenntenn)). The original was designed by Renee French [http://reneefrench.blogspot.com/](http://reneefrench.blogspot.com/).
+* Gonvim logo was made using [gopher-vector](https://github.com/golang-samples/gopher-vector) made by Takuya Ueda ([https://twitter.com/tenntenn](https://twitter.com/tenntenn)). The original gopher was designed by Renee French [http://reneefrench.blogspot.com/](http://reneefrench.blogspot.com/).
 
 
