@@ -1,6 +1,6 @@
 
 
-# <img src="https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/gopher-with-neovim.png" width="36"> Gonvim
+# <img src="https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/gopher-with-neovim.png" width="40"> Gonvim
 
 [![Join the chat at https://gitter.im/gonvim/gonvim](https://badges.gitter.im/gonvim/gonvim.svg)](https://gitter.im/gonvim/gonvim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -16,7 +16,6 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 - [Configurations](#configurations)
 - [Features](#features)
 - [Development](#development)
-<!-- - [Contributing](#contributing) -->
 - [License](#license)
 - [Credits](#credits)
 
@@ -52,7 +51,6 @@ Deploy Neovim under the `$PATH`.
 Add Gonvim `bin` path to `%PATH%` environment variable.
 
 
-<br>
 
 ## Configurations
 
@@ -71,8 +69,6 @@ where the default value of `$XDG_CONFIG_HOME` is the below.
 For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/gonvim/wiki/Configurations)
 
 
-<br>
-
 
 ## Features
 
@@ -82,15 +78,11 @@ For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/g
 * [Dein.vim GUI](https://github.com/akiyosi/gonvim/wiki/Features#deinvim-gui)
 
 
-<br>
-
 ## Simmilar projects
 
 * [Oni](https://github.com/onivim/oni)
 * [Veonim](https://github.com/veonim/veonim)
 
-
-<br>
 
 ## Development
 
@@ -105,17 +97,13 @@ For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/g
 -->
 
 
-<br>
-
 ## License
 Gonvim is released under MIT license
 
-<br>
 
 ## Credits
 
 * Gonvim was created by dzhou121 ([https://github.com/dzhou121/gonvim](https://github.com/dzhou121/gonvim))
 * Gonvim logo was made using [gopher-vector](https://github.com/golang-samples/gopher-vector) made by Takuya Ueda ([https://twitter.com/tenntenn](https://twitter.com/tenntenn)). The original was designed by Renee French [http://reneefrench.blogspot.com/](http://reneefrench.blogspot.com/).
-<br>
 
 
