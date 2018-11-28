@@ -17,6 +17,7 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 - [Features](#features)
 - [Development](#development)
 - [Contributing](#contributing)
+- [Simmilar Projects](#simmilar-projects)
 - [License](#license)
 - [Credits](#credits)
 
@@ -79,11 +80,6 @@ For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/g
 * [Dein.vim GUI](https://github.com/akiyosi/gonvim/wiki/Features#deinvim-gui)
 
 
-## Simmilar projects
-
-* [Oni](https://github.com/onivim/oni)
-* [Veonim](https://github.com/veonim/veonim)
-
 
 ## Development
 
@@ -98,6 +94,14 @@ Gonvim welcomes contribution. If you want to add your changes to the Gonvim, Ple
 1. **Create a branch** for your contribution
 1. **Add contributions** to the branch
 1. **Create a pull request** against the `master` branch of the Gonvim repository.
+
+
+## Simmilar projects
+
+* [Oni](https://github.com/onivim/oni)
+* [Veonim](https://github.com/veonim/veonim)
+
+
 
 ## License
 Gonvim is released under MIT license
