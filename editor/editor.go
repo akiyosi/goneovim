@@ -463,6 +463,9 @@ func (e *Editor) workspaceUpdate() {
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event.Text(), event.Key(), event.Modifiers())
+	if input == "<C-¥>" {
+		input = `<C-\>`
+	}
 	if input != "" {
 		if input == "<Esc>" {
 			e.unfocusGonvimUI()
