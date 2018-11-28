@@ -15,6 +15,7 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 - [Configurations](#configurations)
 - [Features](#features)
 - [Development](#development)
+- [Contributing](#contributing)
 - [License](#license)
 - [Credits](#credits)
 
@@ -89,12 +90,13 @@ For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/g
 
 
 
-<!--
-<br>
-
 ## Contributing
--->
+Gonvim welcomes contribution. If you want to add your changes to the Gonvim, Please following steps
 
+1. **Fork this repository**
+1. **Create a branch** for your contribution
+1. **Add contributions** to the branch
+1. **Create a pull request** against the `master` branch of the Gonvim repository.
 
 ## License
 Gonvim is released under MIT license
