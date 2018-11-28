@@ -127,15 +127,13 @@ func InitEditor() {
 		home = "~"
 	}
 	editor = &Editor{
-		version:    "v0.3.0",
-		signal:     NewEditorSignal(nil),
-		notify:     make(chan *Notify, 10),
-		selectedBg: newRGBA(81, 154, 186, 0.5),
-		matchFg:    newRGBA(81, 154, 186, 1),
-		bgcolor:    nil,
-		fgcolor:    nil,
-		stop:       make(chan struct{}),
-		guiInit:    make(chan bool, 1),
+		version: "v0.3.0",
+		signal:  NewEditorSignal(nil),
+		notify:  make(chan *Notify, 10),
+		bgcolor: nil,
+		fgcolor: nil,
+		stop:    make(chan struct{}),
+		guiInit: make(chan bool, 1),
 	}
 	e := editor
 	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
@@ -156,6 +154,9 @@ func InitEditor() {
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
 	})
+	selectedCol := hexToRGBA(editor.config.SideBar.AccentColor)
+	e.selectedBg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.3)
+	e.matchFg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.6)
 
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
