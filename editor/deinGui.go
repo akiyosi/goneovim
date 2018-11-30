@@ -172,9 +172,9 @@ func confirmDeinGUITomlFile(file string) {
 	opt1 := &NotifyButton{
 		action: func() {
 			b, _ := ioutil.ReadFile(setting)
-			b, _ = tomlwriter.WriteValue(`'`+file+`'`, b, "dein", "tomlFile", editor.config.Dein.TomlFile)
+			b, _ = tomlwriter.WriteValue(`'`+file+`'`, b, "Dein", "TomlFile", "")
 			editor.config.Dein.TomlFile = file
-			err := ioutil.WriteFile(setting, b, 0755)
+			err := ioutil.WriteFile(setting, b, 0664)
 			if err != nil {
 				fmt.Println(err)
 			}
