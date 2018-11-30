@@ -85,6 +85,7 @@ type Workspace struct {
 
 	isSetGuiColor      bool
 	noColorschemeCount int
+	flushCount         int
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -645,31 +646,28 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "update_fg":
 			args := update[1].([]interface{})
 			fgcolor = reflectToInt(args[0])
-			if fgcolor == -1 {
-				w.foreground = newRGBA(170, 175, 190, 1)
-			} else {
-				w.foreground = calcColor(reflectToInt(args[0]))
-				w.minimap.foreground = calcColor(reflectToInt(args[0]))
-			}
 			if w.isSetGuiColor == false {
-				if fgcolor != -1 {
+				if fgcolor == -1  && w.foreground == nil {
+					w.foreground = newRGBA(180, 185, 190, 1)
+				} else if bgcolor != -1 {
 					isSetColorscheme = true
-					editor.fgcolor = editor.workspaces[0].foreground
+					w.foreground = calcColor(reflectToInt(args[0]))
+					w.minimap.foreground = w.foreground
+					editor.fgcolor = w.foreground
 				}
+
 			}
 		case "update_bg":
 			args := update[1].([]interface{})
 			bgcolor = reflectToInt(args[0])
-			if bgcolor == -1 {
-				w.background = newRGBA(5, 10, 15, 1)
-			} else {
-				w.background = calcColor(reflectToInt(args[0]))
-				w.minimap.background = calcColor(reflectToInt(args[0]))
-			}
 			if w.isSetGuiColor == false {
-				if bgcolor != -1 {
+				if bgcolor == -1 && w.background == nil {
+					w.background = newRGBA(7, 11, 15, 1)
+				} else if bgcolor != -1 {
 					isSetColorscheme = true
-					editor.bgcolor = editor.workspaces[0].background
+					w.background = calcColor(reflectToInt(args[0]))
+					w.minimap.background = w.background
+					editor.bgcolor = w.background
 				}
 			}
 		case "update_sp":
@@ -759,14 +757,18 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "messages":
 		case "busy_start":
 		case "busy_stop":
+		case "flush":
+			w.flushCount++
 		default:
 			fmt.Println("Unhandle event", event)
 		}
 	}
 
 	w.drawGuiColor(isSetColorscheme)
-	if fgcolor == -1 && bgcolor == -1 {
-		w.noColorschemeCount++
+	if !w.isSetGuiColor {
+		if (fgcolor == -1 && bgcolor == -1) || w.flushCount >= 9 {
+			w.noColorschemeCount++
+		}
 	}
 
 	s.update()
