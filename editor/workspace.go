@@ -237,7 +237,7 @@ func (w *Workspace) show() {
 }
 
 func (w *Workspace) startNvim(path string) error {
-	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs(append([]string{"--embed"}, os.Args[1:]...)...))
+	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs(append([]string{"--cmd", "let g:gonvim_running=1", "--embed"}, os.Args[1:]...)...))
 	if err != nil {
 		return err
 	}
@@ -324,7 +324,6 @@ func (w *Workspace) initGonvim() {
 	_, _ = w.nvimEval("0")
 	w.nvim.Subscribe("Gui")
 	w.nvim.Command("runtime plugin/nvim_gui_shim.vim")
-	w.nvim.Command("let g:gonvim_running=1")
 	w.nvim.Command(fmt.Sprintf("command! GonvimVersion echo \"%s\"", editor.version))
 	w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
 	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
