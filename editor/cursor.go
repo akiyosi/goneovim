@@ -40,11 +40,11 @@ func (c *Cursor) blink() {
 		c.isShut = false
 	} else {
 		switch c.ws.mode {
-		case "normal":
-			c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
 		case "visual":
 			visualColor := hexToRGBA(editor.config.SideBar.AccentColor)
 			c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", visualColor.R, visualColor.G, visualColor.B))
+		default:
+			c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
 		}
 		c.isShut = true
 	}
