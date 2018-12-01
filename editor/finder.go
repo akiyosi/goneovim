@@ -122,8 +122,6 @@ func (f *Finder) showResult(args []interface{}) {
 			for _, matchIdx := range match[i] {
 				bufmatch = append(bufmatch, matchIdx-3)
 			}
-			fmt.Println("match[i]:", match[i])
-			fmt.Println("bufmatch:", bufmatch)
 			resultItem.setItem(text, "file", bufmatch)
 		} else if resultType == "dir" {
 			resultItem.setItem(text, "dir", match[i])
