@@ -220,7 +220,12 @@ func (s *Fuzzy) scoreSource(source string) {
 
 	if s.pattern != "" {
 		chars := util.ToChars([]byte(source))
-		r, n = algo.FuzzyMatchV2(false, true, true, &chars, []rune(s.pattern), true, s.slab)
+		// fuzzy match like smart case
+		if strings.ContainsAny(s.pattern, "ABCDEFZHIJKLMNOPQRSTUVWXYZ") {
+			r, n = algo.FuzzyMatchV1(true, true, true, &chars, []rune(s.pattern), true, s.slab)
+		} else {
+			r, n = algo.FuzzyMatchV1(false, true, true, &chars, []rune(s.pattern), true, s.slab)
+		}
 	}
 	if r.Score == -1 || r.Score > 0 {
 		i := 0

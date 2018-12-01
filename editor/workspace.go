@@ -647,7 +647,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			args := update[1].([]interface{})
 			fgcolor = reflectToInt(args[0])
 			if w.isSetGuiColor == false {
-				if fgcolor == -1  && w.foreground == nil {
+				if fgcolor == -1 && w.foreground == nil {
 					w.foreground = newRGBA(180, 185, 190, 1)
 				} else if bgcolor != -1 {
 					isSetColorscheme = true
