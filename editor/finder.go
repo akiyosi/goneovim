@@ -95,6 +95,7 @@ func (f *Finder) showResult(args []interface{}) {
 			itemTypes = append(itemTypes, "file_line")
 			itemMatches = append(itemMatches, lineMatch)
 		} else if resultType == "buffer" {
+			// Delete buffer number prefix in "[n] bufname" format
 			n := strings.Index(text, "]")
 			if n > -1 {
 				text = text[n+1:]
@@ -115,7 +116,15 @@ func (f *Finder) showResult(args []interface{}) {
 		if resultType == "file" {
 			resultItem.setItem(text, "file", match[i])
 		} else if resultType == "buffer" {
-			resultItem.setItem(text, "file", match[i])
+			// Decrease number of match[i]
+			// because deleting buffer number prefix in "[n] bufname" format
+			bufmatch := []int{}
+			for _, matchIdx := range match[i] {
+				bufmatch = append(bufmatch, matchIdx-3)
+			}
+			fmt.Println("match[i]:", match[i])
+			fmt.Println("bufmatch:", bufmatch)
+			resultItem.setItem(text, "file", bufmatch)
 		} else if resultType == "dir" {
 			resultItem.setItem(text, "dir", match[i])
 		} else if resultType == "file_line" {
