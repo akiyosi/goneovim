@@ -302,6 +302,7 @@ func (w *Workspace) configure() {
 }
 
 func (w *Workspace) attachUI(path string) error {
+	w.initGonvim()
 	w.initGonvimCommands(path)
 	w.markdown.commands()
 	fuzzy.RegisterPlugin(w.nvim)
@@ -317,7 +318,6 @@ func (w *Workspace) attachUI(path string) error {
 	if err != nil {
 		return err
 	}
-	w.initGonvim()
 	return nil
 }
 
