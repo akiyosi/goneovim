@@ -714,6 +714,14 @@ func (s *Screen) scroll(args []interface{}) {
 		}
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
+				if len(s.content) <= row {
+					continue
+				}
+				for _, line := range s.content {
+					if len(line) <= col {
+						return
+					}
+				}
 				s.content[row][col] = nil
 			}
 		}
@@ -737,6 +745,14 @@ func (s *Screen) scroll(args []interface{}) {
 		}
 		for row := top; row < top-count; row++ {
 			for col := left; col <= right; col++ {
+				if len(s.content) <= row {
+					continue
+				}
+				for _, line := range s.content {
+					if len(line) <= col {
+						return
+					}
+				}
 				s.content[row][col] = nil
 			}
 		}
