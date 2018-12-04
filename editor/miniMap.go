@@ -368,6 +368,10 @@ func (m *MiniMap) updateSize() {
 }
 
 func (m *MiniMap) bufUpdate() {
+	if strings.Contains(m.ws.filepath, "[denite]") {
+		fmt.Println("denite")
+		return
+	}
 	if !m.visible {
 		m.widget.Hide()
 		return

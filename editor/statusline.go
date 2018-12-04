@@ -387,22 +387,22 @@ func (s *Statusline) subscribe() {
 		s.notify.update()
 	})
 	s.ws.nvim.Subscribe("statusline")
-	s.ws.nvim.Command(`autocmd BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
+	s.ws.nvim.Command(`autocmd BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat)`)
 }
 
 func (s *Statusline) handleUpdates(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "bufenter":
-		file := updates[1].(string)
-		filetype := updates[2].(string)
-		encoding := updates[3].(string)
-		fileFormat := updates[4].(string)
-		s.main.redraw(file)
+		// file := updates[1].(string)
+		filetype := updates[1].(string)
+		encoding := updates[2].(string)
+		fileFormat := updates[3].(string)
+		s.main.redraw(s.ws.filepath)
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
 		s.fileFormat.redraw(fileFormat)
-		go s.git.redraw(file)
+		go s.git.redraw(s.ws.filepath)
 	default:
 		fmt.Println("unhandled statusline event", event)
 	}

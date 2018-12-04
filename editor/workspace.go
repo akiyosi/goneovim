@@ -349,7 +349,7 @@ func (w *Workspace) initGonvimCommands(path string) {
 	w.nvim.Command(`autocmd VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")`)
 	// w.nvim.Command(`autocmd ColorScheme * call rpcnotify(1, "Gui", "gonvim_set_colorscheme")`)
 	w.nvim.Command(`autocmd VimEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
-	w.nvim.Command(`autocmd BufEnter,TabEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems")`)
+	w.nvim.Command(`autocmd BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems", expand("%:p"))`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	if editor.config.ScrollBar.Visible == true {
 		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline")`)
@@ -890,7 +890,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			}
 		}
 	case "gonvim_workspace_redrawSideItems":
-		editor.workspaces[editor.active].setFilepath()
+		file := updates[1].(string)
+		editor.workspaces[editor.active].filepath = file
 		editor.wsSide.items[editor.active].setCurrentFileLabel()
 	case GonvimMarkdownNewBufferEvent:
 		go w.markdown.newBuffer()
@@ -946,20 +947,6 @@ func (w *Workspace) guiFont(args string) {
 	w.screen.toolTipFont(w.font)
 }
 
-func (w *Workspace) setFilepath() {
-	retchan := make(chan string, 5)
-	var cfp, result string
-	go func() {
-		w.nvim.Eval("expand('%')", &result)
-		retchan <- result
-	}()
-	select {
-	case cfp = <-retchan:
-	case <-time.After(200 * time.Millisecond):
-	}
-
-	editor.workspaces[editor.active].filepath = cfp
-}
 
 func (w *Workspace) detectTerminalMode() {
 	if !strings.HasPrefix(w.filepath, `term://`) {
