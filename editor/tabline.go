@@ -390,6 +390,10 @@ func (t *Tabline) update(args []interface{}) {
 	arg := args[0].([]interface{})
 	t.CurrentID = int(arg[0].(nvim.Tabpage))
 	tabs := arg[1].([]interface{})
+	if len(tabs) == 1 {
+		t.Tabs[0].setActive(false)
+		t.Tabs[0].updateActive()
+	}
 	for i, tabInterface := range tabs {
 		tabMap, ok := tabInterface.(map[string]interface{})
 		if !ok {
