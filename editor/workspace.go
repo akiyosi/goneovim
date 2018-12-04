@@ -1289,9 +1289,9 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 	scrollBarColor := bg
 
 	paletteFgColor := shiftColor(fg, -5)
-	paletteBorderColor := shiftColor(bg, -5)
-	paletteBgColor := shiftColor(bg, -5)
-	paletteLightBgColor := shiftColor(bg, -20)
+	paletteBorderColor := shiftColor(bg, -8)
+	paletteBgColor := shiftColor(bg, -8)
+	paletteLightBgColor := shiftColor(bg, -25)
 
 	popFgColor := shiftColor(fg, 5)
 	popFgDetailColor := gradColor(fg)
