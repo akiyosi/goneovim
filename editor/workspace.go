@@ -651,24 +651,28 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 					w.foreground = newRGBA(180, 185, 190, 1)
 				} else if bgcolor != -1 {
 					isSetColorscheme = true
-					w.foreground = calcColor(reflectToInt(args[0]))
+					w.foreground = calcColor(fgcolor)
 					w.minimap.foreground = w.foreground
 					editor.fgcolor = w.foreground
 				}
 
+			} else if fgcolor != -1 {
+				w.foreground = calcColor(fgcolor)
 			}
 		case "update_bg":
 			args := update[1].([]interface{})
 			bgcolor = reflectToInt(args[0])
 			if w.isSetGuiColor == false {
 				if bgcolor == -1 && w.background == nil {
-					w.background = newRGBA(7, 11, 15, 1)
+					w.background = newRGBA(9, 13, 17, 1)
 				} else if bgcolor != -1 {
 					isSetColorscheme = true
-					w.background = calcColor(reflectToInt(args[0]))
+					w.background = calcColor(bgcolor)
 					w.minimap.background = w.background
 					editor.bgcolor = w.background
 				}
+			} else if bgcolor != -1 {
+				w.background = calcColor(bgcolor)
 			}
 		case "update_sp":
 			args := update[1].([]interface{})
@@ -1284,10 +1288,10 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 	scrollBarThumbColor := weakBg
 	scrollBarColor := bg
 
-	paletteFgColor := shiftColor(fg, -30)
-	paletteBorderColor := shiftColor(bg, 25)
-	paletteBgColor := shiftColor(bg, 15)
-	paletteLightBgColor := shiftColor(bg, -15)
+	paletteFgColor := shiftColor(fg, -5)
+	paletteBorderColor := shiftColor(bg, -5)
+	paletteBgColor := shiftColor(bg, -5)
+	paletteLightBgColor := shiftColor(bg, -20)
 
 	popFgColor := shiftColor(fg, 5)
 	popFgDetailColor := gradColor(fg)
@@ -1298,9 +1302,9 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 	locBorderColor := shiftColor(bg, 20)
 	locBgColor := shiftColor(bg, 10)
 
-	signatureFgColor := shiftColor(fg, 5)
-	signatureBorderColor := shiftColor(bg, 20)
-	signatureBgColor := shiftColor(bg, 10)
+	signatureFgColor := gradColor(fg)
+	signatureBorderColor := shiftColor(bg, -5)
+	signatureBgColor := shiftColor(bg, -7)
 
 	tooltipFgColor := shiftColor(fg, -40)
 	tooltipBgColor := weakBg
