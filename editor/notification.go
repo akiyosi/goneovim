@@ -45,13 +45,12 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	widget := widgets.NewQWidget(nil, 0)
 	layout := widgets.NewQVBoxLayout()
 	widget.SetLayout(layout)
-	widget.SetFixedWidth(400)
+	widget.SetFixedWidth(e.notificationWidth)
 
 	messageWidget := widgets.NewQWidget(nil, 0)
 	messageLayout := widgets.NewQHBoxLayout()
 	messageLayout.SetContentsMargins(0, 0, 0, 0)
 	messageWidget.SetLayout(messageLayout)
-	// messageWidget.SetFixedWidth(400)
 
 	levelIcon := svg.NewQSvgWidget(nil)
 	levelIcon.SetFixedWidth(editor.iconSize)
@@ -69,7 +68,8 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	levelIcon.Load2(core.NewQByteArray2(level, len(level)))
 
 	label := widgets.NewQLabel(nil, 0)
-	label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
+	size := int(float64(editor.workspaces[editor.active].font.width) * 1.33)
+	label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, size, 1, false))
 	if utf8.RuneCountInString(message) > 50 {
 		label.SetWordWrap(true)
 	}
@@ -125,7 +125,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		if opt.text != "" {
 			// * plugin install button
 			buttonLabel := widgets.NewQLabel(nil, 0)
-			buttonLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
+			buttonLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 			buttonLabel.SetFixedHeight(28)
 			buttonLabel.SetContentsMargins(10, 5, 10, 5)
 			buttonLabel.SetAlignment(core.Qt__AlignCenter)
@@ -302,7 +302,7 @@ func (n *Notification) hideNotification() {
 }
 
 func (e *Editor) showNotifications() {
-	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
 	x := e.notifyStartPos.X()
 	y := e.notifyStartPos.Y()
 	var newNotifications []*Notification
@@ -326,7 +326,7 @@ func (e *Editor) hideNotifications() {
 		newNotifications = append(newNotifications, item)
 	}
 	e.notifications = newNotifications
-	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
 	e.displayNotifications = false
 }
 

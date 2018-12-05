@@ -53,12 +53,13 @@ type Editor struct {
 	version string
 	app     *widgets.QApplication
 
-	activity       *Activity
-	splitter       *widgets.QSplitter
-	notifyStartPos *core.QPoint
-	notify         chan *Notify
-	guiInit        chan bool
-	doneGuiInit    bool
+	activity          *Activity
+	splitter          *widgets.QSplitter
+	notifyStartPos    *core.QPoint
+	notificationWidth int
+	notify            chan *Notify
+	guiInit           chan bool
+	doneGuiInit       bool
 
 	workspaces []*Workspace
 	active     int
@@ -136,7 +137,9 @@ func InitEditor() {
 		guiInit: make(chan bool, 1),
 	}
 	e := editor
-	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	e.config = newGonvimConfig(home)
+	e.notificationWidth = editor.config.Editor.Width * 2 / 3
+	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
 	e.notifications = []*Notification{}
 	e.signal.ConnectNotifySignal(func() {
 		notify := <-e.notify
@@ -149,7 +152,6 @@ func InitEditor() {
 			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
-	e.config = newGonvimConfig(home)
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()

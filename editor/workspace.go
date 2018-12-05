@@ -598,7 +598,7 @@ func (w *Workspace) updateSize() {
 	// w.message.resize() // Need https://github.com/neovim/neovim/pull/7466 to be merged
 
 	// notification
-	e.notifyStartPos = core.NewQPoint2(e.width-400-10, e.height-30)
+	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
 	x := e.notifyStartPos.X()
 	y := e.notifyStartPos.Y()
 	var newNotifications []*Notification
