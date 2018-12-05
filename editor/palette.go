@@ -201,7 +201,7 @@ func (p *Palette) resize() {
 	if x < 0 {
 		x = 0
 	}
-	p.widget.Move2(x/2, 0)
+	p.widget.Move2(x/2, 10)
 
 	itemHeight := p.resultItems[0].widget.SizeHint().Height()
 	p.itemHeight = itemHeight
