@@ -412,6 +412,7 @@ func (w *Workspace) initCwd() {
 }
 
 func (w *Workspace) setCwd() {
+	time.Sleep(65 * time.Millisecond)  // Avoid 'neovim busy'
 	cwdITF, err := w.nvimEval("getcwd()")
 	if err != nil {
 		return
