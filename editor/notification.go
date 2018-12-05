@@ -213,8 +213,8 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	go func() {
 		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 		shadow.SetBlurRadius(40)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-		shadow.SetOffset3(2, 2)
+		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
+		shadow.SetOffset3(-2, -1)
 		widget.SetGraphicsEffect(shadow)
 	}()
 

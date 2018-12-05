@@ -64,7 +64,7 @@ func initPalette() *Palette {
 	widget.SetObjectName("palette")
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(35)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 255))
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
 	shadow.SetOffset3(-2, 8)
 	widget.SetGraphicsEffect(shadow)
 
