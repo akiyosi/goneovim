@@ -658,12 +658,15 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 			} else if fgcolor != -1 {
 				w.foreground = calcColor(fgcolor)
+				w.minimap.foreground = w.foreground
 			}
 		case "update_bg":
 			args := update[1].([]interface{})
 			bgcolor = reflectToInt(args[0])
 			if w.isSetGuiColor == false {
 				if bgcolor == -1 && w.background == nil {
+					// TODO: Detecting &background option in buffer
+					//       and Set colors according to 'light', 'dark' value respectively
 					w.background = newRGBA(9, 13, 17, 1)
 				} else if bgcolor != -1 {
 					isSetColorscheme = true
@@ -673,6 +676,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				}
 			} else if bgcolor != -1 {
 				w.background = calcColor(bgcolor)
+				w.minimap.background = w.background
 			}
 		case "update_sp":
 			args := update[1].([]interface{})
@@ -946,7 +950,6 @@ func (w *Workspace) guiFont(args string) {
 	w.popup.updateFont(w.font)
 	w.screen.toolTipFont(w.font)
 }
-
 
 func (w *Workspace) detectTerminalMode() {
 	if !strings.HasPrefix(w.filepath, `term://`) {
