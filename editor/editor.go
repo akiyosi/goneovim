@@ -128,7 +128,7 @@ func InitEditor() {
 		home = "~"
 	}
 	editor = &Editor{
-		version: "v0.3.0",
+		version: "v0.3.1",
 		signal:  NewEditorSignal(nil),
 		notify:  make(chan *Notify, 10),
 		bgcolor: nil,
