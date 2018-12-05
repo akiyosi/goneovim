@@ -649,7 +649,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			if w.isSetGuiColor == false {
 				if fgcolor == -1 && w.foreground == nil {
 					w.foreground = newRGBA(180, 185, 190, 1)
-				} else if bgcolor != -1 {
+				} else if fgcolor != -1 {
 					isSetColorscheme = true
 					w.foreground = calcColor(fgcolor)
 					w.minimap.foreground = w.foreground
@@ -918,8 +918,8 @@ func (w *Workspace) drawGuiColor(isSetColorscheme bool) {
 	}
 	// If colorscheme is not set, enable default color
 	if w.noColorschemeCount >= 2 && !isSetColorscheme {
-		editor.fgcolor = newRGBA(170, 175, 190, 1)
-		editor.bgcolor = newRGBA(5, 10, 15, 1)
+		editor.fgcolor = newRGBA(180, 185, 190, 1)
+		editor.bgcolor = newRGBA(9, 13, 17, 1)
 		w.foreground = editor.fgcolor
 		w.background = editor.bgcolor
 		w.minimap.foreground = editor.fgcolor
