@@ -1,5 +1,5 @@
 
-# <img src="https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/gopher-with-neovim.png" width="40" align="top" > Gonvim
+# Gonvim
 
 [![Join the chat at https://gitter.im/gonvim/gonvim](https://badges.gitter.im/gonvim/gonvim.svg)](https://gitter.im/gonvim/gonvim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/gonvim)](https://goreportcard.com/report/github.com/akiyosi/gonvim)
@@ -110,6 +110,6 @@ Gonvim is released under MIT license
 ## Credits
 
 * Gonvim was created by dzhou121 ([https://github.com/dzhou121/gonvim](https://github.com/dzhou121/gonvim))
-* Gonvim logo was made using [gopher-vector](https://github.com/golang-samples/gopher-vector) made by Takuya Ueda ([https://twitter.com/tenntenn](https://twitter.com/tenntenn)). The original gopher was designed by Renee French [http://reneefrench.blogspot.com/](http://reneefrench.blogspot.com/).
+* Gonvim application icon was made using [gopher-vector](https://github.com/golang-samples/gopher-vector) made by Takuya Ueda ([https://twitter.com/tenntenn](https://twitter.com/tenntenn)). The original gopher was designed by Renee French [http://reneefrench.blogspot.com/](http://reneefrench.blogspot.com/).
 
 
