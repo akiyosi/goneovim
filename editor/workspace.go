@@ -275,6 +275,7 @@ func (w *Workspace) init(path string) {
 	w.attachUI(path)
 	w.initCwd()
 	w.updateSize()
+	w.loadGinitVim()
 }
 
 func (w *Workspace) configure() {
@@ -318,6 +319,7 @@ func (w *Workspace) attachUI(path string) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -330,11 +332,9 @@ func (w *Workspace) initGonvim() {
 	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
 	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
-	w.loadGinitVim()
 }
 
 func (w *Workspace) loadGinitVim() {
-	w.nvim.Command("runtime! ginit.vim") // ginit.vim is deprecated and will be removed in a future
 	if editor.config.Editor.GinitVim != "" {
 		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, editor.config.Editor.GinitVim)
 		w.nvim.Command(execGinitVim)
