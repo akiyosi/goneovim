@@ -177,7 +177,7 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 
 	case "activityedit":
 		editor.activity.sideArea.SetCurrentWidget(editor.wsSide.scrollarea)
-		editor.workspaces[editor.active].setCwd()
+		editor.workspaces[editor.active].nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())`)
 		for n, item := range editor.wsSide.items {
 			item.setSideItemLabel(n)
 		}

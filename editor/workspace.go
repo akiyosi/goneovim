@@ -349,7 +349,7 @@ func (w *Workspace) initGonvimCommands(path string) {
 	w.nvim.Command(`autocmd VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")`)
 	w.nvim.Command(`autocmd VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")`)
 	// w.nvim.Command(`autocmd ColorScheme * call rpcnotify(1, "Gui", "gonvim_set_colorscheme")`)
-	w.nvim.Command(`autocmd VimEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd")`)
+	w.nvim.Command(`autocmd VimEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())`)
 	w.nvim.Command(`autocmd BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems", expand("%:p"))`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	if editor.config.ScrollBar.Visible == true {
@@ -412,16 +412,7 @@ func (w *Workspace) initCwd() {
 	w.nvim.Command("cd " + cwd)
 }
 
-func (w *Workspace) setCwd() {
-	time.Sleep(65 * time.Millisecond) // Avoid 'neovim busy'
-	cwdITF, err := w.nvimEval("getcwd()")
-	if err != nil {
-		return
-	}
-	cwd := cwdITF.(string)
-	if cwd == "" {
-		return
-	}
+func (w *Workspace) setCwd(cwd string) {
 	w.cwd = cwd
 
 	var labelpath string
@@ -892,7 +883,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_switch":
 		editor.workspaceSwitch(reflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
-		w.setCwd()
+		w.setCwd(updates[1].(string))
 	case "gonvim_workspace_redrawSideItem":
 		fl := editor.wsSide.items[editor.active].Filelist
 		if fl.active != -1 {
