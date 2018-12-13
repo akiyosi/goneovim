@@ -336,7 +336,8 @@ func (w *Workspace) initGonvim() {
 
 func (w *Workspace) loadGinitVim() {
 	if editor.config.Editor.GinitVim != "" {
-		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, editor.config.Editor.GinitVim)
+		scripts := strings.NewReplacer("\r\n", "\n", "\r", "\n", "\n", "\n").Replace(editor.config.Editor.GinitVim)
+		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, scripts)
 		w.nvim.Command(execGinitVim)
 	}
 }
@@ -412,7 +413,7 @@ func (w *Workspace) initCwd() {
 }
 
 func (w *Workspace) setCwd() {
-	time.Sleep(65 * time.Millisecond)  // Avoid 'neovim busy'
+	time.Sleep(65 * time.Millisecond) // Avoid 'neovim busy'
 	cwdITF, err := w.nvimEval("getcwd()")
 	if err != nil {
 		return
@@ -628,21 +629,26 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			titleString := (update[1].([]interface{}))[0].(string)
 			editor.window.SetWindowTitle(titleString)
 		case "option_set":
-			optKey := (update[1].([]interface{}))[0].(string)
-			optValue := (update[1].([]interface{}))[1]
-			switch optKey {
-			case "arabicshape":
-			case "ambiwidth":
-			case "emoji":
-			case "guifont":
-				w.guiFont(optValue.(string))
-			case "guifontset":
-			case "guifontwide":
-			case "linespace":
-				w.guiLinespace(optValue)
-			case "showtabline":
-			case "termguicolors":
-			default:
+			for n, option := range update {
+				if n == 0 {
+					continue
+				}
+				key := (option.([]interface{}))[0].(string)
+				val := (option.([]interface{}))[1]
+				switch key {
+				case "arabicshape":
+				case "ambiwidth":
+				case "emoji":
+				case "guifont":
+					w.guiFont(val.(string))
+				case "guifontset":
+				case "guifontwide":
+				case "linespace":
+					w.guiLinespace(val)
+				case "showtabline":
+				case "termguicolors":
+				default:
+				}
 			}
 		case "update_fg":
 			args := update[1].([]interface{})
