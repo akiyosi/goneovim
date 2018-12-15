@@ -163,12 +163,6 @@ func (m *Markdown) hide() {
 	m.webview.Hide()
 }
 
-func (m *Markdown) commands() {
-	m.ws.nvim.Command(fmt.Sprintf(`autocmd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "%s")`, GonvimMarkdownUpdateEvent))
-	m.ws.nvim.Command(fmt.Sprintf(`autocmd BufEnter *.md call rpcnotify(0, "Gui", "%s")`, GonvimMarkdownNewBufferEvent))
-	m.ws.nvim.Command(fmt.Sprintf(`command! GonvimMarkdown call rpcnotify(0, 'Gui', '%s')`, GonvimMarkdownToggleEvent))
-}
-
 func (m *Markdown) scrollUp() {
 	m.webpage.RunJavaScript("window.scrollBy(0, -20)")
 }

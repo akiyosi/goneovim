@@ -303,15 +303,18 @@ func (w *Workspace) configure() {
 }
 
 func (w *Workspace) attachUI(path string) error {
-	w.initGonvim()
-	w.initGonvimCommands(path)
-	w.markdown.commands()
-	fuzzy.RegisterPlugin(w.nvim)
+	_, _ = w.nvimEval("0")
+	if path != "" {
+		w.nvim.Command("so " + path)
+	}
+	w.nvim.Subscribe("Gui")
 	w.tabline.subscribe()
 	w.statusline.subscribe()
 	w.loc.subscribe()
 	// NOTE: Need https://github.com/neovim/neovim/pull/7466 to be merged
 	// w.message.subscribe()
+	fuzzy.RegisterPlugin(w.nvim)
+	w.initGonvim()
 
 	w.uiAttached = true
 	option := w.attachUIOption()
@@ -324,14 +327,94 @@ func (w *Workspace) attachUI(path string) error {
 }
 
 func (w *Workspace) initGonvim() {
-	_, _ = w.nvimEval("0")
-	w.nvim.Subscribe("Gui")
 	w.nvim.Command("runtime plugin/nvim_gui_shim.vim")
-	w.nvim.Command(fmt.Sprintf("command! GonvimVersion echo \"%s\"", editor.version))
-	w.nvim.Command(`call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)`)
-	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))`)
-	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
-	w.nvim.Command(`call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
+
+	gonvimAutoCmds := `
+	augroup Gonvim
+		autocmd!
+		autocmd VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
+		autocmd VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")
+		autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))
+	augroup end
+	augroup GonvimWorkspace
+		autocmd!
+		autocmd VimEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())
+	augroup end
+	augroup GonvimFileExplorer
+		autocmd!
+		autocmd BufReadPost,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems", expand("%:p"))
+		autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")
+	augroup end
+	augroup GonvimMinimap
+		autocmd!
+		autocmd WinEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
+	augroup end
+	`
+
+	gonvimMdAutoCmds := fmt.Sprintf(`
+	augroup GonvimMarkdown
+		autocmd!
+		autocmd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "%s")
+		autocmd BufEnter *.md call rpcnotify(0, "Gui", "%s")
+	augroup end
+	`, GonvimMarkdownUpdateEvent, GonvimMarkdownNewBufferEvent)
+
+	gonvimAutoCmds = gonvimAutoCmds + gonvimMdAutoCmds
+
+	if editor.config.ScrollBar.Visible {
+		gonvimAutoCmds = gonvimAutoCmds + `
+	augroup GonvimScrollBar
+		autocmd!
+		autocmd TextChanged,TextChangedI,BufReadPost * call rpcnotify(0, "Gui", "gonvim_get_maxline", line("$"))
+	augroup end
+	`
+	}
+	if editor.config.Editor.Clipboard {
+		gonvimAutoCmds = gonvimAutoCmds + `
+	augroup GonvimClipBoard
+		autocmd!
+		autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")
+	augroup end
+	`
+	}
+	if editor.config.Statusline.Visible {
+		gonvimAutoCmds = gonvimAutoCmds + `
+	augroup GonvimStatusline
+		autocmd!
+		autocmd BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat)
+	augroup end
+	`
+	}
+	if editor.config.Lint.Visible {
+		gonvimAutoCmds = gonvimAutoCmds + `
+	augroup GonvimLint
+		autocmd!
+		autocmd CursorMoved,CursorHold,InsertEnter,InsertLeave * call rpcnotify(0, "LocPopup", "update")
+	augroup end
+	`
+	}
+	registerAutocmds := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimAutoCmds)
+	w.nvim.Command(registerAutocmds)
+
+	gonvimCommands := fmt.Sprintf(`
+	command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
+	command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
+	command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
+	command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
+	command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
+	command! GonvimVersion echo %s
+	command! GonvimMarkdown call rpcnotify(0, "Gui", "%s")
+	`, editor.version, GonvimMarkdownToggleEvent)
+	registerCommands := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimCommands)
+	w.nvim.Command(registerCommands)
+
+	gonvimInitNotify := `
+	call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)
+	call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))
+	call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")
+	call rpcnotify(0, "Gui", "gonvim_minimap_update")`
+	initialNotify := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimInitNotify)
+	w.nvim.Command(initialNotify)
 }
 
 func (w *Workspace) loadGinitVim() {
@@ -340,32 +423,6 @@ func (w *Workspace) loadGinitVim() {
 		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, scripts)
 		w.nvim.Command(execGinitVim)
 	}
-}
-
-func (w *Workspace) initGonvimCommands(path string) {
-	if path != "" {
-		w.nvim.Command("so " + path)
-	}
-	w.nvim.Command(`autocmd VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")`)
-	w.nvim.Command(`autocmd VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")`)
-	// w.nvim.Command(`autocmd ColorScheme * call rpcnotify(1, "Gui", "gonvim_set_colorscheme")`)
-	w.nvim.Command(`autocmd VimEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())`)
-	w.nvim.Command(`autocmd BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems", expand("%:p"))`)
-	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
-	if editor.config.ScrollBar.Visible == true {
-		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline", line('$'))`)
-	}
-	w.nvim.Command(`autocmd BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
-	if editor.config.Editor.Clipboard == true {
-		w.nvim.Command(`autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")`)
-	}
-	w.nvim.Command(`autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))`)
-
-	w.nvim.Command(`command! GonvimMiniMap call rpcnotify(0, 'Gui', 'gonvim_minimap_toggle')`)
-	w.nvim.Command(`command! GonvimWorkspaceNew call rpcnotify(0, 'Gui', 'gonvim_workspace_new')`)
-	w.nvim.Command(`command! GonvimWorkspaceNext call rpcnotify(0, 'Gui', 'gonvim_workspace_next')`)
-	w.nvim.Command(`command! GonvimWorkspacePrevious call rpcnotify(0, 'Gui', 'gonvim_workspace_previous')`)
-	w.nvim.Command(`command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, 'Gui', 'gonvim_workspace_switch', <args>)`)
 }
 
 func (w *Workspace) nvimCommandOutput(s string) (string, error) {

@@ -387,7 +387,6 @@ func (s *Statusline) subscribe() {
 		s.notify.update()
 	})
 	s.ws.nvim.Subscribe("statusline")
-	s.ws.nvim.Command(`autocmd BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat)`)
 }
 
 func (s *Statusline) handleUpdates(updates []interface{}) {
