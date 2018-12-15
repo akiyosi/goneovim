@@ -353,7 +353,7 @@ func (w *Workspace) initGonvimCommands(path string) {
 	w.nvim.Command(`autocmd BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems", expand("%:p"))`)
 	w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")`)
 	if editor.config.ScrollBar.Visible == true {
-		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline")`)
+		w.nvim.Command(`autocmd TextChanged,TextChangedI,BufEnter * call rpcnotify(0, "Gui", "gonvim_get_maxline", line('$'))`)
 	}
 	w.nvim.Command(`autocmd BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")`)
 	if editor.config.Editor.Clipboard == true {
@@ -856,24 +856,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
 	case "gonvim_get_maxline":
-		go func() {
-			lnITF, err := w.nvimEval("line('$')")
-			if err != nil {
-				// w.maxLine = 0    // denite is not working if uncomment this line
-			} else {
-				switch lnITF.(type) {
-				case uint64:
-					w.maxLine = int(lnITF.(uint64))
-				case uint:
-					w.maxLine = int(lnITF.(uint))
-				case int64:
-					w.maxLine = int(lnITF.(int64))
-				case int:
-					w.maxLine = lnITF.(int)
-				default:
-				}
-			}
-		}()
+		w.maxLine = reflectToInt(updates[1])
 	case "gonvim_workspace_new":
 		editor.workspaceNew()
 	case "gonvim_workspace_next":
