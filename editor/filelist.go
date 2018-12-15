@@ -34,7 +34,7 @@ type Fileitem struct {
 	path           string
 	fileModified   *svg.QSvgWidget
 	isOpened       bool
-	isModified     string
+	isModified     bool
 }
 
 func newFilelistwidget(path string) *Filelist {
@@ -203,9 +203,7 @@ func (f *Fileitem) setFilename(length float64) {
 // }
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
-	fg := editor.fgcolor
 	bg := editor.bgcolor
-	var svgModified string
 	cfn := ""
 	cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
 	if err != nil {
@@ -216,21 +214,10 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 
 	if cfn == f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", warpColor(bg, -6).print()))
-		if f.isModified == "1" {
-			svgModified = editor.getSvg("circle", gradColor(fg))
-		} else {
-			svgModified = editor.getSvg("circle", warpColor(bg, -6))
-		}
-		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	} else {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", warpColor(bg, -6).print()))
-		if f.isModified == "1" {
-			svgModified = editor.getSvg("circle", gradColor(fg))
-		} else {
-			svgModified = editor.getSvg("circle", warpColor(bg, -6))
-		}
-		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
+	f.loadModifiedBadge()
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
@@ -265,41 +252,22 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 	if !editor.activity.editItem.active {
 		return
 	}
-	fg := editor.fgcolor
+
 	bg := editor.bgcolor
-	var svgModified string
-
 	currFilepath := editor.workspaces[editor.active].filepath
-
-	breakOk1 := false
-	breakOk2 := false
 	for j, fileitem := range i.Filelist.Fileitems {
-		if breakOk1 && breakOk2 {
-			break
-		}
 		if !strings.HasSuffix(currFilepath, fileitem.fileName) {
 			if !fileitem.isOpened {
 				continue
 			}
 			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", shiftColor(bg, -5).print()))
-			svgModified = editor.getSvg("circle", shiftColor(bg, -5))
-			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
-			breakOk1 = true
 			fileitem.isOpened = false
 		} else {
 			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", warpColor(bg, -5).print()))
-			if fileitem.isModified == "1" {
-				svgModified = editor.getSvg("circle", gradColor(fg))
-			} else {
-				svgModified = editor.getSvg("circle", warpColor(bg, -6))
-			}
-			fileitem.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
-			if !fileitem.isOpened {
-				breakOk2 = true
-			}
 			fileitem.isOpened = true
 			i.Filelist.active = j
 		}
+		fileitem.loadModifiedBadge()
 	}
 }
 
@@ -307,6 +275,12 @@ func (f *Fileitem) updateModifiedbadge() {
 	if !editor.activity.editItem.active {
 		return
 	}
+
+	// err := editor.workspaces[editor.active].nvim.Call("modified", &f.isModified)
+	// if err != nil {
+	// 	return
+	// }
+
 	var isModified string
 	isModified, err := editor.workspaces[editor.active].nvimCommandOutput("echo &modified")
 	if err != nil {
@@ -315,11 +289,20 @@ func (f *Fileitem) updateModifiedbadge() {
 	if isModified == "" {
 		return
 	}
+	if isModified == "1" {
+		f.isModified = true
+	} else {
+		f.isModified = false
+	}
 
+	f.loadModifiedBadge()
+}
+
+func (f *Fileitem) loadModifiedBadge() {
 	fg := editor.fgcolor
 	bg := editor.bgcolor
 	var svgModified string
-	if isModified == "1" {
+	if f.isModified {
 		svgModified = editor.getSvg("circle", gradColor(fg))
 	} else {
 		if f.isOpened {
@@ -329,7 +312,6 @@ func (f *Fileitem) updateModifiedbadge() {
 		}
 	}
 	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
-	f.isModified = isModified
 }
 
 func unicodeCount(str string) int {
