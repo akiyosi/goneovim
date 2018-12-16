@@ -204,18 +204,15 @@ func (f *Fileitem) setFilename(length float64) {
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
 	bg := editor.bgcolor
-	cfn := ""
-	cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
-	if err != nil {
-		cfn = ""
-	} else {
-		cfn = cfnITF.(string)
-	}
-
+	svgModified := ""
+	currFilepath := editor.workspaces[editor.active].filepath
+	cfn := filepath.Base(currFilepath)
 	if cfn == f.fileName {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", warpColor(bg, -6).print()))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", warpColor(bg, -5).print()))
 	} else {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", warpColor(bg, -6).print()))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", warpColor(bg, -5).print()))
+		svgModified = editor.getSvg("circle", warpColor(bg, -5))
+		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
 	f.loadModifiedBadge()
 	cursor := gui.NewQCursor()
@@ -225,15 +222,9 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 
 func (f *Fileitem) leaveEvent(event *core.QEvent) {
 	bg := editor.bgcolor
-	var svgModified string
-
-	cfn := ""
-	cfnITF, err := editor.workspaces[editor.active].nvimEval("expand('%:t')")
-	if err != nil {
-		cfn = ""
-	} else {
-		cfn = cfnITF.(string)
-	}
+	svgModified := ""
+	currFilepath := editor.workspaces[editor.active].filepath
+	cfn := filepath.Base(currFilepath)
 
 	if cfn != f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: none; } ", shiftColor(bg, -5).print()))
@@ -255,8 +246,9 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 
 	bg := editor.bgcolor
 	currFilepath := editor.workspaces[editor.active].filepath
+	isMatchPath := filepath.Dir(currFilepath) == editor.workspaces[editor.active].cwd
 	for j, fileitem := range i.Filelist.Fileitems {
-		if !strings.HasSuffix(currFilepath, fileitem.fileName) {
+		if !isMatchPath || !strings.HasSuffix(currFilepath, fileitem.fileName) {
 			if !fileitem.isOpened {
 				continue
 			}
@@ -306,7 +298,7 @@ func (f *Fileitem) loadModifiedBadge() {
 		svgModified = editor.getSvg("circle", gradColor(fg))
 	} else {
 		if f.isOpened {
-			svgModified = editor.getSvg("circle", warpColor(bg, -6))
+			svgModified = editor.getSvg("circle", warpColor(bg, -5))
 		} else {
 			svgModified = editor.getSvg("circle", shiftColor(bg, -5))
 		}

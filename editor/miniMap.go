@@ -32,6 +32,7 @@ type MiniMap struct {
 	pos       int
 	width     int
 	height    int
+	currBuf   string
 
 	visible bool
 
@@ -383,26 +384,16 @@ func (m *MiniMap) bufUpdate() {
 	}
 	m.widget.Show()
 
-	doneC := make(chan string, 5)
-	bufName := ""
-	go func() {
-		buf, _ := m.ws.nvim.CurrentBuffer()
-		result, _ := m.ws.nvim.BufferName(buf)
-		doneC <- result
-	}()
-
-	select {
-	case done := <-doneC:
-		bufName = done
-	case <-time.After(80 * time.Millisecond):
-		bufName = ""
+	if m.currBuf == m.ws.filepath {
+		return
 	}
+	m.currBuf = m.ws.filepath
 
-	if !isFileExist(bufName) {
-		bufName = "[No Name]"
+	if m.currBuf == "" {
+		go m.nvim.Command(":e! [No Name]")
+	} else {
+		go m.nvim.Command(":e! " + m.currBuf)
 	}
-
-	m.nvim.Command(":e! " + bufName)
 	m.mapScroll()
 }
 

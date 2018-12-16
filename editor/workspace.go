@@ -342,12 +342,12 @@ func (w *Workspace) initGonvim() {
 	augroup end
 	augroup GonvimFileExplorer
 		autocmd!
-		autocmd BufReadPost,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItems", expand("%:p"))
-		autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")
+		autocmd BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_setCurrentFileLabel", expand("%:p"))
+		autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
 	augroup end
 	augroup GonvimMinimap
 		autocmd!
-		autocmd WinEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
+		autocmd BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
 	augroup end
 	`
 
@@ -411,7 +411,7 @@ func (w *Workspace) initGonvim() {
 	gonvimInitNotify := `
 	call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)
 	call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))
-	call rpcnotify(0, "Gui", "gonvim_workspace_redrawSideItem")
+	call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
 	call rpcnotify(0, "Gui", "gonvim_minimap_update")`
 	initialNotify := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimInitNotify)
 	w.nvim.Command(initialNotify)
@@ -925,17 +925,25 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.workspaceSwitch(reflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
 		w.setCwd(updates[1].(string))
-	case "gonvim_workspace_redrawSideItem":
+	case "gonvim_workspace_setCurrentFileLabel":
+		file := updates[1].(string)
+		w.filepath = file
+		if strings.Contains(w.filepath, "[denite]") || w.filepath == "" {
+			return
+		}
+		fmt.Println("gonvim_workspace_setCurrentFileLabel")
+		editor.wsSide.items[editor.active].setCurrentFileLabel()
+	case "gonvim_workspace_updateMoifiedbadge":
+		if strings.Contains(w.filepath, "[denite]") || w.filepath == "" {
+			return
+		}
+		fmt.Println("gonvim_workspace_updateMoifiedbadge")
 		fl := editor.wsSide.items[editor.active].Filelist
 		if fl.active != -1 {
 			if len(fl.Fileitems) != 0 {
 				fl.Fileitems[fl.active].updateModifiedbadge()
 			}
 		}
-	case "gonvim_workspace_redrawSideItems":
-		file := updates[1].(string)
-		editor.workspaces[editor.active].filepath = file
-		editor.wsSide.items[editor.active].setCurrentFileLabel()
 	case GonvimMarkdownNewBufferEvent:
 		go w.markdown.newBuffer()
 	case GonvimMarkdownUpdateEvent:
