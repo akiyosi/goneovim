@@ -332,13 +332,13 @@ func (w *Workspace) initGonvim() {
 	gonvimAutoCmds := `
 	augroup Gonvim
 		autocmd!
-		autocmd VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
+		autocmd VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
 		autocmd VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")
 		autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))
 	augroup end
 	augroup GonvimWorkspace
 		autocmd!
-		autocmd VimEnter,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())
+		autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())
 	augroup end
 	augroup GonvimFileExplorer
 		autocmd!
@@ -864,6 +864,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	switch event {
 	case "gonvim_enter":
 		editor.window.SetWindowOpacity(1.0)
+		w.setCwd(updates[1].(string))
 		go func() {
 			time.Sleep(2000 * time.Millisecond)
 			msg, _ := w.nvimCommandOutput("messages")
