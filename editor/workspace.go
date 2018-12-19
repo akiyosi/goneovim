@@ -83,9 +83,7 @@ type Workspace struct {
 	drawTabline    bool
 	drawLint       bool
 
-	isSetGuiColor      bool
-	noColorschemeCount int
-	flushCount         int
+	isSetGuiColor bool
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -667,8 +665,6 @@ func (w *Workspace) updateSize() {
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
 	doMinimapScroll := false
-	isSetColorscheme := false
-	var fgcolor, bgcolor int
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -698,50 +694,43 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				default:
 				}
 			}
-		case "update_fg":
+		case "default_colors_set":
 			args := update[1].([]interface{})
-			fgcolor = reflectToInt(args[0])
-			if w.isSetGuiColor == false {
-				if fgcolor == -1 && w.foreground == nil {
-					w.foreground = newRGBA(180, 185, 190, 1)
-				} else if fgcolor != -1 {
-					isSetColorscheme = true
-					w.foreground = calcColor(fgcolor)
-					w.minimap.foreground = w.foreground
-					editor.fgcolor = w.foreground
-				}
+			fg := reflectToInt(args[0])
+			bg := reflectToInt(args[1])
+			sp := reflectToInt(args[2])
 
-			} else if fgcolor != -1 {
-				w.foreground = calcColor(fgcolor)
-				w.minimap.foreground = w.foreground
-			}
-		case "update_bg":
-			args := update[1].([]interface{})
-			bgcolor = reflectToInt(args[0])
-			if w.isSetGuiColor == false {
-				if bgcolor == -1 && w.background == nil {
-					// TODO: Detecting &background option in buffer
-					//       and Set colors according to 'light', 'dark' value respectively
-					w.background = newRGBA(9, 13, 17, 1)
-				} else if bgcolor != -1 {
-					isSetColorscheme = true
-					w.background = calcColor(bgcolor)
-					w.minimap.background = w.background
-					editor.bgcolor = w.background
-				}
-			} else if bgcolor != -1 {
-				w.background = calcColor(bgcolor)
-				w.minimap.background = w.background
-			}
-		case "update_sp":
-			args := update[1].([]interface{})
-			color := reflectToInt(args[0])
-			if color == -1 {
-				w.special = newRGBA(255, 255, 255, 1)
+			if fg != -1 {
+				w.foreground = calcColor(fg)
 			} else {
-				w.special = calcColor(reflectToInt(args[0]))
-				w.minimap.special = calcColor(reflectToInt(args[0]))
+				w.foreground = newRGBA(180, 185, 190, 1)
 			}
+			if bg != -1 {
+				w.background = calcColor(bg)
+			} else {
+				w.background = newRGBA(9, 13, 17, 1)
+			}
+			if sp != -1 {
+				w.special = calcColor(sp)
+			} else {
+				w.special = newRGBA(255, 255, 255, 1)
+			}
+
+			w.minimap.foreground = w.foreground
+			w.minimap.background = w.background
+			w.minimap.special = w.special
+
+			if fg != -1 || bg != -1 {
+				w.isSetGuiColor = false
+			}
+			if w.isSetGuiColor == true {
+				return
+			}
+			editor.fgcolor = w.foreground
+			editor.bgcolor = w.background
+			w.setGuiColor(editor.fgcolor, editor.bgcolor)
+			w.isSetGuiColor = true
+
 		case "cursor_goto":
 			s.cursorGoto(args)
 			doMinimapScroll = true
@@ -820,17 +809,8 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "messages":
 		case "busy_start":
 		case "busy_stop":
-		case "flush":
-			w.flushCount++
 		default:
 			fmt.Println("Unhandle event", event)
-		}
-	}
-
-	w.drawGuiColor(isSetColorscheme)
-	if !w.isSetGuiColor {
-		if (fgcolor == -1 && bgcolor == -1) || w.flushCount >= 9 {
-			w.noColorschemeCount++
 		}
 	}
 
@@ -931,13 +911,11 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		if strings.Contains(w.filepath, "[denite]") || w.filepath == "" {
 			return
 		}
-		fmt.Println("gonvim_workspace_setCurrentFileLabel")
 		editor.wsSide.items[editor.active].setCurrentFileLabel()
 	case "gonvim_workspace_updateMoifiedbadge":
 		if strings.Contains(w.filepath, "[denite]") || w.filepath == "" {
 			return
 		}
-		fmt.Println("gonvim_workspace_updateMoifiedbadge")
 		fl := editor.wsSide.items[editor.active].Filelist
 		if fl.active != -1 {
 			if len(fl.Fileitems) != 0 {
@@ -957,22 +935,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}
-}
-
-func (w *Workspace) drawGuiColor(isSetColorscheme bool) {
-	if w.isSetGuiColor {
-		return
-	}
-	// If colorscheme is not set, enable default color
-	if w.noColorschemeCount >= 2 && !isSetColorscheme {
-		editor.fgcolor = newRGBA(180, 185, 190, 1)
-		editor.bgcolor = newRGBA(9, 13, 17, 1)
-		w.foreground = editor.fgcolor
-		w.background = editor.bgcolor
-		w.minimap.foreground = editor.fgcolor
-		w.minimap.background = editor.bgcolor
-	}
-	w.setGuiColor(editor.fgcolor, editor.bgcolor)
 }
 
 func (w *Workspace) guiFont(args string) {
@@ -1301,10 +1263,6 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 	if fg == nil || bg == nil {
 		return
 	}
-	if w.isSetGuiColor == true {
-		return
-	}
-	w.isSetGuiColor = true
 
 	activityBarColor := shiftColor(bg, -8)
 	sideBarColor := shiftColor(bg, -5)
