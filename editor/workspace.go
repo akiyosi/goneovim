@@ -301,7 +301,7 @@ func (w *Workspace) configure() {
 }
 
 func (w *Workspace) attachUI(path string) error {
-	_, _ = w.nvimEval("0")
+	// _, _ = w.nvimEval("0")
 	if path != "" {
 		w.nvim.Command("so " + path)
 	}
@@ -312,7 +312,7 @@ func (w *Workspace) attachUI(path string) error {
 	// NOTE: Need https://github.com/neovim/neovim/pull/7466 to be merged
 	// w.message.subscribe()
 	fuzzy.RegisterPlugin(w.nvim)
-	w.initGonvim()
+	go w.initGonvim()
 
 	w.uiAttached = true
 	option := w.attachUIOption()
@@ -328,70 +328,48 @@ func (w *Workspace) initGonvim() {
 	w.nvim.Command("runtime plugin/nvim_gui_shim.vim")
 
 	gonvimAutoCmds := `
-	augroup Gonvim
-		autocmd!
-		autocmd VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
-		autocmd VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")
-		autocmd CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))
-	augroup end
-	augroup GonvimWorkspace
-		autocmd!
-		autocmd DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())
-	augroup end
-	augroup GonvimFileExplorer
-		autocmd!
-		autocmd BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_setCurrentFileLabel", expand("%:p"))
-		autocmd TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
-	augroup end
-	augroup GonvimMinimap
-		autocmd!
-		autocmd BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
-	augroup end
+	aug GonvimAu | au! | aug END
+	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
+	au GonvimAu VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")
+	au GonvimAu CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))
+	aug GonvimAuWorkspace | au! | aug END
+	au GonvimAuWorkspace DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())
+	aug GonvimAuFileExplorer | au! | aug END
+	au GonvimAuFileExplorer BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_setCurrentFileLabel", expand("%:p"))
+	au GonvimAuFileExplorer TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
+	aug GonvimAuMd | au! | aug END
+	au GonvimAuMd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "gonvim_markdown_update")
+	au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
+	aug GonvimAuMinimap | au! | aug END
+	au GonvimAuMinimap BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
 	`
-
-	gonvimMdAutoCmds := fmt.Sprintf(`
-	augroup GonvimMarkdown
-		autocmd!
-		autocmd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "%s")
-		autocmd BufEnter *.md call rpcnotify(0, "Gui", "%s")
-	augroup end
-	`, GonvimMarkdownUpdateEvent, GonvimMarkdownNewBufferEvent)
-
-	gonvimAutoCmds = gonvimAutoCmds + gonvimMdAutoCmds
 
 	if editor.config.ScrollBar.Visible {
 		gonvimAutoCmds = gonvimAutoCmds + `
-	augroup GonvimScrollBar
-		autocmd!
-		autocmd TextChanged,TextChangedI,BufReadPost * call rpcnotify(0, "Gui", "gonvim_get_maxline", line("$"))
-	augroup end
+	aug GonvimAuScrollbar | au! | aug END
+	au GonvimAuScrollbar TextChanged,TextChangedI,BufReadPost * call rpcnotify(0, "Gui", "gonvim_get_maxline", line("$"))
 	`
 	}
 	if editor.config.Editor.Clipboard {
 		gonvimAutoCmds = gonvimAutoCmds + `
-	augroup GonvimClipBoard
-		autocmd!
-		autocmd TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")
-	augroup end
+	aug GonvimAuClipboard | au! | aug END
+	au GonvimAuClipboard TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")
 	`
 	}
 	if editor.config.Statusline.Visible {
 		gonvimAutoCmds = gonvimAutoCmds + `
-	augroup GonvimStatusline
-		autocmd!
-		autocmd BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat)
-	augroup end
+	aug GonvimAuStatusline | au! | aug END
+	au GonvimAuStatusline BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat)
 	`
 	}
 	if editor.config.Lint.Visible {
 		gonvimAutoCmds = gonvimAutoCmds + `
-	augroup GonvimLint
-		autocmd!
-		autocmd CursorMoved,CursorHold,InsertEnter,InsertLeave * call rpcnotify(0, "LocPopup", "update")
-	augroup end
+	aug GonvimAuLint | au! | aug END
+	au GonvimAuLint CursorMoved,CursorHold,InsertEnter,InsertLeave * call rpcnotify(0, "LocPopup", "update")
 	`
 	}
-	registerAutocmds := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimAutoCmds)
+	// registerAutocmds := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimAutoCmds)
+	registerAutocmds := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimAutoCmds))
 	w.nvim.Command(registerAutocmds)
 
 	gonvimCommands := fmt.Sprintf(`
@@ -403,7 +381,8 @@ func (w *Workspace) initGonvim() {
 	command! GonvimVersion echo %s
 	command! GonvimMarkdown call rpcnotify(0, "Gui", "%s")
 	`, editor.version, GonvimMarkdownToggleEvent)
-	registerCommands := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimCommands)
+	// registerCommands := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimCommands)
+	registerCommands := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimCommands))
 	w.nvim.Command(registerCommands)
 
 	gonvimInitNotify := `
@@ -411,8 +390,26 @@ func (w *Workspace) initGonvim() {
 	call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))
 	call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
 	call rpcnotify(0, "Gui", "gonvim_minimap_update")`
-	initialNotify := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimInitNotify)
+	// initialNotify := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimInitNotify)
+	initialNotify := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimInitNotify))
 	w.nvim.Command(initialNotify)
+}
+
+func splitVimscript(s string) string {
+	listLines := "["
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		if line != "" && line != "\t" {
+			listLines = listLines + `'` + line + `'`
+			if i < len(lines) - 2 {
+				listLines = listLines + ","
+			} else {
+				listLines = listLines + "]"
+			}
+		}
+	}
+
+	return listLines
 }
 
 func (w *Workspace) loadGinitVim() {
