@@ -401,7 +401,7 @@ func splitVimscript(s string) string {
 	for i, line := range lines {
 		if line != "" && line != "\t" {
 			listLines = listLines + `'` + line + `'`
-			if i < len(lines) - 2 {
+			if i < len(lines)-2 {
 				listLines = listLines + ","
 			} else {
 				listLines = listLines + "]"
@@ -813,27 +813,31 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 	s.update()
 	w.cursor.update()
-	if editor.config.ScrollBar.Visible == true {
+	w.statusline.mode.redraw()
+	if editor.config.ScrollBar.Visible {
 		w.scrollBar.update()
 	}
 	if doMinimapScroll && w.minimap.visible {
-		go func() {
-			var absMapTop int
-			w.minimap.nvim.Eval("line('w0')", &absMapTop)
-			var absMapBottom int
-			w.minimap.nvim.Eval("line('w$')", &absMapBottom)
-			w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
-			switch {
-			case w.curLine >= absMapBottom:
-				w.minimap.nvim.Input("<C-d>")
-			case absMapTop >= w.curLine:
-				w.minimap.nvim.Input("<C-u>")
-			default:
-			}
-		}()
-		w.minimap.mapScroll()
+		w.updateMinimap()
 	}
-	w.statusline.mode.redraw()
+}
+
+func (w *Workspace) updateMinimap() {
+	go func() {
+		var absMapTop int
+		var absMapBottom int
+		w.minimap.nvim.Eval("line('w0')", &absMapTop)
+		w.minimap.nvim.Eval("line('w$')", &absMapBottom)
+		w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
+		switch {
+		case w.curLine >= absMapBottom:
+			w.minimap.nvim.Input("<C-d>")
+		case absMapTop >= w.curLine:
+			w.minimap.nvim.Input("<C-u>")
+		default:
+		}
+	}()
+	w.minimap.mapScroll()
 }
 
 func (w *Workspace) handleRPCGui(updates []interface{}) {
