@@ -271,8 +271,7 @@ func (w *Workspace) startNvim(path string) error {
 func (w *Workspace) init(path string) {
 	w.configure()
 	w.attachUI(path)
-	w.initCwd()
-	w.updateSize()
+	// w.initCwd()
 	w.loadGinitVim()
 }
 
@@ -302,17 +301,17 @@ func (w *Workspace) configure() {
 
 func (w *Workspace) attachUI(path string) error {
 	// _, _ = w.nvimEval("0")
-	if path != "" {
-		w.nvim.Command("so " + path)
-	}
 	w.nvim.Subscribe("Gui")
+	go w.initGonvim()
+	if path != "" {
+		go w.nvim.Command("so " + path)
+	}
 	w.tabline.subscribe()
 	w.statusline.subscribe()
 	w.loc.subscribe()
 	// NOTE: Need https://github.com/neovim/neovim/pull/7466 to be merged
 	// w.message.subscribe()
 	fuzzy.RegisterPlugin(w.nvim)
-	go w.initGonvim()
 
 	w.uiAttached = true
 	option := w.attachUIOption()
@@ -453,15 +452,18 @@ func (w *Workspace) nvimEval(s string) (interface{}, error) {
 }
 
 func (w *Workspace) initCwd() {
-	cwdITF, err := w.nvimEval("getcwd()")
-	if err != nil {
+	// cwdITF, err := w.nvimEval("getcwd()")
+	// if err != nil {
+	// 	return
+	// }
+	// cwd := cwdITF.(string)
+	// if cwd == "" {
+	// 	return
+	// }
+	if w.cwd == "" {
 		return
 	}
-	cwd := cwdITF.(string)
-	if cwd == "" {
-		return
-	}
-	w.nvim.Command("cd " + cwd)
+	w.nvim.Command("cd " + w.cwd)
 }
 
 func (w *Workspace) setCwd(cwd string) {
@@ -884,8 +886,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		ln := reflectToInt(pos[1])
 		col := reflectToInt(pos[2]) + reflectToInt(pos[3])
 		w.statusline.pos.redraw(ln, col)
-		w.curLine = ln
-		w.curColm = col
+		go func() {
+			w.curLine = ln
+			w.curColm = col
+		}()
 	case "gonvim_minimap_update":
 		if w.minimap.visible {
 			w.minimap.bufUpdate()

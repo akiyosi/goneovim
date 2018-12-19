@@ -210,7 +210,7 @@ func (s *Screen) updateSize() {
 		if initUI == nil {
 			w.uiInitialResized = true
 		}
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After(50 * time.Millisecond):
 		// In this case, assuming that nvim is returning an error at startup and the TryResizeUI() function hangs up.
 		w.nvim.Input("<Enter>")
 		w.updateSize()
