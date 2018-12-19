@@ -963,6 +963,29 @@ func (w *Workspace) guiFont(args string) {
 	w.updateSize()
 	w.popup.updateFont(w.font)
 	w.screen.toolTipFont(w.font)
+	w.cursor.updateShape()
+}
+
+func (w *Workspace) guiLinespace(args interface{}) {
+	// fontArg := args[0].([]interface{})
+	var lineSpace int
+	var err error
+	switch arg := args.(type) {
+	case string:
+		lineSpace, err = strconv.Atoi(arg)
+		if err != nil {
+			return
+		}
+	case int32: // can't combine these in a type switch without compile error
+		lineSpace = int(arg)
+	case int64:
+		lineSpace = int(arg)
+	default:
+		return
+	}
+	w.font.changeLineSpace(lineSpace)
+	w.updateSize()
+	w.cursor.updateShape()
 }
 
 func (w *Workspace) detectTerminalMode() {
@@ -990,27 +1013,6 @@ func (w *Workspace) detectTerminalMode() {
 		}
 		m.Unlock()
 	}()
-}
-
-func (w *Workspace) guiLinespace(args interface{}) {
-	// fontArg := args[0].([]interface{})
-	var lineSpace int
-	var err error
-	switch arg := args.(type) {
-	case string:
-		lineSpace, err = strconv.Atoi(arg)
-		if err != nil {
-			return
-		}
-	case int32: // can't combine these in a type switch without compile error
-		lineSpace = int(arg)
-	case int64:
-		lineSpace = int(arg)
-	default:
-		return
-	}
-	w.font.changeLineSpace(lineSpace)
-	w.updateSize()
 }
 
 // InputMethodEvent is
