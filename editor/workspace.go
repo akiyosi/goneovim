@@ -672,27 +672,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			titleString := (update[1].([]interface{}))[0].(string)
 			editor.window.SetWindowTitle(titleString)
 		case "option_set":
-			for n, option := range update {
-				if n == 0 {
-					continue
-				}
-				key := (option.([]interface{}))[0].(string)
-				val := (option.([]interface{}))[1]
-				switch key {
-				case "arabicshape":
-				case "ambiwidth":
-				case "emoji":
-				case "guifont":
-					w.guiFont(val.(string))
-				case "guifontset":
-				case "guifontwide":
-				case "linespace":
-					w.guiLinespace(val)
-				case "showtabline":
-				case "termguicolors":
-				default:
-				}
-			}
+			w.setOption(update)
 		case "default_colors_set":
 			args := update[1].([]interface{})
 			fg := reflectToInt(args[0])
@@ -823,6 +803,30 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		go w.updateMinimap()
 		w.minimap.mapScroll()
 		doMinimapScroll = false
+	}
+}
+
+func (w *Workspace) setOption(update []interface{}) {
+	for n, option := range update {
+		if n == 0 {
+			continue
+		}
+		key := (option.([]interface{}))[0].(string)
+		val := (option.([]interface{}))[1]
+		switch key {
+		case "arabicshape":
+		case "ambiwidth":
+		case "emoji":
+		case "guifont":
+			w.guiFont(val.(string))
+		case "guifontset":
+		case "guifontwide":
+		case "linespace":
+			w.guiLinespace(val)
+		case "showtabline":
+		case "termguicolors":
+		default:
+		}
 	}
 }
 
