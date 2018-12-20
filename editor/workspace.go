@@ -675,41 +675,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.setOption(update)
 		case "default_colors_set":
 			args := update[1].([]interface{})
-			fg := reflectToInt(args[0])
-			bg := reflectToInt(args[1])
-			sp := reflectToInt(args[2])
-
-			if fg != -1 {
-				w.foreground = calcColor(fg)
-			} else {
-				w.foreground = newRGBA(180, 185, 190, 1)
-			}
-			if bg != -1 {
-				w.background = calcColor(bg)
-			} else {
-				w.background = newRGBA(9, 13, 17, 1)
-			}
-			if sp != -1 {
-				w.special = calcColor(sp)
-			} else {
-				w.special = newRGBA(255, 255, 255, 1)
-			}
-
-			w.minimap.foreground = w.foreground
-			w.minimap.background = w.background
-			w.minimap.special = w.special
-
-			if fg != -1 || bg != -1 {
-				w.isSetGuiColor = false
-			}
-			if w.isSetGuiColor == true {
-				return
-			}
-			editor.fgcolor = w.foreground
-			editor.bgcolor = w.background
-			w.setGuiColor(editor.fgcolor, editor.bgcolor)
-			w.isSetGuiColor = true
-
+			w.setColor(args)
 		case "cursor_goto":
 			s.cursorGoto(args)
 			doMinimapScroll = true
@@ -804,6 +770,43 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		w.minimap.mapScroll()
 		doMinimapScroll = false
 	}
+}
+
+func (w *Workspace) setColor(args []interface{}) {
+	fg := reflectToInt(args[0])
+	bg := reflectToInt(args[1])
+	sp := reflectToInt(args[2])
+
+	if fg != -1 {
+		w.foreground = calcColor(fg)
+	} else {
+		w.foreground = newRGBA(180, 185, 190, 1)
+	}
+	if bg != -1 {
+		w.background = calcColor(bg)
+	} else {
+		w.background = newRGBA(9, 13, 17, 1)
+	}
+	if sp != -1 {
+		w.special = calcColor(sp)
+	} else {
+		w.special = newRGBA(255, 255, 255, 1)
+	}
+
+	w.minimap.foreground = w.foreground
+	w.minimap.background = w.background
+	w.minimap.special = w.special
+
+	if fg != -1 || bg != -1 {
+		w.isSetGuiColor = false
+	}
+	if w.isSetGuiColor == true {
+		return
+	}
+	editor.fgcolor = w.foreground
+	editor.bgcolor = w.background
+	w.setGuiColor(editor.fgcolor, editor.bgcolor)
+	w.isSetGuiColor = true
 }
 
 func (w *Workspace) setOption(update []interface{}) {
