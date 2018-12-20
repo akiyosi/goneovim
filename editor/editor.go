@@ -208,27 +208,7 @@ func InitEditor() {
 	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
 	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
 
-	// Drop shadow to Side Bar
-	if e.config.SideBar.DropShadow == true {
-		go func() {
-			shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-			shadow.SetBlurRadius(60)
-			shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-			shadow.SetOffset3(6, 2)
-			e.activity.sideArea.SetGraphicsEffect(shadow)
-		}()
-	}
-
-	// Drop shadow for Activity Bar
-	if e.config.ActivityBar.DropShadow == true {
-		go func() {
-			shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-			shadow.SetBlurRadius(60)
-			shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-			shadow.SetOffset3(6, 2)
-			e.activity.widget.SetGraphicsEffect(shadow)
-		}()
-	}
+	go e.dropShadow()
 
 	if e.config.ActivityBar.Visible == false {
 		e.activity.widget.Hide()
@@ -347,6 +327,26 @@ func (e *Editor) popupNotification(level NotifyLevel, p int, message string, opt
 	e.notifyStartPos = core.NewQPoint2(x, y)
 	e.notifications = append(e.notifications, notification)
 	notification.show()
+}
+
+func (e *Editor) dropShadow() {
+	// Drop shadow to Side Bar
+	if e.config.SideBar.DropShadow == true {
+		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+		shadow.SetBlurRadius(60)
+		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
+		shadow.SetOffset3(6, 2)
+		e.activity.sideArea.SetGraphicsEffect(shadow)
+	}
+
+	// Drop shadow for Activity Bar
+	if e.config.ActivityBar.DropShadow == true {
+		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+		shadow.SetBlurRadius(60)
+		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
+		shadow.SetOffset3(6, 2)
+		e.activity.widget.SetGraphicsEffect(shadow)
+	}
 }
 
 func hexToRGBA(hex string) *RGBA {
