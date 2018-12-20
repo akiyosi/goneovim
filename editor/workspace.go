@@ -820,26 +820,25 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		w.scrollBar.update()
 	}
 	if doMinimapScroll && w.minimap.visible {
-		w.updateMinimap()
+		go w.updateMinimap()
+		w.minimap.mapScroll()
+		doMinimapScroll = false
 	}
 }
 
 func (w *Workspace) updateMinimap() {
-	go func() {
-		var absMapTop int
-		var absMapBottom int
-		w.minimap.nvim.Eval("line('w0')", &absMapTop)
-		w.minimap.nvim.Eval("line('w$')", &absMapBottom)
-		w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
-		switch {
-		case w.curLine >= absMapBottom:
-			w.minimap.nvim.Input("<C-d>")
-		case absMapTop >= w.curLine:
-			w.minimap.nvim.Input("<C-u>")
-		default:
-		}
-	}()
-	w.minimap.mapScroll()
+	var absMapTop int
+	var absMapBottom int
+	w.minimap.nvim.Eval("line('w0')", &absMapTop)
+	w.minimap.nvim.Eval("line('w$')", &absMapBottom)
+	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
+	switch {
+	case w.curLine >= absMapBottom:
+		w.minimap.nvim.Input("<C-d>")
+	case absMapTop >= w.curLine:
+		w.minimap.nvim.Input("<C-u>")
+	default:
+	}
 }
 
 func (w *Workspace) handleRPCGui(updates []interface{}) {
