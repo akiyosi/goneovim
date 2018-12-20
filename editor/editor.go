@@ -156,9 +156,6 @@ func InitEditor() {
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
 	})
-	selectedCol := hexToRGBA(editor.config.SideBar.AccentColor)
-	e.selectedBg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.3)
-	e.matchFg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.6)
 
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
