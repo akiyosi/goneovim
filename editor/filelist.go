@@ -306,12 +306,3 @@ func (f *Fileitem) loadModifiedBadge() {
 	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 }
 
-func unicodeCount(str string) int {
-	count := 0
-	for _, r := range str {
-		if utf8.RuneLen(r) >= 2 {
-			count++
-		}
-	}
-	return count
-}
