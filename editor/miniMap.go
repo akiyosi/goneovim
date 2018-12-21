@@ -450,14 +450,6 @@ func (m *MiniMap) setColorscheme() {
 }
 
 func (m *MiniMap) mapScroll() {
-	curRegionBot := m.ws.screen.scrollRegion[1]
-	if curRegionBot == 0 {
-		curRegionBot = m.ws.rows - 1
-	}
-	minimapBot := m.scrollRegion[1]
-	if minimapBot == 0 {
-		minimapBot = m.rows - 1
-	}
 	absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
 	var absMapTop int
 	m.nvim.Eval("line('w0')", &absMapTop)
