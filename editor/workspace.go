@@ -646,8 +646,7 @@ func (w *Workspace) updateSize() {
 
 	// notification
 	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
-	x := e.notifyStartPos.X()
-	y := e.notifyStartPos.Y()
+	var x, y int
 	var newNotifications []*Notification
 	for _, item := range e.notifications {
 		x = e.notifyStartPos.X()
@@ -758,7 +757,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	if doMinimapScroll && w.minimap.visible {
 		go w.updateMinimap()
 		w.minimap.mapScroll()
-		doMinimapScroll = false
 	}
 }
 

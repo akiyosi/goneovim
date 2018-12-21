@@ -303,8 +303,7 @@ func (n *Notification) hideNotification() {
 
 func (e *Editor) showNotifications() {
 	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
-	x := e.notifyStartPos.X()
-	y := e.notifyStartPos.Y()
+	var x, y int
 	var newNotifications []*Notification
 	for _, item := range e.notifications {
 		x = e.notifyStartPos.X()
