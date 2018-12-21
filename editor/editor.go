@@ -35,11 +35,13 @@ type Char struct {
 	highlight   Highlight
 }
 
+// NotifyButton is
 type NotifyButton struct {
 	action func()
 	text   string
 }
 
+// Notify is
 type Notify struct {
 	level   NotifyLevel
 	period  int
