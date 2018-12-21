@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
