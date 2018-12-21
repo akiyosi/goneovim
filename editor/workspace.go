@@ -669,8 +669,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		args := update[1:]
 		switch event {
 		case "set_title":
-			titleString := (update[1].([]interface{}))[0].(string)
-			editor.window.SetWindowTitle(titleString)
+			editor.window.SetWindowTitle((update[1].([]interface{}))[0].(string))
 		case "option_set":
 			w.setOption(update)
 		case "default_colors_set":
@@ -697,16 +696,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
-			if editor.config.Editor.DisableImeInNormal {
-				switch w.mode {
-				case "normal":
-					w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
-					editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
-				case "insert":
-					w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-					editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-				}
-			}
+			w.disableImeInNormal()
 		case "popupmenu_show":
 			w.popup.showItems(args)
 		case "popupmenu_hide":
@@ -769,6 +759,20 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		go w.updateMinimap()
 		w.minimap.mapScroll()
 		doMinimapScroll = false
+	}
+}
+
+func (w *Workspace) disableImeInNormal() {
+	if !editor.config.Editor.DisableImeInNormal {
+		return
+	}
+	switch w.mode {
+	case "insert":
+		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+		editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	default:
+		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
+		editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
 	}
 }
 
