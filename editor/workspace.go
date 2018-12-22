@@ -803,7 +803,14 @@ func (w *Workspace) setColor(args []interface{}) {
 	w.minimap.background = w.background
 	w.minimap.special = w.special
 
-	if fg != -1 || bg != -1 {
+	var isChangeFg, isChangeBg bool
+	if editor.fgcolor != nil {
+		isChangeFg = editor.fgcolor.equals(w.foreground)
+	}
+	if editor.bgcolor != nil {
+		isChangeBg = editor.bgcolor.equals(w.background)
+	}
+	if !isChangeFg || !isChangeBg {
 		w.isSetGuiColor = false
 	}
 	if w.isSetGuiColor == true {
