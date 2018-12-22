@@ -203,15 +203,12 @@ func (f *Fileitem) setFilename(length float64) {
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
 	bg := editor.bgcolor
-	svgModified := ""
 	currFilepath := editor.workspaces[editor.active].filepath
 	cfn := filepath.Base(currFilepath)
 	if cfn == f.fileName {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", warpColor(bg, -5).print()))
 	} else {
 		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", warpColor(bg, -5).print()))
-		svgModified = editor.getSvg("circle", warpColor(bg, -5))
-		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
 	f.loadModifiedBadge()
 	cursor := gui.NewQCursor()
