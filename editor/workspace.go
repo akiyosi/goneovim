@@ -305,7 +305,6 @@ func (w *Workspace) configure() {
 }
 
 func (w *Workspace) attachUI(path string) error {
-	// _, _ = w.nvimEval("0")
 	w.nvim.Subscribe("Gui")
 	go w.initGonvim()
 	if path != "" {
