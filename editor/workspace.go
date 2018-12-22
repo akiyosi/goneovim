@@ -606,8 +606,6 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 
 func (w *Workspace) updateSize() {
 	e := editor
-	e.width = e.window.Width()
-	e.height = e.window.Height()
 	width := e.wsWidget.Width()
 	height := e.wsWidget.Height()
 	if width != w.width || height != w.height {
@@ -648,6 +646,12 @@ func (w *Workspace) updateSize() {
 	// w.message.resize() // Need https://github.com/neovim/neovim/pull/7466 to be merged
 
 	// notification
+	e.updateNotificationPos()
+}
+
+func (e *Editor) updateNotificationPos() {
+	e.width = e.window.Width()
+	e.height = e.window.Height()
 	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
 	var x, y int
 	var newNotifications []*Notification
