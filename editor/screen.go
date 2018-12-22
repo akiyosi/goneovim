@@ -192,9 +192,29 @@ func (s *Screen) updateCols() bool {
 
 func (s *Screen) updateSize() {
 	w := s.ws
-	isColDiff := s.updateCols()
-	isRowDiff := s.updateRows()
-	isTryResize := isColDiff || isRowDiff
+	// isColDiff := s.updateCols()
+	// isRowDiff := s.updateRows()
+	// isTryResize := isColDiff || isRowDiff
+	// done := make(chan error, 2)
+	// var result error
+	// go func() {
+	// 	if w.uiAttached && (isTryResize || !w.uiInitialResized) {
+	// 		result = w.nvim.TryResizeUI(w.cols, w.rows)
+	// 		done <- result
+	// 	} else {
+	// 		done <- fmt.Errorf("Through resizing")
+	// 	}
+	// }()
+
+
+	s.width = s.widget.Width()
+	cols := int(float64(s.width) / w.font.truewidth)
+	rows := s.height / w.font.lineHeight
+	isTryResize := (cols != w.cols || rows != w.rows)
+	w.cols = cols
+	w.rows = rows
+
+
 	done := make(chan error, 5)
 	var result error
 	go func() {
@@ -210,7 +230,7 @@ func (s *Screen) updateSize() {
 		if initUI == nil {
 			w.uiInitialResized = true
 		}
-	case <-time.After(50 * time.Millisecond):
+	case <-time.After(200 * time.Millisecond):
 		// In this case, assuming that nvim is returning an error at startup and the TryResizeUI() function hangs up.
 		w.nvim.Input("<Enter>")
 		w.updateSize()

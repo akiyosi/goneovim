@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"runtime"
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	shortpath "github.com/akiyosi/short_path"
@@ -211,8 +212,10 @@ func newWorkspace(path string) (*Workspace, error) {
 	go w.minimap.startMinimapProc()
 	go w.startNvim(path)
 
-	select {
-	case <-w.doneNvimStart:
+	if runtime.GOOS == "windows" {
+		select {
+		case <-w.doneNvimStart:
+		}
 	}
 
 	return w, nil
@@ -263,7 +266,9 @@ func (w *Workspace) startNvim(path string) error {
 
 	go w.init(path)
 
-	w.doneNvimStart <- true
+	if runtime.GOOS == "windows" {
+		w.doneNvimStart <- true
+	}
 
 	return nil
 }
@@ -314,8 +319,7 @@ func (w *Workspace) attachUI(path string) error {
 	fuzzy.RegisterPlugin(w.nvim)
 
 	w.uiAttached = true
-	option := w.attachUIOption()
-	err := w.nvim.AttachUI(w.cols, w.rows, option)
+	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
 	if err != nil {
 		return err
 	}
