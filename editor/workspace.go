@@ -908,10 +908,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		ln := reflectToInt(pos[1])
 		col := reflectToInt(pos[2]) + reflectToInt(pos[3])
 		w.statusline.pos.redraw(ln, col)
-		go func() {
-			w.curLine = ln
-			w.curColm = col
-		}()
+		w.curLine = ln
+		w.curColm = col
 	case "gonvim_minimap_update":
 		if w.minimap.visible {
 			w.minimap.bufUpdate()
