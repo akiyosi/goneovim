@@ -17,7 +17,7 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 - [Features](#features)
 - [Development](#development)
 - [Contributing](#contributing)
-- [Simmilar Projects](#simmilar-projects)
+- [Similar Projects](#similar-projects)
 - [License](#license)
 - [Credits](#credits)
 
@@ -96,7 +96,7 @@ Gonvim welcomes contribution. If you want to add your changes to the Gonvim, Ple
 1. **Create a pull request** against the `master` branch of the Gonvim repository.
 
 
-## Simmilar projects
+## Similar projects
 
 * [Oni](https://github.com/onivim/oni)
 * [Veonim](https://github.com/veonim/veonim)
