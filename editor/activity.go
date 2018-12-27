@@ -46,7 +46,7 @@ func newActivity() *Activity {
 	editIcon := svg.NewQSvgWidget(nil)
 	editIcon.SetFixedWidth((editor.iconSize - 2) * 2)
 	editIcon.SetFixedHeight((editor.iconSize - 2) * 2)
-	svgContent := editor.getSvg("activityedit", newRGBA(255, 255, 255, 1))
+	svgContent := editor.getSvg("activityedit", nil)
 	editIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	editLayout.AddWidget(editIcon, 0, 0)
 	editWidget := widgets.NewQWidget(nil, 0)
@@ -168,8 +168,9 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 			editor.deinSide.scrollarea = sideArea
 			editor.deinSide.scrollarea.ConnectResizeEvent(deinSideResize)
 
-			bg := editor.colors.bg
-			editor.deinSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", shiftColor(bg, -5).print(), gradColor(bg).print(), editor.config.SideBar.AccentColor))
+			bg := editor.colors.sideBarBg.String()
+			sbg := editor.colors.sideBarSelectedItemBg.String()
+			editor.deinSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", bg, sbg, editor.config.SideBar.AccentColor))
 
 			editor.activity.sideArea.AddWidget(editor.deinSide.scrollarea)
 		}

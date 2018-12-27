@@ -38,10 +38,11 @@ func (e *Editor) getSvg(name string, color *RGBA) string {
 		svg = e.svgs["default"]
 	}
 	if color == nil {
-		color = svg.color
-	}
-	if color == nil {
-		color = e.colors.fg
+		if svg.color == nil {
+			color = e.colors.fg
+		} else {
+			color = svg.color
+		}
 	}
 	if color == nil {
 		color = newRGBA(255, 255, 255, 1)
@@ -184,14 +185,12 @@ func (e *Editor) initSVGS() {
 	e.svgs["command"] = &SvgXML{
 		width:  24,
 		height: 24,
-		color:  e.colors.fg,
 		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><g transform="scale(0.93)"><path fill="%s" d="M6 2A4 4 0 0 1 10 6V8H14V6A4 4 0 0 1 18 2A4 4 0 0 1 22 6A4 4 0 0 1 18 10H16V14H18A4 4 0 0 1 22 18A4 4 0 0 1 18 22A4 4 0 0 1 14 18V16H10V18A4 4 0 0 1 6 22A4 4 0 0 1 2 18A4 4 0 0 1 6 14H8V10H6A4 4 0 0 1 2 6A4 4 0 0 1 6 2M16 18A2 2 0 0 0 18 20A2 2 0 0 0 20 18A2 2 0 0 0 18 16H16V18M14 10H10V14H14V10M6 16A2 2 0 0 0 4 18A2 2 0 0 0 6 20A2 2 0 0 0 8 18V16H6M8 6A2 2 0 0 0 6 4A2 2 0 0 0 4 6A2 2 0 0 0 6 8H8V6M18 8A2 2 0 0 0 20 6A2 2 0 0 0 18 4A2 2 0 0 0 16 6V8H18Z" /></g></svg>`,
 	}
 
 	e.svgs["replace"] = &SvgXML{
 		width:  24,
 		height: 24,
-		color:  e.colors.fg,
 		xml:    `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M12 5C16.97 5 21 7.69 21 11C21 12.68 19.96 14.2 18.29 15.29C19.36 14.42 20 13.32 20 12.13C20 9.29 16.42 7 12 7V10L8 6L12 2V5M12 19C7.03 19 3 16.31 3 13C3 11.32 4.04 9.8 5.71 8.71C4.64 9.58 4 10.68 4 11.88C4 14.71 7.58 17 12 17V14L16 18L12 22V19Z" /></svg>`,
 	}
 
@@ -206,7 +205,6 @@ func (e *Editor) initSVGS() {
 	e.svgs["edit"] = &SvgXML{
 		width:  24,
 		height: 24,
-		color:  e.colors.fg,
 		xml: `<?xml version="1.0" encoding="utf-8"?>
    <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="translate(0,2)"><path fill="%s" d="M20.71 4.04C21.1 3.65 21.1 3 20.71 2.63L18.37 0.29C18 -0.1 17.35 -0.1 16.96 0.29L15 2.25L18.75 6M17.75 7L14 3.25L4 13.25V17H7.75L17.75 7Z" /></g></svg>`,
 	}
@@ -215,7 +213,6 @@ func (e *Editor) initSVGS() {
 	e.svgs["select"] = &SvgXML{
 		width:  24,
 		height: 24,
-		color:  e.colors.fg,
 		xml: `<?xml version="1.0" encoding="utf-8"?>
 <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%s" d="M4 3H5V5H3V4A1 1 0 0 1 4 3M20 3A1 1 0 0 1 21 4V5H19V3H20M15 5V3H17V5H15M11 5V3H13V5H11M7 5V3H9V5H7M21 20A1 1 0 0 1 20 21H19V19H21V20M15 21V19H17V21H15M11 21V19H13V21H11M7 21V19H9V21H7M4 21A1 1 0 0 1 3 20V19H5V21H4M3 15H5V17H3V15M21 15V17H19V15H21M3 11H5V13H3V11M21 11V13H19V11H21M3 7H5V9H3V7M21 7V9H19V7H21Z" /></svg>`,
 	}
@@ -229,7 +226,6 @@ func (e *Editor) initSVGS() {
 	e.svgs["comment"] = &SvgXML{
 		width:  1792,
 		height: 1792,
-		color:  blue,
 		xml: `<?xml version="1.0" encoding="utf-8"?>
 <svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path fill="%s" d="M1792 896q0 174-120 321.5t-326 233-450 85.5q-70 0-145-8-198 175-460 242-49 14-114 22-17 2-30.5-9t-17.5-29v-1q-3-4-.5-12t2-10 4.5-9.5l6-9 7-8.5 8-9q7-8 31-34.5t34.5-38 31-39.5 32.5-51 27-59 26-76q-157-89-247.5-220t-90.5-281q0-130 71-248.5t191-204.5 286-136.5 348-50.5q244 0 450 85.5t326 233 120 321.5z"/></svg>`,
 	}
@@ -237,33 +233,28 @@ func (e *Editor) initSVGS() {
 		width:     24,
 		height:    24,
 		thickness: 2,
-		color:     e.colors.fg,
 		xml:       `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M13 13H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z" /></svg>`,
 	}
 	e.svgs["lintwrn"] = &SvgXML{
 		width:     24,
 		height:    24,
 		thickness: 2,
-		color:     e.colors.fg,
 		xml:       `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M13 14H11V10H13M13 18H11V16H13M1 21H23L12 2L1 21Z" /></svg>`,
 	}
 	e.svgs["hoverclose"] = &SvgXML{
 		width:  1792,
 		height: 1792,
-		color:  e.colors.fg,
 		xml:    `<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path fill="%s" d="M1277 1122q0-26-19-45l-181-181 181-181q19-19 19-45 0-27-19-46l-90-90q-19-19-46-19-26 0-45 19l-181 181-181-181q-19-19-45-19-27 0-46 19l-90 90q-19 19-19 46 0 26 19 45l181 181-181 181q-19 19-19 45 0 27 19 46l90 90q19 19 46 19 26 0 45-19l181-181 181 181q19 19 45 19 27 0 46-19l90-90q19-19 19-46zm387-226q0 209-103 385.5t-279.5 279.5-385.5 103-385.5-103-279.5-279.5-103-385.5 103-385.5 279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z"/></svg>`,
 	}
 	e.svgs["cross"] = &SvgXML{
 		width:     100,
 		height:    100,
 		thickness: 2,
-		color:     e.colors.fg,
 		xml:       `<?xml version="1.0" encoding="utf-8"?><svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path fill="%s" d="M1490 1322q0 40-28 68l-136 136q-28 28-68 28t-68-28l-294-294-294 294q-28 28-68 28t-68-28l-136-136q-28-28-28-68t28-68l294-294-294-294q-28-28-28-68t28-68l136-136q28-28 68-28t68 28l294 294 294-294q28-28 68-28t68 28l136 136q28 28 28 68t-28 68l-294 294 294 294q28 28 28 68z"/></svg>`,
 	}
 	e.svgs["bad"] = &SvgXML{
 		width:  24,
 		height: 24,
-		color:  e.colors.fg,
 		xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M11 15H13V17H11V15M11 7H13V13H11V7M12 2C6.47 2 2 6.5 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2M12 20A8 8 0 0 1 4 12A8 8 0 0 1 12 4A8 8 0 0 1 20 12A8 8 0 0 1 12 20Z" /></svg>`,
 		//xml:    `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M13.46 12L19 17.54V19H17.54L12 13.46L6.46 19H5V17.54L10.54 12L5 6.46V5H6.46L12 10.54L17.54 5H19V6.46L13.46 12Z" /></svg>`,
 	}
@@ -272,20 +263,17 @@ func (e *Editor) initSVGS() {
 		width:     200,
 		height:    200,
 		thickness: 0.5,
-		color:     e.colors.fg,
 		xml:       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><g><path fill="%s" d="M22.34999879828441,17.7129974066314 h147.91225647948028 v20.748584330809138 H22.34999879828441 V17.7129974066314 zM22.34999879828441,65.18324337560382 h126.22055467908892 v20.748584330809138 H22.34999879828441 V65.18324337560382 zM22.34999879828441,113.91097930401922 h155.3000099912078 v20.748584330809138 H22.34999879828441 V113.91097930401922 zM22.34999879828441,161.538411517922 h91.01083581468554 v20.748584330809138 H22.34999879828441 V161.538411517922 z"/></g></svg>`,
 	}
 	e.svgs["empty"] = &SvgXML{
 		width:  200,
 		height: 200,
-		color:  e.colors.fg,
 		xml:    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><g><path fill="%s" d=""/></g></svg>`,
 	}
 	e.svgs["folder"] = &SvgXML{
 		width:     1792,
 		height:    1792,
 		thickness: 0.5,
-		color:     e.colors.fg,
 		xml:       `<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><g><path fill="%s" d="M1600 1312v-704q0-40-28-68t-68-28h-704q-40 0-68-28t-28-68v-64q0-40-28-68t-68-28h-320q-40 0-68 28t-28 68v960q0 40 28 68t68 28h1216q40 0 68-28t28-68zm128-704v704q0 92-66 158t-158 66h-1216q-92 0-158-66t-66-158v-960q0-92 66-158t158-66h320q92 0 158 66t66 158v32h672q92 0 158 66t66 158z"/></g></svg>`,
 	}
 	e.svgs["git"] = &SvgXML{
@@ -297,14 +285,12 @@ func (e *Editor) initSVGS() {
 		width:     1792,
 		height:    1792,
 		thickness: 0,
-		color:     newRGBA(141, 193, 73, 1),
 		xml:       `<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><g><path fill="%s" d="M1671 566q0 40-28 68l-724 724-136 136q-28 28-68 28t-68-28l-136-136-362-362q-28-28-28-68t28-68l136-136q28-28 68-28t68 28l294 295 656-657q28-28 68-28t68 28l136 136q28 28 28 68z"/></g></svg>`,
 	}
 	e.svgs["exclamation"] = &SvgXML{
 		width:     24,
 		height:    24,
 		thickness: 0,
-		color:     e.colors.fg,
 		xml:       `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M12 2L1 21H23M12 6L19.53 19H4.47M11 10V14H13V10M11 16V18H13V16" /></svg>`,
 	}
 
@@ -344,7 +330,6 @@ func (e *Editor) initSVGS() {
 		width:     18,
 		height:    18,
 		thickness: 0,
-		color:     e.colors.fg,
 		xml:       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18"><g><path fill="%s" d="M1.9426860809326185,2.020794440799331 V15.979206420212122 H16.057314060551434 V2.020794440799331 zm2.1962214082875993,1.8041484023191938 l1.488652194536292,1.1762194099782244 l-1.488652194536292,1.2543270180082322 zm0,3.606765445891675 H13.234695018669578 v1.0200022335531784 H4.138907489220218 zm0,2.9007278261308826 h5.723346475939733 v1.0200022335531784 H4.138907489220218 zm0,2.824150479043169 h7.60560350567875 v1.018470796391866 H4.138907489220218 z" /></g></svg>`,
 	}
 	e.svgs["py"] = &SvgXML{

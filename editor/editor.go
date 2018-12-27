@@ -171,6 +171,7 @@ func InitEditor() {
 		}
 	})
 	e.colors = initColorPalette()
+	e.colors.update()
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
@@ -370,37 +371,27 @@ func (e *Editor) dropShadow() {
 
 func initColorPalette() *ColorPalette {
 	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
-	bg := newRGBA(180, 185, 190, 1)
-	fg := newRGBA(9, 13, 17, 1)
+	fg := newRGBA(180, 185, 190, 1)
+	bg := newRGBA(9, 13, 17, 1)
 	return &ColorPalette{
 		bg: bg,
 		fg: fg,
 		selectedBg: rgbAccent.brend(bg, 77),
-		matchFg: rgbAccent.brend(bg, 153),
+		matchFg: rgbAccent,
 	}
 }
 
 func (c *ColorPalette) update() {
-	// fg := editor.workspaces[editor.active].foreground
-	// bg := editor.workspaces[editor.active].background
-	// if fg == nil {
-	// 	fg = newRGBA(9, 13, 17, 1)
-	// }
-	// if bg == nil {
-	// 	bg = newRGBA(180, 185, 190, 1)
-	// }
-	// c.fg = fg
-	// c.bg = bg
 	fg := c.fg
 	bg := c.bg
-	c.inactiveFg = warpColor(fg, -5)
-	c.abyss = warpColor(bg, -10)
+	c.inactiveFg = warpColor(bg, -30)
+	c.abyss = warpColor(bg, 5)
 	c.activityBarFg = fg
-	c.activityBarBg = warpColor(bg, 10)
-	c.sideBarFg = warpColor(fg, 10)
-	c.sideBarBg = warpColor(bg, 10)
-	c.sideBarSelectedItemBg = warpColor(bg, 15)
-	c.scrollBarFg = warpColor(bg, 20)
+	c.activityBarBg = warpColor(bg, -5)
+	c.sideBarFg = warpColor(fg, -3)
+	c.sideBarBg = warpColor(bg, -3)
+	c.sideBarSelectedItemBg = warpColor(bg, -7)
+	c.scrollBarFg = warpColor(bg, -10)
 	c.scrollBarBg = bg
 	c.widgetFg = warpColor(fg, 5)
 	c.widgetBg = warpColor(bg, -10)
@@ -436,7 +427,6 @@ func (e *Editor) updateGUIColor() {
 		e.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
 	}
 
-	// e.notifications.setColor()
 	e.wsSide.setColor()
 	e.workspaces[e.active].palette.setColor()
 	e.workspaces[e.active].popup.setColor()
@@ -446,6 +436,8 @@ func (e *Editor) updateGUIColor() {
 	e.workspaces[e.active].scrollBar.setColor()
 	e.workspaces[e.active].minimap.setColor()
 	e.workspaces[e.active].loc.setColor()
+
+	e.window.SetWindowOpacity(1.0)
 }
 
 func hexToRGBA(hex string) *RGBA {

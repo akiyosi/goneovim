@@ -261,7 +261,6 @@ func initStatuslineNew() *Statusline {
 	}
 	s.notify = notify
 	notifyWidget.ConnectEnterEvent(func(event *core.QEvent) {
-		bg := editor.colors.bg
 		if editor.config.Statusline.ModeIndicatorType == "background" {
 			switch editor.workspaces[editor.active].mode {
 			case "normal":
@@ -278,7 +277,7 @@ func initStatuslineNew() *Statusline {
 				notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", darkenHex(editor.config.Statusline.TerminalModeColor)))
 			}
 		} else {
-			notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", warpColor(bg, -10).print()))
+			notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", editor.colors.widgetBg.String()))
 		}
 	})
 	notifyWidget.ConnectLeaveEvent(func(event *core.QEvent) {
@@ -374,7 +373,7 @@ func (s *Statusline) setColor() {
 	bg := editor.colors.bg.String()
 
 	s.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", inactiveFg))
-	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid %s; background-color: %s; } * { color: %s; }", bg, bg, fg))
+	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { border-top: 0px solid %s; background-color: %s; } * { color: %s; }", bg, bg, fg))
 
 	svgContent := editor.getSvg("git", nil)
 	s.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))

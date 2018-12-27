@@ -390,7 +390,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginSettings.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 			if i.contextMenu == nil {
 				i.contextMenu = widgets.NewQMenu(installedPluginSettings)
-				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: rgba(%d, %d, %d, 1);} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: rgba(%d, %d, %d, 1);} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, bg.R, bg.G, bg.B))
+				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: %s;} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: %s;} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", fg.String(), bg.String()))
 				i.contextMenu.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 				// Example menu and action
 				// menuActionExit := i.contextMenu.AddAction("E&xit")
@@ -545,7 +545,7 @@ type DeinPlugin struct {
 func newDeinSide() *DeinSide {
 	fg := editor.colors.fg
 	bg := editor.colors.bg
-	// width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+	sbg := editor.colors.sideBarSelectedItemBg
 
 	layout := newHFlowLayout(0, 0, 0, 0, 20)
 	layout.SetContentsMargins(0, 0, 0, 0)
@@ -565,7 +565,7 @@ func newDeinSide() *DeinSide {
 	headerLayout.AddWidget(header, 0, 0)
 	headerLayout.AddWidget(configIcon, 0, 0)
 	headerWidget.SetLayout(headerLayout)
-	header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg.print()))
+	header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg.String()))
 	header.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 
 	widget := widgets.NewQWidget(nil, 0)
@@ -585,7 +585,7 @@ func newDeinSide() *DeinSide {
 	comboBoxMenu.SetMinimumHeight(editor.config.Editor.FontSize + 3)
 	comboBoxMenu.AddItems([]string{"ALL", "Language", "Completion", "Code-display", "Integrations", "Interface", "Commands", "Other"})
 	comboBoxMenu.SetFocusPolicy(core.Qt__ClickFocus)
-	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" * { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: rgba(%d, %d, %d, 1); background-color: rgba(%d, %d, %d, 1); } ", editor.config.SideBar.AccentColor, gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, bg.R, bg.G, bg.B))
+	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" * { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: %s; background-color: %s; } ", editor.config.SideBar.AccentColor, sbg, bg))
 	comboBoxLayout.AddWidget(comboBoxMenu, 0, 0)
 	comboBoxWidget := widgets.NewQWidget(nil, 0)
 	comboBoxWidget.SetLayout(comboBoxLayout)
@@ -717,8 +717,8 @@ func readDeinToml() ([]byte, DeinTomlConfig) {
 }
 
 func newInstalledPlugins() *InstalledPlugins {
-	fg := editor.colors.fg
-	bg := editor.colors.bg
+	fg := editor.colors.fg.String()
+	bg := editor.colors.sideBarSelectedItemBg.String()
 
 	installedWidget := widgets.NewQWidget(nil, 0)
 	installedLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, installedWidget)
@@ -727,7 +727,7 @@ func newInstalledPlugins() *InstalledPlugins {
 	installedHeader := widgets.NewQLabel(nil, 0)
 	installedHeader.SetContentsMargins(20, 2, 20, 2)
 	installedHeader.SetText("INSTALLED")
-	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 11px; margin-bottom: 0px; background: %s; color: %s; } ", warpColor(bg, -6).print(), fg.print()))
+	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 11px; margin-bottom: 0px; background: %s; color: %s; } ", bg, fg))
 	installedHeader.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	installedLayout.AddWidget(installedHeader, 0, 0)
 

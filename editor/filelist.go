@@ -191,17 +191,8 @@ func (f *Fileitem) setFilename(length float64) {
 	f.file.SetText(elidedfilename)
 }
 
-// func (f *Fileitem) resizeEvent(event *gui.QResizeEvent) {
-// width := editor.config.sideWidth
-// maxfilenameLength := float64(width-(filewidgetLeftMargin+filewidgetMarginBuf))
-// metrics := gui.NewQFontMetricsF(gui.NewQFont())
-// elidedfilename := metrics.ElidedText(filename, core.Qt__ElideRight, maxfilenameLength, 0)
-// file.SetText(elidedfilename)
-// filenameLayout.AddWidget(file, 0, 0)
-// }
-
 func (f *Fileitem) enterEvent(event *core.QEvent) {
-	c := editor.colors.sideBarSelectedItemBg.String()
+	c := editor.colors.selectedBg.String()
 	currFilepath := editor.workspaces[editor.active].filepath
 	cfn := filepath.Base(currFilepath)
 	if cfn == f.fileName {
@@ -259,6 +250,22 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 	}
 }
 
+
+func (f *Fileitem) setColor() {
+	fg := editor.colors.fg
+	fmt.Println("fg: ", fg.String())
+	switch f.fileType {
+	case "/":
+		svgContent := editor.getSvg("directory", fg)
+		f.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+
+	default:
+		svgContent := editor.getSvg(f.fileType, fg)
+		f.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	}
+
+}
+
 func (f *Fileitem) updateModifiedbadge() {
 	if !editor.activity.editItem.active {
 		return
@@ -287,16 +294,17 @@ func (f *Fileitem) updateModifiedbadge() {
 }
 
 func (f *Fileitem) loadModifiedBadge() {
-	fg := editor.colors.fg
-	bg := editor.colors.bg
+	inactiveFg := editor.colors.inactiveFg
+	bg := editor.colors.sideBarBg
+	selectedBg := editor.colors.selectedBg
 	var svgModified string
 	if f.isModified {
-		svgModified = editor.getSvg("circle", gradColor(fg))
+		svgModified = editor.getSvg("circle", inactiveFg)
 	} else {
 		if f.isOpened {
-			svgModified = editor.getSvg("circle", warpColor(bg, -5))
+			svgModified = editor.getSvg("circle", selectedBg)
 		} else {
-			svgModified = editor.getSvg("circle", shiftColor(bg, -5))
+			svgModified = editor.getSvg("circle", bg)
 		}
 	}
 	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))

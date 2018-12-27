@@ -14,9 +14,6 @@ type RGBA struct {
 	A float64
 }
 
-func (rgba *RGBA) print() string {
-	return fmt.Sprintf("rgba(%d, %d, %d, 1)", rgba.R, rgba.G, rgba.B)
-}
 
 func (rgba *RGBA) copy() *RGBA {
 	return &RGBA{
