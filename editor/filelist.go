@@ -50,7 +50,7 @@ func newFilelistwidget(path string) *Filelist {
 	filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
 	filelistlayout.SetContentsMargins(0, 0, 0, 0)
 	filelistlayout.SetSpacing(1)
-	bg := editor.bgcolor
+	bg := editor.colors.bg
 
 	filewidgetLeftMargin := 35
 
@@ -202,7 +202,7 @@ func (f *Fileitem) setFilename(length float64) {
 // }
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
-	bg := editor.bgcolor
+	bg := editor.colors.bg
 	currFilepath := editor.workspaces[editor.active].filepath
 	cfn := filepath.Base(currFilepath)
 	if cfn == f.fileName {
@@ -217,7 +217,7 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 }
 
 func (f *Fileitem) leaveEvent(event *core.QEvent) {
-	bg := editor.bgcolor
+	bg := editor.colors.bg
 	svgModified := ""
 	currFilepath := editor.workspaces[editor.active].filepath
 	cfn := filepath.Base(currFilepath)
@@ -240,7 +240,7 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 		return
 	}
 
-	bg := editor.bgcolor
+	bg := editor.colors.bg
 	currFilepath := editor.workspaces[editor.active].filepath
 	isMatchPath := filepath.Dir(currFilepath) == editor.workspaces[editor.active].cwd
 	for j, fileitem := range i.Filelist.Fileitems {
@@ -287,8 +287,8 @@ func (f *Fileitem) updateModifiedbadge() {
 }
 
 func (f *Fileitem) loadModifiedBadge() {
-	fg := editor.fgcolor
-	bg := editor.bgcolor
+	fg := editor.colors.fg
+	bg := editor.colors.bg
 	var svgModified string
 	if f.isModified {
 		svgModified = editor.getSvg("circle", gradColor(fg))

@@ -83,8 +83,6 @@ type Workspace struct {
 	drawStatusline bool
 	drawTabline    bool
 	drawLint       bool
-
-	isSetGuiColor bool
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -807,22 +805,22 @@ func (w *Workspace) setColor(args []interface{}) {
 	w.minimap.special = w.special
 
 	var isChangeFg, isChangeBg bool
-	if editor.fgcolor != nil {
-		isChangeFg = editor.fgcolor.equals(w.foreground)
+	if editor.colors.fg != nil {
+		isChangeFg = editor.colors.fg.equals(w.foreground)
 	}
-	if editor.bgcolor != nil {
-		isChangeBg = editor.bgcolor.equals(w.background)
+	if editor.colors.bg != nil {
+		isChangeBg = editor.colors.bg.equals(w.background)
 	}
 	if !isChangeFg || !isChangeBg {
-		w.isSetGuiColor = false
+		editor.isSetGuiColor = false
 	}
-	if w.isSetGuiColor == true {
+	if editor.isSetGuiColor == true {
 		return
 	}
-	editor.fgcolor = w.foreground
-	editor.bgcolor = w.background
-	w.setGuiColor(editor.fgcolor, editor.bgcolor)
-	w.isSetGuiColor = true
+	editor.colors.fg= w.foreground
+	editor.colors.bg= w.background
+	w.setGuiColor(editor.colors.fg, editor.colors.bg)
+	editor.isSetGuiColor = true
 }
 
 func (w *Workspace) setOption(update []interface{}) {
@@ -881,7 +879,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.workspaces[editor.active].minimap.exit()
 	// case "gonvim_set_colorscheme":
 	// 	fmt.Println("set_colorscheme")
-	// 	w.isSetGuiColor = false
+	// 	editor.isSetGuiColor = false
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
@@ -1213,12 +1211,12 @@ func (i *WorkspaceSideItem) setActive() {
 	// if i.active {
 	// 	return
 	// }
-	if editor.fgcolor == nil || editor.bgcolor == nil {
+	if editor.colors.fg== nil || editor.colors.bg== nil {
 		return
 	}
 	i.active = true
-	bg := editor.bgcolor
-	fg := editor.fgcolor
+	bg := editor.colors.bg
+	fg := editor.colors.fg
 	wsSideitemActiveBgColor := warpColor(bg, -6)
 	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", wsSideitemActiveBgColor.print(), fg.print()))
 	svgOpenContent := editor.getSvg("chevron-down", fg)
@@ -1243,12 +1241,12 @@ func (i *WorkspaceSideItem) setInactive() {
 	if !i.active {
 		return
 	}
-	if editor.fgcolor == nil || editor.bgcolor == nil {
+	if editor.colors.fg == nil || editor.colors.bg== nil {
 		return
 	}
 	i.active = false
-	bg := editor.bgcolor
-	fg := editor.fgcolor
+	bg := editor.colors.bg
+	fg := editor.colors.fg
 	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", shiftColor(bg, -5).print(), shiftColor(fg, 0).print()))
 	svgOpenContent := editor.getSvg("chevron-down", fg)
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
@@ -1408,8 +1406,8 @@ func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
 
 	// for selected / match color
 	selectedCol := hexToRGBA(editor.config.SideBar.AccentColor)
-	editor.selectedBg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.3)
-	editor.matchFg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.6)
+	editor.colors.selectedBg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.3)
+	editor.colors.matchFg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.6)
 
 	if len(editor.workspaces) == 1 {
 		editor.wsSide.items[0].active = true

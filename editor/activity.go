@@ -38,7 +38,7 @@ func newActivity() *Activity {
 	activitySubLayout.SetContentsMargins(0, 0, 0, 0)
 	activitySubLayout.SetSpacing(15)
 
-	// fg := editor.fgcolor
+	// fg := editor.colors.fg
 
 	editLayout := widgets.NewQVBoxLayout()
 	editLayout.SetContentsMargins(12, 5, 12, 5)
@@ -59,7 +59,7 @@ func newActivity() *Activity {
 		id:     1,
 	}
 
-	// bg := editor.bgcolor
+	// bg := editor.colors.bg
 
 	deinLayout := widgets.NewQVBoxLayout()
 	deinLayout.SetContentsMargins(12, 5, 12, 5)
@@ -110,15 +110,15 @@ func (n *ActivityItem) enterEvent(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
-	fg := editor.fgcolor
+	fg := editor.colors.fg
 	n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
 	svgContent := editor.getSvg(n.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
 func (n *ActivityItem) leaveEvent(event *core.QEvent) {
-	fg := editor.fgcolor
-	bg := editor.bgcolor
+	fg := editor.colors.fg
+	bg := editor.colors.bg
 	var svgContent string
 	if n.active == true {
 		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
@@ -168,7 +168,7 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 			editor.deinSide.scrollarea = sideArea
 			editor.deinSide.scrollarea.ConnectResizeEvent(deinSideResize)
 
-			bg := editor.bgcolor
+			bg := editor.colors.bg
 			editor.deinSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", shiftColor(bg, -5).print(), gradColor(bg).print(), editor.config.SideBar.AccentColor))
 
 			editor.activity.sideArea.AddWidget(editor.deinSide.scrollarea)
@@ -224,8 +224,8 @@ func deinSideResize(event *gui.QResizeEvent) {
 }
 
 func setActivityItemColor() {
-	fg := editor.fgcolor
-	bg := editor.bgcolor
+	fg := editor.colors.fg
+	bg := editor.colors.bg
 	var svgContent string
 	items := []*ActivityItem{editor.activity.editItem, editor.activity.deinItem}
 	for _, item := range items {

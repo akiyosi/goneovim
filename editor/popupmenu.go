@@ -220,8 +220,8 @@ func (p *PopupItem) updateMenu() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		if p.selected {
-			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.selectedBg.String()))
-			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.selectedBg.String()))
+			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
+			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
 		} else {
 			p.menuLabel.SetStyleSheet("")
 			p.detailLabel.SetStyleSheet("")

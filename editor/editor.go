@@ -41,6 +41,13 @@ type NotifyButton struct {
 	text   string
 }
 
+type ColorPalette struct {
+	bg          *RGBA
+	fg          *RGBA
+	selectedBg       *RGBA
+	matchFg          *RGBA
+}
+
 // Notify is
 type Notify struct {
 	level   NotifyLevel
@@ -76,11 +83,6 @@ type Editor struct {
 	height           int
 	iconSize         int
 	tablineHeight    int
-	selectedBg       *RGBA
-	matchFg          *RGBA
-	bgcolor          *RGBA
-	fgcolor          *RGBA
-	isSetGuiColor    bool
 
 	stop     chan struct{}
 	stopOnce sync.Once
@@ -98,8 +100,10 @@ type Editor struct {
 
 	config               gonvimConfig
 	notifications        []*Notification
-	displayNotifications bool
+	isDisplayNotifications bool
 
+	isSetGuiColor    bool
+	colors   *ColorPalette
 	svgs     map[string]*SvgXML
 	svgsOnce sync.Once
 }
@@ -133,8 +137,6 @@ func InitEditor() {
 		version: "v0.3.1",
 		signal:  NewEditorSignal(nil),
 		notify:  make(chan *Notify, 10),
-		bgcolor: nil,
-		fgcolor: nil,
 		stop:    make(chan struct{}),
 		guiInit: make(chan bool, 1),
 	}
@@ -154,6 +156,7 @@ func InitEditor() {
 			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
+	e.colors = e.newColorPalette()
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
@@ -348,6 +351,16 @@ func (e *Editor) dropShadow() {
 		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
 		shadow.SetOffset3(6, 2)
 		e.activity.widget.SetGraphicsEffect(shadow)
+	}
+}
+
+func (e *Editor) newColorPalette() *ColorPalette {
+	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+	return &ColorPalette{
+		bg: newRGBA(180, 185, 190, 1),
+		fg: newRGBA(9, 13, 17, 1),
+		selectedBg: newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.3),
+		matchFg: newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.6),
 	}
 }
 

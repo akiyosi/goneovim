@@ -325,11 +325,11 @@ func newTabline() *Tabline {
 func (t *Tab) updateActive() {
 	//bg := t.t.ws.background
 	//fg := t.t.ws.foreground
-	if editor.fgcolor == nil || editor.bgcolor == nil {
+	if editor.colors.fg == nil || editor.colors.bg == nil {
 		return
 	}
-	bg := editor.bgcolor
-	fg := editor.fgcolor
+	bg := editor.colors.bg
+	fg := editor.colors.fg
 	if t.active {
 		activeStyle := fmt.Sprintf(".QWidget { border-left: 2px solid %s; background-color: %s; } QWidget{ color: %s; } ", editor.config.SideBar.AccentColor, bg.print(), fg.print())
 		t.widget.SetStyleSheet(activeStyle)
@@ -460,7 +460,7 @@ func (t *Tab) pressEvent(event *gui.QMouseEvent) {
 }
 
 func (t *Tab) closeIconPressEvent(event *gui.QMouseEvent) {
-	fg := editor.fgcolor
+	fg := editor.colors.fg
 	t.closeIcon.SetFixedWidth(editor.iconSize)
 	t.closeIcon.SetFixedHeight(editor.iconSize)
 	svgContent := editor.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))

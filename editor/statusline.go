@@ -261,7 +261,7 @@ func initStatuslineNew() *Statusline {
 	}
 	s.notify = notify
 	notifyWidget.ConnectEnterEvent(func(event *core.QEvent) {
-		bg := editor.bgcolor
+		bg := editor.colors.bg
 		if editor.config.Statusline.ModeIndicatorType == "background" {
 			switch editor.workspaces[editor.active].mode {
 			case "normal":
@@ -285,7 +285,7 @@ func initStatuslineNew() *Statusline {
 		notifyWidget.SetStyleSheet("")
 	})
 	notifyWidget.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
-		switch editor.displayNotifications {
+		switch editor.isDisplayNotifications {
 		case true:
 			editor.hideNotifications()
 		case false:
@@ -681,14 +681,14 @@ func (s *StatuslineLint) update() {
 		var svgErrContent, svgWrnContent string
 
 		var lintNoErrColor *RGBA
-		switch editor.fgcolor {
+		switch editor.colors.fg {
 		case nil:
 			return
 		default:
 			if editor.config.Statusline.ModeIndicatorType == "background" {
 				lintNoErrColor = newRGBA(255, 255, 255, 1)
 			} else {
-				lintNoErrColor = editor.fgcolor
+				lintNoErrColor = editor.colors.fg
 			}
 		}
 
@@ -731,14 +731,14 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 	var svgErrContent, svgWrnContent string
 
 	var lintNoErrColor *RGBA
-	switch editor.fgcolor {
+	switch editor.colors.fg {
 	case nil:
 		return
 	default:
 		if editor.config.Statusline.ModeIndicatorType == "background" {
 			lintNoErrColor = newRGBA(255, 255, 255, 1)
 		} else {
-			lintNoErrColor = editor.fgcolor
+			lintNoErrColor = editor.colors.fg
 		}
 	}
 

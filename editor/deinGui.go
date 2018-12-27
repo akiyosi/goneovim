@@ -269,7 +269,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginName := widgets.NewQLabel(nil, 0)
 		installedPluginName.SetText(i.name)
 		installedPluginName.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
-		fg := editor.fgcolor
+		fg := editor.colors.fg
 		installedPluginName.SetStyleSheet(fmt.Sprintf(" .QLabel { color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
 		installedPluginName.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 3, false))
 		installedPluginName.SetFixedWidth(width)
@@ -328,7 +328,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		updateWaitingLayout.SetContentsMargins(editor.config.Editor.FontSize/2, 0, editor.config.Editor.FontSize/2, 0)
 		updateWaiting.SetLayout(updateWaitingLayout)
 		waitingLabel := widgets.NewQProgressBar(nil)
-		bg := editor.bgcolor
+		bg := editor.colors.bg
 		waitingLabel.SetStyleSheet(fmt.Sprintf(" QProgressBar { border: 0px; background: %s; } QProgressBar::chunk { background-color: %s; } ", shiftHex(editor.config.SideBar.AccentColor, 25), editor.config.SideBar.AccentColor))
 		waitingLabel.SetRange(0, 0)
 		updateWaitingLayout.AddWidget(waitingLabel, 0, 0)
@@ -543,8 +543,8 @@ type DeinPlugin struct {
 }
 
 func newDeinSide() *DeinSide {
-	fg := editor.fgcolor
-	bg := editor.bgcolor
+	fg := editor.colors.fg
+	bg := editor.colors.bg
 	// width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
 
 	layout := newHFlowLayout(0, 0, 0, 0, 20)
@@ -717,8 +717,8 @@ func readDeinToml() ([]byte, DeinTomlConfig) {
 }
 
 func newInstalledPlugins() *InstalledPlugins {
-	fg := editor.fgcolor
-	bg := editor.bgcolor
+	fg := editor.colors.fg
+	bg := editor.colors.bg
 
 	installedWidget := widgets.NewQWidget(nil, 0)
 	installedLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, installedWidget)
@@ -887,7 +887,7 @@ func (side *DeinSide) doSearch(pagenum int) {
 }
 
 func drawSearchresults(results PluginSearchResults, pagenum int) {
-	fg := editor.fgcolor
+	fg := editor.colors.fg
 	resultplugins := []*Plugin{}
 	labelColor := darkenHex(editor.config.SideBar.AccentColor)
 	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
@@ -1127,7 +1127,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		if plugin.installed == true {
 			plugin.installButtonIcon.Hide()
 			pluginInstallLabel.SetText("Installed")
-			bg := editor.bgcolor
+			bg := editor.colors.bg
 			pluginInstall.SetStyleSheet(fmt.Sprintf(" #installbutton { background: rgba(%d, %d, %d, 1);}  #installbutton QLabel { color: rgba(%d, %d, %d, 1); }", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
 		} else {
 			pluginInstallLabel.SetText("Install")
@@ -1203,12 +1203,12 @@ func (d *DeinPluginItem) enterWidget(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
-	bg := editor.bgcolor
+	bg := editor.colors.bg
 	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 }
 
 func (d *DeinPluginItem) leaveWidget(event *core.QEvent) {
-	bg := editor.bgcolor
+	bg := editor.colors.bg
 	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
 	gui.QGuiApplication_RestoreOverrideCursor()
 }
@@ -1217,12 +1217,12 @@ func (p *Plugin) enterWidget(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
-	bg := editor.bgcolor
+	bg := editor.colors.bg
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
 }
 
 func (p *Plugin) leaveWidget(event *core.QEvent) {
-	bg := editor.bgcolor
+	bg := editor.colors.bg
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: rgba(%d, %d, %d, 1);} ", shiftColor(bg, -5).R, shiftColor(bg, -5).G, shiftColor(bg, -5).B))
 	gui.QGuiApplication_RestoreOverrideCursor()
 }
@@ -1294,8 +1294,8 @@ func (p *Plugin) deinInstallPre(reponame string) {
 	editor.deinSide.deinInstall <- text
 	editor.deinSide.signal.DeinInstallSignal()
 
-	fg := editor.fgcolor
-	bg := editor.bgcolor
+	fg := editor.colors.fg
+	bg := editor.colors.bg
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton { background: rgba(%d, %d, %d, 1);} #installbutton QLabel { color: rgba(%d, %d, %d, 1);", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, fg.R, fg.G, fg.B))
 	p.installButtonIcon.Hide()
 
@@ -1480,21 +1480,21 @@ func (side *DeinSide) enterConfigIcon(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
-	fg := editor.fgcolor
+	fg := editor.colors.fg
 	svgConfigContent := editor.getSvg("configfile", newRGBA(warpColor(fg, -20).R, warpColor(fg, -20).G, warpColor(fg, -20).B, 1))
 	side.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 }
 
 func (side *DeinSide) leaveConfigIcon(event *core.QEvent) {
-	bg := editor.bgcolor
+	bg := editor.colors.bg
 	svgConfigContent := editor.getSvg("configfile", newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
 	side.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 	gui.QGuiApplication_RestoreOverrideCursor()
 }
 
 func (side *DeinSide) pressConfigIcon(event *gui.QMouseEvent) {
-	fg := editor.fgcolor
-	bg := editor.bgcolor
+	fg := editor.colors.fg
+	bg := editor.colors.bg
 	if side.contextMenu == nil {
 		side.contextMenu = widgets.NewQMenu(side.widget)
 		side.contextMenu.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))

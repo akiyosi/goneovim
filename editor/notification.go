@@ -77,14 +77,14 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	label.SetText(message)
 
 	closeIcon := svg.NewQSvgWidget(nil)
-	bg := editor.bgcolor
+	bg := editor.colors.bg
 	svgContent := e.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
 	closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	closeIcon.SetFixedWidth(editor.iconSize - 1)
 	closeIcon.SetFixedHeight(editor.iconSize - 1)
 
 	closeIcon.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
-		fg := editor.fgcolor
+		fg := editor.colors.fg
 		svgContent := e.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
 		closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	})
@@ -179,7 +179,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		notification.closeNotification()
 	})
 	notification.widget.ConnectEnterEvent(func(event *core.QEvent) {
-		fg := editor.fgcolor
+		fg := editor.colors.fg
 		svgContent := e.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
 		notification.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	})
@@ -293,10 +293,10 @@ func (n *Notification) hideNotification() {
 		item.widget.Hide()
 		item.isHide = true
 	})
-	editor.displayNotifications = false
+	editor.isDisplayNotifications = false
 	for _, item := range editor.notifications {
 		if item.isHide == false {
-			editor.displayNotifications = true
+			editor.isDisplayNotifications = true
 		}
 	}
 }
@@ -314,7 +314,7 @@ func (e *Editor) showNotifications() {
 		newNotifications = append(newNotifications, item)
 	}
 	e.notifications = newNotifications
-	e.displayNotifications = true
+	e.isDisplayNotifications = true
 }
 
 func (e *Editor) hideNotifications() {
@@ -326,7 +326,7 @@ func (e *Editor) hideNotifications() {
 	}
 	e.notifications = newNotifications
 	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
-	e.displayNotifications = false
+	e.isDisplayNotifications = false
 }
 
 func (n *Notification) statusReset() {
@@ -337,14 +337,14 @@ func (n *Notification) statusReset() {
 
 func (n *Notification) show() {
 	for {
-		if editor.workspaces[editor.active].isSetGuiColor {
+		if editor.isSetGuiColor {
 			break
 		} else {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
-	fg := editor.fgcolor
-	bg := editor.bgcolor
+	fg := editor.colors.fg
+	bg := editor.colors.bg
 	n.widget.SetStyleSheet(fmt.Sprintf(" * {color: rgb(%d, %d, %d); background: rgb(%d, %d, %d);}", fg.R, fg.G, fg.B, shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
 	n.widget.Show()
 }

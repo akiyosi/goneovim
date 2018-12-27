@@ -163,8 +163,8 @@ func formatText(text string, matchIndex []int, path bool) string {
 	sort.Ints(matchIndex)
 
 	color := ""
-	if editor.matchFg != nil {
-		color = editor.matchFg.Hex()
+	if editor.colors.matchFg != nil {
+		color = editor.colors.matchFg.Hex()
 	}
 
 	match := len(matchIndex) > 0

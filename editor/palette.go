@@ -261,7 +261,7 @@ func (p *Palette) showSelected(selected int) {
 
 func (f *PaletteResultItem) update() {
 	if f.selected {
-		f.widget.SetStyleSheet(fmt.Sprintf(".QWidget {background-color: %s;}", editor.selectedBg))
+		f.widget.SetStyleSheet(fmt.Sprintf(".QWidget {background-color: %s;}", editor.colors.selectedBg))
 	} else {
 		f.widget.SetStyleSheet("")
 	}
