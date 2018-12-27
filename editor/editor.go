@@ -41,11 +41,25 @@ type NotifyButton struct {
 	text   string
 }
 
+// ColorPalette is
 type ColorPalette struct {
-	bg          *RGBA
 	fg          *RGBA
-	selectedBg       *RGBA
+	bg          *RGBA
+	inactiveFg  *RGBA
+	abyss       *RGBA
 	matchFg          *RGBA
+	selectedBg       *RGBA
+	activityBarFg  *RGBA
+	activityBarBg  *RGBA
+	sideBarFg  *RGBA
+	sideBarBg  *RGBA
+	sideBarSelectedItemBg  *RGBA
+	scrollBarFg  *RGBA
+	scrollBarBg  *RGBA
+	widgetFg  *RGBA
+	widgetBg  *RGBA
+	widgetInputArea  *RGBA
+	minimapCurrentRegion *RGBA
 }
 
 // Notify is
@@ -156,7 +170,7 @@ func InitEditor() {
 			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
-	e.colors = e.newColorPalette()
+	e.colors = initColorPalette()
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
@@ -354,14 +368,84 @@ func (e *Editor) dropShadow() {
 	}
 }
 
-func (e *Editor) newColorPalette() *ColorPalette {
+func initColorPalette() *ColorPalette {
 	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+	bg := newRGBA(180, 185, 190, 1)
+	fg := newRGBA(9, 13, 17, 1)
 	return &ColorPalette{
-		bg: newRGBA(180, 185, 190, 1),
-		fg: newRGBA(9, 13, 17, 1),
-		selectedBg: newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.3),
-		matchFg: newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.6),
+		bg: bg,
+		fg: fg,
+		selectedBg: rgbAccent.brend(bg, 77),
+		matchFg: rgbAccent.brend(bg, 153),
 	}
+}
+
+func (c *ColorPalette) update() {
+	// fg := editor.workspaces[editor.active].foreground
+	// bg := editor.workspaces[editor.active].background
+	// if fg == nil {
+	// 	fg = newRGBA(9, 13, 17, 1)
+	// }
+	// if bg == nil {
+	// 	bg = newRGBA(180, 185, 190, 1)
+	// }
+	// c.fg = fg
+	// c.bg = bg
+	fg := c.fg
+	bg := c.bg
+	c.inactiveFg = warpColor(fg, -5)
+	c.abyss = warpColor(bg, -10)
+	c.activityBarFg = fg
+	c.activityBarBg = warpColor(bg, 10)
+	c.sideBarFg = warpColor(fg, 10)
+	c.sideBarBg = warpColor(bg, 10)
+	c.sideBarSelectedItemBg = warpColor(bg, 15)
+	c.scrollBarFg = warpColor(bg, 20)
+	c.scrollBarBg = bg
+	c.widgetFg = warpColor(fg, 5)
+	c.widgetBg = warpColor(bg, -10)
+	c.widgetInputArea = warpColor(bg, -20)
+	c.minimapCurrentRegion = warpColor(bg, 10)
+}
+
+func (e *Editor) updateGUIColor() {
+	// if activity & sidebar is enabled
+	if e.activity != nil && e.wsSide != nil {
+		// for splitter
+		e.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", e.colors.sideBarBg.String()))
+
+		// for Activity Bar
+		e.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; } ", e.colors.activityBarBg))
+
+		var svgEditContent string
+		if e.activity.editItem.active == true {
+			svgEditContent = e.getSvg("activityedit", e.colors.fg)
+		} else {
+			svgEditContent = e.getSvg("activityedit", e.colors.inactiveFg)
+		}
+		e.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
+
+		var svgDeinContent string
+		if e.activity.deinItem.active == true {
+			svgDeinContent = e.getSvg("activitydein", e.colors.fg)
+
+		} else {
+			svgDeinContent = e.getSvg("activitydein", e.colors.inactiveFg)
+
+		}
+		e.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
+	}
+
+	// e.notifications.setColor()
+	e.wsSide.setColor()
+	e.workspaces[e.active].palette.setColor()
+	e.workspaces[e.active].popup.setColor()
+	e.workspaces[e.active].signature.setColor()
+	e.workspaces[e.active].tabline.setColor()
+	e.workspaces[e.active].statusline.setColor()
+	e.workspaces[e.active].scrollBar.setColor()
+	e.workspaces[e.active].minimap.setColor()
+	e.workspaces[e.active].loc.setColor()
 }
 
 func hexToRGBA(hex string) *RGBA {

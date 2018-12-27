@@ -40,6 +40,16 @@ func (rgba *RGBA) Hex() string {
 	return fmt.Sprintf("#%02x%02x%02x", uint8(rgba.R), uint8(rgba.G), uint8(rgba.B))
 }
 
+// input color *RGBA, aplpha (1-255) int
+func (rgba *RGBA) brend(color *RGBA, alpha int) *RGBA {
+	return &RGBA{
+		R : int(float64(color.R + rgba.R) * float64(alpha) / float64(255)),
+		G : int(float64(color.G + rgba.G) * float64(alpha) / float64(255)),
+		B : int(float64(color.B + rgba.B) * float64(alpha) / float64(255)),
+		A: 1,
+	}
+}
+
 // QColor is
 func (rgba *RGBA) QColor() *gui.QColor {
 	return gui.NewQColor3(rgba.R, rgba.G, rgba.B, int(rgba.A*255))

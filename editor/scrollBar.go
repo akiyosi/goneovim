@@ -1,6 +1,8 @@
 package editor
 
 import (
+	"fmt"
+
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -27,6 +29,13 @@ func newScrollBar() *ScrollBar {
 	scrollBar.widget.Hide()
 
 	return scrollBar
+}
+
+func (s *ScrollBar) setColor() {
+	fg := editor.colors.scrollBarFg
+	bg := editor.colors.scrollBarBg
+	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", fg))
+	s.widget.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", bg))
 }
 
 func (s *ScrollBar) update() {

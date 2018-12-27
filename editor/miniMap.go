@@ -214,6 +214,11 @@ func (m *MiniMap) attachUIOption() map[string]interface{} {
 	return o
 }
 
+func (m *MiniMap) setColor() {
+	c := editor.colors.minimapCurrentRegion
+	m.curRegion.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 35);}", c.R, c.G, c.B))
+}
+
 func (m *MiniMap) toggle() {
 	if m.visible {
 		m.visible = false

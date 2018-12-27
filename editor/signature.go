@@ -53,6 +53,12 @@ func initSignature() *Signature {
 	return signature
 }
 
+func (s *Signature) setColor() {
+	fg := editor.colors.widgetFg.String()
+	bg := editor.colors.widgetBg.String()
+	s.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } QWidget { background-color: %s; } * { color: %s; }", bg, bg, fg))
+}
+
 func (s *Signature) showItem(args []interface{}) {
 	text := args[0].(string)
 	s.text = text

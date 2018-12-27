@@ -343,8 +343,8 @@ func (n *Notification) show() {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
-	fg := editor.colors.fg
-	bg := editor.colors.bg
-	n.widget.SetStyleSheet(fmt.Sprintf(" * {color: rgb(%d, %d, %d); background: rgb(%d, %d, %d);}", fg.R, fg.G, fg.B, shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B))
+	fg := editor.colors.widgetFg.String()
+	bg := editor.colors.widgetBg.String()
+	n.widget.SetStyleSheet(fmt.Sprintf(" * {color: %s; background: %s;}", fg, bg))
 	n.widget.Show()
 }

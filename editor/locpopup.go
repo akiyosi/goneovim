@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 
@@ -58,6 +59,12 @@ func initLocpopup() *Locpopup {
 	loc.widget.SetGraphicsEffect(shadow)
 
 	return loc
+}
+
+func (l *Locpopup) setColor() {
+	fg := editor.colors.widgetFg.String()
+	bg := editor.colors.widgetBg.String()
+	l.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } * { background-color: %s;  color: %s; }", bg, bg, fg))
 }
 
 func (l *Locpopup) subscribe() {

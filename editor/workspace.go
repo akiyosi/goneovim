@@ -817,9 +817,11 @@ func (w *Workspace) setColor(args []interface{}) {
 	if editor.isSetGuiColor == true {
 		return
 	}
-	editor.colors.fg= w.foreground
-	editor.colors.bg= w.background
-	w.setGuiColor(editor.colors.fg, editor.colors.bg)
+	editor.colors.fg = w.foreground
+	editor.colors.bg = w.background
+	//w.setGuiColor(editor.colors.fg, editor.colors.bg)
+	editor.colors.update()
+	editor.updateGUIColor()
 	editor.isSetGuiColor = true
 }
 
@@ -1205,6 +1207,16 @@ func (i *WorkspaceSideItem) setSideItemLabel(n int) {
 		i.setInactive()
 	}
 	i.label.SetContentsMargins(1, 3, 0, 3)
+}
+
+func (s *WorkspaceSide) setColor() {
+	fg := editor.colors.sideBarFg.String()
+	bg := editor.colors.sideBarBg.String()
+	sfg := editor.colors.scrollBarFg.String()
+	sbg := editor.colors.scrollBarBg.String()
+	s.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg))
+	s.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-color: %s; padding-top: 5px; background-color: %s; } QWidget { color: %s; border-right: 0px solid; }", bg, bg, fg))
+	s.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
 }
 
 func (i *WorkspaceSideItem) setActive() {

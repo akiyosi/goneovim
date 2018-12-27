@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -202,13 +201,13 @@ func (f *Fileitem) setFilename(length float64) {
 // }
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
-	bg := editor.colors.bg
+	c := editor.colors.sideBarSelectedItemBg.String()
 	currFilepath := editor.workspaces[editor.active].filepath
 	cfn := filepath.Base(currFilepath)
 	if cfn == f.fileName {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", warpColor(bg, -5).print()))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", c))
 	} else {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", warpColor(bg, -5).print()))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", c))
 	}
 	f.loadModifiedBadge()
 	cursor := gui.NewQCursor()
@@ -217,14 +216,14 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 }
 
 func (f *Fileitem) leaveEvent(event *core.QEvent) {
-	bg := editor.colors.bg
+	c := editor.colors.sideBarBg
 	svgModified := ""
 	currFilepath := editor.workspaces[editor.active].filepath
 	cfn := filepath.Base(currFilepath)
 
 	if cfn != f.fileName {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: none; } ", shiftColor(bg, -5).print()))
-		svgModified = editor.getSvg("circle", shiftColor(bg, -5))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: none; } ", c.String()))
+		svgModified = editor.getSvg("circle", c)
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
 	gui.QGuiApplication_RestoreOverrideCursor()
@@ -240,18 +239,19 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 		return
 	}
 
-	bg := editor.colors.bg
+	bg := editor.colors.sideBarBg.String()
+	sbg := editor.colors.selectedBg.String()
 	currFilepath := editor.workspaces[editor.active].filepath
 	isMatchPath := filepath.Dir(currFilepath) == editor.workspaces[editor.active].cwd
 	for j, fileitem := range i.Filelist.Fileitems {
-		if !isMatchPath || !strings.HasSuffix(currFilepath, fileitem.fileName) {
+		if !isMatchPath || filepath.Base(currFilepath) != fileitem.fileName {
 			if !fileitem.isOpened {
 				continue
 			}
-			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", shiftColor(bg, -5).print()))
+			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", bg))
 			fileitem.isOpened = false
 		} else {
-			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", warpColor(bg, -5).print()))
+			fileitem.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", sbg))
 			fileitem.isOpened = true
 			i.Filelist.active = j
 		}

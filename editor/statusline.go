@@ -364,6 +364,24 @@ func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 	s.lint.widget.SetContentsMargins(l, u, r, d)
 }
 
+func (s *Statusline) setColor() {
+	if editor.config.Statusline.ModeIndicatorType == "background" {
+		return
+	}
+
+	inactiveFg := editor.colors.inactiveFg.String()
+	fg := editor.colors.fg.String()
+	bg := editor.colors.bg.String()
+
+	s.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", inactiveFg))
+	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid %s; background-color: %s; } * { color: %s; }", bg, bg, fg))
+
+	svgContent := editor.getSvg("git", nil)
+	s.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	svgContent = editor.getSvg("bell", nil)
+	s.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+}
+
 func (s *Statusline) subscribe() {
 	if !s.ws.drawStatusline {
 		s.widget.Hide()

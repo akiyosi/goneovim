@@ -121,6 +121,15 @@ func (p *PopupMenu) updateFont(font *Font) {
 	}
 }
 
+func (p *PopupMenu) setColor() {
+	fg := editor.colors.widgetFg.String()
+	inactiveFg := editor.colors.inactiveFg.String()
+	bg := editor.colors.widgetBg.String()
+	sbg := editor.colors.scrollBarBg.String()
+	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", sbg))
+	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: %s; color: %s;} #detailpopup { color: %s; }", bg, fg, inactiveFg))
+}
+
 func (p *PopupMenu) showItems(args []interface{}) {
 	arg := args[0].([]interface{})
 	items := arg[0].([]interface{})
