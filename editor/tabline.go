@@ -465,10 +465,9 @@ func (t *Tab) pressEvent(event *gui.QMouseEvent) {
 }
 
 func (t *Tab) closeIconPressEvent(event *gui.QMouseEvent) {
-	fg := editor.colors.fg
 	t.closeIcon.SetFixedWidth(editor.iconSize)
 	t.closeIcon.SetFixedHeight(editor.iconSize)
-	svgContent := editor.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+	svgContent := editor.getSvg("hoverclose", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
