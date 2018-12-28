@@ -77,15 +77,14 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	label.SetText(message)
 
 	closeIcon := svg.NewQSvgWidget(nil)
-	bg := editor.colors.bg
-	svgContent := e.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
+	svgContent := e.getSvg("cross", editor.colors.widgetBg)
 	closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	closeIcon.SetFixedWidth(editor.iconSize - 1)
 	closeIcon.SetFixedHeight(editor.iconSize - 1)
 
 	closeIcon.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
-		fg := editor.colors.fg
-		svgContent := e.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+		inactiveFg := editor.colors.inactiveFg
+		svgContent := e.getSvg("hoverclose", inactiveFg)
 		closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	})
 	closeIcon.ConnectEnterEvent(func(event *core.QEvent) {
@@ -179,12 +178,11 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		notification.closeNotification()
 	})
 	notification.widget.ConnectEnterEvent(func(event *core.QEvent) {
-		fg := editor.colors.fg
-		svgContent := e.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
+		svgContent := e.getSvg("cross", nil)
 		notification.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	})
 	notification.widget.ConnectLeaveEvent(func(event *core.QEvent) {
-		svgContent := e.getSvg("cross", newRGBA(shiftColor(bg, -8).R, shiftColor(bg, -8).G, shiftColor(bg, -8).B, 1))
+		svgContent := e.getSvg("cross", editor.colors.widgetBg)
 		notification.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	})
 	notification.widget.ConnectMousePressEvent(func(event *gui.QMouseEvent) {

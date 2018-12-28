@@ -111,21 +111,21 @@ func (n *ActivityItem) enterEvent(event *core.QEvent) {
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
 	fg := editor.colors.fg
-	n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
-	svgContent := editor.getSvg(n.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+	n.widget.SetStyleSheet(fmt.Sprintf(" * { color: %s; } ", fg.String()))
+	svgContent := editor.getSvg(n.text, nil)
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
 func (n *ActivityItem) leaveEvent(event *core.QEvent) {
 	fg := editor.colors.fg
-	bg := editor.colors.bg
+	inactiveFg := editor.colors.inactiveFg
 	var svgContent string
 	if n.active == true {
-		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
-		svgContent = editor.getSvg(n.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: %s; } ", fg.String()))
+		svgContent = editor.getSvg(n.text, nil)
 	} else {
-		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
-		svgContent = editor.getSvg(n.text, newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: %s; } ", inactiveFg))
+		svgContent = editor.getSvg(n.text, inactiveFg)
 	}
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	gui.QGuiApplication_RestoreOverrideCursor()
@@ -226,16 +226,16 @@ func deinSideResize(event *gui.QResizeEvent) {
 
 func setActivityItemColor() {
 	fg := editor.colors.fg
-	bg := editor.colors.bg
+	inactiveFg := editor.colors.inactiveFg
 	var svgContent string
 	items := []*ActivityItem{editor.activity.editItem, editor.activity.deinItem}
 	for _, item := range items {
 		if item.active == true {
-			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B))
-			svgContent = editor.getSvg(item.text, newRGBA(warpColor(fg, 15).R, warpColor(fg, 15).G, warpColor(fg, 15).B, 1))
+			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: %s; } ", fg.String()))
+			svgContent = editor.getSvg(item.text, fg)
 		} else {
-			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: rgba(%d, %d, %d, 1); } ", gradColor(bg).R, gradColor(bg).G, gradColor(bg).B))
-			svgContent = editor.getSvg(item.text, newRGBA(gradColor(bg).R, gradColor(bg).G, gradColor(bg).B, 1))
+			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: %s; } ", inactiveFg.String()))
+			svgContent = editor.getSvg(item.text, inactiveFg)
 		}
 		item.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}

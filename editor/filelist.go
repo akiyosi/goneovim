@@ -49,8 +49,6 @@ func newFilelistwidget(path string) *Filelist {
 	filelistlayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, filelistwidget)
 	filelistlayout.SetContentsMargins(0, 0, 0, 0)
 	filelistlayout.SetSpacing(1)
-	bg := editor.colors.bg
-
 	filewidgetLeftMargin := 35
 
 	// var filewidgetMarginBuf int
@@ -93,7 +91,7 @@ func newFilelistwidget(path string) *Filelist {
 		fileModified.SetFixedHeight(editor.iconSize)
 		fileModified.SetContentsMargins(0, 0, 0, 0)
 		// Hide with the same color as the background
-		svgModified := editor.getSvg("circle", shiftColor(bg, -5))
+		svgModified := editor.getSvg("circle", editor.colors.sideBarBg)
 		fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 
 		filename := f.Name()
