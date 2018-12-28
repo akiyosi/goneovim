@@ -1203,7 +1203,7 @@ func (d *DeinPluginItem) enterWidget(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
-	bg := editor.colors.inactiveFg.String()
+	bg := editor.colors.selectedBg.String()
 	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", bg))
 }
 
@@ -1217,7 +1217,7 @@ func (p *Plugin) enterWidget(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
-	bg := editor.colors.inactiveFg.String()
+	bg := editor.colors.selectedBg.String()
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", bg))
 }
 
@@ -1294,7 +1294,7 @@ func (p *Plugin) deinInstallPre(reponame string) {
 	editor.deinSide.signal.DeinInstallSignal()
 
 	fg := editor.colors.fg.String()
-	bg := editor.colors.inactiveFg.String()
+	bg := editor.colors.selectedBg.String()
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton { background: %s;} #installbutton QLabel { color: %s; }", bg, fg))
 	p.installButtonIcon.Hide()
 

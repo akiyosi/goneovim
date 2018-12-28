@@ -376,7 +376,7 @@ func initColorPalette() *ColorPalette {
 	return &ColorPalette{
 		bg: bg,
 		fg: fg,
-		selectedBg: rgbAccent.brend(bg, 77),
+		selectedBg: bg.brend(rgbAccent, 0.3),
 		matchFg: rgbAccent,
 	}
 }
@@ -384,6 +384,8 @@ func initColorPalette() *ColorPalette {
 func (c *ColorPalette) update() {
 	fg := c.fg
 	bg := c.bg
+	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+	c.selectedBg = bg.brend(rgbAccent, 0.3)
 	c.inactiveFg = warpColor(bg, -30)
 	c.abyss = warpColor(bg, 5)
 	c.activityBarFg = fg
