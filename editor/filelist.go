@@ -292,12 +292,12 @@ func (f *Fileitem) updateModifiedbadge() {
 }
 
 func (f *Fileitem) loadModifiedBadge() {
-	inactiveFg := editor.colors.inactiveFg
+	fg := editor.colors.fg
 	bg := editor.colors.sideBarBg
 	selectedBg := editor.colors.selectedBg
 	var svgModified string
 	if f.isModified {
-		svgModified = editor.getSvg("circle", inactiveFg)
+		svgModified = editor.getSvg("circle", fg)
 	} else {
 		if f.isOpened {
 			svgModified = editor.getSvg("circle", selectedBg)
