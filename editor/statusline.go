@@ -368,11 +368,11 @@ func (s *Statusline) setColor() {
 		return
 	}
 
-	inactiveFg := editor.colors.inactiveFg.String()
+	comment := editor.colors.comment.String()
 	fg := editor.colors.fg.String()
 	bg := editor.colors.bg.String()
 
-	s.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", inactiveFg))
+	s.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", comment))
 	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { border-top: 0px solid %s; background-color: %s; } * { color: %s; }", bg, bg, fg))
 
 	svgContent := editor.getSvg("git", nil)

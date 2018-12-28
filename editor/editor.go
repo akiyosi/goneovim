@@ -46,6 +46,7 @@ type ColorPalette struct {
 	fg          *RGBA
 	bg          *RGBA
 	inactiveFg  *RGBA
+	comment     *RGBA
 	abyss       *RGBA
 	matchFg          *RGBA
 	selectedBg       *RGBA
@@ -387,6 +388,7 @@ func (c *ColorPalette) update() {
 	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
 	c.selectedBg = bg.brend(rgbAccent, 0.3)
 	c.inactiveFg = warpColor(bg, -30)
+	c.comment = warpColor(fg, -38)
 	c.abyss = warpColor(bg, 5)
 	c.activityBarFg = fg
 	c.activityBarBg = warpColor(bg, -5)
@@ -396,7 +398,7 @@ func (c *ColorPalette) update() {
 	c.scrollBarFg = warpColor(bg, -10)
 	c.scrollBarBg = bg
 	c.widgetFg = warpColor(fg, 5)
-	c.widgetBg = warpColor(bg, -10)
+	c.widgetBg = warpColor(bg, -8)
 	c.widgetInputArea = warpColor(bg, -20)
 	c.minimapCurrentRegion = warpColor(bg, 10)
 }

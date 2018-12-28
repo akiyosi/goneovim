@@ -694,9 +694,9 @@ func newDeinSide() *DeinSide {
 	configIcon.ConnectLeaveEvent(side.leaveConfigIcon)
 	configIcon.ConnectMousePressEvent(side.pressConfigIcon)
 
-	deinSideStyle := fmt.Sprintf("QWidget {	color: %s; border-right: 0px solid; }", editor.colors.inactiveFg.String())
+	deinSideStyle := fmt.Sprintf("QWidget {	color: %s; border-right: 0px solid; }", editor.colors.comment.String())
 	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget {padding-top: 5px; background-color: %s; }", editor.colors.sideBarBg.String()) + deinSideStyle)
-	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid %s; border-radius: 1px; background: %s; selection-background-color: %s; }", editor.config.SideBar.AccentColor, editor.colors.sideBarBg.String(), editor.colors.sideBarSelectedItemBg.String()) + deinSideStyle)
+	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid %s; border-radius: 1px; background: %s; selection-background-color: %s; color: %s; }", editor.config.SideBar.AccentColor, editor.colors.sideBarBg.String(), editor.colors.sideBarSelectedItemBg.String(), editor.colors.fg.String()) + deinSideStyle)
 
 	return side
 }
