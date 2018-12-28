@@ -469,6 +469,9 @@ func (w *Workspace) initCwd() {
 
 func (w *Workspace) setCwd(cwd string) {
 	w.cwd = cwd
+	if editor.wsSide == nil {
+		return
+	}
 
 	var labelpath string
 	switch editor.config.Workspace.PathStyle {
@@ -933,11 +936,17 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_setCurrentFileLabel":
 		file := updates[1].(string)
 		w.filepath = file
+		if editor.wsSide == nil {
+			return
+		}
 		if strings.Contains(w.filepath, "[denite]") || w.filepath == "" {
 			return
 		}
 		editor.wsSide.items[editor.active].setCurrentFileLabel()
 	case "gonvim_workspace_updateMoifiedbadge":
+		if editor.wsSide == nil {
+			return
+		}
 		if strings.Contains(w.filepath, "[denite]") || w.filepath == "" {
 			return
 		}

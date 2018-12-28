@@ -205,50 +205,58 @@ func InitEditor() {
 	layout.SetSpacing(0)
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
-	e.wsSide = newWorkspaceSide()
-	sideArea := widgets.NewQScrollArea(nil)
-	sideArea.SetWidgetResizable(true)
-	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-	sideArea.ConnectEnterEvent(func(event *core.QEvent) {
-		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
-	})
-	sideArea.ConnectLeaveEvent(func(event *core.QEvent) {
+
+
+	// If enable activity widget
+	// if false {
+	if e.config.ActivityBar.Visible == true {
+		e.wsSide = newWorkspaceSide()
+		sideArea := widgets.NewQScrollArea(nil)
+		sideArea.SetWidgetResizable(true)
 		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-	})
-	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
-	sideArea.SetWidget(e.wsSide.widget)
-	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
-	e.wsSide.scrollarea = sideArea
+		sideArea.ConnectEnterEvent(func(event *core.QEvent) {
+			sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+		})
+		sideArea.ConnectLeaveEvent(func(event *core.QEvent) {
+			sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+		})
+		sideArea.SetFocusPolicy(core.Qt__ClickFocus)
+		sideArea.SetWidget(e.wsSide.widget)
+		sideArea.SetFrameShape(widgets.QFrame__NoFrame)
+		e.wsSide.scrollarea = sideArea
 
-	activityWidget := widgets.NewQWidget(nil, 0)
-	activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
-	activity := newActivity()
-	activity.widget = activityWidget
-	activityWidget.SetLayout(activity.layout)
-	e.activity = activity
-	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
-	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
+		activityWidget := widgets.NewQWidget(nil, 0)
+		activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
+		activity := newActivity()
+		activity.widget = activityWidget
+		activityWidget.SetLayout(activity.layout)
+		e.activity = activity
+		e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
+		e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
 
-	go e.dropShadow()
+		go e.dropShadow()
 
-	if e.config.ActivityBar.Visible == false {
-		e.activity.widget.Hide()
+		// if e.config.ActivityBar.Visible == false {
+		// 	e.activity.widget.Hide()
+		// }
+		if e.config.SideBar.Visible == false {
+			e.activity.sideArea.Hide()
+		}
+
+		splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+		splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
+		splitter.AddWidget(e.activity.sideArea)
+		splitter.AddWidget(e.wsWidget)
+		splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
+		splitter.SetStretchFactor(1, 100)
+		splitter.SetObjectName("splitter")
+		e.splitter = splitter
+
+		layout.AddWidget(splitter, 1, 0)
+		layout.AddWidget(e.activity.widget, 0, 0)
+	} else {
+		layout.AddWidget(e.wsWidget, 1, 0)
 	}
-	if e.config.SideBar.Visible == false {
-		e.activity.sideArea.Hide()
-	}
-
-	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
-	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
-	splitter.AddWidget(e.activity.sideArea)
-	splitter.AddWidget(e.wsWidget)
-	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
-	splitter.SetStretchFactor(1, 100)
-	splitter.SetObjectName("splitter")
-	e.splitter = splitter
-
-	layout.AddWidget(splitter, 1, 0)
-	layout.AddWidget(e.activity.widget, 0, 0)
 
 	e.workspaces = []*Workspace{}
 	sessionExists := false
@@ -388,7 +396,7 @@ func (c *ColorPalette) update() {
 	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
 	c.selectedBg = bg.brend(rgbAccent, 0.3)
 	c.inactiveFg = warpColor(bg, -30)
-	c.comment = warpColor(fg, -38)
+	c.comment = warpColor(fg, -40)
 	c.abyss = warpColor(bg, 5)
 	c.activityBarFg = fg
 	c.activityBarBg = warpColor(bg, -5)
@@ -397,9 +405,9 @@ func (c *ColorPalette) update() {
 	c.sideBarSelectedItemBg = warpColor(bg, -7)
 	c.scrollBarFg = warpColor(bg, -10)
 	c.scrollBarBg = bg
-	c.widgetFg = warpColor(fg, 5)
-	c.widgetBg = warpColor(bg, -8)
-	c.widgetInputArea = warpColor(bg, -20)
+	c.widgetFg = warpColor(fg, 3)
+	c.widgetBg = warpColor(bg, -4)
+	c.widgetInputArea = warpColor(bg, -14)
 	c.minimapCurrentRegion = warpColor(bg, 10)
 }
 
@@ -429,9 +437,9 @@ func (e *Editor) updateGUIColor() {
 
 		}
 		e.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
+		e.wsSide.setColor()
 	}
 
-	e.wsSide.setColor()
 	e.workspaces[e.active].palette.setColor()
 	e.workspaces[e.active].popup.setColor()
 	e.workspaces[e.active].signature.setColor()
@@ -539,6 +547,9 @@ func (e *Editor) workspacePrevious() {
 }
 
 func (e *Editor) workspaceUpdate() {
+	if e.wsSide == nil {
+		return
+	}
 	for i, ws := range e.workspaces {
 		if i == e.active {
 			ws.hide()
@@ -572,6 +583,9 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 }
 
 func (e *Editor) unfocusGonvimUI() {
+	if e.activity == nil || e.wsSide == nil {
+		return
+	}
 	if e.activity.deinItem.active {
 		e.deinSide.searchbox.editBox.ClearFocus()
 		e.deinSide.widget.ClearFocus()

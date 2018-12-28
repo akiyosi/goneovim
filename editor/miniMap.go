@@ -215,8 +215,8 @@ func (m *MiniMap) attachUIOption() map[string]interface{} {
 }
 
 func (m *MiniMap) setColor() {
-	c := editor.colors.minimapCurrentRegion
-	m.curRegion.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 35);}", c.R, c.G, c.B))
+	c := editor.colors.selectedBg
+	m.curRegion.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 0.2);}", c.R, c.G, c.B))
 }
 
 func (m *MiniMap) toggle() {
