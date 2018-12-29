@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	// "time"
 
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
@@ -160,32 +159,13 @@ func InitEditor() {
 		editor.cleanup()
 	})
 
-	e.iconSize = 10
-	go func() {
-		e.initSVGS()
-		e.config = newGonvimConfig(home)
-		e.width = e.config.Editor.Width
-		e.height = e.config.Editor.Height
-		e.window.SetMinimumSize2(e.width, e.height)
-		e.notificationWidth = editor.config.Editor.Width * 2 / 3
-		e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
-		font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
-		e.iconSize = int(font.Height())
-		e.colors = initColorPalette()
-		e.colors.update()
-	}()
-	e.notifications = []*Notification{}
-	e.signal.ConnectNotifySignal(func() {
-		notify := <-e.notify
-		if notify.message == "" {
-			return
-		}
-		if notify.buttons == nil {
-			e.popupNotification(notify.level, notify.period, notify.message)
-		} else {
-			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
-		}
-	})
+	e.initSVGS()
+	e.config = newGonvimConfig(home)
+	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
+	e.iconSize = int(font.Height())
+	e.colors = initColorPalette()
+	e.colors.update()
+	e.initNotifications()
 
 	//create a window
 	e.window = widgets.NewQMainWindow(nil, 0)
@@ -322,6 +302,23 @@ func InitEditor() {
 	e.window.Show()
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
+}
+
+func (e *Editor) initNotifications() {
+	e.notifications = []*Notification{}
+	e.notificationWidth = editor.config.Editor.Width * 2 / 3
+	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
+	e.signal.ConnectNotifySignal(func() {
+		notify := <-e.notify
+		if notify.message == "" {
+			return
+		}
+		if notify.buttons == nil {
+			e.popupNotification(notify.level, notify.period, notify.message)
+		} else {
+			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
+		}
+	})
 }
 
 func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
@@ -482,6 +479,9 @@ func shiftHex(hex string, v int) string {
 
 func (e *Editor) setWindowOptions() {
 	e.window.SetWindowTitle("Gonvim")
+	e.width = e.config.Editor.Width
+	e.height = e.config.Editor.Height
+	e.window.SetMinimumSize2(e.width, e.height)
 	e.window.SetContentsMargins(0, 0, 0, 0)
 	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
 	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
