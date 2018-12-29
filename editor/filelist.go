@@ -68,7 +68,7 @@ func newFilelistwidget(path string) *Filelist {
 		// filewidget.SetSizePolicy2(widgets.QSizePolicy__Maximum, widgets.QSizePolicy__Maximum)
 
 		filelayout := widgets.NewQHBoxLayout()
-		filelayout.SetContentsMargins(filewidgetLeftMargin, 0, 10, 0)
+		filelayout.SetContentsMargins(filewidgetLeftMargin, 0, 0, 0)
 
 		fileIcon := svg.NewQSvgWidget(nil)
 		fileIcon.SetFixedWidth(editor.iconSize)
@@ -78,7 +78,7 @@ func newFilelistwidget(path string) *Filelist {
 		filenameWidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 		// filenameWidget.SetSizePolicy2(widgets.QSizePolicy__Maximum, widgets.QSizePolicy__Maximum)
 		filenameLayout := widgets.NewQHBoxLayout()
-		filenameLayout.SetContentsMargins(0, 4, 5, 4)
+		filenameLayout.SetContentsMargins(0, 0, 0, editor.config.Editor.Linespace)
 		filenameLayout.SetSpacing(0)
 		file := widgets.NewQLabel(nil, 0)
 		file.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
