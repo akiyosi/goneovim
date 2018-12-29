@@ -156,6 +156,11 @@ func InitEditor() {
 		guiInit: make(chan bool, 1),
 	}
 	e := editor
+	e.app = widgets.NewQApplication(0, nil)
+	e.app.ConnectAboutToQuit(func() {
+		editor.cleanup()
+	})
+
 	e.config = newGonvimConfig(home)
 	e.notificationWidth = editor.config.Editor.Width * 2 / 3
 	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
@@ -171,12 +176,9 @@ func InitEditor() {
 			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
+
 	e.colors = initColorPalette()
 	e.colors.update()
-	e.app = widgets.NewQApplication(0, nil)
-	e.app.ConnectAboutToQuit(func() {
-		editor.cleanup()
-	})
 
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
@@ -186,16 +188,7 @@ func InitEditor() {
 
 	//create a window
 	e.window = widgets.NewQMainWindow(nil, 0)
-	e.window.SetWindowTitle("Gonvim")
-	e.window.SetContentsMargins(0, 0, 0, 0)
-	e.window.SetMinimumSize2(e.width, e.height)
-	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
-	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
-	e.window.SetWindowOpacity(0.0)
-
-	e.initSpecialKeys()
-	e.window.ConnectKeyPressEvent(e.keyPress)
-	e.window.SetAcceptDrops(true)
+	e.setWindowOptions()
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
@@ -484,6 +477,18 @@ func shiftHex(hex string, v int) string {
 	c := hexToRGBA(hex)
 	d := shiftColor(c, v)
 	return fmt.Sprintf("#%02x%02x%02x", (int)(d.R*255.0), (int)(d.G*255.0), (int)(d.B*255.0))
+}
+
+func (e *Editor) setWindowOptions() {
+	e.window.SetWindowTitle("Gonvim")
+	e.window.SetContentsMargins(0, 0, 0, 0)
+	e.window.SetMinimumSize2(e.width, e.height)
+	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
+	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
+	e.window.SetWindowOpacity(0.0)
+	e.initSpecialKeys()
+	e.window.ConnectKeyPressEvent(e.keyPress)
+	e.window.SetAcceptDrops(true)
 }
 
 func isFileExist(filename string) bool {
