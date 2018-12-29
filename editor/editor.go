@@ -208,7 +208,6 @@ func InitEditor() {
 
 
 	// If enable activity widget
-	// if false {
 	if e.config.ActivityBar.Visible == true {
 		e.wsSide = newWorkspaceSide()
 		sideArea := widgets.NewQScrollArea(nil)
