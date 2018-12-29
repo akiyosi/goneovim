@@ -152,6 +152,7 @@ func InitEditor() {
 		notify:  make(chan *Notify, 10),
 		stop:    make(chan struct{}),
 		guiInit: make(chan bool, 1),
+		config: newGonvimConfig(home),
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
@@ -160,7 +161,6 @@ func InitEditor() {
 	})
 
 	e.initSVGS()
-	e.config = newGonvimConfig(home)
 	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
 	e.iconSize = int(font.Height())
 	e.colors = initColorPalette()
