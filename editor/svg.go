@@ -22,24 +22,30 @@ type Svg struct {
 	name   string
 }
 
-func (e *Editor) getSvgs() map[string]*SvgXML {
-	e.svgsOnce.Do(func() {
-		e.initSVGS()
-	})
-	return e.svgs
-}
+// func (e *Editor) getSvgs() map[string]*SvgXML {
+// 	e.svgsOnce.Do(func() {
+// 		e.initSVGS()
+// 	})
+// 	return e.svgs
+// }
 
 func (e *Editor) getSvg(name string, color *RGBA) string {
-	e.svgsOnce.Do(func() {
-		e.initSVGS()
-	})
+	// e.svgsOnce.Do(func() {
+	// 	e.initSVGS()
+	// })
 	svg := e.svgs[name]
+	var fg *RGBA
+	if e.colors == nil {
+		fg = newRGBA(255, 255, 255, 1)
+	} else {
+		fg = e.colors.fg
+	}
 	if svg == nil {
 		svg = e.svgs["default"]
 	}
 	if color == nil {
 		if svg.color == nil {
-			color = e.colors.fg
+			color = fg
 		} else {
 			color = svg.color
 		}

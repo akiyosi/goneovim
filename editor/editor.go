@@ -120,7 +120,6 @@ type Editor struct {
 	isSetGuiColor    bool
 	colors   *ColorPalette
 	svgs     map[string]*SvgXML
-	svgsOnce sync.Once
 }
 
 type editorSignal struct {
@@ -161,9 +160,20 @@ func InitEditor() {
 		editor.cleanup()
 	})
 
-	e.config = newGonvimConfig(home)
-	e.notificationWidth = editor.config.Editor.Width * 2 / 3
-	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
+	e.iconSize = 10
+	go func() {
+		e.initSVGS()
+		e.config = newGonvimConfig(home)
+		e.width = e.config.Editor.Width
+		e.height = e.config.Editor.Height
+		e.window.SetMinimumSize2(e.width, e.height)
+		e.notificationWidth = editor.config.Editor.Width * 2 / 3
+		e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
+		font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
+		e.iconSize = int(font.Height())
+		e.colors = initColorPalette()
+		e.colors.update()
+	}()
 	e.notifications = []*Notification{}
 	e.signal.ConnectNotifySignal(func() {
 		notify := <-e.notify
@@ -176,15 +186,6 @@ func InitEditor() {
 			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
-
-	e.colors = initColorPalette()
-	e.colors.update()
-
-	e.width = e.config.Editor.Width
-	e.height = e.config.Editor.Height
-
-	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
-	e.iconSize = int(font.Height())
 
 	//create a window
 	e.window = widgets.NewQMainWindow(nil, 0)
@@ -482,7 +483,6 @@ func shiftHex(hex string, v int) string {
 func (e *Editor) setWindowOptions() {
 	e.window.SetWindowTitle("Gonvim")
 	e.window.SetContentsMargins(0, 0, 0, 0)
-	e.window.SetMinimumSize2(e.width, e.height)
 	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
 	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
 	e.window.SetWindowOpacity(0.0)

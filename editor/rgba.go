@@ -40,9 +40,9 @@ func (rgba *RGBA) Hex() string {
 // input color *RGBA, aplpha (0.0...-1.0..) int
 func (rgba *RGBA) brend(color *RGBA, alpha float64) *RGBA {
 	return &RGBA{
-		R : int((float64(rgba.R) * float64(1-alpha)) + (float64(color.R) * float64(alpha))),
-		G : int((float64(rgba.R) * float64(1-alpha)) + (float64(color.G) * float64(alpha))),
-		B : int((float64(rgba.R) * float64(1-alpha)) + (float64(color.B) * float64(alpha))),
+		R: int((float64(rgba.R) * float64(1-alpha)) + (float64(color.R) * float64(alpha))),
+		G: int((float64(rgba.R) * float64(1-alpha)) + (float64(color.G) * float64(alpha))),
+		B: int((float64(rgba.R) * float64(1-alpha)) + (float64(color.B) * float64(alpha))),
 		A: 1,
 	}
 }
