@@ -182,7 +182,7 @@ func InitEditor() {
 
 
 	// If enable activity widget
-	if e.config.ActivityBar.Visible == true {
+	if e.config.SideBar.Visible == true {
 		e.wsSide = newWorkspaceSide()
 		sideArea := widgets.NewQScrollArea(nil)
 		sideArea.SetWidgetResizable(true)
@@ -209,12 +209,12 @@ func InitEditor() {
 
 		go e.dropShadow()
 
-		// if e.config.ActivityBar.Visible == false {
-		// 	e.activity.widget.Hide()
-		// }
-		if e.config.SideBar.Visible == false {
-			e.activity.sideArea.Hide()
+		if e.config.ActivityBar.Visible == false {
+			e.activity.widget.Hide()
 		}
+		// if e.config.SideBar.Visible == false {
+		// 	e.activity.sideArea.Hide()
+		// }
 
 		splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
 		splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
