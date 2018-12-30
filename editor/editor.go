@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	// "time"
 
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
@@ -39,6 +38,28 @@ type Char struct {
 type NotifyButton struct {
 	action func()
 	text   string
+}
+
+// ColorPalette is
+type ColorPalette struct {
+	fg          *RGBA
+	bg          *RGBA
+	inactiveFg  *RGBA
+	comment     *RGBA
+	abyss       *RGBA
+	matchFg          *RGBA
+	selectedBg       *RGBA
+	activityBarFg  *RGBA
+	activityBarBg  *RGBA
+	sideBarFg  *RGBA
+	sideBarBg  *RGBA
+	sideBarSelectedItemBg  *RGBA
+	scrollBarFg  *RGBA
+	scrollBarBg  *RGBA
+	widgetFg  *RGBA
+	widgetBg  *RGBA
+	widgetInputArea  *RGBA
+	minimapCurrentRegion *RGBA
 }
 
 // Notify is
@@ -76,11 +97,6 @@ type Editor struct {
 	height           int
 	iconSize         int
 	tablineHeight    int
-	selectedBg       *RGBA
-	matchFg          *RGBA
-	bgcolor          *RGBA
-	fgcolor          *RGBA
-	isSetGuiColor    bool
 
 	stop     chan struct{}
 	stopOnce sync.Once
@@ -98,10 +114,11 @@ type Editor struct {
 
 	config               gonvimConfig
 	notifications        []*Notification
-	displayNotifications bool
+	isDisplayNotifications bool
 
+	isSetGuiColor    bool
+	colors   *ColorPalette
 	svgs     map[string]*SvgXML
-	svgsOnce sync.Once
 }
 
 type editorSignal struct {
@@ -125,6 +142,8 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
+	runtime.GOMAXPROCS(16)
+
 	home, err := homedir.Dir()
 	if err != nil {
 		home = "~"
@@ -133,50 +152,28 @@ func InitEditor() {
 		version: "v0.3.1",
 		signal:  NewEditorSignal(nil),
 		notify:  make(chan *Notify, 10),
-		bgcolor: nil,
-		fgcolor: nil,
 		stop:    make(chan struct{}),
 		guiInit: make(chan bool, 1),
+		config: newGonvimConfig(home),
 	}
 	e := editor
-	e.config = newGonvimConfig(home)
-	e.notificationWidth = editor.config.Editor.Width * 2 / 3
-	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
-	e.notifications = []*Notification{}
-	e.signal.ConnectNotifySignal(func() {
-		notify := <-e.notify
-		if notify.message == "" {
-			return
-		}
-		if notify.buttons == nil {
-			e.popupNotification(notify.level, notify.period, notify.message)
-		} else {
-			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
-		}
-	})
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
 	})
+	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QWidget")
+	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QLabel")
 
-	e.width = e.config.Editor.Width
-	e.height = e.config.Editor.Height
-
+	e.initSVGS()
 	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
 	e.iconSize = int(font.Height())
+	e.colors = initColorPalette()
+	e.colors.update()
+	e.initNotifications()
 
 	//create a window
 	e.window = widgets.NewQMainWindow(nil, 0)
-	e.window.SetWindowTitle("Gonvim")
-	e.window.SetContentsMargins(0, 0, 0, 0)
-	e.window.SetMinimumSize2(e.width, e.height)
-	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
-	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
-	e.window.SetWindowOpacity(0.0)
-
-	e.initSpecialKeys()
-	e.window.ConnectKeyPressEvent(e.keyPress)
-	e.window.SetAcceptDrops(true)
+	e.setWindowOptions()
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
@@ -186,50 +183,57 @@ func InitEditor() {
 	layout.SetSpacing(0)
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
-	e.wsSide = newWorkspaceSide()
-	sideArea := widgets.NewQScrollArea(nil)
-	sideArea.SetWidgetResizable(true)
-	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-	sideArea.ConnectEnterEvent(func(event *core.QEvent) {
-		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
-	})
-	sideArea.ConnectLeaveEvent(func(event *core.QEvent) {
+
+
+	// If enable activity widget
+	if e.config.SideBar.Visible == true {
+		e.wsSide = newWorkspaceSide()
+		sideArea := widgets.NewQScrollArea(nil)
+		sideArea.SetWidgetResizable(true)
 		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-	})
-	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
-	sideArea.SetWidget(e.wsSide.widget)
-	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
-	e.wsSide.scrollarea = sideArea
+		sideArea.ConnectEnterEvent(func(event *core.QEvent) {
+			sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+		})
+		sideArea.ConnectLeaveEvent(func(event *core.QEvent) {
+			sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+		})
+		sideArea.SetFocusPolicy(core.Qt__ClickFocus)
+		sideArea.SetWidget(e.wsSide.widget)
+		sideArea.SetFrameShape(widgets.QFrame__NoFrame)
+		e.wsSide.scrollarea = sideArea
 
-	activityWidget := widgets.NewQWidget(nil, 0)
-	activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
-	activity := newActivity()
-	activity.widget = activityWidget
-	activityWidget.SetLayout(activity.layout)
-	e.activity = activity
-	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
-	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
+		activityWidget := widgets.NewQWidget(nil, 0)
+		activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
+		activity := newActivity()
+		activity.widget = activityWidget
+		activityWidget.SetLayout(activity.layout)
+		e.activity = activity
+		e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
+		e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
 
-	go e.dropShadow()
+		go e.dropShadow()
 
-	if e.config.ActivityBar.Visible == false {
-		e.activity.widget.Hide()
+		if e.config.ActivityBar.Visible == false {
+			e.activity.widget.Hide()
+		}
+		// if e.config.SideBar.Visible == false {
+		// 	e.activity.sideArea.Hide()
+		// }
+
+		splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+		splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
+		splitter.AddWidget(e.activity.sideArea)
+		splitter.AddWidget(e.wsWidget)
+		splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
+		splitter.SetStretchFactor(1, 100)
+		splitter.SetObjectName("splitter")
+		e.splitter = splitter
+
+		layout.AddWidget(splitter, 1, 0)
+		layout.AddWidget(e.activity.widget, 0, 0)
+	} else {
+		layout.AddWidget(e.wsWidget, 1, 0)
 	}
-	if e.config.SideBar.Visible == false {
-		e.activity.sideArea.Hide()
-	}
-
-	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
-	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
-	splitter.AddWidget(e.activity.sideArea)
-	splitter.AddWidget(e.wsWidget)
-	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
-	splitter.SetStretchFactor(1, 100)
-	splitter.SetObjectName("splitter")
-	e.splitter = splitter
-
-	layout.AddWidget(splitter, 1, 0)
-	layout.AddWidget(e.activity.widget, 0, 0)
 
 	e.workspaces = []*Workspace{}
 	sessionExists := false
@@ -304,6 +308,23 @@ func InitEditor() {
 	widgets.QApplication_Exec()
 }
 
+func (e *Editor) initNotifications() {
+	e.notifications = []*Notification{}
+	e.notificationWidth = editor.config.Editor.Width * 2 / 3
+	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
+	e.signal.ConnectNotifySignal(func() {
+		notify := <-e.notify
+		if notify.message == "" {
+			return
+		}
+		if notify.buttons == nil {
+			e.popupNotification(notify.level, notify.period, notify.message)
+		} else {
+			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
+		}
+	})
+}
+
 func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
 	opts := NotifyOptions{}
 	for _, o := range opt {
@@ -351,6 +372,80 @@ func (e *Editor) dropShadow() {
 	}
 }
 
+func initColorPalette() *ColorPalette {
+	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+	fg := newRGBA(180, 185, 190, 1)
+	bg := newRGBA(9, 13, 17, 1)
+	return &ColorPalette{
+		bg: bg,
+		fg: fg,
+		selectedBg: bg.brend(rgbAccent, 0.3),
+		matchFg: rgbAccent,
+	}
+}
+
+func (c *ColorPalette) update() {
+	fg := c.fg
+	bg := c.bg
+	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+	c.selectedBg = bg.brend(rgbAccent, 0.3)
+	c.inactiveFg = warpColor(bg, -30)
+	c.comment = warpColor(fg, -40)
+	c.abyss = warpColor(bg, 5)
+	c.activityBarFg = fg
+	c.activityBarBg = warpColor(bg, -5)
+	c.sideBarFg = warpColor(fg, -3)
+	c.sideBarBg = warpColor(bg, -3)
+	c.sideBarSelectedItemBg = warpColor(bg, -7)
+	c.scrollBarFg = warpColor(bg, -10)
+	c.scrollBarBg = bg
+	c.widgetFg = warpColor(fg, 3)
+	c.widgetBg = warpColor(bg, -4)
+	c.widgetInputArea = warpColor(bg, -14)
+	c.minimapCurrentRegion = warpColor(bg, 10)
+}
+
+func (e *Editor) updateGUIColor() {
+	// if activity & sidebar is enabled
+	if e.activity != nil && e.wsSide != nil {
+		// for splitter
+		e.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", e.colors.sideBarBg.String()))
+
+		// for Activity Bar
+		e.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; } ", e.colors.activityBarBg))
+
+		var svgEditContent string
+		if e.activity.editItem.active == true {
+			svgEditContent = e.getSvg("activityedit", e.colors.fg)
+		} else {
+			svgEditContent = e.getSvg("activityedit", e.colors.inactiveFg)
+		}
+		e.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
+
+		var svgDeinContent string
+		if e.activity.deinItem.active == true {
+			svgDeinContent = e.getSvg("activitydein", e.colors.fg)
+
+		} else {
+			svgDeinContent = e.getSvg("activitydein", e.colors.inactiveFg)
+
+		}
+		e.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
+		e.wsSide.setColor()
+	}
+
+	e.workspaces[e.active].palette.setColor()
+	e.workspaces[e.active].popup.setColor()
+	e.workspaces[e.active].signature.setColor()
+	e.workspaces[e.active].tabline.setColor()
+	e.workspaces[e.active].statusline.setColor()
+	e.workspaces[e.active].scrollBar.setColor()
+	e.workspaces[e.active].minimap.setColor()
+	e.workspaces[e.active].loc.setColor()
+
+	e.window.SetWindowOpacity(1.0)
+}
+
 func hexToRGBA(hex string) *RGBA {
 	format := "#%02x%02x%02x"
 	if len(hex) == 4 {
@@ -386,6 +481,20 @@ func shiftHex(hex string, v int) string {
 	return fmt.Sprintf("#%02x%02x%02x", (int)(d.R*255.0), (int)(d.G*255.0), (int)(d.B*255.0))
 }
 
+func (e *Editor) setWindowOptions() {
+	e.window.SetWindowTitle("Gonvim")
+	e.width = e.config.Editor.Width
+	e.height = e.config.Editor.Height
+	e.window.SetMinimumSize2(e.width, e.height)
+	e.window.SetContentsMargins(0, 0, 0, 0)
+	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
+	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
+	e.window.SetWindowOpacity(0.0)
+	e.initSpecialKeys()
+	e.window.ConnectKeyPressEvent(e.keyPress)
+	e.window.SetAcceptDrops(true)
+}
+
 func isFileExist(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
@@ -403,6 +512,7 @@ func (e *Editor) copyClipBoard() {
 }
 
 func (e *Editor) workspaceNew() {
+	editor.isSetGuiColor = false
 	ws, err := newWorkspace("")
 	if err != nil {
 		return
@@ -445,6 +555,9 @@ func (e *Editor) workspacePrevious() {
 }
 
 func (e *Editor) workspaceUpdate() {
+	if e.wsSide == nil {
+		return
+	}
 	for i, ws := range e.workspaces {
 		if i == e.active {
 			ws.hide()
@@ -478,6 +591,9 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 }
 
 func (e *Editor) unfocusGonvimUI() {
+	if e.activity == nil || e.wsSide == nil {
+		return
+	}
 	if e.activity.deinItem.active {
 		e.deinSide.searchbox.editBox.ClearFocus()
 		e.deinSide.widget.ClearFocus()

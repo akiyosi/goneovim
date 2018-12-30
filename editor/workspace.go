@@ -84,7 +84,16 @@ type Workspace struct {
 	drawTabline    bool
 	drawLint       bool
 
-	isSetGuiColor bool
+	t1	time.Duration
+	t2	time.Duration
+	t3	time.Duration
+	t4	time.Duration
+	t5	time.Duration
+	t6	time.Duration
+	t7	time.Duration
+	t8	time.Duration
+	t9	time.Duration
+	t10	time.Duration
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -471,6 +480,9 @@ func (w *Workspace) initCwd() {
 
 func (w *Workspace) setCwd(cwd string) {
 	w.cwd = cwd
+	if editor.wsSide == nil {
+		return
+	}
 
 	var labelpath string
 	switch editor.config.Workspace.PathStyle {
@@ -505,10 +517,12 @@ func (w *Workspace) setCwd(cwd string) {
 				continue
 			}
 
-			filelist := newFilelistwidget(path)
+			filelist, err := newFilelist(path)
+			if err != nil {
+				continue
+			}
 			sideItem.isload = true
 			sideItem.setFilelistwidget(filelist)
-			continue
 		}
 	}
 }
@@ -531,6 +545,16 @@ func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
 	} else {
 		i.openFilelist()
 	}
+}
+
+// slow...
+func (i *WorkspaceSideItem) addFilewidget(f *Fileitem) {
+	// f.makeWidget()
+	// i.Filelist.Fileitems = append(i.Filelist.Fileitems, f)
+	// i.Filelist.widget.Layout().AddWidget(f.widget)
+
+	i.Filelist.Fileitems = append(i.Filelist.Fileitems, f)
+	i.Filelist.widget.Layout().AddWidget(f.widget)
 }
 
 func (i *WorkspaceSideItem) toggleFilelist(event *gui.QMouseEvent) {
@@ -680,7 +704,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.setOption(update)
 		case "default_colors_set":
 			args := update[1].([]interface{})
-			w.setColor(args)
+			w.setColorsSet(args)
 		case "cursor_goto":
 			s.cursorGoto(args)
 			doMinimapScroll = true
@@ -781,7 +805,7 @@ func (w *Workspace) disableImeInNormal() {
 	}
 }
 
-func (w *Workspace) setColor(args []interface{}) {
+func (w *Workspace) setColorsSet(args []interface{}) {
 	fg := reflectToInt(args[0])
 	bg := reflectToInt(args[1])
 	sp := reflectToInt(args[2])
@@ -807,22 +831,24 @@ func (w *Workspace) setColor(args []interface{}) {
 	w.minimap.special = w.special
 
 	var isChangeFg, isChangeBg bool
-	if editor.fgcolor != nil {
-		isChangeFg = editor.fgcolor.equals(w.foreground)
+	if editor.colors.fg != nil {
+		isChangeFg = editor.colors.fg.equals(w.foreground)
 	}
-	if editor.bgcolor != nil {
-		isChangeBg = editor.bgcolor.equals(w.background)
+	if editor.colors.bg != nil {
+		isChangeBg = editor.colors.bg.equals(w.background)
 	}
 	if !isChangeFg || !isChangeBg {
-		w.isSetGuiColor = false
+		editor.isSetGuiColor = false
 	}
-	if w.isSetGuiColor == true {
+	if editor.isSetGuiColor == true {
 		return
 	}
-	editor.fgcolor = w.foreground
-	editor.bgcolor = w.background
-	w.setGuiColor(editor.fgcolor, editor.bgcolor)
-	w.isSetGuiColor = true
+	editor.colors.fg = w.foreground
+	editor.colors.bg = w.background
+	//w.setGuiColor(editor.colors.fg, editor.colors.bg)
+	editor.colors.update()
+	editor.updateGUIColor()
+	editor.isSetGuiColor = true
 }
 
 func (w *Workspace) setOption(update []interface{}) {
@@ -881,7 +907,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.workspaces[editor.active].minimap.exit()
 	// case "gonvim_set_colorscheme":
 	// 	fmt.Println("set_colorscheme")
-	// 	w.isSetGuiColor = false
+	// 	editor.isSetGuiColor = false
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
@@ -933,11 +959,17 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_setCurrentFileLabel":
 		file := updates[1].(string)
 		w.filepath = file
+		if editor.wsSide == nil {
+			return
+		}
 		if strings.Contains(w.filepath, "[denite]") || w.filepath == "" {
 			return
 		}
 		editor.wsSide.items[editor.active].setCurrentFileLabel()
 	case "gonvim_workspace_updateMoifiedbadge":
+		if editor.wsSide == nil {
+			return
+		}
 		if strings.Contains(w.filepath, "[denite]") || w.filepath == "" {
 			return
 		}
@@ -1066,6 +1098,7 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 	return qv
 }
 
+
 // WorkspaceSide is
 type WorkspaceSide struct {
 	widget     *widgets.QWidget
@@ -1091,8 +1124,10 @@ func newWorkspaceSide() *WorkspaceSide {
 		widget: widget,
 		header: header,
 	}
+
 	layout.AddWidget(header)
 	side.header.Show()
+
 
 	items := []*WorkspaceSideItem{}
 	side.items = items
@@ -1107,8 +1142,17 @@ func newWorkspaceSide() *WorkspaceSide {
 	return side
 }
 
+type filelistSignal struct {
+	core.QObject
+	_ func() `signal:"filelistUpdateSignal"`
+}
+
+
 // WorkspaceSideItem is
 type WorkspaceSideItem struct {
+	signal     *filelistSignal
+	filelistUpdate chan *Fileitem
+
 	hidden    bool
 	active    bool
 	side      *WorkspaceSide
@@ -1175,6 +1219,9 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	closeIcon.Hide()
 
 	sideitem := &WorkspaceSideItem{
+		filelistUpdate:   make(chan *Fileitem, 20000),
+		signal:        NewFilelistSignal(nil),
+
 		widget:      widget,
 		layout:      layout,
 		labelWidget: labelWidget,
@@ -1185,6 +1232,10 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 		// Filelistwidget: flwidget,
 	}
 	sideitem.Filelist.WSitem = sideitem
+	sideitem.signal.ConnectFilelistUpdateSignal(func() {
+		update := <-sideitem.filelistUpdate
+		sideitem.addFilewidget(update)
+	})
 
 	sideitem.widget.ConnectMousePressEvent(sideitem.toggleFilelist)
 
@@ -1209,18 +1260,32 @@ func (i *WorkspaceSideItem) setSideItemLabel(n int) {
 	i.label.SetContentsMargins(1, 3, 0, 3)
 }
 
+func (s *WorkspaceSide) setColor() {
+	fg := editor.colors.sideBarFg.String()
+	bg := editor.colors.sideBarBg.String()
+	sfg := editor.colors.scrollBarFg.String()
+	sbg := editor.colors.scrollBarBg.String()
+	s.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg))
+	s.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-color: %s; padding-top: 5px; background-color: %s; } QWidget { color: %s; border-right: 0px solid; }", bg, bg, fg))
+	s.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
+
+	if len(editor.workspaces) == 1 {
+		s.items[0].active = true
+		s.items[0].labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", editor.colors.sideBarSelectedItemBg, fg))
+	}
+}
+
 func (i *WorkspaceSideItem) setActive() {
 	// if i.active {
 	// 	return
 	// }
-	if editor.fgcolor == nil || editor.bgcolor == nil {
+	if editor.colors.fg== nil || editor.colors.bg== nil {
 		return
 	}
 	i.active = true
-	bg := editor.bgcolor
-	fg := editor.fgcolor
-	wsSideitemActiveBgColor := warpColor(bg, -6)
-	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", wsSideitemActiveBgColor.print(), fg.print()))
+	bg := editor.colors.sideBarSelectedItemBg
+	fg := editor.colors.fg
+	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", bg.String(), fg.String()))
 	svgOpenContent := editor.getSvg("chevron-down", fg)
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
 	svgCloseContent := editor.getSvg("chevron-right", fg)
@@ -1229,7 +1294,10 @@ func (i *WorkspaceSideItem) setActive() {
 	reloadFilelist := i.cwdpath != i.Filelist.cwdpath
 
 	if reloadFilelist && editor.activity.editItem.active {
-		filelist := newFilelistwidget(i.cwdpath)
+		filelist, err := newFilelist(i.cwdpath)
+		if err != nil {
+			return
+		}
 		i.setFilelistwidget(filelist)
 	}
 	if !i.isFilelistHide {
@@ -1243,13 +1311,13 @@ func (i *WorkspaceSideItem) setInactive() {
 	if !i.active {
 		return
 	}
-	if editor.fgcolor == nil || editor.bgcolor == nil {
+	if editor.colors.fg == nil || editor.colors.bg== nil {
 		return
 	}
 	i.active = false
-	bg := editor.bgcolor
-	fg := editor.fgcolor
-	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", shiftColor(bg, -5).print(), shiftColor(fg, 0).print()))
+	bg := editor.colors.sideBarBg
+	fg := editor.colors.inactiveFg
+	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", bg.String(), fg.String()))
 	svgOpenContent := editor.getSvg("chevron-down", fg)
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
 	svgCloseContent := editor.getSvg("chevron-right", fg)
@@ -1286,135 +1354,135 @@ func (i *WorkspaceSideItem) hide() {
 	i.closeIcon.Hide()
 }
 
-func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
-	if fg == nil || bg == nil {
-		return
-	}
-
-	activityBarColor := shiftColor(bg, -8)
-	sideBarColor := shiftColor(bg, -5)
-	STRONGFg := warpColor(fg, 15)
-	strongFg := warpColor(fg, 10)
-	weakBg := gradColor(bg)
-	//weakFg := gradColor(fg)
-	//darkerBg := shiftColor(bg, 10)
-
-	tablineFgColor := gradColor(fg)
-	tablineBgColor := shiftColor(bg, 10)
-
-	statuslineFolderLabelColor := gradColor(fg)
-	statuslineBorderColor := bg
-	statuslineBgColor := bg
-	statuslineFgColor := strongFg
-
-	scrollBarThumbColor := weakBg
-	scrollBarColor := bg
-
-	paletteFgColor := shiftColor(fg, -5)
-	paletteBorderColor := shiftColor(bg, -8)
-	paletteBgColor := shiftColor(bg, -8)
-	paletteLightBgColor := shiftColor(bg, -25)
-
-	popFgColor := shiftColor(fg, 5)
-	popFgDetailColor := gradColor(fg)
-	popBgColor := shiftColor(bg, 15)
-	popScrollBarColor := gradColor(bg)
-
-	locFgColor := shiftColor(fg, 5)
-	locBorderColor := shiftColor(bg, 20)
-	locBgColor := shiftColor(bg, 10)
-
-	signatureFgColor := gradColor(fg)
-	signatureBorderColor := shiftColor(bg, -5)
-	signatureBgColor := shiftColor(bg, -7)
-
-	tooltipFgColor := shiftColor(fg, -40)
-	tooltipBgColor := weakBg
-
-	wsHeaderColor := fg
-	wsSideColor := gradColor(fg)
-	wsSideBorderColor := shiftColor(bg, 10)
-	wsSideBgColor := shiftColor(bg, -5)
-
-	wsSideScrollBarHandleColor := gradColor(bg)
-
-	wsSideitemActiveBgColor := warpColor(bg, -6)
-
-	// for splitter
-	editor.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", sideBarColor.print()))
-
-	// for Activity Bar
-	editor.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; } ", activityBarColor.print()))
-
-	var svgEditContent string
-	if editor.activity.editItem.active == true {
-		svgEditContent = editor.getSvg("activityedit", STRONGFg)
-	} else {
-		svgEditContent = editor.getSvg("activityedit", weakBg)
-	}
-	editor.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
-
-	var svgDeinContent string
-	if editor.activity.deinItem.active == true {
-		svgDeinContent = editor.getSvg("activitydein", STRONGFg)
-	} else {
-		svgDeinContent = editor.getSvg("activitydein", weakBg)
-	}
-	editor.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
-
-	// tab
-	w.tabline.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-left: 8px solid %s; border-bottom: 0px solid; border-right: 0px solid; background-color: %s; } QWidget { color: %s; } ", tablineBgColor.print(), tablineBgColor.print(), tablineFgColor.print()))
-
-	// statusline
-	if editor.config.Statusline.ModeIndicatorType != "background" {
-		w.statusline.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", statuslineFolderLabelColor.print()))
-		w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid %s; background-color: %s; } * { color: %s; }", statuslineBorderColor.print(), statuslineBgColor.print(), statuslineFgColor.print()))
-
-		svgContent := editor.getSvg("git", statuslineFgColor)
-		w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		svgContent = editor.getSvg("bell", statuslineFgColor)
-		w.statusline.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	}
-
-	// scrollBar
-	w.scrollBar.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", scrollBarThumbColor.print()))
-	w.scrollBar.widget.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", scrollBarColor.print()))
-
-	w.minimap.curRegion.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 35);}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
-
-	// for Gonvim UI Color form colorscheme
-	w.palette.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteFgColor.print()))
-	w.palette.widget.SetStyleSheet(fmt.Sprintf(" QWidget#palette { border: 1px solid %s; } .QWidget { background-color: %s; } * { color: %s; } ", paletteBorderColor.print(), paletteBgColor.print(), paletteFgColor.print()))
-	w.palette.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteLightBgColor.print()))
-	w.palette.pattern.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteLightBgColor.print()))
-
-	// popup
-	w.popup.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", popScrollBarColor.print()))
-	w.popup.widget.SetStyleSheet(fmt.Sprintf("* {background-color: %s; color: %s;} #detailpopup { color: %s; }", popBgColor.print(), popFgColor.print(), popFgDetailColor.print()))
-
-	// loc
-	w.loc.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } * { background-color: %s;  color: %s; }", locBorderColor.print(), locBgColor.print(), locFgColor.print()))
-
-	// signature
-	w.signature.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } QWidget { background-color: %s; } * { color: %s; }", signatureBorderColor.print(), signatureBgColor.print(), signatureFgColor.print()))
-
-	// screan tooltip
-	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: %s; text-decoration: underline; color: %s; }", tooltipBgColor.print(), tooltipFgColor.print()))
-
-	// for Workspaceside
-	editor.wsSide.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", wsHeaderColor.print()))
-	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-color: %s; padding-top: 5px; background-color: %s; } QWidget { color: %s; border-right: 0px solid; }", wsSideBorderColor.print(), wsSideBgColor.print(), wsSideColor.print()))
-	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", wsSideBgColor.print(), wsSideScrollBarHandleColor.print(), editor.config.SideBar.AccentColor))
-
-	// for selected / match color
-	selectedCol := hexToRGBA(editor.config.SideBar.AccentColor)
-	editor.selectedBg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.3)
-	editor.matchFg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.6)
-
-	if len(editor.workspaces) == 1 {
-		editor.wsSide.items[0].active = true
-		editor.wsSide.items[0].labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", wsSideitemActiveBgColor.print(), fg.print()))
-	}
-
-	editor.window.SetWindowOpacity(1.0)
-}
+// func (w *Workspace) setGuiColor(fg *RGBA, bg *RGBA) {
+// 	if fg == nil || bg == nil {
+// 		return
+// 	}
+// 
+// 	activityBarColor := shiftColor(bg, -8)
+// 	sideBarColor := shiftColor(bg, -5)
+// 	STRONGFg := warpColor(fg, 15)
+// 	strongFg := warpColor(fg, 10)
+// 	weakBg := gradColor(bg)
+// 	//weakFg := gradColor(fg)
+// 	//darkerBg := shiftColor(bg, 10)
+// 
+// 	tablineFgColor := gradColor(fg)
+// 	tablineBgColor := shiftColor(bg, 10)
+// 
+// 	statuslineFolderLabelColor := gradColor(fg)
+// 	statuslineBorderColor := bg
+// 	statuslineBgColor := bg
+// 	statuslineFgColor := strongFg
+// 
+// 	scrollBarThumbColor := weakBg
+// 	scrollBarColor := bg
+// 
+// 	paletteFgColor := shiftColor(fg, -5)
+// 	paletteBorderColor := shiftColor(bg, -8)
+// 	paletteBgColor := shiftColor(bg, -8)
+// 	paletteLightBgColor := shiftColor(bg, -25)
+// 
+// 	popFgColor := shiftColor(fg, 5)
+// 	popFgDetailColor := gradColor(fg)
+// 	popBgColor := shiftColor(bg, 15)
+// 	popScrollBarColor := gradColor(bg)
+// 
+// 	locFgColor := shiftColor(fg, 5)
+// 	locBorderColor := shiftColor(bg, 20)
+// 	locBgColor := shiftColor(bg, 10)
+// 
+// 	signatureFgColor := gradColor(fg)
+// 	signatureBorderColor := shiftColor(bg, -5)
+// 	signatureBgColor := shiftColor(bg, -7)
+// 
+// 	tooltipFgColor := shiftColor(fg, -40)
+// 	tooltipBgColor := weakBg
+// 
+// 	wsHeaderColor := fg
+// 	wsSideColor := gradColor(fg)
+// 	wsSideBorderColor := shiftColor(bg, 10)
+// 	wsSideBgColor := shiftColor(bg, -5)
+// 
+// 	wsSideScrollBarHandleColor := gradColor(bg)
+// 
+// 	wsSideitemActiveBgColor := warpColor(bg, -6)
+// 
+// 	// for splitter
+// 	editor.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", sideBarColor.print()))
+// 
+// 	// for Activity Bar
+// 	editor.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; } ", activityBarColor.print()))
+// 
+// 	var svgEditContent string
+// 	if editor.activity.editItem.active == true {
+// 		svgEditContent = editor.getSvg("activityedit", STRONGFg)
+// 	} else {
+// 		svgEditContent = editor.getSvg("activityedit", weakBg)
+// 	}
+// 	editor.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
+// 
+// 	var svgDeinContent string
+// 	if editor.activity.deinItem.active == true {
+// 		svgDeinContent = editor.getSvg("activitydein", STRONGFg)
+// 	} else {
+// 		svgDeinContent = editor.getSvg("activitydein", weakBg)
+// 	}
+// 	editor.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
+// 
+// 	// tab
+// 	w.tabline.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-left: 8px solid %s; border-bottom: 0px solid; border-right: 0px solid; background-color: %s; } QWidget { color: %s; } ", tablineBgColor.print(), tablineBgColor.print(), tablineFgColor.print()))
+// 
+// 	// statusline
+// 	if editor.config.Statusline.ModeIndicatorType != "background" {
+// 		w.statusline.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", statuslineFolderLabelColor.print()))
+// 		w.statusline.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline {	border-top: 0px solid %s; background-color: %s; } * { color: %s; }", statuslineBorderColor.print(), statuslineBgColor.print(), statuslineFgColor.print()))
+// 
+// 		svgContent := editor.getSvg("git", statuslineFgColor)
+// 		w.statusline.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+// 		svgContent = editor.getSvg("bell", statuslineFgColor)
+// 		w.statusline.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+// 	}
+// 
+// 	// scrollBar
+// 	w.scrollBar.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", scrollBarThumbColor.print()))
+// 	w.scrollBar.widget.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", scrollBarColor.print()))
+// 
+// 	w.minimap.curRegion.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 35);}", gradColor(fg).R, gradColor(fg).G, gradColor(fg).B))
+// 
+// 	// for Gonvim UI Color form colorscheme
+// 	w.palette.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteFgColor.print()))
+// 	w.palette.widget.SetStyleSheet(fmt.Sprintf(" QWidget#palette { border: 1px solid %s; } .QWidget { background-color: %s; } * { color: %s; } ", paletteBorderColor.print(), paletteBgColor.print(), paletteFgColor.print()))
+// 	w.palette.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteLightBgColor.print()))
+// 	w.palette.pattern.SetStyleSheet(fmt.Sprintf("background-color: %s;", paletteLightBgColor.print()))
+// 
+// 	// popup
+// 	w.popup.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", popScrollBarColor.print()))
+// 	w.popup.widget.SetStyleSheet(fmt.Sprintf("* {background-color: %s; color: %s;} #detailpopup { color: %s; }", popBgColor.print(), popFgColor.print(), popFgDetailColor.print()))
+// 
+// 	// loc
+// 	w.loc.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } * { background-color: %s;  color: %s; }", locBorderColor.print(), locBgColor.print(), locFgColor.print()))
+// 
+// 	// signature
+// 	w.signature.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } QWidget { background-color: %s; } * { color: %s; }", signatureBorderColor.print(), signatureBgColor.print(), signatureFgColor.print()))
+// 
+// 	// screan tooltip
+// 	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: %s; text-decoration: underline; color: %s; }", tooltipBgColor.print(), tooltipFgColor.print()))
+// 
+// 	// for Workspaceside
+// 	editor.wsSide.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", wsHeaderColor.print()))
+// 	editor.wsSide.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-color: %s; padding-top: 5px; background-color: %s; } QWidget { color: %s; border-right: 0px solid; }", wsSideBorderColor.print(), wsSideBgColor.print(), wsSideColor.print()))
+// 	editor.wsSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", wsSideBgColor.print(), wsSideScrollBarHandleColor.print(), editor.config.SideBar.AccentColor))
+// 
+// 	// for selected / match color
+// 	selectedCol := hexToRGBA(editor.config.SideBar.AccentColor)
+// 	editor.colors.selectedBg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.3)
+// 	editor.colors.matchFg = newRGBA(selectedCol.R, selectedCol.G, selectedCol.B, 0.6)
+// 
+// 	if len(editor.workspaces) == 1 {
+// 		editor.wsSide.items[0].active = true
+// 		editor.wsSide.items[0].labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", wsSideitemActiveBgColor.print(), fg.print()))
+// 	}
+// 
+// 	editor.window.SetWindowOpacity(1.0)
+// }

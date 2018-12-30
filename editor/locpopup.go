@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 
@@ -34,11 +35,9 @@ func initLocpopup() *Locpopup {
 	//typeLabel := widgets.NewQLabel(nil, 0)
 	//typeLabel.SetContentsMargins(4, 1, 4, 1)
 	typeLabel := svg.NewQSvgWidget(nil)
-	typeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	typeLabel.SetFixedSize2(editor.iconSize-1, editor.iconSize-1)
 
 	contentLabel := widgets.NewQLabel(nil, 0)
-	contentLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	contentLabel.SetContentsMargins(0, 0, 0, 0)
 
 	layout.AddWidget(typeLabel, 0, 0)
@@ -58,6 +57,12 @@ func initLocpopup() *Locpopup {
 	loc.widget.SetGraphicsEffect(shadow)
 
 	return loc
+}
+
+func (l *Locpopup) setColor() {
+	fg := editor.colors.widgetFg.String()
+	bg := editor.colors.widgetBg.String()
+	l.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } * { background-color: %s;  color: %s; }", bg, bg, fg))
 }
 
 func (l *Locpopup) subscribe() {

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
@@ -38,7 +37,6 @@ func initSignature() *Signature {
 	icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
 	label := widgets.NewQLabel(nil, 0)
-	label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 
 	layout.AddWidget(icon, 0, 0)
 	layout.AddWidget(label, 0, 0)
@@ -51,6 +49,12 @@ func initSignature() *Signature {
 		height: widget.SizeHint().Height(),
 	}
 	return signature
+}
+
+func (s *Signature) setColor() {
+	fg := editor.colors.widgetFg.String()
+	bg := editor.colors.widgetBg.String()
+	s.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } QWidget { background-color: %s; } * { color: %s; }", bg, bg, fg))
 }
 
 func (s *Signature) showItem(args []interface{}) {

@@ -56,6 +56,12 @@ func (t *Tabline) subscribe() {
 	}
 }
 
+func (t *Tabline) setColor() {
+	inactiveFg := editor.colors.inactiveFg.String()
+	abyss := editor.colors.abyss
+	t.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-left: 8px solid %s; border-bottom: 0px solid; border-right: 0px solid; background-color: %s; } QWidget { color: %s; } ", abyss, abyss, inactiveFg))
+}
+
 func newHFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {
 	layout := widgets.NewQLayout2()
 	items := []*widgets.QLayoutItem{}
@@ -284,7 +290,6 @@ func newTabline() *Tabline {
 		// fileIcon.SetFixedHeight(12)
 		file := widgets.NewQLabel(nil, 0)
 		file.SetContentsMargins(0, marginTop, 0, marginBottom)
-		file.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		closeIcon := svg.NewQSvgWidget(nil)
 		closeIcon.SetFixedWidth(editor.iconSize)
 		closeIcon.SetFixedHeight(editor.iconSize)
@@ -323,21 +328,20 @@ func newTabline() *Tabline {
 }
 
 func (t *Tab) updateActive() {
-	//bg := t.t.ws.background
-	//fg := t.t.ws.foreground
-	if editor.fgcolor == nil || editor.bgcolor == nil {
+	if editor.colors.fg == nil || editor.colors.bg == nil {
 		return
 	}
-	bg := editor.bgcolor
-	fg := editor.fgcolor
+	bg := editor.colors.bg.String()
+	fg := editor.colors.fg.String()
+	inactiveFg := editor.colors.inactiveFg
 	if t.active {
-		activeStyle := fmt.Sprintf(".QWidget { border-left: 2px solid %s; background-color: %s; } QWidget{ color: %s; } ", editor.config.SideBar.AccentColor, bg.print(), fg.print())
+		activeStyle := fmt.Sprintf(".QWidget { border-left: 2px solid %s; background-color: %s; } QWidget{ color: %s; } ", editor.config.SideBar.AccentColor, bg, fg)
 		t.widget.SetStyleSheet(activeStyle)
-		svgContent := editor.getSvg("cross", newRGBA(fg.R, fg.G, fg.B, 1))
+		svgContent := editor.getSvg("cross", nil)
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else {
 		t.widget.SetStyleSheet("")
-		svgContent := editor.getSvg("cross", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 0.6))
+		svgContent := editor.getSvg("cross", inactiveFg)
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 }
@@ -460,10 +464,9 @@ func (t *Tab) pressEvent(event *gui.QMouseEvent) {
 }
 
 func (t *Tab) closeIconPressEvent(event *gui.QMouseEvent) {
-	fg := editor.fgcolor
 	t.closeIcon.SetFixedWidth(editor.iconSize)
 	t.closeIcon.SetFixedHeight(editor.iconSize)
-	svgContent := editor.getSvg("hoverclose", newRGBA(gradColor(fg).R, gradColor(fg).G, gradColor(fg).B, 1))
+	svgContent := editor.getSvg("hoverclose", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 

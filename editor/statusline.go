@@ -147,7 +147,6 @@ func initStatuslineNew() *Statusline {
 	gitIcon := svg.NewQSvgWidget(nil)
 	gitIcon.SetFixedSize2(editor.iconSize+1, editor.iconSize+1)
 	gitLabel := widgets.NewQLabel(nil, 0)
-	gitLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	gitLabel.SetContentsMargins(0, 0, 0, 0)
 	gitLayout := widgets.NewQHBoxLayout()
 	gitLayout.SetContentsMargins(0, 0, 0, 0)
@@ -186,10 +185,8 @@ func initStatuslineNew() *Statusline {
 		modeIcon.Hide()
 	}
 	fileLabel := widgets.NewQLabel(nil, 0)
-	fileLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	fileLabel.SetContentsMargins(0, 0, 0, 1)
 	folderLabel := widgets.NewQLabel(nil, 0)
-	folderLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	folderLabel.SetContentsMargins(0, 0, 0, 1)
 	folderLabel.Hide()
 	modeAndFileLayout := widgets.NewQHBoxLayout()
@@ -212,7 +209,6 @@ func initStatuslineNew() *Statusline {
 	s.main = main
 
 	fileFormatLabel := widgets.NewQLabel(nil, 0)
-	fileFormatLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	fileFormat := &StatuslineFileFormat{
 		label: fileFormatLabel,
 	}
@@ -220,7 +216,6 @@ func initStatuslineNew() *Statusline {
 	s.fileFormat.label.Hide()
 
 	encodingLabel := widgets.NewQLabel(nil, 0)
-	encodingLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	encoding := &StatuslineEncoding{
 		label: encodingLabel,
 	}
@@ -228,14 +223,12 @@ func initStatuslineNew() *Statusline {
 	s.encoding.label.Hide()
 
 	posLabel := widgets.NewQLabel(nil, 0)
-	posLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	pos := &StatuslinePos{
 		label: posLabel,
 	}
 	s.pos = pos
 
 	filetypeLabel := widgets.NewQLabel(nil, 0)
-	filetypeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	filetype := &StatuslineFiletype{
 		label: filetypeLabel,
 	}
@@ -246,7 +239,6 @@ func initStatuslineNew() *Statusline {
 	notifyWidget := widgets.NewQWidget(nil, 0)
 	notifyWidget.SetLayout(notifyLayout)
 	notifyLabel := widgets.NewQLabel(nil, 0)
-	notifyLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	notifyLabel.Hide()
 	notifyicon := svg.NewQSvgWidget(nil)
 	notifyicon.SetFixedSize2(editor.iconSize, editor.iconSize)
@@ -261,7 +253,6 @@ func initStatuslineNew() *Statusline {
 	}
 	s.notify = notify
 	notifyWidget.ConnectEnterEvent(func(event *core.QEvent) {
-		bg := editor.bgcolor
 		if editor.config.Statusline.ModeIndicatorType == "background" {
 			switch editor.workspaces[editor.active].mode {
 			case "normal":
@@ -278,14 +269,14 @@ func initStatuslineNew() *Statusline {
 				notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", darkenHex(editor.config.Statusline.TerminalModeColor)))
 			}
 		} else {
-			notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", warpColor(bg, -10).print()))
+			notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", editor.colors.widgetBg.String()))
 		}
 	})
 	notifyWidget.ConnectLeaveEvent(func(event *core.QEvent) {
 		notifyWidget.SetStyleSheet("")
 	})
 	notifyWidget.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
-		switch editor.displayNotifications {
+		switch editor.isDisplayNotifications {
 		case true:
 			editor.hideNotifications()
 		case false:
@@ -298,20 +289,17 @@ func initStatuslineNew() *Statusline {
 	okIcon := svg.NewQSvgWidget(nil)
 	okIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	okLabel := widgets.NewQLabel(nil, 0)
-	okLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	okLabel.SetContentsMargins(0, 0, 0, 0)
 	errorIcon := svg.NewQSvgWidget(nil)
 	errorIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	//errorIcon.Show()
 	errorLabel := widgets.NewQLabel(nil, 0)
-	errorLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	errorLabel.SetContentsMargins(0, 0, 0, 0)
 	//errorLabel.Show()
 	warnIcon := svg.NewQSvgWidget(nil)
 	warnIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	//warnIcon.Show()
 	warnLabel := widgets.NewQLabel(nil, 0)
-	warnLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	warnLabel.SetContentsMargins(0, 0, 0, 0)
 	//warnLabel.Show()
 	lintLayout := widgets.NewQHBoxLayout()
@@ -362,6 +350,24 @@ func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 	s.fileFormat.label.SetContentsMargins(l, u, r, d)
 	s.encoding.label.SetContentsMargins(l, u, r, d)
 	s.lint.widget.SetContentsMargins(l, u, r, d)
+}
+
+func (s *Statusline) setColor() {
+	if editor.config.Statusline.ModeIndicatorType == "background" {
+		return
+	}
+
+	comment := editor.colors.comment.String()
+	fg := editor.colors.fg.String()
+	bg := editor.colors.bg.String()
+
+	s.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", comment))
+	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { border-top: 0px solid %s; background-color: %s; } * { color: %s; }", bg, bg, fg))
+
+	svgContent := editor.getSvg("git", nil)
+	s.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	svgContent = editor.getSvg("bell", nil)
+	s.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
 func (s *Statusline) subscribe() {
@@ -681,14 +687,14 @@ func (s *StatuslineLint) update() {
 		var svgErrContent, svgWrnContent string
 
 		var lintNoErrColor *RGBA
-		switch editor.fgcolor {
+		switch editor.colors.fg {
 		case nil:
 			return
 		default:
 			if editor.config.Statusline.ModeIndicatorType == "background" {
 				lintNoErrColor = newRGBA(255, 255, 255, 1)
 			} else {
-				lintNoErrColor = editor.fgcolor
+				lintNoErrColor = editor.colors.fg
 			}
 		}
 
@@ -731,14 +737,14 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 	var svgErrContent, svgWrnContent string
 
 	var lintNoErrColor *RGBA
-	switch editor.fgcolor {
+	switch editor.colors.fg {
 	case nil:
 		return
 	default:
 		if editor.config.Statusline.ModeIndicatorType == "background" {
 			lintNoErrColor = newRGBA(255, 255, 255, 1)
 		} else {
-			lintNoErrColor = editor.fgcolor
+			lintNoErrColor = editor.colors.fg
 		}
 	}
 

@@ -121,6 +121,15 @@ func (p *PopupMenu) updateFont(font *Font) {
 	}
 }
 
+func (p *PopupMenu) setColor() {
+	fg := editor.colors.widgetFg.String()
+	inactiveFg := editor.colors.inactiveFg.String()
+	bg := editor.colors.widgetBg.String()
+	sbg := editor.colors.scrollBarBg.String()
+	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", sbg))
+	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: %s; color: %s;} #detailpopup { color: %s; }", bg, fg, inactiveFg))
+}
+
 func (p *PopupMenu) showItems(args []interface{}) {
 	arg := args[0].([]interface{})
 	items := arg[0].([]interface{})
@@ -220,8 +229,8 @@ func (p *PopupItem) updateMenu() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		if p.selected {
-			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.selectedBg.String()))
-			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.selectedBg.String()))
+			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
+			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
 		} else {
 			p.menuLabel.SetStyleSheet("")
 			p.detailLabel.SetStyleSheet("")
