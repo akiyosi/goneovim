@@ -22,12 +22,206 @@ type Svg struct {
 	name   string
 }
 
-// func (e *Editor) getSvgs() map[string]*SvgXML {
-// 	e.svgsOnce.Do(func() {
-// 		e.initSVGS()
-// 	})
-// 	return e.svgs
-// }
+const (
+    GithubLangMercury = "#ff2b2b"
+    GithubLangTypeScript = "#2b7489"
+    GithubLangPureBasic = "#5a6986"
+    GithubLangObjectiveCpp = "#6866fb"
+    GithubLangSelf = "#0579aa"
+    GithubLangedn = "#db5855"
+    GithubLangNewLisp = "#87AED7"
+    GithubLangJupyterNotebook = "#DA5B0B"
+    GithubLangRebol = "#358a5b"
+    GithubLangFrege = "#00cafe"
+    GithubLangDart = "#00B4AB"
+    GithubLangAspectJ = "#a957b0"
+    GithubLangShell = "#89e051"
+    GithubLangWebOntologyLanguage = "#9cc9dd"
+    GithubLangxBase = "#403a40"
+    GithubLangEiffel = "#946d57"
+    GithubLangNix = "#7e7eff"
+    GithubLangRAML = "#77d9fb"
+    GithubLangMTML = "#b7e1f4"
+    GithubLangRacket = "#22228f"
+    GithubLangElixir = "#6e4a7e"
+    GithubLangSAS = "#B34936"
+    GithubLangAgda = "#315665"
+    GithubLangwisp = "#7582D1"
+    GithubLangD = "#ba595e"
+    GithubLangKotlin = "#F18E33"
+    GithubLangOpal = "#f7ede0"
+    GithubLangCrystal = "#776791"
+    GithubLangObjectiveC = "#438eff"
+    GithubLangColdFusionCFC = "#ed2cd6"
+    GithubLangOz = "#fab738"
+    GithubLangMirah = "#c7a938"
+    GithubLangObjectiveJ = "#ff0c5a"
+    GithubLangGosu = "#82937f"
+    GithubLangFreeMarker = "#0050b2"
+    GithubLangRuby = "#701516"
+    GithubLangComponentPascal = "#b0ce4e"
+    GithubLangArc = "#aa2afe"
+    GithubLangBrainfuck = "#2F2530"
+    GithubLangNit = "#009917"
+    GithubLangAPL = "#5A8164"
+    GithubLangGo = "#375eab"
+    GithubLangVisualBasic = "#945db7"
+    GithubLangPHP = "#4F5D95"
+    GithubLangCirru = "#ccccff"
+    GithubLangSQF = "#3F3F3F"
+    GithubLangGlyph = "#e4cc98"
+    GithubLangJava = "#b07219"
+    GithubLangMAXScript = "#00a6a6"
+    GithubLangScala = "#DC322F"
+    GithubLangMakefile = "#427819"
+    GithubLangColdFusion = "#ed2cd6"
+    GithubLangPerl = "#0298c3"
+    GithubLangLua = "#000080"
+    GithubLangVue = "#2c3e50"
+    GithubLangVerilog = "#b2b7f8"
+    GithubLangFactor = "#636746"
+    GithubLangHaxe = "#df7900"
+    GithubLangPureData = "#91de79"
+    GithubLangForth = "#341708"
+    GithubLangRed = "#ee0000"
+    GithubLangHy = "#7790B2"
+    GithubLangVolt = "#1F1F1F"
+    GithubLangLSL = "#3d9970"
+    GithubLangeC = "#913960"
+    GithubLangCoffeeScript = "#244776"
+    GithubLangHTML = "#e44b23"
+    GithubLangLex = "#DBCA00"
+    GithubLangAPIBlueprint = "#2ACCA8"
+    GithubLangSwift = "#ffac45"
+    GithubLangC = "#555555"
+    GithubLangAutoHotkey = "#6594b9"
+    GithubLangIsabelle = "#FEFE00"
+    GithubLangMetal = "#8f14e9"
+    GithubLangClarion = "#db901e"
+    GithubLangJSONiq = "#40d47e"
+    GithubLangBoo = "#d4bec1"
+    GithubLangAutoIt = "#1C3552"
+    GithubLangClojure = "#db5855"
+    GithubLangRust = "#dea584"
+    GithubLangProlog = "#74283c"
+    GithubLangSourcePawn = "#5c7611"
+    GithubLangAMPL = "#E6EFBB"
+    GithubLangFORTRAN = "#4d41b1"
+    GithubLangANTLR = "#9DC3FF"
+    GithubLangHarbour = "#0e60e3"
+    GithubLangTcl = "#e4cc98"
+    GithubLangBlitzMax = "#cd6400"
+    GithubLangPigLatin = "#fcd7de"
+    GithubLangLasso = "#999999"
+    GithubLangECL = "#8a1267"
+    GithubLangVHDL = "#adb2cb"
+    GithubLangElm = "#60B5CC"
+    GithubLangPropellerSpin = "#7fa2a7"
+    GithubLangX10 = "#4B6BEF"
+    GithubLangIDL = "#a3522f"
+    GithubLangATS = "#1ac620"
+    GithubLangAda = "#02f88c"
+    GithubLangUnity3DAsset = "#ab69a1"
+    GithubLangNu = "#c9df40"
+    GithubLangLFE = "#004200"
+    GithubLangSuperCollider = "#46390b"
+    GithubLangOxygene = "#cdd0e3"
+    GithubLangASP = "#6a40fd"
+    GithubLangAssembly = "#6E4C13"
+    GithubLangGnuplot = "#f0a9f0"
+    GithubLangJFlex = "#DBCA00"
+    GithubLangNetLinx = "#0aa0ff"
+    GithubLangTuring = "#45f715"
+    GithubLangVala = "#fbe5cd"
+    GithubLangProcessing = "#0096D8"
+    GithubLangArduino = "#bd79d1"
+    GithubLangFLUX = "#88ccff"
+    GithubLangNetLogo = "#ff6375"
+    GithubLangCSharp = "#178600"
+    GithubLangCSS = "#563d7c"
+    GithubLangEmacsLisp = "#c065db"
+    GithubLangStan = "#b2011d"
+    GithubLangSaltStack = "#646464"
+    GithubLangQML = "#44a51c"
+    GithubLangPike = "#005390"
+    GithubLangLOLCODE = "#cc9900"
+    GithubLangooc = "#b0b77e"
+    GithubLangHandlebars = "#01a9d6"
+    GithubLangJ = "#9EEDFF"
+    GithubLangMask = "#f97732"
+    GithubLangEmberScript = "#FFF4F3"
+    GithubLangTeX = "#3D6117"
+    GithubLangNemerle = "#3d3c6e"
+    GithubLangKRL = "#28431f"
+    GithubLangRenPy = "#ff7f7f"
+    GithubLangUnifiedParallelC = "#4e3617"
+    GithubLangGolo = "#88562A"
+    GithubLangFancy = "#7b9db4"
+    GithubLangOCaml = "#3be133"
+    GithubLangShen = "#120F14"
+    GithubLangPascal = "#b0ce4e"
+    GithubLangFSharp = "#b845fc"
+    GithubLangPuppet = "#302B6D"
+    GithubLangActionScript = "#882B0F"
+    GithubLangDiff = "#88dddd"
+    GithubLangRagelInRubyHost = "#9d5200"
+    GithubLangFantom = "#dbded5"
+    GithubLangZephir = "#118f9e"
+    GithubLangClick = "#E4E6F3"
+    GithubLangSmalltalk = "#596706"
+    GithubLangDM = "#447265"
+    GithubLangIoke = "#078193"
+    GithubLangPogoScript = "#d80074"
+    GithubLangLiveScript = "#499886"
+    GithubLangJavaScript = "#f1e05a"
+    GithubLangVimL = "#199f4b"
+    GithubLangPureScript = "#1D222D"
+    GithubLangABAP = "#E8274B"
+    GithubLangMatlab = "#bb92ac"
+    GithubLangSlash = "#007eff"
+    GithubLangR = "#198ce7"
+    GithubLangErlang = "#B83998"
+    GithubLangPan = "#cc0000"
+    GithubLangLookML = "#652B81"
+    GithubLangEagle = "#814C05"
+    GithubLangScheme = "#1e4aec"
+    GithubLangPLSQL = "#dad8d8"
+    GithubLangPython = "#3572A5"
+    GithubLangMax = "#c4a79c"
+    GithubLangCommonLisp = "#3fb68b"
+    GithubLangLatte = "#A8FF97"
+    GithubLangXQuery = "#5232e7"
+    GithubLangOmgrofl = "#cabbff"
+    GithubLangXC = "#99DA07"
+    GithubLangNimrod = "#37775b"
+    GithubLangSystemVerilog = "#DAE1C2"
+    GithubLangChapel = "#8dc63f"
+    GithubLangGroovy = "#e69f56"
+    GithubLangDylan = "#6c616e"
+    GithubLangE = "#ccce35"
+    GithubLangParrot = "#f3ca0a"
+    GithubLangGrammaticalFramework = "#79aa7a"
+    GithubLangGameMakerLanguage = "#8fb200"
+    GithubLangPapyrus = "#6600cc"
+    GithubLangNetLinxERB = "#747faa"
+    GithubLangClean = "#3F85AF"
+    GithubLangAlloy = "#64C800"
+    GithubLangSquirrel = "#800000"
+    GithubLangPAWN = "#dbb284"
+    GithubLangUnrealScript = "#a54c4d"
+    GithubLangStandardML = "#dc566d"
+    GithubLangSlim = "#ff8f77"
+    GithubLangPerl6 = "#0000fb"
+    GithubLangJulia = "#a270ba"
+    GithubLangHaskell = "#29b544"
+    GithubLangNCL = "#28431f"
+    GithubLangIo = "#a9188d"
+    GithubLangRouge = "#cc0088"
+    GithubLangCpp = "#f34b7d"
+    GithubLangAGSScript = "#B9D9FF"
+    GithubLangDogescript = "#cca760"
+    GithubLangNesC = "#94B0C7"
+)
 
 func (e *Editor) getSvg(name string, color *RGBA) string {
 	// e.svgsOnce.Do(func() {
@@ -58,7 +252,6 @@ func (e *Editor) getSvg(name string, color *RGBA) string {
 }
 
 func (e *Editor) initSVGS() {
-	blue := newRGBA(81, 154, 186, 1)
 	e.svgs = map[string]*SvgXML{}
 
 	e.svgs["flag"] = &SvgXML{
@@ -304,7 +497,7 @@ func (e *Editor) initSVGS() {
 		width:     24,
 		height:    24,
 		thickness: 0,
-		color:     blue,
+		color:     hexToRGBA(GithubLangJSONiq),
 		xml:       `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M5 3H7V5H5V10A2 2 0 0 1 3 12A2 2 0 0 1 5 14V19H7V21H5C3.93 20.73 3 20.1 3 19V15A2 2 0 0 0 1 13H0V11H1A2 2 0 0 0 3 9V5A2 2 0 0 1 5 3M19 3A2 2 0 0 1 21 5V9A2 2 0 0 0 23 11H24V13H23A2 2 0 0 0 21 15V19A2 2 0 0 1 19 21H17V19H19V14A2 2 0 0 1 21 12A2 2 0 0 1 19 10V5H17V3H19M12 15A1 1 0 0 1 13 16A1 1 0 0 1 12 17A1 1 0 0 1 11 16A1 1 0 0 1 12 15M8 15A1 1 0 0 1 9 16A1 1 0 0 1 8 17A1 1 0 0 1 7 16A1 1 0 0 1 8 15M16 15A1 1 0 0 1 17 16A1 1 0 0 1 16 17A1 1 0 0 1 15 16A1 1 0 0 1 16 15Z" /></svg>`,
 	}
 
@@ -312,7 +505,7 @@ func (e *Editor) initSVGS() {
 		width:     24,
 		height:    24,
 		thickness: 0,
-		color:     blue,
+		color:     hexToRGBA(GithubLangTypeScript),
 		xml:       `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="%s" d="M3 3H21V21H3V3M13.71 17.86C14.21 18.84 15.22 19.59 16.8 19.59C18.4 19.59 19.6 18.76 19.6 17.23C19.6 15.82 18.79 15.19 17.35 14.57L16.93 14.39C16.2 14.08 15.89 13.87 15.89 13.37C15.89 12.96 16.2 12.64 16.7 12.64C17.18 12.64 17.5 12.85 17.79 13.37L19.1 12.5C18.55 11.54 17.77 11.17 16.7 11.17C15.19 11.17 14.22 12.13 14.22 13.4C14.22 14.78 15.03 15.43 16.25 15.95L16.67 16.13C17.45 16.47 17.91 16.68 17.91 17.26C17.91 17.74 17.46 18.09 16.76 18.09C15.93 18.09 15.45 17.66 15.09 17.06L13.71 17.86M13 11.25H8V12.75H9.5V20H11.25V12.75H13V11.25Z" /></svg>`,
 	}
 
@@ -320,7 +513,7 @@ func (e *Editor) initSVGS() {
 		width:     24,
 		height:    24,
 		thickness: 0,
-		color:     blue,
+		color:     hexToRGBA(GithubLangJavaScript),
 		xml:       `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M3 3H21V21H3V3M7.73 18.04C8.13 18.89 8.92 19.59 10.27 19.59C11.77 19.59 12.8 18.79 12.8 17.04V11.26H11.1V17C11.1 17.86 10.75 18.08 10.2 18.08C9.62 18.08 9.38 17.68 9.11 17.21L7.73 18.04M13.71 17.86C14.21 18.84 15.22 19.59 16.8 19.59C18.4 19.59 19.6 18.76 19.6 17.23C19.6 15.82 18.79 15.19 17.35 14.57L16.93 14.39C16.2 14.08 15.89 13.87 15.89 13.37C15.89 12.96 16.2 12.64 16.7 12.64C17.18 12.64 17.5 12.85 17.79 13.37L19.1 12.5C18.55 11.54 17.77 11.17 16.7 11.17C15.19 11.17 14.22 12.13 14.22 13.4C14.22 14.78 15.03 15.43 16.25 15.95L16.67 16.13C17.45 16.47 17.91 16.68 17.91 17.26C17.91 17.74 17.46 18.09 16.76 18.09C15.93 18.09 15.45 17.66 15.09 17.06L13.71 17.86Z" /></svg>`,
 	}
 
@@ -328,7 +521,6 @@ func (e *Editor) initSVGS() {
 		width:     1024,
 		height:    1024,
 		thickness: 0,
-		color:     blue,
 		xml:       `<svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><path fill="%s" d="M950.154 192H73.846C33.127 192 0 225.12699999999995 0 265.846v492.308C0 798.875 33.127 832 73.846 832h876.308c40.721 0 73.846-33.125 73.846-73.846V265.846C1024 225.12699999999995 990.875 192 950.154 192zM576 703.875L448 704V512l-96 123.077L256 512v192H128V320h128l96 128 96-128 128-0.125V703.875zM767.091 735.875L608 512h96V320h128v192h96L767.091 735.875z" /></svg>`,
 	}
 
@@ -342,7 +534,7 @@ func (e *Editor) initSVGS() {
 		width:     128,
 		height:    128,
 		thickness: 0,
-		color:     blue,
+		color:     hexToRGBA(GithubLangPython),
 		xml:       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><g><path fill="%s" d="M49.33 62h29.159c8.117 0 14.511-6.868 14.511-15.019v-27.798c0-7.912-6.632-13.856-14.555-15.176-5.014-.835-10.195-1.215-15.187-1.191-4.99.023-9.612.448-13.805 1.191-12.355 2.181-14.453 6.751-14.453 15.176v10.817h29v4h-40.224000000000004c-8.484 0-15.914 5.108-18.237 14.811-2.681 11.12-2.8 17.919 0 29.53 2.075 8.642 7.03 14.659 15.515 14.659h9.946v-13.048c0-9.637 8.428-17.952 18.33-17.952zm-1.838-39.11c-3.026 0-5.478-2.479-5.478-5.545 0-3.079 2.451-5.581 5.478-5.581 3.015 0 5.479 2.502 5.479 5.581-.001 3.066-2.465 5.545-5.479 5.545zM122.281 48.811c-2.098-8.448-6.103-14.811-14.599-14.811h-10.682v12.981c0 10.05-8.794 18.019-18.511 18.019h-29.159c-7.988 0-14.33 7.326-14.33 15.326v27.8c0 7.91 6.745 12.564 14.462 14.834 9.242 2.717 17.994 3.208 29.051 0 7.349-2.129 14.487-6.411 14.487-14.834v-11.126h-29v-4h43.682c8.484 0 11.647-5.776 14.599-14.66 3.047-9.145 2.916-17.799 0-29.529zm-41.955 55.606c3.027 0 5.479 2.479 5.479 5.547 0 3.076-2.451 5.579-5.479 5.579-3.015 0-5.478-2.502-5.478-5.579 0-3.068 2.463-5.547 5.478-5.547z"/></g></svg>`,
 	}
 	e.svgs["pyc"] = e.svgs["py"]
@@ -350,14 +542,14 @@ func (e *Editor) initSVGS() {
 		width:     128,
 		height:    128,
 		thickness: 1,
-		color:     blue,
+		color:     hexToRGBA(GithubLangC),
 		xml:       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><g><path fill="%s" d="M97.5221405461895,45.03725476832212 L108.76640973908529,40.28547464292772 C108.56169322951193,38.08885210339795 94.3709708336648,16.355134752322773 69.08566426354695,16.60775090230729 C43.80035769342909,16.86037464885613 18.857250847109363,37.373658362115926 19.237894612168745,64.2531288574854 C19.61853837722812,91.1325841597262 44.09328059332486,111.39442159390717 68.83481490446007,111.39442919047148 C93.57635717502413,111.39443678703581 108.34661354359856,92.47813321193519 107.91159096075516,92.0739200243284 C107.47656837791175,91.66970683672162 100.93955315316323,85.45629455970422 100.26450603444523,85.0460952794112 C99.58945891572723,84.63589599911819 90.07591976589798,98.4070389619417 68.86888921929224,98.15440761882854 C47.66185867268652,97.90177627571538 33.5390540830676,80.57280520208417 33.375925589144344,64.50575260403423 C33.212797095221084,48.43870000598427 47.89705183525975,31.110936786080387 69.10406646300783,30.858313039531545 C90.31109700961355,30.605681696418387 93.33611773457105,42.36367434123211 97.5221405461895,45.03725476832212 z"></path></g></svg>`,
 	}
 	e.svgs["cpp"] = &SvgXML{
 		width:     24,
 		height:    24,
 		thickness: 0.5,
-		color:     blue,
+		color:     hexToRGBA(GithubLangCpp),
 		xml: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
     <path fill="%s" d="M10.5 15.97L10.91 18.41C10.65 18.55 10.23 18.68 9.67 18.8C9.1 18.93 8.43 19 7.66 19C5.45 18.96 3.79 18.3 2.68 17.04C1.56 15.77 1 14.16 1 12.21C1.05 9.9 1.72 8.13 3 6.89C4.32 5.64 5.96 5 7.94 5C8.69 5 9.34 5.07 9.88 5.19C10.42 5.31 10.82 5.44 11.08 5.59L10.5 8.08L9.44 7.74C9.04 7.64 8.58 7.59 8.05 7.59C6.89 7.58 5.93 7.95 5.18 8.69C4.42 9.42 4.03 10.54 4 12.03C4 13.39 4.37 14.45 5.08 15.23C5.79 16 6.79 16.4 8.07 16.41L9.4 16.29C9.83 16.21 10.19 16.1 10.5 15.97M11 11H13V9H15V11H17V13H15V15H13V13H11V11M18 11H20V9H22V11H24V13H22V15H20V13H18V11Z" />
 </svg>`,
@@ -366,7 +558,7 @@ func (e *Editor) initSVGS() {
 		width:     128,
 		height:    128,
 		thickness: 0,
-		color:     blue,
+		color:     hexToRGBA(GithubLangGo),
 		xml:       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><g><path fill="%s" d="M108.2 64.8c-.1-.1-.2-.2-.4-.2l-.1-.1c-.1-.1-.2-.1-.2-.2l-.1-.1c-.1 0-.2-.1-.2-.1l-.2-.1c-.1 0-.2-.1-.2-.1l-.2-.1c-.1 0-.2-.1-.2-.1-.1 0-.1 0-.2-.1l-.3-.1c-.1 0-.1 0-.2-.1l-.3-.1h-.1l-.4-.1h-.2c-.1 0-.2 0-.3-.1h-2.3c-.6-13.3.6-26.8-2.8-39.6 12.9-4.6 2.8-22.3-8.4-14.4-7.4-6.4-17.6-7.8-28.3-7.8-10.5.7-20.4 2.9-27.4 8.4-2.8-1.4-5.5-1.8-7.9-1.1v.1c-.1 0-.3.1-.4.2-.1 0-.3.1-.4.2h-.1c-.1 0-.2.1-.4.2h-.1l-.3.2h-.1l-.3.2h-.1l-.3.2s-.1 0-.1.1l-.3.2s-.1 0-.1.1l-.3.2s-.1 0-.1.1l-.3.2-.1.1c-.1.1-.2.1-.2.2l-.1.1-.2.2-.1.1c-.1.1-.1.2-.2.2l-.1.1c-.1.1-.1.2-.2.2l-.1.1c-.1.1-.1.2-.2.2l-.1.1c-.1.1-.1.2-.2.2l-.1.1c-.1.1-.1.2-.2.2l-.1.1-.1.3s0 .1-.1.1l-.1.3s0 .1-.1.1l-.1.3s0 .1-.1.1l-.1.3s0 .1-.1.1c.4.3.4.4.4.4v.1l-.1.3v.1c0 .1 0 .2-.1.3v3.1c0 .1 0 .2.1.3v.1l.1.3v.1l.1.3s0 .1.1.1l.1.3s0 .1.1.1l.1.3s0 .1.1.1l.2.3s0 .1.1.1l.2.3s0 .1.1.1l.2.3.1.1.3.3.3.3h.1c1 .9 2 1.6 4 2.2v-.2c-4.2 12.6-.7 25.3-.5 38.3-.6 0-.7.4-1.7.5h-.5c-.1 0-.3 0-.5.1-.1 0-.3 0-.4.1l-.4.1h-.1l-.4.1h-.1l-.3.1h-.1l-.3.1s-.1 0-.1.1l-.3.1-.2.1c-.1 0-.2.1-.2.1l-.2.1-.2.1c-.1 0-.2.1-.2.1l-.2.1-.4.3c-.1.1-.2.2-.3.2l-.4.4-.1.1c-.1.2-.3.4-.4.5l-.2.3-.3.6-.1.3v.3c0 .5.2.9.9 1.2.2 3.7 3.9 2 5.6.8l.1-.1c.2-.2.5-.3.6-.3h.1l.2-.1c.1 0 .1 0 .2-.1.2-.1.4-.1.5-.2.1 0 .1-.1.1-.2l.1-.1c.1-.2.2-.6.2-1.2l.1-1.3v1.8c-.5 13.1-4 30.7 3.3 42.5 1.3 2.1 2.9 3.9 4.7 5.4h-.5c-.2.2-.5.4-.8.6l-.9.6-.3.2-.6.4-.9.7-1.1 1c-.2.2-.3.4-.4.5l-.4.6-.2.3c-.1.2-.2.4-.2.6l-.1.3c-.2.8 0 1.7.6 2.7l.4.4h.2c.1 0 .2 0 .4.1.2.4 1.2 2.5 3.9.9 2.8-1.5 4.7-4.6 8.1-5.1l-.5-.6c5.9 2.8 12.8 4 19 4.2 8.7.3 18.6-.9 26.5-5.2 2.2.7 3.9 3.9 5.8 5.4l.1.1.1.1.1.1.1.1s.1 0 .1.1c0 0 .1 0 .1.1 0 0 .1 0 .1.1h2.1000000000000005s.1 0 .1-.1h.1s.1 0 .1-.1h.1s.1 0 .1-.1c0 0 .1 0 .1-.1l.1-.1s.1 0 .1-.1l.1-.1h.1l.2-.2.2-.1h.1l.1-.1h.1l.1-.1.1-.1.1-.1.1-.1.1-.1.1-.1.1-.1v-.1s0-.1.1-.1v-.1s0-.1.1-.1v-.1s0-.1.1-.1v-1.4000000000000001s-.3 0-.3-.1l-.3-.1v-.1l.3-.1s.2 0 .2-.1l.1-.1v-2.1000000000000005s0-.1-.1-.1v-.1s0-.1-.1-.1v-.1s0-.1-.1-.1c0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1 0 0 0-.1-.1-.1l-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1v-.1l-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1-.1c2-1.9 3.8-4.2 5.1-6.9 5.9-11.8 4.9-26.2 4.1-39.2h.1c.1 0 .2.1.2.1h.30000000000000004s.1 0 .1.1h.1s.1 0 .1.1l.2.1c1.7 1.2 5.4 2.9 5.6-.8 1.6.6-.3-1.8-1.3-2.5zm-72.2-41.8c-3.2-16 22.4-19 23.3-3.4.8 13-20 16.3-23.3 3.4zm36.1 15c-1.3 1.4-2.7 1.2-4.1.7 0 1.9.4 3.9.1 5.9-.5.9-1.5 1-2.3 1.4-1.2-.2-2.1-.9-2.6-2l-.2-.1c-3.9 5.2-6.3-1.1-5.2-5-1.2.1-2.2-.2-3-1.5-1.4-2.6.7-5.8 3.4-6.3.7 3 8.7 2.6 10.1-.2 3.1 1.5 6.5 4.3 3.8 7.1zm-7-17.5c-.9-13.8 20.3-17.5 23.4-4 3.5 15-20.8 18.9-23.4 4zM41.7 17c-1.9 0-3.5 1.7-3.5 3.8 0 2.1 1.6 3.8 3.5 3.8s3.5-1.7 3.5-3.8c0-2.1-1.5-3.8-3.5-3.8zm1.6 5.7c-.5 0-.8-.4-.8-1 0-.5.4-1 .8-1 .5 0 .8.4.8 1 0 .5-.3 1-.8 1zM71.1 16.1c-1.9 0-3.4 1.7-3.4 3.8 0 2.1 1.5 3.8 3.4 3.8s3.4-1.7 3.4-3.8c0-2.1-1.5-3.8-3.4-3.8zm1.6 5.6c-.4 0-.8-.4-.8-1 0-.5.4-1 .8-1s.8.4.8 1-.4 1-.8 1z"/></g></svg>`,
 	}
 }
