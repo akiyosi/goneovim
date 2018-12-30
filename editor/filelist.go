@@ -30,7 +30,7 @@ type Fileitem struct {
 	widget         *widgets.QWidget
 	fileIcon       *svg.QSvgWidget
 	fileType       string
-	file           *widgets.QLabel
+	fileLabel           *widgets.QLabel
 	fileText       string
 	fileName       string
 	filenameWidget *widgets.QWidget
@@ -124,20 +124,15 @@ func (f *Fileitem) makeWidget(width int) {
 	fileIcon.SetFixedWidth(editor.iconSize)
 	fileIcon.SetFixedHeight(editor.iconSize)
 
-	// filenameWidget := widgets.NewQWidget(nil, 0)
-	// filenameWidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
-	// filenameLayout := widgets.NewQHBoxLayout()
-	// filenameLayout.SetContentsMargins(0, editor.config.Editor.Linespace/2, 0, editor.config.Editor.Linespace/2)
-	// filenameLayout.SetSpacing(0)
-
-	file := widgets.NewQLabel(nil, 0)
-	file.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
-	file.SetContentsMargins(0, 0, 0, 0)
-	file.SetContentsMargins(0, editor.config.Editor.Linespace/2, 0, editor.config.Editor.Linespace/2)
+	fileLabel := widgets.NewQLabel(nil, 0)
+	fileLabel.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
+	fileLabel.SetContentsMargins(0, 0, 0, 0)
+	fileLabel.SetContentsMargins(0, editor.config.Editor.Linespace/2, 0, editor.config.Editor.Linespace/2)
 	fileModified := svg.NewQSvgWidget(nil)
 	fileModified.SetFixedWidth(editor.iconSize)
 	fileModified.SetFixedHeight(editor.iconSize)
 	fileModified.SetContentsMargins(0, 0, 0, 0)
+
 	// Hide with the same color as the background
 	svgModified := editor.getSvg("circle", editor.colors.sideBarBg)
 	fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
@@ -146,14 +141,12 @@ func (f *Fileitem) makeWidget(width int) {
 	maxfilenameLength := float64(width - fileIcon.Width() - fileModified.Width() - FilewidgetLeftMargin - charWidth - 35)
 
 	// f.filenameWidget = filenameWidget
-	f.file = file
+	f.fileLabel = fileLabel
 	f.fileIcon = fileIcon
 	f.fileModified = fileModified
 
 	f.setFilename(maxfilenameLength)
 
-	// filenameLayout.AddWidget(f.file, 0, 0)
-	// filenameWidget.SetLayout(filenameLayout)
 
 	if f.fileType == "/" {
 		svgContent := editor.getSvg("directory", nil)
@@ -165,7 +158,7 @@ func (f *Fileitem) makeWidget(width int) {
 
 	filelayout.AddWidget(f.fileIcon, 0, 0)
 	// filelayout.AddWidget(f.filenameWidget, 0, 0)
-	filelayout.AddWidget(f.file, 0, 0)
+	filelayout.AddWidget(f.fileLabel, 0, 0)
 	filelayout.AddWidget(f.fileModified, 0, 0)
 
 	filewidget.SetLayout(filelayout)
@@ -343,8 +336,8 @@ func (fl *Filelist) newFileitem(f os.FileInfo, path string) (*Fileitem, error) {
 func (f *Fileitem) setFilename(length float64) {
 	metrics := gui.NewQFontMetricsF(gui.NewQFont())
 	elidedfilename := metrics.ElidedText(f.fileText, core.Qt__ElideRight, length, 0)
-	f.file.Clear()
-	f.file.SetText(elidedfilename)
+	f.fileLabel.Clear()
+	f.fileLabel.SetText(elidedfilename)
 }
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
