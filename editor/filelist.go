@@ -147,7 +147,6 @@ func (f *Fileitem) makeWidget(width int) {
 
 	f.setFilename(maxfilenameLength)
 
-
 	if f.fileType == "/" {
 		svgContent := editor.getSvg("directory", nil)
 		fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -202,7 +201,7 @@ func (f *Fileitem) setFilename(length float64) {
 	metrics := gui.NewQFontMetricsF(gui.NewQFont())
 	elidedfilename := metrics.ElidedText(f.fileText, core.Qt__ElideRight, length, 0)
 	f.fileLabel.Clear()
-	f.fileLabel.SetText(elidedfilename)
+	go f.fileLabel.SetText(elidedfilename)
 }
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {

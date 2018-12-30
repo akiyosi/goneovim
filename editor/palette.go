@@ -79,7 +79,6 @@ func initPalette() *Palette {
 	resultLayout.SetSpacing(0)
 	resultLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 	resultWidget := widgets.NewQWidget(nil, 0)
-	resultWidget.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	resultWidget.SetLayout(resultLayout)
 	resultWidget.SetContentsMargins(0, 0, 0, 0)
 
@@ -90,14 +89,12 @@ func initPalette() *Palette {
 	scrollBar.SetFixedWidth(5)
 
 	resultMainWidget := widgets.NewQWidget(nil, 0)
-	resultMainWidget.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	resultMainWidget.SetContentsMargins(0, 0, 0, 0)
 	resultMainLayout.AddWidget(resultWidget, 0, 0)
 	resultMainLayout.AddWidget(scrollCol, 0, 0)
 	resultMainWidget.SetLayout(resultMainLayout)
 
 	pattern := widgets.NewQLabel(nil, 0)
-	pattern.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	pattern.SetContentsMargins(padding, padding, padding, padding)
 	pattern.SetFixedWidth(width - padding*2)
 	pattern.SetSizePolicy2(widgets.QSizePolicy__Preferred, widgets.QSizePolicy__Maximum)
@@ -145,7 +142,6 @@ func initPalette() *Palette {
 		icon.SetFixedHeight(editor.iconSize - 1)
 		icon.SetContentsMargins(0, 0, 0, 0)
 		base := widgets.NewQLabel(nil, 0)
-		base.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		base.SetText("base")
 		base.SetContentsMargins(0, padding, 0, padding)
 		base.SetStyleSheet("background-color: none; white-space: pre-wrap;")

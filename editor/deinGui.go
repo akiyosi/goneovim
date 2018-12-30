@@ -271,7 +271,6 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginName.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 		fg := editor.colors.fg
 		installedPluginName.SetStyleSheet(fmt.Sprintf(" .QLabel { color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
-		installedPluginName.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 3, false))
 		installedPluginName.SetFixedWidth(width)
 
 		i.nameLabel = installedPluginName
@@ -285,7 +284,6 @@ func loadDeinCashe() []*DeinPluginItem {
 			installedPluginWidget.Show()
 		}()
 		installedPluginDescLabel.SetWordWrap(true)
-		installedPluginDescLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		installedPluginDesc := widgets.NewQWidget(nil, 0)
 		installedPluginDescLayout := widgets.NewQHBoxLayout()
 		installedPluginDescLayout.AddWidget(installedPluginDescLabel, 0, 0)
@@ -294,7 +292,6 @@ func loadDeinCashe() []*DeinPluginItem {
 
 		// * plugin install button
 		updateButtonLabel := widgets.NewQLabel(nil, 0)
-		updateButtonLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		updateButtonLabel.SetFixedWidth(7 * editor.config.Editor.FontSize)
 		updateButtonLabel.SetFixedHeight(2 * (editor.config.Editor.FontSize - 2))
 		updateButtonLabel.SetContentsMargins(editor.config.Editor.FontSize/2, 0, editor.config.Editor.FontSize/2, 0)
@@ -391,7 +388,6 @@ func loadDeinCashe() []*DeinPluginItem {
 			if i.contextMenu == nil {
 				i.contextMenu = widgets.NewQMenu(installedPluginSettings)
 				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: %s;} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: %s;} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", fg.String(), bg.String()))
-				i.contextMenu.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 				// Example menu and action
 				// menuActionExit := i.contextMenu.AddAction("E&xit")
 				// menuActionExit.SetShortcut(gui.NewQKeySequence2("Ctrl+X", gui.QKeySequence__NativeText))
@@ -581,7 +577,6 @@ func newDeinSide() *DeinSide {
 	comboBoxLayout.SetContentsMargins(20, 5, 20, 0)
 	comboBoxLayout.SetSpacing(0)
 	comboBoxMenu := widgets.NewQComboBox(nil)
-	comboBoxMenu.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	comboBoxMenu.SetMinimumHeight(editor.config.Editor.FontSize + 3)
 	comboBoxMenu.AddItems([]string{"ALL", "Language", "Completion", "Code-display", "Integrations", "Interface", "Commands", "Other"})
 	comboBoxMenu.SetFocusPolicy(core.Qt__ClickFocus)
@@ -602,7 +597,6 @@ func newDeinSide() *DeinSide {
 	searchboxEdit := widgets.NewQLineEdit(nil)
 	searchboxEdit.SetMinimumHeight(editor.config.Editor.FontSize + 3)
 	searchboxEdit.SetPlaceholderText("Search Plugins in VimAwesome")
-	searchboxEdit.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	searchboxEdit.SetFocusPolicy(core.Qt__ClickFocus)
 	// searchboxEdit.SetFixedWidth(editor.config.sideWidth - (20 + 20))
 	// searchboxEdit.SetFixedWidth(width - (20 + 20))
@@ -728,7 +722,6 @@ func newInstalledPlugins() *InstalledPlugins {
 	installedHeader.SetContentsMargins(20, 2, 20, 2)
 	installedHeader.SetText("INSTALLED")
 	installedHeader.SetStyleSheet(fmt.Sprintf(" QLabel { margin-top: 11px; margin-bottom: 0px; background: %s; color: %s; } ", bg, fg))
-	installedHeader.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	installedLayout.AddWidget(installedHeader, 0, 0)
 
 	cache := loadDeinCashe()
@@ -910,7 +903,6 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 		pluginName.SetFixedWidth(width)
 		pluginName.SetText(p.Name)
 		pluginName.SetStyleSheet(fmt.Sprintf(" .QLabel { color: rgba(%d, %d, %d, 1);} ", fg.R, fg.G, fg.B))
-		pluginName.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 3, false))
 		pluginName.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Fixed)
 
 		// * plugin description
@@ -926,7 +918,6 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 			pluginDescLabel.SetWordWrap(true)
 			pluginDescLayout.AddWidget(pluginDescLabel, 0, 0)
 			pluginDesc.SetLayout(pluginDescLayout)
-			pluginDescLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		}
 
 		// * plugin info
@@ -1231,7 +1222,6 @@ func (p *Plugin) enterButton(event *core.QEvent) {
 		return
 	}
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton { background: %s;} #installbutton QLabel { color: #ffffff; }", editor.config.SideBar.AccentColor))
-	p.installButton.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 }
 
 func (p *Plugin) leaveButton(event *core.QEvent) {
@@ -1240,7 +1230,6 @@ func (p *Plugin) leaveButton(event *core.QEvent) {
 	}
 	labelColor := darkenHex(editor.config.SideBar.AccentColor)
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton { background: %s;} #installbutton QLabel { color: #ffffff; }", labelColor))
-	p.installButton.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 }
 
 func deinInstallPost(result string) {
@@ -1494,7 +1483,6 @@ func (side *DeinSide) pressConfigIcon(event *gui.QMouseEvent) {
 	bg := editor.colors.bg
 	if side.contextMenu == nil {
 		side.contextMenu = widgets.NewQMenu(side.widget)
-		side.contextMenu.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 		side.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: %s;} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: %s;} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", fg.String(), bg.String()))
 		menuActionUpdateRemotePlugins := side.contextMenu.AddAction("UpdateRemotePlugins")
 		menuActionUpdateRemotePlugins.ConnectTriggered(func(dummy bool) {
