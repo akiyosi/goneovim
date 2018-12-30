@@ -83,6 +83,17 @@ type Workspace struct {
 	drawStatusline bool
 	drawTabline    bool
 	drawLint       bool
+
+	t1	time.Duration
+	t2	time.Duration
+	t3	time.Duration
+	t4	time.Duration
+	t5	time.Duration
+	t6	time.Duration
+	t7	time.Duration
+	t8	time.Duration
+	t9	time.Duration
+	t10	time.Duration
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -506,10 +517,12 @@ func (w *Workspace) setCwd(cwd string) {
 				continue
 			}
 
-			filelist := newFilelistwidget(path)
+			filelist, err := newFilelist(path)
+			if err != nil {
+				continue
+			}
 			sideItem.isload = true
 			sideItem.setFilelistwidget(filelist)
-			continue
 		}
 	}
 }
@@ -532,6 +545,16 @@ func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
 	} else {
 		i.openFilelist()
 	}
+}
+
+// slow...
+func (i *WorkspaceSideItem) addFilewidget(f *Fileitem) {
+	// f.makeWidget()
+	// i.Filelist.Fileitems = append(i.Filelist.Fileitems, f)
+	// i.Filelist.widget.Layout().AddWidget(f.widget)
+
+	i.Filelist.Fileitems = append(i.Filelist.Fileitems, f)
+	i.Filelist.widget.Layout().AddWidget(f.widget)
 }
 
 func (i *WorkspaceSideItem) toggleFilelist(event *gui.QMouseEvent) {
@@ -1075,6 +1098,7 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 	return qv
 }
 
+
 // WorkspaceSide is
 type WorkspaceSide struct {
 	widget     *widgets.QWidget
@@ -1100,8 +1124,10 @@ func newWorkspaceSide() *WorkspaceSide {
 		widget: widget,
 		header: header,
 	}
+
 	layout.AddWidget(header)
 	side.header.Show()
+
 
 	items := []*WorkspaceSideItem{}
 	side.items = items
@@ -1116,8 +1142,17 @@ func newWorkspaceSide() *WorkspaceSide {
 	return side
 }
 
+type filelistSignal struct {
+	core.QObject
+	_ func() `signal:"filelistUpdateSignal"`
+}
+
+
 // WorkspaceSideItem is
 type WorkspaceSideItem struct {
+	signal     *filelistSignal
+	filelistUpdate chan *Fileitem
+
 	hidden    bool
 	active    bool
 	side      *WorkspaceSide
@@ -1184,6 +1219,9 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	closeIcon.Hide()
 
 	sideitem := &WorkspaceSideItem{
+		filelistUpdate:   make(chan *Fileitem, 20000),
+		signal:        NewFilelistSignal(nil),
+
 		widget:      widget,
 		layout:      layout,
 		labelWidget: labelWidget,
@@ -1194,6 +1232,10 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 		// Filelistwidget: flwidget,
 	}
 	sideitem.Filelist.WSitem = sideitem
+	sideitem.signal.ConnectFilelistUpdateSignal(func() {
+		update := <-sideitem.filelistUpdate
+		sideitem.addFilewidget(update)
+	})
 
 	sideitem.widget.ConnectMousePressEvent(sideitem.toggleFilelist)
 
@@ -1252,7 +1294,10 @@ func (i *WorkspaceSideItem) setActive() {
 	reloadFilelist := i.cwdpath != i.Filelist.cwdpath
 
 	if reloadFilelist && editor.activity.editItem.active {
-		filelist := newFilelistwidget(i.cwdpath)
+		filelist, err := newFilelist(i.cwdpath)
+		if err != nil {
+			return
+		}
 		i.setFilelistwidget(filelist)
 	}
 	if !i.isFilelistHide {

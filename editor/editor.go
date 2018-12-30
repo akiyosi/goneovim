@@ -142,6 +142,8 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
+	runtime.GOMAXPROCS(16)
+
 	home, err := homedir.Dir()
 	if err != nil {
 		home = "~"
@@ -159,6 +161,8 @@ func InitEditor() {
 	e.app.ConnectAboutToQuit(func() {
 		editor.cleanup()
 	})
+	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QWidget")
+	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QLabel")
 
 	e.initSVGS()
 	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
