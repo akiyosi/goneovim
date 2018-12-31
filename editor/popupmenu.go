@@ -70,15 +70,16 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	max := 15
 	var popupItems []*PopupItem
 
+	margin := editor.config.Editor.Linespace
 	for i := 0; i < max; i++ {
 		kind := widgets.NewQLabel(nil, 0)
-		kind.SetContentsMargins(8, 8, 8, 8)
+		kind.SetContentsMargins(margin, margin, margin, margin)
 		kind.SetFont(font.fontNew)
 		menu := widgets.NewQLabel(nil, 0)
-		menu.SetContentsMargins(8, 8, 8, 8)
+		menu.SetContentsMargins(margin, margin, margin, margin)
 		menu.SetFont(font.fontNew)
 		detail := widgets.NewQLabel(nil, 0)
-		detail.SetContentsMargins(8, 8, 8, 8)
+		detail.SetContentsMargins(margin, margin, margin, margin)
 		detail.SetFont(font.fontNew)
 		detail.SetObjectName("detailpopup")
 
