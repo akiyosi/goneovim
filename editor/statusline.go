@@ -77,6 +77,9 @@ type StatuslineMain struct {
 	file      string
 	fileType  string
 	fileLabel *widgets.QLabel
+
+	ro       bool
+	roIcon   *svg.QSvgWidget
 }
 
 // StatuslineFiletype is
@@ -189,22 +192,27 @@ func initStatuslineNew() *Statusline {
 	folderLabel := widgets.NewQLabel(nil, 0)
 	folderLabel.SetContentsMargins(0, 0, 0, 1)
 	folderLabel.Hide()
-	modeAndFileLayout := widgets.NewQHBoxLayout()
-	modeAndFileLayout.SetContentsMargins(0, 0, 0, 1)
-	modeAndFileLayout.SetSpacing(6)
-	modeAndFileLayout.AddWidget(modeLabel, 0, 0)
-	modeAndFileLayout.AddWidget(modeIcon, 0, 0)
-	modeAndFileLayout.AddWidget(folderLabel, 0, 0)
-	modeAndFileLayout.AddWidget(fileLabel, 0, 0)
-	modeAndFileWidget := widgets.NewQWidget(nil, 0)
-	modeAndFileWidget.SetLayout(modeAndFileLayout)
+	
+	roIcon := svg.NewQSvgWidget(nil)
+	roIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
+	leftLayout := widgets.NewQHBoxLayout()
+	leftLayout.SetContentsMargins(0, 0, 0, 1)
+	leftLayout.SetSpacing(6)
+	leftLayout.AddWidget(modeLabel, 0, 0)
+	leftLayout.AddWidget(modeIcon, 0, 0)
+	leftLayout.AddWidget(folderLabel, 0, 0)
+	leftLayout.AddWidget(fileLabel, 0, 0)
+	leftLayout.AddWidget(roIcon, 0, 0)
+	leftWidget := widgets.NewQWidget(nil, 0)
+	leftWidget.SetLayout(leftLayout)
 	main := &StatuslineMain{
 		s:           s,
 		modeLabel:   modeLabel,
 		modeIcon:    modeIcon,
-		widget:      modeAndFileWidget,
+		widget:      leftWidget,
 		fileLabel:   fileLabel,
 		folderLabel: folderLabel,
+		roIcon: roIcon,
 	}
 	s.main = main
 
@@ -329,7 +337,7 @@ func initStatuslineNew() *Statusline {
 
 	s.setContentsMarginsForWidgets(0, 7, 0, 9)
 
-	layout.AddWidget(modeAndFileWidget)
+	layout.AddWidget(leftWidget)
 	layout.AddWidget(notifyWidget)
 	layout.AddWidget(gitWidget)
 	layout.AddWidget(filetypeLabel)
@@ -403,7 +411,26 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		filetype := updates[1].(string)
 		encoding := updates[2].(string)
 		fileFormat := updates[3].(string)
-		s.main.redraw(s.ws.filepath)
+
+		ro := 0
+		switch updates[4].(type) {
+		case int:
+			ro = updates[4].(int)
+		case uint:
+			ro = int(updates[4].(uint))
+		case int64:
+			ro = int(updates[4].(int64))
+		case uint64:
+			ro = int(updates[4].(uint64))
+		default:
+		}
+		if ro == 1 {
+			s.main.ro = true
+		} else {
+			s.main.ro = false
+		}
+
+		s.main.redraw()
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
 		s.fileFormat.redraw(fileFormat)
@@ -585,9 +612,18 @@ func (s *StatuslineGit) redraw(file string) {
 	}
 }
 
-func (s *StatuslineMain) redraw(file string) {
+func (s *StatuslineMain) redraw() {
+	file := s.s.ws.filepath
 	if file == "" {
 		file = "[No Name]"
+	}
+
+	if s.ro {
+		svgContent := editor.getSvg("lock", nil)
+		s.roIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.roIcon.Show()
+	} else {
+		s.roIcon.Hide()
 	}
 
 	if file == s.file {

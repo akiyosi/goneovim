@@ -373,7 +373,7 @@ func (w *Workspace) initGonvim() {
 	if editor.config.Statusline.Visible {
 		gonvimAutoCmds = gonvimAutoCmds + `
 	aug GonvimAuStatusline | au! | aug END
-	au GonvimAuStatusline BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat)
+	au GonvimAuStatusline BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat, &ro)
 	`
 	}
 	if editor.config.Lint.Visible {
@@ -400,7 +400,7 @@ func (w *Workspace) initGonvim() {
 	w.nvim.Command(registerCommands)
 
 	gonvimInitNotify := `
-	call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat)
+	call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat, &ro)
 	call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))
 	call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
 	call rpcnotify(0, "Gui", "gonvim_minimap_update")`
