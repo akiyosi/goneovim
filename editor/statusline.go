@@ -456,7 +456,8 @@ func (s *StatusMode) redraw() {
 	case "normal":
 		text = "Normal"
 		bg = hexToRGBA(editor.config.Statusline.NormalModeColor)
-		svgContent := editor.getSvg("hjkl", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		// svgContent := editor.getSvg("hjkl", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgContent := editor.getSvg("thought", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "cmdline_normal":

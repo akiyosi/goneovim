@@ -254,7 +254,11 @@ func (e *Editor) getSvg(name string, color *RGBA) string {
 func (e *Editor) initSVGS() {
 	e.svgs = map[string]*SvgXML{}
 
-
+	e.svgs["thought"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M3.5,19A1.5,1.5 0 0,1 5,20.5A1.5,1.5 0 0,1 3.5,22A1.5,1.5 0 0,1 2,20.5A1.5,1.5 0 0,1 3.5,19M8.5,16A2.5,2.5 0 0,1 11,18.5A2.5,2.5 0 0,1 8.5,21A2.5,2.5 0 0,1 6,18.5A2.5,2.5 0 0,1 8.5,16M14.5,15C13.31,15 12.23,14.5 11.5,13.65C10.77,14.5 9.69,15 8.5,15C6.54,15 4.91,13.59 4.57,11.74C3.07,11.16 2,9.7 2,8A4,4 0 0,1 6,4C6.26,4 6.5,4.03 6.77,4.07C7.5,3.41 8.45,3 9.5,3C10.69,3 11.77,3.5 12.5,4.35C13.23,3.5 14.31,3 15.5,3C17.46,3 19.09,4.41 19.43,6.26C20.93,6.84 22,8.3 22,10A4,4 0 0,1 18,14L17.23,13.93C16.5,14.59 15.55,15 14.5,15Z" /></svg>`,
+	}
 
 	e.svgs["backParentDir"] = &SvgXML{
 		width:  24,
@@ -413,15 +417,14 @@ func (e *Editor) initSVGS() {
 		width:  24,
 		height: 24,
 		xml: `<?xml version="1.0" encoding="utf-8"?>
-   <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="translate(0,2)"><path fill="%s" d="M20.71 4.04C21.1 3.65 21.1 3 20.71 2.63L18.37 0.29C18 -0.1 17.35 -0.1 16.96 0.29L15 2.25L18.75 6M17.75 7L14 3.25L4 13.25V17H7.75L17.75 7Z" /></g></svg>`,
+   <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g transform="translate(0,0)"><path fill="%s" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" /></g></svg>`,
 	}
 
 	// for Visual Mode
 	e.svgs["select"] = &SvgXML{
 		width:  24,
 		height: 24,
-		xml: `<?xml version="1.0" encoding="utf-8"?>
-<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%s" d="M4 3H5V5H3V4A1 1 0 0 1 4 3M20 3A1 1 0 0 1 21 4V5H19V3H20M15 5V3H17V5H15M11 5V3H13V5H11M7 5V3H9V5H7M21 20A1 1 0 0 1 20 21H19V19H21V20M15 21V19H17V21H15M11 21V19H13V21H11M7 21V19H9V21H7M4 21A1 1 0 0 1 3 20V19H5V21H4M3 15H5V17H3V15M21 15V17H19V15H21M3 11H5V13H3V11M21 11V13H19V11H21M3 7H5V9H3V7M21 7V9H19V7H21Z" /></svg>`,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M14,17H17V14H19V17H22V19H19V22H17V19H14V17M12,17V19H9V17H12M7,17V19H3V15H5V17H7M3,13V10H5V13H3M3,8V4H7V6H5V8H3M9,4H12V6H9V4M15,4H19V8H17V6H15V4M19,10V12H17V10H19Z" /></svg>`,
 	}
 
 	e.svgs["fire"] = &SvgXML{
