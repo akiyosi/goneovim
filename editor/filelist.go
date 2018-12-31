@@ -90,6 +90,16 @@ func newFilelist(path string) (*Filelist, error) {
 
 	// go func() {
 		fl := editor.wsSide.items[editor.active].Filelist
+		parentDirItem := &Fileitem{
+			fl:             fl,
+			fileText:       "",
+			fileName:       "",
+			fileType:       "..",
+			path:           "",
+		}
+		parentDirItem.makeWidget(width)
+		filelist.Fileitems = append(filelist.Fileitems, parentDirItem)
+		filelistlayout.AddWidget(parentDirItem.widget, 0, 0)
 		for _, f := range files {
 			fileitem, err := fl.newFileitem(f, path)
 			if err != nil {
@@ -147,10 +157,14 @@ func (f *Fileitem) makeWidget(width int) {
 
 	f.setFilename(maxfilenameLength)
 
-	if f.fileType == "/" {
+	switch f.fileType {
+	case "..":
+		svgContent := editor.getSvg("backParentDir", nil)
+		fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	case "/":
 		svgContent := editor.getSvg("directory", nil)
 		fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	} else {
+	default:
 		svgContent := editor.getSvg(f.fileType, nil)
 		fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
@@ -205,15 +219,25 @@ func (f *Fileitem) setFilename(length float64) {
 }
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
-	c := editor.colors.selectedBg.String()
+	fg := editor.colors.fg
+	selectedBg := editor.colors.selectedBg
+
 	currFilepath := editor.workspaces[editor.active].filepath
 	cfn := filepath.Base(currFilepath)
 	if cfn == f.fileName {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", c))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", selectedBg.String()))
 	} else {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", c))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", selectedBg.String()))
 	}
-	f.loadModifiedBadge()
+
+	var svgModified string
+	if f.isModified {
+		svgModified = editor.getSvg("circle", fg)
+	} else {
+		svgModified = editor.getSvg("circle", selectedBg)
+	}
+	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
@@ -234,7 +258,21 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 }
 
 func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
-	editor.workspaces[editor.active].nvim.Command(":e " + f.path)
+	openCommand := ""
+	switch f.fileType {
+	case "/":
+		openCommand = ":cd " + f.path
+	case "..":
+		openCommand = ":cd .."
+	default:
+		if editor.config.Workspace.FileExplorerOpenCmd == "" {
+			openCommand = ":e " + f.path
+		} else {
+			openCommand = editor.config.Workspace.FileExplorerOpenCmd + " " + f.path
+		}
+
+	}
+	editor.workspaces[editor.active].nvim.Command(openCommand)
 	f.fl.WSitem.setCurrentFileLabel()
 }
 

@@ -254,6 +254,14 @@ func (e *Editor) getSvg(name string, color *RGBA) string {
 func (e *Editor) initSVGS() {
 	e.svgs = map[string]*SvgXML{}
 
+
+
+	e.svgs["backParentDir"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M13.5,7A6.5,6.5 0 0,1 20,13.5A6.5,6.5 0 0,1 13.5,20H10V18H13.5C16,18 18,16 18,13.5C18,11 16,9 13.5,9H7.83L10.91,12.09L9.5,13.5L4,8L9.5,2.5L10.92,3.91L7.83,7H13.5M6,18H8V20H6V18Z" /></svg>`,
+	}
+
 	e.svgs["flag"] = &SvgXML{
 		width:  24,
 		height: 24,

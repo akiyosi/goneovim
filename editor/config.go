@@ -70,6 +70,7 @@ import (
 // #   name: directory name only,
 // #   minimum: only the last directory is full name, middle directory is short form
 // pathStyle = minimum
+// FileExplorerOpenCmd = ":tabew"
 //
 // # restore the previous sessions if there are exists.
 // restoreSession = false
@@ -144,6 +145,7 @@ type sideBarConfig struct {
 type workspaceConfig struct {
 	RestoreSession bool
 	PathStyle      string
+	FileExplorerOpenCmd string
 }
 
 type deinConfig struct {
