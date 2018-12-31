@@ -183,6 +183,13 @@ func (fl *Filelist) newFileitem(f os.FileInfo, path string) (*Fileitem, error) {
 	return fileitem, nil
 }
 
+func (f *Fileitem) setFilename(length float64) {
+	metrics := gui.NewQFontMetricsF(gui.NewQFont())
+	elidedfilename := metrics.ElidedText(f.fileText, core.Qt__ElideRight, length, 0)
+	f.fileLabel.Clear()
+	go f.fileLabel.SetText(elidedfilename)
+}
+
 func (f *Fileitem) enterEvent(event *core.QEvent) {
 	fg := editor.colors.fg
 	selectedBg := editor.colors.selectedBg
