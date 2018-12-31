@@ -72,6 +72,7 @@ type Workspace struct {
 	maxLine          int
 	curLine          int
 	curColm          int
+	isInTerm	 bool
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -343,6 +344,8 @@ func (w *Workspace) initGonvim() {
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
 	au GonvimAu VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")
 	au GonvimAu CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))
+	au GonvimAu TermOpen * call rpcnotify(0, "Gui", "gonvim_termopen")
+	au GonvimAu TermClose * call rpcnotify(0, "Gui", "gonvim_termclose")
 	aug GonvimAuWorkspace | au! | aug END
 	au GonvimAuWorkspace DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())
 	aug GonvimAuFileExplorer | au! | aug END
@@ -979,6 +982,11 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 				fl.Fileitems[fl.active].updateModifiedbadge()
 			}
 		}
+	case "gonvim_termopen":
+		w.isInTerm = true
+		w.detectTerminalMode()
+	case "gonvim_termclose":
+		w.isInTerm = false
 	case GonvimMarkdownNewBufferEvent:
 		go w.markdown.newBuffer()
 	case GonvimMarkdownUpdateEvent:
@@ -1041,6 +1049,7 @@ func (w *Workspace) guiLinespace(args interface{}) {
 }
 
 func (w *Workspace) detectTerminalMode() {
+	// Note: I'm waiting for the merge of neovim/neovim#8550
 	if !strings.HasPrefix(w.filepath, `term://`) {
 		return
 	}
