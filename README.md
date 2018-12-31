@@ -68,6 +68,14 @@ where the default value of `$XDG_CONFIG_HOME` is the below.
 | Unix    |  `~/.config`         |
 | Windows |  `~/AppData/Local`   |
 
+### neovim configuration for gonvim
+
+The sample configuration is below.
+
+[gonvim-init.vim](https://github.com/akiyosi/gonvim-init.vim)
+
+### gonvim configuration
+
 For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/gonvim/wiki/Configurations)
 
 
