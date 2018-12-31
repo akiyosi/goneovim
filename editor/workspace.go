@@ -513,30 +513,62 @@ func (w *Workspace) setCwd(cwd string) {
 			if err != nil {
 				continue
 			}
-			sideItem.isload = true
-			sideItem.setFilelistwidget(filelist)
+			go sideItem.setFilelistwidget(filelist)
 		}
 	}
 }
 
 func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
-	var mu sync.Mutex
-	mu.Lock()
-	defer mu.Unlock()
+	i.mu.Lock()
+	defer i.mu.Unlock()
 
-	if i.Filelistwidget != nil {
-		i.Filelistwidget.DestroyQWidget()
-	}
+	// if i.Filelistwidget != nil {
+	// 	i.Filelistwidget.DestroyQWidget()
+	// }
+	// i.layout.AddWidget(f.widget, 0, 0)
+
+	i.Filelistwidget.Hide()
+	i.layout.RemoveWidget(i.Filelistwidget)
 	i.layout.AddWidget(f.widget, 0, 0)
+
 	i.Filelistwidget = f.widget
 	i.Filelist = f
 	i.Filelist.WSitem = i
 	i.active = true
+	i.isload = true
+
 	if i.isFilelistHide {
 		i.closeFilelist()
 	} else {
 		i.openFilelist()
 	}
+
+	editor.wsSide.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
+		if editor.activity.editItem.active == false {
+			return
+		}
+		if !i.isload {
+			return
+		}
+		if len(i.Filelist.Fileitems) == 0 {
+			return
+		}
+
+		width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+		charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
+		length := float64(width - (2 * editor.iconSize) - FilewidgetLeftMargin - charWidth - 35)
+
+		for _, item := range editor.wsSide.items {
+			item.label.SetMaximumWidth(editor.activity.sideArea.Width())
+			item.label.SetMinimumWidth(editor.activity.sideArea.Width())
+			for _, fileitem := range item.Filelist.Fileitems {
+				fileitem.widget.SetMaximumWidth(width)
+				fileitem.widget.SetMinimumWidth(width)
+				fileitem.setFilename(length)
+			}
+		}
+
+	})
 }
 
 // slow...
@@ -1147,6 +1179,7 @@ type filelistSignal struct {
 type WorkspaceSideItem struct {
 	signal         *filelistSignal
 	filelistUpdate chan *Fileitem
+	mu             sync.Mutex
 
 	hidden    bool
 	active    bool
