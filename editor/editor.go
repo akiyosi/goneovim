@@ -389,7 +389,7 @@ func (c *ColorPalette) update() {
 	bg := c.bg
 	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
 	c.selectedBg = bg.brend(rgbAccent, 0.3)
-	c.inactiveFg = warpColor(bg, -30)
+	c.inactiveFg = warpColor(bg, -40)
 	c.comment = warpColor(fg, -40)
 	c.abyss = warpColor(bg, 5)
 	c.activityBarFg = fg
