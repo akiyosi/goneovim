@@ -132,9 +132,7 @@ func (f *Fileitem) makeWidget(width int) {
 		f.widget.SetAttribute(core.Qt__WA_Hover, true)
 		f.widget.SetLayout(filelayout)
 
-		charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
-		maxfilenameLength := float64(width - (2 * editor.iconSize) - FilewidgetLeftMargin - charWidth - 35)
-		f.setFilename(maxfilenameLength)
+		f.fileLabel.SetText(f.fileText)
 
 		// Hide with the same color as the background
 		svgModified := editor.getSvg("circle", editor.colors.sideBarBg)
@@ -183,13 +181,6 @@ func (fl *Filelist) newFileitem(f os.FileInfo, path string) (*Fileitem, error) {
 	}
 
 	return fileitem, nil
-}
-
-func (f *Fileitem) setFilename(length float64) {
-	metrics := gui.NewQFontMetricsF(gui.NewQFont())
-	elidedfilename := metrics.ElidedText(f.fileText, core.Qt__ElideRight, length, 0)
-	f.fileLabel.Clear()
-	go f.fileLabel.SetText(elidedfilename)
 }
 
 func (f *Fileitem) enterEvent(event *core.QEvent) {
