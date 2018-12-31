@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"runtime"
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	shortpath "github.com/akiyosi/short_path"
@@ -72,7 +72,7 @@ type Workspace struct {
 	maxLine          int
 	curLine          int
 	curColm          int
-	isInTerm	 bool
+	isInTerm         bool
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -84,17 +84,6 @@ type Workspace struct {
 	drawStatusline bool
 	drawTabline    bool
 	drawLint       bool
-
-	t1	time.Duration
-	t2	time.Duration
-	t3	time.Duration
-	t4	time.Duration
-	t5	time.Duration
-	t6	time.Duration
-	t7	time.Duration
-	t8	time.Duration
-	t9	time.Duration
-	t10	time.Duration
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -1107,7 +1096,6 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 	return qv
 }
 
-
 // WorkspaceSide is
 type WorkspaceSide struct {
 	widget     *widgets.QWidget
@@ -1137,7 +1125,6 @@ func newWorkspaceSide() *WorkspaceSide {
 	layout.AddWidget(header)
 	side.header.Show()
 
-
 	items := []*WorkspaceSideItem{}
 	side.items = items
 	for i := 0; i < 20; i++ {
@@ -1156,10 +1143,9 @@ type filelistSignal struct {
 	_ func() `signal:"filelistUpdateSignal"`
 }
 
-
 // WorkspaceSideItem is
 type WorkspaceSideItem struct {
-	signal     *filelistSignal
+	signal         *filelistSignal
 	filelistUpdate chan *Fileitem
 
 	hidden    bool
@@ -1228,8 +1214,8 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	closeIcon.Hide()
 
 	sideitem := &WorkspaceSideItem{
-		filelistUpdate:   make(chan *Fileitem, 20000),
-		signal:        NewFilelistSignal(nil),
+		filelistUpdate: make(chan *Fileitem, 20000),
+		signal:         NewFilelistSignal(nil),
 
 		widget:      widget,
 		layout:      layout,
@@ -1288,7 +1274,7 @@ func (i *WorkspaceSideItem) setActive() {
 	// if i.active {
 	// 	return
 	// }
-	if editor.colors.fg== nil || editor.colors.bg== nil {
+	if editor.colors.fg == nil || editor.colors.bg == nil {
 		return
 	}
 	i.active = true
@@ -1320,7 +1306,7 @@ func (i *WorkspaceSideItem) setInactive() {
 	if !i.active {
 		return
 	}
-	if editor.colors.fg == nil || editor.colors.bg== nil {
+	if editor.colors.fg == nil || editor.colors.bg == nil {
 		return
 	}
 	i.active = false

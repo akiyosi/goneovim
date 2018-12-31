@@ -143,8 +143,8 @@ type sideBarConfig struct {
 }
 
 type workspaceConfig struct {
-	RestoreSession bool
-	PathStyle      string
+	RestoreSession      bool
+	PathStyle           string
 	FileExplorerOpenCmd string
 }
 

@@ -14,7 +14,6 @@ type RGBA struct {
 	A float64
 }
 
-
 func (rgba *RGBA) copy() *RGBA {
 	return &RGBA{
 		R: rgba.R,

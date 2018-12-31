@@ -16,7 +16,6 @@ const (
 	FilewidgetLeftMargin = 35
 )
 
-
 type Filelist struct {
 	WSitem    *WorkspaceSideItem
 	widget    *widgets.QWidget
@@ -30,7 +29,7 @@ type Fileitem struct {
 	widget         *widgets.QWidget
 	fileIcon       *svg.QSvgWidget
 	fileType       string
-	fileLabel           *widgets.QLabel
+	fileLabel      *widgets.QLabel
 	fileText       string
 	fileName       string
 	filenameWidget *widgets.QWidget
@@ -47,7 +46,7 @@ func newFilelist(path string) (*Filelist, error) {
 	}
 
 	filelist := &Filelist{
-		Fileitems : []*Fileitem{},
+		Fileitems: []*Fileitem{},
 	}
 
 	filelist.active = -1
@@ -89,35 +88,35 @@ func newFilelist(path string) (*Filelist, error) {
 	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
 
 	// go func() {
-		fl := editor.wsSide.items[editor.active].Filelist
-		parentDirItem := &Fileitem{
-			fl:             fl,
-			fileText:       "",
-			fileName:       "",
-			fileType:       "..",
-			path:           "",
+	fl := editor.wsSide.items[editor.active].Filelist
+	parentDirItem := &Fileitem{
+		fl:       fl,
+		fileText: "",
+		fileName: "",
+		fileType: "..",
+		path:     "",
+	}
+	parentDirItem.makeWidget(width)
+	filelist.Fileitems = append(filelist.Fileitems, parentDirItem)
+	filelistlayout.AddWidget(parentDirItem.widget, 0, 0)
+	for _, f := range files {
+		fileitem, err := fl.newFileitem(f, path)
+		if err != nil {
+			continue
 		}
-		parentDirItem.makeWidget(width)
-		filelist.Fileitems = append(filelist.Fileitems, parentDirItem)
-		filelistlayout.AddWidget(parentDirItem.widget, 0, 0)
-		for _, f := range files {
-			fileitem, err := fl.newFileitem(f, path)
-			if err != nil {
-				continue
-			}
 
-			fileitem.makeWidget(width)
-			// fileitem.widget.MoveToThread(editor.app.Thread())  // Can't work...
+		fileitem.makeWidget(width)
+		// fileitem.widget.MoveToThread(editor.app.Thread())  // Can't work...
 
-			// // Use signal
-			// // Too Slow... 
-			// fl.WSitem.filelistUpdate <- fileitem
-			// fl.WSitem.signal.FilelistUpdateSignal()
+		// // Use signal
+		// // Too Slow...
+		// fl.WSitem.filelistUpdate <- fileitem
+		// fl.WSitem.signal.FilelistUpdateSignal()
 
-			filelist.Fileitems = append(filelist.Fileitems, fileitem)
-			filelistlayout.AddWidget(fileitem.widget, 0, 0)
+		filelist.Fileitems = append(filelist.Fileitems, fileitem)
+		filelistlayout.AddWidget(fileitem.widget, 0, 0)
 
-		}
+	}
 	// }()
 
 	return filelist, nil
@@ -200,16 +199,15 @@ func (fl *Filelist) newFileitem(f os.FileInfo, path string) (*Fileitem, error) {
 	}
 
 	fileitem := &Fileitem{
-		fl:             fl,
-		fileText:       filename,
-		fileName:       f.Name(),
-		fileType:       filetype,
-		path:           filepath,
+		fl:       fl,
+		fileText: filename,
+		fileName: f.Name(),
+		fileType: filetype,
+		path:     filepath,
 	}
 
 	return fileitem, nil
 }
-
 
 func (f *Fileitem) setFilename(length float64) {
 	metrics := gui.NewQFontMetricsF(gui.NewQFont())
@@ -301,7 +299,6 @@ func (i *WorkspaceSideItem) setCurrentFileLabel() {
 	}
 }
 
-
 func (f *Fileitem) setColor() {
 	fg := editor.colors.fg
 	switch f.fileType {
@@ -359,4 +356,3 @@ func (f *Fileitem) loadModifiedBadge() {
 	}
 	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 }
-

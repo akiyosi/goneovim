@@ -78,8 +78,8 @@ type StatuslineMain struct {
 	fileType  string
 	fileLabel *widgets.QLabel
 
-	ro       bool
-	roIcon   *svg.QSvgWidget
+	ro     bool
+	roIcon *svg.QSvgWidget
 }
 
 // StatuslineFiletype is
@@ -192,7 +192,7 @@ func initStatuslineNew() *Statusline {
 	folderLabel := widgets.NewQLabel(nil, 0)
 	folderLabel.SetContentsMargins(0, 0, 0, 1)
 	folderLabel.Hide()
-	
+
 	roIcon := svg.NewQSvgWidget(nil)
 	roIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	leftLayout := widgets.NewQHBoxLayout()
@@ -212,7 +212,7 @@ func initStatuslineNew() *Statusline {
 		widget:      leftWidget,
 		fileLabel:   fileLabel,
 		folderLabel: folderLabel,
-		roIcon: roIcon,
+		roIcon:      roIcon,
 	}
 	s.main = main
 

@@ -206,14 +206,12 @@ func (s *Screen) updateSize() {
 	// 	}
 	// }()
 
-
 	s.width = s.widget.Width()
 	cols := int(float64(s.width) / w.font.truewidth)
 	rows := s.height / w.font.lineHeight
 	isTryResize := (cols != w.cols || rows != w.rows)
 	w.cols = cols
 	w.rows = rows
-
 
 	done := make(chan error, 5)
 	var result error

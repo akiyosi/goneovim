@@ -42,24 +42,24 @@ type NotifyButton struct {
 
 // ColorPalette is
 type ColorPalette struct {
-	fg          *RGBA
-	bg          *RGBA
-	inactiveFg  *RGBA
-	comment     *RGBA
-	abyss       *RGBA
-	matchFg          *RGBA
-	selectedBg       *RGBA
-	activityBarFg  *RGBA
-	activityBarBg  *RGBA
-	sideBarFg  *RGBA
-	sideBarBg  *RGBA
-	sideBarSelectedItemBg  *RGBA
-	scrollBarFg  *RGBA
-	scrollBarBg  *RGBA
-	widgetFg  *RGBA
-	widgetBg  *RGBA
-	widgetInputArea  *RGBA
-	minimapCurrentRegion *RGBA
+	fg                    *RGBA
+	bg                    *RGBA
+	inactiveFg            *RGBA
+	comment               *RGBA
+	abyss                 *RGBA
+	matchFg               *RGBA
+	selectedBg            *RGBA
+	activityBarFg         *RGBA
+	activityBarBg         *RGBA
+	sideBarFg             *RGBA
+	sideBarBg             *RGBA
+	sideBarSelectedItemBg *RGBA
+	scrollBarFg           *RGBA
+	scrollBarBg           *RGBA
+	widgetFg              *RGBA
+	widgetBg              *RGBA
+	widgetInputArea       *RGBA
+	minimapCurrentRegion  *RGBA
 }
 
 // Notify is
@@ -112,13 +112,13 @@ type Editor struct {
 	keyAlt          core.Qt__Key
 	keyShift        core.Qt__Key
 
-	config               gonvimConfig
-	notifications        []*Notification
+	config                 gonvimConfig
+	notifications          []*Notification
 	isDisplayNotifications bool
 
-	isSetGuiColor    bool
-	colors   *ColorPalette
-	svgs     map[string]*SvgXML
+	isSetGuiColor bool
+	colors        *ColorPalette
+	svgs          map[string]*SvgXML
 }
 
 type editorSignal struct {
@@ -154,7 +154,7 @@ func InitEditor() {
 		notify:  make(chan *Notify, 10),
 		stop:    make(chan struct{}),
 		guiInit: make(chan bool, 1),
-		config: newGonvimConfig(home),
+		config:  newGonvimConfig(home),
 	}
 	e := editor
 	e.app = widgets.NewQApplication(0, nil)
@@ -183,7 +183,6 @@ func InitEditor() {
 	layout.SetSpacing(0)
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
-
 
 	// If enable activity widget
 	if e.config.SideBar.Visible == true {
@@ -377,10 +376,10 @@ func initColorPalette() *ColorPalette {
 	fg := newRGBA(180, 185, 190, 1)
 	bg := newRGBA(9, 13, 17, 1)
 	return &ColorPalette{
-		bg: bg,
-		fg: fg,
+		bg:         bg,
+		fg:         fg,
 		selectedBg: bg.brend(rgbAccent, 0.3),
-		matchFg: rgbAccent,
+		matchFg:    rgbAccent,
 	}
 }
 
