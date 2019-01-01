@@ -1040,6 +1040,9 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 }
 
 func (w *Workspace) guiFont(args string) {
+	if args == "" {
+		return
+	}
 	parts := strings.Split(args, ":")
 	if len(parts) < 1 {
 		return
