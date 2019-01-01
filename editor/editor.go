@@ -433,14 +433,7 @@ func (e *Editor) updateGUIColor() {
 		e.wsSide.setColor()
 	}
 
-	e.workspaces[e.active].palette.setColor()
-	e.workspaces[e.active].popup.setColor()
-	e.workspaces[e.active].signature.setColor()
-	e.workspaces[e.active].tabline.setColor()
-	e.workspaces[e.active].statusline.setColor()
-	e.workspaces[e.active].scrollBar.setColor()
-	e.workspaces[e.active].minimap.setColor()
-	e.workspaces[e.active].loc.setColor()
+	e.workspaces[e.active].updateWorkspaceColor()
 
 	e.window.SetWindowOpacity(1.0)
 }

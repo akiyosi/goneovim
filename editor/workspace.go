@@ -864,6 +864,11 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	if !isChangeFg || !isChangeBg {
 		editor.isSetGuiColor = false
 	}
+	// Ignore setting GUI color when create second workspace and fg, bg equals -1
+	if len(editor.workspaces) > 1 && fg == -1 && bg == -1 {
+		w.updateWorkspaceColor()
+		editor.isSetGuiColor = true
+	}
 	if editor.isSetGuiColor == true {
 		return
 	}
@@ -873,6 +878,17 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	editor.colors.update()
 	editor.updateGUIColor()
 	editor.isSetGuiColor = true
+}
+
+func (w *Workspace) updateWorkspaceColor() {
+	w.palette.setColor()
+	w.popup.setColor()
+	w.signature.setColor()
+	w.tabline.setColor()
+	w.statusline.setColor()
+	w.scrollBar.setColor()
+	w.minimap.setColor()
+	w.loc.setColor()
 }
 
 func (w *Workspace) setOption(update []interface{}) {
