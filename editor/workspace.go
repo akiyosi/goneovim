@@ -889,6 +889,7 @@ func (w *Workspace) updateWorkspaceColor() {
 	w.scrollBar.setColor()
 	w.minimap.setColor()
 	w.loc.setColor()
+	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: %s; text-decoration: underline; color: %s; }", editor.colors.selectedBg.String(), editor.colors.fg.String()))
 }
 
 func (w *Workspace) setOption(update []interface{}) {
