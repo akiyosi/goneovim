@@ -173,8 +173,15 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.scrollCol.Hide()
 	}
 
+	xpos := int(float64(col)*p.ws.font.truewidth)
+	popupWidth := popupItems[0].kindLabel.Width()+popupItems[0].menuLabel.Width()+popupItems[0].detailLabel.Width()
+	if xpos+popupWidth >= p.ws.screen.widget.Width() {
+		xpos = p.ws.screen.widget.Width() - popupWidth - 5
+	}
+
 	p.widget.Move2(
-		int(float64(col)*p.ws.font.truewidth)-popupItems[0].kindLabel.Width()-8,
+		//int(float64(col)*p.ws.font.truewidth)-popupItems[0].kindLabel.Width()-8,
+		xpos,
 		(row+1)*p.ws.font.lineHeight,
 	)
 	p.show()
@@ -224,6 +231,7 @@ func (p *PopupMenu) scroll(n int) {
 func (p *PopupItem) updateKind() {
 	p.kindLabel.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", p.kindBg.String(), p.kindColor.String()))
 	p.kindLabel.SetText(p.kindText)
+	p.kindLabel.AdjustSize()
 }
 
 func (p *PopupItem) updateMenu() {
@@ -243,6 +251,8 @@ func (p *PopupItem) updateMenu() {
 		p.detailText = p.detailTextRequest
 		p.detailLabel.SetText(p.detailText)
 	}
+	p.menuLabel.AdjustSize()
+	p.detailLabel.AdjustSize()
 }
 
 func (p *PopupItem) setSelected(selected bool) {
