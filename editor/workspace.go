@@ -61,6 +61,7 @@ type Workspace struct {
 	rows             int
 	cols             int
 	uiAttached       bool
+	uiRemoteAttached bool
 	uiInitialResized bool
 	foreground       *RGBA
 	background       *RGBA
@@ -74,6 +75,7 @@ type Workspace struct {
 	curLine          int
 	curColm          int
 	isInTerm         bool
+
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -247,6 +249,7 @@ func (w *Workspace) startNvim(path string) error {
 	var err error
 	if opts.ServerPtr != "" {
 		neovim, err = nvim.Dial(opts.ServerPtr)
+		w.uiRemoteAttached = true
 	} else {
 		neovim, err = nvim.NewChildProcess(nvim.ChildProcessArgs(append([]string{"--cmd", "let g:gonvim_running=1", "--embed"}, args...)...))
 	}
@@ -262,6 +265,12 @@ func (w *Workspace) startNvim(path string) error {
 		w.redrawUpdates <- updates
 		w.signal.RedrawSignal()
 	})
+
+	// Hide activitybar, sidebar, if gonvim --server mode
+	if w.uiRemoteAttached {
+		editor.activity.widget.Hide()
+	 	editor.activity.sideArea.Hide()
+	}
 
 	go func() {
 		err := w.nvim.Serve()
@@ -348,15 +357,19 @@ func (w *Workspace) initGonvim() {
 	au GonvimAu TermClose * call rpcnotify(0, "Gui", "gonvim_termclose")
 	aug GonvimAuWorkspace | au! | aug END
 	au GonvimAuWorkspace DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())
-	aug GonvimAuFileExplorer | au! | aug END
-	au GonvimAuFileExplorer BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_setCurrentFileLabel", expand("%:p"))
-	au GonvimAuFileExplorer TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
 	aug GonvimAuMd | au! | aug END
 	au GonvimAuMd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "gonvim_markdown_update")
 	au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
-	aug GonvimAuMinimap | au! | aug END
-	au GonvimAuMinimap BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
 	`
+	if !w.uiRemoteAttached {
+		gonvimAutoCmds = gonvimAutoCmds + `
+		aug GonvimAuFileExplorer | au! | aug END
+		au GonvimAuFileExplorer BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_setCurrentFileLabel", expand("%:p"))
+		au GonvimAuFileExplorer TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
+		aug GonvimAuMinimap | au! | aug END
+		au GonvimAuMinimap BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
+		`
+	}
 
 	if editor.config.ScrollBar.Visible {
 		gonvimAutoCmds = gonvimAutoCmds + `
@@ -382,29 +395,36 @@ func (w *Workspace) initGonvim() {
 	au GonvimAuLint CursorMoved,CursorHold,InsertEnter,InsertLeave * call rpcnotify(0, "LocPopup", "update")
 	`
 	}
-	// registerAutocmds := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimAutoCmds)
 	registerAutocmds := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimAutoCmds))
 	w.nvim.Command(registerAutocmds)
 
 	gonvimCommands := fmt.Sprintf(`
-	command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
+	command! GonvimVersion echo %s
+	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")`, editor.version)
+	if !w.uiRemoteAttached {
+		gonvimCommands = gonvimCommands + `
 	command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
 	command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
 	command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
 	command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
-	command! GonvimVersion echo %s
-	command! GonvimMarkdown call rpcnotify(0, "Gui", "%s")
-	`, editor.version, GonvimMarkdownToggleEvent)
-	// registerCommands := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimCommands)
+	command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
+	`
+	}
+
+	fmt.Println(gonvimCommands)
 	registerCommands := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimCommands))
 	w.nvim.Command(registerCommands)
 
 	gonvimInitNotify := `
 	call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat, &ro)
 	call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))
-	call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
-	call rpcnotify(0, "Gui", "gonvim_minimap_update")`
-	// initialNotify := fmt.Sprintf(`call execute(split('%s', '\n'))`, gonvimInitNotify)
+	`
+	if !w.uiRemoteAttached {
+		gonvimInitNotify = gonvimInitNotify + `
+		call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
+		call rpcnotify(0, "Gui", "gonvim_minimap_update")
+		`
+	}
 	initialNotify := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimInitNotify))
 	w.nvim.Command(initialNotify)
 }
