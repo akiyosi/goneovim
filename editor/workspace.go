@@ -13,6 +13,7 @@ import (
 
 	"github.com/akiyosi/gonvim/fuzzy"
 	shortpath "github.com/akiyosi/short_path"
+	"github.com/jessevdk/go-flags"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -238,7 +239,17 @@ func (w *Workspace) show() {
 }
 
 func (w *Workspace) startNvim(path string) error {
-	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs(append([]string{"--cmd", "let g:gonvim_running=1", "--embed"}, os.Args[1:]...)...))
+	var opts struct {
+		ServerPtr string `long:"server" description:"Remote session address"`
+	}
+	args, _ := flags.ParseArgs(&opts, os.Args[1:])
+	var neovim *nvim.Nvim
+	var err error
+	if opts.ServerPtr != "" {
+		neovim, err = nvim.Dial(opts.ServerPtr)
+	} else {
+		neovim, err = nvim.NewChildProcess(nvim.ChildProcessArgs(append([]string{"--cmd", "let g:gonvim_running=1", "--embed"}, args...)...))
+	}
 	if err != nil {
 		return err
 	}
