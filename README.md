@@ -86,7 +86,7 @@ For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/g
 * [Markdown Preview](https://github.com/akiyosi/gonvim/wiki/Features#markdown-preview)
 * [MiniMap](https://github.com/akiyosi/gonvim/wiki/Features#minimap)
 * [Dein.vim GUI](https://github.com/akiyosi/gonvim/wiki/Features#deinvim-gui)
-
+* [Remote attachment](https://github.com/akiyosi/gonvim/wiki/Configurations#remote-attachment)
 
 
 ## Development
