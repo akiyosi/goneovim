@@ -362,11 +362,11 @@ func (w *Workspace) initGonvim() {
 	aug GonvimAuMd | au! | aug END
 	au GonvimAuMd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "gonvim_markdown_update")
 	au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
+	aug GonvimAuFileExplorer | au! | aug END
+	au GonvimAuFileExplorer BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_setCurrentFileLabel", expand("%:p"))
 	`
 	if !w.uiRemoteAttached {
 		gonvimAutoCmds = gonvimAutoCmds + `
-		aug GonvimAuFileExplorer | au! | aug END
-		au GonvimAuFileExplorer BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_setCurrentFileLabel", expand("%:p"))
 		au GonvimAuFileExplorer TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
 		aug GonvimAuMinimap | au! | aug END
 		au GonvimAuMinimap BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
@@ -1030,6 +1030,9 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_setCurrentFileLabel":
 		file := updates[1].(string)
 		w.filepath = file
+		if w.uiRemoteAttached {
+			return
+		}
 		if editor.wsSide == nil {
 			return
 		}

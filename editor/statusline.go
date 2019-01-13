@@ -197,7 +197,7 @@ func initStatuslineNew() *Statusline {
 	roIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	leftLayout := widgets.NewQHBoxLayout()
 	leftLayout.SetContentsMargins(0, 0, 0, 1)
-	leftLayout.SetSpacing(6)
+	leftLayout.SetSpacing(8)
 	leftLayout.AddWidget(modeLabel, 0, 0)
 	leftLayout.AddWidget(modeIcon, 0, 0)
 	leftLayout.AddWidget(folderLabel, 0, 0)
