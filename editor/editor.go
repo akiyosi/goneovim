@@ -185,7 +185,7 @@ func InitEditor() {
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 
 	// If enable activity widget
-	if e.config.SideBar.Visible == true {
+	if e.config.SideBar.Visible == true || e.config.ActivityBar.Visible == true {
 		e.wsSide = newWorkspaceSide()
 		sideArea := widgets.NewQScrollArea(nil)
 		sideArea.SetWidgetResizable(true)
@@ -215,9 +215,9 @@ func InitEditor() {
 		if e.config.ActivityBar.Visible == false {
 			e.activity.widget.Hide()
 		}
-		// if e.config.SideBar.Visible == false {
-		// 	e.activity.sideArea.Hide()
-		// }
+		if e.config.SideBar.Visible == false {
+			e.activity.sideArea.Hide()
+		}
 
 		splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
 		splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")

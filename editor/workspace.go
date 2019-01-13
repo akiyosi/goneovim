@@ -268,8 +268,10 @@ func (w *Workspace) startNvim(path string) error {
 
 	// Hide activitybar, sidebar, if gonvim --server mode
 	if w.uiRemoteAttached {
-		editor.activity.widget.Hide()
-	 	editor.activity.sideArea.Hide()
+		if editor.activity != nil {
+			editor.activity.widget.Hide()
+	 		editor.activity.sideArea.Hide()
+		}
 	}
 
 	go func() {
