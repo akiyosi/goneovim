@@ -2,7 +2,7 @@ package fuzzy
 
 import (
 	"fmt"
-	"io/ioutil"
+	//"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
@@ -46,6 +46,7 @@ type Fuzzy struct {
 	resultRWMtext sync.RWMutex
 	running       bool
 	pwd           string
+	isRemoteAttachment bool
 }
 
 // Output is
@@ -56,13 +57,14 @@ type Output struct {
 }
 
 // RegisterPlugin registers this remote plugin
-func RegisterPlugin(nvim *nvim.Nvim) {
+func RegisterPlugin(nvim *nvim.Nvim, isRemoteAttachment bool) {
 	nvim.Subscribe("GonvimFuzzy")
 	shim := &Fuzzy{
 		nvim:        nvim,
 		slab:        util.MakeSlab(slab16Size, slab32Size),
 		scoreMutext: &sync.Mutex{},
 		max:         20,
+		isRemoteAttachment: isRemoteAttachment,
 	}
 	nvim.RegisterHandler("GonvimFuzzy", func(args ...interface{}) {
 		go shim.handle(args...)
@@ -285,60 +287,125 @@ func (s *Fuzzy) processSource() {
 				dir = path
 			}
 		}
-		homeDir := ""
-		usr, err := user.Current()
-		if err == nil {
-			homeDir = usr.HomeDir
-		}
+		// homeDir := ""
+		// usr, err := user.Current()
+		// if err == nil {
+		// 	homeDir = usr.HomeDir
+		// }
 		go func() {
 			defer close(sourceNew)
 			pwd := "./"
 			if dir != "" {
 				pwd = dir
 			}
-			files, _ := ioutil.ReadDir(pwd)
+
+			// -- Explore file with local gonvim
+			// --
+			// files, _ := ioutil.ReadDir(pwd)
+			// folders := []string{}
+			// ignore, _ := gitignore.NewRepository(pwd)
+			// for {
+			// 	for _, f := range files {
+			// 		if s.cancelled {
+			// 			return
+			// 		}
+			// 		if f.IsDir() {
+			// 			if f.Name() == ".git" {
+			// 			        continue
+			// 			}
+			// 			folders = append(folders, filepath.Join(pwd, f.Name()))
+			// 			continue
+			// 		}
+			// 		file := filepath.Join(pwd, f.Name())
+			// 		match := ignore.Relative(file, true)
+			// 		if match != nil {
+			// 			continue
+			// 		}
+			// 		if homeDir != "" && strings.HasPrefix(file, homeDir) {
+			// 			file = "~" + file[len(homeDir):]
+			// 		}
+			// 		select {
+			// 		case sourceNew <- file:
+			// 		case <-cancelChan:
+			// 			return
+			// 		}
+			// 	}
+			// 	for {
+			// 		if len(folders) == 0 {
+			// 			return
+			// 		}
+			// 		pwd = folders[0]
+			// 		folders = folders[1:]
+			// 		files, _ = ioutil.ReadDir(pwd)
+			// 		if len(files) == 0 {
+			// 			continue
+			// 		} else {
+			// 			break
+			// 		}
+			// 	}
+			// }
+
+
+			// -- Explore file with nvim function
+			// --
 			folders := []string{}
 			ignore, _ := gitignore.NewRepository(pwd)
+		 	command := fmt.Sprintf("globpath('%s', '{,.}*', 1, 0)", pwd)
+			files := ""
+		 	s.nvim.Eval(command, &files)
 			for {
-				for _, f := range files {
-					if s.cancelled {
-						return
-					}
-					if f.IsDir() {
-						if f.Name() == ".git" {
-						        continue
-						}
-						folders = append(folders, filepath.Join(pwd, f.Name()))
+				for _, file := range strings.Split(files, "\n") {
+			 		if s.cancelled {
+			 			return
+			 		}
+
+					file = file[2:]
+
+					// Skip './' and '../'
+					if file[len(file)-2:] == "./" || file[len(file)-3:] == "../" {
 						continue
 					}
-					file := filepath.Join(pwd, f.Name())
-					match := ignore.Relative(file, true)
-					if match != nil {
+
+					// If it is directory
+					if file[len(file)-1] == '/' {
+			 			if file == ".git/" {
+			 			        continue
+			 			}
+			 			folders = append(folders, file)
 						continue
 					}
-					if homeDir != "" && strings.HasPrefix(file, homeDir) {
-						file = "~" + file[len(homeDir):]
+
+					// Skip gitignore files
+					if !s.isRemoteAttachment {
+			 			match := ignore.Relative(file, true)
+			 			if match != nil {
+							fmt.Println("ignore!")
+			 				continue
+			 			}
 					}
-					select {
-					case sourceNew <- file:
-					case <-cancelChan:
-						return
-					}
+
+			 		select {
+			 		case sourceNew <- file:
+			 		case <-cancelChan:
+			 			return
+			 		}
 				}
-				for {
-					if len(folders) == 0 {
-						return
-					}
-					pwd = folders[0]
-					folders = folders[1:]
-					files, _ = ioutil.ReadDir(pwd)
-					if len(files) == 0 {
-						continue
-					} else {
-						break
-					}
-				}
+			 	for {
+			 		if len(folders) == 0 {
+			 			return
+			 		}
+		 			command = fmt.Sprintf("globpath('./%s', '{,.}*', 1, 0)", folders[0])
+			 		folders = folders[1:]
+		 			s.nvim.Eval(command, &files)
+			 		if len(files) == 0 {
+			 			continue
+			 		} else {
+			 			break
+			 		}
+			 	}
+
 			}
+
 		}()
 		return
 	}
@@ -655,3 +722,4 @@ func expand(path string) (string, error) {
 	}
 	return filepath.Join(usr.HomeDir, path[1:]), nil
 }
+

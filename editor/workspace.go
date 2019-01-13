@@ -334,11 +334,13 @@ func (w *Workspace) attachUI(path string) error {
 	w.loc.subscribe()
 	// NOTE: Need https://github.com/neovim/neovim/pull/7466 to be merged
 	// w.message.subscribe()
-	fuzzy.RegisterPlugin(w.nvim)
+	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
 
 	w.uiAttached = true
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
 	if err != nil {
+		fmt.Println(err)
+		editor.close()
 		return err
 	}
 
@@ -399,7 +401,7 @@ func (w *Workspace) initGonvim() {
 	w.nvim.Command(registerAutocmds)
 
 	gonvimCommands := fmt.Sprintf(`
-	command! GonvimVersion echo %s
+	command! GonvimVersion echo "%s"
 	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")`, editor.version)
 	if !w.uiRemoteAttached {
 		gonvimCommands = gonvimCommands + `
@@ -411,7 +413,6 @@ func (w *Workspace) initGonvim() {
 	`
 	}
 
-	fmt.Println(gonvimCommands)
 	registerCommands := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimCommands))
 	w.nvim.Command(registerCommands)
 
@@ -433,13 +434,11 @@ func splitVimscript(s string) string {
 	listLines := "["
 	lines := strings.Split(s, "\n")
 	for i, line := range lines {
-		if line != "" && line != "\t" {
-			listLines = listLines + `'` + line + `'`
-			if i < len(lines)-2 {
-				listLines = listLines + ","
-			} else {
-				listLines = listLines + "]"
-			}
+		listLines = listLines + `'` + line + `'`
+		if i == len(lines)-1 {
+			listLines = listLines + "]"
+		} else {
+			listLines = listLines + ","
 		}
 	}
 
