@@ -74,7 +74,10 @@ func newFilelist(path string) (*Filelist, error) {
 	parentDirItem.makeWidget(width)
 	filelist.Fileitems = append(filelist.Fileitems, parentDirItem)
 	filelistlayout.AddWidget(parentDirItem.widget, 0, 0)
-	for _, f := range files {
+	for i, f := range files {
+		if i >= editor.config.FileExplorer.MaxItems {
+			break
+		}
 		fileitem, err := fl.newFileitem(f, path)
 		if err != nil {
 			continue
@@ -237,10 +240,10 @@ func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
 	case "..":
 		openCommand = ":cd .."
 	default:
-		if editor.config.Workspace.FileExplorerOpenCmd == "" {
+		if editor.config.FileExplorer.OpenCmd == "" {
 			openCommand = ":e " + f.path
 		} else {
-			openCommand = editor.config.Workspace.FileExplorerOpenCmd + " " + f.path
+			openCommand = editor.config.FileExplorer.OpenCmd + " " + f.path
 		}
 
 	}

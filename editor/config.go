@@ -78,16 +78,17 @@ import (
 // [dein]
 // tomlFile
 type gonvimConfig struct {
-	Editor      editorConfig
-	Statusline  statusLineConfig
-	Tabline     tabLineConfig
-	Lint        lintConfig
-	ScrollBar   scrollBarConfig
-	ActivityBar activityBarConfig
-	MiniMap     miniMapConfig
-	SideBar     sideBarConfig
-	Workspace   workspaceConfig
-	Dein        deinConfig
+	Editor       editorConfig
+	Statusline   statusLineConfig
+	Tabline      tabLineConfig
+	Lint         lintConfig
+	ScrollBar    scrollBarConfig
+	ActivityBar  activityBarConfig
+	MiniMap      miniMapConfig
+	SideBar      sideBarConfig
+	Workspace    workspaceConfig
+	FileExplorer fileExplorerConfig
+	Dein         deinConfig
 }
 
 type editorConfig struct {
@@ -145,7 +146,11 @@ type sideBarConfig struct {
 type workspaceConfig struct {
 	RestoreSession      bool
 	PathStyle           string
-	FileExplorerOpenCmd string
+}
+
+type fileExplorerConfig struct {
+	OpenCmd string
+	MaxItems int
 }
 
 type deinConfig struct {
@@ -154,6 +159,11 @@ type deinConfig struct {
 
 func newGonvimConfig(home string) gonvimConfig {
 	var config gonvimConfig
+
+	// Set default value
+	config.FileExplorer.MaxItems = 50
+
+	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
 		config.Editor.FontSize = 14
 		config.Editor.Width = 800
@@ -225,6 +235,11 @@ func newGonvimConfig(home string) gonvimConfig {
 	if config.SideBar.AccentColor == "" {
 		config.SideBar.AccentColor = "#5596ea"
 	}
+
+	if config.FileExplorer.MaxItems < 0 {
+		config.FileExplorer.MaxItems = 50
+	}
+
 	if config.Workspace.PathStyle == "" {
 		config.Workspace.PathStyle = "minimum"
 	}

@@ -545,7 +545,7 @@ func (w *Workspace) setCwd(cwd string) {
 			if err != nil {
 				continue
 			}
-			go sideItem.setFilelistwidget(filelist)
+			sideItem.setFilelistwidget(filelist)
 		}
 	}
 }
