@@ -26,9 +26,11 @@ type Statusline struct {
 	margin         int
 	height         int
 
+	left       *LeftStatusItem
+
 	pos        *StatuslinePos
 	mode       *StatusMode
-	main       *StatuslineMain
+	file       *StatuslineFile
 	notify     *StatuslineNotify
 	filetype   *StatuslineFiletype
 	git        *StatuslineGit
@@ -37,6 +39,12 @@ type Statusline struct {
 	lint       *StatuslineLint
 	updates    chan []interface{}
 }
+
+type LeftStatusItem struct {
+	s      *Statusline
+	widget *widgets.QWidget
+}
+
 
 // StatuslineNotify
 type StatuslineNotify struct {
@@ -62,13 +70,9 @@ type StatuslineLint struct {
 	svgLoaded  bool
 }
 
-// StatuslineMain is
-type StatuslineMain struct {
+// StatuslineFile is
+type StatuslineFile struct {
 	s      *Statusline
-	widget *widgets.QWidget
-
-	modeIcon  *svg.QSvgWidget
-	modeLabel *widgets.QLabel
 
 	folderLabel *widgets.QLabel
 	base        string
@@ -102,6 +106,9 @@ type StatusMode struct {
 	mode string
 	text string
 	bg   *RGBA
+
+	icon  *svg.QSvgWidget
+	label *widgets.QLabel
 }
 
 // StatuslineGit is
@@ -187,6 +194,9 @@ func initStatuslineNew() *Statusline {
 		modeLabel.Hide()
 		modeIcon.Hide()
 	}
+	s.mode.label = modeLabel
+	s.mode.icon = modeIcon
+
 	fileLabel := widgets.NewQLabel(nil, 0)
 	fileLabel.SetContentsMargins(0, 0, 0, 1)
 	folderLabel := widgets.NewQLabel(nil, 0)
@@ -198,23 +208,19 @@ func initStatuslineNew() *Statusline {
 	leftLayout := widgets.NewQHBoxLayout()
 	leftLayout.SetContentsMargins(0, 0, 0, 1)
 	leftLayout.SetSpacing(8)
-	leftLayout.AddWidget(modeLabel, 0, 0)
-	leftLayout.AddWidget(modeIcon, 0, 0)
-	leftLayout.AddWidget(folderLabel, 0, 0)
-	leftLayout.AddWidget(fileLabel, 0, 0)
-	leftLayout.AddWidget(roIcon, 0, 0)
 	leftWidget := widgets.NewQWidget(nil, 0)
-	leftWidget.SetLayout(leftLayout)
-	main := &StatuslineMain{
-		s:           s,
-		modeLabel:   modeLabel,
-		modeIcon:    modeIcon,
+	left := &LeftStatusItem{
 		widget:      leftWidget,
+	}
+	s.left = left
+	left.s = s
+	file := &StatuslineFile{
+		s:           s,
 		fileLabel:   fileLabel,
 		folderLabel: folderLabel,
 		roIcon:      roIcon,
 	}
-	s.main = main
+	s.file = file
 
 	fileFormatLabel := widgets.NewQLabel(nil, 0)
 	fileFormat := &StatuslineFileFormat{
@@ -336,21 +342,78 @@ func initStatuslineNew() *Statusline {
 	s.lint = lint
 
 	s.setContentsMarginsForWidgets(0, 7, 0, 9)
-
+	left.widget.SetLayout(leftLayout)
 	layout.AddWidget(leftWidget)
-	layout.AddWidget(notifyWidget)
-	layout.AddWidget(gitWidget)
-	layout.AddWidget(filetypeLabel)
-	layout.AddWidget(fileFormatLabel)
-	layout.AddWidget(encodingLabel)
-	layout.AddWidget(posLabel)
-	layout.AddWidget(lintWidget)
+
+	left.setWidget()
+	s.setWidget()
 
 	return s
 }
 
+
+func (s *Statusline) setWidget() {
+	for _, rightItem := range editor.config.Statusline.Right {
+		switch rightItem {
+		case "mode" :
+			s.widget.Layout().AddWidget(s.mode.label)
+			s.widget.Layout().AddWidget(s.mode.icon)
+		case "filepath" :
+			s.widget.Layout().AddWidget(s.file.folderLabel)
+		case "filename" :
+			s.widget.Layout().AddWidget(s.file.fileLabel)
+			s.widget.Layout().AddWidget(s.file.roIcon)
+		case "message" :
+			s.widget.Layout().AddWidget(s.notify.widget)
+		case "git" :
+			s.widget.Layout().AddWidget(s.git.widget)
+		case "filetype" :
+			s.widget.Layout().AddWidget(s.filetype.label)
+		case "fileformat" :
+			s.widget.Layout().AddWidget(s.fileFormat.label)
+		case "fileencoding" :
+			s.widget.Layout().AddWidget(s.encoding.label)
+		case "curpos" :
+			s.widget.Layout().AddWidget(s.pos.label)
+		case "lint" :
+			s.widget.Layout().AddWidget(s.lint.widget)
+		default:
+		}
+	}
+}
+
+func (left *LeftStatusItem) setWidget() {
+	for _, leftItem := range editor.config.Statusline.Left {
+		switch leftItem {
+		case "mode" :
+			left.widget.Layout().AddWidget(left.s.mode.label)
+			left.widget.Layout().AddWidget(left.s.mode.icon)
+		case "filepath" :
+			left.widget.Layout().AddWidget(left.s.file.folderLabel)
+		case "filename" :
+			left.widget.Layout().AddWidget(left.s.file.fileLabel)
+			left.widget.Layout().AddWidget(left.s.file.roIcon)
+		case "message" :
+			left.widget.Layout().AddWidget(left.s.notify.widget)
+		case "git" :
+			left.widget.Layout().AddWidget(left.s.git.widget)
+		case "filetype" :
+			left.widget.Layout().AddWidget(left.s.filetype.label)
+		case "fileformat" :
+			left.widget.Layout().AddWidget(left.s.fileFormat.label)
+		case "fileencoding" :
+			left.widget.Layout().AddWidget(left.s.encoding.label)
+		case "curpos" :
+			left.widget.Layout().AddWidget(left.s.pos.label)
+		case "lint" :
+			left.widget.Layout().AddWidget(left.s.lint.widget)
+		default:
+		}
+	}
+}
+
 func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
-	s.main.widget.SetContentsMargins(l, u, r, d)
+	s.left.widget.SetContentsMargins(l, u, r, d)
 	s.pos.label.SetContentsMargins(l, u, r, d)
 	s.notify.widget.SetContentsMargins(l, u, r, d)
 	s.filetype.label.SetContentsMargins(l, u, r, d)
@@ -369,7 +432,7 @@ func (s *Statusline) setColor() {
 	fg := editor.colors.fg.String()
 	bg := editor.colors.bg.String()
 
-	s.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", comment))
+	s.file.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", comment))
 	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { border-top: 0px solid %s; background-color: %s; } * { color: %s; }", bg, bg, fg))
 
 	svgContent := editor.getSvg("git", nil)
@@ -425,12 +488,12 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		default:
 		}
 		if ro == 1 {
-			s.main.ro = true
+			s.file.ro = true
 		} else {
-			s.main.ro = false
+			s.file.ro = false
 		}
 
-		s.main.redraw()
+		s.file.redraw()
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
 		s.fileFormat.redraw(fileFormat)
@@ -441,12 +504,12 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 }
 
 func (s *StatusMode) update() {
-	s.s.main.modeLabel.SetText(s.text)
-	s.s.main.modeLabel.SetStyleSheet(fmt.Sprintf("color: #ffffff; background-color: %s;", s.bg.String()))
+	s.s.mode.label.SetText(s.text)
+	s.s.mode.label.SetStyleSheet(fmt.Sprintf("color: #ffffff; background-color: %s;", s.bg.String()))
 }
 
 func (s *StatusMode) updateStatusline() {
-	s.s.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", newRGBA(230, 230, 230, 1)))
+	s.s.file.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", newRGBA(230, 230, 230, 1)))
 	s.s.widget.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
 	s.s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { border-top: 0px solid %s; background-color: %s; } * { color: %s; }", s.bg.String(), s.bg.String(), "#ffffff"))
 	svgContent := editor.getSvg("git", newRGBA(255, 255, 255, 1))
@@ -485,38 +548,38 @@ func (s *StatusMode) redraw() {
 		bg = hexToRGBA(editor.config.Statusline.NormalModeColor)
 		// svgContent := editor.getSvg("hjkl", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		svgContent := editor.getSvg("thought", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.s.mode.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.mode.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "cmdline_normal":
 		text = "Normal"
 		bg = hexToRGBA(editor.config.Statusline.CommandModeColor)
 		svgContent := editor.getSvg("command", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.s.mode.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.mode.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "insert":
 		text = "Insert"
 		bg = hexToRGBA(editor.config.Statusline.InsertModeColor)
 		svgContent := editor.getSvg("edit", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.s.mode.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.mode.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "visual":
 		text = "Visual"
 		bg = hexToRGBA(editor.config.Statusline.VisualModeColor)
 		svgContent := editor.getSvg("select", newRGBA(warpColor(fg, 30).R, warpColor(fg, 30).G, warpColor(fg, 30).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.s.mode.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.mode.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "replace":
 		text = "Replace"
 		bg = hexToRGBA(editor.config.Statusline.ReplaceModeColor)
 		svgContent := editor.getSvg("replace", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-3, 1, false))
+		s.s.mode.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.mode.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-3, 1, false))
 	case "terminal-input":
 		text = "Terminal"
 		bg = hexToRGBA(editor.config.Statusline.TerminalModeColor)
 		svgContent := editor.getSvg("terminal", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-4, 1, false))
+		s.s.mode.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.s.mode.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-4, 1, false))
 	default:
 	}
 
@@ -525,20 +588,20 @@ func (s *StatusMode) redraw() {
 
 	switch editor.config.Statusline.ModeIndicatorType {
 	case "none":
-		s.s.main.modeLabel.Hide()
-		s.s.main.modeIcon.Hide()
+		s.s.mode.label.Hide()
+		s.s.mode.icon.Hide()
 	case "textLabel":
-		s.s.main.modeIcon.Hide()
+		s.s.mode.icon.Hide()
 		s.update()
 	case "icon":
-		s.s.main.modeLabel.Hide()
+		s.s.mode.label.Hide()
 	case "background":
-		s.s.main.modeLabel.Hide()
-		s.s.main.modeIcon.Hide()
+		s.s.mode.label.Hide()
+		s.s.mode.icon.Hide()
 		s.updateStatusline()
 	default:
-		s.s.main.modeLabel.Hide()
-		s.s.main.modeIcon.Hide()
+		s.s.mode.label.Hide()
+		s.s.mode.icon.Hide()
 	}
 }
 
@@ -612,7 +675,7 @@ func (s *StatuslineGit) redraw(file string) {
 	}
 }
 
-func (s *StatuslineMain) redraw() {
+func (s *StatuslineFile) redraw() {
 	file := s.s.ws.filepath
 	if file == "" {
 		file = "[No Name]"
