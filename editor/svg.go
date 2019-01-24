@@ -254,6 +254,217 @@ func (e *Editor) getSvg(name string, color *RGBA) string {
 func (e *Editor) initSVGS() {
 	e.svgs = map[string]*SvgXML{}
 
+	e.svgs["vim_keyword"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+
+	e.svgs["vim_ctrl_x"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_whole_line"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_files"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_tags"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_path_defines"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_path_paterns"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+
+	e.svgs["vim_dictionary"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_thesaurus"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_cmdline"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_function"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_omni"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_spell"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_eval"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+	e.svgs["vim_unknown"] = &SvgXML{
+		width:  24,
+		height: 24,
+	}
+
+	e.svgs["lsp_text"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15M5,15.91L11,19.29V12.58L5,9.21V15.91M19,15.91V9.21L13,12.58V19.29L19,15.91Z" /></svg>`,
+	}
+
+	e.svgs["lsp_method"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15M5,15.91L11,19.29V12.58L5,9.21V15.91M19,15.91V9.21L13,12.58V19.29L19,15.91Z" /></svg>`,
+	}
+
+	e.svgs["lsp_function"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15M5,15.91L11,19.29V12.58L5,9.21V15.91M19,15.91V9.21L13,12.58V19.29L19,15.91Z" /></svg>`,
+	}
+
+	e.svgs["lsp_constructor"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml:    `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15M5,15.91L11,19.29V12.58L5,9.21V15.91M19,15.91V9.21L13,12.58V19.29L19,15.91Z" /></svg>`,
+	}
+
+	e.svgs["lsp_variable"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15Z" /></svg>`,
+	}
+
+	e.svgs["lsp_field"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15Z" /></svg>`,
+	}
+
+	e.svgs["lsp_class"] = &SvgXML{ // TODO
+		width:  24,
+		height: 24,
+		xml:    `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15M5,15.91L11,19.29V12.58L5,9.21V15.91M19,15.91V9.21L13,12.58V19.29L19,15.91Z" /></svg>`,
+	}
+
+	e.svgs["lsp_interface"] = &SvgXML{ // Need to change to a better icon
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M4,9C5.31,9 6.42,9.83 6.83,11H17.17C17.58,9.83 18.69,9 20,9A3,3 0 0,1 23,12A3,3 0 0,1 20,15C18.69,15 17.58,14.17 17.17,13H6.83C6.42,14.17 5.31,15 4,15A3,3 0 0,1 1,12A3,3 0 0,1 4,9Z" /></svg>`,
+	}
+
+	e.svgs["lsp_module"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `
+<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z" /></svg>`,
+	}
+
+	e.svgs["lsp_property"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `
+<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M22.7,19L13.6,9.9C14.5,7.6 14,4.9 12.1,3C10.1,1 7.1,0.6 4.7,1.7L9,6L6,9L1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1C4.8,14 7.5,14.5 9.8,13.6L18.9,22.7C19.3,23.1 19.9,23.1 20.3,22.7L22.6,20.4C23.1,20 23.1,19.3 22.7,19Z" /></svg>`,
+	}
+
+	e.svgs["lsp_unit"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M22,14A2,2 0 0,1 20,16H4A2,2 0 0,1 2,14V10A2,2 0 0,1 4,8H20A2,2 0 0,1 22,10V14M4,14H8V10H4V14M10,14H14V10H10V14M16,14H20V10H16V14Z" /></svg>`,
+	}
+
+	e.svgs["lsp_value"] = &SvgXML{ // Need to change to a better icon
+		width:  24,
+		height: 24,
+		xml:    `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M18,18H12V12.21C11.34,12.82 10.47,13.2 9.5,13.2C7.46,13.2 5.8,11.54 5.8,9.5A3.7,3.7 0 0,1 9.5,5.8C11.54,5.8 13.2,7.46 13.2,9.5C13.2,10.47 12.82,11.34 12.21,12H18M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z" /></svg>`,
+	}
+
+	e.svgs["lsp_enum"] = &SvgXML{ // Need to change to a better icon
+		width:  24,
+		height: 24,
+		xml:    `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M18,18H12V12.21C11.34,12.82 10.47,13.2 9.5,13.2C7.46,13.2 5.8,11.54 5.8,9.5A3.7,3.7 0 0,1 9.5,5.8C11.54,5.8 13.2,7.46 13.2,9.5C13.2,10.47 12.82,11.34 12.21,12H18M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z" /></svg>`,
+	}
+
+	e.svgs["lsp_keyword"] = &SvgXML{ // TODO
+		width:  24,
+		height: 24,
+		xml: ``,
+	}
+
+	e.svgs["lsp_snippet"] = &SvgXML{  // Need to change to a better icon
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M2,3H8V5H4V19H8V21H2V3M7,17V15H9V17H7M11,17V15H13V17H11M15,17V15H17V17H15M22,3V21H16V19H20V5H16V3H22Z" /></svg>`,
+
+	}
+
+	e.svgs["lsp_color"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M17.5,12A1.5,1.5 0 0,1 16,10.5A1.5,1.5 0 0,1 17.5,9A1.5,1.5 0 0,1 19,10.5A1.5,1.5 0 0,1 17.5,12M14.5,8A1.5,1.5 0 0,1 13,6.5A1.5,1.5 0 0,1 14.5,5A1.5,1.5 0 0,1 16,6.5A1.5,1.5 0 0,1 14.5,8M9.5,8A1.5,1.5 0 0,1 8,6.5A1.5,1.5 0 0,1 9.5,5A1.5,1.5 0 0,1 11,6.5A1.5,1.5 0 0,1 9.5,8M6.5,12A1.5,1.5 0 0,1 5,10.5A1.5,1.5 0 0,1 6.5,9A1.5,1.5 0 0,1 8,10.5A1.5,1.5 0 0,1 6.5,12M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A1.5,1.5 0 0,0 13.5,19.5C13.5,19.11 13.35,18.76 13.11,18.5C12.88,18.23 12.73,17.88 12.73,17.5A1.5,1.5 0 0,1 14.23,16H16A5,5 0 0,0 21,11C21,6.58 16.97,3 12,3Z" /></svg>`,
+	}
+
+	e.svgs["lsp_file"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z" /></svg>`,
+	}
+
+	e.svgs["lsp_reference"] = &SvgXML{  // Need to change to a better icon
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M3,6V22H21V24H3A2,2 0 0,1 1,22V6H3M16,9H21.5L16,3.5V9M7,2H17L23,8V18A2,2 0 0,1 21,20H7C5.89,20 5,19.1 5,18V4A2,2 0 0,1 7,2M7,4V18H21V11H14V4H7Z" /></svg>`,
+	}
+
+	e.svgs["lsp_folder"] = &SvgXML{ // TODO
+		width:  24,
+		height: 24,
+	}
+
+	e.svgs["lsp_enumMember"] = &SvgXML{ // TODO
+		width:  24,
+		height: 24,
+	}
+
+	e.svgs["lsp_constant"] = &SvgXML{ // TODO
+		width:  24,
+		height: 24,
+	}
+
+	e.svgs["lsp_struct"] = &SvgXML{ // TODO
+		width:  24,
+		height: 24,
+	}
+
+	e.svgs["lsp_event"] = &SvgXML{ // TODO
+		width:  24,
+		height: 24,
+	}
+
+	e.svgs["lsp_operator"] = &SvgXML{ // TODO
+		width:  24,
+		height: 24,
+	}
+
+	e.svgs["lsp_typeParameter"] = &SvgXML{ // TODO
+		width:  24,
+		height: 24,
+	}
+
+
+
 	e.svgs["lock"] = &SvgXML{
 		width:  24,
 		height: 24,
@@ -413,9 +624,12 @@ func (e *Editor) initSVGS() {
 
 	// terminal
 	e.svgs["terminal"] = &SvgXML{
-		width:  112,
-		height: 128,
-		xml:    `<svg height="128" viewBox="0 0 14 16" version="1.1" width="112" aria-hidden="true"><path fill="%s" fill-rule="evenodd" d="M7 10h4v1H7v-1zm-3 1l3-3-3-3-.75.75L5.5 8l-2.25 2.25L4 11zm10-8v10c0 .55-.45 1-1 1H1c-.55 0-1-.45-1-1V3c0-.55.45-1 1-1h12c.55 0 1 .45 1 1zm-1 0H1v10h12V3z"></path></svg>`,
+		// width:  112,
+		// height: 128,
+		// xml:    `<svg height="128" viewBox="0 0 14 16" version="1.1" width="112" aria-hidden="true"><path fill="%s" fill-rule="evenodd" d="M7 10h4v1H7v-1zm-3 1l3-3-3-3-.75.75L5.5 8l-2.25 2.25L4 11zm10-8v10c0 .55-.45 1-1 1H1c-.55 0-1-.45-1-1V3c0-.55.45-1 1-1h12c.55 0 1 .45 1 1zm-1 0H1v10h12V3z"></path></svg>`,
+		width:  32,
+		height: 32,
+		xml: `<svg width="32" height="32" viewBox="0 0 32 32"><g transform="scale(1.16) translate(-3,-3)"><path fill="%s" d="M25.716 6.696h-19.296c-0.888 0-1.608 0.72-1.608 1.608v16.080c0 0.888 0.72 1.608 1.608 1.608h19.296c0.888 0 1.608-0.72 1.608-1.608v-16.080c0-0.888-0.72-1.608-1.608-1.608zM8.028 17.952l3.216-3.216-3.216-3.216 1.608-1.608 4.824 4.824-4.824 4.824-1.608-1.608zM20.892 19.56h-6.432v-1.608h6.432v1.608z"></path></g></svg>`,
 	}
 
 	// for Insert Mode
