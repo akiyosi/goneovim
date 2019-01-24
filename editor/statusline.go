@@ -47,7 +47,7 @@ type LeftStatusItem struct {
 }
 
 type StatuslineComponent struct {
-	disable   bool
+	isInclude bool
 	hidden    bool
 	widget *widgets.QWidget
 	icon   *svg.QSvgWidget
@@ -128,7 +128,6 @@ type StatuslineGit struct {
 	branch    string
 	file      string
 	svgLoaded bool
-	hidden    bool
 	c      *StatuslineComponent
 }
 
@@ -158,13 +157,12 @@ func initStatuslineNew() *Statusline {
 		updates: make(chan []interface{}, 1000),
 	}
 
-	fmt.Println("debug:: 1")
-
 	mode := &StatuslineMode{
 		s: s,
 		c: &StatuslineComponent{},
 	}
 	s.mode = mode
+	s.mode.c.hide()
 
 	gitIcon := svg.NewQSvgWidget(nil)
 	gitIcon.SetFixedSize2(editor.iconSize+1, editor.iconSize+1)
@@ -187,6 +185,7 @@ func initStatuslineNew() *Statusline {
 		},
 	}
 	s.git = git
+	s.git.c.hide()
 
 	modeLabel := widgets.NewQLabel(nil, 0)
 	modeLabel.SetContentsMargins(4, 1, 4, 1)
@@ -213,7 +212,6 @@ func initStatuslineNew() *Statusline {
 
 	folderLabel := widgets.NewQLabel(nil, 0)
 	folderLabel.SetContentsMargins(0, 0, 0, 1)
-	folderLabel.Hide()
 	path := &StatuslineFilepath{
 		s:           s,
 		c: &StatuslineComponent{
@@ -221,6 +219,7 @@ func initStatuslineNew() *Statusline {
 		},
 	}
 	s.path = path
+	s.path.c.hide()
 
 	fileLabel := widgets.NewQLabel(nil, 0)
 	fileLabel.SetContentsMargins(0, 0, 0, 1)
@@ -243,7 +242,7 @@ func initStatuslineNew() *Statusline {
 		},
 	}
 	s.file = file
-
+	s.file.c.hide()
 
 	leftLayout := widgets.NewQHBoxLayout()
 	leftLayout.SetContentsMargins(0, 0, 0, 1)
@@ -262,7 +261,7 @@ func initStatuslineNew() *Statusline {
 		},
 	}
 	s.fileFormat = fileFormat
-	// s.fileFormat.label.Hide()
+	s.fileFormat.c.hide()
 
 	encodingLabel := widgets.NewQLabel(nil, 0)
 	encoding := &StatuslineEncoding{
@@ -271,7 +270,7 @@ func initStatuslineNew() *Statusline {
 		},
 	}
 	s.encoding = encoding
-	// s.encoding.label.Hide()
+	s.encoding.c.hide()
 
 	posLabel := widgets.NewQLabel(nil, 0)
 	pos := &StatuslinePos{
@@ -280,6 +279,7 @@ func initStatuslineNew() *Statusline {
 		},
 	}
 	s.pos = pos
+	s.pos.c.hide()
 
 	filetypeLabel := widgets.NewQLabel(nil, 0)
 	filetype := &StatuslineFiletype{
@@ -288,7 +288,7 @@ func initStatuslineNew() *Statusline {
 		},
 	}
 	s.filetype = filetype
-	// s.filetype.label.Hide()
+	s.filetype.c.hide()
 
 	notifyLayout := widgets.NewQHBoxLayout()
 	notifyWidget := widgets.NewQWidget(nil, 0)
@@ -309,6 +309,7 @@ func initStatuslineNew() *Statusline {
 		},
 	}
 	s.notify = notify
+	s.notify.c.hide()
 	notifyWidget.ConnectEnterEvent(func(event *core.QEvent) {
 		if editor.config.Statusline.ModeIndicatorType == "background" {
 			switch editor.workspaces[editor.active].mode {
@@ -340,8 +341,6 @@ func initStatuslineNew() *Statusline {
 			editor.showNotifications()
 		}
 	})
-	// notifyWidget.ConnectMouseReleaseEvent(func(*gui.QMouseEvent) {
-	// })
 
 	okIcon := svg.NewQSvgWidget(nil)
 	okIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
@@ -349,21 +348,16 @@ func initStatuslineNew() *Statusline {
 	okLabel.SetContentsMargins(0, 0, 0, 0)
 	errorIcon := svg.NewQSvgWidget(nil)
 	errorIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
-	//errorIcon.Show()
 	errorLabel := widgets.NewQLabel(nil, 0)
 	errorLabel.SetContentsMargins(0, 0, 0, 0)
-	//errorLabel.Show()
 	warnIcon := svg.NewQSvgWidget(nil)
 	warnIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
-	//warnIcon.Show()
 	warnLabel := widgets.NewQLabel(nil, 0)
 	warnLabel.SetContentsMargins(0, 0, 0, 0)
-	//warnLabel.Show()
 	lintLayout := widgets.NewQHBoxLayout()
 	lintLayout.SetContentsMargins(0, 0, 0, 0)
 	lintLayout.SetSpacing(0)
 	lintLayout.AddWidget(okIcon, 0, 0)
-	//lintLayout.AddWidget(okLabel, 0, 0)
 	lintLayout.AddWidget(errorIcon, 0, 0)
 	lintLayout.AddWidget(errorLabel, 0, 0)
 	lintLayout.AddWidget(warnIcon, 0, 0)
@@ -385,6 +379,7 @@ func initStatuslineNew() *Statusline {
 		warnings:   -1,
 	}
 	s.lint = lint
+	s.lint.c.hide()
 
 	s.setContentsMarginsForWidgets(0, 7, 0, 9)
 	left.widget.SetLayout(leftLayout)
@@ -403,25 +398,46 @@ func (s *Statusline) setWidget() {
 		case "mode" :
 			s.widget.Layout().AddWidget(s.mode.c.label)
 			s.widget.Layout().AddWidget(s.mode.c.icon)
+			s.mode.c.isInclude = true
+			s.mode.c.show()
 		case "filepath" :
 			s.widget.Layout().AddWidget(s.path.c.label)
+			s.path.c.isInclude = true
+			s.path.c.show()
 		case "filename" :
 			s.widget.Layout().AddWidget(s.file.c.label)
 			s.widget.Layout().AddWidget(s.file.c.icon)
+			s.file.c.isInclude = true
+			s.file.c.show()
 		case "message" :
 			s.widget.Layout().AddWidget(s.notify.c.widget)
+			s.notify.c.isInclude = true
+			s.notify.c.icon.Show()
+			s.notify.c.widget.Show()
 		case "git" :
 			s.widget.Layout().AddWidget(s.git.c.widget)
+			s.git.c.isInclude = true
+			s.git.c.show()
 		case "filetype" :
 			s.widget.Layout().AddWidget(s.filetype.c.label)
+			s.filetype.c.isInclude = true
+			s.filetype.c.show()
 		case "fileformat" :
 			s.widget.Layout().AddWidget(s.fileFormat.c.label)
+			s.fileFormat.c.isInclude = true
+			s.fileFormat.c.show()
 		case "fileencoding" :
 			s.widget.Layout().AddWidget(s.encoding.c.label)
+			s.encoding.c.isInclude = true
+			s.encoding.c.show()
 		case "curpos" :
 			s.widget.Layout().AddWidget(s.pos.c.label)
+			s.pos.c.isInclude = true
+			s.pos.c.show()
 		case "lint" :
 			s.widget.Layout().AddWidget(s.lint.c.widget)
+			s.lint.c.isInclude = true
+			s.lint.c.show()
 		default:
 		}
 	}
@@ -433,25 +449,46 @@ func (left *LeftStatusItem) setWidget() {
 		case "mode" :
 			left.widget.Layout().AddWidget(left.s.mode.c.label)
 			left.widget.Layout().AddWidget(left.s.mode.c.icon)
+			left.s.mode.c.isInclude = true
+			left.s.mode.c.show()
 		case "filepath" :
 			left.widget.Layout().AddWidget(left.s.path.c.label)
+			left.s.path.c.isInclude = true
+			left.s.path.c.show()
 		case "filename" :
 			left.widget.Layout().AddWidget(left.s.file.c.label)
 			left.widget.Layout().AddWidget(left.s.file.c.icon)
+			left.s.file.c.isInclude = true
+			left.s.file.c.show()
 		case "message" :
 			left.widget.Layout().AddWidget(left.s.notify.c.widget)
+			left.s.notify.c.isInclude = true
+			left.s.notify.c.icon.Show()
+			left.s.notify.c.widget.Show()
 		case "git" :
 			left.widget.Layout().AddWidget(left.s.git.c.widget)
+			left.s.git.c.isInclude = true
+			left.s.git.c.show()
 		case "filetype" :
 			left.widget.Layout().AddWidget(left.s.filetype.c.label)
+			left.s.filetype.c.isInclude = true
+			left.s.filetype.c.show()
 		case "fileformat" :
 			left.widget.Layout().AddWidget(left.s.fileFormat.c.label)
+			left.s.fileFormat.c.isInclude = true
+			left.s.fileFormat.c.show()
 		case "fileencoding" :
 			left.widget.Layout().AddWidget(left.s.encoding.c.label)
+			left.s.encoding.c.isInclude = true
+			left.s.encoding.c.show()
 		case "curpos" :
 			left.widget.Layout().AddWidget(left.s.pos.c.label)
+			left.s.pos.c.isInclude = true
+			left.s.pos.c.show()
 		case "lint" :
 			left.widget.Layout().AddWidget(left.s.lint.c.widget)
+			left.s.lint.c.isInclude = true
+			left.s.lint.c.show()
 		default:
 		}
 	}
@@ -469,7 +506,6 @@ func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 }
 
 func (s *Statusline) setColor() {
-	fmt.Println("debug:: 2")
 	if editor.config.Statusline.ModeIndicatorType == "background" {
 		return
 	}
@@ -485,11 +521,9 @@ func (s *Statusline) setColor() {
 	s.git.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	svgContent = editor.getSvg("bell", nil)
 	s.notify.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	fmt.Println("debug:: 3")
 }
 
 func (s *Statusline) subscribe() {
-	fmt.Println("debug:: 4")
 	if !s.ws.drawStatusline {
 		s.widget.Hide()
 		return
@@ -512,11 +546,9 @@ func (s *Statusline) subscribe() {
 		s.notify.update()
 	})
 	s.ws.nvim.Subscribe("statusline")
-	fmt.Println("debug:: 5")
 }
 
 func (s *Statusline) handleUpdates(updates []interface{}) {
-	fmt.Println("debug:: 6")
 	event := updates[0].(string)
 	switch event {
 	case "bufenter":
@@ -542,24 +574,16 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		} else {
 			s.file.ro = false
 		}
-	fmt.Println("debug:: 7")
 
 		s.file.redraw()
-	fmt.Println("debug:: 8")
 		s.path.redraw()
-	fmt.Println("debug:: 9")
 		s.filetype.redraw(filetype)
-	fmt.Println("debug:: 10")
 		s.encoding.redraw(encoding)
-	fmt.Println("debug:: 11")
 		s.fileFormat.redraw(fileFormat)
-	fmt.Println("debug:: 12")
 		go s.git.redraw(s.ws.filepath)
-	fmt.Println("debug:: 13")
 	default:
 		fmt.Println("unhandled statusline event", event)
 	}
-	fmt.Println("debug:: 14")
 }
 
 func (s *StatuslineMode) update() {
@@ -666,27 +690,62 @@ func (s *StatuslineMode) redraw() {
 	}
 }
 
-func (s *StatuslineGit) hide() {
+func (s *StatuslineComponent) hide() {
 	if s.hidden {
 		return
 	}
+	if s.widget != nil {
+		s.widget.Hide()
+	} else {
+		if s.label != nil {
+			s.label.Hide()
+		}
+		if s.icon != nil {
+			s.label.Hide()
+		}
+	}
 	s.hidden = true
+}
+
+func (s *StatuslineComponent) show() {
+	if !s.hidden {
+		return
+	}
+	if !s.isInclude {
+		return
+	}
+
+	if s.label == nil && s.icon != nil {
+		s.label.Show()
+		s.hidden = false
+		return
+	} else if s.label != nil {
+		if s.label.Text() != "" {
+			s.hidden = false
+			s.label.Show()
+			if s.icon != nil {
+				s.icon.Show()
+			}
+		} else if s.label.Text() == "" {
+			return
+		}
+	}
+
+	if s.widget != nil {
+		s.widget.Show()
+		s.hidden = false
+	}
+
+}
+
+func (s *StatuslineGit) hide() {
+	s.c.hide()
 	s.s.ws.signal.GitSignal()
 }
 
 func (s *StatuslineGit) update() {
-	if s.hidden {
-		s.c.widget.Hide()
-		return
-	}
-	//fg := s.s.ws.screen.highlight.foreground
 	s.c.label.SetText(s.branch)
-	//if !s.svgLoaded {
-	//	s.svgLoaded = true
-	//	svgContent := editor.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-	//	s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	//}
-	s.c.widget.Show()
+	s.c.show()
 }
 
 func (s *StatuslineGit) redraw(file string) {
@@ -731,7 +790,7 @@ func (s *StatuslineGit) redraw(file string) {
 
 	if s.branch != branch {
 		s.branch = branch
-		s.hidden = false
+		s.c.show()
 		s.s.ws.signal.GitSignal()
 	}
 }
@@ -784,14 +843,13 @@ func (s *StatuslineFilepath) redraw() { //TODO reduce process
 	if strings.HasPrefix(file, "term://") {
 		dir = ""
 	}
-	if dir != "" {
-		s.c.label.Show()
-	} else {
-		s.c.label.Hide()
+	if dir == "" {
+		s.c.hide()
 	}
 	if s.dir != dir {
 		s.dir = dir
 		s.c.label.SetText(s.dir)
+		s.c.show()
 	}
 }
 
@@ -806,6 +864,7 @@ func (s *StatuslinePos) redraw(ln, col int) {
 	if text != s.text {
 		s.text = text
 		s.c.label.SetText(text)
+		s.c.show()
 	}
 }
 
@@ -815,7 +874,7 @@ func (s *StatuslineEncoding) redraw(encoding string) {
 	}
 	s.encoding = encoding
 	s.c.label.SetText(s.encoding)
-	s.c.label.Show()
+	s.c.show()
 }
 
 func (s *StatuslineFileFormat) redraw(fileFormat string) {
@@ -827,7 +886,7 @@ func (s *StatuslineFileFormat) redraw(fileFormat string) {
 	}
 	s.fileFormat = fileFormat
 	s.c.label.SetText(s.fileFormat)
-	s.c.label.Show()
+	s.c.show()
 }
 
 func (s *StatuslineFiletype) redraw(filetype string) {
@@ -840,16 +899,16 @@ func (s *StatuslineFiletype) redraw(filetype string) {
 		typetext = "C++"
 	}
 	s.c.label.SetText(typetext)
-	s.c.label.Show()
+	s.c.show()
 }
 
 func (s *StatuslineNotify) update() {
 	s.num = len(editor.notifications)
 	if s.num == 0 {
-		s.c.label.Hide()
+		s.c.hide()
 		return
 	} else {
-		s.c.label.Show()
+		s.c.show()
 	}
 	s.c.label.SetText(fmt.Sprintf("%v", s.num))
 }
@@ -889,22 +948,12 @@ func (s *StatuslineLint) update() {
 		s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 	}
 
-	//if s.errors == 0 && s.warnings == 0 {
-	//	s.okIcon.Show()
-	//	//s.okLabel.SetText("ok")
-	//	s.okLabel.Show()
-	//	s.errorIcon.Hide()
-	//	s.errorLabel.Hide()
-	//	s.warnIcon.Hide()
-	//	s.warnLabel.Hide()
-	//} else {
 	s.okIcon.Hide()
 	s.okLabel.Hide()
 	s.errorIcon.Show()
 	s.errorLabel.Show()
 	s.warnIcon.Show()
 	s.warnLabel.Show()
-	//}
 }
 
 func (s *StatuslineLint) redraw(errors, warnings int) {
