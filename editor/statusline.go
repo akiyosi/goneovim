@@ -1,3 +1,8 @@
+// TODO 
+//  * Add 'charcode' to show the character codepoint under the cursor
+//    vimscript: char2nr(matchstr(getline('.'), '\%' . col('.') . 'c.'))
+//  * Add user defined component feature
+
 package editor
 
 import (
