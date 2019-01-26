@@ -254,6 +254,31 @@ func (e *Editor) getSvg(name string, color *RGBA) string {
 func (e *Editor) initSVGS() {
 	e.svgs = map[string]*SvgXML{}
 
+	e.svgs["gonvim_fuzzy_buffers"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M15.5,2C13,2 11,4 11,6.5C11,9 13,11 15.5,11C16.4,11 17.2,10.7 17.9,10.3L21,13.4L22.4,12L19.3,8.9C19.7,8.2 20,7.4 20,6.5C20,4 18,2 15.5,2M4,4A2,2 0 0,0 2,6V20A2,2 0 0,0 4,22H18A2,2 0 0,0 20,20V15L18,13V20H4V6H9.03C9.09,5.3 9.26,4.65 9.5,4H4M15.5,4C16.9,4 18,5.1 18,6.5C18,7.9 16.9,9 15.5,9C14.1,9 13,7.9 13,6.5C13,5.1 14.1,4 15.5,4Z" /></svg>`,
+	}
+
+	e.svgs["gonvim_fuzzy_files"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H13C12.59,21.75 12.2,21.44 11.86,21.1C11.53,20.77 11.25,20.4 11,20H6V4H13V9H18V10.18C18.71,10.34 19.39,10.61 20,11V8L14,2M20.31,18.9C21.64,16.79 21,14 18.91,12.68C16.8,11.35 14,12 12.69,14.08C11.35,16.19 12,18.97 14.09,20.3C15.55,21.23 17.41,21.23 18.88,20.32L22,23.39L23.39,22L20.31,18.9M16.5,19A2.5,2.5 0 0,1 14,16.5A2.5,2.5 0 0,1 16.5,14A2.5,2.5 0 0,1 19,16.5A2.5,2.5 0 0,1 16.5,19Z" /></svg>`,
+	}
+
+	e.svgs["gonvim_fuzzy_keyword"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" /></svg>`,
+	}
+
+	e.svgs["gonvim_fuzzy_bufferlines"] = &SvgXML{
+		width:  24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M9,2A7,7 0 0,1 16,9C16,10.57 15.5,12 14.61,13.19L15.41,14H16L22,20L20,22L14,16V15.41L13.19,14.61C12,15.5 10.57,16 9,16A7,7 0 0,1 2,9A7,7 0 0,1 9,2M5,8V10H13V8H5Z" /></svg>`,
+	}
+
+	// TODO: Add vim completion kind
 	e.svgs["vim_keyword"] = &SvgXML{
 		width:  24,
 		height: 24,
@@ -317,6 +342,7 @@ func (e *Editor) initSVGS() {
 		height: 24,
 	}
 
+	// TODO: Add LSP completion kind
 	e.svgs["lsp_text"] = &SvgXML{
 		width:  24,
 		height: 24,
@@ -462,8 +488,6 @@ func (e *Editor) initSVGS() {
 		width:  24,
 		height: 24,
 	}
-
-
 
 	e.svgs["lock"] = &SvgXML{
 		width:  24,
