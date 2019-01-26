@@ -141,6 +141,12 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.selected = selected
 	p.top = 0
 
+	// Detect completion kind
+	kind, _ := p.ws.nvimEval("complete_mode()")
+	if kind != "" {
+		fmt.Println("kind:", kind.(string))
+	}
+
 	popupItems := p.items
 	itemHeight := p.ws.font.height + 20
 	heightLeft := p.ws.screen.height - (row+1)*p.ws.font.lineHeight
