@@ -1,3 +1,8 @@
+// TODO 
+//  * Add 'charcode' to show the character codepoint under the cursor
+//    vimscript: char2nr(matchstr(getline('.'), '\%' . col('.') . 'c.'))
+//  * Add user defined component feature
+
 package editor
 
 import (
@@ -26,9 +31,12 @@ type Statusline struct {
 	margin         int
 	height         int
 
+	left       *LeftStatusItem
+
 	pos        *StatuslinePos
-	mode       *StatusMode
-	main       *StatuslineMain
+	mode       *StatuslineMode
+	path   *StatuslineFilepath
+	file       *StatuslineFile
 	notify     *StatuslineNotify
 	filetype   *StatuslineFiletype
 	git        *StatuslineGit
@@ -38,12 +46,23 @@ type Statusline struct {
 	updates    chan []interface{}
 }
 
-// StatuslineNotify
-type StatuslineNotify struct {
+type LeftStatusItem struct {
 	s      *Statusline
+	widget *widgets.QWidget
+}
+
+type StatuslineComponent struct {
+	isInclude bool
+	hidden    bool
 	widget *widgets.QWidget
 	icon   *svg.QSvgWidget
 	label  *widgets.QLabel
+}
+
+// StatuslineNotify
+type StatuslineNotify struct {
+	s      *Statusline
+	c      *StatuslineComponent
 	num    int
 }
 
@@ -52,7 +71,9 @@ type StatuslineLint struct {
 	s          *Statusline
 	errors     int
 	warnings   int
-	widget     *widgets.QWidget
+
+	c      *StatuslineComponent
+
 	okIcon     *svg.QSvgWidget
 	errorIcon  *svg.QSvgWidget
 	warnIcon   *svg.QSvgWidget
@@ -62,46 +83,48 @@ type StatuslineLint struct {
 	svgLoaded  bool
 }
 
-// StatuslineMain is
-type StatuslineMain struct {
+// StatuslineFile is
+type StatuslineFilepath struct {
 	s      *Statusline
-	widget *widgets.QWidget
 
-	modeIcon  *svg.QSvgWidget
-	modeLabel *widgets.QLabel
+	c      *StatuslineComponent
 
-	folderLabel *widgets.QLabel
-	base        string
 	dir         string
+}
+
+// StatuslineFile is
+type StatuslineFile struct {
+	s      *Statusline
+	c      *StatuslineComponent
 
 	file      string
-	fileType  string
-	fileLabel *widgets.QLabel
+	base        string
 
 	ro     bool
-	roIcon *svg.QSvgWidget
 }
 
 // StatuslineFiletype is
 type StatuslineFiletype struct {
 	filetype string
-	label    *widgets.QLabel
+	c      *StatuslineComponent
 }
 
 // StatuslinePos is
 type StatuslinePos struct {
 	ln    int
 	col   int
-	label *widgets.QLabel
 	text  string
+	c      *StatuslineComponent
 }
 
-// StatusMode is
-type StatusMode struct {
+// StatuslineMode is
+type StatuslineMode struct {
 	s    *Statusline
 	mode string
 	text string
 	bg   *RGBA
+
+	c      *StatuslineComponent
 }
 
 // StatuslineGit is
@@ -109,23 +132,20 @@ type StatuslineGit struct {
 	s         *Statusline
 	branch    string
 	file      string
-	widget    *widgets.QWidget
-	label     *widgets.QLabel
-	icon      *svg.QSvgWidget
 	svgLoaded bool
-	hidden    bool
+	c      *StatuslineComponent
 }
 
 // StatuslineEncoding is
 type StatuslineEncoding struct {
 	encoding string
-	label    *widgets.QLabel
+	c      *StatuslineComponent
 }
 
 // StatuslineFileFormat
 type StatuslineFileFormat struct {
 	fileFormat string
-	label      *widgets.QLabel
+	c      *StatuslineComponent
 }
 
 func initStatuslineNew() *Statusline {
@@ -142,10 +162,12 @@ func initStatuslineNew() *Statusline {
 		updates: make(chan []interface{}, 1000),
 	}
 
-	mode := &StatusMode{
+	mode := &StatuslineMode{
 		s: s,
+		c: &StatuslineComponent{},
 	}
 	s.mode = mode
+	s.mode.c.hide()
 
 	gitIcon := svg.NewQSvgWidget(nil)
 	gitIcon.SetFixedSize2(editor.iconSize+1, editor.iconSize+1)
@@ -161,11 +183,14 @@ func initStatuslineNew() *Statusline {
 	gitWidget.Hide()
 	git := &StatuslineGit{
 		s:      s,
-		widget: gitWidget,
-		icon:   gitIcon,
-		label:  gitLabel,
+		c: &StatuslineComponent{
+			widget: gitWidget,
+			icon:   gitIcon,
+			label:  gitLabel,
+		},
 	}
 	s.git = git
+	s.git.c.hide()
 
 	modeLabel := widgets.NewQLabel(nil, 0)
 	modeLabel.SetContentsMargins(4, 1, 4, 1)
@@ -187,61 +212,88 @@ func initStatuslineNew() *Statusline {
 		modeLabel.Hide()
 		modeIcon.Hide()
 	}
-	fileLabel := widgets.NewQLabel(nil, 0)
-	fileLabel.SetContentsMargins(0, 0, 0, 1)
+	s.mode.c.label = modeLabel
+	s.mode.c.icon = modeIcon
+
 	folderLabel := widgets.NewQLabel(nil, 0)
 	folderLabel.SetContentsMargins(0, 0, 0, 1)
-	folderLabel.Hide()
+	path := &StatuslineFilepath{
+		s:           s,
+		c: &StatuslineComponent{
+			label:  folderLabel,
+		},
+	}
+	s.path = path
+	s.path.c.hide()
 
+	fileLabel := widgets.NewQLabel(nil, 0)
+	fileLabel.SetContentsMargins(0, 0, 0, 1)
 	roIcon := svg.NewQSvgWidget(nil)
 	roIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
+
+	fileLayout := widgets.NewQHBoxLayout()
+	fileLayout.SetContentsMargins(0, 0, 0, 0)
+	fileLayout.SetSpacing(editor.iconSize / 3)
+	fileLayout.AddWidget(fileLabel, 0, 0)
+	fileLayout.AddWidget(roIcon, 0, 0)
+	fileWidget := widgets.NewQWidget(nil, 0)
+	fileWidget.SetLayout(fileLayout)
+	file := &StatuslineFile{
+		s:           s,
+		c: &StatuslineComponent{
+			widget:  fileWidget,
+			label:   fileLabel,
+			icon:    roIcon,
+		},
+	}
+	s.file = file
+	s.file.c.hide()
+
 	leftLayout := widgets.NewQHBoxLayout()
 	leftLayout.SetContentsMargins(0, 0, 0, 1)
 	leftLayout.SetSpacing(8)
-	leftLayout.AddWidget(modeLabel, 0, 0)
-	leftLayout.AddWidget(modeIcon, 0, 0)
-	leftLayout.AddWidget(folderLabel, 0, 0)
-	leftLayout.AddWidget(fileLabel, 0, 0)
-	leftLayout.AddWidget(roIcon, 0, 0)
 	leftWidget := widgets.NewQWidget(nil, 0)
-	leftWidget.SetLayout(leftLayout)
-	main := &StatuslineMain{
-		s:           s,
-		modeLabel:   modeLabel,
-		modeIcon:    modeIcon,
+	left := &LeftStatusItem{
 		widget:      leftWidget,
-		fileLabel:   fileLabel,
-		folderLabel: folderLabel,
-		roIcon:      roIcon,
 	}
-	s.main = main
+	s.left = left
+	left.s = s
 
 	fileFormatLabel := widgets.NewQLabel(nil, 0)
 	fileFormat := &StatuslineFileFormat{
-		label: fileFormatLabel,
+		c: &StatuslineComponent{
+			label: fileFormatLabel,
+		},
 	}
 	s.fileFormat = fileFormat
-	s.fileFormat.label.Hide()
+	s.fileFormat.c.hide()
 
 	encodingLabel := widgets.NewQLabel(nil, 0)
 	encoding := &StatuslineEncoding{
-		label: encodingLabel,
+		c: &StatuslineComponent{
+			label: encodingLabel,
+		},
 	}
 	s.encoding = encoding
-	s.encoding.label.Hide()
+	s.encoding.c.hide()
 
 	posLabel := widgets.NewQLabel(nil, 0)
 	pos := &StatuslinePos{
-		label: posLabel,
+		c: &StatuslineComponent{
+			label: posLabel,
+		},
 	}
 	s.pos = pos
+	s.pos.c.hide()
 
 	filetypeLabel := widgets.NewQLabel(nil, 0)
 	filetype := &StatuslineFiletype{
-		label: filetypeLabel,
+		c: &StatuslineComponent{
+			label: filetypeLabel,
+		},
 	}
 	s.filetype = filetype
-	s.filetype.label.Hide()
+	s.filetype.c.hide()
 
 	notifyLayout := widgets.NewQHBoxLayout()
 	notifyWidget := widgets.NewQWidget(nil, 0)
@@ -255,11 +307,14 @@ func initStatuslineNew() *Statusline {
 	notifyLayout.SetContentsMargins(2, 0, 2, 0)
 	notifyLayout.SetSpacing(2)
 	notify := &StatuslineNotify{
-		widget: notifyWidget,
-		label:  notifyLabel,
-		icon:   notifyicon,
+		c: &StatuslineComponent{
+			widget: notifyWidget,
+			label:  notifyLabel,
+			icon:   notifyicon,
+		},
 	}
 	s.notify = notify
+	s.notify.c.hide()
 	notifyWidget.ConnectEnterEvent(func(event *core.QEvent) {
 		if editor.config.Statusline.ModeIndicatorType == "background" {
 			switch editor.workspaces[editor.active].mode {
@@ -291,8 +346,6 @@ func initStatuslineNew() *Statusline {
 			editor.showNotifications()
 		}
 	})
-	// notifyWidget.ConnectMouseReleaseEvent(func(*gui.QMouseEvent) {
-	// })
 
 	okIcon := svg.NewQSvgWidget(nil)
 	okIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
@@ -300,21 +353,16 @@ func initStatuslineNew() *Statusline {
 	okLabel.SetContentsMargins(0, 0, 0, 0)
 	errorIcon := svg.NewQSvgWidget(nil)
 	errorIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
-	//errorIcon.Show()
 	errorLabel := widgets.NewQLabel(nil, 0)
 	errorLabel.SetContentsMargins(0, 0, 0, 0)
-	//errorLabel.Show()
 	warnIcon := svg.NewQSvgWidget(nil)
 	warnIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
-	//warnIcon.Show()
 	warnLabel := widgets.NewQLabel(nil, 0)
 	warnLabel.SetContentsMargins(0, 0, 0, 0)
-	//warnLabel.Show()
 	lintLayout := widgets.NewQHBoxLayout()
 	lintLayout.SetContentsMargins(0, 0, 0, 0)
 	lintLayout.SetSpacing(0)
 	lintLayout.AddWidget(okIcon, 0, 0)
-	//lintLayout.AddWidget(okLabel, 0, 0)
 	lintLayout.AddWidget(errorIcon, 0, 0)
 	lintLayout.AddWidget(errorLabel, 0, 0)
 	lintLayout.AddWidget(warnIcon, 0, 0)
@@ -323,7 +371,9 @@ func initStatuslineNew() *Statusline {
 	lintWidget.SetLayout(lintLayout)
 	lint := &StatuslineLint{
 		s:          s,
-		widget:     lintWidget,
+		c: &StatuslineComponent{
+			widget:     lintWidget,
+		},
 		okIcon:     okIcon,
 		errorIcon:  errorIcon,
 		warnIcon:   warnIcon,
@@ -334,30 +384,130 @@ func initStatuslineNew() *Statusline {
 		warnings:   -1,
 	}
 	s.lint = lint
+	s.lint.c.hide()
 
 	s.setContentsMarginsForWidgets(0, 7, 0, 9)
-
+	left.widget.SetLayout(leftLayout)
 	layout.AddWidget(leftWidget)
-	layout.AddWidget(notifyWidget)
-	layout.AddWidget(gitWidget)
-	layout.AddWidget(filetypeLabel)
-	layout.AddWidget(fileFormatLabel)
-	layout.AddWidget(encodingLabel)
-	layout.AddWidget(posLabel)
-	layout.AddWidget(lintWidget)
+
+	left.setWidget()
+	s.setWidget()
 
 	return s
 }
 
+
+func (s *Statusline) setWidget() {
+	for _, rightItem := range editor.config.Statusline.Right {
+		switch rightItem {
+		case "mode" :
+			s.widget.Layout().AddWidget(s.mode.c.label)
+			s.widget.Layout().AddWidget(s.mode.c.icon)
+			s.mode.c.isInclude = true
+			s.mode.c.show()
+		case "filepath" :
+			s.widget.Layout().AddWidget(s.path.c.label)
+			s.path.c.isInclude = true
+			s.path.c.show()
+		case "filename" :
+			s.widget.Layout().AddWidget(s.file.c.label)
+			s.widget.Layout().AddWidget(s.file.c.icon)
+			s.file.c.isInclude = true
+			s.file.c.show()
+		case "message" :
+			s.widget.Layout().AddWidget(s.notify.c.widget)
+			s.notify.c.isInclude = true
+			s.notify.c.icon.Show()
+			s.notify.c.widget.Show()
+		case "git" :
+			s.widget.Layout().AddWidget(s.git.c.widget)
+			s.git.c.isInclude = true
+			s.git.c.show()
+		case "filetype" :
+			s.widget.Layout().AddWidget(s.filetype.c.label)
+			s.filetype.c.isInclude = true
+			s.filetype.c.show()
+		case "fileformat" :
+			s.widget.Layout().AddWidget(s.fileFormat.c.label)
+			s.fileFormat.c.isInclude = true
+			s.fileFormat.c.show()
+		case "fileencoding" :
+			s.widget.Layout().AddWidget(s.encoding.c.label)
+			s.encoding.c.isInclude = true
+			s.encoding.c.show()
+		case "curpos" :
+			s.widget.Layout().AddWidget(s.pos.c.label)
+			s.pos.c.isInclude = true
+			s.pos.c.show()
+		case "lint" :
+			s.widget.Layout().AddWidget(s.lint.c.widget)
+			s.lint.c.isInclude = true
+			s.lint.c.show()
+		default:
+		}
+	}
+}
+
+func (left *LeftStatusItem) setWidget() {
+	for _, leftItem := range editor.config.Statusline.Left {
+		switch leftItem {
+		case "mode" :
+			left.widget.Layout().AddWidget(left.s.mode.c.label)
+			left.widget.Layout().AddWidget(left.s.mode.c.icon)
+			left.s.mode.c.isInclude = true
+			left.s.mode.c.show()
+		case "filepath" :
+			left.widget.Layout().AddWidget(left.s.path.c.label)
+			left.s.path.c.isInclude = true
+			left.s.path.c.show()
+		case "filename" :
+			left.widget.Layout().AddWidget(left.s.file.c.label)
+			left.widget.Layout().AddWidget(left.s.file.c.icon)
+			left.s.file.c.isInclude = true
+			left.s.file.c.show()
+		case "message" :
+			left.widget.Layout().AddWidget(left.s.notify.c.widget)
+			left.s.notify.c.isInclude = true
+			left.s.notify.c.icon.Show()
+			left.s.notify.c.widget.Show()
+		case "git" :
+			left.widget.Layout().AddWidget(left.s.git.c.widget)
+			left.s.git.c.isInclude = true
+			left.s.git.c.show()
+		case "filetype" :
+			left.widget.Layout().AddWidget(left.s.filetype.c.label)
+			left.s.filetype.c.isInclude = true
+			left.s.filetype.c.show()
+		case "fileformat" :
+			left.widget.Layout().AddWidget(left.s.fileFormat.c.label)
+			left.s.fileFormat.c.isInclude = true
+			left.s.fileFormat.c.show()
+		case "fileencoding" :
+			left.widget.Layout().AddWidget(left.s.encoding.c.label)
+			left.s.encoding.c.isInclude = true
+			left.s.encoding.c.show()
+		case "curpos" :
+			left.widget.Layout().AddWidget(left.s.pos.c.label)
+			left.s.pos.c.isInclude = true
+			left.s.pos.c.show()
+		case "lint" :
+			left.widget.Layout().AddWidget(left.s.lint.c.widget)
+			left.s.lint.c.isInclude = true
+			left.s.lint.c.show()
+		default:
+		}
+	}
+}
+
 func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
-	s.main.widget.SetContentsMargins(l, u, r, d)
-	s.pos.label.SetContentsMargins(l, u, r, d)
-	s.notify.widget.SetContentsMargins(l, u, r, d)
-	s.filetype.label.SetContentsMargins(l, u, r, d)
-	s.git.widget.SetContentsMargins(l, u, r, d)
-	s.fileFormat.label.SetContentsMargins(l, u, r, d)
-	s.encoding.label.SetContentsMargins(l, u, r, d)
-	s.lint.widget.SetContentsMargins(l, u, r, d)
+	s.left.widget.SetContentsMargins(l, u, r, d)
+	s.pos.c.label.SetContentsMargins(l, u, r, d)
+	s.notify.c.widget.SetContentsMargins(l, u, r, d)
+	s.filetype.c.label.SetContentsMargins(l, u, r, d)
+	s.git.c.widget.SetContentsMargins(l, u, r, d)
+	s.fileFormat.c.label.SetContentsMargins(l, u, r, d)
+	s.encoding.c.label.SetContentsMargins(l, u, r, d)
+	s.lint.c.widget.SetContentsMargins(l, u, r, d)
 }
 
 func (s *Statusline) setColor() {
@@ -369,13 +519,13 @@ func (s *Statusline) setColor() {
 	fg := editor.colors.fg.String()
 	bg := editor.colors.bg.String()
 
-	s.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", comment))
+	s.path.c.label.SetStyleSheet(fmt.Sprintf("color: %s;", comment))
 	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { border-top: 0px solid %s; background-color: %s; } * { color: %s; }", bg, bg, fg))
 
 	svgContent := editor.getSvg("git", nil)
-	s.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	s.git.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	svgContent = editor.getSvg("bell", nil)
-	s.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	s.notify.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
 func (s *Statusline) subscribe() {
@@ -425,12 +575,13 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		default:
 		}
 		if ro == 1 {
-			s.main.ro = true
+			s.file.ro = true
 		} else {
-			s.main.ro = false
+			s.file.ro = false
 		}
 
-		s.main.redraw()
+		s.file.redraw()
+		s.path.redraw()
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
 		s.fileFormat.redraw(fileFormat)
@@ -440,19 +591,21 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 	}
 }
 
-func (s *StatusMode) update() {
-	s.s.main.modeLabel.SetText(s.text)
-	s.s.main.modeLabel.SetStyleSheet(fmt.Sprintf("color: #ffffff; background-color: %s;", s.bg.String()))
+func (s *StatuslineMode) update() {
+	s.c.label.SetText(s.text)
+	s.c.label.SetStyleSheet(fmt.Sprintf("color: #ffffff; background-color: %s;", s.bg.String()))
 }
 
-func (s *StatusMode) updateStatusline() {
-	s.s.main.folderLabel.SetStyleSheet(fmt.Sprintf("color: %s;", newRGBA(230, 230, 230, 1)))
+func (s *StatuslineMode) updateStatusline() {
 	s.s.widget.SetStyleSheet(fmt.Sprintf("background-color: %s;", s.bg.String()))
 	s.s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { border-top: 0px solid %s; background-color: %s; } * { color: %s; }", s.bg.String(), s.bg.String(), "#ffffff"))
+
+	s.s.path.c.label.SetStyleSheet(fmt.Sprintf("color: %s;", newRGBA(230, 230, 230, 1)))
+
 	svgContent := editor.getSvg("git", newRGBA(255, 255, 255, 1))
-	s.s.git.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	s.s.git.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	svgContent = editor.getSvg("bell", newRGBA(255, 255, 255, 1))
-	s.s.notify.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	s.s.notify.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
 	var svgErrContent, svgWrnContent string
 	if s.s.lint.errors != 0 {
@@ -469,7 +622,7 @@ func (s *StatusMode) updateStatusline() {
 	s.s.lint.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 }
 
-func (s *StatusMode) redraw() {
+func (s *StatuslineMode) redraw() {
 	if s.s.ws.mode == s.mode {
 		return
 	}
@@ -485,38 +638,38 @@ func (s *StatusMode) redraw() {
 		bg = hexToRGBA(editor.config.Statusline.NormalModeColor)
 		// svgContent := editor.getSvg("hjkl", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
 		svgContent := editor.getSvg("thought", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "cmdline_normal":
 		text = "Normal"
 		bg = hexToRGBA(editor.config.Statusline.CommandModeColor)
 		svgContent := editor.getSvg("command", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "insert":
 		text = "Insert"
 		bg = hexToRGBA(editor.config.Statusline.InsertModeColor)
 		svgContent := editor.getSvg("edit", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "visual":
 		text = "Visual"
 		bg = hexToRGBA(editor.config.Statusline.VisualModeColor)
 		svgContent := editor.getSvg("select", newRGBA(warpColor(fg, 30).R, warpColor(fg, 30).G, warpColor(fg, 30).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "replace":
 		text = "Replace"
 		bg = hexToRGBA(editor.config.Statusline.ReplaceModeColor)
 		svgContent := editor.getSvg("replace", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-3, 1, false))
+		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-3, 1, false))
 	case "terminal-input":
 		text = "Terminal"
 		bg = hexToRGBA(editor.config.Statusline.TerminalModeColor)
 		svgContent := editor.getSvg("terminal", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		s.s.main.modeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.s.main.modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-4, 1, false))
+		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-4, 1, false))
 	default:
 	}
 
@@ -525,44 +678,79 @@ func (s *StatusMode) redraw() {
 
 	switch editor.config.Statusline.ModeIndicatorType {
 	case "none":
-		s.s.main.modeLabel.Hide()
-		s.s.main.modeIcon.Hide()
+		s.c.label.Hide()
+		s.c.icon.Hide()
 	case "textLabel":
-		s.s.main.modeIcon.Hide()
+		s.c.icon.Hide()
 		s.update()
 	case "icon":
-		s.s.main.modeLabel.Hide()
+		s.c.label.Hide()
 	case "background":
-		s.s.main.modeLabel.Hide()
-		s.s.main.modeIcon.Hide()
+		s.c.label.Hide()
+		s.c.icon.Hide()
 		s.updateStatusline()
 	default:
-		s.s.main.modeLabel.Hide()
-		s.s.main.modeIcon.Hide()
+		s.c.label.Hide()
+		s.c.icon.Hide()
 	}
 }
 
-func (s *StatuslineGit) hide() {
+func (s *StatuslineComponent) hide() {
 	if s.hidden {
 		return
 	}
+	if s.widget != nil {
+		s.widget.Hide()
+	} else {
+		if s.label != nil {
+			s.label.Hide()
+		}
+		if s.icon != nil {
+			s.label.Hide()
+		}
+	}
 	s.hidden = true
+}
+
+func (s *StatuslineComponent) show() {
+	if !s.hidden {
+		return
+	}
+	if !s.isInclude {
+		return
+	}
+
+	if s.label == nil && s.icon != nil {
+		s.label.Show()
+		s.hidden = false
+		return
+	} else if s.label != nil {
+		if s.label.Text() != "" {
+			s.hidden = false
+			s.label.Show()
+			if s.icon != nil {
+				s.icon.Show()
+			}
+		} else if s.label.Text() == "" {
+			return
+		}
+	}
+
+	if s.widget != nil {
+		s.widget.Show()
+		s.hidden = false
+	}
+
+}
+
+func (s *StatuslineGit) hide() {
+	s.c.hide()
 	s.s.ws.signal.GitSignal()
 }
 
 func (s *StatuslineGit) update() {
-	if s.hidden {
-		s.widget.Hide()
-		return
-	}
-	//fg := s.s.ws.screen.highlight.foreground
-	s.label.SetText(s.branch)
-	//if !s.svgLoaded {
-	//	s.svgLoaded = true
-	//	svgContent := editor.getSvg("git", newRGBA(shiftColor(fg, -12).R, shiftColor(fg, -12).G, shiftColor(fg, -12).B, 1))
-	//	s.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	//}
-	s.widget.Show()
+	s.c.label.SetText(s.branch)
+	s.c.show()
 }
 
 func (s *StatuslineGit) redraw(file string) {
@@ -607,12 +795,12 @@ func (s *StatuslineGit) redraw(file string) {
 
 	if s.branch != branch {
 		s.branch = branch
-		s.hidden = false
+		s.c.show()
 		s.s.ws.signal.GitSignal()
 	}
 }
 
-func (s *StatuslineMain) redraw() {
+func (s *StatuslineFile) redraw() { //TODO reduce process
 	file := s.s.ws.filepath
 	if file == "" {
 		file = "[No Name]"
@@ -620,10 +808,10 @@ func (s *StatuslineMain) redraw() {
 
 	if s.ro {
 		svgContent := editor.getSvg("lock", nil)
-		s.roIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.roIcon.Show()
+		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		s.c.icon.Show()
 	} else {
-		s.roIcon.Hide()
+		s.c.icon.Hide()
 	}
 
 	if file == s.file {
@@ -641,20 +829,35 @@ func (s *StatuslineMain) redraw() {
 		base = file
 		dir = ""
 	}
-	if dir != "" {
-		s.folderLabel.Show()
-	} else {
-		s.folderLabel.Hide()
-	}
 	if s.base != base {
 		s.base = base
-		s.fileLabel.SetText(s.base)
+		s.c.label.SetText(s.base)
+	}
+}
+
+func (s *StatuslineFilepath) redraw() { //TODO reduce process
+	file := s.s.ws.filepath
+	if file == "" {
+		file = "[No Name]"
+	}
+
+	dir := filepath.Dir(file)
+	if dir == "." {
+		dir = ""
+	}
+	if strings.HasPrefix(file, "term://") {
+		dir = ""
+	}
+	if dir == "" {
+		s.c.hide()
 	}
 	if s.dir != dir {
 		s.dir = dir
-		s.folderLabel.SetText(s.dir)
+		s.c.label.SetText(s.dir)
+		s.c.show()
 	}
 }
+
 
 func (s *StatuslinePos) redraw(ln, col int) {
 	if ln == s.ln && col == s.col {
@@ -665,7 +868,8 @@ func (s *StatuslinePos) redraw(ln, col int) {
 	s.col = col
 	if text != s.text {
 		s.text = text
-		s.label.SetText(text)
+		s.c.label.SetText(text)
+		s.c.show()
 	}
 }
 
@@ -674,8 +878,8 @@ func (s *StatuslineEncoding) redraw(encoding string) {
 		return
 	}
 	s.encoding = encoding
-	s.label.SetText(s.encoding)
-	s.label.Show()
+	s.c.label.SetText(s.encoding)
+	s.c.show()
 }
 
 func (s *StatuslineFileFormat) redraw(fileFormat string) {
@@ -686,8 +890,8 @@ func (s *StatuslineFileFormat) redraw(fileFormat string) {
 		return
 	}
 	s.fileFormat = fileFormat
-	s.label.SetText(s.fileFormat)
-	s.label.Show()
+	s.c.label.SetText(s.fileFormat)
+	s.c.show()
 }
 
 func (s *StatuslineFiletype) redraw(filetype string) {
@@ -699,19 +903,19 @@ func (s *StatuslineFiletype) redraw(filetype string) {
 	if typetext == "Cpp" {
 		typetext = "C++"
 	}
-	s.label.SetText(typetext)
-	s.label.Show()
+	s.c.label.SetText(typetext)
+	s.c.show()
 }
 
 func (s *StatuslineNotify) update() {
 	s.num = len(editor.notifications)
 	if s.num == 0 {
-		s.label.Hide()
+		s.c.hide()
 		return
 	} else {
-		s.label.Show()
+		s.c.show()
 	}
-	s.label.SetText(fmt.Sprintf("%v", s.num))
+	s.c.label.SetText(fmt.Sprintf("%v", s.num))
 }
 
 func (s *StatuslineLint) update() {
@@ -749,22 +953,12 @@ func (s *StatuslineLint) update() {
 		s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 	}
 
-	//if s.errors == 0 && s.warnings == 0 {
-	//	s.okIcon.Show()
-	//	//s.okLabel.SetText("ok")
-	//	s.okLabel.Show()
-	//	s.errorIcon.Hide()
-	//	s.errorLabel.Hide()
-	//	s.warnIcon.Hide()
-	//	s.warnLabel.Hide()
-	//} else {
 	s.okIcon.Hide()
 	s.okLabel.Hide()
 	s.errorIcon.Show()
 	s.errorLabel.Show()
 	s.warnIcon.Show()
 	s.warnLabel.Show()
-	//}
 }
 
 func (s *StatuslineLint) redraw(errors, warnings int) {

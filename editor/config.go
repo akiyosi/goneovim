@@ -41,6 +41,8 @@ import (
 // replaceModeColor = "#123456"
 // visualModeColor = "#123456"
 // termnalModeColor = "#123456"
+// left = [ "mode", "filepath", "filename" ]
+// right = [ "message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint" ]
 //
 // [tabline]
 // visible = true
@@ -113,6 +115,8 @@ type statusLineConfig struct {
 	ReplaceModeColor  string
 	VisualModeColor   string
 	TerminalModeColor string
+	Left []string
+	Right []string
 }
 
 type tabLineConfig struct {
@@ -162,6 +166,8 @@ func newGonvimConfig(home string) gonvimConfig {
 
 	// Set default value
 	config.FileExplorer.MaxItems = 50
+	config.Statusline.Left = []string{"mode", "filepath", "filename"}
+	config.Statusline.Right = []string{"message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
 
 	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {

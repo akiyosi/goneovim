@@ -393,7 +393,23 @@ func (w *Workspace) initGonvim() {
 	au GonvimAuStatusline BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat, &ro)
 	`
 	}
-	if editor.config.Lint.Visible {
+
+	isLintEnable := false
+	for _, rightItem := range editor.config.Statusline.Right {
+		if rightItem == "lint" {
+			isLintEnable = true
+			break
+		}
+	}
+	for _, leftItem := range editor.config.Statusline.Left {
+		if leftItem == "lint" {
+			isLintEnable = true
+			break
+		}
+	}
+	isLintEnable = isLintEnable && editor.config.Lint.Visible
+
+	if isLintEnable {
 		gonvimAutoCmds = gonvimAutoCmds + `
 	aug GonvimAuLint | au! | aug END
 	au GonvimAuLint CursorMoved,CursorHold,InsertEnter,InsertLeave * call rpcnotify(0, "LocPopup", "update")
