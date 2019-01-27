@@ -407,7 +407,7 @@ func (w *Workspace) initGonvim() {
 			break
 		}
 	}
-	isLintEnable = isLintEnable && editor.config.Lint.Visible
+	isLintEnable = isLintEnable || editor.config.Lint.Visible
 
 	if isLintEnable {
 		gonvimAutoCmds = gonvimAutoCmds + `
@@ -419,8 +419,8 @@ func (w *Workspace) initGonvim() {
 	w.nvim.Command(registerAutocmds)
 
 	gonvimCommands := fmt.Sprintf(`
-	command! GonvimVersion echo "%s"
-	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")`, editor.version)
+	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
+	command! GonvimVersion echo "%s"`, editor.version)
 	if !w.uiRemoteAttached {
 		gonvimCommands = gonvimCommands + `
 	command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
