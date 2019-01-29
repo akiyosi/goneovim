@@ -109,10 +109,12 @@ type InstalledPlugins struct {
 
 func readDeinCache() (map[interface{}]interface{}, error) {
 	w := editor.workspaces[editor.active]
-	basePath, err := w.nvim.CommandOutput("echo g:dein#_base_path")
+	var value interface{}
+	err := w.nvim.Var("dein#_base_path", &value)
 	if err != nil {
 		return nil, err
 	}
+	basePath := value.(string)
 
 	if isFileExist(basePath+"/cache_nvim") == false {
 		editor.workspaces[editor.active].nvim.Command("call dein#util#_save_cache(g:dein#_vimrcs, 1, 1)")
@@ -128,7 +130,8 @@ func readDeinCache() (map[interface{}]interface{}, error) {
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	if err := scanner.Err(); err != nil {
+	err = scanner.Err()
+	if err != nil {
 		return nil, err
 	}
 	if editor.config.Dein.TomlFile == "" {
@@ -203,7 +206,7 @@ func loadDeinCashe() []*DeinPluginItem {
 	width := editor.config.SideBar.Width
 
 	var keys []string
-	for k, _ := range m {
+	for k := range m {
 		keys = append(keys, k.(string))
 	}
 	sort.Strings(keys)
@@ -498,10 +501,12 @@ func getRepoDesc(owner string, name string) string {
 	return text
 }
 
+// DeinTomlConfig is
 type DeinTomlConfig struct {
 	Plugins []DeinPlugin
 }
 
+// DeinPlugin is the struct of dein.toml parsed result.
 type DeinPlugin struct {
 	Repo           string
 	AuGroup        string `toml:"augroup"`
@@ -780,7 +785,7 @@ type PluginSearchResults struct {
 	} `json:"plugins"`
 }
 
-// Pligin is the item structure witch is the search result in vim-awesome
+// Plugin is the item structure witch is the search result in vim-awesome
 type Plugin struct {
 	repo      string
 	readme    string

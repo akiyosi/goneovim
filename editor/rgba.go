@@ -81,38 +81,6 @@ func reverseColor(rgba *RGBA) *RGBA {
 	}
 }
 
-func gradColor(rgba *RGBA) *RGBA {
-	if rgba == nil {
-		return &RGBA{0, 0, 0, 1}
-	}
-	var r, g, b int
-
-	if rgba.R > 128 {
-		r = rgba.R - (rgba.R-128)/2
-	} else {
-		r = rgba.R + (128-rgba.R)/2
-	}
-
-	if rgba.G > 128 {
-		g = rgba.G - (rgba.G-128)/2
-	} else {
-		g = rgba.G + (128-rgba.G)/2
-	}
-
-	if rgba.B > 128 {
-		b = rgba.B - (rgba.B-128)/2
-	} else {
-		b = rgba.B + (128-rgba.B)/2
-	}
-
-	return &RGBA{
-		R: r,
-		G: g,
-		B: b,
-		A: rgba.A,
-	}
-}
-
 func warpColor(rgba *RGBA, v int) *RGBA {
 	if rgba == nil {
 		return &RGBA{0, 0, 0, 1}

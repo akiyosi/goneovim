@@ -46,11 +46,13 @@ type Statusline struct {
 	updates    chan []interface{}
 }
 
+// LeftStatusItem is left side statusline component
 type LeftStatusItem struct {
 	s      *Statusline
 	widget *widgets.QWidget
 }
 
+// StatuslineComponent is common widget component in statusline
 type StatuslineComponent struct {
 	isInclude bool
 	hidden    bool
@@ -59,7 +61,7 @@ type StatuslineComponent struct {
 	label  *widgets.QLabel
 }
 
-// StatuslineNotify
+// StatuslineNotify is
 type StatuslineNotify struct {
 	s      *Statusline
 	c      *StatuslineComponent
@@ -83,7 +85,7 @@ type StatuslineLint struct {
 	svgLoaded  bool
 }
 
-// StatuslineFile is
+// StatuslineFilepath is
 type StatuslineFilepath struct {
 	s      *Statusline
 
@@ -142,7 +144,7 @@ type StatuslineEncoding struct {
 	c      *StatuslineComponent
 }
 
-// StatuslineFileFormat
+// StatuslineFileFormat is
 type StatuslineFileFormat struct {
 	fileFormat string
 	c      *StatuslineComponent
@@ -821,13 +823,8 @@ func (s *StatuslineFile) redraw() { //TODO reduce process
 	s.file = file
 
 	base := filepath.Base(file)
-	dir := filepath.Dir(file)
-	if dir == "." {
-		dir = ""
-	}
 	if strings.HasPrefix(file, "term://") {
 		base = file
-		dir = ""
 	}
 	if s.base != base {
 		s.base = base
@@ -912,9 +909,8 @@ func (s *StatuslineNotify) update() {
 	if s.num == 0 {
 		s.c.hide()
 		return
-	} else {
-		s.c.show()
 	}
+	s.c.show()
 	s.c.label.SetText(fmt.Sprintf("%v", s.num))
 }
 

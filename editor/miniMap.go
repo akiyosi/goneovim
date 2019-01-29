@@ -141,7 +141,7 @@ func (m *MiniMap) startMinimapProc() {
 	m.updateSize()
 
 	go func() {
-		err := m.nvim.Serve()
+		err = m.nvim.Serve()
 		if err != nil {
 			fmt.Println(err)
 		}

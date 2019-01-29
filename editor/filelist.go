@@ -13,9 +13,11 @@ import (
 )
 
 const (
+	// FilewidgetLeftMargin is left margin in filelist
 	FilewidgetLeftMargin = 35
 )
 
+// Filelist is
 type Filelist struct {
 	WSitem    *WorkspaceSideItem
 	widget    *widgets.QWidget
@@ -24,6 +26,7 @@ type Filelist struct {
 	cwdpath   string
 }
 
+// Fileitem is
 type Fileitem struct {
 	fl             *Filelist
 	widget         *widgets.QWidget
@@ -247,7 +250,7 @@ func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
 		}
 
 	}
-	editor.workspaces[editor.active].nvim.Command(openCommand)
+	go editor.workspaces[editor.active].nvim.Command(openCommand)
 	f.fl.WSitem.setCurrentFileLabel()
 }
 

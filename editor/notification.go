@@ -11,13 +11,17 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+// NotifyLevel is notification type like "warn", "error"
 type NotifyLevel int
 
 const (
+	// NotifyInfo is a type of "information"
 	NotifyInfo NotifyLevel = 0
+	// NotifyWarn is a type of "warning"
 	NotifyWarn NotifyLevel = 1
 )
 
+// Notification is
 type Notification struct {
 	widget    *widgets.QWidget
 	closeIcon *svg.QSvgWidget
@@ -27,10 +31,12 @@ type Notification struct {
 	isHide    bool
 }
 
+// NotifyOptions is
 type NotifyOptions struct {
 	buttons []*NotifyButton
 }
 
+// NotifyOptionArg is
 type NotifyOptionArg func(*NotifyOptions)
 
 func notifyOptionArg(b []*NotifyButton) NotifyOptionArg {
