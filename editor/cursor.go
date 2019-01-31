@@ -35,9 +35,6 @@ func initCursorNew() *Cursor {
 }
 
 func (c *Cursor) blink() {
-	if c.color == nil {
-		c.color = invertColor(c.ws.background)
-	}
 	if c.isShut {
 		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.1)", c.color.R, c.color.G, c.color.B))
 		c.isShut = false
@@ -58,9 +55,6 @@ func (c *Cursor) blink() {
 func (c *Cursor) move() {
 	c.widget.Move2(c.x, c.y+int(float64(c.ws.font.lineSpace)/2))
 	c.ws.loc.widget.Move2(c.x, c.y+c.ws.font.lineHeight)
-	if c.ws.screen.colorContent == nil {
-		return
-	}
 	c.updateColor()
 	c.updateShape()
 }
@@ -68,8 +62,17 @@ func (c *Cursor) move() {
 func (c *Cursor) updateColor() {
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
-	if c.ws.screen.colorContent == nil {
+	s := c.ws.screen.colorContent
+	if s == nil {
 		return
+	}
+	if len(s) < row {
+		return
+	}
+	for _, line := range s {
+		if len(line) <= col {
+			return
+		}
 	}
 	color := c.ws.screen.colorContent[row][col+1]
 	if color != nil && !c.color.equals(color) {
