@@ -66,19 +66,19 @@ func (c *Cursor) updateColor() {
 	if s == nil {
 		return
 	}
-	if len(s) < row {
+	if len(s) <= row {
 		return
 	}
 	for _, line := range s {
-		if len(line) <= col {
+		if len(line) <= col+1 {
 			return
 		}
 	}
-	color := c.ws.screen.colorContent[row][col+1]
+	color := s[row][col+1]
 	if color != nil && !c.color.equals(color) {
 		c.color = invertColor(color)
 	}
-	if color == nil {
+	if c.color == nil {
 		c.color = invertColor(c.ws.background)
 	}
 }
