@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/therecipe/qt/gui"
 )
@@ -63,7 +64,26 @@ func calcColor(c int) *RGBA {
 	}
 }
 
-func reverseColor(rgba *RGBA) *RGBA {
+func complementaryColor(rgba *RGBA) *RGBA {
+	if rgba == nil {
+		return &RGBA{255, 255, 255, 1}
+	}
+	r := float64(rgba.R)
+	g := float64(rgba.G)
+	b := float64(rgba.B)
+	max := math.Max(math.Max(r, g), b)
+	min := math.Min(math.Min(r, g), b)
+	c := max + min
+
+	return &RGBA{
+		R: int(c-r),
+		G: int(c-g),
+		B: int(c-b),
+		A: 1,
+	}
+}
+
+func invertColor(rgba *RGBA) *RGBA {
 	if rgba == nil {
 		return &RGBA{0, 0, 0, 1}
 	}

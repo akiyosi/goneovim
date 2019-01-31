@@ -15,6 +15,7 @@ type Cursor struct {
 	x      int
 	y      int
 	isShut bool
+	color  *RGBA
 }
 
 func initCursorNew() *Cursor {
@@ -34,9 +35,11 @@ func initCursorNew() *Cursor {
 }
 
 func (c *Cursor) blink() {
-	bg := c.ws.background
+	if c.color == nil {
+		c.color = invertColor(c.ws.background)
+	}
 	if c.isShut {
-		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.1)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
+		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.1)", c.color.R, c.color.G, c.color.B))
 		c.isShut = false
 	} else {
 		switch c.ws.mode {
@@ -44,7 +47,7 @@ func (c *Cursor) blink() {
 			visualColor := hexToRGBA(editor.config.SideBar.AccentColor)
 			c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", visualColor.R, visualColor.G, visualColor.B))
 		default:
-			c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
+			c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.7)", c.color.R, c.color.G, c.color.B))
 		}
 		c.isShut = true
 	}
@@ -55,20 +58,40 @@ func (c *Cursor) blink() {
 func (c *Cursor) move() {
 	c.widget.Move2(c.x, c.y+int(float64(c.ws.font.lineSpace)/2))
 	c.ws.loc.widget.Move2(c.x, c.y+c.ws.font.lineHeight)
+	if c.ws.screen.colorContent == nil {
+		return
+	}
+	c.updateColor()
+	c.updateShape()
+}
+
+func (c *Cursor) updateColor() {
+	row := c.ws.screen.cursor[0]
+	col := c.ws.screen.cursor[1]
+	if c.ws.screen.colorContent == nil {
+		return
+	}
+	color := c.ws.screen.colorContent[row][col+1]
+	if color != nil && !c.color.equals(color) {
+		c.color = invertColor(color)
+	}
+	if color == nil {
+		c.color = invertColor(c.ws.background)
+	}
 }
 
 func (c *Cursor) updateShape() {
 	mode := c.ws.mode
-	bg := c.ws.background
+	c.updateColor()
 	switch mode {
 	case "normal":
 		c.widget.Resize2(c.ws.font.width, c.ws.font.height+2)
 		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.5)")
-		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
+		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.7)", c.color.R, c.color.G, c.color.B))
 	case "insert":
 		c.widget.Resize2(2, c.ws.font.height+2)
 		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
-		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.9)", reverseColor(bg).R, reverseColor(bg).G, reverseColor(bg).B))
+		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.9)", c.color.R, c.color.G, c.color.B))
 	case "visual":
 		c.widget.Resize2(c.ws.font.width, c.ws.font.height+2)
 		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")

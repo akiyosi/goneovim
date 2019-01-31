@@ -38,6 +38,7 @@ type Screen struct {
 	cursor           [2]int
 	lastCursor       [2]int
 	content          [][]*Char
+	colorContent     [][]*RGBA
 	scrollRegion     []int
 	scrollDust       [2]int
 	scrollDustDeltaY int
@@ -540,6 +541,10 @@ func (s *Screen) resize(args []interface{}) {
 	for i := 0; i < s.ws.rows; i++ {
 		s.content[i] = make([]*Char, s.ws.cols)
 	}
+	s.colorContent = make([][]*RGBA, s.ws.rows)
+	for i := 0; i < s.ws.rows; i++ {
+		s.colorContent[i] = make([]*RGBA, s.ws.cols)
+	}
 	s.queueRedrawAll()
 }
 
@@ -549,6 +554,10 @@ func (s *Screen) clear(args []interface{}) {
 	s.content = make([][]*Char, s.ws.rows)
 	for i := 0; i < s.ws.rows; i++ {
 		s.content[i] = make([]*Char, s.ws.cols)
+	}
+	s.colorContent = make([][]*RGBA, s.ws.rows)
+	for i := 0; i < s.ws.rows; i++ {
+		s.colorContent[i] = make([]*RGBA, s.ws.cols)
 	}
 	s.queueRedrawAll()
 }
@@ -853,6 +862,7 @@ func (s *Screen) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 		if x >= len(line) {
 			continue
 		}
+		s.colorContent[y][x] = bg
 		char := line[x]
 		if char != nil {
 			bg = char.highlight.background
