@@ -35,6 +35,9 @@ func initCursorNew() *Cursor {
 }
 
 func (c *Cursor) blink() {
+	if c.color == nil {
+		c.color = invertColor(c.ws.background)
+	}
 	if c.isShut {
 		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.1)", c.color.R, c.color.G, c.color.B))
 		c.isShut = false

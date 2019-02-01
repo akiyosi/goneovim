@@ -76,9 +76,9 @@ func complementaryColor(rgba *RGBA) *RGBA {
 	c := max + min
 
 	return &RGBA{
-		R: int(c-r),
-		G: int(c-g),
-		B: int(c-b),
+		R: int(c - r),
+		G: int(c - g),
+		B: int(c - b),
 		A: 1,
 	}
 }

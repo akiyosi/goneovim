@@ -76,7 +76,6 @@ type Workspace struct {
 	curColm          int
 	isInTerm         bool
 
-
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
 	guiUpdates    chan []interface{}
@@ -270,7 +269,7 @@ func (w *Workspace) startNvim(path string) error {
 	if w.uiRemoteAttached {
 		if editor.activity != nil {
 			editor.activity.widget.Hide()
-	 		editor.activity.sideArea.Hide()
+			editor.activity.sideArea.Hide()
 		}
 	}
 

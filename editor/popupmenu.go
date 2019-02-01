@@ -179,8 +179,8 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.scrollCol.Hide()
 	}
 
-	xpos := int(float64(col)*p.ws.font.truewidth)
-	popupWidth := popupItems[0].kindLabel.Width()+popupItems[0].menuLabel.Width()+popupItems[0].detailLabel.Width()
+	xpos := int(float64(col) * p.ws.font.truewidth)
+	popupWidth := popupItems[0].kindLabel.Width() + popupItems[0].menuLabel.Width() + popupItems[0].detailLabel.Width()
 	if xpos+popupWidth >= p.ws.screen.widget.Width() {
 		xpos = p.ws.screen.widget.Width() - popupWidth - 5
 	}

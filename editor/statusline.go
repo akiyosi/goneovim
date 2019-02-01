@@ -1,4 +1,4 @@
-// TODO 
+// TODO
 //  * Add 'charcode' to show the character codepoint under the cursor
 //    vimscript: char2nr(matchstr(getline('.'), '\%' . col('.') . 'c.'))
 //  * Add user defined component feature
@@ -31,11 +31,11 @@ type Statusline struct {
 	margin         int
 	height         int
 
-	left       *LeftStatusItem
+	left *LeftStatusItem
 
 	pos        *StatuslinePos
 	mode       *StatuslineMode
-	path   *StatuslineFilepath
+	path       *StatuslineFilepath
 	file       *StatuslineFile
 	notify     *StatuslineNotify
 	filetype   *StatuslineFiletype
@@ -56,25 +56,25 @@ type LeftStatusItem struct {
 type StatuslineComponent struct {
 	isInclude bool
 	hidden    bool
-	widget *widgets.QWidget
-	icon   *svg.QSvgWidget
-	label  *widgets.QLabel
+	widget    *widgets.QWidget
+	icon      *svg.QSvgWidget
+	label     *widgets.QLabel
 }
 
 // StatuslineNotify is
 type StatuslineNotify struct {
-	s      *Statusline
-	c      *StatuslineComponent
-	num    int
+	s   *Statusline
+	c   *StatuslineComponent
+	num int
 }
 
 // StatuslineLint is
 type StatuslineLint struct {
-	s          *Statusline
-	errors     int
-	warnings   int
+	s        *Statusline
+	errors   int
+	warnings int
 
-	c      *StatuslineComponent
+	c *StatuslineComponent
 
 	okIcon     *svg.QSvgWidget
 	errorIcon  *svg.QSvgWidget
@@ -87,36 +87,36 @@ type StatuslineLint struct {
 
 // StatuslineFilepath is
 type StatuslineFilepath struct {
-	s      *Statusline
+	s *Statusline
 
-	c      *StatuslineComponent
+	c *StatuslineComponent
 
-	dir         string
+	dir string
 }
 
 // StatuslineFile is
 type StatuslineFile struct {
-	s      *Statusline
-	c      *StatuslineComponent
+	s *Statusline
+	c *StatuslineComponent
 
-	file      string
-	base        string
+	file string
+	base string
 
-	ro     bool
+	ro bool
 }
 
 // StatuslineFiletype is
 type StatuslineFiletype struct {
 	filetype string
-	c      *StatuslineComponent
+	c        *StatuslineComponent
 }
 
 // StatuslinePos is
 type StatuslinePos struct {
-	ln    int
-	col   int
-	text  string
-	c      *StatuslineComponent
+	ln   int
+	col  int
+	text string
+	c    *StatuslineComponent
 }
 
 // StatuslineMode is
@@ -126,7 +126,7 @@ type StatuslineMode struct {
 	text string
 	bg   *RGBA
 
-	c      *StatuslineComponent
+	c *StatuslineComponent
 }
 
 // StatuslineGit is
@@ -135,19 +135,19 @@ type StatuslineGit struct {
 	branch    string
 	file      string
 	svgLoaded bool
-	c      *StatuslineComponent
+	c         *StatuslineComponent
 }
 
 // StatuslineEncoding is
 type StatuslineEncoding struct {
 	encoding string
-	c      *StatuslineComponent
+	c        *StatuslineComponent
 }
 
 // StatuslineFileFormat is
 type StatuslineFileFormat struct {
 	fileFormat string
-	c      *StatuslineComponent
+	c          *StatuslineComponent
 }
 
 func initStatuslineNew() *Statusline {
@@ -184,7 +184,7 @@ func initStatuslineNew() *Statusline {
 	gitWidget.SetLayout(gitLayout)
 	gitWidget.Hide()
 	git := &StatuslineGit{
-		s:      s,
+		s: s,
 		c: &StatuslineComponent{
 			widget: gitWidget,
 			icon:   gitIcon,
@@ -220,9 +220,9 @@ func initStatuslineNew() *Statusline {
 	folderLabel := widgets.NewQLabel(nil, 0)
 	folderLabel.SetContentsMargins(0, 0, 0, 1)
 	path := &StatuslineFilepath{
-		s:           s,
+		s: s,
 		c: &StatuslineComponent{
-			label:  folderLabel,
+			label: folderLabel,
 		},
 	}
 	s.path = path
@@ -241,11 +241,11 @@ func initStatuslineNew() *Statusline {
 	fileWidget := widgets.NewQWidget(nil, 0)
 	fileWidget.SetLayout(fileLayout)
 	file := &StatuslineFile{
-		s:           s,
+		s: s,
 		c: &StatuslineComponent{
-			widget:  fileWidget,
-			label:   fileLabel,
-			icon:    roIcon,
+			widget: fileWidget,
+			label:  fileLabel,
+			icon:   roIcon,
 		},
 	}
 	s.file = file
@@ -256,7 +256,7 @@ func initStatuslineNew() *Statusline {
 	leftLayout.SetSpacing(8)
 	leftWidget := widgets.NewQWidget(nil, 0)
 	left := &LeftStatusItem{
-		widget:      leftWidget,
+		widget: leftWidget,
 	}
 	s.left = left
 	left.s = s
@@ -372,9 +372,9 @@ func initStatuslineNew() *Statusline {
 	lintWidget := widgets.NewQWidget(nil, 0)
 	lintWidget.SetLayout(lintLayout)
 	lint := &StatuslineLint{
-		s:          s,
+		s: s,
 		c: &StatuslineComponent{
-			widget:     lintWidget,
+			widget: lintWidget,
 		},
 		okIcon:     okIcon,
 		errorIcon:  errorIcon,
@@ -398,50 +398,49 @@ func initStatuslineNew() *Statusline {
 	return s
 }
 
-
 func (s *Statusline) setWidget() {
 	for _, rightItem := range editor.config.Statusline.Right {
 		switch rightItem {
-		case "mode" :
+		case "mode":
 			s.widget.Layout().AddWidget(s.mode.c.label)
 			s.widget.Layout().AddWidget(s.mode.c.icon)
 			s.mode.c.isInclude = true
 			s.mode.c.show()
-		case "filepath" :
+		case "filepath":
 			s.widget.Layout().AddWidget(s.path.c.label)
 			s.path.c.isInclude = true
 			s.path.c.show()
-		case "filename" :
+		case "filename":
 			s.widget.Layout().AddWidget(s.file.c.label)
 			s.widget.Layout().AddWidget(s.file.c.icon)
 			s.file.c.isInclude = true
 			s.file.c.show()
-		case "message" :
+		case "message":
 			s.widget.Layout().AddWidget(s.notify.c.widget)
 			s.notify.c.isInclude = true
 			s.notify.c.icon.Show()
 			s.notify.c.widget.Show()
-		case "git" :
+		case "git":
 			s.widget.Layout().AddWidget(s.git.c.widget)
 			s.git.c.isInclude = true
 			s.git.c.show()
-		case "filetype" :
+		case "filetype":
 			s.widget.Layout().AddWidget(s.filetype.c.label)
 			s.filetype.c.isInclude = true
 			s.filetype.c.show()
-		case "fileformat" :
+		case "fileformat":
 			s.widget.Layout().AddWidget(s.fileFormat.c.label)
 			s.fileFormat.c.isInclude = true
 			s.fileFormat.c.show()
-		case "fileencoding" :
+		case "fileencoding":
 			s.widget.Layout().AddWidget(s.encoding.c.label)
 			s.encoding.c.isInclude = true
 			s.encoding.c.show()
-		case "curpos" :
+		case "curpos":
 			s.widget.Layout().AddWidget(s.pos.c.label)
 			s.pos.c.isInclude = true
 			s.pos.c.show()
-		case "lint" :
+		case "lint":
 			s.widget.Layout().AddWidget(s.lint.c.widget)
 			s.lint.c.isInclude = true
 			s.lint.c.show()
@@ -453,46 +452,46 @@ func (s *Statusline) setWidget() {
 func (left *LeftStatusItem) setWidget() {
 	for _, leftItem := range editor.config.Statusline.Left {
 		switch leftItem {
-		case "mode" :
+		case "mode":
 			left.widget.Layout().AddWidget(left.s.mode.c.label)
 			left.widget.Layout().AddWidget(left.s.mode.c.icon)
 			left.s.mode.c.isInclude = true
 			left.s.mode.c.show()
-		case "filepath" :
+		case "filepath":
 			left.widget.Layout().AddWidget(left.s.path.c.label)
 			left.s.path.c.isInclude = true
 			left.s.path.c.show()
-		case "filename" :
+		case "filename":
 			left.widget.Layout().AddWidget(left.s.file.c.label)
 			left.widget.Layout().AddWidget(left.s.file.c.icon)
 			left.s.file.c.isInclude = true
 			left.s.file.c.show()
-		case "message" :
+		case "message":
 			left.widget.Layout().AddWidget(left.s.notify.c.widget)
 			left.s.notify.c.isInclude = true
 			left.s.notify.c.icon.Show()
 			left.s.notify.c.widget.Show()
-		case "git" :
+		case "git":
 			left.widget.Layout().AddWidget(left.s.git.c.widget)
 			left.s.git.c.isInclude = true
 			left.s.git.c.show()
-		case "filetype" :
+		case "filetype":
 			left.widget.Layout().AddWidget(left.s.filetype.c.label)
 			left.s.filetype.c.isInclude = true
 			left.s.filetype.c.show()
-		case "fileformat" :
+		case "fileformat":
 			left.widget.Layout().AddWidget(left.s.fileFormat.c.label)
 			left.s.fileFormat.c.isInclude = true
 			left.s.fileFormat.c.show()
-		case "fileencoding" :
+		case "fileencoding":
 			left.widget.Layout().AddWidget(left.s.encoding.c.label)
 			left.s.encoding.c.isInclude = true
 			left.s.encoding.c.show()
-		case "curpos" :
+		case "curpos":
 			left.widget.Layout().AddWidget(left.s.pos.c.label)
 			left.s.pos.c.isInclude = true
 			left.s.pos.c.show()
-		case "lint" :
+		case "lint":
 			left.widget.Layout().AddWidget(left.s.lint.c.widget)
 			left.s.lint.c.isInclude = true
 			left.s.lint.c.show()
@@ -854,7 +853,6 @@ func (s *StatuslineFilepath) redraw() { //TODO reduce process
 		s.c.show()
 	}
 }
-
 
 func (s *StatuslinePos) redraw(ln, col int) {
 	if ln == s.ln && col == s.col {

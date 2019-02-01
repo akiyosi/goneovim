@@ -115,8 +115,8 @@ type statusLineConfig struct {
 	ReplaceModeColor  string
 	VisualModeColor   string
 	TerminalModeColor string
-	Left []string
-	Right []string
+	Left              []string
+	Right             []string
 }
 
 type tabLineConfig struct {
@@ -148,12 +148,12 @@ type sideBarConfig struct {
 }
 
 type workspaceConfig struct {
-	RestoreSession      bool
-	PathStyle           string
+	RestoreSession bool
+	PathStyle      string
 }
 
 type fileExplorerConfig struct {
-	OpenCmd string
+	OpenCmd  string
 	MaxItems int
 }
 
