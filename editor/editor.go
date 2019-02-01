@@ -258,6 +258,9 @@ func InitEditor() {
 		e.workspaces = append(e.workspaces, ws)
 	}
 	e.workspaceUpdate()
+	e.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	e.wsWidget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
+	e.wsWidget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {

@@ -178,9 +178,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	w.widget.ConnectInputMethodEvent(w.InputMethodEvent)
 	w.widget.ConnectInputMethodQuery(w.InputMethodQuery)
-	editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	editor.wsWidget.ConnectInputMethodEvent(w.InputMethodEvent)
-	editor.wsWidget.ConnectInputMethodQuery(w.InputMethodQuery)
 
 	// screen widget and scrollBar widget
 	scrWidget := widgets.NewQWidget(nil, 0)
