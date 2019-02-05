@@ -5,6 +5,8 @@ import (
 
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
+	"github.com/therecipe/qt/svg"
+	"github.com/therecipe/qt/core"
 )
 
 // PopupMenu is the popupmenu
@@ -31,6 +33,8 @@ type PopupMenu struct {
 type PopupItem struct {
 	kindLabel  *widgets.QLabel
 	kindText   string
+	kind       string
+	kindIcon   *svg.QSvgWidget
 	detailText string
 
 	menuLabel       *widgets.QLabel
@@ -72,9 +76,12 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 
 	margin := editor.config.Editor.Linespace/2 + 2
 	for i := 0; i < max; i++ {
-		kind := widgets.NewQLabel(nil, 0)
-		kind.SetContentsMargins(margin, margin, margin, margin)
-		kind.SetFont(font.fontNew)
+		// kind := widgets.NewQLabel(nil, 0)
+		// kind.SetContentsMargins(margin, margin, margin, margin)
+		// kind.SetFont(font.fontNew)
+		kindIcon := svg.NewQSvgWidget(nil)
+		kindIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
+
 		menu := widgets.NewQLabel(nil, 0)
 		menu.SetContentsMargins(margin+1, margin, margin, margin)
 		menu.SetFont(font.fontNew)
@@ -83,12 +90,13 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		detail.SetFont(font.fontNew)
 		detail.SetObjectName("detailpopup")
 
-		layout.AddWidget(kind, i, 0, 0)
+		layout.AddWidget(kindIcon, i, 0, 0)
 		layout.AddWidget(menu, i, 1, 0)
 		layout.AddWidget(detail, i, 2, 0)
 
 		popupItem := &PopupItem{
-			kindLabel:   kind,
+			// kindLabel:   kind,
+			kindIcon: kindIcon,
 			menuLabel:   menu,
 			detailLabel: detail,
 		}
@@ -116,7 +124,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 func (p *PopupMenu) updateFont(font *Font) {
 	for i := 0; i < p.total; i++ {
 		popupItem := p.items[i]
-		popupItem.kindLabel.SetFont(font.fontNew)
+		// popupItem.kindLabel.SetFont(font.fontNew)
 		popupItem.menuLabel.SetFont(font.fontNew)
 		popupItem.detailLabel.SetFont(font.fontNew)
 	}
@@ -140,12 +148,6 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.rawItems = items
 	p.selected = selected
 	p.top = 0
-
-	// TODO: Detect completion kind
-	// kind, _ := p.ws.nvimEval("complete_mode()")
-	// if kind != "" {
-	// 	fmt.Println("kind:", kind.(string))
-	// }
 
 	popupItems := p.items
 	itemHeight := p.ws.font.height + 20
@@ -180,7 +182,8 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	}
 
 	xpos := int(float64(col) * p.ws.font.truewidth)
-	popupWidth := popupItems[0].kindLabel.Width() + popupItems[0].menuLabel.Width() + popupItems[0].detailLabel.Width()
+	// popupWidth := popupItems[0].kindLabel.Width() + popupItems[0].menuLabel.Width() + popupItems[0].detailLabel.Width()
+	popupWidth := editor.iconSize + popupItems[0].menuLabel.Width() + popupItems[0].detailLabel.Width()
 	if xpos+popupWidth >= p.ws.screen.widget.Width() {
 		xpos = p.ws.screen.widget.Width() - popupWidth - 5
 	}
@@ -278,51 +281,68 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 }
 
 func (p *PopupItem) setKind(kindText string, selected bool) {
-	color := newRGBA(151, 195, 120, 1)
-	bg := newRGBA(151, 195, 120, 0.2)
+	// color := newRGBA(151, 195, 120, 1)
+	// bg := newRGBA(151, 195, 120, 0.2)
+	w := editor.workspaces[editor.active]
 
-	switch kindText {
+	// Detect completion kind
+	var isEnableCompleteMode int
+	var enableCompleteMode interface{}
+	var kind interface{}
+	w.nvim.Eval("exists('*complete_mode')", &enableCompleteMode)
+	switch enableCompleteMode.(type) {
+	case int64:
+		isEnableCompleteMode = int(enableCompleteMode.(int64))
+	case uint64:
+		isEnableCompleteMode = int(enableCompleteMode.(uint64))
+	case uint:
+		isEnableCompleteMode = int(enableCompleteMode.(uint))
+	case int:
+		isEnableCompleteMode = enableCompleteMode.(int)
+	}
+
+	if isEnableCompleteMode == 1 {
+		w.nvim.Eval("complete_mode()", &kind)
+		if kind != nil {
+			p.kind = kind.(string)
+		}
+	}
+
+	switch p.kind {
 	case "function", "func":
-		kindText = "f"
-		color = newRGBA(97, 174, 239, 1)
-		bg = newRGBA(97, 174, 239, 0.2)
+		icon := editor.getSvg("vim_function", nil)
+		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	case "var", "statement", "instance", "param", "import":
-		kindText = "v"
-		color = newRGBA(223, 106, 115, 1)
-		bg = newRGBA(223, 106, 115, 0.2)
-	case "const":
-		kindText = "c"
-		color = newRGBA(223, 106, 115, 1)
-		bg = newRGBA(223, 106, 115, 0.2)
-	case "class":
-		kindText = "c"
-		color = newRGBA(229, 193, 124, 1)
-		bg = newRGBA(229, 193, 124, 0.2)
-	case "type":
-		kindText = "t"
-		color = newRGBA(229, 193, 124, 1)
-		bg = newRGBA(229, 193, 124, 0.2)
-	case "module":
-		kindText = "m"
-		color = newRGBA(42, 161, 152, 1)
-		bg = newRGBA(42, 161, 152, 0.2)
-	case "keyword":
-		kindText = "k"
-		color = newRGBA(42, 161, 152, 1)
-		bg = newRGBA(42, 161, 152, 0.2)
-	case "package":
-		kindText = "p"
-		color = newRGBA(42, 161, 152, 1)
-		bg = newRGBA(42, 161, 152, 0.2)
+		icon := editor.getSvg("vim_variable", nil)
+		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	// case "const":
+	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
+	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	// case "class":
+	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
+	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	// case "type":
+	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
+	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	// case "module":
+	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
+	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	// case "keyword":
+	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
+	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	// case "package":
+	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
+	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	default:
-		kindText = "b"
+		icon := editor.getSvg("vim_unknown", nil)
+		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	}
-	if kindText != p.kindText {
-		p.kindText = kindText
-		p.kindColor = color
-		p.kindBg = bg
-		p.updateKind()
-	}
+	// if kindText != p.kindText {
+	// 	p.kindText = kindText
+	// 	p.kindColor = color
+	// 	p.kindBg = bg
+	// 	p.updateKind()
+	// }
 }
 
 func (p *PopupItem) hide() {
@@ -330,7 +350,8 @@ func (p *PopupItem) hide() {
 		return
 	}
 	p.hidden = true
-	p.kindLabel.Hide()
+	//p.kindLabel.Hide()
+	p.kindIcon.Hide()
 	p.menuLabel.Hide()
 	p.detailLabel.Hide()
 }
@@ -340,7 +361,8 @@ func (p *PopupItem) show() {
 		return
 	}
 	p.hidden = false
-	p.kindLabel.Show()
+	//p.kindLabel.Show()
+	p.kindIcon.Show()
 	p.menuLabel.Show()
 	p.detailLabel.Show()
 }
