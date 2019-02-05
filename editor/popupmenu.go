@@ -34,6 +34,7 @@ type PopupItem struct {
 	kindLabel  *widgets.QLabel
 	kindText   string
 	kind       string
+	kindWidget *widgets.QWidget
 	kindIcon   *svg.QSvgWidget
 	detailText string
 
@@ -55,7 +56,7 @@ type PopupItem struct {
 func initPopupmenuNew(font *Font) *PopupMenu {
 	layout := widgets.NewQGridLayout2()
 	layout.SetSpacing(0)
-	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetContentsMargins(0, editor.iconSize/5, 0, 0)
 	scrollCol := widgets.NewQWidget(nil, 0)
 	scrollCol.SetContentsMargins(0, 0, 0, 0)
 	scrollCol.SetFixedWidth(5)
@@ -76,26 +77,29 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 
 	margin := editor.config.Editor.Linespace/2 + 2
 	for i := 0; i < max; i++ {
-		// kind := widgets.NewQLabel(nil, 0)
-		// kind.SetContentsMargins(margin, margin, margin, margin)
-		// kind.SetFont(font.fontNew)
+		kindWidget := widgets.NewQWidget(nil, 0)
+		kindlayout := widgets.NewQHBoxLayout()
+		kindlayout.SetContentsMargins(editor.iconSize/2, 0, editor.iconSize/2, 0)
+		kindWidget.SetLayout(kindlayout)
 		kindIcon := svg.NewQSvgWidget(nil)
 		kindIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
+		kindlayout.AddWidget(kindIcon, 0, 0)
 
 		menu := widgets.NewQLabel(nil, 0)
-		menu.SetContentsMargins(margin+1, margin, margin, margin)
+		menu.SetContentsMargins(1, margin, margin, margin)
 		menu.SetFont(font.fontNew)
 		detail := widgets.NewQLabel(nil, 0)
 		detail.SetContentsMargins(margin, margin, margin, margin)
 		detail.SetFont(font.fontNew)
 		detail.SetObjectName("detailpopup")
 
-		layout.AddWidget(kindIcon, i, 0, 0)
+		layout.AddWidget(kindWidget, i, 0, 0)
 		layout.AddWidget(menu, i, 1, 0)
 		layout.AddWidget(detail, i, 2, 0)
 
 		popupItem := &PopupItem{
 			// kindLabel:   kind,
+			kindWidget: kindWidget,
 			kindIcon: kindIcon,
 			menuLabel:   menu,
 			detailLabel: detail,
@@ -113,9 +117,9 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	}
 
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	shadow.SetBlurRadius(28)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 80))
-	shadow.SetOffset3(0, 6)
+	shadow.SetBlurRadius(38)
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
+	shadow.SetOffset3(-2, 6)
 	popup.widget.SetGraphicsEffect(shadow)
 
 	return popup
@@ -134,8 +138,7 @@ func (p *PopupMenu) setColor() {
 	fg := editor.colors.widgetFg.String()
 	inactiveFg := editor.colors.inactiveFg.String()
 	bg := editor.colors.widgetBg.String()
-	sbg := editor.colors.scrollBarBg.String()
-	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", sbg))
+	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
 	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: %s; color: %s;} #detailpopup { color: %s; }", bg, fg, inactiveFg))
 }
 
@@ -182,8 +185,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	}
 
 	xpos := int(float64(col) * p.ws.font.truewidth)
-	// popupWidth := popupItems[0].kindLabel.Width() + popupItems[0].menuLabel.Width() + popupItems[0].detailLabel.Width()
-	popupWidth := editor.iconSize + popupItems[0].menuLabel.Width() + popupItems[0].detailLabel.Width()
+	popupWidth := editor.iconSize + popupItems[0].menuLabel.Width() // + popupItems[0].detailLabel.Width()
 	if xpos+popupWidth >= p.ws.screen.widget.Width() {
 		xpos = p.ws.screen.widget.Width() - popupWidth - 5
 	}
@@ -247,9 +249,11 @@ func (p *PopupItem) updateMenu() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		if p.selected {
+			p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
 			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
 			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
 		} else {
+			p.kindWidget.SetStyleSheet("")
 			p.menuLabel.SetStyleSheet("")
 			p.detailLabel.SetStyleSheet("")
 		}
@@ -285,57 +289,99 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 	// bg := newRGBA(151, 195, 120, 0.2)
 	w := editor.workspaces[editor.active]
 
-	// Detect completion kind
-	var isEnableCompleteMode int
-	var enableCompleteMode interface{}
-	var kind interface{}
-	w.nvim.Eval("exists('*complete_mode')", &enableCompleteMode)
-	switch enableCompleteMode.(type) {
-	case int64:
-		isEnableCompleteMode = int(enableCompleteMode.(int64))
-	case uint64:
-		isEnableCompleteMode = int(enableCompleteMode.(uint64))
-	case uint:
-		isEnableCompleteMode = int(enableCompleteMode.(uint))
-	case int:
-		isEnableCompleteMode = enableCompleteMode.(int)
-	}
-
-	if isEnableCompleteMode == 1 {
-		w.nvim.Eval("complete_mode()", &kind)
-		if kind != nil {
-			p.kind = kind.(string)
-		}
-	}
-
-	switch p.kind {
+	switch kindText {
 	case "function", "func":
-		icon := editor.getSvg("vim_function", nil)
+		icon := editor.getSvg("lsp_function", nil)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	case "var", "statement", "instance", "param", "import":
-		icon := editor.getSvg("vim_variable", nil)
+		icon := editor.getSvg("lsp_variable", nil)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	// case "const":
-	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
-	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	// case "class":
-	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
-	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	// case "type":
-	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
-	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	// case "module":
-	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
-	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	// case "keyword":
-	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
-	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	// case "package":
-	// 	icon := editor.getSvg(p.kind, editor.colors.sideBarBg)
-	// 	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	case "const":
+		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
+		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	case "class":
+		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
+		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	case "type":
+		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
+		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	case "module":
+		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
+		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	case "keyword":
+		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
+		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	case "package":
+		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
+		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	default:
-		icon := editor.getSvg("vim_unknown", nil)
-		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		// Detect completion kind
+		var isEnableCompleteMode int
+		var enableCompleteMode interface{}
+		var kind interface{}
+		w.nvim.Eval("exists('*complete_mode')", &enableCompleteMode)
+		switch enableCompleteMode.(type) {
+		case int64:
+			isEnableCompleteMode = int(enableCompleteMode.(int64))
+		case uint64:
+			isEnableCompleteMode = int(enableCompleteMode.(uint64))
+		case uint:
+			isEnableCompleteMode = int(enableCompleteMode.(uint))
+		case int:
+			isEnableCompleteMode = enableCompleteMode.(int)
+		}
+		if isEnableCompleteMode == 1 {
+			w.nvim.Eval("complete_mode()", &kind)
+			if kind != nil {
+				p.kind = kind.(string)
+			}
+		}
+
+		switch p.kind {
+		case "keyword":
+			icon := editor.getSvg("vim_keyword", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "whole_line":
+			icon := editor.getSvg("vim_whole_line", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "files":
+			icon := editor.getSvg("vim_files", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "tags":
+			icon := editor.getSvg("vim_tags", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "path_defines":
+			icon := editor.getSvg("vim_defines", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "path_patterns":
+			icon := editor.getSvg("vim_patterns", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "path_dictionary":
+			icon := editor.getSvg("vim_dictionary", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "path_thesaurus":
+			icon := editor.getSvg("vim_thesaurus", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "path_cmdline":
+			icon := editor.getSvg("vim_cmdline", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "path_function":
+			icon := editor.getSvg("vim_function", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "path_omni":
+			icon := editor.getSvg("vim_omni", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "path_spell":
+			icon := editor.getSvg("vim_spell", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		case "path_eval":
+			icon := editor.getSvg("vim_eval", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		default:
+			icon := editor.getSvg("vim_unknown", nil)
+			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+		}
+
 	}
 	// if kindText != p.kindText {
 	// 	p.kindText = kindText
