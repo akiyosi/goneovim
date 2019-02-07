@@ -1,12 +1,13 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/therecipe/qt/gui"
-	"github.com/therecipe/qt/widgets"
-	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/svg"
+	"github.com/therecipe/qt/widgets"
 )
 
 // PopupMenu is the popupmenu
@@ -99,8 +100,8 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 
 		popupItem := &PopupItem{
 			// kindLabel:   kind,
-			kindWidget: kindWidget,
-			kindIcon: kindIcon,
+			kindWidget:  kindWidget,
+			kindIcon:    kindIcon,
 			menuLabel:   menu,
 			detailLabel: detail,
 		}
@@ -284,11 +285,36 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 	p.setSelected(selected)
 }
 
-func (p *PopupItem) setKind(kindText string, selected bool) {
-	// color := newRGBA(151, 195, 120, 1)
-	// bg := newRGBA(151, 195, 120, 0.2)
+func detectVimCompleteMode() (string, error) {
 	w := editor.workspaces[editor.active]
 
+	var isEnableCompleteMode int
+	var enableCompleteMode interface{}
+	var kind interface{}
+	w.nvim.Eval("exists('*complete_mode')", &enableCompleteMode)
+	switch enableCompleteMode.(type) {
+	case int64:
+		isEnableCompleteMode = int(enableCompleteMode.(int64))
+	case uint64:
+		isEnableCompleteMode = int(enableCompleteMode.(uint64))
+	case uint:
+		isEnableCompleteMode = int(enableCompleteMode.(uint))
+	case int:
+		isEnableCompleteMode = enableCompleteMode.(int)
+	}
+	if isEnableCompleteMode == 1 {
+		w.nvim.Eval("complete_mode()", &kind)
+		if kind != nil {
+			return kind.(string), nil
+		} else {
+			return "", nil
+		}
+	}
+	return "", errors.New("Does not exits complete_mode()")
+
+}
+
+func (p *PopupItem) setKind(kindText string, selected bool) {
 	switch kindText {
 	case "function", "func":
 		icon := editor.getSvg("lsp_function", nil)
@@ -296,92 +322,34 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 	case "var", "statement", "instance", "param", "import":
 		icon := editor.getSvg("lsp_variable", nil)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "const":
-		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
-		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "class":
-		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
-		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "type":
-		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
-		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "module":
-		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
-		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "keyword":
-		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
-		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "package":
+	case "const", "class", "type", "module", "keyword", "package":
 		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	default:
-		// Detect completion kind
-		var isEnableCompleteMode int
-		var enableCompleteMode interface{}
-		var kind interface{}
-		w.nvim.Eval("exists('*complete_mode')", &enableCompleteMode)
-		switch enableCompleteMode.(type) {
-		case int64:
-			isEnableCompleteMode = int(enableCompleteMode.(int64))
-		case uint64:
-			isEnableCompleteMode = int(enableCompleteMode.(uint64))
-		case uint:
-			isEnableCompleteMode = int(enableCompleteMode.(uint))
-		case int:
-			isEnableCompleteMode = enableCompleteMode.(int)
+		kind, err := detectVimCompleteMode()
+		if err == nil {
+			p.kind = kind
 		}
-		if isEnableCompleteMode == 1 {
-			w.nvim.Eval("complete_mode()", &kind)
-			if kind != nil {
-				p.kind = kind.(string)
-			}
-		}
-
 		switch p.kind {
-		case "keyword":
-			icon := editor.getSvg("vim_keyword", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "whole_line":
-			icon := editor.getSvg("vim_whole_line", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "files":
-			icon := editor.getSvg("vim_files", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "tags":
-			icon := editor.getSvg("vim_tags", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "path_defines":
-			icon := editor.getSvg("vim_defines", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "path_patterns":
-			icon := editor.getSvg("vim_patterns", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "path_dictionary":
-			icon := editor.getSvg("vim_dictionary", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "path_thesaurus":
-			icon := editor.getSvg("vim_thesaurus", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "path_cmdline":
-			icon := editor.getSvg("vim_cmdline", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "path_function":
-			icon := editor.getSvg("vim_function", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "path_omni":
-			icon := editor.getSvg("vim_omni", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "path_spell":
-			icon := editor.getSvg("vim_spell", nil)
-			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-		case "path_eval":
-			icon := editor.getSvg("vim_eval", nil)
+		case "keyword",
+			"whole_line",
+			"files",
+			"tags",
+			"path_defines",
+			"path_patterns",
+			"path_dictionary",
+			"path_thesaurus",
+			"path_cmdline",
+			"path_function",
+			"path_omni",
+			"path_spell",
+			"path_eval":
+			icon := editor.getSvg("vim_"+p.kind, nil)
 			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 		default:
 			icon := editor.getSvg("vim_unknown", nil)
 			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 		}
-
 	}
 	// if kindText != p.kindText {
 	// 	p.kindText = kindText
