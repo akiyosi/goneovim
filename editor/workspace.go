@@ -62,7 +62,6 @@ type Workspace struct {
 	cols             int
 	uiAttached       bool
 	uiRemoteAttached bool
-	uiInitialResized bool
 	foreground       *RGBA
 	background       *RGBA
 	special          *RGBA

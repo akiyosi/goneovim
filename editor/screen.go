@@ -50,6 +50,7 @@ type Screen struct {
 	paintMutex       sync.Mutex
 	redrawMutex      sync.Mutex
 	drawSplit        bool
+	resizeCount      uint
 	tooltip          *widgets.QLabel
 }
 
@@ -191,46 +192,48 @@ func (s *Screen) updateCols() bool {
 	return ret
 }
 
+func (s *Screen) waitTime() time.Duration {
+	var ret time.Duration
+	switch s.resizeCount {
+	case 0:
+		ret = 10
+	case 1:
+		ret = 100
+	default:
+		ret = 1000
+	}
+
+	s.resizeCount++
+	return ret
+}
+
 func (s *Screen) updateSize() {
 	w := s.ws
-	// isColDiff := s.updateCols()
-	// isRowDiff := s.updateRows()
-	// isTryResize := isColDiff || isRowDiff
-	// done := make(chan error, 2)
-	// var result error
-	// go func() {
-	// 	if w.uiAttached && (isTryResize || !w.uiInitialResized) {
-	// 		result = w.nvim.TryResizeUI(w.cols, w.rows)
-	// 		done <- result
-	// 	} else {
-	// 		done <- fmt.Errorf("Through resizing")
-	// 	}
-	// }()
 
 	s.width = s.widget.Width()
 	cols := int(float64(s.width) / w.font.truewidth)
 	rows := s.height / w.font.lineHeight
 	isTryResize := (cols != w.cols || rows != w.rows)
+	if !isTryResize {
+		return
+	}
 	w.cols = cols
 	w.rows = rows
+	if !w.uiAttached {
+		return
+	}
 
 	done := make(chan error, 5)
 	var result error
 	go func() {
-		if w.uiAttached && (isTryResize || !w.uiInitialResized) {
-			result = w.nvim.TryResizeUI(w.cols, w.rows)
-			done <- result
-		} else {
-			done <- fmt.Errorf("Through resizing")
-		}
+		result = w.nvim.TryResizeUI(w.cols, w.rows)
+		done <- result
 	}()
 	select {
-	case initUI := <-done:
-		if initUI == nil {
-			w.uiInitialResized = true
-		}
-	case <-time.After(200 * time.Millisecond):
-		// In this case, assuming that nvim is returning an error at startup and the TryResizeUI() function hangs up.
+	case <-done:
+	case <-time.After(s.waitTime() * time.Millisecond):
+		// In this case, assuming that nvim is returning an error
+		//  at startup and the TryResizeUI() function hangs up.
 		w.nvim.Input("<Enter>")
 		w.updateSize()
 	}
