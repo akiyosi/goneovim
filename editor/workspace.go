@@ -795,7 +795,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.mode = arg[0].(string)
 			w.disableImeInNormal()
 		case "popupmenu_show":
-			fmt.Println(args)
 			w.popup.showItems(args)
 		case "popupmenu_hide":
 			w.popup.hide()
