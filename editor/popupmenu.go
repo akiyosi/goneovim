@@ -196,6 +196,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		xpos,
 		(row+1)*p.ws.font.lineHeight,
 	)
+	p.hide()
 	p.show()
 }
 
@@ -322,8 +323,11 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 	case "var", "statement", "instance", "param", "import":
 		icon := editor.getSvg("lsp_variable", nil)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "const", "class", "type", "module", "keyword", "package":
-		icon := editor.getSvg("lsp_"+kindText, editor.colors.sideBarBg)
+	case "class", "type", "struct":
+		icon := editor.getSvg("lsp_class", nil)
+		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	case "const","module", "keyword", "package":
+		icon := editor.getSvg("lsp_"+kindText, nil)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	default:
 		kind, err := detectVimCompleteMode()
