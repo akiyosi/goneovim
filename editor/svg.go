@@ -64,7 +64,7 @@ const (
 	GithubLangBrainfuck            = "#2F2530"
 	GithubLangNit                  = "#009917"
 	GithubLangAPL                  = "#5A8164"
-	GithubLangGo                   = "#375eab"
+	GithubLangGo                   = "#00ADD8"
 	GithubLangVisualBasic          = "#945db7"
 	GithubLangPHP                  = "#4F5D95"
 	GithubLangCirru                = "#ccccff"
