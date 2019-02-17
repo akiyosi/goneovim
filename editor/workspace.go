@@ -1271,6 +1271,7 @@ type WorkspaceSideItem struct {
 
 func newWorkspaceSideItem() *WorkspaceSideItem {
 	widget := widgets.NewQWidget(nil, 0)
+	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0); }")
 
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
 	layout.SetContentsMargins(0, 5, 0, 5)
@@ -1357,9 +1358,9 @@ func (i *WorkspaceSideItem) setSideItemLabel(n int) {
 
 func (s *WorkspaceSide) setColor() {
 	fg := editor.colors.sideBarFg.String()
-	bg := editor.colors.sideBarBg.String()
+	bg := editor.colors.sideBarBg.StringTransparent()
 	sfg := editor.colors.scrollBarFg.String()
-	sbg := editor.colors.scrollBarBg.String()
+	sbg := editor.colors.scrollBarBg.StringTransparent()
 	s.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg))
 	s.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-color: %s; padding-top: 5px; background-color: %s; } QWidget { color: %s; border-right: 0px solid; }", bg, bg, fg))
 	s.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
@@ -1380,7 +1381,9 @@ func (i *WorkspaceSideItem) setActive() {
 	i.active = true
 	bg := editor.colors.sideBarSelectedItemBg
 	fg := editor.colors.fg
-	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", bg.String(), fg.String()))
+	// transparent := editor.config.Editor.Transparent / 2.0
+	transparent := transparent()
+	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); color: %s; }", bg.R, bg.G, bg.B, transparent, fg.String()))
 	svgOpenContent := editor.getSvg("chevron-down", fg)
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
 	svgCloseContent := editor.getSvg("chevron-right", fg)
@@ -1410,9 +1413,9 @@ func (i *WorkspaceSideItem) setInactive() {
 		return
 	}
 	i.active = false
-	bg := editor.colors.sideBarBg
+	// bg := editor.colors.sideBarBg
 	fg := editor.colors.inactiveFg
-	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", bg.String(), fg.String()))
+	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; }", fg.String()))
 	svgOpenContent := editor.getSvg("chevron-down", fg)
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
 	svgCloseContent := editor.getSvg("chevron-right", fg)

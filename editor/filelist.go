@@ -118,6 +118,7 @@ func (f *Fileitem) makeWidget(width int) {
 	go func() {
 		filewidget.SetMaximumWidth(width)
 		filewidget.SetMinimumWidth(width)
+		filewidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
 
 		f.widget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 
@@ -143,6 +144,7 @@ func (f *Fileitem) makeWidget(width int) {
 		// Hide with the same color as the background
 		svgModified := editor.getSvg("circle", editor.colors.sideBarBg)
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+		f.fileModified.Hide()
 
 		switch f.fileType {
 		case "..":
@@ -203,9 +205,9 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 	currFilepath := editor.workspaces[editor.active].filepath
 	cfn := filepath.Base(currFilepath)
 	if cfn == f.fileName {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", selectedBg.String()))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; }", selectedBg.StringTransparent()))
 	} else {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", selectedBg.String()))
+		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: underline; } ", selectedBg.StringTransparent()))
 	}
 
 	var svgModified string
@@ -228,7 +230,7 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 	cfn := filepath.Base(currFilepath)
 
 	if cfn != f.fileName {
-		f.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; text-decoration: none; } ", c.String()))
+		f.widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0); text-decoration: none; } ")
 		svgModified = editor.getSvg("circle", c)
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
@@ -324,9 +326,11 @@ func (f *Fileitem) loadModifiedBadge() {
 	fg := editor.colors.fg
 	bg := editor.colors.sideBarBg
 	selectedBg := editor.colors.selectedBg
+	isShow := false
 	var svgModified string
 	if f.isModified {
 		svgModified = editor.getSvg("circle", fg)
+		isShow = true
 	} else {
 		if f.isOpened {
 			svgModified = editor.getSvg("circle", selectedBg)
@@ -335,4 +339,9 @@ func (f *Fileitem) loadModifiedBadge() {
 		}
 	}
 	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
+	if isShow {
+		f.fileModified.Show()
+	} else {
+		f.fileModified.Hide()
+	}
 }

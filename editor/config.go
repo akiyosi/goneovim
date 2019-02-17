@@ -24,6 +24,7 @@ import (
 // cursorBlink = true
 // disableIMEinNormal = true
 // startFullScreen = true
+// transparent = 0.5
 // ginitvim = '''
 //   set guifont=FuraCode\ Nerd\ Font\ Mono:h14
 //   if g:gonvim_running == 1
@@ -109,6 +110,7 @@ type editorConfig struct {
 	DisableImeInNormal bool
 	GinitVim           string
 	StartFullscreen    bool
+	Transparent        float64
 }
 
 type statusLineConfig struct {
@@ -171,6 +173,7 @@ func newGonvimConfig(home string) gonvimConfig {
 
 	// Set default value
 	config.FileExplorer.MaxItems = 50
+	config.Editor.Transparent = 1.0
 	config.Statusline.Left = []string{"mode", "filepath", "filename"}
 	config.Statusline.Right = []string{"message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
 	config.Editor.ExtCmdline = true

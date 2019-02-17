@@ -334,7 +334,7 @@ func initStatuslineNew() *Statusline {
 				notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", darkenHex(editor.config.Statusline.TerminalModeColor)))
 			}
 		} else {
-			notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", editor.colors.widgetBg.String()))
+			notifyWidget.SetStyleSheet(fmt.Sprintf(" * { background: %s; }", editor.colors.widgetBg.StringTransparent()))
 		}
 	})
 	notifyWidget.ConnectLeaveEvent(func(event *core.QEvent) {
@@ -518,10 +518,10 @@ func (s *Statusline) setColor() {
 
 	comment := editor.colors.comment.String()
 	fg := editor.colors.fg.String()
-	bg := editor.colors.bg.String()
+	bg := editor.colors.bg.StringTransparent()
 
 	s.path.c.label.SetStyleSheet(fmt.Sprintf("color: %s;", comment))
-	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { border-top: 0px solid %s; background-color: %s; } * { color: %s; }", bg, bg, fg))
+	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { background-color: %s; } * { color: %s; }", bg, fg))
 
 	svgContent := editor.getSvg("git", nil)
 	s.git.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))

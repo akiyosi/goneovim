@@ -218,7 +218,7 @@ func InitEditor() {
 	}
 
 	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
-	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
+	splitter.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	splitter.AddWidget(e.activity.sideArea)
 	splitter.AddWidget(e.wsWidget)
 	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
@@ -408,10 +408,10 @@ func (e *Editor) updateGUIColor() {
 	// if activity & sidebar is enabled
 	if e.activity != nil && e.wsSide != nil {
 		// for splitter
-		e.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", e.colors.sideBarBg.String()))
+		e.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", e.colors.sideBarBg.StringTransparent()))
 
 		// for Activity Bar
-		e.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; } ", e.colors.activityBarBg))
+		e.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; } ", e.colors.activityBarBg.StringTransparent()))
 
 		var svgEditContent string
 		if e.activity.editItem.active == true {
@@ -481,6 +481,7 @@ func (e *Editor) setWindowOptions() {
 	e.window.SetContentsMargins(0, 0, 0, 0)
 	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
 	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
+	e.window.SetWindowFlag(core.Qt__FramelessWindowHint, true)
 	e.window.SetWindowOpacity(0.0)
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)

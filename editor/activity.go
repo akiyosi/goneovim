@@ -83,6 +83,7 @@ func newActivity() *Activity {
 	activitySubLayout.AddWidget(deinWidget, 0, 0)
 	activitySubWidget := widgets.NewQWidget(nil, 0)
 	activitySubWidget.SetLayout(activitySubLayout)
+	activitySubWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0); } ")
 
 	activityLayout.AddWidget(activitySubWidget, 0, 0)
 	activityLayout.SetAlignment(activitySubWidget, core.Qt__AlignTop)
@@ -111,7 +112,7 @@ func (n *ActivityItem) enterEvent(event *core.QEvent) {
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
 	fg := editor.colors.fg
-	n.widget.SetStyleSheet(fmt.Sprintf(" * { color: %s; } ", fg.String()))
+	n.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; } ", fg.String()))
 	svgContent := editor.getSvg(n.text, nil)
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
@@ -121,10 +122,10 @@ func (n *ActivityItem) leaveEvent(event *core.QEvent) {
 	inactiveFg := editor.colors.inactiveFg
 	var svgContent string
 	if n.active == true {
-		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: %s; } ", fg.String()))
+		n.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; } ", fg.String()))
 		svgContent = editor.getSvg(n.text, nil)
 	} else {
-		n.widget.SetStyleSheet(fmt.Sprintf(" * { color: %s; } ", inactiveFg))
+		n.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; } ", inactiveFg))
 		svgContent = editor.getSvg(n.text, inactiveFg)
 	}
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -168,9 +169,30 @@ func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {
 			editor.deinSide.scrollarea = sideArea
 			editor.deinSide.scrollarea.ConnectResizeEvent(deinSideResize)
 
-			bg := editor.colors.sideBarBg.String()
-			sbg := editor.colors.sideBarSelectedItemBg.String()
-			editor.deinSide.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", bg, sbg, editor.config.SideBar.AccentColor))
+			bg := editor.colors.sideBarBg.StringTransparent()
+			sbg := editor.colors.sideBarSelectedItemBg.StringTransparent()
+			editor.deinSide.scrollarea.SetStyleSheet(fmt.Sprintf(`
+			.QScrollBar {
+				border-width: 0px;
+				background-color: %s;
+				width: 5px;
+				margin: 0 0 0 0; 
+			} 
+			.QScrollBar::handle:vertical {
+				background-color: %s;
+				min-height: 25px;
+			} 
+			.QScrollBar::handle:vertical:hover {
+				background-color: %s; 
+				min-height: 25px;
+			} 
+			.QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical {
+				border: none; 
+				background: none; 
+			} 
+			.QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+				background: none; 
+			}`, bg, sbg, editor.config.SideBar.AccentColor))
 
 			editor.activity.sideArea.AddWidget(editor.deinSide.scrollarea)
 		}
@@ -231,10 +253,10 @@ func setActivityItemColor() {
 	items := []*ActivityItem{editor.activity.editItem, editor.activity.deinItem}
 	for _, item := range items {
 		if item.active == true {
-			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: %s; } ", fg.String()))
+			item.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; } ", fg.String()))
 			svgContent = editor.getSvg(item.text, fg)
 		} else {
-			item.widget.SetStyleSheet(fmt.Sprintf(" * { color: %s; } ", inactiveFg.String()))
+			item.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; } ", inactiveFg.String()))
 			svgContent = editor.getSvg(item.text, inactiveFg)
 		}
 		item.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))

@@ -137,15 +137,17 @@ func initPalette() *Palette {
 		itemLayout := util.NewVFlowLayout(padding, padding*2, 0, 0, 9999)
 		itemLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 		itemWidget.SetLayout(itemLayout)
+		itemWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 		resultLayout.AddWidget(itemWidget, 0, 0)
 		icon := svg.NewQSvgWidget(nil)
 		icon.SetFixedWidth(editor.iconSize - 1)
 		icon.SetFixedHeight(editor.iconSize - 1)
 		icon.SetContentsMargins(0, 0, 0, 0)
+		icon.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 		base := widgets.NewQLabel(nil, 0)
 		base.SetText("base")
 		base.SetContentsMargins(0, padding, 0, padding)
-		base.SetStyleSheet("background-color: none; white-space: pre-wrap;")
+		base.SetStyleSheet("background-color: rgba(0, 0, 0, 0); white-space: pre-wrap;")
 		// base.SetSizePolicy2(widgets.QSizePolicy__Preferred, widgets.QSizePolicy__Maximum)
 		itemLayout.AddWidget(icon)
 		itemLayout.AddWidget(base)
@@ -164,13 +166,16 @@ func initPalette() *Palette {
 
 func (p *Palette) setColor() {
 	fg := editor.colors.widgetFg.String()
-	bg := editor.colors.widgetBg.String()
-	inputArea := editor.colors.widgetInputArea.String()
-	sbg := editor.colors.scrollBarBg.String()
+	bg := editor.colors.widgetBg
+	inputArea := editor.colors.widgetInputArea
+	sbg := editor.colors.scrollBarBg
+	// transparent := editor.config.Editor.Transparent / 4.0
+	transparent := transparent() * transparent()
 	p.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", fg))
-	p.widget.SetStyleSheet(fmt.Sprintf(" QWidget#palette { border: 1px solid %s; } .QWidget { background-color: %s; } * { color: %s; } ", bg, bg, fg))
-	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", sbg))
-	p.pattern.SetStyleSheet(fmt.Sprintf("background-color: %s;", inputArea))
+	//p.widget.SetStyleSheet(fmt.Sprintf(" QWidget#palette { border: 1px solid %s; } .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg, bg, fg))
+	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg.R, bg.G, bg.B, transparent, fg))
+	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", sbg.R, sbg.G, sbg.B, transparent))
+	p.pattern.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inputArea.R, inputArea.G, inputArea.B, transparent))
 }
 
 func (p *Palette) resize() {
@@ -269,11 +274,17 @@ func (p *Palette) showSelected(selected int) {
 }
 
 func (f *PaletteResultItem) update() {
+	c := editor.colors.selectedBg
+	// transparent := editor.config.Editor.Transparent
+	transparent := transparent()
 	if f.selected {
-		f.widget.SetStyleSheet(fmt.Sprintf(".QWidget {background-color: %s;}", editor.colors.selectedBg))
+		f.widget.SetStyleSheet(fmt.Sprintf(".QWidget {background-color: rgba(%d, %d, %d, %f);}", c.R, c.G, c.B, transparent))
 	} else {
 		f.widget.SetStyleSheet("")
 	}
+	f.p.widget.Hide()
+	f.p.widget.Show()
+
 }
 
 func (f *PaletteResultItem) setSelected(selected bool) {

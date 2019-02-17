@@ -32,6 +32,16 @@ func (rgba *RGBA) String() string {
 	return fmt.Sprintf("rgba(%d, %d, %d, %f)", rgba.R, rgba.G, rgba.B, rgba.A)
 }
 
+func (rgba *RGBA) StringTransparent() string {
+	transparent := editor.config.Editor.Transparent
+	return fmt.Sprintf("rgba(%d, %d, %d, %f)", rgba.R, rgba.G, rgba.B, transparent)
+}
+
+func transparent() float64 {
+	t := editor.config.Editor.Transparent
+	return t * t
+}
+
 // Hex is
 func (rgba *RGBA) Hex() string {
 	return fmt.Sprintf("#%02x%02x%02x", uint8(rgba.R), uint8(rgba.G), uint8(rgba.B))
@@ -195,6 +205,6 @@ func newRGBA(r int, g int, b int, a float64) *RGBA {
 		R: r,
 		G: g,
 		B: b,
-		A: a,
+		A: a, // Not use this value
 	}
 }

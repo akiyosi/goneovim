@@ -57,11 +57,13 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	messageLayout := widgets.NewQHBoxLayout()
 	messageLayout.SetContentsMargins(0, 0, 0, 0)
 	messageWidget.SetLayout(messageLayout)
+	messageWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0)}")
 
 	levelIcon := svg.NewQSvgWidget(nil)
 	levelIcon.SetFixedWidth(editor.iconSize)
 	levelIcon.SetFixedHeight(editor.iconSize)
 	levelIcon.SetContentsMargins(0, 0, 0, 0)
+	levelIcon.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0)}")
 	var level string
 	switch l {
 	case NotifyInfo:
@@ -74,6 +76,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	levelIcon.Load2(core.NewQByteArray2(level, len(level)))
 
 	label := widgets.NewQLabel(nil, 0)
+	label.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0)}")
 	size := int(float64(editor.workspaces[editor.active].font.width) * 1.33)
 	label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, size, 1, false))
 	if utf8.RuneCountInString(message) > 50 {
@@ -348,7 +351,9 @@ func (n *Notification) show() {
 		}
 	}
 	fg := editor.colors.widgetFg.String()
-	bg := editor.colors.widgetBg.String()
-	n.widget.SetStyleSheet(fmt.Sprintf(" * {color: %s; background: %s;}", fg, bg))
+	bg := editor.colors.widgetBg
+	// transparent := editor.config.Editor.Transparent / 2.0
+	transparent := transparent()
+	n.widget.SetStyleSheet(fmt.Sprintf(" * {color: %s; background: rgba(%d, %d, %d, %f);}", fg, bg.R, bg.G, bg.B, transparent))
 	n.widget.Show()
 }

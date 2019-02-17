@@ -32,8 +32,8 @@ func newScrollBar() *ScrollBar {
 }
 
 func (s *ScrollBar) setColor() {
-	fg := editor.colors.scrollBarFg
-	bg := editor.colors.scrollBarBg
+	fg := editor.colors.scrollBarFg.String()
+	bg := editor.colors.scrollBarBg.StringTransparent()
 	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", fg))
 	s.widget.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", bg))
 }
