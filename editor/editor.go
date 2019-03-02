@@ -11,6 +11,7 @@ import (
 
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
+	frameless "github.com/akiyosi/goqtframelesswindow/qframelesswindow"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -75,6 +76,8 @@ type Editor struct {
 	signal  *editorSignal
 	version string
 	app     *widgets.QApplication
+
+	framelesswin *frameless.QFramelessWindow
 
 	activity          *Activity
 	splitter          *widgets.QSplitter
@@ -172,7 +175,13 @@ func InitEditor() {
 	e.initNotifications()
 
 	//create a window
-	e.window = widgets.NewQMainWindow(nil, 0)
+	// e.window = widgets.NewQMainWindow(nil, 0)
+	// e.setWindowOptions()
+
+
+
+	e.framelesswin = frameless.NewQFramelessWindow()
+	e.window = e.framelesswin.Window
 	e.setWindowOptions()
 
 	widget := widgets.NewQWidget(nil, 0)
@@ -292,7 +301,9 @@ func InitEditor() {
 		})
 	}
 
-	e.window.SetCentralWidget(widget)
+	//e.window.SetCentralWidget(widget)
+
+	e.framelesswin.SetContent(layout)
 
 	go func() {
 		<-editor.stop
@@ -435,6 +446,9 @@ func (e *Editor) updateGUIColor() {
 
 	e.workspaces[e.active].updateWorkspaceColor()
 
+	e.framelesswin.SetStyles(e.colors.bg.Hex())
+	e.framelesswin.SetTitleStyle(fmt.Sprintf(" * {color: %s}", e.colors.fg.Hex()))
+
 	e.window.SetWindowOpacity(1.0)
 }
 
@@ -474,14 +488,24 @@ func shiftHex(hex string, v int) string {
 }
 
 func (e *Editor) setWindowOptions() {
-	e.window.SetWindowTitle("Gonvim")
+	// e.window.SetWindowTitle("Gonvim")
+	// e.width = e.config.Editor.Width
+	// e.height = e.config.Editor.Height
+	// e.window.SetMinimumSize2(e.width, e.height)
+	// e.window.SetContentsMargins(0, 0, 0, 0)
+	// e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
+	// e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
+	// e.window.SetWindowFlag(core.Qt__FramelessWindowHint, true)
+	// e.window.SetWindowOpacity(0.0)
+	// e.initSpecialKeys()
+	// e.window.ConnectKeyPressEvent(e.keyPress)
+	// e.window.SetAcceptDrops(true)
+
+	// e.window.SetWindowTitle("Gonvim")
+	e.framelesswin.SetTitle("Gonvim")
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
 	e.window.SetMinimumSize2(e.width, e.height)
-	e.window.SetContentsMargins(0, 0, 0, 0)
-	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
-	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
-	e.window.SetWindowFlag(core.Qt__FramelessWindowHint, true)
 	e.window.SetWindowOpacity(0.0)
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)

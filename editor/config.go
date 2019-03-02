@@ -173,7 +173,7 @@ func newGonvimConfig(home string) gonvimConfig {
 
 	// Set default value
 	config.FileExplorer.MaxItems = 50
-	config.Editor.Transparent = 1.0
+	config.Editor.Transparent = 0.5
 	config.Statusline.Left = []string{"mode", "filepath", "filename"}
 	config.Statusline.Right = []string{"message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
 	config.Editor.ExtCmdline = true
