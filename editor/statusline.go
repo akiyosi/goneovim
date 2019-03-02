@@ -518,10 +518,11 @@ func (s *Statusline) setColor() {
 
 	comment := editor.colors.comment.String()
 	fg := editor.colors.fg.String()
-	bg := editor.colors.bg.StringTransparent()
+	// bg := editor.colors.bg.StringTransparent()
 
 	s.path.c.label.SetStyleSheet(fmt.Sprintf("color: %s;", comment))
-	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { background-color: %s; } * { color: %s; }", bg, fg))
+	// s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { background-color: %s; } * { color: %s; }", bg, fg))
+	s.widget.SetStyleSheet(fmt.Sprintf("QWidget#statusline { background-color: rgba(0, 0, 0, 0); } * { color: %s; }", fg))
 
 	svgContent := editor.getSvg("git", nil)
 	s.git.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))

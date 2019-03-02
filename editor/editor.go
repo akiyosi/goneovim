@@ -186,6 +186,7 @@ func InitEditor() {
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
+	// widget.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); }")
 
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, widget)
 	layout.SetContentsMargins(0, 0, 0, 0)
@@ -446,7 +447,7 @@ func (e *Editor) updateGUIColor() {
 
 	e.workspaces[e.active].updateWorkspaceColor()
 
-	e.framelesswin.SetStyles(e.colors.bg.Hex())
+	e.framelesswin.SetWidgetColor(e.colors.bg.StringTransparent())
 	e.framelesswin.SetTitleStyle(fmt.Sprintf(" * {color: %s}", e.colors.fg.Hex()))
 
 	e.window.SetWindowOpacity(1.0)

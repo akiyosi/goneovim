@@ -280,6 +280,9 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	p.SetBackgroundMode(core.Qt__TransparentMode)
 	bg := s.ws.background
 	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
+	if transparent < 255 {
+		transparent = 0
+	}
 	if s.ws.background != nil {
 		// p.FillRect5(
 		p.FillRect2(

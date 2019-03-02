@@ -58,12 +58,12 @@ func (t *Tabline) subscribe() {
 
 func (t *Tabline) setColor() {
 	inactiveFg := editor.colors.inactiveFg.String()
-	bg := editor.colors.bg.StringTransparent()
+	// bg := editor.colors.bg.StringTransparent()
 	t.widget.SetStyleSheet(fmt.Sprintf(`
 	.QWidget { 
 		border-bottom: 0px solid;
 		border-right: 0px solid;
-		background-color: %s; } QWidget { color: %s; } `, bg, inactiveFg))
+		background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; } `, inactiveFg))
 }
 
 func newTabline() *Tabline {
