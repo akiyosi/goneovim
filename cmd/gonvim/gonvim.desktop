@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=Gonvim
+Comment=Gonvim
+Exec=/path/to/gonvim.sh
+Icon=/path/to/gonvim.ico
