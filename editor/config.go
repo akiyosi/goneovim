@@ -15,8 +15,8 @@ import (
 // gonvimConfig is the following toml file
 // # Gonvim config toml
 // [editor]
-// width = 1000  # >= 800
-// height = 800  # >= 600
+// width = 1000  # >= 400
+// height = 800  # >= 300
 // fontFamily = "FuraCode Nerd Font Mono"
 // fontsize = 18
 // linespace = 10
@@ -189,11 +189,11 @@ func newGonvimConfig(home string) gonvimConfig {
 		}()
 	}
 
-	if config.Editor.Width <= 800 {
-		config.Editor.Width = 800
+	if config.Editor.Width <= 400 {
+		config.Editor.Width = 400
 	}
-	if config.Editor.Height <= 600 {
-		config.Editor.Height = 600
+	if config.Editor.Height <= 300 {
+		config.Editor.Height = 300
 	}
 	if config.Statusline.ModeIndicatorType == "" {
 		config.Statusline.ModeIndicatorType = "textLabel"
