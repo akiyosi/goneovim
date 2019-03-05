@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/akiyosi/gonvim/util"
 )
 
 // Finder is a fuzzy finder window
@@ -21,12 +23,12 @@ func (f *Finder) hide() {
 }
 
 func (f *Finder) cursorPos(args []interface{}) {
-	x := reflectToInt(args[0])
+	x := util.ReflectToInt(args[0])
 	f.ws.palette.cursorMove(x)
 }
 
 func (f *Finder) selectResult(args []interface{}) {
-	selected := reflectToInt(args[0])
+	selected := util.ReflectToInt(args[0])
 	f.ws.palette.showSelected(selected)
 }
 
@@ -35,17 +37,17 @@ func (f *Finder) showPattern(args []interface{}) {
 	p := args[0].(string)
 	palette.patternText = p
 	palette.pattern.SetText(palette.patternText)
-	palette.cursorMove(reflectToInt(args[1]))
+	palette.cursorMove(util.ReflectToInt(args[1]))
 }
 
 func (f *Finder) showResult(args []interface{}) {
 	palette := f.ws.palette
-	selected := reflectToInt(args[1])
+	selected := util.ReflectToInt(args[1])
 	match := [][]int{}
 	for _, i := range args[2].([]interface{}) {
 		m := []int{}
 		for _, n := range i.([]interface{}) {
-			m = append(m, reflectToInt(n))
+			m = append(m, util.ReflectToInt(n))
 		}
 		match = append(match, m)
 	}
@@ -134,8 +136,8 @@ func (f *Finder) showResult(args []interface{}) {
 	}
 	palette.showSelected(selected)
 
-	start := reflectToInt(args[4])
-	total := reflectToInt(args[5])
+	start := util.ReflectToInt(args[4])
+	total := util.ReflectToInt(args[5])
 
 	// if len(rawItems) == f.showTotal {
 	// 	f.scrollCol.Show()

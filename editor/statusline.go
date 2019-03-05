@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/akiyosi/gonvim/osdepend"
+	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
@@ -155,7 +155,7 @@ func initStatuslineNew() *Statusline {
 	widget.SetContentsMargins(0, 0, 6, 0)
 
 	// spacing, padding, paddingtop, rightitemnum, width
-	layout := newVFlowLayout(16, 10, 1, 1, 0)
+	layout := util.NewVFlowLayout(16, 10, 1, 1, 0)
 	widget.SetLayout(layout)
 	widget.SetObjectName("statusline")
 
@@ -769,7 +769,7 @@ func (s *StatuslineGit) redraw(file string) {
 	s.file = file
 	dir := filepath.Dir(file)
 	cmd := exec.Command("git", "-C", dir, "branch")
-	osdepend.PrepareRunProc(cmd)
+	util.PrepareRunProc(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		s.hide()
@@ -788,7 +788,7 @@ func (s *StatuslineGit) redraw(file string) {
 		}
 	}
 	cmd = exec.Command("git", "-C", dir, "diff", "--quiet")
-	osdepend.PrepareRunProc(cmd)
+	util.PrepareRunProc(cmd)
 	_, err = cmd.Output()
 	if err != nil {
 		branch += "*"

@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/akiyosi/gonvim/util"
 	"github.com/neovim/go-client/nvim"
-
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
@@ -531,7 +531,7 @@ func (m *MiniMap) handleRPCGui(updates []interface{}) {
 	switch event {
 	// case "minimap_cursormoved":
 	// 	pos := updates[1].([]interface{})
-	// 	ln := reflectToInt(pos[1])
+	// 	ln := util.ReflectToInt(pos[1])
 	// 	m.curLine = ln
 	default:
 	}
@@ -632,7 +632,7 @@ func (m *MiniMap) highlightSet(args []interface{}) {
 
 		fg, ok := hl["foreground"]
 		if ok {
-			rgba := calcColor(reflectToInt(fg))
+			rgba := calcColor(util.ReflectToInt(fg))
 			highlight.foreground = rgba
 		} else {
 			highlight.foreground = m.foreground
@@ -640,7 +640,7 @@ func (m *MiniMap) highlightSet(args []interface{}) {
 
 		bg, ok := hl["background"]
 		if ok {
-			rgba := calcColor(reflectToInt(bg))
+			rgba := calcColor(util.ReflectToInt(bg))
 			highlight.background = rgba
 		} else {
 			highlight.background = m.background
@@ -651,10 +651,10 @@ func (m *MiniMap) highlightSet(args []interface{}) {
 
 func (m *MiniMap) setScrollRegion(args []interface{}) {
 	arg := args[0].([]interface{})
-	top := reflectToInt(arg[0])
-	bot := reflectToInt(arg[1])
-	left := reflectToInt(arg[2])
-	right := reflectToInt(arg[3])
+	top := util.ReflectToInt(arg[0])
+	bot := util.ReflectToInt(arg[1])
+	left := util.ReflectToInt(arg[2])
+	right := util.ReflectToInt(arg[3])
 	m.scrollRegion[0] = top
 	m.scrollRegion[1] = bot
 	m.scrollRegion[2] = left
@@ -999,8 +999,8 @@ func (m *MiniMap) eolClear(args []interface{}) {
 
 func (m *MiniMap) cursorGoto(args []interface{}) {
 	pos, _ := args[0].([]interface{})
-	m.cursor[0] = reflectToInt(pos[0])
-	m.cursor[1] = reflectToInt(pos[1])
+	m.cursor[0] = util.ReflectToInt(pos[0])
+	m.cursor[1] = util.ReflectToInt(pos[1])
 }
 
 func (m *MiniMap) isNormalWidth(char string) bool {

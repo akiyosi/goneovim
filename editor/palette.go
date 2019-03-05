@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/akiyosi/gonvim/fuzzy"
+	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
@@ -133,7 +134,7 @@ func initPalette() *Palette {
 	for i := 0; i < max; i++ {
 		itemWidget := widgets.NewQWidget(nil, 0)
 		itemWidget.SetContentsMargins(0, 0, 0, 0)
-		itemLayout := newVFlowLayout(padding, padding*2, 0, 0, 9999)
+		itemLayout := util.NewVFlowLayout(padding, padding*2, 0, 0, 9999)
 		itemLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 		itemWidget.SetLayout(itemLayout)
 		resultLayout.AddWidget(itemWidget, 0, 0)

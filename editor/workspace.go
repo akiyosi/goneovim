@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/akiyosi/gonvim/fuzzy"
+	"github.com/akiyosi/gonvim/util"
 	shortpath "github.com/akiyosi/short_path"
 	"github.com/jessevdk/go-flags"
 	"github.com/neovim/go-client/nvim"
@@ -873,9 +874,9 @@ func (w *Workspace) disableImeInNormal() {
 }
 
 func (w *Workspace) setColorsSet(args []interface{}) {
-	fg := reflectToInt(args[0])
-	bg := reflectToInt(args[1])
-	sp := reflectToInt(args[2])
+	fg := util.ReflectToInt(args[0])
+	bg := util.ReflectToInt(args[1])
+	sp := util.ReflectToInt(args[2])
 
 	if fg != -1 {
 		w.foreground = calcColor(fg)
@@ -1015,8 +1016,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.signature.hide()
 	case "gonvim_cursormoved":
 		pos := updates[1].([]interface{})
-		ln := reflectToInt(pos[1])
-		col := reflectToInt(pos[2]) + reflectToInt(pos[3])
+		ln := util.ReflectToInt(pos[1])
+		col := util.ReflectToInt(pos[2]) + util.ReflectToInt(pos[3])
 		w.statusline.pos.redraw(ln, col)
 		w.curLine = ln
 		w.curColm = col
@@ -1029,7 +1030,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
 	case "gonvim_get_maxline":
-		w.maxLine = reflectToInt(updates[1])
+		w.maxLine = util.ReflectToInt(updates[1])
 	case "gonvim_workspace_new":
 		editor.workspaceNew()
 	case "gonvim_workspace_next":
@@ -1037,7 +1038,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_previous":
 		editor.workspacePrevious()
 	case "gonvim_workspace_switch":
-		editor.workspaceSwitch(reflectToInt(updates[1]))
+		editor.workspaceSwitch(util.ReflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
 		w.setCwd(updates[1].(string))
 	case "gonvim_workspace_setCurrentFileLabel":
@@ -1203,7 +1204,7 @@ type WorkspaceSide struct {
 }
 
 func newWorkspaceSide() *WorkspaceSide {
-	layout := newHFlowLayout(0, 0, 0, 0, 20)
+	layout := util.NewHFlowLayout(0, 0, 0, 0, 20)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 	header := widgets.NewQLabel(nil, 0)

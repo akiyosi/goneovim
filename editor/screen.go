@@ -12,6 +12,8 @@ import (
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
+
+	"github.com/akiyosi/gonvim/util"
 )
 
 // Window is
@@ -582,8 +584,8 @@ func (s *Screen) eolClear(args []interface{}) {
 
 func (s *Screen) cursorGoto(args []interface{}) {
 	pos, _ := args[0].([]interface{})
-	s.cursor[0] = reflectToInt(pos[0])
-	s.cursor[1] = reflectToInt(pos[1])
+	s.cursor[0] = util.ReflectToInt(pos[0])
+	s.cursor[1] = util.ReflectToInt(pos[1])
 }
 
 func (s *Screen) put(args []interface{}) {
@@ -681,7 +683,7 @@ func (s *Screen) highlightSet(args []interface{}) {
 
 		fg, ok := hl["foreground"]
 		if ok {
-			rgba := calcColor(reflectToInt(fg))
+			rgba := calcColor(util.ReflectToInt(fg))
 			highlight.foreground = rgba
 		} else {
 			highlight.foreground = s.ws.foreground
@@ -689,7 +691,7 @@ func (s *Screen) highlightSet(args []interface{}) {
 
 		bg, ok := hl["background"]
 		if ok {
-			rgba := calcColor(reflectToInt(bg))
+			rgba := calcColor(util.ReflectToInt(bg))
 			highlight.background = rgba
 		} else {
 			highlight.background = s.ws.background
@@ -701,10 +703,10 @@ func (s *Screen) highlightSet(args []interface{}) {
 
 func (s *Screen) setScrollRegion(args []interface{}) {
 	arg := args[0].([]interface{})
-	top := reflectToInt(arg[0])
-	bot := reflectToInt(arg[1])
-	left := reflectToInt(arg[2])
-	right := reflectToInt(arg[3])
+	top := util.ReflectToInt(arg[0])
+	bot := util.ReflectToInt(arg[1])
+	left := util.ReflectToInt(arg[2])
+	right := util.ReflectToInt(arg[3])
 	s.scrollRegion[0] = top
 	s.scrollRegion[1] = bot
 	s.scrollRegion[2] = left

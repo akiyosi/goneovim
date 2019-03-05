@@ -8,6 +8,8 @@ import (
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
+
+	"github.com/akiyosi/gonvim/util"
 )
 
 // PopupMenu is the popupmenu
@@ -146,9 +148,9 @@ func (p *PopupMenu) setColor() {
 func (p *PopupMenu) showItems(args []interface{}) {
 	arg := args[0].([]interface{})
 	items := arg[0].([]interface{})
-	selected := reflectToInt(arg[1])
-	row := reflectToInt(arg[2])
-	col := reflectToInt(arg[3])
+	selected := util.ReflectToInt(arg[1])
+	row := util.ReflectToInt(arg[2])
+	col := util.ReflectToInt(arg[3])
 	p.rawItems = items
 	p.selected = selected
 	p.top = 0
@@ -209,7 +211,7 @@ func (p *PopupMenu) hide() {
 }
 
 func (p *PopupMenu) selectItem(args []interface{}) {
-	selected := reflectToInt(args[0].([]interface{})[0])
+	selected := util.ReflectToInt(args[0].([]interface{})[0])
 	if selected == -1 && p.top > 0 {
 		p.scroll(-p.top)
 	}

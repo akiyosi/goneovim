@@ -1,6 +1,6 @@
 // +build windows
 
-package osdepend
+package util
 
 import (
 	"os/exec"

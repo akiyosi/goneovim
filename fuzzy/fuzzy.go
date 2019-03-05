@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/akiyosi/gonvim/osdepend"
+	gonvimUtil "github.com/akiyosi/gonvim/util"
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/util"
 	"github.com/neovim/go-client/nvim"
@@ -106,7 +106,7 @@ func (s *Fuzzy) handle(args ...interface{}) {
 	case "confirm":
 		s.confirm()
 	case "update_max":
-		s.max = reflectToInt(args[1])
+		s.max = gonvimUtil.ReflectToInt(args[1])
 	default:
 		fmt.Println("unhandleld fzfshim event", event)
 	}
@@ -433,7 +433,7 @@ func (s *Fuzzy) processSource() {
 		}()
 	case string:
 		cmd := exec.Command("bash", "-c", src)
-		osdepend.PrepareRunProc(cmd)
+		gonvimUtil.PrepareRunProc(cmd)
 		stdout, _ := cmd.StdoutPipe()
 		output := ""
 		go func() {
@@ -703,13 +703,13 @@ func insertAtIndex(in string, i int, newChar string) string {
 	return string(a)
 }
 
-func reflectToInt(iface interface{}) int {
-	o, ok := iface.(int64)
-	if ok {
-		return int(o)
-	}
-	return int(iface.(uint64))
-}
+// func reflectToInt(iface interface{}) int {
+// 	o, ok := iface.(int64)
+// 	if ok {
+// 		return int(o)
+// 	}
+// 	return int(iface.(uint64))
+// }
 
 func expand(path string) (string, error) {
 	if len(path) == 0 || path[0] != '~' {

@@ -3,6 +3,8 @@ package editor
 import (
 	"fmt"
 	"strings"
+
+	"github.com/akiyosi/gonvim/util"
 )
 
 // CmdContent is the content of the cmdline
@@ -58,11 +60,11 @@ func (c *Cmdline) getText(ch string) string {
 func (c *Cmdline) show(args []interface{}) {
 	arg := args[0].([]interface{})
 	content := arg[0].([]interface{})[0].([]interface{})[1].(string)
-	pos := reflectToInt(arg[1])
+	pos := util.ReflectToInt(arg[1])
 	firstc := arg[2].(string)
 	prompt := arg[3].(string)
-	indent := reflectToInt(arg[4])
-	// level := reflectToInt(arg[5])
+	indent := util.ReflectToInt(arg[4])
+	// level := util.ReflectToInt(arg[5])
 	// fmt.Println("cmdline show", content, pos, firstc, prompt, indent, level)
 
 	c.pos = pos
@@ -152,8 +154,8 @@ func (c *Cmdline) functionHide() {
 
 func (c *Cmdline) changePos(args []interface{}) {
 	args = args[0].([]interface{})
-	pos := reflectToInt(args[0])
-	// level := reflectToInt(args[1])
+	pos := util.ReflectToInt(args[0])
+	// level := util.ReflectToInt(args[1])
 	// fmt.Println("change pos", pos, level)
 	c.pos = pos
 	c.cursorMove()
@@ -162,8 +164,8 @@ func (c *Cmdline) changePos(args []interface{}) {
 func (c *Cmdline) putChar(args []interface{}) {
 	args = args[0].([]interface{})
 	ch := args[0].(string)
-	// shift := reflectToInt(args[1])
-	// level := reflectToInt(args[2])
+	// shift := util.ReflectToInt(args[1])
+	// level := util.ReflectToInt(args[2])
 	// fmt.Println("putChar", ch, shift, level)
 	text := c.getText(ch)
 	palette := c.ws.palette
@@ -204,7 +206,7 @@ func (c *Cmdline) wildmenuShow(args []interface{}) {
 }
 
 func (c *Cmdline) wildmenuSelect(args []interface{}) {
-	selected := reflectToInt(args[0].([]interface{})[0])
+	selected := util.ReflectToInt(args[0].([]interface{})[0])
 	// fmt.Println("selected is", selected)
 	showTotal := c.ws.palette.showTotal
 	if selected == -1 && c.top > 0 {

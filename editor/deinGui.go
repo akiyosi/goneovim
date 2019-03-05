@@ -16,6 +16,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/akiyosi/gonvim/util"
 	"github.com/BurntSushi/toml"
 	"github.com/akiyosi/tomlwriter"
 	homedir "github.com/mitchellh/go-homedir"
@@ -430,7 +431,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginHead := widgets.NewQWidget(nil, 0)
 
 		// spacing, padding, paddingtop, rightitemnum, width
-		// installedPluginHeadLayout := newVFlowLayout(2, 2, 1, 1, 0)
+		// installedPluginHeadLayout := util.NewVFlowLayout(2, 2, 1, 1, 0)
 		installedPluginHeadLayout := widgets.NewQHBoxLayout()
 		installedPluginHeadLayout.SetContentsMargins(0, 0, 0, 0)
 		installedPluginHead.SetLayout(installedPluginHeadLayout)
@@ -548,7 +549,7 @@ func newDeinSide() *DeinSide {
 	bg := editor.colors.bg
 	sbg := editor.colors.sideBarSelectedItemBg
 
-	layout := newHFlowLayout(0, 0, 0, 0, 20)
+	layout := util.NewHFlowLayout(0, 0, 0, 0, 20)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
@@ -927,7 +928,7 @@ func drawSearchresults(results PluginSearchResults, pagenum int) {
 
 		// * plugin info
 		pluginInfo := widgets.NewQWidget(nil, 0)
-		//pluginInfoLayout := newVFlowLayout(16, 10, 1, 2, 0)
+		//pluginInfoLayout := util.NewVFlowLayout(16, 10, 1, 2, 0)
 		pluginInfoLayout := widgets.NewQHBoxLayout()
 		pluginInfoLayout.SetContentsMargins(0, 0, 0, 0)
 		pluginInfoLayout.SetSpacing(5)

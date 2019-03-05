@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
@@ -61,9 +62,9 @@ func (s *Signature) showItem(args []interface{}) {
 	text := args[0].(string)
 	s.text = text
 	cursor := args[1].([]interface{})
-	s.comma = reflectToInt(args[2])
-	s.cusor[0] = reflectToInt(cursor[0])
-	s.cusor[1] = reflectToInt(cursor[1])
+	s.comma = util.ReflectToInt(args[2])
+	s.cusor[0] = util.ReflectToInt(cursor[0])
+	s.cusor[1] = util.ReflectToInt(cursor[1])
 	s.update()
 	s.move()
 	s.hide()
@@ -71,7 +72,7 @@ func (s *Signature) showItem(args []interface{}) {
 }
 
 func (s *Signature) pos(args []interface{}) {
-	s.comma = reflectToInt(args[0])
+	s.comma = util.ReflectToInt(args[0])
 	s.update()
 	// s.underline()
 }

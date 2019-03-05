@@ -5,6 +5,8 @@ import (
 	"sort"
 	"sync"
 
+
+	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
@@ -167,7 +169,7 @@ func (l *Locpopup) update(args []interface{}) {
 		if lnumInterface == nil {
 			continue
 		}
-		lnum := reflectToInt(lnumInterface)
+		lnum := util.ReflectToInt(lnumInterface)
 		if lnum == pos[0] {
 			locs = append(locs, loc)
 		}
@@ -188,7 +190,7 @@ func (l *Locpopup) update(args []interface{}) {
 	}
 	var loc map[string]interface{}
 	for _, loc = range locs {
-		if pos[1] >= reflectToInt(loc["col"])-1 {
+		if pos[1] >= util.ReflectToInt(loc["col"])-1 {
 			break
 		}
 	}
@@ -219,5 +221,5 @@ func (s ByCol) Swap(i, j int) {
 
 // Less than
 func (s ByCol) Less(i, j int) bool {
-	return reflectToInt(s[i]["col"]) > reflectToInt(s[j]["col"])
+	return util.ReflectToInt(s[i]["col"]) > util.ReflectToInt(s[j]["col"])
 }
