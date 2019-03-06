@@ -99,6 +99,11 @@ type editorConfig struct {
 	FontFamily         string
 	FontSize           int
 	Linespace          int
+	ExtCmdline         bool
+	ExtMessage         bool
+	ExtWildmenu        bool
+	ExtPopupmenu       bool
+	ExtTabline         bool
 	Clipboard          bool
 	CursorBlink        bool
 	DisableImeInNormal bool
@@ -168,6 +173,11 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.FileExplorer.MaxItems = 50
 	config.Statusline.Left = []string{"mode", "filepath", "filename"}
 	config.Statusline.Right = []string{"message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
+	config.Editor.ExtCmdline = true
+	config.Editor.ExtMessage = true
+	config.Editor.ExtWildmenu = true
+	config.Editor.ExtPopupmenu = true
+	config.Editor.ExtTabline = true
 
 	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {

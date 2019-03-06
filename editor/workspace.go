@@ -304,7 +304,7 @@ func (w *Workspace) configure() {
 		w.drawStatusline = false
 	}
 
-	if editor.config.Tabline.Visible {
+	if editor.config.Tabline.Visible && editor.config.Editor.ExtTabline {
 		w.drawTabline = true
 	} else {
 		w.drawTabline = false
@@ -679,15 +679,15 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 						continue
 					}
 					if name == "wildmenu_show" {
-						o["ext_wildmenu"] = true
+						o["ext_wildmenu"] = editor.config.Editor.ExtWildmenu
 					} else if name == "cmdline_show" {
-						o["ext_cmdline"] = true
+						o["ext_cmdline"] = editor.config.Editor.ExtCmdline
 					} else if name == "msg_chunk" {
-						o["ext_messages"] = true
+						o["ext_messages"] = editor.config.Editor.ExtMessage
 					} else if name == "popupmenu_show" {
-						o["ext_popupmenu"] = true
+						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
 					} else if name == "tabline_update" {
-						o["ext_tabline"] = w.drawTabline
+						o["ext_tabline"] = editor.config.Editor.ExtTabline
 					}
 				}
 			}
