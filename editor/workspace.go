@@ -769,7 +769,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "set_title":
 			titleStr := (update[1].([]interface{}))[0].(string)
 			//editor.window.SetWindowTitle((update[1].([]interface{}))[0].(string))
-			fmt.Println(titleStr)
 			editor.framelesswin.SetTitle(titleStr)
 		case "option_set":
 			w.setOption(update)

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
+	frameless "github.com/akiyosi/goqtframelesswindow"
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
-	frameless "github.com/akiyosi/goqtframelesswindow/qframelesswindow"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -177,8 +177,6 @@ func InitEditor() {
 	//create a window
 	// e.window = widgets.NewQMainWindow(nil, 0)
 	// e.setWindowOptions()
-
-
 
 	e.framelesswin = frameless.NewQFramelessWindow()
 	e.window = e.framelesswin.Window
@@ -447,8 +445,8 @@ func (e *Editor) updateGUIColor() {
 
 	e.workspaces[e.active].updateWorkspaceColor()
 
-	e.framelesswin.SetWidgetColor(e.colors.bg.StringTransparent())
-	e.framelesswin.SetTitleStyle(fmt.Sprintf(" * {color: %s}", e.colors.fg.Hex()))
+	e.framelesswin.SetWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B), e.config.Editor.Transparent)
+	e.framelesswin.SetTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 
 	e.window.SetWindowOpacity(1.0)
 }
