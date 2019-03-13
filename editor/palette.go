@@ -130,7 +130,7 @@ func initPalette() *Palette {
 	}
 
 	resultItems := []*PaletteResultItem{}
-	max := 30
+	max := editor.config.Palette.MaxNumberOfResultItems
 	for i := 0; i < max; i++ {
 		itemWidget := widgets.NewQWidget(nil, 0)
 		itemWidget.SetContentsMargins(0, 0, 0, 0)
@@ -213,7 +213,7 @@ func (p *Palette) resize() {
 
 	itemHeight := p.resultItems[0].widget.SizeHint().Height()
 	p.itemHeight = itemHeight
-	p.showTotal = int(float64(p.ws.height)/float64(itemHeight)*0.5) - 1
+	p.showTotal = int(float64(p.ws.height)/float64(itemHeight)*editor.config.Palette.AreaRatio) - 1
 	if p.ws.uiAttached {
 		fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
 	}
