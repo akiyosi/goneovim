@@ -883,6 +883,9 @@ func (w *Workspace) disableImeInNormal() {
 	case "insert":
 		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 		editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	case "cmdline_normal":
+		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+		editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	default:
 		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
 		editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
