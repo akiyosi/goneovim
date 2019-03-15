@@ -241,6 +241,10 @@ func (s *Screen) updateSize() {
 	}
 }
 
+func (s *Screen) toolTipMove() {
+	s.tooltip.Move(core.NewQPoint2(s.ws.cursor.x, s.ws.cursor.y))
+}
+
 func (s *Screen) toolTipFont(font *Font) {
 	s.tooltip.SetFont(font.fontNew)
 	s.tooltip.SetContentsMargins(0, font.lineSpace/2, 0, font.lineSpace/2)

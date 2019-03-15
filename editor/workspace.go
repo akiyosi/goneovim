@@ -866,6 +866,10 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s.update()
 	w.cursor.update()
 	w.statusline.mode.redraw()
+
+	if s.tooltip.IsVisible() {
+		w.screen.toolTipMove()
+	}
 	if editor.config.ScrollBar.Visible {
 		w.scrollBar.update()
 	}
@@ -1209,6 +1213,9 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 		x := int(float64(col)*w.font.truewidth) - 1
 		y := row*w.font.lineHeight + w.tabline.height + w.tabline.marginTop + w.tabline.marginBottom
 		imrect.SetRect(x, y, 1, w.font.lineHeight)
+
+		w.screen.toolTipMove()
+
 		return core.NewQVariant33(imrect)
 	}
 	return qv

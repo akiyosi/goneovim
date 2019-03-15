@@ -123,5 +123,4 @@ func (c *Cursor) update() {
 		c.y = row * c.ws.font.lineHeight
 		c.move()
 	}
-	c.ws.screen.tooltip.Move(core.NewQPoint2(c.x, c.y))
 }
