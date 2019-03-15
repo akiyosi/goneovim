@@ -242,7 +242,17 @@ func (s *Screen) updateSize() {
 }
 
 func (s *Screen) toolTipMove() {
-	s.tooltip.Move(core.NewQPoint2(s.ws.cursor.x, s.ws.cursor.y))
+	var x, y int
+	if s.ws.palette.widget.IsVisible() {
+		// TODO: tooltip 
+		x = s.ws.palette.widget.X() + s.ws.palette.cursor.Pos().X() - 20
+		y = s.ws.palette.cursor.Pos().Y()
+	} else {
+		x = s.ws.cursor.x
+		y = s.ws.cursor.y
+	}
+
+	s.tooltip.Move(core.NewQPoint2(x, y))
 }
 
 func (s *Screen) toolTipFont(font *Font) {
