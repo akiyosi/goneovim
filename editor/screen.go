@@ -241,17 +241,29 @@ func (s *Screen) updateSize() {
 	}
 }
 
-func (s *Screen) toolTipMove() {
+func (s *Screen) toolTipPos() (int, int) {
 	var x, y int
+	w := s.ws
 	if s.ws.palette.widget.IsVisible() {
-		// TODO: tooltip 
-		x = s.ws.palette.widget.X() + s.ws.palette.cursor.Pos().X() - 20
-		y = s.ws.palette.cursor.Pos().Y()
+		s.tooltip.SetParent(s.ws.palette.widget)
+	        font :=  gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false)
+		s.tooltip.SetFont(font)
+		// x = s.ws.palette.widget.X() + s.ws.palette.cursor.Pos().X() - 48
+		x = w.palette.cursorX + w.palette.patternPadding + 8
+		// y = s.ws.palette.cursor.Pos().Y() + 8
+		y = w.palette.patternPadding + 8
 	} else {
-		x = s.ws.cursor.x
-		y = s.ws.cursor.y
+		s.tooltip.SetParent(s.widget)
+		s.toolTipFont(w.font)
+		row := s.cursor[0]
+		col := s.cursor[1]
+		x = int(float64(col) * w.font.truewidth)
+		y = row * w.font.lineHeight
 	}
+	return x, y
+}
 
+func (s *Screen) toolTipMove(x int, y int) {
 	s.tooltip.Move(core.NewQPoint2(x, y))
 }
 

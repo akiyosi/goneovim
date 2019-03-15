@@ -138,7 +138,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.statusline = initStatuslineNew()
 	w.statusline.ws = w
 	w.screen = newScreen()
-	w.screen.toolTipFont(w.font)
 	w.screen.ws = w
 	w.scrollBar = newScrollBar()
 	w.scrollBar.ws = w
@@ -868,7 +867,8 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	w.statusline.mode.redraw()
 
 	if s.tooltip.IsVisible() {
-		w.screen.toolTipMove()
+		x, y := w.screen.toolTipPos()
+		w.screen.toolTipMove(x, y)
 	}
 	if editor.config.ScrollBar.Visible {
 		w.scrollBar.update()
@@ -1207,14 +1207,14 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
 	qv := core.NewQVariant()
 	if query == core.Qt__ImCursorRectangle {
+		x, y := w.screen.toolTipPos()
+		w.screen.toolTipMove(x, y)
+
 		imrect := core.NewQRect()
 		row := w.screen.cursor[0]
-		col := w.screen.cursor[1]
-		x := int(float64(col)*w.font.truewidth) - 1
-		y := row*w.font.lineHeight + w.tabline.height + w.tabline.marginTop + w.tabline.marginBottom
-		imrect.SetRect(x, y, 1, w.font.lineHeight)
-
-		w.screen.toolTipMove()
+		candX := x + w.palette.widget.Pos().X()
+		candY := row*w.font.lineHeight + w.tabline.height + w.tabline.marginTop + w.tabline.marginBottom
+		imrect.SetRect(candX, candY, 1, w.font.lineHeight)
 
 		return core.NewQVariant33(imrect)
 	}
