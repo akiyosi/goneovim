@@ -867,7 +867,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	w.statusline.mode.redraw()
 
 	if s.tooltip.IsVisible() {
-		x, y := w.screen.toolTipPos()
+		x, y, _, _ := w.screen.toolTipPos()
 		w.screen.toolTipMove(x, y)
 	}
 	if editor.config.ScrollBar.Visible {
@@ -1207,13 +1207,9 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
 	qv := core.NewQVariant()
 	if query == core.Qt__ImCursorRectangle {
-		x, y := w.screen.toolTipPos()
+		x, y, candX, candY := w.screen.toolTipPos()
 		w.screen.toolTipMove(x, y)
-
 		imrect := core.NewQRect()
-		row := w.screen.cursor[0]
-		candX := x + w.palette.widget.Pos().X()
-		candY := row*w.font.lineHeight + w.tabline.height + w.tabline.marginTop + w.tabline.marginBottom
 		imrect.SetRect(candX, candY, 1, w.font.lineHeight)
 
 		return core.NewQVariant33(imrect)

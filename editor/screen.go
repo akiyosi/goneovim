@@ -241,17 +241,17 @@ func (s *Screen) updateSize() {
 	}
 }
 
-func (s *Screen) toolTipPos() (int, int) {
-	var x, y int
+func (s *Screen) toolTipPos() (int, int, int, int) {
+	var x, y, candX, candY int
 	w := s.ws
 	if s.ws.palette.widget.IsVisible() {
 		s.tooltip.SetParent(s.ws.palette.widget)
-	        font :=  gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false)
+		font := gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false)
 		s.tooltip.SetFont(font)
-		// x = s.ws.palette.widget.X() + s.ws.palette.cursor.Pos().X() - 48
 		x = w.palette.cursorX + w.palette.patternPadding + 8
-		// y = s.ws.palette.cursor.Pos().Y() + 8
+		candX = x + w.palette.widget.Pos().X()
 		y = w.palette.patternPadding + 8
+		candY = y + w.palette.widget.Pos().Y()
 	} else {
 		s.tooltip.SetParent(s.widget)
 		s.toolTipFont(w.font)
@@ -259,8 +259,10 @@ func (s *Screen) toolTipPos() (int, int) {
 		col := s.cursor[1]
 		x = int(float64(col) * w.font.truewidth)
 		y = row * w.font.lineHeight
+		candX = int(float64(col) * w.font.truewidth)
+		candY = row*w.font.lineHeight + w.tabline.height + w.tabline.marginTop + w.tabline.marginBottom
 	}
-	return x, y
+	return x, y, candX, candY
 }
 
 func (s *Screen) toolTipMove(x int, y int) {
@@ -427,7 +429,7 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__ArrowCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
-	
+
 	inp := s.convertMouse(event)
 	if inp == "" {
 		return

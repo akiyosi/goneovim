@@ -328,7 +328,7 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 	case "class", "type", "struct":
 		icon := editor.getSvg("lsp_class", nil)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "const","module", "keyword", "package":
+	case "const", "module", "keyword", "package":
 		icon := editor.getSvg("lsp_"+kindText, nil)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	default:

@@ -16,8 +16,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/akiyosi/gonvim/util"
 	"github.com/BurntSushi/toml"
+	"github.com/akiyosi/gonvim/util"
 	"github.com/akiyosi/tomlwriter"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"

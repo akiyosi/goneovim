@@ -34,7 +34,7 @@ import (
 // [palette]
 // AreaRatio = 0.8
 // MaxNumberOfResultItems = 40
-// 
+//
 // [statusLine]
 // visible = true
 // # textLabel / icon / background / none
@@ -100,7 +100,7 @@ type gonvimConfig struct {
 }
 
 type paletteConfig struct {
-	AreaRatio float64
+	AreaRatio              float64
 	MaxNumberOfResultItems int
 }
 type editorConfig struct {
