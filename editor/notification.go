@@ -103,7 +103,10 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	closeIcon.ConnectLeaveEvent(func(event *core.QEvent) {
 		svgContent := e.getSvg("cross", nil)
 		closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		gui.QGuiApplication_RestoreOverrideCursor()
+		// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
+		cursor := gui.NewQCursor()
+		cursor.SetShape(core.Qt__ArrowCursor)
+		gui.QGuiApplication_SetOverrideCursor(cursor)
 	})
 
 	messageLayout.AddWidget(levelIcon, 0, 0)

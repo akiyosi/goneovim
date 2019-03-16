@@ -128,7 +128,10 @@ func (n *ActivityItem) leaveEvent(event *core.QEvent) {
 		svgContent = editor.getSvg(n.text, inactiveFg)
 	}
 	n.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	gui.QGuiApplication_RestoreOverrideCursor()
+	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__ArrowCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 }
 
 func (n *ActivityItem) mouseEvent(event *gui.QMouseEvent) {

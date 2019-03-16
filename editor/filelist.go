@@ -232,7 +232,10 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 		svgModified = editor.getSvg("circle", c)
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
-	gui.QGuiApplication_RestoreOverrideCursor()
+	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__ArrowCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 }
 
 func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
