@@ -13,10 +13,10 @@ import (
 	"time"
 
 	gonvimUtil "github.com/akiyosi/gonvim/util"
+	"github.com/denormal/go-gitignore"
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/util"
 	"github.com/neovim/go-client/nvim"
-	"github.com/denormal/go-gitignore"
 )
 
 const (
@@ -26,26 +26,26 @@ const (
 
 // Fuzzy is
 type Fuzzy struct {
-	nvim          *nvim.Nvim
-	options       map[string]interface{}
-	source        []string
-	sourceNew     chan string
-	max           int
-	selected      int
-	pattern       string
-	cursor        int
-	slab          *util.Slab
-	start         int
-	result        []*Output
-	scoreMutext   *sync.Mutex
-	scoreNew      bool
-	cancelled     bool
-	cancelChan    chan bool
-	lastOutput    []string
-	lastMatch     [][]int
-	resultRWMtext sync.RWMutex
-	running       bool
-	pwd           string
+	nvim               *nvim.Nvim
+	options            map[string]interface{}
+	source             []string
+	sourceNew          chan string
+	max                int
+	selected           int
+	pattern            string
+	cursor             int
+	slab               *util.Slab
+	start              int
+	result             []*Output
+	scoreMutext        *sync.Mutex
+	scoreNew           bool
+	cancelled          bool
+	cancelChan         chan bool
+	lastOutput         []string
+	lastMatch          [][]int
+	resultRWMtext      sync.RWMutex
+	running            bool
+	pwd                string
 	isRemoteAttachment bool
 }
 
@@ -60,10 +60,10 @@ type Output struct {
 func RegisterPlugin(nvim *nvim.Nvim, isRemoteAttachment bool) {
 	nvim.Subscribe("GonvimFuzzy")
 	shim := &Fuzzy{
-		nvim:        nvim,
-		slab:        util.MakeSlab(slab16Size, slab32Size),
-		scoreMutext: &sync.Mutex{},
-		max:         20,
+		nvim:               nvim,
+		slab:               util.MakeSlab(slab16Size, slab32Size),
+		scoreMutext:        &sync.Mutex{},
+		max:                20,
 		isRemoteAttachment: isRemoteAttachment,
 	}
 	nvim.RegisterHandler("GonvimFuzzy", func(args ...interface{}) {
@@ -312,7 +312,7 @@ func (s *Fuzzy) processSource() {
 						}
 						if f.IsDir() {
 							if f.Name() == ".git" {
-							        continue
+								continue
 							}
 							folders = append(folders, filepath.Join(pwd, f.Name()))
 							continue
@@ -350,14 +350,14 @@ func (s *Fuzzy) processSource() {
 				// --
 				folders := []string{}
 				ignore, _ := gitignore.NewRepository(pwd)
-		 		command := fmt.Sprintf("globpath('%s', '{,.}*', 1, 0)", pwd)
+				command := fmt.Sprintf("globpath('%s', '{,.}*', 1, 0)", pwd)
 				files := ""
-		 		s.nvim.Eval(command, &files)
+				s.nvim.Eval(command, &files)
 				for {
 					for _, file := range strings.Split(files, "\n") {
-				 		if s.cancelled {
-				 			return
-				 		}
+						if s.cancelled {
+							return
+						}
 
 						file = file[2:]
 
@@ -368,41 +368,41 @@ func (s *Fuzzy) processSource() {
 
 						// If it is directory
 						if file[len(file)-1] == '/' {
-				 			if file == ".git/" {
-				 			        continue
-				 			}
-				 			folders = append(folders, file)
+							if file == ".git/" {
+								continue
+							}
+							folders = append(folders, file)
 							continue
 						}
 
 						// Skip gitignore files
 						if !s.isRemoteAttachment {
-				 			match := ignore.Relative(file, true)
-				 			if match != nil {
+							match := ignore.Relative(file, true)
+							if match != nil {
 								fmt.Println("ignore!")
-				 				continue
-				 			}
+								continue
+							}
 						}
 
-				 		select {
-				 		case sourceNew <- file:
-				 		case <-cancelChan:
-				 			return
-				 		}
+						select {
+						case sourceNew <- file:
+						case <-cancelChan:
+							return
+						}
 					}
-				 	for {
-				 		if len(folders) == 0 {
-				 			return
-				 		}
-		 				command = fmt.Sprintf("globpath('./%s', '{,.}*', 1, 0)", folders[0])
-				 		folders = folders[1:]
-		 				s.nvim.Eval(command, &files)
-				 		if len(files) == 0 {
-				 			continue
-				 		} else {
-				 			break
-				 		}
-				 	}
+					for {
+						if len(folders) == 0 {
+							return
+						}
+						command = fmt.Sprintf("globpath('./%s', '{,.}*', 1, 0)", folders[0])
+						folders = folders[1:]
+						s.nvim.Eval(command, &files)
+						if len(files) == 0 {
+							continue
+						} else {
+							break
+						}
+					}
 
 				}
 			}
@@ -722,4 +722,3 @@ func expand(path string) (string, error) {
 	}
 	return filepath.Join(usr.HomeDir, path[1:]), nil
 }
-
