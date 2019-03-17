@@ -978,6 +978,8 @@ func (w *Workspace) setOption(update []interface{}) {
 			w.guiLinespace(val)
 		case "showtabline":
 		case "termguicolors":
+		case "pumblend":
+			w.popup.setPumblend(val)
 		default:
 		}
 	}

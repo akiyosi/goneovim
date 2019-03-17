@@ -2,6 +2,7 @@ package editor
 
 import (
 	"errors"
+	"strconv"
 	"fmt"
 
 	"github.com/therecipe/qt/core"
@@ -140,9 +141,38 @@ func (p *PopupMenu) updateFont(font *Font) {
 func (p *PopupMenu) setColor() {
 	fg := editor.colors.widgetFg.String()
 	inactiveFg := editor.colors.inactiveFg.String()
-	bg := editor.colors.widgetBg.String()
+	bg := editor.colors.widgetBg
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
 	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: %s; color: %s;} #detailpopup { color: %s; }", bg, fg, inactiveFg))
+	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, 1.0); color: %s;} #detailpopup { color: %s; }", bg.R, bg.G, bg.B, fg, inactiveFg))
+}
+
+func (p *PopupMenu) setPumblend(arg interface{}) {
+	var pumblend int
+	var err error
+	switch val := arg.(type) {
+	case string:
+		pumblend, err = strconv.Atoi(val)
+		if err != nil {
+			return
+		}
+	case int32: // can't combine these in a type switch without compile error
+		pumblend = int(val)
+	case int64:
+		pumblend = int(val)
+	default:
+		return
+	}
+	alpha := float64(100 - pumblend) / float64(100)
+	if alpha < 0 {
+		alpha = 0
+	}
+
+	fg := editor.colors.widgetFg.String()
+	inactiveFg := editor.colors.inactiveFg.String()
+	bg := editor.colors.widgetBg
+	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
+	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #detailpopup { color: %s; }", bg.R, bg.G, bg.B, alpha, fg, inactiveFg))
 }
 
 func (p *PopupMenu) showItems(args []interface{}) {
