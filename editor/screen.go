@@ -425,11 +425,6 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 }
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
-	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
-	cursor := gui.NewQCursor()
-	cursor.SetShape(core.Qt__ArrowCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
-
 	inp := s.convertMouse(event)
 	if inp == "" {
 		return
