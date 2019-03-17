@@ -180,6 +180,8 @@ func newGonvimConfig(home string) gonvimConfig {
 	var config gonvimConfig
 
 	// Set default value
+	config.Editor.Width = 800
+	config.Editor.Height = 600
 	config.FileExplorer.MaxItems = 50
 	config.Statusline.Left = []string{"mode", "filepath", "filename"}
 	config.Statusline.Right = []string{"message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
@@ -189,14 +191,12 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.Editor.ExtPopupmenu = true
 	config.Editor.ExtTabline = true
 
-	config.Palette.AreaRatio = 0.5
+	config.Palette.AreaRatio = 0.6
 	config.Palette.MaxNumberOfResultItems = 30
 
 	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
 		config.Editor.FontSize = 14
-		config.Editor.Width = 800
-		config.Editor.Height = 600
 		config.Statusline.Visible = true
 		config.Statusline.ModeIndicatorType = "textLabel"
 		config.Tabline.Visible = true
