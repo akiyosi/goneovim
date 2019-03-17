@@ -138,7 +138,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.statusline = initStatuslineNew()
 	w.statusline.ws = w
 	w.screen = newScreen()
-	w.screen.toolTipFont(w.font)
 	w.screen.ws = w
 	w.scrollBar = newScrollBar()
 	w.scrollBar.ws = w
@@ -321,6 +320,21 @@ func (w *Workspace) configure() {
 	}
 }
 
+func (w *Workspace) readInitVim() {
+	var guifont string
+	w.nvim.Option("guifont", &guifont)
+	if guifont != "" {
+		w.guiFont(guifont)
+	}
+
+	var linespace int
+	w.nvim.Option("linespace", &linespace)
+	if linespace != 0 {
+		w.guiLinespace(linespace)
+	}
+
+}
+
 func (w *Workspace) attachUI(path string) error {
 	w.nvim.Subscribe("Gui")
 	go w.initGonvim()
@@ -341,6 +355,7 @@ func (w *Workspace) attachUI(path string) error {
 		editor.close()
 		return err
 	}
+	go w.readInitVim()
 
 	return nil
 }
@@ -852,6 +867,11 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s.update()
 	w.cursor.update()
 	w.statusline.mode.redraw()
+
+	if s.tooltip.IsVisible() {
+		x, y, _, _ := w.screen.toolTipPos()
+		w.screen.toolTipMove(x, y)
+	}
 	if editor.config.ScrollBar.Visible {
 		w.scrollBar.update()
 	}
@@ -867,6 +887,9 @@ func (w *Workspace) disableImeInNormal() {
 	}
 	switch w.mode {
 	case "insert":
+		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+		editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	case "cmdline_normal":
 		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 		editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	default:
@@ -1186,12 +1209,11 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
 	qv := core.NewQVariant()
 	if query == core.Qt__ImCursorRectangle {
+		x, y, candX, candY := w.screen.toolTipPos()
+		w.screen.toolTipMove(x, y)
 		imrect := core.NewQRect()
-		row := w.screen.cursor[0]
-		col := w.screen.cursor[1]
-		x := int(float64(col)*w.font.truewidth) - 1
-		y := row*w.font.lineHeight + w.tabline.height + w.tabline.marginTop + w.tabline.marginBottom
-		imrect.SetRect(x, y, 1, w.font.lineHeight)
+		imrect.SetRect(candX, candY, 1, w.font.lineHeight)
+
 		return core.NewQVariant33(imrect)
 	}
 	return qv

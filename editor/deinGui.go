@@ -16,8 +16,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/akiyosi/gonvim/util"
 	"github.com/BurntSushi/toml"
+	"github.com/akiyosi/gonvim/util"
 	"github.com/akiyosi/tomlwriter"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
@@ -1215,7 +1215,10 @@ func (d *DeinPluginItem) leaveWidget(event *core.QEvent) {
 	// bg := editor.colors.sideBarBg.String()
 	// d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", bg))
 	d.widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
-	gui.QGuiApplication_RestoreOverrideCursor()
+	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__ArrowCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 }
 
 func (p *Plugin) enterWidget(event *core.QEvent) {
@@ -1229,7 +1232,10 @@ func (p *Plugin) enterWidget(event *core.QEvent) {
 func (p *Plugin) leaveWidget(event *core.QEvent) {
 	// p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", editor.colors.sideBarBg.StringTransparent()))
 	p.widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
-	gui.QGuiApplication_RestoreOverrideCursor()
+	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__ArrowCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 }
 
 func (p *Plugin) enterButton(event *core.QEvent) {
@@ -1490,7 +1496,10 @@ func (side *DeinSide) enterConfigIcon(event *core.QEvent) {
 func (side *DeinSide) leaveConfigIcon(event *core.QEvent) {
 	svgConfigContent := editor.getSvg("configfile", editor.colors.inactiveFg)
 	side.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
-	gui.QGuiApplication_RestoreOverrideCursor()
+	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__ArrowCursor)
+	gui.QGuiApplication_SetOverrideCursor(cursor)
 }
 
 func (side *DeinSide) pressConfigIcon(event *gui.QMouseEvent) {

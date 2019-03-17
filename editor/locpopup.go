@@ -5,7 +5,6 @@ import (
 	"sort"
 	"sync"
 
-
 	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"

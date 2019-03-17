@@ -241,6 +241,34 @@ func (s *Screen) updateSize() {
 	}
 }
 
+func (s *Screen) toolTipPos() (int, int, int, int) {
+	var x, y, candX, candY int
+	w := s.ws
+	if s.ws.palette.widget.IsVisible() {
+		s.tooltip.SetParent(s.ws.palette.widget)
+		font := gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false)
+		s.tooltip.SetFont(font)
+		x = w.palette.cursorX + w.palette.patternPadding + 8
+		candX = x + w.palette.widget.Pos().X()
+		y = w.palette.patternPadding + 8
+		candY = y + w.palette.widget.Pos().Y()
+	} else {
+		s.tooltip.SetParent(s.widget)
+		s.toolTipFont(w.font)
+		row := s.cursor[0]
+		col := s.cursor[1]
+		x = int(float64(col) * w.font.truewidth)
+		y = row * w.font.lineHeight
+		candX = int(float64(col) * w.font.truewidth)
+		candY = row*w.font.lineHeight + w.tabline.height + w.tabline.marginTop + w.tabline.marginBottom
+	}
+	return x, y, candX, candY
+}
+
+func (s *Screen) toolTipMove(x int, y int) {
+	s.tooltip.Move(core.NewQPoint2(x, y))
+}
+
 func (s *Screen) toolTipFont(font *Font) {
 	s.tooltip.SetFont(font.fontNew)
 	s.tooltip.SetContentsMargins(0, font.lineSpace/2, 0, font.lineSpace/2)

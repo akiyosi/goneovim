@@ -32,6 +32,10 @@ import (
 //   endif
 // '''
 //
+// [palette]
+// AreaRatio = 0.8
+// MaxNumberOfResultItems = 40
+//
 // [statusLine]
 // visible = true
 // # textLabel / icon / background / none
@@ -47,6 +51,7 @@ import (
 //
 // [tabline]
 // visible = true
+//
 //
 // [lint]
 // visible = true
@@ -82,6 +87,7 @@ import (
 // tomlFile
 type gonvimConfig struct {
 	Editor       editorConfig
+	Palette      paletteConfig
 	Statusline   statusLineConfig
 	Tabline      tabLineConfig
 	Lint         lintConfig
@@ -94,6 +100,10 @@ type gonvimConfig struct {
 	Dein         deinConfig
 }
 
+type paletteConfig struct {
+	AreaRatio              float64
+	MaxNumberOfResultItems int
+}
 type editorConfig struct {
 	Width              int
 	Height             int
@@ -172,6 +182,8 @@ func newGonvimConfig(home string) gonvimConfig {
 	var config gonvimConfig
 
 	// Set default value
+	config.Editor.Width = 800
+	config.Editor.Height = 600
 	config.FileExplorer.MaxItems = 50
 	config.Editor.Transparent = 0.5
 	config.Statusline.Left = []string{"mode", "filepath", "filename"}
@@ -182,11 +194,12 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.Editor.ExtPopupmenu = true
 	config.Editor.ExtTabline = true
 
+	config.Palette.AreaRatio = 0.6
+	config.Palette.MaxNumberOfResultItems = 30
+
 	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
 		config.Editor.FontSize = 14
-		config.Editor.Width = 800
-		config.Editor.Height = 600
 		config.Statusline.Visible = true
 		config.Statusline.ModeIndicatorType = "textLabel"
 		config.Tabline.Visible = true
