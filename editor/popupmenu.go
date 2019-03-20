@@ -85,6 +85,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		kindlayout := widgets.NewQHBoxLayout()
 		kindlayout.SetContentsMargins(editor.iconSize/2, 0, editor.iconSize/2, 0)
 		kindWidget.SetLayout(kindlayout)
+		kindWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 		kindIcon := svg.NewQSvgWidget(nil)
 		kindIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		kindlayout.AddWidget(kindIcon, 0, 0)
@@ -92,10 +93,13 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		menu := widgets.NewQLabel(nil, 0)
 		menu.SetContentsMargins(1, margin, margin, margin)
 		menu.SetFont(font.fontNew)
+		menu.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+
 		detail := widgets.NewQLabel(nil, 0)
 		detail.SetContentsMargins(margin, margin, margin, margin)
 		detail.SetFont(font.fontNew)
 		detail.SetObjectName("detailpopup")
+		detail.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 		layout.AddWidget(kindWidget, i, 0, 0)
 		layout.AddWidget(menu, i, 1, 0)
@@ -283,13 +287,20 @@ func (p *PopupItem) updateMenu() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		if p.selected {
-			p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
-			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
-			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
+			go func() {
+				p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
+				p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
+				p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
+			}()
 		} else {
-			p.kindWidget.SetStyleSheet("")
-			p.menuLabel.SetStyleSheet("")
-			p.detailLabel.SetStyleSheet("")
+			go func() {
+				p.kindWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+				p.menuLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+				p.detailLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+			}()
+			// p.kindWidget.SetStyleSheet("")
+			// p.menuLabel.SetStyleSheet("")
+			// p.detailLabel.SetStyleSheet("")
 		}
 	}
 	if p.menuTextRequest != p.menuText {
