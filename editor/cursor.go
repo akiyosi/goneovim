@@ -2,7 +2,6 @@ package editor
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
@@ -17,7 +16,6 @@ type Cursor struct {
 	y      int
 	isShut bool
 	color  *RGBA
-	mu     sync.Mutex
 }
 
 func initCursorNew() *Cursor {
@@ -65,9 +63,6 @@ func (c *Cursor) move() {
 }
 
 func (c *Cursor) updateColor() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
 	s := c.ws.screen.colorContent
