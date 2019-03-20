@@ -309,7 +309,6 @@ func (p *PopupItem) updateMenu() {
 		p.detailText = p.detailTextRequest
 		p.detailLabel.SetText(p.detailText)
 	}
-	p.kindWidget.AdjustSize()
 	p.menuLabel.AdjustSize()
 	p.detailLabel.AdjustSize()
 }
