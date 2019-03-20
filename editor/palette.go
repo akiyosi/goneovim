@@ -166,10 +166,10 @@ func (p *Palette) setColor() {
 	fg := editor.colors.widgetFg.String()
 	bg := editor.colors.widgetBg.String()
 	inputArea := editor.colors.widgetInputArea.String()
-	sbg := editor.colors.scrollBarBg.String()
+	inactiveFg := editor.colors.inactiveFg.String()
 	p.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", fg))
 	p.widget.SetStyleSheet(fmt.Sprintf(" QWidget#palette { border: 1px solid %s; } .QWidget { background-color: %s; } * { color: %s; } ", bg, bg, fg))
-	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", sbg))
+	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
 	p.pattern.SetStyleSheet(fmt.Sprintf("background-color: %s;", inputArea))
 }
 

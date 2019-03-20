@@ -388,20 +388,20 @@ func (c *ColorPalette) update() {
 	bg := c.bg
 	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
 	c.selectedBg = bg.brend(rgbAccent, 0.3)
-	c.inactiveFg = warpColor(bg, -40)
-	c.comment = warpColor(fg, -40)
+	c.inactiveFg = warpColor(bg, -80)
+	c.comment = warpColor(fg, -80)
 	c.abyss = warpColor(bg, 5)
 	c.activityBarFg = fg
-	c.activityBarBg = warpColor(bg, -5)
-	c.sideBarFg = warpColor(fg, -3)
-	c.sideBarBg = warpColor(bg, -3)
-	c.sideBarSelectedItemBg = warpColor(bg, -7)
-	c.scrollBarFg = warpColor(bg, -10)
+	c.activityBarBg = warpColor(bg, -10)
+	c.sideBarFg = warpColor(fg, -5)
+	c.sideBarBg = warpColor(bg, -5)
+	c.sideBarSelectedItemBg = warpColor(bg, -15)
+	c.scrollBarFg = warpColor(bg, -20)
 	c.scrollBarBg = bg
-	c.widgetFg = warpColor(fg, 3)
-	c.widgetBg = warpColor(bg, -4)
-	c.widgetInputArea = warpColor(bg, -14)
-	c.minimapCurrentRegion = warpColor(bg, 10)
+	c.widgetFg = warpColor(fg, 5)
+	c.widgetBg = warpColor(bg, -10)
+	c.widgetInputArea = warpColor(bg, -30)
+	c.minimapCurrentRegion = warpColor(bg, 20)
 }
 
 func (e *Editor) updateGUIColor() {
