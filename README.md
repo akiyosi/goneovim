@@ -13,7 +13,9 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 <img src="https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/gopher-with-neovim.png" width="250" align="top" >
 </p>
 
+
 <br />
+
 ## Table of contents
 
 - [Features](#features)
