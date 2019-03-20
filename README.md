@@ -13,7 +13,8 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 <img src="https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/gopher-with-neovim.png" width="250" align="top" >
 </p>
 
-# Table of contents
+<br />
+## Table of contents
 
 - [Features](#features)
 - [Getting started](#getting-started)
@@ -24,7 +25,11 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 - [License](#license)
 - [Credits](#credits)
 
-# Features
+---
+<br />
+
+
+## Features
 
 * [Fuzzy Finder](https://github.com/akiyosi/gonvim/wiki/Features#fuzzy-finder-in-gui)
 * [Markdown Preview](https://github.com/akiyosi/gonvim/wiki/Features#markdown-preview)
@@ -33,14 +38,15 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 * [Remote attachment](https://github.com/akiyosi/gonvim/wiki/Configurations#remote-attachment)
 
 
-# Getting Started
+## Getting Started
 Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](https://github.com/akiyosi/gonvim/releases) page.
 
 
 > Note: MacOS or Linux users need to install neovim and deploy `nvim` under the `$PATH`.
 <br />[Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
-### 🍏MacOS
+* MacOS 🍏
+
 *gonvim.app* looks for the nvim process from the following.
 
 ```
@@ -56,21 +62,21 @@ tar xf nvim-macos.tar.gz
 ln -s /path/to/bin/nvim /usr/local/bin/nvim
 ```
 
-### 🐧Linux
+* Linux 🐧
 
 Execute `/path/to/Gonvim-0.X.X-linux/gonvim.sh`
 
-### 🏞Windows
+* Windows 🏞
 
 Execute `/path/to/Gonvim-0.X.X-windows/gonvim.exe`
 
 
 
-# Configurations
+## Configurations
 
 | application | config file |
 |:------------|:------------|
-| Gonvim (GUI front end of neovim) | `~/.gonvim/setting.toml` |
+| Gonvim (GUI frontend of neovim) | `~/.gonvim/setting.toml` |
 | Neovim      | `$XDG_CONFIG_HOME/nvim/init.vim` |
 
 where the default value of `$XDG_CONFIG_HOME` is the below.
@@ -80,26 +86,25 @@ where the default value of `$XDG_CONFIG_HOME` is the below.
 | Unix    |  `~/.config`         |
 | Windows |  `~/AppData/Local`   |
 
-### neovim configuration for gonvim
+---
 
-The sample configuration is below.
+* neovim configuration for gonvim
 
-[gonvim-init.vim](https://github.com/akiyosi/gonvim-init.vim)
+The sample configuration is [gonvim-init.vim](https://github.com/akiyosi/gonvim-init.vim)
 
-### gonvim configuration
+* gonvim configuration
 
 For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/gonvim/wiki/Configurations)
 
 
 
-
-# Development
+## Development
 
 * [Development](https://github.com/akiyosi/gonvim/wiki/Development)
 
 
 
-# Contributing
+## Contributing
 Gonvim welcomes contribution. If you want to add your changes to the Gonvim, Please following steps
 
 1. **Fork this repository**
@@ -108,18 +113,18 @@ Gonvim welcomes contribution. If you want to add your changes to the Gonvim, Ple
 1. **Create a pull request** against the `master` branch of the Gonvim repository.
 
 
-# Similar projects
+## Similar projects
 
 * [Oni](https://github.com/onivim/oni)
 * [Veonim](https://github.com/veonim/veonim)
 
 
 
-# License
+## License
 Gonvim is released under MIT license
 
 
-# Credits
+## Credits
 
 * Gonvim was created by dzhou121 ([https://github.com/dzhou121/gonvim](https://github.com/dzhou121/gonvim))
 * Gonvim application icon was made using [gopher-vector](https://github.com/golang-samples/gopher-vector) made by Takuya Ueda ([https://twitter.com/tenntenn](https://twitter.com/tenntenn)). The original gopher was designed by Renee French [http://reneefrench.blogspot.com/](http://reneefrench.blogspot.com/).
