@@ -124,6 +124,8 @@ type StatuslineMode struct {
 	s    *Statusline
 	mode string
 	text string
+
+	fg   *RGBA
 	bg   *RGBA
 
 	c *StatuslineComponent
@@ -624,51 +626,49 @@ func (s *StatuslineMode) updateStatusline() {
 }
 
 func (s *StatuslineMode) redraw() {
-	if s.s.ws.mode == s.mode {
+	if s.s.ws.mode == s.mode && s.fg.equals(s.s.ws.foreground) {
 		return
 	}
-
-	fg := s.s.ws.foreground
-
+	s.fg = s.s.ws.foreground
 	s.mode = s.s.ws.mode
 	text := s.mode
 	bg := newRGBA(102, 153, 204, 1)
+	iconColor := warpColor(s.fg, 10)
 	switch s.mode {
 	case "normal":
 		text = "Normal"
 		bg = hexToRGBA(editor.config.Statusline.NormalModeColor)
-		// svgContent := editor.getSvg("hjkl", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
-		svgContent := editor.getSvg("thought", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgContent := editor.getSvg("thought", iconColor)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "cmdline_normal":
 		text = "Normal"
 		bg = hexToRGBA(editor.config.Statusline.CommandModeColor)
-		svgContent := editor.getSvg("command", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgContent := editor.getSvg("command", iconColor)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "insert":
 		text = "Insert"
 		bg = hexToRGBA(editor.config.Statusline.InsertModeColor)
-		svgContent := editor.getSvg("edit", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgContent := editor.getSvg("edit", iconColor)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "visual":
 		text = "Visual"
 		bg = hexToRGBA(editor.config.Statusline.VisualModeColor)
-		svgContent := editor.getSvg("select", newRGBA(warpColor(fg, 30).R, warpColor(fg, 30).G, warpColor(fg, 30).B, 1))
+		svgContent := editor.getSvg("select", iconColor)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "replace":
 		text = "Replace"
 		bg = hexToRGBA(editor.config.Statusline.ReplaceModeColor)
-		svgContent := editor.getSvg("replace", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgContent := editor.getSvg("replace", iconColor)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-3, 1, false))
 	case "terminal-input":
 		text = "Terminal"
 		bg = hexToRGBA(editor.config.Statusline.TerminalModeColor)
-		svgContent := editor.getSvg("terminal", newRGBA(warpColor(fg, 10).R, warpColor(fg, 10).G, warpColor(fg, 10).B, 1))
+		svgContent := editor.getSvg("terminal", iconColor)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-4, 1, false))
 	default:
