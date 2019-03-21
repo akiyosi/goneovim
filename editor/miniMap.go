@@ -246,13 +246,21 @@ func (m *MiniMap) paint(vqp *gui.QPaintEvent) {
 	cols := int(math.Ceil(float64(right)/font.truewidth)) - col
 
 	p := gui.NewQPainter2(m.widget)
+	p.SetBackgroundMode(core.Qt__TransparentMode)
+	bg := m.ws.background
+	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
+	if transparent < 255 {
+		transparent = 0
+	}
 	if m.background != nil {
-		p.FillRect5(
+		// p.FillRect5(
+		p.FillRect2(
 			left,
 			top,
 			width,
 			height,
-			m.background.QColor(),
+			// m.background.QColor(),
+			gui.NewQBrush3(gui.NewQColor3(bg.R, bg.G, bg.B, transparent), core.Qt__SolidPattern),
 		)
 	}
 
@@ -876,6 +884,18 @@ func (m *MiniMap) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int
 	}
 }
 
+func (m *MiniMap) transparent(bg *RGBA) int {
+	t := 255
+	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
+
+	if m.ws.background.equals(bg) {
+		t = 0
+	} else {
+		t = transparent
+	}
+	return t
+}
+
 func (m *MiniMap) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 	rectF := core.NewQRectF()
 	if y >= len(m.content) {
@@ -916,9 +936,9 @@ func (m *MiniMap) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos 
 						float64(end-start+1)*m.font.truewidth,
 						float64(m.font.lineHeight),
 					)
-					p.FillRect4(
+					p.FillRect(
 						rectF,
-						gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
+						gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, m.transparent(lastBg)), core.Qt__SolidPattern),
 					)
 
 					// start a new one
@@ -935,9 +955,9 @@ func (m *MiniMap) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos 
 					float64(end-start+1)*m.font.truewidth,
 					float64(m.font.lineHeight),
 				)
-				p.FillRect4(
+				p.FillRect(
 					rectF,
-					gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
+					gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, m.transparent(lastBg)), core.Qt__SolidPattern),
 				)
 
 				// start a new one
@@ -955,9 +975,9 @@ func (m *MiniMap) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos 
 			float64(end-start+1)*m.font.truewidth,
 			float64(m.font.lineHeight),
 		)
-		p.FillRect4(
+		p.FillRect(
 			rectF,
-			gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
+			gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, m.transparent(lastBg)), core.Qt__SolidPattern),
 		)
 	}
 }
