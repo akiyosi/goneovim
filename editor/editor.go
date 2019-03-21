@@ -300,9 +300,12 @@ func InitEditor() {
 		})
 	}
 
-	//e.window.SetCentralWidget(widget)
-
 	e.framelesswin.SetContent(layout)
+	if e.config.Editor.Transparent < 1.0 {
+		e.framelesswin.UnsetWindowNativeShadow()
+	} else {
+		e.framelesswin.SetWindowNativeShadow()
+	}
 
 	go func() {
 		<-editor.stop
