@@ -181,7 +181,6 @@ func (p *PopupMenu) setPumblend(arg interface{}) {
 	bg := editor.colors.widgetBg
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
 	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #detailpopup { color: %s; }", bg.R, bg.G, bg.B, alpha, fg, inactiveFg))
->>>>>>> master
 }
 
 func (p *PopupMenu) showItems(args []interface{}) {
