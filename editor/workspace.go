@@ -320,21 +320,6 @@ func (w *Workspace) configure() {
 	}
 }
 
-func (w *Workspace) readInitVim() {
-	var guifont string
-	w.nvim.Option("guifont", &guifont)
-	if guifont != "" {
-		w.guiFont(guifont)
-	}
-
-	var linespace int
-	w.nvim.Option("linespace", &linespace)
-	if linespace != 0 {
-		w.guiLinespace(linespace)
-	}
-
-}
-
 func (w *Workspace) attachUI(path string) error {
 	w.nvim.Subscribe("Gui")
 	go w.initGonvim()
@@ -355,7 +340,6 @@ func (w *Workspace) attachUI(path string) error {
 		editor.close()
 		return err
 	}
-	go w.readInitVim()
 
 	return nil
 }
@@ -980,6 +964,8 @@ func (w *Workspace) setOption(update []interface{}) {
 			w.guiLinespace(val)
 		case "showtabline":
 		case "termguicolors":
+		case "pumblend":
+			w.popup.setPumblend(val)
 		default:
 		}
 	}

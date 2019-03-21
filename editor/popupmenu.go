@@ -2,6 +2,7 @@ package editor
 
 import (
 	"errors"
+	"strconv"
 	"fmt"
 
 	"github.com/therecipe/qt/core"
@@ -84,6 +85,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		kindlayout := widgets.NewQHBoxLayout()
 		kindlayout.SetContentsMargins(editor.iconSize/2, 0, editor.iconSize/2, 0)
 		kindWidget.SetLayout(kindlayout)
+		kindWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 		kindIcon := svg.NewQSvgWidget(nil)
 		kindIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		kindlayout.AddWidget(kindIcon, 0, 0)
@@ -91,10 +93,13 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		menu := widgets.NewQLabel(nil, 0)
 		menu.SetContentsMargins(1, margin, margin, margin)
 		menu.SetFont(font.fontNew)
+		menu.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+
 		detail := widgets.NewQLabel(nil, 0)
 		detail.SetContentsMargins(margin, margin, margin, margin)
 		detail.SetFont(font.fontNew)
 		detail.SetObjectName("detailpopup")
+		detail.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 		kindWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 		menu.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
@@ -148,6 +153,35 @@ func (p *PopupMenu) setColor() {
 	transparent := transparent()
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
 	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #detailpopup { color: %s; }", bg.R, bg.G, bg.B, transparent, fg, inactiveFg))
+}
+
+func (p *PopupMenu) setPumblend(arg interface{}) {
+	var pumblend int
+	var err error
+	switch val := arg.(type) {
+	case string:
+		pumblend, err = strconv.Atoi(val)
+		if err != nil {
+			return
+		}
+	case int32: // can't combine these in a type switch without compile error
+		pumblend = int(val)
+	case int64:
+		pumblend = int(val)
+	default:
+		return
+	}
+	alpha := float64(100 - pumblend) / float64(100)
+	if alpha < 0 {
+		alpha = 0
+	}
+
+	fg := editor.colors.widgetFg.String()
+	inactiveFg := editor.colors.inactiveFg.String()
+	bg := editor.colors.widgetBg
+	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
+	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #detailpopup { color: %s; }", bg.R, bg.G, bg.B, alpha, fg, inactiveFg))
+>>>>>>> master
 }
 
 func (p *PopupMenu) showItems(args []interface{}) {
@@ -258,13 +292,17 @@ func (p *PopupItem) updateMenu() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		if p.selected {
-			p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			go func() {
+				p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+				p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+				p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			}()
 		} else {
-			p.kindWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-			p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-			p.detailLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			go func() {
+				p.kindWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+				p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+				p.detailLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			}()
 		}
 	}
 	if p.menuTextRequest != p.menuText {

@@ -8,30 +8,48 @@ Gonvim is a Neovim GUI written in Golang, using a [Golang qt backend](https://gi
  
 This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
 
-![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/0.3.0.png)
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/gopher-with-neovim.png" width="250" align="top" >
+</p>
+
+
+<br />
 
 ## Table of contents
 
+- [Features](#features)
 - [Getting started](#getting-started)
 - [Configurations](#configurations)
-- [Features](#features)
 - [Development](#development)
 - [Contributing](#contributing)
 - [Similar Projects](#similar-projects)
 - [License](#license)
 - [Credits](#credits)
 
-<br>
+---
+<br />
+
+
+## Features
+
+* [Fuzzy Finder](https://github.com/akiyosi/gonvim/wiki/Features#fuzzy-finder-in-gui)
+* [Markdown Preview](https://github.com/akiyosi/gonvim/wiki/Features#markdown-preview)
+* [MiniMap](https://github.com/akiyosi/gonvim/wiki/Features#minimap)
+* [Dein.vim GUI](https://github.com/akiyosi/gonvim/wiki/Features#deinvim-gui)
+* [Remote attachment](https://github.com/akiyosi/gonvim/wiki/Configurations#remote-attachment)
+
 
 ## Getting Started
 Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](https://github.com/akiyosi/gonvim/releases) page.
 
 
-### Prerequisites
-MacOS or Linux users need to install neovim. See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
+> Note: MacOS or Linux users need to install neovim and deploy `nvim` under the `$PATH`.
+<br />[Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
-### MacOS
-gonvim.app looks for the nvim process from the following.
+* MacOS 🍏
+
+*gonvim.app* looks for the nvim process from the following.
 
 ```
 /usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/local/bin:/opt/local/sbin
@@ -46,11 +64,13 @@ tar xf nvim-macos.tar.gz
 ln -s /path/to/bin/nvim /usr/local/bin/nvim
 ```
 
-### Linux
-Deploy Neovim under the `$PATH`.
+* Linux 🐧
 
-### Windows
-Add Gonvim `bin` path to `%PATH%` environment variable.
+Execute `/path/to/Gonvim-0.X.X-linux/gonvim.sh`
+
+* Windows 🏞
+
+Execute `/path/to/Gonvim-0.X.X-windows/gonvim.exe`
 
 
 
@@ -58,7 +78,7 @@ Add Gonvim `bin` path to `%PATH%` environment variable.
 
 | application | config file |
 |:------------|:------------|
-| Gonvim (GUI front end of neovim) | `~/.gonvim/setting.toml` |
+| Gonvim (GUI frontend of neovim) | `~/.gonvim/setting.toml` |
 | Neovim      | `$XDG_CONFIG_HOME/nvim/init.vim` |
 
 where the default value of `$XDG_CONFIG_HOME` is the below.
@@ -68,25 +88,16 @@ where the default value of `$XDG_CONFIG_HOME` is the below.
 | Unix    |  `~/.config`         |
 | Windows |  `~/AppData/Local`   |
 
-### neovim configuration for gonvim
+---
 
-The sample configuration is below.
+* neovim configuration for gonvim
 
-[gonvim-init.vim](https://github.com/akiyosi/gonvim-init.vim)
+The sample configuration is [gonvim-init.vim](https://github.com/akiyosi/gonvim-init.vim)
 
-### gonvim configuration
+* gonvim configuration
 
 For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/gonvim/wiki/Configurations)
 
-
-
-## Features
-
-* [Fuzzy Finder](https://github.com/akiyosi/gonvim/wiki/Features#fuzzy-finder-in-gui)
-* [Markdown Preview](https://github.com/akiyosi/gonvim/wiki/Features#markdown-preview)
-* [MiniMap](https://github.com/akiyosi/gonvim/wiki/Features#minimap)
-* [Dein.vim GUI](https://github.com/akiyosi/gonvim/wiki/Features#deinvim-gui)
-* [Remote attachment](https://github.com/akiyosi/gonvim/wiki/Configurations#remote-attachment)
 
 
 ## Development

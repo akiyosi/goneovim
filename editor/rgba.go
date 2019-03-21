@@ -25,6 +25,9 @@ func (rgba *RGBA) copy() *RGBA {
 }
 
 func (rgba *RGBA) equals(other *RGBA) bool {
+	if rgba == nil {
+		return false
+	}
 	return rgba.R == other.R && rgba.G == other.G && rgba.B == other.B && rgba.A == other.A
 }
 
@@ -120,19 +123,19 @@ func warpColor(rgba *RGBA, v int) *RGBA {
 	if rgba.R > 128 {
 		r = rgba.R + v
 	} else {
-		r = rgba.R - (2 * v)
+		r = rgba.R - v
 	}
 
 	if rgba.G > 128 {
 		g = rgba.G + v
 	} else {
-		g = rgba.G - (2 * v)
+		g = rgba.G - v
 	}
 
 	if rgba.B > 128 {
 		b = rgba.B + v
 	} else {
-		b = rgba.B - (2 * v)
+		b = rgba.B - v
 	}
 
 	if r <= 0 {

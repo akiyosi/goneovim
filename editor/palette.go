@@ -168,13 +168,11 @@ func (p *Palette) setColor() {
 	fg := editor.colors.widgetFg.String()
 	bg := editor.colors.widgetBg
 	inputArea := editor.colors.widgetInputArea
-	sbg := editor.colors.scrollBarBg
-	// transparent := editor.config.Editor.Transparent / 4.0
+	inactiveFg := editor.colors.inactiveFg
 	transparent := transparent() * transparent()
 	p.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", fg))
-	//p.widget.SetStyleSheet(fmt.Sprintf(" QWidget#palette { border: 1px solid %s; } .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg, bg, fg))
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg.R, bg.G, bg.B, transparent, fg))
-	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", sbg.R, sbg.G, sbg.B, transparent))
+	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inactiveFg.R, inactiveFg.G, inactiveFg.B, transparent))
 	p.pattern.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inputArea.R, inputArea.G, inputArea.B, transparent))
 }
 
