@@ -58,8 +58,12 @@ func (t *Tabline) subscribe() {
 
 func (t *Tabline) setColor() {
 	inactiveFg := editor.colors.inactiveFg.String()
-	abyss := editor.colors.abyss
-	t.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-left: 8px solid %s; border-bottom: 0px solid; border-right: 0px solid; background-color: %s; } QWidget { color: %s; } ", abyss, abyss, inactiveFg))
+	// bg := editor.colors.bg.StringTransparent()
+	t.widget.SetStyleSheet(fmt.Sprintf(`
+	.QWidget { 
+		border-bottom: 0px solid;
+		border-right: 0px solid;
+		background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; } `, inactiveFg))
 }
 
 func newTabline() *Tabline {
@@ -163,16 +167,25 @@ func (t *Tab) updateActive() {
 	if editor.colors.fg == nil || editor.colors.bg == nil {
 		return
 	}
-	bg := editor.colors.bg.String()
+	bg := editor.colors.bg
 	fg := editor.colors.fg.String()
 	inactiveFg := editor.colors.inactiveFg
 	if t.active {
-		activeStyle := fmt.Sprintf(".QWidget { border-left: 2px solid %s; background-color: %s; } QWidget{ color: %s; } ", editor.config.SideBar.AccentColor, bg, fg)
+		activeStyle := fmt.Sprintf(`
+		.QWidget { 
+			border-left: 2px solid %s; 
+			background-color: rgba(%d, %d, %d, %d); 
+		} QWidget{ color: %s; } `, editor.config.SideBar.AccentColor, bg.R, bg.G, bg.B, 0, fg)
 		t.widget.SetStyleSheet(activeStyle)
 		svgContent := editor.getSvg("cross", nil)
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else {
-		t.widget.SetStyleSheet("")
+		inActiveStyle := fmt.Sprintf(`
+		.QWidget { 
+			border-left: 0px solid %s; 
+			background-color: rgba(%d, %d, %d, %d); 
+		} QWidget{ color: %s; } `, editor.config.SideBar.AccentColor, bg.R, bg.G, bg.B, 0, inactiveFg)
+		t.widget.SetStyleSheet(inActiveStyle)
 		svgContent := editor.getSvg("cross", inactiveFg)
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}

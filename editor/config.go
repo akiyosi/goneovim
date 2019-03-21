@@ -24,6 +24,7 @@ import (
 // cursorBlink = true
 // disableIMEinNormal = true
 // startFullScreen = true
+// transparent = 0.5
 // ginitvim = '''
 //   set guifont=FuraCode\ Nerd\ Font\ Mono:h14
 //   if g:gonvim_running == 1
@@ -119,6 +120,7 @@ type editorConfig struct {
 	DisableImeInNormal bool
 	GinitVim           string
 	StartFullscreen    bool
+	Transparent        float64
 }
 
 type statusLineConfig struct {

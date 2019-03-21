@@ -37,9 +37,11 @@ func initLocpopup() *Locpopup {
 	//typeLabel.SetContentsMargins(4, 1, 4, 1)
 	typeLabel := svg.NewQSvgWidget(nil)
 	typeLabel.SetFixedSize2(editor.iconSize-1, editor.iconSize-1)
+	typeLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 	contentLabel := widgets.NewQLabel(nil, 0)
 	contentLabel.SetContentsMargins(0, 0, 0, 0)
+	contentLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 	layout.AddWidget(typeLabel, 0, 0)
 	layout.AddWidget(contentLabel, 0, 0)
@@ -62,8 +64,10 @@ func initLocpopup() *Locpopup {
 
 func (l *Locpopup) setColor() {
 	fg := editor.colors.widgetFg.String()
-	bg := editor.colors.widgetBg.String()
-	l.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } * { background-color: %s;  color: %s; }", bg, bg, fg))
+	bg := editor.colors.widgetBg
+	// transparent := editor.config.Editor.Transparent / 2.0
+	transparent := transparent()
+	l.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }", bg.R, bg.G, bg.B, transparent, fg))
 }
 
 func (l *Locpopup) subscribe() {

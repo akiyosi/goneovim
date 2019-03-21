@@ -259,6 +259,7 @@ func loadDeinCashe() []*DeinPluginItem {
 
 		// make widgets
 		installedPluginWidget := widgets.NewQWidget(nil, 0)
+		installedPluginWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
 		installedPluginLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, installedPluginWidget)
 		installedPluginLayout.SetContentsMargins(20, 5, 20, 5)
 		installedPluginLayout.SetSpacing(3)
@@ -391,7 +392,7 @@ func loadDeinCashe() []*DeinPluginItem {
 		installedPluginSettings.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
 			if i.contextMenu == nil {
 				i.contextMenu = widgets.NewQMenu(installedPluginSettings)
-				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: %s;} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: %s;} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", fg.String(), bg.String()))
+				i.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: %s;} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: %s;} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", fg.String(), bg.StringTransparent()))
 				// Example menu and action
 				// menuActionExit := i.contextMenu.AddAction("E&xit")
 				// menuActionExit.SetShortcut(gui.NewQKeySequence2("Ctrl+X", gui.QKeySequence__NativeText))
@@ -554,6 +555,7 @@ func newDeinSide() *DeinSide {
 	layout.SetSpacing(0)
 
 	headerWidget := widgets.NewQWidget(nil, 0)
+	headerWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0); }")
 	headerLayout := widgets.NewQHBoxLayout()
 	headerLayout.SetContentsMargins(20, 15, 20, 5)
 	header := widgets.NewQLabel(nil, 0)
@@ -567,7 +569,7 @@ func newDeinSide() *DeinSide {
 	headerLayout.AddWidget(header, 0, 0)
 	headerLayout.AddWidget(configIcon, 0, 0)
 	headerWidget.SetLayout(headerLayout)
-	header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg.String()))
+	header.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); } .QLabel{ color: %s;} ", fg.String()))
 	header.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 
 	widget := widgets.NewQWidget(nil, 0)
@@ -575,6 +577,7 @@ func newDeinSide() *DeinSide {
 	widget.SetLayout(layout)
 
 	searchWidget := widgets.NewQWidget(nil, 0)
+	searchWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
 	searchWidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Minimum)
 	searchLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, searchWidget)
 	searchLayout.SetContentsMargins(0, 5, 0, 5)
@@ -586,10 +589,11 @@ func newDeinSide() *DeinSide {
 	comboBoxMenu.SetMinimumHeight(editor.config.Editor.FontSize + 3)
 	comboBoxMenu.AddItems([]string{"ALL", "Language", "Completion", "Code-display", "Integrations", "Interface", "Commands", "Other"})
 	comboBoxMenu.SetFocusPolicy(core.Qt__ClickFocus)
-	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" * { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: %s; background-color: %s; color: %s;} ", editor.config.SideBar.AccentColor, sbg, bg, fg))
+	comboBoxMenu.SetStyleSheet(fmt.Sprintf(" * { padding-top: 1px; padding-left: 2px; border: 1px solid %s; border-radius: 1; selection-background-color: %s; background-color: %s; color: %s;} ", editor.config.SideBar.AccentColor, sbg.StringTransparent(), bg.StringTransparent(), fg.String()))
 	comboBoxLayout.AddWidget(comboBoxMenu, 0, 0)
 	comboBoxWidget := widgets.NewQWidget(nil, 0)
 	comboBoxWidget.SetLayout(comboBoxLayout)
+	comboBoxWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
 
 	combobox := &SearchComboBox{
 		widget:   comboBoxWidget,
@@ -609,6 +613,7 @@ func newDeinSide() *DeinSide {
 	searchBoxLayout.AddWidget(searchboxEdit, 0, 0)
 	searchBoxWidget := widgets.NewQWidget(nil, 0)
 	searchBoxWidget.SetLayout(searchBoxLayout)
+	searchBoxWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
 
 	searchboxEdit.ConnectReturnPressed(func() {
 		doPluginSearch()
@@ -630,7 +635,7 @@ func newDeinSide() *DeinSide {
 	waitingLayout.SetContentsMargins(20, 0, 20, 5)
 	waitingWidget.SetLayout(waitingLayout)
 	pbar := widgets.NewQProgressBar(nil)
-	pbar.SetStyleSheet(fmt.Sprintf(" QProgressBar { padding: 20 1 0 1; height: 1px; border: 0px; background: %s; } QProgressBar::chunk { background-color: %s; } ", editor.colors.sideBarBg.String(), editor.config.SideBar.AccentColor))
+	pbar.SetStyleSheet(fmt.Sprintf(" QProgressBar { padding: 20 1 0 1; height: 1px; border: 0px; background: %s; } QProgressBar::chunk { background-color: %s; } ", editor.colors.sideBarBg.StringTransparent(), editor.config.SideBar.AccentColor))
 	pbar.SetRange(0, 0)
 	waitingLayout.AddWidget(pbar, 0, 0)
 	pbar.Hide()
@@ -695,8 +700,8 @@ func newDeinSide() *DeinSide {
 	configIcon.ConnectMousePressEvent(side.pressConfigIcon)
 
 	deinSideStyle := fmt.Sprintf("QWidget {	color: %s; border-right: 0px solid; }", editor.colors.comment.String())
-	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget {padding-top: 5px; background-color: %s; }", editor.colors.sideBarBg.String()) + deinSideStyle)
-	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid %s; border-radius: 1px; background: %s; selection-background-color: %s; color: %s; }", editor.config.SideBar.AccentColor, editor.colors.sideBarBg.String(), editor.colors.sideBarSelectedItemBg.String(), editor.colors.fg.String()) + deinSideStyle)
+	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget {padding-top: 5px; background-color: %s; }", editor.colors.sideBarBg.StringTransparent()) + deinSideStyle)
+	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid %s; border-radius: 1px; background: %s; selection-background-color: %s; color: %s; }", editor.config.SideBar.AccentColor, editor.colors.sideBarBg.StringTransparent(), editor.colors.sideBarSelectedItemBg.StringTransparent(), editor.colors.fg.String()) + deinSideStyle)
 
 	return side
 }
@@ -718,9 +723,10 @@ func readDeinToml() ([]byte, DeinTomlConfig) {
 
 func newInstalledPlugins() *InstalledPlugins {
 	fg := editor.colors.fg.String()
-	bg := editor.colors.sideBarSelectedItemBg.String()
+	bg := editor.colors.sideBarSelectedItemBg.StringTransparent()
 
 	installedWidget := widgets.NewQWidget(nil, 0)
+	installedWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
 	installedLayout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, installedWidget)
 	installedLayout.SetSpacing(10)
 
@@ -829,6 +835,7 @@ func doPluginSearch() {
 	editor.deinSide.plugincontent.RemoveWidget(editor.deinSide.searchresult.widget)
 
 	widget := widgets.NewQWidget(nil, 0)
+	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__TopToBottom, widget)
 	layout.SetSpacing(1)
 
@@ -1200,13 +1207,14 @@ func (d *DeinPluginItem) enterWidget(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
-	bg := editor.colors.selectedBg.String()
+	bg := editor.colors.selectedBg.StringTransparent()
 	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", bg))
 }
 
 func (d *DeinPluginItem) leaveWidget(event *core.QEvent) {
-	bg := editor.colors.sideBarBg.String()
-	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", bg))
+	// bg := editor.colors.sideBarBg.String()
+	// d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", bg))
+	d.widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
 	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__ArrowCursor)
@@ -1217,12 +1225,13 @@ func (p *Plugin) enterWidget(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
 	gui.QGuiApplication_SetOverrideCursor(cursor)
-	bg := editor.colors.selectedBg.String()
+	bg := editor.colors.selectedBg.StringTransparent()
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", bg))
 }
 
 func (p *Plugin) leaveWidget(event *core.QEvent) {
-	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", editor.colors.sideBarBg.String()))
+	// p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", editor.colors.sideBarBg.StringTransparent()))
+	p.widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
 	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__ArrowCursor)
@@ -1295,7 +1304,7 @@ func (p *Plugin) deinInstallPre(reponame string) {
 	editor.deinSide.signal.DeinInstallSignal()
 
 	fg := editor.colors.fg.String()
-	bg := editor.colors.selectedBg.String()
+	bg := editor.colors.selectedBg.StringTransparent()
 	p.installButton.SetStyleSheet(fmt.Sprintf(" #installbutton { background: %s;} #installbutton QLabel { color: %s; }", bg, fg))
 	p.installButtonIcon.Hide()
 
@@ -1498,7 +1507,7 @@ func (side *DeinSide) pressConfigIcon(event *gui.QMouseEvent) {
 	bg := editor.colors.bg
 	if side.contextMenu == nil {
 		side.contextMenu = widgets.NewQMenu(side.widget)
-		side.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: %s;} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: %s;} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", fg.String(), bg.String()))
+		side.contextMenu.SetStyleSheet(fmt.Sprintf(" QMenu { padding: 5px 0px 5px 0px; border-radius:6px; background-color: %s;} QMenu::item { padding: 2px 20px 2px 20px; background-color: transparent; color: %s;} QMenu::item:selected { padding: 2px 20px 2px 20px; background-color: #257afd; color: #eeeeee; } ", fg.String(), bg.StringTransparent()))
 		menuActionUpdateRemotePlugins := side.contextMenu.AddAction("UpdateRemotePlugins")
 		menuActionUpdateRemotePlugins.ConnectTriggered(func(dummy bool) {
 			go editor.workspaces[editor.active].nvim.Command(":UpdateRemotePlugins")

@@ -77,7 +77,7 @@ func (c *Cursor) updateColor() {
 			return
 		}
 	}
-	color := s[row][col+1]
+	color := s[row][col+1] // FIXME: out of index
 	if color != nil && !c.color.equals(color) {
 		c.color = invertColor(color)
 	}

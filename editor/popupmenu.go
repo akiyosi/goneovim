@@ -75,7 +75,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetLayout(mainLayout)
 	widget.SetContentsMargins(1, 1, 1, 1)
-	//widget.SetStyleSheet("* {background-color: rgba(24, 29, 34, 1); color: rgba(205, 211, 222, 1);}")
+	// widget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
 	max := 15
 	var popupItems []*PopupItem
 
@@ -99,6 +99,10 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		detail.SetContentsMargins(margin, margin, margin, margin)
 		detail.SetFont(font.fontNew)
 		detail.SetObjectName("detailpopup")
+		detail.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+
+		kindWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+		menu.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 		detail.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 		layout.AddWidget(kindWidget, i, 0, 0)
@@ -146,9 +150,9 @@ func (p *PopupMenu) setColor() {
 	fg := editor.colors.widgetFg.String()
 	inactiveFg := editor.colors.inactiveFg.String()
 	bg := editor.colors.widgetBg
+	transparent := transparent()
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
-	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: %s; color: %s;} #detailpopup { color: %s; }", bg, fg, inactiveFg))
-	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, 1.0); color: %s;} #detailpopup { color: %s; }", bg.R, bg.G, bg.B, fg, inactiveFg))
+	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #detailpopup { color: %s; }", bg.R, bg.G, bg.B, transparent, fg, inactiveFg))
 }
 
 func (p *PopupMenu) setPumblend(arg interface{}) {
@@ -288,19 +292,16 @@ func (p *PopupItem) updateMenu() {
 		p.selected = p.selectedRequest
 		if p.selected {
 			go func() {
-				p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
-				p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
-				p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
+				p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+				p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+				p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 			}()
 		} else {
 			go func() {
-				p.kindWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
-				p.menuLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
-				p.detailLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+				p.kindWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+				p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+				p.detailLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 			}()
-			// p.kindWidget.SetStyleSheet("")
-			// p.menuLabel.SetStyleSheet("")
-			// p.detailLabel.SetStyleSheet("")
 		}
 	}
 	if p.menuTextRequest != p.menuText {

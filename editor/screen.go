@@ -305,13 +305,21 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	cols := int(math.Ceil(float64(right)/font.truewidth)) - col
 
 	p := gui.NewQPainter2(s.widget)
+	p.SetBackgroundMode(core.Qt__TransparentMode)
+	bg := s.ws.background
+	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
+	if transparent < 255 {
+		transparent = 0
+	}
 	if s.ws.background != nil {
-		p.FillRect5(
+		// p.FillRect5(
+		p.FillRect2(
 			left,
 			top,
 			width,
 			height,
-			s.ws.background.QColor(),
+			// s.ws.background.QColor(),
+			gui.NewQBrush3(gui.NewQColor3(bg.R, bg.G, bg.B, transparent), core.Qt__SolidPattern),
 		)
 	}
 
@@ -879,6 +887,18 @@ func (s *Screen) cursorWin() *Window {
 	return s.posWin(s.cursor[1], s.cursor[0])
 }
 
+func (s *Screen) transparent(bg *RGBA) int {
+	t := 255
+	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
+
+	if s.ws.background.equals(bg) {
+		t = 0
+	} else {
+		t = transparent
+	}
+	return t
+}
+
 func (s *Screen) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
 	rectF := core.NewQRectF()
 	screen := s.ws.screen
@@ -921,9 +941,10 @@ func (s *Screen) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 						float64(end-start+1)*s.ws.font.truewidth,
 						float64(s.ws.font.lineHeight),
 					)
-					p.FillRect4(
+					p.FillRect(
 						rectF,
-						gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
+						//gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0*255)), core.Qt__SolidPattern),
+						gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, s.transparent(lastBg)), core.Qt__SolidPattern),
 					)
 
 					// start a new one
@@ -940,9 +961,11 @@ func (s *Screen) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 					float64(end-start+1)*s.ws.font.truewidth,
 					float64(s.ws.font.lineHeight),
 				)
-				p.FillRect4(
+				p.FillRect(
 					rectF,
-					gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
+					//gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0.2*255)),
+					// gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0*255)), core.Qt__SolidPattern),
+					gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, s.transparent(lastBg)), core.Qt__SolidPattern),
 				)
 
 				// start a new one
@@ -960,9 +983,11 @@ func (s *Screen) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 			float64(end-start+1)*s.ws.font.truewidth,
 			float64(s.ws.font.lineHeight),
 		)
-		p.FillRect4(
+		p.FillRect(
 			rectF,
-			gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(lastBg.A*255)),
+			// gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0.2*255)),
+			//gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0*255)), core.Qt__SolidPattern),
+			gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, s.transparent(lastBg)), core.Qt__SolidPattern),
 		)
 	}
 }
