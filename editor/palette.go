@@ -90,6 +90,7 @@ func initPalette() *Palette {
 	scrollBar.SetFixedWidth(5)
 
 	resultMainWidget := widgets.NewQWidget(nil, 0)
+	resultMainWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0); }")
 	resultMainWidget.SetContentsMargins(0, 0, 0, 0)
 	resultMainLayout.AddWidget(resultWidget, 0, 0)
 	resultMainLayout.AddWidget(scrollCol, 0, 0)
@@ -167,13 +168,18 @@ func initPalette() *Palette {
 func (p *Palette) setColor() {
 	fg := editor.colors.widgetFg.String()
 	bg := editor.colors.widgetBg
-	inputArea := editor.colors.widgetInputArea
+	// inputArea := editor.colors.widgetInputArea
 	inactiveFg := editor.colors.inactiveFg
 	transparent := transparent() * transparent()
 	p.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", fg))
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg.R, bg.G, bg.B, transparent, fg))
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inactiveFg.R, inactiveFg.G, inactiveFg.B, transparent))
-	p.pattern.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inputArea.R, inputArea.G, inputArea.B, transparent))
+	if transparent < 1.0 {
+		p.patternWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+		p.pattern.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+	} else {
+		p.pattern.SetStyleSheet(fmt.Sprintf("background-color: %s;", bg.String()))
+	}
 }
 
 func (p *Palette) resize() {
