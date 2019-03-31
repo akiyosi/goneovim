@@ -46,6 +46,7 @@ type Screen struct {
 	scrollDustDeltaY int
 	curtab           nvim.Tabpage
 	cmdheight        int
+	highAttrDef      HighAttrDef
 	highlight        Highlight
 	curWins          map[nvim.Window]*Window
 	queueRedrawArea  [4]int
@@ -312,13 +313,11 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 		transparent = 0
 	}
 	if s.ws.background != nil {
-		// p.FillRect5(
 		p.FillRect2(
 			left,
 			top,
 			width,
 			height,
-			// s.ws.background.QColor(),
 			gui.NewQBrush3(gui.NewQColor3(bg.R, bg.G, bg.B, transparent), core.Qt__SolidPattern),
 		)
 	}
@@ -575,6 +574,20 @@ func (s *Screen) size() (int, int) {
 	return geo.Width(), geo.Height()
 }
 
+func (s *Screen) gridResize(args []interface{}) {
+	s.cursor[0] = 0
+	s.cursor[1] = 0
+	s.content = make([][]*Char, s.ws.rows)
+	for i := 0; i < s.ws.rows; i++ {
+		s.content[i] = make([]*Char, s.ws.cols)
+	}
+	s.colorContent = make([][]*RGBA, s.ws.rows)
+	for i := 0; i < s.ws.rows; i++ {
+		s.colorContent[i] = make([]*RGBA, s.ws.cols)
+	}
+	s.queueRedrawAll()
+}
+
 func (s *Screen) resize(args []interface{}) {
 	s.cursor[0] = 0
 	s.cursor[1] = 0
@@ -687,6 +700,23 @@ func (s *Screen) put(args []interface{}) {
 			}
 		}
 	}
+
+	fmt.Printf("----------------------------------\n")
+	for i, line := range s.content {
+		if i > 3 {
+			break
+		}
+		for _, char := range line {
+			if char == nil {
+				continue
+			}
+			fmt.Printf(char.char)
+			fmt.Printf("-")
+		}
+		fmt.Printf("\n")
+	}
+	fmt.Printf("----------------------------------\n")
+
 	s.queueRedraw(x, y, numChars, 1)
 }
 
@@ -733,8 +763,128 @@ func (s *Screen) highlightSet(args []interface{}) {
 			highlight.background = s.ws.background
 		}
 		s.highlight = highlight
-		//s.ws.minimap.highlight = highlight
 	}
+}
+
+func (s *Screen) setHighAttrDef(args []interface{}) {
+	//var h HighAttrDef
+	h := make(map[int]*Highlight)
+	for _, arg := range args {
+		id := util.ReflectToInt(arg.([]interface{})[0])
+		h[id] = s.getHighlight(arg.([]interface{})[1])
+	}
+	s.highAttrDef = h
+}
+
+func (s *Screen) getHighlight(args interface{}) *Highlight {
+	highlight := Highlight{}
+	hl := args.(map[string]interface{})
+
+	bold := hl["bold"]
+	if bold != nil {
+		highlight.bold = true
+	} else {
+		highlight.bold = false
+	}
+
+	italic := hl["italic"]
+	if italic != nil {
+		highlight.italic = true
+	} else {
+		highlight.italic = false
+	}
+
+	_, ok := hl["reverse"]
+	if ok {
+		highlight.foreground = s.highlight.background
+		highlight.background = s.highlight.foreground
+		s.highlight = highlight
+		return &highlight
+	}
+
+	fg, ok := hl["foreground"]
+	if ok {
+		rgba := calcColor(util.ReflectToInt(fg))
+		highlight.foreground = rgba
+	} else {
+		highlight.foreground = s.ws.foreground
+	}
+
+	bg, ok := hl["background"]
+	if ok {
+		rgba := calcColor(util.ReflectToInt(bg))
+		highlight.background = rgba
+	} else {
+		highlight.background = s.ws.background
+	}
+
+	return &highlight
+}
+
+func (s *Screen) gridLines(args []interface{}) {
+	numChars := 0
+	x := s.cursor[1]
+	y := s.cursor[0]
+	row := s.cursor[0]
+	col := s.cursor[1]
+	if row >= s.ws.rows {
+		return
+	}
+	line := s.content[row]
+	oldFirstNormal := true
+	if x >= len(line) {
+		x = len(line) - 1
+	}
+	char := line[x] // sometimes crash at this line
+	if char != nil && !char.normalWidth {
+		oldFirstNormal = false
+	}
+	var lastChar *Char
+	oldNormalWidth := true
+	for _, arg := range args {
+		chars := arg.([]interface{})
+		for _, c := range chars {
+			if col >= len(line) {
+				continue
+			}
+			char := line[col]
+			if char != nil && !char.normalWidth {
+				oldNormalWidth = false
+			} else {
+				oldNormalWidth = true
+			}
+			if char == nil {
+				char = &Char{}
+				line[col] = char
+			}
+			char.char = c.(string)
+			char.normalWidth = s.isNormalWidth(char.char)
+			lastChar = char
+			char.highlight = s.highlight
+			col++
+			numChars++
+		}
+	}
+	if lastChar != nil && !lastChar.normalWidth {
+		numChars++
+	}
+	if !oldNormalWidth {
+		numChars++
+	}
+	s.cursor[1] = col
+	if x > 0 {
+		char := line[x-1]
+		if char != nil && char.char != "" && !char.normalWidth {
+			x--
+			numChars++
+		} else {
+			if !oldFirstNormal {
+				x--
+				numChars++
+			}
+		}
+	}
+	s.queueRedraw(x, y, numChars, 1)
 }
 
 func (s *Screen) setScrollRegion(args []interface{}) {

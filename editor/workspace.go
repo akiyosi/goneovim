@@ -652,6 +652,7 @@ func (i *WorkspaceSideItem) closeFilelist() {
 func (w *Workspace) attachUIOption() map[string]interface{} {
 	o := make(map[string]interface{})
 	o["rgb"] = true
+	o["ext_multigrid"] = true
 
 	apiInfo, err := w.nvim.APIInfo()
 	if err == nil {
@@ -767,16 +768,60 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		switch event {
 		case "set_title":
 			titleStr := (update[1].([]interface{}))[0].(string)
-			//editor.window.SetWindowTitle((update[1].([]interface{}))[0].(string))
 			editor.framelesswin.SetTitle(titleStr)
 		case "option_set":
 			w.setOption(update)
+
+		case "grid_resize":
+			fmt.Println("resize:", args)
+			s.gridResize(args)
+
 		case "default_colors_set":
 			args := update[1].([]interface{})
 			w.setColorsSet(args)
+
+		case "grid_line":
+			fmt.Println("grid", args)
+			// s.gridLines(args)
+
+		case "hl_attr_define":
+			fmt.Println("highlight:", args)
+			s.setHighAttrDef(args)
+
+		case "grid_clear":
+
+		case "grid_destroy":
+
+		case "grid_cursor_goto":
+
+		case "grid_scroll":
+
+		case "win_pos": 
+			fmt.Println("win_pos:", args)
+		
+		case "win_float_pos": 
+			fmt.Println("win_float_pos:", args)
+		
+		case "win_external_pos": 
+			fmt.Println("win_external_pos:", args)
+		
+		case "win_hide": 
+			fmt.Println("win_hide:", args)
+		
+		case "win_scroll_over_start":
+			fmt.Println("win_scroll_over_start:", args)
+			
+		case "win_scroll_over_reset":
+			fmt.Println("win_scroll_over_reset:", args)
+
+		case "win_close": 
+			fmt.Println("win_close:", args)
+
+
 		case "cursor_goto":
 			s.cursorGoto(args)
 			doMinimapScroll = true
+
 		case "put":
 			s.put(args)
 		case "eol_clear":

@@ -20,12 +20,16 @@ import (
 
 var editor *Editor
 
+type HighAttrDef map[int]*Highlight
+
 // Highlight is
 type Highlight struct {
 	foreground *RGBA
 	background *RGBA
-	bold       bool
 	italic     bool
+	bold       bool
+	underline  bool	
+	undercurl  bool	
 }
 
 // Char is
