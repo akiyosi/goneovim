@@ -30,6 +30,9 @@ type Window struct {
 	cols       int
 	rows       int
 
+	colStart   int
+	rowStart   int
+
 	content          [][]*Char
 	colorContent     [][]*RGBA
 
@@ -311,14 +314,14 @@ func (s *Screen) paint(event *gui.QPaintEvent) {
 	left := rect.X()
 	width := rect.Width()
 	height := rect.Height()
-	right := left + width
-	bottom := top + height
+	// right := left + width
+	// bottom := top + height
 	row := int(float64(top) / float64(font.lineHeight))
 	col := int(float64(left) / font.truewidth)
-	rows := int(math.Ceil(float64(bottom) / float64(font.lineHeight))) - row
-	cols := int(math.Ceil(float64(right) / font.truewidth)) - col
-	// rows := s.windows[s.activeGrid].rows
-	// cols := s.windows[s.activeGrid].cols
+	// rows := int(math.Ceil(float64(bottom) / float64(font.lineHeight))) - row
+	// cols := int(math.Ceil(float64(right) / font.truewidth)) - col
+	rows := s.windows[s.activeGrid].rows
+	cols := s.windows[s.activeGrid].cols
 
 	p := gui.NewQPainter2(s.widget)
 	p.SetBackgroundMode(core.Qt__TransparentMode)
@@ -595,6 +598,9 @@ func (s *Screen) gridResize(args []interface{}) {
 		cols = util.ReflectToInt(arg.([]interface{})[1])
 		rows = util.ReflectToInt(arg.([]interface{})[2])
 	}
+	if gridid == 1 {
+		return
+	}
 	s.windows[gridid] = &Window{
 		content: make([][]*Char, rows),
 		colorContent: make([][]*RGBA, rows),
@@ -607,6 +613,8 @@ func (s *Screen) gridResize(args []interface{}) {
 	}
 	s.windows[gridid].cols = cols
 	s.windows[gridid].rows = rows
+	s.windows[gridid].colStart = cols
+	s.windows[gridid].rowStart = rows
 
 	s.queueRedrawAll()
 }
@@ -733,12 +741,12 @@ func (s *Screen) setHighAttrDef(args []interface{}) {
 	var h map[int]*Highlight
 	if s.highAttrDef == nil {
 		h = make(map[int]*Highlight)
-		h[0] = &Highlight{
-			foreground: editor.colors.fg,
-			background: editor.colors.bg,
-		}
 	} else {
 		h = s.highAttrDef
+	}
+	h[0] = &Highlight{
+		foreground: editor.colors.fg,
+		background: editor.colors.bg,
 	}
 
 	for _, arg := range args {
@@ -818,22 +826,31 @@ func (s *Screen) gridClear(args []interface{}) {
 
 func (s *Screen) gridLine(args []interface{}) {
 	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		if gridid == 1 {
+			return
+		}
+		row := util.ReflectToInt(arg.([]interface{})[0])
+		col := util.ReflectToInt(arg.([]interface{})[0])
+		if s.windows[gridid].rowStart > row {
+			s.windows[gridid].rowStart = row
+		}
+		if s.windows[gridid].colStart > col {
+			s.windows[gridid].colStart = col
+		}
 		s.updateGridContent(arg.([]interface{}))
 	}
-
-	// DEBUG: the folloing assign is for debug
-	// s.content = s.windows[2].content
 }
 
 func (s *Screen) updateGridContent(arg []interface{}) {
 
 	numChars := 0
 	x := s.cursor[1]
-	// y := s.cursor[0]
 
 	gridid := util.ReflectToInt(arg[0])
 	row := util.ReflectToInt(arg[1])
 	col := util.ReflectToInt(arg[2])
+	start := col
 
 	if gridid == 1 { // Skip global grid id
 		return
@@ -897,7 +914,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
  			if !oldNormalWidth {
  				numChars++
  			}
- 			s.cursor[1] = col
  			if x > 0 {
  				char := line[x-1]
  				if char != nil && char.char != "" && !char.normalWidth {
@@ -910,7 +926,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
  					}
  				}
  			}
-			s.queueRedraw(x, row, numChars, 1)
+			s.queueRedraw(start, row, numChars, 1)
 		} // end of makeCells()
 
 		r := 1
@@ -934,10 +950,10 @@ func (s *Screen) gridScroll(args []interface{}) {
 	var rows int
 	for _, arg := range args {
 		gridid = util.ReflectToInt(arg.([]interface{})[0])
-		s.scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1]) // top
-		s.scrollRegion[1] = util.ReflectToInt(arg.([]interface{})[2]) // bot
-		s.scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3]) // left
-		s.scrollRegion[3] = util.ReflectToInt(arg.([]interface{})[4]) // right
+		s.scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])      // top
+		s.scrollRegion[1] = util.ReflectToInt(arg.([]interface{})[2]) - 1  // bot
+		s.scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3])      // left
+		s.scrollRegion[3] = util.ReflectToInt(arg.([]interface{})[4]) - 1  // right
 		rows = util.ReflectToInt(arg.([]interface{})[5])
 	}
 	if gridid == 1 { // Skip globak grid id
@@ -969,9 +985,9 @@ func (s *Screen) scroll(gridid, count int) {
 
 	if top == 0 && bot == 0 && left == 0 && right == 0 {
 		top = 0
-		bot = s.ws.rows - 1
+		bot = s.windows[gridid].rows - 1
 		left = 0
-		right = s.ws.cols - 1
+		right = s.windows[gridid].cols - 1
 	}
 
 	s.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
@@ -1010,7 +1026,7 @@ func (s *Screen) scroll(gridid, count int) {
 	} else {
 		for row := bot; row >= top-count; row-- {
 			for col := left; col <= right; col++ {
-				if len(content) <= row+count {
+				if len(content) <= row {
 					continue
 				}
 				for _, line := range content {
@@ -1018,7 +1034,8 @@ func (s *Screen) scroll(gridid, count int) {
 						return
 					}
 				}
-				content[row][col] = content[row+count][col]
+				a := content[row+count][col]
+				content[row][col] = a
 			}
 		}
 		for row := top; row < top-count; row++ {
@@ -1035,7 +1052,7 @@ func (s *Screen) scroll(gridid, count int) {
 			}
 		}
 		s.queueRedraw(left, top, (right - left), -count)
-		if bot < s.ws.rows-1 {
+		if bot < s.windows[gridid].rows-1 {
 			s.queueRedraw(left, bot+1, (right - left), -count)
 		}
 	}
@@ -1047,7 +1064,6 @@ func (s *Screen) update() {
 	width := s.queueRedrawArea[2] - x
 	height := s.queueRedrawArea[3] - y
 	if width > 0 && height > 0 {
-		// s.item.SetPixmap(s.pixmap)
 		s.widget.Update2(
 			int(float64(x)*s.ws.font.truewidth),
 			y*s.ws.font.lineHeight,

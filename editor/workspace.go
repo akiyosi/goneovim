@@ -95,6 +95,9 @@ func newWorkspace(path string) (*Workspace, error) {
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
 		doneNvimStart: make(chan bool, 1000),
+		foreground:   newRGBA(180, 185, 190, 1),
+	 	background:   newRGBA(9, 13, 17, 1),
+	 	special   :  newRGBA(255, 255, 255, 1),
 	}
 	w.signal.ConnectRedrawSignal(func() {
 		updates := <-w.redrawUpdates
@@ -774,7 +777,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.setOption(update)
 
 		case "grid_resize":
-			fmt.Println("grid_resize")
 			s.gridResize(args)
 
 		case "default_colors_set":
@@ -782,24 +784,20 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.setColorsSet(args)
 
 		case "grid_line":
-			fmt.Println("grid_line")
 			s.gridLine(args)
 
 		case "hl_attr_define":
 			s.setHighAttrDef(args)
 
 		case "grid_clear":
-			fmt.Println("grid_clear")
 			s.gridClear(args)
 
 		case "grid_destroy":
 
 		case "grid_cursor_goto":
-			fmt.Println("grid_cursor_goto")
 			s.cursorGoto(args)
 
 		case "grid_scroll":
-			fmt.Println("grid_scroll")
 			s.gridScroll(args)
 
 		case "win_pos": 
@@ -938,19 +936,19 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	sp := util.ReflectToInt(args[2])
 
 	if fg != -1 {
-		w.foreground = calcColor(fg)
-	} else {
-		w.foreground = newRGBA(180, 185, 190, 1)
+		w.foreground.R = calcColor(fg).R
+		w.foreground.G = calcColor(fg).G
+		w.foreground.B = calcColor(fg).B
 	}
 	if bg != -1 {
-		w.background = calcColor(bg)
-	} else {
-		w.background = newRGBA(9, 13, 17, 1)
+		w.background.R = calcColor(bg).R
+		w.background.G = calcColor(bg).G
+		w.background.B = calcColor(bg).B
 	}
 	if sp != -1 {
-		w.special = calcColor(sp)
-	} else {
-		w.special = newRGBA(255, 255, 255, 1)
+		w.special.R = calcColor(sp).R
+		w.special.G = calcColor(sp).G
+		w.special.B = calcColor(sp).B
 	}
 
 	w.minimap.foreground = w.foreground
@@ -975,8 +973,8 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	if editor.isSetGuiColor == true {
 		return
 	}
-	editor.colors.fg = w.foreground
-	editor.colors.bg = w.background
+	editor.colors.fg = newRGBA(w.foreground.R, w.foreground.G, w.foreground.B, 1)
+	editor.colors.bg = newRGBA(w.background.R, w.background.G, w.background.B, 1)
 	//w.setGuiColor(editor.colors.fg, editor.colors.bg)
 	editor.colors.update()
 	editor.updateGUIColor()
