@@ -20,8 +20,6 @@ import (
 
 var editor *Editor
 
-type HighAttrDef map[int]*Highlight
-
 // Highlight is
 type Highlight struct {
 	foreground *RGBA

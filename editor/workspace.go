@@ -769,11 +769,12 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "set_title":
 			titleStr := (update[1].([]interface{}))[0].(string)
 			editor.framelesswin.SetTitle(titleStr)
+
 		case "option_set":
 			w.setOption(update)
 
 		case "grid_resize":
-			fmt.Println("resize:", args)
+			fmt.Println("grid_resize")
 			s.gridResize(args)
 
 		case "default_colors_set":
@@ -781,20 +782,25 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.setColorsSet(args)
 
 		case "grid_line":
-			fmt.Println("grid", args)
-			// s.gridLines(args)
+			fmt.Println("grid_line")
+			s.gridLine(args)
 
 		case "hl_attr_define":
-			fmt.Println("highlight:", args)
 			s.setHighAttrDef(args)
 
 		case "grid_clear":
+			fmt.Println("grid_clear")
+			s.gridClear(args)
 
 		case "grid_destroy":
 
 		case "grid_cursor_goto":
+			fmt.Println("grid_cursor_goto")
+			s.cursorGoto(args)
 
 		case "grid_scroll":
+			fmt.Println("grid_scroll")
+			s.gridScroll(args)
 
 		case "win_pos": 
 			fmt.Println("win_pos:", args)
@@ -817,26 +823,25 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "win_close": 
 			fmt.Println("win_close:", args)
 
+		// case "cursor_goto":
+		// 	s.cursorGoto(args)
+		// 	doMinimapScroll = true
+		// case "put":
+		// 	s.put(args)
+		// case "eol_clear":
+		// 	s.eolClear(args)
+		// case "clear":
+		// 	s.clear(args)
+		// case "resize":
+		// 	s.resize(args)
+		// case "highlight_set":
+		// 	s.highlightSet(args)
+		// case "set_scroll_region":
+		// 	s.setScrollRegion(args)
+		// case "scroll":
+		// 	//s.scroll(args)
+		// 	doMinimapScroll = true
 
-		case "cursor_goto":
-			s.cursorGoto(args)
-			doMinimapScroll = true
-
-		case "put":
-			s.put(args)
-		case "eol_clear":
-			s.eolClear(args)
-		case "clear":
-			s.clear(args)
-		case "resize":
-			s.resize(args)
-		case "highlight_set":
-			s.highlightSet(args)
-		case "set_scroll_region":
-			s.setScrollRegion(args)
-		case "scroll":
-			s.scroll(args)
-			doMinimapScroll = true
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
@@ -889,7 +894,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "busy_start":
 		case "busy_stop":
 		default:
-			fmt.Println("Unhandle event", event)
+			// fmt.Println("Unhandle event", event)
 		}
 	}
 
