@@ -228,24 +228,32 @@ func (s *Screen) waitTime() time.Duration {
 
 func (s *Screen) updateSize() {
 	w := s.ws
-
 	s.width = s.widget.Width()
-	cols := int(float64(s.width) / w.font.truewidth)
-	rows := s.height / w.font.lineHeight
-	isTryResize := (cols != w.cols || rows != w.rows)
-	if !isTryResize {
+	currentCols := int(float64(s.width) / w.font.truewidth)
+	currentRows := s.height / w.font.lineHeight
+
+	isNeedTryResize := (currentCols != w.cols || currentRows != w.rows)
+	if !isNeedTryResize {
 		return
 	}
-	w.cols = cols
-	w.rows = rows
+
+	w.cols = currentCols
+	w.rows = currentRows
+
 	if !w.uiAttached {
 		return
 	}
+	s.uiTryResize(currentCols, currentRows)
+}
 
+func (s *Screen) uiTryResize(width, height int) {
+	w := s.ws
 	done := make(chan error, 5)
 	var result error
 	go func() {
-		result = w.nvim.TryResizeUI(w.cols, w.rows)
+		result = w.nvim.TryResizeUI(width, height)
+		// rewrite with nvim_ui_try_resize_grid
+		// result = w.nvim.Call("nvim_ui_try_resize_grid", s.activeGrid, currentCols, currentRows)
 		done <- result
 	}()
 	select {
@@ -254,7 +262,7 @@ func (s *Screen) updateSize() {
 		// In this case, assuming that nvim is returning an error
 		//  at startup and the TryResizeUI() function hangs up.
 		w.nvim.Input("<Enter>")
-		w.updateSize()
+		s.uiTryResize(width, height)
 	}
 }
 
@@ -589,8 +597,6 @@ func (s *Screen) size() (int, int) {
 }
 
 func (s *Screen) gridResize(args []interface{}) {
-	// s.cursor[0] = 0
-	// s.cursor[1] = 0
 	var gridid gridId
 	var rows, cols int
 	for _, arg := range args {
@@ -621,6 +627,10 @@ func (s *Screen) gridResize(args []interface{}) {
 
 func (s *Screen) cursorGoto(args []interface{}) {
 	pos, _ := args[0].([]interface{})
+	gridid := pos[0]
+	if gridid == 1 {
+		return
+	}
 	s.cursor[0] = util.ReflectToInt(pos[1])
 	s.cursor[1] = util.ReflectToInt(pos[2])
 }
@@ -813,12 +823,13 @@ func (s *Screen) gridClear(args []interface{}) {
 
 	content := s.windows[gridid].content
 	colorContent := s.windows[gridid].colorContent
-	content = make([][]*Char, s.ws.rows)
-	colorContent = make([][]*RGBA, s.ws.rows)
-	for i := 0; i < s.ws.rows; i++ {
+	content = make([][]*Char, s.windows[gridid].rows)
+	colorContent = make([][]*RGBA, s.windows[gridid].rows)
+
+	for i := 0; i < s.windows[gridid].rows; i++ {
 		content[i] = make([]*Char, s.ws.cols)
 	}
-	for i := 0; i < s.ws.rows; i++ {
+	for i := 0; i < s.windows[gridid].rows; i++ {
 		colorContent[i] = make([]*RGBA, s.ws.cols)
 	}
 	s.queueRedrawAll()
@@ -843,14 +854,10 @@ func (s *Screen) gridLine(args []interface{}) {
 }
 
 func (s *Screen) updateGridContent(arg []interface{}) {
-
 	numChars := 0
-	x := s.cursor[1]
-
 	gridid := util.ReflectToInt(arg[0])
 	row := util.ReflectToInt(arg[1])
 	col := util.ReflectToInt(arg[2])
-	start := col
 
 	if gridid == 1 { // Skip global grid id
 		return
@@ -860,7 +867,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	content := s.windows[gridid].content
 	line := content[row]
 	cells := arg[3].([]interface{})
-	oldFirstNormal := true
+	//oldFirstNormal := true
 	oldNormalWidth := true
 	lastChar := &Char{}
 
@@ -914,19 +921,19 @@ func (s *Screen) updateGridContent(arg []interface{}) {
  			if !oldNormalWidth {
  				numChars++
  			}
- 			if x > 0 {
- 				char := line[x-1]
- 				if char != nil && char.char != "" && !char.normalWidth {
- 					x--
- 					numChars++
- 				} else {
- 					if !oldFirstNormal {
- 						x--
- 						numChars++
- 					}
- 				}
- 			}
-			s.queueRedraw(start, row, numChars, 1)
+ 			// if x > 0 {
+ 			// 	char := line[x-1]
+ 			// 	if char != nil && char.char != "" && !char.normalWidth {
+ 			// 		x--
+ 			// 		numChars++
+ 			// 	} else {
+ 			// 		if !oldFirstNormal {
+ 			// 			x--
+ 			// 			numChars++
+ 			// 		}
+ 			// 	}
+ 			// }
+			s.queueRedraw(0, row, numChars, 1)
 		} // end of makeCells()
 
 		r := 1
@@ -963,18 +970,6 @@ func (s *Screen) gridScroll(args []interface{}) {
 	s.scroll(gridid, rows)
 }
 
-func (s *Screen) setScrollRegion(args []interface{}) {
-	arg := args[0].([]interface{})
-	top := util.ReflectToInt(arg[0])
-	bot := util.ReflectToInt(arg[1])
-	left := util.ReflectToInt(arg[2])
-	right := util.ReflectToInt(arg[3])
-	s.scrollRegion[0] = top
-	s.scrollRegion[1] = bot
-	s.scrollRegion[2] = left
-	s.scrollRegion[3] = right
-}
-
 // func (s *Screen) scroll(args []interface{}) {
 func (s *Screen) scroll(gridid, count int) {
 	top := s.scrollRegion[0]
@@ -995,27 +990,11 @@ func (s *Screen) scroll(gridid, count int) {
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
 			for col := left; col <= right; col++ {
-				if len(content) <= row+count {
-					continue
-				}
-				for _, line := range content {
-					if len(line) <= col {
-						return
-					}
-				}
 				content[row][col] = content[row+count][col]
 			}
 		}
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
-				if len(content) <= row {
-					continue
-				}
-				for _, line := range content {
-					if len(line) <= col {
-						return
-					}
-				}
 				content[row][col] = nil
 			}
 		}
@@ -1026,28 +1005,11 @@ func (s *Screen) scroll(gridid, count int) {
 	} else {
 		for row := bot; row >= top-count; row-- {
 			for col := left; col <= right; col++ {
-				if len(content) <= row {
-					continue
-				}
-				for _, line := range content {
-					if len(line) <= col {
-						return
-					}
-				}
-				a := content[row+count][col]
-				content[row][col] = a
+				content[row][col] = content[row+count][col]
 			}
 		}
 		for row := top; row < top-count; row++ {
 			for col := left; col <= right; col++ {
-				if len(content) <= row {
-					continue
-				}
-				for _, line := range content {
-					if len(line) <= col {
-						return
-					}
-				}
 				content[row][col] = nil
 			}
 		}

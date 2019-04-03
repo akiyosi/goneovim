@@ -783,21 +783,23 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			args := update[1].([]interface{})
 			w.setColorsSet(args)
 
-		case "grid_line":
-			s.gridLine(args)
-
 		case "hl_attr_define":
 			s.setHighAttrDef(args)
+
+		case "grid_line":
+			s.gridLine(args)
 
 		case "grid_clear":
 			s.gridClear(args)
 
 		case "grid_destroy":
+			fmt.Println("grid_destroy:", args)
 
 		case "grid_cursor_goto":
 			s.cursorGoto(args)
 
 		case "grid_scroll":
+			fmt.Println("grid_scroll:", args)
 			s.gridScroll(args)
 
 		case "win_pos": 
