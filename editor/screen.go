@@ -30,9 +30,6 @@ type Window struct {
 	cols       int
 	rows       int
 
-	colStart   int
-	rowStart   int
-
 	content          [][]*Char
 	colorContent     [][]*RGBA
 
@@ -322,12 +319,8 @@ func (s *Screen) paint(event *gui.QPaintEvent) {
 	left := rect.X()
 	width := rect.Width()
 	height := rect.Height()
-	// right := left + width
-	// bottom := top + height
 	row := int(float64(top) / float64(font.lineHeight))
 	col := int(float64(left) / font.truewidth)
-	// rows := int(math.Ceil(float64(bottom) / float64(font.lineHeight))) - row
-	// cols := int(math.Ceil(float64(right) / font.truewidth)) - col
 	rows := s.windows[s.activeGrid].rows
 	cols := s.windows[s.activeGrid].cols
 
@@ -351,7 +344,6 @@ func (s *Screen) paint(event *gui.QPaintEvent) {
 	p.SetFont(font.fontNew)
 
 	for y := row; y < row+rows; y++ {
-		// if y >= s.ws.rows {
 		if y >= s.windows[s.activeGrid].rows {
 			continue
 		}
@@ -607,20 +599,53 @@ func (s *Screen) gridResize(args []interface{}) {
 	if gridid == 1 {
 		return
 	}
+	if s.windows[gridid] != nil {
+		if s.windows[gridid].cols == cols || s.windows[gridid].rows == rows {
+			return
+		}
+	}
+
+	content := make([][]*Char, rows)
+	colorContent := make([][]*RGBA, rows)
+
+	for i := 0; i < rows; i++ {
+		content[i] = make([]*Char, cols)
+	}
+	for i := 0; i < rows; i++ {
+		colorContent[i] = make([]*RGBA, cols)
+	}
+
+	if s.windows[gridid] != nil {
+		for i := 0; i < rows; i++ {
+			if i >= len(s.windows[gridid].content) {
+				continue
+			}
+			for j := 0; j < cols; j++ {
+				if j >= len(s.windows[gridid].content[i]) {
+					continue
+				}
+				content[i][j] = s.windows[gridid].content[i][j]
+			}
+		}
+		for i := 0; i < rows; i++ {
+			if i >= len(s.windows[gridid].colorContent) {
+				continue
+			}
+			for j := 0; j < cols; j++ {
+				if j >= len(s.windows[gridid].colorContent[i]) {
+					continue
+				}
+				colorContent[i][j] = s.windows[gridid].colorContent[i][j]
+			}
+		}
+	}
+
 	s.windows[gridid] = &Window{
-		content: make([][]*Char, rows),
-		colorContent: make([][]*RGBA, rows),
+		content: content,
+		colorContent: colorContent,
+		cols: cols,
+		rows: rows,
 	}
-	for i := 0; i < rows; i++ {
-		s.windows[gridid].content[i] = make([]*Char, cols)
-	}
-	for i := 0; i < rows; i++ {
-		s.windows[gridid].colorContent[i] = make([]*RGBA, cols)
-	}
-	s.windows[gridid].cols = cols
-	s.windows[gridid].rows = rows
-	s.windows[gridid].colStart = cols
-	s.windows[gridid].rowStart = rows
 
 	s.queueRedrawAll()
 }
@@ -816,38 +841,30 @@ func (s *Screen) gridClear(args []interface{}) {
 	var gridid gridId
 	for _, arg := range args {
 		gridid = util.ReflectToInt(arg.([]interface{})[0])
-	}
-	if gridid == 1 { // Skip global grid id
-		return
-	}
+		if gridid == 1 { // Skip global grid id
+			return
+		}
 
-	content := s.windows[gridid].content
-	colorContent := s.windows[gridid].colorContent
-	content = make([][]*Char, s.windows[gridid].rows)
-	colorContent = make([][]*RGBA, s.windows[gridid].rows)
+		content := s.windows[gridid].content
+		colorContent := s.windows[gridid].colorContent
+		content = make([][]*Char, s.windows[gridid].rows)
+		colorContent = make([][]*RGBA, s.windows[gridid].rows)
 
-	for i := 0; i < s.windows[gridid].rows; i++ {
-		content[i] = make([]*Char, s.ws.cols)
+		for i := 0; i < s.windows[gridid].rows; i++ {
+			content[i] = make([]*Char, s.ws.cols)
+		}
+		for i := 0; i < s.windows[gridid].rows; i++ {
+			colorContent[i] = make([]*RGBA, s.ws.cols)
+		}
+		s.queueRedrawAll()
 	}
-	for i := 0; i < s.windows[gridid].rows; i++ {
-		colorContent[i] = make([]*RGBA, s.ws.cols)
-	}
-	s.queueRedrawAll()
 }
 
 func (s *Screen) gridLine(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		if gridid == 1 {
-			return
-		}
-		row := util.ReflectToInt(arg.([]interface{})[0])
-		col := util.ReflectToInt(arg.([]interface{})[0])
-		if s.windows[gridid].rowStart > row {
-			s.windows[gridid].rowStart = row
-		}
-		if s.windows[gridid].colStart > col {
-			s.windows[gridid].colStart = col
+			continue
 		}
 		s.updateGridContent(arg.([]interface{}))
 	}
@@ -865,6 +882,9 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	s.activeGrid = gridid
 
 	content := s.windows[gridid].content
+	if row >= s.windows[gridid].rows {
+		return
+	}
 	line := content[row]
 	cells := arg[3].([]interface{})
 	//oldFirstNormal := true
@@ -921,19 +941,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
  			if !oldNormalWidth {
  				numChars++
  			}
- 			// if x > 0 {
- 			// 	char := line[x-1]
- 			// 	if char != nil && char.char != "" && !char.normalWidth {
- 			// 		x--
- 			// 		numChars++
- 			// 	} else {
- 			// 		if !oldFirstNormal {
- 			// 			x--
- 			// 			numChars++
- 			// 		}
- 			// 	}
- 			// }
-			s.queueRedraw(0, row, numChars, 1)
 		} // end of makeCells()
 
 		r := 1
@@ -947,6 +954,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			makeCells()
 			r++
 		}
+		s.queueRedraw(0, row, s.windows[gridid].cols, 1)
  	}
 
 	return
@@ -957,14 +965,14 @@ func (s *Screen) gridScroll(args []interface{}) {
 	var rows int
 	for _, arg := range args {
 		gridid = util.ReflectToInt(arg.([]interface{})[0])
+		if gridid == 1 { // Skip globak grid id
+			return
+		}
 		s.scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])      // top
 		s.scrollRegion[1] = util.ReflectToInt(arg.([]interface{})[2]) - 1  // bot
 		s.scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3])      // left
 		s.scrollRegion[3] = util.ReflectToInt(arg.([]interface{})[4]) - 1  // right
 		rows = util.ReflectToInt(arg.([]interface{})[5])
-	}
-	if gridid == 1 { // Skip globak grid id
-		return
 	}
 
 	s.scroll(gridid, rows)
@@ -990,11 +998,27 @@ func (s *Screen) scroll(gridid, count int) {
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
 			for col := left; col <= right; col++ {
+				if len(content) <= row+count {
+				        continue
+				}
+				for _, line := range content {
+				        if len(line) <= col {
+				                return
+				        }
+				}
 				content[row][col] = content[row+count][col]
 			}
 		}
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
+				if len(content) <= row {
+				        continue
+				}
+				for _, line := range content {
+				        if len(line) <= col {
+				                return
+				        }
+				}
 				content[row][col] = nil
 			}
 		}
@@ -1005,11 +1029,27 @@ func (s *Screen) scroll(gridid, count int) {
 	} else {
 		for row := bot; row >= top-count; row-- {
 			for col := left; col <= right; col++ {
+				if len(content) <= row {
+				        continue
+				}
+				for _, line := range content {
+				        if len(line) <= col {
+				                return
+				        }
+				}
 				content[row][col] = content[row+count][col]
 			}
 		}
 		for row := top; row < top-count; row++ {
 			for col := left; col <= right; col++ {
+				if len(content) <= row {
+				        continue
+				}
+				for _, line := range content {
+				        if len(line) <= col {
+				                return
+				        }
+				}
 				content[row][col] = nil
 			}
 		}
