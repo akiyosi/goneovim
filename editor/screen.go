@@ -310,6 +310,9 @@ func (s *Screen) toolTip(text string) {
 }
 
 func (s *Screen) paint(event *gui.QPaintEvent) {
+	if s.activeGrid <= 1 {
+	        return
+	}
 	s.paintMutex.Lock()
 	defer s.paintMutex.Unlock()
 
