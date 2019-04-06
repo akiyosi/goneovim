@@ -810,7 +810,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			fmt.Println("win_external_pos:", args)
 		
 		case "win_hide": 
-			fmt.Println("win_hide:", args)
+			s.windowHide(args)
 		
 		case "win_scroll_over_start":
 			fmt.Println("win_scroll_over_start:", args)

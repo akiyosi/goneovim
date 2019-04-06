@@ -318,9 +318,6 @@ func (s *Screen) toolTip(text string) {
 }
 
 func (w *Window) paint(event *gui.QPaintEvent) {
-	// if s.windows[s.activeGrid] == nil {
-	// 	return
-	// }
 	w.paintMutex.Lock()
 	defer w.paintMutex.Unlock()
 
@@ -335,7 +332,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	rows := w.rows
 	cols := w.cols
 
-	// p := gui.NewQPainter2(s.widget)
 	p := gui.NewQPainter2(w.widget)
 	p.SetBackgroundMode(core.Qt__TransparentMode)
 	bg := w.s.ws.background
@@ -801,7 +797,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	}
 	line := content[row]
 	cells := arg[3].([]interface{})
-	//oldFirstNormal := true
 	oldNormalWidth := true
 	lastChar := &Char{}
 
@@ -892,7 +887,6 @@ func (s *Screen) gridScroll(args []interface{}) {
 	s.scroll(gridid, rows)
 }
 
-// func (s *Screen) scroll(args []interface{}) {
 func (s *Screen) scroll(gridid, count int) {
 	top := s.scrollRegion[0]
 	bot := s.scrollRegion[1]
@@ -983,7 +977,6 @@ func (s *Screen) update() {
 	width := s.queueRedrawArea[2] - x
 	height := s.queueRedrawArea[3] - y
 	if width > 0 && height > 0 {
-		// s.widget.Update2(
 		s.windows[s.activeGrid].widget.Update2(
 			int(float64(x)*s.ws.font.truewidth),
 			y*s.ws.font.lineHeight,
@@ -1020,19 +1013,6 @@ func (s *Screen) queueRedraw(x, y, width, height int) {
 	}
 }
 
-// func (s *Screen) posWin(x, y int) *Window {
-// 	for _, win := range s.curWins {
-// 		if win.pos[0] <= y && win.pos[1] <= x && (win.pos[0]+win.height+1) >= y && (win.pos[1]+win.width >= x) {
-// 			return win
-// 		}
-// 	}
-// 	return nil
-// }
-// 
-// func (s *Screen) cursorWin() *Window {
-// 	return s.posWin(s.cursor[1], s.cursor[0])
-// }
-
 func (w *Window) transparent(bg *RGBA) int {
 	t := 255
 	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
@@ -1046,13 +1026,6 @@ func (w *Window) transparent(bg *RGBA) int {
 }
 
 func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
-	// screen := s.ws.screen
-	// if screen.activeGrid == 1 {
-	// 	return
-	// }
-	// if screen.windows[screen.activeGrid] == nil {
-	// 	return
-	// }
 	if y >= len(w.content) {
 		return
 	}
@@ -1097,7 +1070,6 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 					)
 					p.FillRect(
 						rectF,
-						//gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0*255)), core.Qt__SolidPattern),
 						gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
 					)
 
@@ -1117,8 +1089,6 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 				)
 				p.FillRect(
 					rectF,
-					//gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0.2*255)),
-					// gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0*255)), core.Qt__SolidPattern),
 					gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
 				)
 
@@ -1139,21 +1109,12 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 		)
 		p.FillRect(
 			rectF,
-			// gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0.2*255)),
-			//gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0*255)), core.Qt__SolidPattern),
 			gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
 		)
 	}
 }
 
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
-	// screen := s.ws.screen
-	// if screen.activeGrid == 1 {
-	// 	return
-	// }
-	// if screen.windows[screen.activeGrid] == nil {
-	// 	return
-	// }
 	if y >= len(w.content) {
 		return
 	}
@@ -1162,7 +1123,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 	font.SetBold(false)
 	font.SetItalic(false)
 	pointF := core.NewQPointF()
-	// line := screen.content[y]
 	line := w.content[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
@@ -1266,7 +1226,6 @@ func (s *Screen) isNormalWidth(char string) bool {
 	if char[0] <= 127 {
 		return true
 	}
-	//return s.ws.font.fontMetrics.Width(char) == s.ws.font.truewidth
 	return s.ws.font.fontMetrics.HorizontalAdvance(char, -1) == s.ws.font.truewidth
 }
 
@@ -1330,6 +1289,19 @@ func (s *Screen) gridDestroy(args []interface{}) {
 			continue
 		}
 		s.windows[gridid] = nil
+	}
+}
+
+func (s *Screen) windowHide(args []interface{}) {
+	for _, win := range s.windows {
+		win.widget.Show()
+	}
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		if gridid == 1 {
+			continue
+		}
+		s.windows[gridid].widget.Hide()
 	}
 }
 
