@@ -804,7 +804,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.windowPosition(args)
 		
 		case "win_float_pos": 
-			fmt.Println("win_float_pos:", args)
+			s.windowFloatPosition(args)
 		
 		case "win_external_pos": 
 			fmt.Println("win_external_pos:", args)

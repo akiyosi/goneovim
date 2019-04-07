@@ -21,6 +21,7 @@ type gridId = int
 // Window is
 type Window struct {
 	id         int
+	anchor     int
 
 	s          *Screen
 	widget     *widgets.QWidget
@@ -663,7 +664,6 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	height := rows * int(s.ws.font.lineHeight)
 	rect := core.NewQRect4(0, 0, width, height)
 	win.widget.SetGeometry(rect)
-	win.widget.SetGeometry(rect)
 	win.move(win.pos[0], win.pos[1])
 
 	s.queueRedrawAll()
@@ -1290,6 +1290,33 @@ func (s *Screen) gridDestroy(args []interface{}) {
 			continue
 		}
 		s.windows[gridid] = nil
+	}
+}
+
+func (s *Screen) windowFloatPosition(args []interface{}) {
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		if isSkipGlobalId(gridid) {
+			continue
+		}
+		s.windows[gridid].id = util.ReflectToInt(arg.([]interface{})[1])
+		s.windows[gridid].anchor = util.ReflectToInt(arg.([]interface{})[2])
+		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
+		anchorRow := util.ReflectToInt(arg.([]interface{})[4])
+		anchorCol := util.ReflectToInt(arg.([]interface{})[5])
+		// focusable := util.ReflectToInt(arg.([]interface{})[6])
+		s.windows[gridid].pos[0] = anchorCol
+		s.windows[gridid].pos[1] = anchorRow
+		s.windows[gridid].move(anchorCol, anchorRow)
+		s.windows[gridid].widget.SetParent(s.windows[anchorGrid].widget)
+
+		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+		shadow.SetBlurRadius(38)
+		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
+		shadow.SetOffset3(-2, 6)
+		s.windows[gridid].widget.SetGraphicsEffect(shadow)
+
+		s.windows[gridid].widget.Show()
 	}
 }
 
