@@ -627,14 +627,15 @@ func (s *StatuslineMode) updateStatusline() {
 }
 
 func (s *StatuslineMode) redraw() {
-	if s.s.ws.mode == s.mode && s.fg.equals(s.s.ws.foreground) {
+	iconColor := warpColor(s.fg, 10)
+	isSkipUpdateColor := ! (warpColor(s.s.ws.foreground, 10).equals(iconColor))
+	if s.s.ws.mode == s.mode && isSkipUpdateColor {
 		return
 	}
 	s.fg = s.s.ws.foreground
 	s.mode = s.s.ws.mode
 	text := s.mode
 	bg := newRGBA(102, 153, 204, 1)
-	iconColor := warpColor(s.fg, 10)
 	switch s.mode {
 	case "normal":
 		text = "Normal"

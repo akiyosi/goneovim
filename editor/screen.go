@@ -598,7 +598,7 @@ func (s *Screen) gridResize(args []interface{}) {
 		gridid = util.ReflectToInt(arg.([]interface{})[0])
 		cols = util.ReflectToInt(arg.([]interface{})[1])
 		rows = util.ReflectToInt(arg.([]interface{})[2])
-		if gridid == 1 {
+		if isSkipGlobalId(gridid) {
 			continue
 		}
 		s.resizeWindow(gridid, cols, rows)
@@ -623,7 +623,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		colorContent[i] = make([]*RGBA, cols)
 	}
 
-	if win != nil {
+	if win != nil && gridid != 1 {
 		for i := 0; i < rows; i++ {
 			if i >= len(win.content) {
 				continue
@@ -666,14 +666,13 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win.widget.SetGeometry(rect)
 	win.move(win.pos[0], win.pos[1])
 
-
 	s.queueRedrawAll()
 }
 
 func (s *Screen) cursorGoto(args []interface{}) {
 	pos, _ := args[0].([]interface{})
 	gridid := util.ReflectToInt(pos[0])
-	if gridid == 1 {
+	if isSkipGlobalId(gridid) {
 		return
 	}
 	s.cursor[0] = util.ReflectToInt(pos[1])
@@ -750,7 +749,7 @@ func (s *Screen) gridClear(args []interface{}) {
 	var gridid gridId
 	for _, arg := range args {
 		gridid = util.ReflectToInt(arg.([]interface{})[0])
-		if gridid == 1 { // Skip global grid id
+		if isSkipGlobalId(gridid) {
 			return
 		}
 
@@ -772,7 +771,7 @@ func (s *Screen) gridClear(args []interface{}) {
 func (s *Screen) gridLine(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		if gridid == 1 {
+		if isSkipGlobalId(gridid) {
 			continue
 		}
 		s.updateGridContent(arg.([]interface{}))
@@ -786,7 +785,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	row := util.ReflectToInt(arg[1])
 	col := util.ReflectToInt(arg[2])
 
-	if gridid == 1 { // Skip global grid id
+	if isSkipGlobalId(gridid) {
 		return
 	}
 	s.activeGrid = gridid
@@ -797,6 +796,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	}
 	line := content[row]
 	cells := arg[3].([]interface{})
+
 	oldNormalWidth := true
 	lastChar := &Char{}
 
@@ -874,7 +874,7 @@ func (s *Screen) gridScroll(args []interface{}) {
 	var rows int
 	for _, arg := range args {
 		gridid = util.ReflectToInt(arg.([]interface{})[0])
-		if gridid == 1 { // Skip globak grid id
+		if isSkipGlobalId(gridid) {
 			return
 		}
 		s.scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])      // top
@@ -972,18 +972,21 @@ func (s *Screen) update() {
 	if s.windows[s.activeGrid] == nil {
 		return
 	}
-	x := s.queueRedrawArea[0]
-	y := s.queueRedrawArea[1]
-	width := s.queueRedrawArea[2] - x
-	height := s.queueRedrawArea[3] - y
+
+	x := int(float64(s.queueRedrawArea[0]) * s.ws.font.truewidth)
+	y := s.queueRedrawArea[1] * s.ws.font.lineHeight
+	width := int(float64(s.queueRedrawArea[2] - s.queueRedrawArea[0]) * s.ws.font.truewidth)
+	height := (s.queueRedrawArea[3] - s.queueRedrawArea[1]) * s.ws.font.lineHeight
+
 	if width > 0 && height > 0 {
 		s.windows[s.activeGrid].widget.Update2(
-			int(float64(x)*s.ws.font.truewidth),
-			y*s.ws.font.lineHeight,
-			int(float64(width)*s.ws.font.truewidth),
-			height*s.ws.font.lineHeight,
+			x,
+			y,
+			width,
+			height,
 		)
 	}
+
 	s.queueRedrawArea[0] = s.ws.cols
 	s.queueRedrawArea[1] = s.ws.rows
 	s.queueRedrawArea[2] = 0
@@ -1135,8 +1138,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 			}
 		}
 	}
-	// if col+cols < w.cols {
-	// }
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -1264,7 +1265,7 @@ func (s *Screen) windowPosition(args []interface{}) {
 		// width := util.ReflectToInt(arg.([]interface{})[4])
 		// height := util.ReflectToInt(arg.([]interface{})[5])
 
-		if gridid == 1 {
+		if isSkipGlobalId(gridid) {
 			continue
 		}
 
@@ -1285,7 +1286,7 @@ func (s *Screen) windowPosition(args []interface{}) {
 func (s *Screen) gridDestroy(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		if gridid == 1 {
+		if isSkipGlobalId(gridid) {
 			continue
 		}
 		s.windows[gridid] = nil
@@ -1298,7 +1299,7 @@ func (s *Screen) windowHide(args []interface{}) {
 	}
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		if gridid == 1 {
+		if isSkipGlobalId(gridid) {
 			continue
 		}
 		s.windows[gridid].widget.Hide()
@@ -1308,7 +1309,7 @@ func (s *Screen) windowHide(args []interface{}) {
 func (s *Screen) windowClose(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		if gridid == 1 {
+		if isSkipGlobalId(gridid) {
 			continue
 		}
 		s.windows[gridid].widget.Hide()
@@ -1321,4 +1322,14 @@ func (w *Window) move(col int, row int) {
 	w.widget.Move2(x, y)
 }
 
-
+func isSkipGlobalId(id gridId) bool {
+	if editor.config.Editor.SkipGlobalId {
+		if id == 1 {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		return false
+	}
+}

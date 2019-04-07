@@ -25,6 +25,7 @@ import (
 // disableIMEinNormal = true
 // startFullScreen = true
 // transparent = 0.5
+// SkipGlobalId = true
 // ginitvim = '''
 //   set guifont=FuraCode\ Nerd\ Font\ Mono:h14
 //   if g:gonvim_running == 1
@@ -121,6 +122,7 @@ type editorConfig struct {
 	GinitVim           string
 	StartFullscreen    bool
 	Transparent        float64
+	SkipGlobalId       bool
 }
 
 type statusLineConfig struct {
@@ -192,6 +194,8 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.Editor.ExtWildmenu = true
 	config.Editor.ExtPopupmenu = true
 	config.Editor.ExtTabline = true
+
+	config.Editor.SkipGlobalId = false
 
 	config.Palette.AreaRatio = 0.6
 	config.Palette.MaxNumberOfResultItems = 30
