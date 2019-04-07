@@ -17,6 +17,18 @@ func ReflectToInt(iface interface{}) int {
 	return 0
 }
 
+func ReflectToFloat(iface interface{}) float64 {
+	i, ok := iface.(float64)
+	if ok {
+		return float64(i)
+	}
+	u, ok := iface.(float32)
+	if ok {
+		return float64(u)
+	}
+	return 0
+}
+
 func IsZero(d interface{}) bool {
 	if d == nil {
 		return false

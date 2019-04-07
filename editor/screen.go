@@ -1302,12 +1302,14 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		s.windows[gridid].id = util.ReflectToInt(arg.([]interface{})[1])
 		s.windows[gridid].anchor = util.ReflectToInt(arg.([]interface{})[2])
 		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
-		anchorRow := util.ReflectToInt(arg.([]interface{})[4])
-		anchorCol := util.ReflectToInt(arg.([]interface{})[5])
-		// focusable := util.ReflectToInt(arg.([]interface{})[6])
+		// why float types??
+		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
+		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
+		// focusable := arg.([]interface{})[6]
+
 		s.windows[gridid].pos[0] = anchorCol
 		s.windows[gridid].pos[1] = anchorRow
-		s.windows[gridid].move(anchorCol, anchorRow)
+		s.windows[gridid].move(s.windows[gridid].pos[0], s.windows[gridid].pos[1])
 		s.windows[gridid].widget.SetParent(s.windows[anchorGrid].widget)
 
 		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
