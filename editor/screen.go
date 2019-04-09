@@ -660,7 +660,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win.cols = cols
 	win.rows = rows
 
-	width := cols * int(s.ws.font.truewidth)
+	width := int(float64(cols) * s.ws.font.truewidth)
 	height := rows * int(s.ws.font.lineHeight)
 	rect := core.NewQRect4(0, 0, width, height)
 	win.widget.SetGeometry(rect)
@@ -1346,7 +1346,7 @@ func (s *Screen) windowClose(args []interface{}) {
 }
 
 func (w *Window) move(col int, row int) {
-	x := col * int(w.s.ws.font.truewidth)
+	x := int(float64(col) * w.s.ws.font.truewidth)
 	y := row * int(w.s.ws.font.lineHeight)
 	w.widget.Move2(x, y)
 }
