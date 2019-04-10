@@ -1308,6 +1308,7 @@ func (s *Screen) gridDestroy(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
+		s.windows[gridid].widget.Hide()
 		s.windows[gridid] = nil
 	}
 }
@@ -1364,7 +1365,9 @@ func (s *Screen) windowClose(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		s.windows[gridid].widget.Hide()
+		win := s.windows[gridid]
+		s.ws.nvim.SetCurrentWindow(win.id)
+		s.ws.nvim.Command("close")
 	}
 }
 
