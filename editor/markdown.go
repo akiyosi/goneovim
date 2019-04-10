@@ -164,7 +164,7 @@ func (m *Markdown) scrollDown() {
 func (m *Markdown) openReadme(reponame string, readme string) {
 	for gridid, win := range m.ws.screen.windows {
 		if gridid == m.mdGridId {
-			m.ws.nvim.SetCurrentWindow(win.win)
+			m.ws.nvim.SetCurrentWindow(win.id)
 			m.ws.nvim.Command("close")
 			m.htmlSet = false
 			if editor.deinSide.preDisplayedReadme == reponame {
