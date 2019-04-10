@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -20,23 +21,23 @@ type gridId = int
 
 // Window is
 type Window struct {
-	id         int
-	anchor     int
-
 	s          *Screen
-	widget     *widgets.QWidget
-	win        nvim.Window
+
+	id         nvim.Window
 	pos        [2]int
-	tab        nvim.Tabpage
-
-	width      int
-	height     int
-
+	anchor     int
 	cols       int
 	rows       int
-
 	content          [][]*Char
 	colorContent     [][]*RGBA
+
+	widget     *widgets.QWidget
+	win        nvim.Window
+	tab        nvim.Tabpage
+
+	// only use minimap
+	width      int
+	height     int
 
 	hl         string
 	bg         *RGBA
@@ -360,7 +361,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawText(p, y, col, cols, [2]int{0, 0})
 	}
 
-	w.s.drawWindows(p, row, col, rows, cols)
+	// w.s.drawWindows(p, row, col, rows, cols)
 	p.DestroyQPainter()
 	w.s.ws.markdown.updatePos()
 }
@@ -517,80 +518,80 @@ func (s *Screen) convertMouse(event *gui.QMouseEvent) string {
 	return fmt.Sprintf("<%s%s%s><%d,%d>", editor.modPrefix(mod), buttonName, evType, pos[0], pos[1])
 }
 
-func (s *Screen) drawWindows(p *gui.QPainter, row, col, rows, cols int) {
-	done := make(chan struct{}, 1000)
-	go func() {
-		s.getWindows()
-		close(done)
-	}()
-	select {
-	case <-done:
-	case <-time.After(500 * time.Microsecond):
-	}
-}
-
-func (s *Screen) getWindows() {
-	wins := map[nvim.Window]*Window{}
-	neovim := s.ws.nvim
-	curtab, _ := neovim.CurrentTabpage()
-	s.curtab = curtab
-	nwins, _ := neovim.TabpageWindows(curtab)
-	b := neovim.NewBatch()
-	for _, nwin := range nwins {
-		win := &Window{
-			win: nwin,
-		}
-		b.WindowWidth(nwin, &win.width)
-		b.WindowHeight(nwin, &win.height)
-		b.WindowPosition(nwin, &win.pos)
-		b.WindowTabpage(nwin, &win.tab)
-		wins[nwin] = win
-	}
-	b.Option("cmdheight", &s.cmdheight)
-	err := b.Execute()
-	if err != nil {
-		return
-	}
-	s.curWins = wins
-	s.setBufferNames()
-}
-
-func (s *Screen) setBufferNames() {
-	neovim := s.ws.nvim
-	for _, win := range s.curWins {
-		buf, _ := neovim.WindowBuffer(win.win)
-		win.bufName, _ = neovim.BufferName(buf)
-
-		if win.height+win.pos[0] < s.ws.rows-s.cmdheight {
-			win.statusline = true
-		} else {
-			win.statusline = false
-		}
-		neovim.WindowOption(win.win, "winhl", &win.hl)
-		if win.hl != "" {
-			parts := strings.Split(win.hl, ",")
-			for _, part := range parts {
-				if strings.HasPrefix(part, "Normal:") {
-					hl := part[7:]
-					result := ""
-					neovim.Eval(fmt.Sprintf("synIDattr(hlID('%s'), 'bg')", hl), &result)
-					if result != "" {
-						var r, g, b int
-						format := "#%02x%02x%02x"
-						n, err := fmt.Sscanf(result, format, &r, &g, &b)
-						if err != nil {
-							continue
-						}
-						if n != 3 {
-							continue
-						}
-						win.bg = newRGBA(r, g, b, 1)
-					}
-				}
-			}
-		}
-	}
-}
+// func (s *Screen) drawWindows(p *gui.QPainter, row, col, rows, cols int) {
+// 	done := make(chan struct{}, 1000)
+// 	go func() {
+// 		s.getWindows()
+// 		close(done)
+// 	}()
+// 	select {
+// 	case <-done:
+// 	case <-time.After(500 * time.Microsecond):
+// 	}
+// }
+// 
+// func (s *Screen) getWindows() {
+// 	wins := map[nvim.Window]*Window{}
+// 	neovim := s.ws.nvim
+// 	curtab, _ := neovim.CurrentTabpage()
+// 	s.curtab = curtab
+// 	nwins, _ := neovim.TabpageWindows(curtab)
+// 	b := neovim.NewBatch()
+// 	for _, nwin := range nwins {
+// 		win := &Window{
+// 			win: nwin,
+// 		}
+// 		b.WindowWidth(nwin, &win.width)
+// 		b.WindowHeight(nwin, &win.height)
+// 		b.WindowPosition(nwin, &win.pos)
+// 		b.WindowTabpage(nwin, &win.tab)
+// 		wins[nwin] = win
+// 	}
+// 	b.Option("cmdheight", &s.cmdheight)
+// 	err := b.Execute()
+// 	if err != nil {
+// 		return
+// 	}
+// 	s.curWins = wins
+// 	s.setBufferNames()
+// }
+// 
+// func (s *Screen) setBufferNames() {
+// 	neovim := s.ws.nvim
+// 	for _, win := range s.curWins {
+// 		buf, _ := neovim.WindowBuffer(win.win)
+// 		win.bufName, _ = neovim.BufferName(buf)
+// 
+// 		if win.height+win.pos[0] < s.ws.rows-s.cmdheight {
+// 			win.statusline = true
+// 		} else {
+// 			win.statusline = false
+// 		}
+// 		neovim.WindowOption(win.win, "winhl", &win.hl)
+// 		if win.hl != "" {
+// 			parts := strings.Split(win.hl, ",")
+// 			for _, part := range parts {
+// 				if strings.HasPrefix(part, "Normal:") {
+// 					hl := part[7:]
+// 					result := ""
+// 					neovim.Eval(fmt.Sprintf("synIDattr(hlID('%s'), 'bg')", hl), &result)
+// 					if result != "" {
+// 						var r, g, b int
+// 						format := "#%02x%02x%02x"
+// 						n, err := fmt.Sscanf(result, format, &r, &g, &b)
+// 						if err != nil {
+// 							continue
+// 						}
+// 						if n != 3 {
+// 							continue
+// 						}
+// 						win.bg = newRGBA(r, g, b, 1)
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// }
 
 func (s *Screen) gridResize(args []interface{}) {
 	var gridid gridId
@@ -602,7 +603,25 @@ func (s *Screen) gridResize(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
+		s.assignMdGridid(gridid)
 		s.resizeWindow(gridid, cols, rows)
+
+	}
+}
+
+func (s *Screen) assignMdGridid(gridid gridId) {
+	if !s.ws.markdown.gridIdTrap || gridid == 1 {
+		return
+	}
+	maxid := 0
+	for id, _ := range s.windows {
+		if maxid < id {
+			maxid = id
+		}
+	}
+	if maxid < gridid {
+		s.ws.markdown.mdGridId = gridid
+		s.ws.markdown.gridIdTrap = false
 	}
 }
 
@@ -1274,7 +1293,7 @@ func (s *Screen) windowPosition(args []interface{}) {
 			continue
 		}
 
-		win.id = id
+		win.id = *(*nvim.Window)(unsafe.Pointer(&id))
 		win.pos[0] = startCol
 		win.pos[1] = startRow
 		win.move(startCol, startRow)
@@ -1299,7 +1318,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		s.windows[gridid].id = util.ReflectToInt(arg.([]interface{})[1])
+		id := util.ReflectToInt(arg.([]interface{})[1])
+		s.windows[gridid].id = *(*nvim.Window)((unsafe.Pointer)(&id))
 		s.windows[gridid].anchor = util.ReflectToInt(arg.([]interface{})[2])
 		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
 		// why float types??
@@ -1324,6 +1344,9 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 func (s *Screen) windowHide(args []interface{}) {
 	for _, win := range s.windows {
+		if win == nil {
+			continue
+		}
 		win.widget.Show()
 	}
 	for _, arg := range args {

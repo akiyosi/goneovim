@@ -800,16 +800,16 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "grid_scroll":
 			s.gridScroll(args)
 
-		case "win_pos": 
+		case "win_pos":
 			s.windowPosition(args)
 		
-		case "win_float_pos": 
+		case "win_float_pos":
 			s.windowFloatPosition(args)
 		
-		case "win_external_pos": 
+		case "win_external_pos":
 			fmt.Println("win_external_pos:", args)
 		
-		case "win_hide": 
+		case "win_hide":
 			s.windowHide(args)
 		
 		case "win_scroll_over_start":
@@ -818,7 +818,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "win_scroll_over_reset":
 			fmt.Println("win_scroll_over_reset:", args)
 
-		case "win_close": 
+		case "win_close":
 			s.windowClose(args)
 
 		// case "cursor_goto":
