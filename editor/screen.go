@@ -21,31 +21,31 @@ type gridId = int
 
 // Window is
 type Window struct {
-	s          *Screen
+	paintMutex       sync.Mutex
+	redrawMutex      sync.Mutex
+
+	s                *Screen
+	content          [][]*Char
+	colorContent     [][]*RGBA
 
 	id         nvim.Window
 	pos        [2]int
 	anchor     int
 	cols       int
 	rows       int
-	content          [][]*Char
-	colorContent     [][]*RGBA
 
 	widget     *widgets.QWidget
+
+	// maybe only use minimap
 	win        nvim.Window
 	tab        nvim.Tabpage
-
 	// only use minimap
 	width      int
 	height     int
-
-	hl         string
-	bg         *RGBA
 	statusline bool
 	bufName    string
-
-	paintMutex       sync.Mutex
-	redrawMutex      sync.Mutex
+	hl         string
+	bg         *RGBA
 }
 
 // Screen is the main editor area
@@ -393,7 +393,7 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		dx := math.Abs(float64(s.scrollDust[0]))
 		dy := math.Abs(float64(s.scrollDust[1]))
 
-		fontheight := float64(float64(font.lineHeight))
+		fontheight := float64(font.lineHeight)
 		fontwidth := float64(font.truewidth)
 
 		s.scrollDust[0] += h
