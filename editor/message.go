@@ -7,6 +7,8 @@ import (
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
+
+	"github.com/akiyosi/gonvim/util"
 )
 
 // Message isj
@@ -25,6 +27,7 @@ type MessageItem struct {
 	m       *Message
 	active  bool
 	kind    string
+	attrId  int
 	text    string
 	hideAt  time.Time
 	expired bool
@@ -42,7 +45,6 @@ func initMessage() *Message {
 	layout.SetSpacing(0)
 	layout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 	widget.SetLayout(layout)
-	widget.SetStyleSheet("* {background-color: rgba(24, 29, 34, 1); color: rgba(205, 211, 222, 1);}")
 
 	m := &Message{
 		width:   width,
@@ -55,17 +57,18 @@ func initMessage() *Message {
 	for i := 0; i < 10; i++ {
 		w := widgets.NewQWidget(nil, 0)
 		w.SetContentsMargins(0, 0, 0, 0)
-		w.SetStyleSheet(".QWidget {border-left: 1px solid #000; border-bottom: 1px solid #000;}")
-		w.SetFixedWidth(34)
+		w.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
+		w.SetFixedWidth(editor.iconSize)
 		icon := svg.NewQSvgWidget(nil)
-		icon.SetFixedSize2(14, 14)
+		icon.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
+		icon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		icon.SetParent(w)
 		icon.Move2(10, 10)
 		l := widgets.NewQLabel(nil, 0)
+		l.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		l.SetContentsMargins(10, 10, 10, 10)
-		l.SetStyleSheet("border-bottom: 1px solid #000; border-left: 1px solid #000; border-right: 1px solid #000;")
 		l.SetWordWrap(true)
-		l.SetText(fmt.Sprintf("ldksj sdlkfjd  lkdsj sdlkfj sdlfkj lsdlfj  dslfjdsf sdfdslfkjdsf lksdjf sdklfj sldfkj sldkfj sdlfkj sdlkfjsdf test%d", i))
+		l.SetText("dummy text")
 		layout.AddWidget(w, i, 0, 0)
 		layout.AddWidget(l, i, 1, 0)
 		w.Hide()
@@ -80,6 +83,14 @@ func initMessage() *Message {
 	widget.Show()
 	m.items = items
 	return m
+}
+
+func (m *Message) setColor() {
+	fg := editor.colors.widgetFg.String()
+	bg := editor.colors.widgetBg
+	// transparent := editor.config.Editor.Transparent / 2.0
+	transparent := transparent()
+	m.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }", bg.R, bg.G, bg.B, transparent, fg))
 }
 
 func (m *Message) subscribe() {
@@ -120,30 +131,52 @@ func (m *Message) update() {
 
 func (m *Message) resize() {
 	m.width = m.ws.width / 4
-	m.widget.Move2(m.ws.width-m.width-34, 0)
-	m.widget.Resize2(m.width+34, 0)
+	m.widget.Move2(m.ws.width-m.width-editor.iconSize, 0)
+	m.widget.Resize2(m.width+editor.iconSize, 0)
 	for _, item := range m.items {
 		item.label.SetMinimumHeight(0)
 		item.label.SetMinimumHeight(item.label.HeightForWidth(m.width))
 	}
 }
 
-func (m *Message) chunk(args []interface{}) {
-	text := ""
+func (m *Message) msgShow(args []interface{}) {
 	for _, arg := range args {
-		chunk, ok := arg.([]interface{})
+		kind, ok := arg.([]interface{})[0].(string)
 		if !ok {
 			continue
 		}
-		if len(chunk) != 2 {
-			continue
+
+		text := ""
+		var attrId int
+		for _, tupple := range arg.([]interface{})[1].([]interface{}) {
+			chunk, ok := tupple.([]interface{})
+			if !ok {
+				continue
+			}
+			if len(chunk) != 2 {
+				continue
+			}
+			attrId = util.ReflectToInt(chunk[0])
+			if !ok {
+				continue
+			}
+			msg, ok := chunk[1].(string)
+			if !ok {
+				continue
+			}
+			text += msg
 		}
-		msg, ok := chunk[0].(string)
-		if !ok {
-			continue
+
+		replaceLast := false
+		if len(arg.([]interface{})) > 2 {
+			replaceLast, ok = arg.([]interface{})[2].(bool)
 		}
-		text += msg
+
+		m.makeMessage(kind, attrId, text, replaceLast)
 	}
+}
+
+func (m *Message) makeMessage(kind string, attrId int, text string, replaceLast  bool) {
 	if text == "" {
 		return
 	}
@@ -167,15 +200,35 @@ func (m *Message) chunk(args []interface{}) {
 		}
 	}
 
+	if replaceLast {
+		for _, i := range m.items {
+			i.hide()
+		}
+	}
+
 	item.hideAt = time.Now().Add(time.Duration(m.expires) * time.Second)
 	time.AfterFunc(time.Duration(m.expires+1)*time.Second, func() {
 		m.ws.signal.MessageSignal()
 	})
-	item.setKind(m.kind)
+	item.attrId = attrId
+	item.setKind(kind)
 	item.setText(text)
 	item.show()
-	m.widget.Resize2(m.width+34, 0)
+	m.widget.Resize2(m.width+editor.iconSize, 0)
 }
+
+func (m *Message) msgClear() {
+	for _, item := range m.items {
+		item.hide()
+	}
+}
+
+func (m *Message) msgHistoryShow(args []interface{}) {
+	for _, arg := range args {
+		m.msgShow((arg.([]interface{})[0]).([]interface{}))
+	}
+}
+
 
 func (i *MessageItem) setText(text string) {
 	i.text = text
@@ -217,6 +270,8 @@ func (i *MessageItem) show() {
 	i.label.Show()
 	i.icon.Show()
 	i.widget.Show()
+	i.m.widget.Raise()
+	i.widget.Raise()
 }
 
 func (i *MessageItem) setKind(kind string) {
@@ -224,15 +279,18 @@ func (i *MessageItem) setKind(kind string) {
 		return
 	}
 	i.kind = kind
-	style := "border-bottom: 1px solid #000; border-left: 1px solid #000; border-right: 1px solid #000;"
+	var style string
+	var color *RGBA
 	switch i.kind {
-	case "emsg":
-		style += "color: rgba(204, 62, 68, 1);"
-		svgContent := editor.getSvg("fire", newRGBA(204, 62, 68, 1))
+	case "emsg", "echo", "echomsg", "echoerr", "return_prompt", "quickfix" :
+		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
+		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
+		svgContent := editor.getSvg(i.kind, color)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	default:
-		style += "color: rgba(81, 154, 186, 1);"
-		svgContent := editor.getSvg("comment", nil)
+		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
+		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
+		svgContent := editor.getSvg("echo", nil)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	i.label.SetStyleSheet(style)

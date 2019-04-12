@@ -51,8 +51,7 @@ type Workspace struct {
 	loc        *Locpopup
 	cmdline    *Cmdline
 	signature  *Signature
-	// Need https://github.com/neovim/neovim/pull/7466 to be merged
-	// message    *Message
+	message    *Message
 	minimap *MiniMap
 	width   int
 	height  int
@@ -162,10 +161,10 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.signature = initSignature()
 	w.signature.widget.SetParent(w.screen.widget)
 	w.signature.ws = w
-	// Need https://github.com/neovim/neovim/pull/7466 to be merged
-	// w.message = initMessage()
+	w.message = initMessage()
 	// w.message.widget.SetParent(w.screen.widget)
-	// w.message.ws = w
+	w.message.widget.SetParent(editor.window)
+	w.message.ws = w
 	w.cmdline = initCmdline()
 	w.cmdline.ws = w
 	w.minimap = newMiniMap()
@@ -331,8 +330,7 @@ func (w *Workspace) attachUI(path string) error {
 	w.tabline.subscribe()
 	w.statusline.subscribe()
 	w.loc.subscribe()
-	// NOTE: Need https://github.com/neovim/neovim/pull/7466 to be merged
-	// w.message.subscribe()
+	w.message.subscribe()
 	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
 
 	w.uiAttached = true
@@ -684,7 +682,7 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 						o["ext_wildmenu"] = editor.config.Editor.ExtWildmenu
 					} else if name == "cmdline_show" {
 						o["ext_cmdline"] = editor.config.Editor.ExtCmdline
-					} else if name == "msg_chunk" {
+					} else if name == "msg_show" {
 						o["ext_messages"] = editor.config.Editor.ExtMessage
 					} else if name == "popupmenu_show" {
 						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
@@ -737,7 +735,7 @@ func (w *Workspace) updateSize() {
 
 	w.screen.updateSize()
 	w.palette.resize()
-	// w.message.resize() // Need https://github.com/neovim/neovim/pull/7466 to be merged
+	w.message.resize()
 
 	// notification
 	e.updateNotificationPos()
@@ -870,25 +868,12 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.cmdline.wildmenuSelect(args)
 		case "wildmenu_hide":
 			w.cmdline.wildmenuHide()
-		case "msg_start_kind":
-			// Need https://github.com/neovim/neovim/pull/7466 to be merged
-			// if len(args) > 0 {
-			// 	kinds, ok := args[len(args)-1].([]interface{})
-			// 	if ok {
-			// 		if len(kinds) > 0 {
-			// 			kind, ok := kinds[len(kinds)-1].(string)
-			// 			if ok {
-			// 				w.message.kind = kind
-			// 			}
-			// 		}
-			// 	}
-			// }
-		case "msg_chunk":
-			// Need https://github.com/neovim/neovim/pull/7466 to be merged
-			// w.message.chunk(args)
-		case "msg_end":
-		case "msg_showcmd":
-		case "messages":
+		case "msg_show":
+			w.message.msgShow(args)
+		case "msg_clear":
+			w.message.msgClear()
+		case "msg_history_show":
+			w.message.msgHistoryShow(args)
 		case "busy_start":
 		case "busy_stop":
 		default:
@@ -990,6 +975,7 @@ func (w *Workspace) updateWorkspaceColor() {
 	w.scrollBar.setColor()
 	w.minimap.setColor()
 	w.loc.setColor()
+	w.message.setColor()
 	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: %s; text-decoration: underline; color: %s; }", editor.colors.selectedBg.String(), editor.colors.fg.String()))
 }
 
