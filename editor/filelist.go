@@ -220,7 +220,7 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	f.widget.SetCursor(cursor)
 }
 
 func (f *Fileitem) leaveEvent(event *core.QEvent) {
@@ -234,10 +234,9 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 		svgModified = editor.getSvg("circle", c)
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
-	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__ArrowCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	f.widget.SetCursor(cursor)
 }
 
 func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {

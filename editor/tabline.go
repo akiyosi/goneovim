@@ -333,7 +333,7 @@ func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
 
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	t.widget.SetCursor(cursor)
 }
 
 func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
@@ -342,8 +342,7 @@ func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
 	svgContent := editor.getSvg("cross", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
-	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__ArrowCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	t.widget.SetCursor(cursor)
 }
