@@ -518,81 +518,6 @@ func (s *Screen) convertMouse(event *gui.QMouseEvent) string {
 	return fmt.Sprintf("<%s%s%s><%d,%d>", editor.modPrefix(mod), buttonName, evType, pos[0], pos[1])
 }
 
-// func (s *Screen) drawWindows(p *gui.QPainter, row, col, rows, cols int) {
-// 	done := make(chan struct{}, 1000)
-// 	go func() {
-// 		s.getWindows()
-// 		close(done)
-// 	}()
-// 	select {
-// 	case <-done:
-// 	case <-time.After(500 * time.Microsecond):
-// 	}
-// }
-// 
-// func (s *Screen) getWindows() {
-// 	wins := map[nvim.Window]*Window{}
-// 	neovim := s.ws.nvim
-// 	curtab, _ := neovim.CurrentTabpage()
-// 	s.curtab = curtab
-// 	nwins, _ := neovim.TabpageWindows(curtab)
-// 	b := neovim.NewBatch()
-// 	for _, nwin := range nwins {
-// 		win := &Window{
-// 			win: nwin,
-// 		}
-// 		b.WindowWidth(nwin, &win.width)
-// 		b.WindowHeight(nwin, &win.height)
-// 		b.WindowPosition(nwin, &win.pos)
-// 		b.WindowTabpage(nwin, &win.tab)
-// 		wins[nwin] = win
-// 	}
-// 	b.Option("cmdheight", &s.cmdheight)
-// 	err := b.Execute()
-// 	if err != nil {
-// 		return
-// 	}
-// 	s.curWins = wins
-// 	s.setBufferNames()
-// }
-// 
-// func (s *Screen) setBufferNames() {
-// 	neovim := s.ws.nvim
-// 	for _, win := range s.curWins {
-// 		buf, _ := neovim.WindowBuffer(win.win)
-// 		win.bufName, _ = neovim.BufferName(buf)
-// 
-// 		if win.height+win.pos[0] < s.ws.rows-s.cmdheight {
-// 			win.statusline = true
-// 		} else {
-// 			win.statusline = false
-// 		}
-// 		neovim.WindowOption(win.win, "winhl", &win.hl)
-// 		if win.hl != "" {
-// 			parts := strings.Split(win.hl, ",")
-// 			for _, part := range parts {
-// 				if strings.HasPrefix(part, "Normal:") {
-// 					hl := part[7:]
-// 					result := ""
-// 					neovim.Eval(fmt.Sprintf("synIDattr(hlID('%s'), 'bg')", hl), &result)
-// 					if result != "" {
-// 						var r, g, b int
-// 						format := "#%02x%02x%02x"
-// 						n, err := fmt.Sscanf(result, format, &r, &g, &b)
-// 						if err != nil {
-// 							continue
-// 						}
-// 						if n != 3 {
-// 							continue
-// 						}
-// 						win.bg = newRGBA(r, g, b, 1)
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
 func (s *Screen) gridResize(args []interface{}) {
 	var gridid gridId
 	var rows, cols int
@@ -605,7 +530,6 @@ func (s *Screen) gridResize(args []interface{}) {
 		}
 		s.assignMdGridid(gridid)
 		s.resizeWindow(gridid, cols, rows)
-
 	}
 }
 
@@ -697,6 +621,10 @@ func (s *Screen) cursorGoto(args []interface{}) {
 	s.cursor[0] = util.ReflectToInt(pos[1])
 	s.cursor[1] = util.ReflectToInt(pos[2])
 	s.ws.cursor.widget.SetParent(s.windows[gridid].widget)
+	if gridid == 1 {
+		return
+	}
+	s.windows[gridid].widget.Raise()
 }
 
 func (s *Screen) setHighAttrDef(args []interface{}) {
