@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 
@@ -91,6 +92,10 @@ func (m *Message) setColor() {
 	// transparent := editor.config.Editor.Transparent / 2.0
 	transparent := transparent()
 	m.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }", bg.R, bg.G, bg.B, transparent, fg))
+	size := int(float64(editor.workspaces[editor.active].font.width))
+	for _, item := range m.items {
+		item.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, size, 1, false))
+	}
 }
 
 func (m *Message) subscribe() {
@@ -130,7 +135,7 @@ func (m *Message) update() {
 }
 
 func (m *Message) resize() {
-	m.width = m.ws.width / 4
+	m.width = m.ws.width / 3
 	m.widget.Move2(m.ws.width-m.width-editor.iconSize, 0)
 	m.widget.Resize2(m.width+editor.iconSize, 0)
 	for _, item := range m.items {
