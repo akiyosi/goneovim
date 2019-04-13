@@ -793,7 +793,8 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.gridDestroy(args)
 
 		case "grid_cursor_goto":
-			s.cursorGoto(args)
+			s.gridCursorGoto(args)
+			doMinimapScroll = true
 
 		case "grid_scroll":
 			s.gridScroll(args)
@@ -820,8 +821,8 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.windowClose(args)
 
 		// case "cursor_goto":
-		// 	s.cursorGoto(args)
-		// 	doMinimapScroll = true
+		//	s.cursorGoto(args)
+		//	doMinimapScroll = true
 		// case "put":
 		// 	s.put(args)
 		// case "eol_clear":
