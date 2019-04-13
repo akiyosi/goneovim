@@ -92,7 +92,7 @@ func (m *Message) setColor() {
 	// transparent := editor.config.Editor.Transparent / 2.0
 	transparent := transparent()
 	m.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }", bg.R, bg.G, bg.B, transparent, fg))
-	size := int(float64(editor.workspaces[editor.active].font.width))
+	size := int(float64(editor.workspaces[editor.active].font.width)*1.4)
 	for _, item := range m.items {
 		item.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, size, 1, false))
 	}
