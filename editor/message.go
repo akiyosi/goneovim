@@ -54,6 +54,8 @@ func initMessage() *Message {
 		expires: 10,
 	}
 
+	margin := 5
+
 	items := []*MessageItem{}
 	for i := 0; i < 10; i++ {
 		w := widgets.NewQWidget(nil, 0)
@@ -64,10 +66,10 @@ func initMessage() *Message {
 		icon.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		icon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		icon.SetParent(w)
-		icon.Move2(10, 10)
+		icon.Move2(margin, margin)
 		l := widgets.NewQLabel(nil, 0)
 		l.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
-		l.SetContentsMargins(10, 10, 10, 10)
+		l.SetContentsMargins(margin, margin, margin, margin)
 		l.SetWordWrap(true)
 		l.SetText("dummy text")
 		layout.AddWidget(w, i, 0, 0)
@@ -246,6 +248,8 @@ func (i *MessageItem) setText(text string) {
 	label.SetMaximumHeight(height)
 	i.widget.SetMinimumHeight(height)
 	i.widget.SetMaximumHeight(height)
+	i.widget.SetMinimumWidth(editor.iconSize+5)
+	i.widget.SetMaximumWidth(editor.iconSize+5)
 }
 
 func (i *MessageItem) copy(item *MessageItem) {
@@ -292,11 +296,13 @@ func (i *MessageItem) setKind(kind string) {
 		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
 		svgContent := editor.getSvg(i.kind, color)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		fmt.Println("case *:", color.String())
 	default:
 		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
 		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
 		svgContent := editor.getSvg("echo", nil)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		fmt.Println("default")
 	}
 	i.label.SetStyleSheet(style)
 }
