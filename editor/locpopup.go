@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 
+	"github.com/neovim/go-client/nvim"
 	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -124,12 +126,21 @@ func (l *Locpopup) update(args []interface{}) {
 		}
 		l.mutex.Unlock()
 	}()
-	buf, err := l.ws.nvim.CurrentBuffer()
-	if err != nil {
-		return
+
+	doneChannel := make(chan nvim.Buffer, 5)
+	var buf, buftmp nvim.Buffer
+	go func() {
+	        buftmp, _ = l.ws.nvim.CurrentBuffer()
+	        doneChannel <- buftmp
+	}()
+	select {
+	case buf = <-doneChannel:
+	case <-time.After(20 * time.Millisecond):
+	        return
 	}
+
 	buftype := new(string)
-	err = l.ws.nvim.BufferOption(buf, "buftype", buftype)
+	err := l.ws.nvim.BufferOption(buf, "buftype", buftype)
 	if err != nil {
 		return
 	}
