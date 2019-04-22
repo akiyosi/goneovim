@@ -162,7 +162,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.signature.widget.SetParent(w.screen.widget)
 	w.signature.ws = w
 	w.message = initMessage()
-	// w.message.widget.SetParent(w.screen.widget)
 	w.message.widget.SetParent(editor.window)
 	w.message.ws = w
 	w.cmdline = initCmdline()
@@ -683,7 +682,9 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 					} else if name == "cmdline_show" {
 						o["ext_cmdline"] = editor.config.Editor.ExtCmdline
 					} else if name == "msg_show" {
-						o["ext_messages"] = editor.config.Editor.ExtMessage
+						// // Still experimental
+						// o["ext_messages"] = editor.config.Editor.ExtMessage
+						o["ext_messages"] = false
 					} else if name == "popupmenu_show" {
 						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
 					} else if name == "tabline_update" {
@@ -1027,18 +1028,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_enter":
 		editor.window.SetWindowOpacity(1.0)
 		w.setCwd(updates[1].(string))
-		go func() {
-			time.Sleep(2000 * time.Millisecond)
-			msg, _ := w.nvimCommandOutput("messages")
-			if msg != "" {
-				editor.pushNotification(NotifyWarn, -1, msg)
-			}
-		}()
 	case "gonvim_exit":
 		editor.workspaces[editor.active].minimap.exit()
-	// case "gonvim_set_colorscheme":
-	// 	fmt.Println("set_colorscheme")
-	// 	editor.isSetGuiColor = false
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":

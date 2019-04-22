@@ -616,7 +616,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 func (s *Screen) gridCursorGoto(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		if gridid == 1 {
+		if isSkipGlobalId(gridid) {
 			continue
 		}
 		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
@@ -828,9 +828,9 @@ func (s *Screen) gridScroll(args []interface{}) {
 		s.scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3])      // left
 		s.scrollRegion[3] = util.ReflectToInt(arg.([]interface{})[4]) - 1  // right
 		rows = util.ReflectToInt(arg.([]interface{})[5])
+		s.scroll(gridid, rows)
 	}
 
-	s.scroll(gridid, rows)
 }
 
 func (s *Screen) scroll(gridid, count int) {
@@ -857,7 +857,7 @@ func (s *Screen) scroll(gridid, count int) {
 				}
 				for _, line := range content {
 				        if len(line) <= col {
-				                return
+				                continue
 				        }
 				}
 				content[row][col] = content[row+count][col]
@@ -870,7 +870,7 @@ func (s *Screen) scroll(gridid, count int) {
 				}
 				for _, line := range content {
 				        if len(line) <= col {
-				                return
+				                continue
 				        }
 				}
 				content[row][col] = nil
@@ -888,7 +888,7 @@ func (s *Screen) scroll(gridid, count int) {
 				}
 				for _, line := range content {
 				        if len(line) <= col {
-				                return
+				                continue
 				        }
 				}
 				content[row][col] = content[row+count][col]
@@ -901,7 +901,7 @@ func (s *Screen) scroll(gridid, count int) {
 				}
 				for _, line := range content {
 				        if len(line) <= col {
-				                return
+				                continue
 				        }
 				}
 				content[row][col] = nil

@@ -21,6 +21,8 @@ type Message struct {
 	layout  *widgets.QGridLayout
 	items   []*MessageItem
 	expires int
+	pos       *core.QPoint
+	isDrag  bool
 }
 
 // MessageItem is
@@ -58,7 +60,7 @@ func initMessage() *Message {
 
 	items := []*MessageItem{}
 	for i := 0; i < 10; i++ {
-		w := widgets.NewQWidget(nil, 0)
+		w := widgets.NewQWidget(m.widget, 0)
 		w.SetContentsMargins(0, 0, 0, 0)
 		w.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		w.SetFixedWidth(editor.iconSize)
@@ -74,6 +76,7 @@ func initMessage() *Message {
 		l.SetText("dummy text")
 		layout.AddWidget(w, i, 0, 0)
 		layout.AddWidget(l, i, 1, 0)
+		layout.SetAlignment(w, core.Qt__AlignTop)
 		w.Hide()
 		l.Hide()
 		items = append(items, &MessageItem{
@@ -83,8 +86,31 @@ func initMessage() *Message {
 			widget: w,
 		})
 	}
-	widget.Show()
+
+	// // Enable widget dragging
+	// m.widget.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
+	// 	m.widget.Raise()
+	// 	m.isDrag = true
+	// 	m.pos = event.Pos()
+	// })
+	// m.widget.ConnectMouseReleaseEvent(func(*gui.QMouseEvent) {
+	// 	m.isDrag = false
+	// })
+	// m.widget.ConnectMouseMoveEvent(func(event *gui.QMouseEvent) {
+	// 	if m.isDrag == true {
+	// 		x := event.Pos().X() - m.pos.X()
+	// 		y := event.Pos().Y() - m.pos.Y()
+	// 		newPos := core.NewQPoint2(x, y)
+	// 		trans := m.widget.MapToParent(newPos)
+	// 		m.widget.Move(trans)
+	// 		// m.widget.Hide()
+	// 		// m.widget.Show()
+	// 	}
+	// })
+
 	m.items = items
+
+	widget.Show()
 	return m
 }
 
@@ -138,7 +164,7 @@ func (m *Message) update() {
 
 func (m *Message) resize() {
 	m.width = m.ws.width / 3
-	m.widget.Move2(m.ws.width-m.width-editor.iconSize, 0)
+	m.widget.Move2(m.ws.width-m.width-editor.iconSize-m.ws.scrollBar.widget.Width()-18, 6+m.ws.tabline.widget.Height())
 	m.widget.Resize2(m.width+editor.iconSize, 0)
 	for _, item := range m.items {
 		item.label.SetMinimumHeight(0)
@@ -296,13 +322,11 @@ func (i *MessageItem) setKind(kind string) {
 		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
 		svgContent := editor.getSvg(i.kind, color)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		fmt.Println("case *:", color.String())
 	default:
 		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
 		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
 		svgContent := editor.getSvg("echo", nil)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		fmt.Println("default")
 	}
 	i.label.SetStyleSheet(style)
 }
