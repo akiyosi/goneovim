@@ -519,6 +519,7 @@ func (s *Screen) convertMouse(event *gui.QMouseEvent) string {
 }
 
 func (s *Screen) gridResize(args []interface{}) {
+	fmt.Println("grid_resize", args)
 	var gridid gridId
 	var rows, cols int
 	for _, arg := range args {
@@ -609,19 +610,21 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	rect := core.NewQRect4(0, 0, width, height)
 	win.widget.SetGeometry(rect)
 	win.move(win.pos[0], win.pos[1])
+	win.widget.Raise()
 
 	s.queueRedrawAll()
 }
 
 func (s *Screen) gridCursorGoto(args []interface{}) {
+	fmt.Println("grid_cursor_goto", args)
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		if isSkipGlobalId(gridid) {
-			continue
-		}
 		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
 		s.cursor[1] = util.ReflectToInt(arg.([]interface{})[2])
 		s.ws.cursor.widget.SetParent(s.windows[gridid].widget)
+		if gridid == 1 {
+			continue
+		}
 		s.windows[gridid].widget.Raise()
 	}
 }
@@ -692,6 +695,7 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 }
 
 func (s *Screen) gridClear(args []interface{}) {
+	fmt.Println("grid_clear", args)
 	var gridid gridId
 	for _, arg := range args {
 		gridid = util.ReflectToInt(arg.([]interface{})[0])
@@ -699,16 +703,14 @@ func (s *Screen) gridClear(args []interface{}) {
 			continue
 		}
 
-		content := s.windows[gridid].content
-		colorContent := s.windows[gridid].colorContent
-		content = make([][]*Char, s.windows[gridid].rows)
-		colorContent = make([][]*RGBA, s.windows[gridid].rows)
+		s.windows[gridid].content = make([][]*Char, s.windows[gridid].rows)
+		s.windows[gridid].colorContent = make([][]*RGBA, s.windows[gridid].rows)
 
 		for i := 0; i < s.windows[gridid].rows; i++ {
-			content[i] = make([]*Char, s.ws.cols)
+			s.windows[gridid].content[i] = make([]*Char, s.ws.cols)
 		}
 		for i := 0; i < s.windows[gridid].rows; i++ {
-			colorContent[i] = make([]*RGBA, s.ws.cols)
+			s.windows[gridid].colorContent[i] = make([]*RGBA, s.ws.cols)
 		}
 		s.queueRedrawAll()
 	}
@@ -811,7 +813,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		}
 		s.queueRedraw(0, row, s.windows[gridid].cols, 1)
  	}
-
 	return
 }
 
