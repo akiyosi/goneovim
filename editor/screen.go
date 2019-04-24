@@ -707,10 +707,10 @@ func (s *Screen) gridClear(args []interface{}) {
 		s.windows[gridid].colorContent = make([][]*RGBA, s.windows[gridid].rows)
 
 		for i := 0; i < s.windows[gridid].rows; i++ {
-			s.windows[gridid].content[i] = make([]*Char, s.ws.cols)
+			s.windows[gridid].content[i] = make([]*Char, s.windows[gridid].cols)
 		}
 		for i := 0; i < s.windows[gridid].rows; i++ {
-			s.windows[gridid].colorContent[i] = make([]*RGBA, s.ws.cols)
+			s.windows[gridid].colorContent[i] = make([]*RGBA, s.windows[gridid].cols)
 		}
 		s.queueRedrawAll()
 	}
