@@ -184,11 +184,11 @@ func InitEditor() {
 	e.window = e.framelesswin.Window
 	e.setWindowOptions()
 
-	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 0, 0, 0)
+	// widget := widgets.NewQWidget(nil, 0)
+	// widget.SetContentsMargins(0, 0, 0, 0)
 	// widget.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); }")
 
-	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, widget)
+	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
