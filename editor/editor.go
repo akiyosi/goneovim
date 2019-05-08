@@ -92,7 +92,7 @@ type Editor struct {
 	workspaces []*Workspace
 	active     int
 	nvim       *nvim.Nvim
-	window     *widgets.QMainWindow
+	window     *frameless.QFramelessWindow
 	wsWidget   *widgets.QWidget
 	wsSide     *WorkspaceSide
 	deinSide   *DeinSide
@@ -180,8 +180,8 @@ func InitEditor() {
 	// e.window = widgets.NewQMainWindow(nil, 0)
 	// e.setWindowOptions()
 
-	e.framelesswin = frameless.NewQFramelessWindow()
-	e.window = e.framelesswin.Window
+	e.framelesswin = frameless.CreateQFramelessWindow()
+	e.window = e.framelesswin
 	e.setWindowOptions()
 
 	// widget := widgets.NewQWidget(nil, 0)
@@ -302,11 +302,11 @@ func InitEditor() {
 		})
 	}
 
-	e.framelesswin.SetContent(layout)
+	e.framelesswin.SetupContent(layout)
 	if e.config.Editor.Transparent < 1.0 {
-		e.framelesswin.UnsetWindowNativeShadow()
+		e.framelesswin.RemoveWindowNativeShadow()
 	} else {
-		e.framelesswin.SetWindowNativeShadow()
+		e.framelesswin.AddWindowNativeShadow()
 	}
 
 	go func() {
@@ -450,8 +450,8 @@ func (e *Editor) updateGUIColor() {
 
 	e.workspaces[e.active].updateWorkspaceColor()
 
-	e.framelesswin.SetWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B), e.config.Editor.Transparent)
-	e.framelesswin.SetTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
+	e.framelesswin.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B), e.config.Editor.Transparent)
+	e.framelesswin.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 
 	e.window.SetWindowOpacity(1.0)
 }
@@ -506,7 +506,7 @@ func (e *Editor) setWindowOptions() {
 	// e.window.SetAcceptDrops(true)
 
 	// e.window.SetWindowTitle("Gonvim")
-	e.framelesswin.SetTitle("Gonvim")
+	e.framelesswin.SetupTitle("Gonvim")
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
 	e.window.SetMinimumSize2(e.width, e.height)
