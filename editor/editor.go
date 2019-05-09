@@ -169,24 +169,21 @@ func InitEditor() {
 	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QWidget")
 	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QLabel")
 
-	e.initSVGS()
 	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
 	e.iconSize = int(font.Height())
+
+	e.initSVGS()
+
 	e.colors = initColorPalette()
 	e.colors.update()
+
 	e.initNotifications()
 
-	//create a window
-	// e.window = widgets.NewQMainWindow(nil, 0)
-	// e.setWindowOptions()
-
 	e.framelesswin = frameless.CreateQFramelessWindow()
+
 	e.window = e.framelesswin
 	e.setWindowOptions()
 
-	// widget := widgets.NewQWidget(nil, 0)
-	// widget.SetContentsMargins(0, 0, 0, 0)
-	// widget.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); }")
 
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
 	layout.SetContentsMargins(0, 0, 0, 0)
@@ -453,6 +450,15 @@ func (e *Editor) updateGUIColor() {
 	e.framelesswin.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B), e.config.Editor.Transparent)
 	e.framelesswin.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 
+	// On linux, add a frame if alpha is 1.0
+	if runtime.GOOS == "linux" && e.config.Editor.Transparent == 1.0 {
+		e.framelesswin.Widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); }", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
+		e.framelesswin.TitleBar.Hide()
+		e.framelesswin.SetWindowFlag(core.Qt__FramelessWindowHint, false)
+		e.framelesswin.SetWindowFlag(core.Qt__NoDropShadowWindowHint, false)
+		e.framelesswin.Show()
+	}
+
 	e.window.SetWindowOpacity(1.0)
 }
 
@@ -492,20 +498,6 @@ func shiftHex(hex string, v int) string {
 }
 
 func (e *Editor) setWindowOptions() {
-	// e.window.SetWindowTitle("Gonvim")
-	// e.width = e.config.Editor.Width
-	// e.height = e.config.Editor.Height
-	// e.window.SetMinimumSize2(e.width, e.height)
-	// e.window.SetContentsMargins(0, 0, 0, 0)
-	// e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
-	// e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
-	// e.window.SetWindowFlag(core.Qt__FramelessWindowHint, true)
-	// e.window.SetWindowOpacity(0.0)
-	// e.initSpecialKeys()
-	// e.window.ConnectKeyPressEvent(e.keyPress)
-	// e.window.SetAcceptDrops(true)
-
-	// e.window.SetWindowTitle("Gonvim")
 	e.framelesswin.SetupTitle("Gonvim")
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
