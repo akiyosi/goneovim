@@ -621,11 +621,15 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
 		s.cursor[1] = util.ReflectToInt(arg.([]interface{})[2])
-		s.ws.cursor.widget.SetParent(s.windows[gridid].widget)
+		if s.windows[gridid] != nil {
+			s.ws.cursor.widget.SetParent(s.windows[gridid].widget)
+		}
 		if gridid == 1 {
 			continue
 		}
-		s.windows[gridid].widget.Raise()
+		if s.windows[gridid] != nil {
+			s.windows[gridid].widget.Raise()
+		}
 	}
 }
 

@@ -684,7 +684,7 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 					} else if name == "msg_show" {
 						// // Still experimental
 						// o["ext_messages"] = editor.config.Editor.ExtMessage
-						o["ext_messages"] = false
+						o["ext_messages"] = true
 					} else if name == "popupmenu_show" {
 						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
 					} else if name == "tabline_update" {
