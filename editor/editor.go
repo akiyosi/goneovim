@@ -178,13 +178,14 @@ func InitEditor() {
 	e.initNotifications()
 
 	e.window = frameless.CreateQFramelessWindow()
-	e.window.Show()
-
 	e.setWindowOptions()
 
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
+
+	e.window.SetupContent(layout)
+	e.window.Show()
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 
@@ -295,8 +296,6 @@ func InitEditor() {
 			event.Accept()
 		})
 	}
-
-	e.window.SetupContent(layout)
 
 	go func() {
 		<-editor.stop
