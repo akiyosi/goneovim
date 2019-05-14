@@ -286,6 +286,7 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		candY = y + w.palette.widget.Pos().Y()
 	} else {
 		s.tooltip.SetParent(s.widget)
+		s.tooltip.Raise()
 		s.toolTipFont(w.font)
 		row := s.cursor[0]
 		col := s.cursor[1]
