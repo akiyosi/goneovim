@@ -185,7 +185,6 @@ func InitEditor() {
 	layout.SetSpacing(0)
 
 	e.window.SetupContent(layout)
-	e.window.Show()
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 
@@ -305,6 +304,7 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
+	e.window.Show()
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
 }
