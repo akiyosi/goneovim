@@ -1300,7 +1300,6 @@ func (s *Screen) windowClose(args []interface{}) {
 		}
 		win := s.windows[gridid]
 		s.ws.nvim.SetCurrentWindow(win.id)
-		s.ws.nvim.Command("close")
 	}
 }
 
