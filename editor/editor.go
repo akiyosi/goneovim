@@ -79,8 +79,6 @@ type Editor struct {
 	version string
 	app     *widgets.QApplication
 
-	framelesswin *frameless.QFramelessWindow
-
 	activity          *Activity
 	splitter          *widgets.QSplitter
 	notifyStartPos    *core.QPoint
@@ -179,11 +177,10 @@ func InitEditor() {
 
 	e.initNotifications()
 
-	e.framelesswin = frameless.CreateQFramelessWindow()
+	e.window = frameless.CreateQFramelessWindow()
+	e.window.Show()
 
-	e.window = e.framelesswin
 	e.setWindowOptions()
-
 
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
 	layout.SetContentsMargins(0, 0, 0, 0)
@@ -299,12 +296,7 @@ func InitEditor() {
 		})
 	}
 
-	e.framelesswin.SetupContent(layout)
-	if e.config.Editor.Transparent < 1.0 {
-		e.framelesswin.RemoveWindowNativeShadow()
-	} else {
-		e.framelesswin.AddWindowNativeShadow()
-	}
+	e.window.SetupContent(layout)
 
 	go func() {
 		<-editor.stop
@@ -314,7 +306,6 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
-	e.window.Show()
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
 }
@@ -447,16 +438,16 @@ func (e *Editor) updateGUIColor() {
 
 	e.workspaces[e.active].updateWorkspaceColor()
 
-	e.framelesswin.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B), e.config.Editor.Transparent)
-	e.framelesswin.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
+	e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B), e.config.Editor.Transparent)
+	e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 
 	// On linux, add a frame if alpha is 1.0
 	if runtime.GOOS == "linux" && e.config.Editor.Transparent == 1.0 {
-		e.framelesswin.Widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); }", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
-		e.framelesswin.TitleBar.Hide()
-		e.framelesswin.SetWindowFlag(core.Qt__FramelessWindowHint, false)
-		e.framelesswin.SetWindowFlag(core.Qt__NoDropShadowWindowHint, false)
-		e.framelesswin.Show()
+		e.window.Widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); }", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
+		e.window.TitleBar.Hide()
+		e.window.SetWindowFlag(core.Qt__FramelessWindowHint, false)
+		e.window.SetWindowFlag(core.Qt__NoDropShadowWindowHint, false)
+		e.window.Show()
 	}
 
 	e.window.SetWindowOpacity(1.0)
@@ -498,7 +489,8 @@ func shiftHex(hex string, v int) string {
 }
 
 func (e *Editor) setWindowOptions() {
-	e.framelesswin.SetupTitle("Gonvim")
+	e.window.SetupTitle("Gonvim")
+	e.window.SetupWidgetColor(0, 0, 0, 1.0)
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
 	e.window.SetMinimumSize2(e.width, e.height)
