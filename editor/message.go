@@ -75,8 +75,9 @@ func initMessage() *Message {
 	 	l.SetWordWrap(true)
 	 	l.SetText("dummy text")
 	 	layout.AddWidget(w, i, 0, 0)
-	 	layout.AddWidget(l, i, 1, 0)
 		layout.SetAlignment(w, core.Qt__AlignTop)
+	 	layout.AddWidget(l, i, 1, 0)
+		layout.SetAlignment(l, core.Qt__AlignTop)
 		item := &MessageItem{
 			m:      m,
 			label:  l,
@@ -130,9 +131,9 @@ func (m *Message) setColor() {
 	bg := editor.colors.widgetBg
 	transparent := transparent()
 	m.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }", bg.R, bg.G, bg.B, transparent, fg))
-	size := int(float64(m.ws.font.width)*1.4)
 	for _, item := range m.items {
-		item.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, size, 1, false))
+	 	item.icon.SetFixedSize2(m.ws.font.height, m.ws.font.height)
+		item.label.SetFont(m.ws.font.fontNew)
 	}
 }
 
@@ -176,32 +177,37 @@ func (m *Message) resize() {
 	m.width = m.ws.screen.widget.Width() / 3
 	m.widget.Move2(m.ws.width-m.width-editor.iconSize-m.ws.scrollBar.widget.Width()-12, 6+m.ws.tabline.widget.Height())
 	height := 0
-	size := m.ws.font.width
+	width := m.ws.font.width
 	posChange := false
 	for _, item := range m.items {
-		if m.width < size*len(item.label.Text()) {
-			posChange = true
-		}
 		item.label.SetMinimumHeight(0)
 		item.label.SetMinimumHeight(item.label.HeightForWidth(m.width))
+		item.label.SetAlignment(core.Qt__AlignTop)
+		if !item.active {
+			continue
+		}
+		if m.width < width * len(item.label.Text()) {
+			posChange = true
+		}
 		height += item.widget.Height()
 	}
 
+	// if message is too long, message widget move to bottom half of screen
 	if posChange {
-		m.width = m.ws.screen.widget.Width()
-		m.widget.Move2(10, m.ws.screen.widget.Height()/2)
+		m.width = m.ws.screen.widget.Width() - m.ws.scrollBar.widget.Width() - 12
+		m.widget.Move2(10, m.ws.screen.widget.Height() - height - m.ws.statusline.widget.Height())
 	}
 
 	m.widget.Resize2(m.width+editor.iconSize, height)
 }
 
 func (m *Message) msgShow(args []interface{}) {
+	prevKind := ""
 	for _, arg := range args {
 		kind, ok := arg.([]interface{})[0].(string)
 		if !ok {
 			continue
 		}
-
 		text := ""
 		var attrId int
 		for _, tupple := range arg.([]interface{})[1].([]interface{}) {
@@ -228,11 +234,18 @@ func (m *Message) msgShow(args []interface{}) {
 			replaceLast, ok = arg.([]interface{})[2].(bool)
 		}
 
-		m.makeMessage(kind, attrId, text, replaceLast)
+		if kind == prevKind {
+			// Do not show message icon if the same kind as the previous kind
+			m.makeMessage("_dup", attrId, text, replaceLast)
+		} else {
+			m.makeMessage(kind, attrId, text, replaceLast)
+		}
+		prevKind = kind
 	}
 }
 
 func (m *Message) makeMessage(kind string, attrId int, text string, replaceLast  bool) {
+	defer m.resize()
 	if text == "" {
 		return
 	}
@@ -271,7 +284,6 @@ func (m *Message) makeMessage(kind string, attrId int, text string, replaceLast 
 	item.setText(text)
 	item.show()
 	m.widget.Resize2(m.width+editor.iconSize, 0)
-	m.resize()
 }
 
 func (m *Message) msgClear() {
@@ -337,28 +349,28 @@ func (i *MessageItem) setKind(kind string) {
 	i.kind = kind
 	var style string
 	var color *RGBA
+	if i.m.ws == nil {
+		return
+	}
+	if i.m.ws.screen.highAttrDef[i.attrId] == nil {
+		return
+	}
 	switch i.kind {
 	case "emsg", "echo", "echomsg", "echoerr", "return_prompt", "quickfix" :
-		if i.m.ws == nil {
-			return
-		}
-		if i.m.ws.screen.highAttrDef[i.attrId] == nil {
-			return
-		}
 		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
 		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
 		svgContent := editor.getSvg(i.kind, color)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	default:
-		if i.m.ws == nil {
-			return
-		}
-		if i.m.ws.screen.highAttrDef[i.attrId] == nil {
-			return
-		}
+	case "_dup":
 		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
 		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
-		svgContent := editor.getSvg("echo", nil)
+		// hide 
+		svgContent := editor.getSvg("echo", editor.colors.widgetBg)
+		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	default:
+		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
+		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
+		svgContent := editor.getSvg("echo", color)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	i.label.SetStyleSheet(style)
