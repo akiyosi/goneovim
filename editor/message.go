@@ -130,8 +130,15 @@ func (m *Message) setColor() {
 	bg := editor.colors.widgetBg
 	transparent := transparent()
 	m.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }", bg.R, bg.G, bg.B, transparent, fg))
+}
+
+func (m *Message) updateFont(font *Font) {
+	margin := m.ws.font.height / 3
+	m.layout.SetColumnMinimumWidth(0, m.ws.font.height+margin*2)
 	for _, item := range m.items {
 	 	item.icon.SetFixedSize2(m.ws.font.height, m.ws.font.height)
+	 	item.label.SetContentsMargins(margin, margin, margin, margin)
+	 	item.icon.Move2(margin, margin)
 		item.label.SetFont(m.ws.font.fontNew)
 	}
 }
@@ -176,16 +183,22 @@ func (m *Message) resize() {
 	m.width = m.ws.screen.widget.Width() / 3
 	m.widget.Move2(m.ws.width-m.width-editor.iconSize-m.ws.scrollBar.widget.Width()-12, 6+m.ws.tabline.widget.Height())
 	height := 0
-	width := m.ws.font.width
+	width := m.ws.font.truewidth
 	posChange := false
 	for _, item := range m.items {
+	 	item.widget.SetStyleSheet("* { background-color: rgba(0, 0, 200, 1.0); border: 0px solid #000;}")
 		item.label.SetMinimumHeight(0)
 		item.label.SetMinimumHeight(item.label.HeightForWidth(m.width))
 		item.label.SetAlignment(core.Qt__AlignTop)
+	 	item.label.SetStyleSheet("* { background-color: rgba(200, 0, 0, 1.0); border: 0px solid #000;}")
 		if !item.active {
 			continue
 		}
-		if m.width < width * len(item.label.Text()) {
+
+		labelWidth := m.width - item.widget.Width()
+		messageWidth := int(width * float64(len(item.label.Text())))
+
+		if labelWidth < messageWidth {
 			posChange = true
 		}
 		height += item.widget.Height()
