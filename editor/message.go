@@ -134,11 +134,10 @@ func (m *Message) setColor() {
 
 func (m *Message) updateFont(font *Font) {
 	margin := m.ws.font.height / 3
-	m.layout.SetColumnMinimumWidth(0, m.ws.font.height+margin*2)
 	for _, item := range m.items {
 	 	item.icon.SetFixedSize2(m.ws.font.height, m.ws.font.height)
-	 	item.label.SetContentsMargins(margin, margin, margin, margin)
-	 	item.icon.Move2(margin, margin)
+	 	item.label.SetContentsMargins(margin/2, margin, margin, margin)
+	 	item.icon.Move2(margin*5/4, margin)
 		item.label.SetFont(m.ws.font.fontNew)
 	}
 }
@@ -186,11 +185,11 @@ func (m *Message) resize() {
 	width := m.ws.font.truewidth
 	posChange := false
 	for _, item := range m.items {
-	 	item.widget.SetStyleSheet("* { background-color: rgba(0, 0, 200, 1.0); border: 0px solid #000;}")
+	 	item.widget.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		item.label.SetMinimumHeight(0)
 		item.label.SetMinimumHeight(item.label.HeightForWidth(m.width))
 		item.label.SetAlignment(core.Qt__AlignTop)
-	 	item.label.SetStyleSheet("* { background-color: rgba(200, 0, 0, 1.0); border: 0px solid #000;}")
+	 	item.label.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		if !item.active {
 			continue
 		}
@@ -315,15 +314,14 @@ func (i *MessageItem) setText(text string) {
 	i.text = text
 	label := i.label
 	label.SetMinimumHeight(0)
-	// label.SetMaximumHeight(0)
 	label.SetText(text)
 	height := label.HeightForWidth(i.m.width)
 	label.SetMinimumHeight(height)
 	label.SetMaximumHeight(height)
 	i.widget.SetMinimumHeight(height)
 	i.widget.SetMaximumHeight(height)
-	i.widget.SetMinimumWidth(editor.iconSize+5)
-	i.widget.SetMaximumWidth(editor.iconSize+5)
+	i.widget.SetMinimumWidth(i.m.ws.font.height*5/3)
+	i.widget.SetMaximumWidth(i.m.ws.font.height*5/3)
 }
 
 func (i *MessageItem) copy(item *MessageItem) {
