@@ -118,8 +118,6 @@ func initMessage() *Message {
 		widget.SetGraphicsEffect(shadow)
 	}()
 
-	widget.Show()
-
 	// hide messgaes at startup.
 	m.update()
 
@@ -341,6 +339,7 @@ func (i *MessageItem) show() {
 	i.label.Show()
 	i.icon.Show()
 	i.widget.Show()
+	i.m.widget.Show()
 	i.m.widget.Raise()
 	i.widget.Raise()
 }
