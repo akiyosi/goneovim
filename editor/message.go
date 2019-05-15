@@ -115,8 +115,9 @@ func initMessage() *Message {
 		shadow.SetBlurRadius(40)
 		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
 		shadow.SetOffset3(-2, 4)
-		widget.SetGraphicsEffect(shadow)
+		m.widget.SetGraphicsEffect(shadow)
 	}()
+	m.widget.Hide()
 
 	// hide messgaes at startup.
 	m.update()
