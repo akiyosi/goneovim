@@ -204,12 +204,10 @@ func (m *Message) resizeMessages() bool {
 	ok := true
 	width := m.ws.font.truewidth
 	for _, item := range m.items {
-	 	item.widget.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		item.widget.SetFixedSize2(m.ws.font.height*5/3, m.ws.font.height*5/3)
 		item.label.SetMinimumHeight(0)
 		item.label.SetMinimumHeight(item.label.HeightForWidth(m.width))
 		item.label.SetAlignment(core.Qt__AlignTop)
-	 	item.label.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		if !item.active {
 			continue
 		}
