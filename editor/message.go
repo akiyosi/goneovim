@@ -135,6 +135,7 @@ func (m *Message) setColor() {
 func (m *Message) updateFont(font *Font) {
 	margin := m.ws.font.height / 3
 	for _, item := range m.items {
+		item.widget.SetFixedSize2(m.ws.font.height*5/3, m.ws.font.height*5/3)
 	 	item.icon.SetFixedSize2(m.ws.font.height, m.ws.font.height)
 	 	item.label.SetContentsMargins(margin/2, margin, margin, margin)
 	 	item.icon.Move2(margin*5/4, margin)
@@ -180,12 +181,31 @@ func (m *Message) update() {
 
 func (m *Message) resize() {
 	m.width = m.ws.screen.widget.Width() / 3
-	m.widget.Move2(m.ws.width-m.width-editor.iconSize-m.ws.scrollBar.widget.Width()-12, 6+m.ws.tabline.widget.Height())
-	height := 0
+	ok := m.resizeMessages()
+	if !ok {
+	 	m.width = m.ws.screen.widget.Width() - m.ws.scrollBar.widget.Width() - 12
+		_ = m.resizeMessages()
+	}
+
+	m.widget.Resize2(m.width+editor.iconSize, 0)
+
+	var x, y int
+	if !ok {
+		x = 10
+		y = m.ws.screen.widget.Height() - m.widget.Height() - 10
+	} else {
+		x = m.ws.width-m.width-editor.iconSize-m.ws.scrollBar.widget.Width()-12
+		y = 6 + m.ws.tabline.widget.Height()
+	}
+	m.widget.Move2(x, y)
+}
+
+func (m *Message) resizeMessages() bool {
+	ok := true
 	width := m.ws.font.truewidth
-	posChange := false
 	for _, item := range m.items {
 	 	item.widget.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
+		item.widget.SetFixedSize2(m.ws.font.height*5/3, m.ws.font.height*5/3)
 		item.label.SetMinimumHeight(0)
 		item.label.SetMinimumHeight(item.label.HeightForWidth(m.width))
 		item.label.SetAlignment(core.Qt__AlignTop)
@@ -198,18 +218,11 @@ func (m *Message) resize() {
 		messageWidth := int(width * float64(len(item.label.Text())))
 
 		if labelWidth < messageWidth {
-			posChange = true
+			ok = false
 		}
-		height += item.widget.Height()
 	}
 
-	// if message is too long, message widget move to bottom half of screen
-	if posChange {
-		m.width = m.ws.screen.widget.Width() - m.ws.scrollBar.widget.Width() - 12
-		m.widget.Move2(10, m.ws.screen.widget.Height() - height - m.ws.statusline.widget.Height())
-	}
-
-	m.widget.Resize2(m.width+editor.iconSize, height)
+	return ok
 }
 
 func (m *Message) msgShow(args []interface{}) {
@@ -257,7 +270,7 @@ func (m *Message) msgShow(args []interface{}) {
 
 func (m *Message) makeMessage(kind string, attrId int, text string, replaceLast  bool) {
 	defer m.resize()
-	if text == "" {
+	if text == "" || text == "\n" || text == "\r\n" {
 		return
 	}
 	for text[len(text)-1] == '\n' {
@@ -294,7 +307,7 @@ func (m *Message) makeMessage(kind string, attrId int, text string, replaceLast 
 	item.setKind(kind)
 	item.setText(text)
 	item.show()
-	m.widget.Resize2(m.width+editor.iconSize, 0)
+	// m.widget.Resize2(m.width+editor.iconSize, 0)
 }
 
 func (m *Message) msgClear() {
@@ -320,8 +333,7 @@ func (i *MessageItem) setText(text string) {
 	label.SetMaximumHeight(height)
 	i.widget.SetMinimumHeight(height)
 	i.widget.SetMaximumHeight(height)
-	i.widget.SetMinimumWidth(i.m.ws.font.height*5/3)
-	i.widget.SetMaximumWidth(i.m.ws.font.height*5/3)
+	i.widget.SetFixedSize2(i.m.ws.font.height*5/3, i.m.ws.font.height*5/3)
 }
 
 func (i *MessageItem) copy(item *MessageItem) {
