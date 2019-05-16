@@ -285,8 +285,6 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		y = w.palette.patternPadding + 8
 		candY = y + w.palette.widget.Pos().Y()
 	} else {
-		s.tooltip.SetParent(s.widget)
-		s.tooltip.Raise()
 		s.toolTipFont(w.font)
 		row := s.cursor[0]
 		col := s.cursor[1]
@@ -520,7 +518,6 @@ func (s *Screen) convertMouse(event *gui.QMouseEvent) string {
 }
 
 func (s *Screen) gridResize(args []interface{}) {
-	fmt.Println("grid_resize", args)
 	var gridid gridId
 	var rows, cols int
 	for _, arg := range args {
@@ -611,13 +608,12 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	rect := core.NewQRect4(0, 0, width, height)
 	win.widget.SetGeometry(rect)
 	win.move(win.pos[0], win.pos[1])
-	win.widget.Raise()
+	win.raise()
 
 	s.queueRedrawAll()
 }
 
 func (s *Screen) gridCursorGoto(args []interface{}) {
-	fmt.Println("grid_cursor_goto", args)
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
@@ -629,7 +625,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			continue
 		}
 		if s.windows[gridid] != nil {
-			s.windows[gridid].widget.Raise()
+			s.windows[gridid].raise()
 		}
 	}
 }
@@ -700,7 +696,6 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 }
 
 func (s *Screen) gridClear(args []interface{}) {
-	fmt.Println("grid_clear", args)
 	var gridid gridId
 	for _, arg := range args {
 		gridid = util.ReflectToInt(arg.([]interface{})[0])
@@ -1301,6 +1296,12 @@ func (s *Screen) windowClose(args []interface{}) {
 		win := s.windows[gridid]
 		s.ws.nvim.SetCurrentWindow(win.id)
 	}
+}
+
+func (w *Window) raise() {
+	w.widget.Raise()
+	w.s.tooltip.SetParent(w.widget)
+	// w.s.tooltip.Raise()
 }
 
 func (w *Window) move(col int, row int) {
