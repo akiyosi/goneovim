@@ -96,51 +96,30 @@ func newWorkspace(path string) (*Workspace, error) {
 		doneNvimStart: make(chan bool, 1000),
 		foreground:   newRGBA(180, 185, 190, 1),
 	 	background:   newRGBA(9, 13, 17, 1),
-	 	special   :  newRGBA(255, 255, 255, 1),
+	 	special:  newRGBA(255, 255, 255, 1),
 	}
-	w.signal.ConnectRedrawSignal(func() {
-		updates := <-w.redrawUpdates
-		w.handleRedraw(updates)
-	})
-	w.signal.ConnectGuiSignal(func() {
-		updates := <-w.guiUpdates
-		w.handleRPCGui(updates)
-	})
-	w.signal.ConnectStopSignal(func() {
-		workspaces := []*Workspace{}
-		index := 0
-		for i, ws := range editor.workspaces {
-			if ws != w {
-				workspaces = append(workspaces, ws)
-			} else {
-				index = i
-			}
-		}
-		if len(workspaces) == 0 {
-			editor.close()
-			return
-		}
-		for i := 0; i <= len(editor.wsSide.items) && i <= len(editor.workspaces); i++ {
-			if i >= index {
-				editor.wsSide.items[i].cwdpath = editor.wsSide.items[i+1].cwdpath
-			}
-		}
-		editor.workspaces = workspaces
-		w.hide()
-		if editor.active == index {
-			if index > 0 {
-				editor.active--
-			}
-			editor.workspaceUpdate()
-		}
-	})
 	w.font = initFontNew(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, editor.config.Editor.Linespace)
+	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)
+	w.rows = editor.config.Editor.Height / w.font.lineHeight
+
+	// Basic Workspace UI component
 	w.tabline = newTabline()
 	w.tabline.ws = w
 	w.statusline = initStatuslineNew()
 	w.statusline.ws = w
+	w.loc = initLocpopup()
+	w.loc.ws = w
+	w.message = initMessage()
+	w.message.ws = w
+
+	go w.startNvim(path)
+
+	w.registerSignal()
+
 	w.screen = newScreen()
 	w.screen.ws = w
+	w.loc.widget.SetParent(w.screen.widget)
+	w.message.widget.SetParent(editor.window)
 	w.scrollBar = newScrollBar()
 	w.scrollBar.ws = w
 	w.markdown = newMarkdown(w)
@@ -155,15 +134,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.palette = initPalette()
 	w.palette.widget.SetParent(editor.window)
 	w.palette.ws = w
-	w.loc = initLocpopup()
-	w.loc.widget.SetParent(w.screen.widget)
-	w.loc.ws = w
 	w.signature = initSignature()
 	w.signature.widget.SetParent(w.screen.widget)
 	w.signature.ws = w
-	w.message = initMessage()
-	w.message.widget.SetParent(editor.window)
-	w.message.ws = w
 	w.cmdline = initCmdline()
 	w.cmdline.ws = w
 	w.minimap = newMiniMap()
@@ -207,7 +180,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.updateSize()
 
 	go w.minimap.startMinimapProc()
-	go w.startNvim(path)
 
 	if runtime.GOOS == "windows" {
 		select {
@@ -216,6 +188,45 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 
 	return w, nil
+}
+
+func (w *Workspace) registerSignal() {
+	w.signal.ConnectRedrawSignal(func() {
+		updates := <-w.redrawUpdates
+		w.handleRedraw(updates)
+	})
+	w.signal.ConnectGuiSignal(func() {
+		updates := <-w.guiUpdates
+		w.handleRPCGui(updates)
+	})
+	w.signal.ConnectStopSignal(func() {
+		workspaces := []*Workspace{}
+		index := 0
+		for i, ws := range editor.workspaces {
+			if ws != w {
+				workspaces = append(workspaces, ws)
+			} else {
+				index = i
+			}
+		}
+		if len(workspaces) == 0 {
+			editor.close()
+			return
+		}
+		for i := 0; i <= len(editor.wsSide.items) && i <= len(editor.workspaces); i++ {
+			if i >= index {
+				editor.wsSide.items[i].cwdpath = editor.wsSide.items[i+1].cwdpath
+			}
+		}
+		editor.workspaces = workspaces
+		w.hide()
+		if editor.active == index {
+			if index > 0 {
+				editor.active--
+			}
+			editor.workspaceUpdate()
+		}
+	})
 }
 
 func (w *Workspace) hide() {
