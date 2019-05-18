@@ -47,6 +47,7 @@ type Workspace struct {
 	markdown   *Markdown
 	finder     *Finder
 	palette    *Palette
+	fpalette    *Palette
 	popup      *PopupMenu
 	loc        *Locpopup
 	cmdline    *Cmdline
@@ -124,7 +125,10 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.loc.widget.SetParent(w.screen.widget)
 	w.message.widget.SetParent(editor.window)
 	w.palette.widget.SetParent(editor.window)
-
+  
+  w.fpalette = initPalette()
+	w.fpalette.widget.SetParent(editor.window)
+	w.fpalette.ws = w
 	w.scrollBar = newScrollBar()
 	w.scrollBar.ws = w
 	w.markdown = newMarkdown(w)
@@ -174,6 +178,7 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	w.popup.widget.Hide()
 	w.palette.hide()
+	w.fpalette.hide()
 	w.loc.widget.Hide()
 	w.signature.widget.Hide()
 
@@ -749,6 +754,7 @@ func (w *Workspace) updateSize() {
 
 	w.screen.updateSize()
 	w.palette.resize()
+	w.fpalette.resize()
 	w.message.resize()
 
 	// notification
@@ -986,6 +992,7 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 
 func (w *Workspace) updateWorkspaceColor() {
 	w.palette.setColor()
+	w.fpalette.setColor()
 	w.popup.setColor()
 	w.signature.setColor()
 	w.tabline.setColor()
@@ -1057,6 +1064,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.finder.cursorPos(updates[1:])
 	case "finder_show_result":
 		w.finder.showResult(updates[1:])
+	case "finder_show":
+		w.finder.show()
 	case "finder_hide":
 		w.finder.hide()
 	case "finder_select":

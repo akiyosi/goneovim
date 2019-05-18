@@ -105,6 +105,8 @@ func (s *Fuzzy) handle(args ...interface{}) {
 		s.cancel()
 	case "confirm":
 		s.confirm()
+	case "resume":
+		s.resume()
 	case "update_max":
 		s.max = gonvimUtil.ReflectToInt(args[1])
 	default:
@@ -531,6 +533,10 @@ func (s *Fuzzy) outputHide() {
 	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_hide")
 }
 
+func (s *Fuzzy) outputShow() {
+	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_show")
+}
+
 func (s *Fuzzy) outputCursor() {
 	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_pattern_pos", s.cursor)
 }
@@ -680,9 +686,16 @@ func (s *Fuzzy) confirm() {
 func (s *Fuzzy) cancel() {
 	s.running = false
 	s.outputHide()
-	s.cancelled = true
-	s.cancelChan <- true
-	s.reset()
+	// s.cancelled = true
+	// s.cancelChan <- true
+	// s.reset()
+}
+
+func (s *Fuzzy) resume() {
+	s.running = true
+	s.outputShow()
+	// s.cancelled = false
+	// s.cancelChan <- false
 }
 
 func removeAtIndex(in string, i int) string {
