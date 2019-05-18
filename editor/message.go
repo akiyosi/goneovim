@@ -256,6 +256,9 @@ func (m *Message) msgShow(args []interface{}) {
 			replaceLast, ok = arg.([]interface{})[2].(bool)
 		}
 
+		if kind == "" && text == "<" {
+			continue
+		}
 		if kind == prevKind {
 			// Do not show message icon if the same kind as the previous kind
 			m.makeMessage("_dup", attrId, text, replaceLast)
