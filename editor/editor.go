@@ -177,7 +177,7 @@ func InitEditor() {
 
 	e.initNotifications()
 
-	e.window = frameless.CreateQFramelessWindow()
+	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent)
 	e.setWindowOptions()
 
 	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
@@ -437,7 +437,7 @@ func (e *Editor) updateGUIColor() {
 
 	e.workspaces[e.active].updateWorkspaceColor()
 
-	e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B), e.config.Editor.Transparent)
+	e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B))
 	e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 
 	// On linux, add a frame if alpha is 1.0
@@ -489,7 +489,7 @@ func shiftHex(hex string, v int) string {
 
 func (e *Editor) setWindowOptions() {
 	e.window.SetupTitle("Gonvim")
-	e.window.SetupWidgetColor(0, 0, 0, 1.0)
+	e.window.SetupWidgetColor(0, 0, 0)
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
 	e.window.SetMinimumSize2(e.width, e.height)

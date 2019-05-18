@@ -112,6 +112,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.loc.ws = w
 	w.message = initMessage()
 	w.message.ws = w
+	w.palette = initPalette()
+	w.palette.ws = w
 
 	go w.startNvim(path)
 
@@ -119,8 +121,14 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	w.screen = newScreen()
 	w.screen.ws = w
+
 	w.loc.widget.SetParent(w.screen.widget)
 	w.message.widget.SetParent(editor.window)
+	w.palette.widget.SetParent(editor.window)
+  
+  w.fpalette = initPalette()
+	w.fpalette.widget.SetParent(editor.window)
+	w.fpalette.ws = w
 	w.scrollBar = newScrollBar()
 	w.scrollBar.ws = w
 	w.markdown = newMarkdown(w)
@@ -132,12 +140,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.popup.ws = w
 	w.finder = initFinder()
 	w.finder.ws = w
-	w.palette = initPalette()
-	w.palette.widget.SetParent(editor.window)
-	w.palette.ws = w
-	w.fpalette = initPalette()
-	w.fpalette.widget.SetParent(editor.window)
-	w.fpalette.ws = w
 	w.signature = initSignature()
 	w.signature.widget.SetParent(w.screen.widget)
 	w.signature.ws = w

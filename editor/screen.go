@@ -1077,6 +1077,14 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
 	if col > 0 {
+
+		// Note: index out of range
+ 		// 3  0x000000000553c109 in github.com/akiyosi/gonvim/editor.(*Window).drawText
+ 		//    at /Users/akiyoshi/go/src/github.com/akiyosi/gonvim/editor/screen.go:1080
+ 		// 4  0x00000000055345af in github.com/akiyosi/gonvim/editor.(*Window).paint
+ 		//    at /Users/akiyoshi/go/src/github.com/akiyosi/gonvim/editor/screen.go:360
+ 		// 5  0x00000000055907f9 in github.com/akiyosi/gonvim/editor.(*Window).paint-fm
+ 		//    at /Users/akiyoshi/go/src/github.com/akiyosi/gonvim/editor/screen.go:1194
 		char := line[col-1]
 		if char != nil && char.char != "" {
 			if !char.normalWidth {
