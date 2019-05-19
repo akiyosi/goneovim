@@ -147,6 +147,13 @@ func (hl *Highlight) copy() Highlight {
 func InitEditor() {
 	runtime.GOMAXPROCS(16)
 
+	if runtime.GOOS == "linux" {
+		exe, _ := os.Executable()
+		dir, _ := filepath.Split(exe)
+		_ = os.Setenv("LD_LIBRARY_PATH", dir + "lib")
+		_ = os.Setenv("QT_PLUGIN_PATH", dir + "plugins")
+	}
+
 	home, err := homedir.Dir()
 	if err != nil {
 		home = "~"
