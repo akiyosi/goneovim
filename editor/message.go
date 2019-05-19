@@ -177,9 +177,16 @@ func (m *Message) update() {
 			item.hide()
 		}
 	}
+	m.resize()
 }
 
 func (m *Message) resize() {
+	if m.ws == nil {
+		return
+	}
+	if m.ws.screen == nil {
+		return
+	}
 	m.width = m.ws.screen.widget.Width() / 3
 	ok := m.resizeMessages()
 	if !ok {
