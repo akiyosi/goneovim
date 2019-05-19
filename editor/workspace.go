@@ -106,7 +106,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	// Basic Workspace UI component
 	w.tabline = newTabline()
 	w.tabline.ws = w
-	w.statusline = initStatuslineNew()
+	w.statusline = initStatusline()
 	w.statusline.ws = w
 	w.loc = initLocpopup()
 	w.loc.ws = w
@@ -114,6 +114,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.message.ws = w
 	w.palette = initPalette()
 	w.palette.ws = w
+	w.fpalette = initPalette()
+	w.fpalette.ws = w
 
 	go w.startNvim(path)
 
@@ -126,9 +128,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.message.widget.SetParent(editor.window)
 	w.palette.widget.SetParent(editor.window)
   
-  w.fpalette = initPalette()
 	w.fpalette.widget.SetParent(editor.window)
-	w.fpalette.ws = w
 	w.scrollBar = newScrollBar()
 	w.scrollBar.ws = w
 	w.markdown = newMarkdown(w)
@@ -738,17 +738,6 @@ func (w *Workspace) updateSize() {
 	if w.drawStatusline {
 		w.statusline.height = w.statusline.widget.Height()
 	}
-
-	// height = w.height - w.tabline.height - w.statusline.height
-	// rows := height / w.font.lineHeight
-
-	// remainingHeight := height - rows*w.font.lineHeight
-	// remainingHeightBottom := remainingHeight / 2
-	// remainingHeightTop := remainingHeight - remainingHeightBottom
-	// w.tabline.marginTop = w.tabline.marginDefault + remainingHeightTop
-	// w.tabline.marginBottom = w.tabline.marginDefault + remainingHeightBottom
-	// w.tabline.updateMargin()
-	// w.screen.height = height - remainingHeight
 
 	w.screen.height = w.height - w.tabline.height - w.statusline.height
 

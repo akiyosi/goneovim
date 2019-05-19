@@ -152,7 +152,7 @@ type StatuslineFileFormat struct {
 	c          *StatuslineComponent
 }
 
-func initStatuslineNew() *Statusline {
+func initStatusline() *Statusline {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 6, 0)
 
