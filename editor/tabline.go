@@ -66,7 +66,7 @@ func (t *Tabline) setColor() {
 		background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; } `, inactiveFg))
 }
 
-func newTabline() *Tabline {
+func initTabline() *Tabline {
 	width := 210
 	widget := widgets.NewQWidget(nil, 0)
 	layout := widgets.NewQLayout2()

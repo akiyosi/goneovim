@@ -104,7 +104,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.rows = editor.config.Editor.Height / w.font.lineHeight
 
 	// Basic Workspace UI component
-	w.tabline = newTabline()
+	w.tabline = initTabline()
 	w.tabline.ws = w
 	w.statusline = initStatusline()
 	w.statusline.ws = w
