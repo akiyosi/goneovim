@@ -180,8 +180,6 @@ func initStatusline() *Statusline {
 	gitLayout := widgets.NewQHBoxLayout()
 	gitLayout.SetContentsMargins(0, 0, 0, 0)
 	gitLayout.SetSpacing(editor.iconSize / 3)
-	gitLayout.AddWidget(gitIcon, 0, 0)
-	gitLayout.AddWidget(gitLabel, 0, 0)
 	gitWidget := widgets.NewQWidget(nil, 0)
 	gitWidget.SetLayout(gitLayout)
 	gitWidget.Hide()
@@ -238,8 +236,6 @@ func initStatusline() *Statusline {
 	fileLayout := widgets.NewQHBoxLayout()
 	fileLayout.SetContentsMargins(0, 0, 0, 0)
 	fileLayout.SetSpacing(editor.iconSize / 3)
-	fileLayout.AddWidget(fileLabel, 0, 0)
-	fileLayout.AddWidget(roIcon, 0, 0)
 	fileWidget := widgets.NewQWidget(nil, 0)
 	fileWidget.SetLayout(fileLayout)
 	file := &StatuslineFile{
@@ -306,8 +302,6 @@ func initStatusline() *Statusline {
 	notifyLabel.Hide()
 	notifyicon := svg.NewQSvgWidget(nil)
 	notifyicon.SetFixedSize2(editor.iconSize, editor.iconSize)
-	notifyLayout.AddWidget(notifyicon, 0, 0)
-	notifyLayout.AddWidget(notifyLabel, 0, 0)
 	notifyLayout.SetContentsMargins(2, 0, 2, 0)
 	notifyLayout.SetSpacing(2)
 	notify := &StatuslineNotify{
@@ -366,11 +360,6 @@ func initStatusline() *Statusline {
 	lintLayout := widgets.NewQHBoxLayout()
 	lintLayout.SetContentsMargins(0, 0, 0, 0)
 	lintLayout.SetSpacing(0)
-	lintLayout.AddWidget(okIcon, 0, 0)
-	lintLayout.AddWidget(errorIcon, 0, 0)
-	lintLayout.AddWidget(errorLabel, 0, 0)
-	lintLayout.AddWidget(warnIcon, 0, 0)
-	lintLayout.AddWidget(warnLabel, 0, 0)
 	lintWidget := widgets.NewQWidget(nil, 0)
 	lintWidget.SetLayout(lintLayout)
 	lint := &StatuslineLint{
@@ -392,10 +381,24 @@ func initStatusline() *Statusline {
 
 	s.setContentsMarginsForWidgets(0, 7, 0, 9)
 	left.widget.SetLayout(leftLayout)
-	layout.AddWidget(leftWidget)
 
-	left.setWidget()
-	s.setWidget()
+	go func() {
+		gitLayout.AddWidget(gitIcon, 0, 0)
+		gitLayout.AddWidget(gitLabel, 0, 0)
+		fileLayout.AddWidget(fileLabel, 0, 0)
+		fileLayout.AddWidget(roIcon, 0, 0)
+		notifyLayout.AddWidget(notifyicon, 0, 0)
+		notifyLayout.AddWidget(notifyLabel, 0, 0)
+		lintLayout.AddWidget(okIcon, 0, 0)
+		lintLayout.AddWidget(errorIcon, 0, 0)
+		lintLayout.AddWidget(errorLabel, 0, 0)
+		lintLayout.AddWidget(warnIcon, 0, 0)
+		lintLayout.AddWidget(warnLabel, 0, 0)
+		layout.AddWidget(leftWidget)
+
+		left.setWidget()
+		s.setWidget()
+	}()
 
 	return s
 }

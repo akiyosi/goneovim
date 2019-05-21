@@ -74,10 +74,6 @@ func initMessage() *Message {
 	 	l.SetContentsMargins(margin, margin, margin, margin)
 	 	l.SetWordWrap(true)
 	 	l.SetText("dummy text")
-	 	layout.AddWidget(w, i, 0, 0)
-		layout.SetAlignment(w, core.Qt__AlignTop)
-	 	layout.AddWidget(l, i, 1, 0)
-		layout.SetAlignment(l, core.Qt__AlignTop)
 		item := &MessageItem{
 			m:      m,
 			label:  l,
@@ -109,8 +105,15 @@ func initMessage() *Message {
 		}
 	})
 
-	// Drop shadow to widget
 	go func() {
+		// layout message item
+		for i, item := range items {
+		 	layout.AddWidget(item.widget, i, 0, 0)
+			layout.SetAlignment(item.widget, core.Qt__AlignTop)
+		 	layout.AddWidget(item.label, i, 1, 0)
+			layout.SetAlignment(item.label, core.Qt__AlignTop)
+		}
+		// Drop shadow to widget
 		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 		shadow.SetBlurRadius(40)
 		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))

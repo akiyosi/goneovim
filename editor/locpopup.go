@@ -45,9 +45,6 @@ func initLocpopup() *Locpopup {
 	contentLabel.SetContentsMargins(0, 0, 0, 0)
 	contentLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
-	layout.AddWidget(typeLabel, 0, 0)
-	layout.AddWidget(contentLabel, 0, 0)
-
 	loc := &Locpopup{
 		widget:       widget,
 		typeLabel:    typeLabel,
@@ -59,7 +56,12 @@ func initLocpopup() *Locpopup {
 	shadow.SetBlurRadius(28)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, 80))
 	shadow.SetOffset3(0, 6)
-	loc.widget.SetGraphicsEffect(shadow)
+
+	go func() {
+		layout.AddWidget(loc.typeLabel, 0, 0)
+		layout.AddWidget(loc.contentLabel, 0, 0)
+		loc.widget.SetGraphicsEffect(shadow)
+	}()
 
 	return loc
 }

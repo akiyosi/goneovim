@@ -153,11 +153,15 @@ func initTabline() *Tabline {
 		closeIcon.ConnectLeaveEvent(tab.closeIconLeaveEvent)
 
 		tabs = append(tabs, tab)
-		layout.AddWidget(w)
-		if i > 0 {
-			tab.hide()
-		}
 	}
+	go func() {
+		for i, tab := range tabs {
+			layout.AddWidget(tab.widget)
+			if i > 0 {
+				tab.hide()
+			}
+		}
+	}()
 	tabline.Tabs = tabs
 
 	return tabline
