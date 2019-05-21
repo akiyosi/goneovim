@@ -97,9 +97,9 @@ func newScreen() *Screen {
 	}
 
 	// widget.ConnectPaintEvent(screen.paint)
-	// widget.ConnectMousePressEvent(screen.mouseEvent)
-	// widget.ConnectMouseReleaseEvent(screen.mouseEvent)
-	// widget.ConnectMouseMoveEvent(screen.mouseEvent)
+	widget.ConnectMousePressEvent(screen.mouseEvent)
+	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
+	widget.ConnectMouseMoveEvent(screen.mouseEvent)
 	// widget.ConnectWheelEvent(screen.wheelEvent)
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		screen.updateSize()
@@ -1192,9 +1192,6 @@ func (s *Screen) newWindow() *Window {
 
 	widget.SetParent(s.widget)
 	widget.ConnectPaintEvent(w.paint)
-	widget.ConnectMousePressEvent(s.mouseEvent)
-	widget.ConnectMouseReleaseEvent(s.mouseEvent)
-	widget.ConnectMouseMoveEvent(s.mouseEvent)
 	widget.ConnectWheelEvent(s.wheelEvent)
 	widget.ConnectDragEnterEvent(s.dragEnterEvent)
 	widget.ConnectDragMoveEvent(s.dragMoveEvent)
