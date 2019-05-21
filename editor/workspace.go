@@ -103,10 +103,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)
 	w.rows = editor.config.Editor.Height / w.font.lineHeight
 
-	go w.startNvim(path)
-
-	w.registerSignal()
-
 	// Basic Workspace UI component
 	w.tabline = newTabline()
 	w.tabline.ws = w
@@ -116,11 +112,14 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.loc.ws = w
 	w.message = initMessage()
 	w.message.ws = w
+
+	go w.startNvim(path)
+	w.registerSignal()
+
 	w.palette = initPalette()
 	w.palette.ws = w
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
-
 	w.screen = newScreen()
 	w.screen.ws = w
 
@@ -193,10 +192,6 @@ func newWorkspace(path string) (*Workspace, error) {
 		case <-w.doneNvimStart:
 		}
 	}
-	w.tabline.subscribe()
-	w.statusline.subscribe()
-	w.loc.subscribe()
-	w.message.subscribe()
 
 	return w, nil
 }
@@ -348,6 +343,10 @@ func (w *Workspace) attachUI(path string) error {
 	if path != "" {
 		go w.nvim.Command("so " + path)
 	}
+	w.tabline.subscribe()
+	w.statusline.subscribe()
+	w.loc.subscribe()
+	w.message.subscribe()
 	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
 
 	w.uiAttached = true
