@@ -738,9 +738,10 @@ func (w *Workspace) updateSize() {
 		w.statusline.height = w.statusline.widget.Height()
 	}
 
-	w.screen.height = w.height - w.tabline.height - w.statusline.height
-
-	w.screen.updateSize()
+	if w.screen != nil {
+		w.screen.height = w.height - w.tabline.height - w.statusline.height
+		w.screen.updateSize()
+	}
 	if w.palette !=  nil {
 		w.palette.resize()
 	}
