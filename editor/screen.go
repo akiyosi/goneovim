@@ -360,11 +360,56 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawText(p, y, col, cols, [2]int{0, 0})
 	}
 
-	// w.s.drawWindows(p, row, col, rows, cols)
+	if w == w.s.windows[1] {
+		for _, win := range w.s.windows {
+			win.drawBorder(p)
+		}
+	}
+
 	p.DestroyQPainter()
 	w.s.ws.markdown.updatePos()
 }
 
+func (w *Window) drawBorder(p *gui.QPainter) {
+	if w == nil {
+		return
+	}
+	x := int(float64(w.pos[0]) * w.s.ws.font.truewidth)
+	y := w.pos[1] * int(w.s.ws.font.lineHeight)
+	width := int(float64(w.cols) * w.s.ws.font.truewidth)
+	color := gui.NewQColor3(
+		editor.colors.scrollBarFg.R,
+		editor.colors.scrollBarFg.G,
+		editor.colors.scrollBarFg.B,
+		255)
+	bg := w.s.ws.background
+
+	// Vertical
+	p.FillRect5(
+		x+width,
+		y,
+		1,
+		w.s.widget.Height(),
+		color,
+	)
+	p.FillRect5(
+		x+width+1,
+		y,
+		int(w.s.ws.font.truewidth),
+		w.s.widget.Height(),
+		gui.NewQColor3(bg.R, bg.G, bg.B, 255),
+	)
+
+	// Horizontal
+	height := w.rows * int(w.s.ws.font.lineHeight)
+	p.FillRect5(
+		x,
+		y+height+w.s.ws.font.lineHeight-1,
+		int(float64(w.cols) * w.s.ws.font.truewidth) + 1,
+		1,
+		color,
+	)
+}
 func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	var m sync.Mutex
 	m.Lock()
