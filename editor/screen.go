@@ -377,7 +377,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	x := int(float64(w.pos[0]) * w.s.ws.font.truewidth)
 	y := w.pos[1] * int(w.s.ws.font.lineHeight)
 	width := int(float64(w.cols) * w.s.ws.font.truewidth)
-	winHeight := int((float64(w.rows) + 0.5) * float64(w.s.ws.font.lineHeight))
+	winHeight := int((w.rows + 1) * w.s.ws.font.lineHeight)
 	color := gui.NewQColor3(
 		editor.colors.scrollBarFg.R,
 		editor.colors.scrollBarFg.G,
@@ -392,7 +392,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		// separetor
 		p.FillRect5(
 			int(float64(x+width)+w.s.ws.font.truewidth/2),
-			y,
+			y - int(w.s.ws.font.lineHeight/2),
 			1,
 			winHeight, //w.widget.Height(),
 			color,
