@@ -120,6 +120,7 @@ type editorConfig struct {
 	GinitVim           string
 	StartFullscreen    bool
 	Transparent        float64
+	DrawBorder         bool
 	SkipGlobalId       bool
 }
 
@@ -194,6 +195,7 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.Editor.ExtTabline = true
 
 	config.Editor.SkipGlobalId = false
+	config.Editor.DrawBorder = true
 
 	config.Palette.AreaRatio = 0.6
 	config.Palette.MaxNumberOfResultItems = 30

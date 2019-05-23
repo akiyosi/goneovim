@@ -22,6 +22,9 @@ var editor *Editor
 
 // Highlight is
 type Highlight struct {
+	kind       string
+	uiName     string
+	hiName     string
 	foreground *RGBA
 	background *RGBA
 	italic     bool

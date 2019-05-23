@@ -360,7 +360,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawText(p, y, col, cols, [2]int{0, 0})
 	}
 
-	if w == w.s.windows[1] {
+	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
 		for _, win := range w.s.windows {
 			win.drawBorder(p)
 		}
@@ -377,35 +377,38 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	x := int(float64(w.pos[0]) * w.s.ws.font.truewidth)
 	y := w.pos[1] * int(w.s.ws.font.lineHeight)
 	width := int(float64(w.cols) * w.s.ws.font.truewidth)
+	winHeight := int((float64(w.rows) + 0.5) * float64(w.s.ws.font.lineHeight))
 	color := gui.NewQColor3(
 		editor.colors.scrollBarFg.R,
 		editor.colors.scrollBarFg.G,
 		editor.colors.scrollBarFg.B,
 		255)
-	bg := w.s.ws.background
+	// // color for debug
+	// color := gui.NewQColor3(200, 0, 0, 255)
+
 
 	// Vertical
-	p.FillRect5(
-		x+width,
-		y,
-		1,
-		w.s.widget.Height(),
-		color,
-	)
-	p.FillRect5(
-		x+width+1,
-		y,
-		int(w.s.ws.font.truewidth),
-		w.s.widget.Height(),
-		gui.NewQColor3(bg.R, bg.G, bg.B, 255),
-	)
+	if y + w.s.ws.font.lineHeight + 1 < w.s.widget.Height() {
+		// separetor
+		p.FillRect5(
+			int(float64(x+width)+w.s.ws.font.truewidth/2),
+			y,
+			1,
+			winHeight, //w.widget.Height(),
+			color,
+		)
+	}
 
 	// Horizontal
 	height := w.rows * int(w.s.ws.font.lineHeight)
+	y2 := y+height-1+w.s.ws.font.lineHeight/2
+	if y2 + w.s.ws.font.lineHeight + w.s.ws.font.lineHeight/2 > w.s.widget.Height() {
+		return
+	}
 	p.FillRect5(
 		x,
-		y+height+w.s.ws.font.lineHeight-1,
-		int(float64(w.cols) * w.s.ws.font.truewidth) + 1,
+		y2,
+		int((float64(w.cols) + 0.5) * w.s.ws.font.truewidth),
 		1,
 		color,
 	)
@@ -689,15 +692,37 @@ func (s *Screen) setHighAttrDef(args []interface{}) {
 
 	for _, arg := range args {
 		id := util.ReflectToInt(arg.([]interface{})[0])
-		h[id] = s.getHighlight(arg.([]interface{})[1])
+		h[id] = s.getHighlight(arg)
 	}
 
 	s.highAttrDef = h
 }
 
 func (s *Screen) getHighlight(args interface{}) *Highlight {
+	arg := args.([]interface{})
 	highlight := Highlight{}
-	hl := args.(map[string]interface{})
+
+	hl := arg[1].(map[string]interface{})
+	info := make(map[string]interface{})
+	for _, arg := range arg[3].([]interface{}) {
+		info = arg.(map[string]interface{})
+		break
+	}
+
+	kind, ok := info["kind"]
+	if ok {
+		highlight.kind = kind.(string)
+	}
+
+	uiName, ok := info["ui_name"]
+	if ok {
+		highlight.uiName = uiName.(string)
+	}
+
+	hiName, ok := info["hi_name"]
+	if ok {
+		highlight.hiName = hiName.(string)
+	}
 
 	bold := hl["bold"]
 	if bold != nil {
@@ -713,7 +738,7 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.italic = false
 	}
 
-	_, ok := hl["reverse"]
+	_, ok = hl["reverse"]
 	if ok {
 		highlight.foreground = s.highlight.background
 		highlight.background = s.highlight.foreground
@@ -739,6 +764,7 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 
 	return &highlight
 }
+
 
 func (s *Screen) gridClear(args []interface{}) {
 	var gridid gridId
@@ -778,9 +804,11 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	row := util.ReflectToInt(arg[1])
 	col := util.ReflectToInt(arg[2])
 
+
 	if isSkipGlobalId(gridid) {
 		return
 	}
+
 	s.activeGrid = gridid
 
 	content := s.windows[gridid].content
@@ -805,6 +833,12 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		if len(cell) >= 2 {
  			hi = util.ReflectToInt(cell[1])
 		}
+
+		// if drawborder is true, and row is statusline's row
+		if s.isSkipDrawStatusline(hi) {
+			return
+		}
+		
 		if len(cell) == 3 {
  			repeat = util.ReflectToInt(cell[2])
 		}
@@ -859,6 +893,23 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		s.queueRedraw(0, row, s.windows[gridid].cols, 1)
  	}
 	return
+}
+
+
+func (s *Screen) isSkipDrawStatusline(hi int) bool {
+	// If ext_statusline is implemented in Neovim, the implementation may be revised
+	if !editor.config.Editor.DrawBorder {
+		return false
+	}
+	if s.highAttrDef[hi] == nil {
+		return false
+	}
+	if s.highAttrDef[hi].hiName == "StatusLine" ||
+	   s.highAttrDef[hi].hiName == "StatusLineNC" || 
+	   s.highAttrDef[hi].hiName == "VertSplit" {
+		return true
+	}
+	return false
 }
 
 func (s *Screen) gridScroll(args []interface{}) {
