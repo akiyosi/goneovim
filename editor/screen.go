@@ -46,6 +46,8 @@ type Window struct {
 	bufName    string
 	hl         string
 	bg         *RGBA
+
+	queueRedrawArea  [4]int
 }
 
 // Screen is the main editor area
@@ -837,7 +839,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		if s.isSkipDrawStatusline(hi) {
 			return
 		}
-		
+
 		if len(cell) == 3 {
  			repeat = util.ReflectToInt(cell[2])
 		}
@@ -889,7 +891,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			makeCells()
 			r++
 		}
-		s.queueRedraw(0, row, s.windows[gridid].cols, 1)
+		s.windows[gridid].queueRedraw(0, row, s.windows[gridid].cols, 1)
  	}
 	return
 }
@@ -943,7 +945,7 @@ func (s *Screen) scroll(gridid, count int) {
 		right = s.windows[gridid].cols - 1
 	}
 
-	s.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
+	s.windows[gridid].queueRedraw(left, top, (right - left + 1), (bot - top + 1))
 
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
@@ -972,9 +974,9 @@ func (s *Screen) scroll(gridid, count int) {
 				content[row][col] = nil
 			}
 		}
-		s.queueRedraw(left, (bot - count + 1), (right - left), count)
+		s.windows[gridid].queueRedraw(left, (bot - count + 1), (right - left), count)
 		if top > 0 {
-			s.queueRedraw(left, (top - count), (right - left), count)
+			s.windows[gridid].queueRedraw(left, (top - count), (right - left), count)
 		}
 	} else {
 		for row := bot; row >= top-count; row-- {
@@ -1003,25 +1005,25 @@ func (s *Screen) scroll(gridid, count int) {
 				content[row][col] = nil
 			}
 		}
-		s.queueRedraw(left, top, (right - left), -count)
+		s.windows[gridid].queueRedraw(left, top, (right - left), -count)
 		if bot < s.windows[gridid].rows-1 {
-			s.queueRedraw(left, bot+1, (right - left), -count)
+			s.windows[gridid].queueRedraw(left, bot+1, (right - left), -count)
 		}
 	}
 }
 
-func (s *Screen) update() {
-	if s.windows[s.activeGrid] == nil {
+func (w *Window) update() {
+	if w == nil {
 		return
 	}
 
-	x := int(float64(s.queueRedrawArea[0]) * s.ws.font.truewidth)
-	y := s.queueRedrawArea[1] * s.ws.font.lineHeight
-	width := int(float64(s.queueRedrawArea[2] - s.queueRedrawArea[0]) * s.ws.font.truewidth)
-	height := (s.queueRedrawArea[3] - s.queueRedrawArea[1]) * s.ws.font.lineHeight
+	x := int(float64(w.queueRedrawArea[0]) * w.s.ws.font.truewidth)
+	y := w.queueRedrawArea[1] * w.s.ws.font.lineHeight
+	width := int(float64(w.queueRedrawArea[2] - w.queueRedrawArea[0]) * w.s.ws.font.truewidth)
+	height := (w.queueRedrawArea[3] - w.queueRedrawArea[1]) * w.s.ws.font.lineHeight
 
 	if width > 0 && height > 0 {
-		s.windows[s.activeGrid].widget.Update2(
+		w.widget.Update2(
 			x,
 			y,
 			width,
@@ -1029,10 +1031,18 @@ func (s *Screen) update() {
 		)
 	}
 
-	s.queueRedrawArea[0] = s.ws.cols
-	s.queueRedrawArea[1] = s.ws.rows
-	s.queueRedrawArea[2] = 0
-	s.queueRedrawArea[3] = 0
+	w.queueRedrawArea[0] = w.cols
+	w.queueRedrawArea[1] = w.rows
+	w.queueRedrawArea[2] = 0
+	w.queueRedrawArea[3] = 0
+}
+
+func (s *Screen) update() {
+	for _, win := range s.windows {
+		if win != nil {
+			win.update()
+		}
+	}
 }
 
 func (s *Screen) queueRedrawAll() {
@@ -1043,18 +1053,18 @@ func (s *Screen) redraw() {
 	s.queueRedrawArea = [4]int{s.ws.cols, s.ws.rows, 0, 0}
 }
 
-func (s *Screen) queueRedraw(x, y, width, height int) {
-	if x < s.queueRedrawArea[0] {
-		s.queueRedrawArea[0] = x
+func (w *Window) queueRedraw(x, y, width, height int) {
+	if x < w.queueRedrawArea[0] {
+		w.queueRedrawArea[0] = x
 	}
-	if y < s.queueRedrawArea[1] {
-		s.queueRedrawArea[1] = y
+	if y < w.queueRedrawArea[1] {
+		w.queueRedrawArea[1] = y
 	}
-	if (x + width) > s.queueRedrawArea[2] {
-		s.queueRedrawArea[2] = x + width
+	if (x + width) > w.queueRedrawArea[2] {
+		w.queueRedrawArea[2] = x + width
 	}
-	if (y + height) > s.queueRedrawArea[3] {
-		s.queueRedrawArea[3] = y + height
+	if (y + height) > w.queueRedrawArea[3] {
+		w.queueRedrawArea[3] = y + height
 	}
 }
 
