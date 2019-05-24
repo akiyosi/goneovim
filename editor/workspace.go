@@ -112,6 +112,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.loc.ws = w
 	w.message = initMessage()
 	w.message.ws = w
+	w.screen = newScreen()
+	w.screen.ws = w
 
 	go w.startNvim(path)
 	w.registerSignal()
@@ -120,8 +122,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.palette.ws = w
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
-	w.screen = newScreen()
-	w.screen.ws = w
 
 	w.loc.widget.SetParent(w.screen.widget)
 	w.message.widget.SetParent(editor.window)

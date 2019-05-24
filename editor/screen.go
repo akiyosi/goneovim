@@ -83,7 +83,7 @@ type Screen struct {
 func newScreen() *Screen {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
-	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	// widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
 	tooltip := widgets.NewQLabel(widget, 0)
@@ -98,7 +98,6 @@ func newScreen() *Screen {
 		tooltip:      tooltip,
 	}
 
-	// widget.ConnectPaintEvent(screen.paint)
 	widget.ConnectMousePressEvent(screen.mouseEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
