@@ -589,7 +589,7 @@ func (s *Fuzzy) outputResult() {
 
 	s.resultRWMtext.RLock()
 	total := len(result)
-	if start >= total {
+	if start >= total || selected >= total {
 		s.start = 0
 		start = 0
 		s.selected = 0
