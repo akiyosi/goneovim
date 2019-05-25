@@ -361,8 +361,6 @@ func (w *Workspace) attachUI(path string) error {
 }
 
 func (w *Workspace) initGonvim() {
-	w.nvim.Command("runtime plugin/nvim_gui_shim.vim")
-
 	gonvimAutoCmds := `
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
