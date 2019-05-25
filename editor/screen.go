@@ -1402,7 +1402,9 @@ func (s *Screen) windowClose(args []interface{}) {
 func (w *Window) raise() {
 	w.widget.Raise()
 	w.s.tooltip.SetParent(w.widget)
-	// w.s.tooltip.Raise()
+	w.s.ws.popup.widget.SetParent(w.widget)
+	w.s.ws.loc.widget.SetParent(w.widget)
+	w.s.ws.signature.widget.SetParent(w.widget)
 }
 
 func (w *Window) move(col int, row int) {
