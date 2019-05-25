@@ -666,10 +666,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
 		s.cursor[1] = util.ReflectToInt(arg.([]interface{})[2])
-		if s.windows[gridid] != nil {
-			s.ws.cursor.widget.SetParent(s.windows[gridid].widget)
-		}
-		if gridid == 1 {
+		if isSkipGlobalId(gridid) {
 			continue
 		}
 		if s.windows[gridid] != nil {
@@ -1373,12 +1370,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 }
 
 func (s *Screen) windowHide(args []interface{}) {
-	for _, win := range s.windows {
-		if win == nil {
-			continue
-		}
-		win.widget.Show()
-	}
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		if isSkipGlobalId(gridid) {
@@ -1400,11 +1391,15 @@ func (s *Screen) windowClose(args []interface{}) {
 }
 
 func (w *Window) raise() {
+	if w == w.s.windows[1] {
+		return
+	}
 	w.widget.Raise()
 	w.s.tooltip.SetParent(w.widget)
 	w.s.ws.popup.widget.SetParent(w.widget)
 	w.s.ws.loc.widget.SetParent(w.widget)
 	w.s.ws.signature.widget.SetParent(w.widget)
+	w.s.ws.cursor.widget.SetParent(w.widget)
 }
 
 func (w *Window) move(col int, row int) {
