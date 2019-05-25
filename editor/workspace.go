@@ -123,11 +123,11 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
 
-	w.loc.widget.SetParent(w.screen.widget)
+	// w.loc.widget.SetParent(w.screen.widget)
 	w.message.widget.SetParent(editor.window)
 	w.palette.widget.SetParent(editor.window)
-  
 	w.fpalette.widget.SetParent(editor.window)
+
 	w.scrollBar = newScrollBar()
 	w.scrollBar.ws = w
 	w.markdown = newMarkdown(w)
@@ -135,12 +135,12 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
 	w.popup = initPopupmenuNew(w.font)
-	w.popup.widget.SetParent(w.screen.widget)
+	// w.popup.widget.SetParent(w.screen.widget)
 	w.popup.ws = w
 	w.finder = initFinder()
 	w.finder.ws = w
 	w.signature = initSignature()
-	w.signature.widget.SetParent(w.screen.widget)
+	// w.signature.widget.SetParent(w.screen.widget)
 	w.signature.ws = w
 	w.cmdline = initCmdline()
 	w.cmdline.ws = w
