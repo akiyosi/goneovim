@@ -5,11 +5,14 @@ import (
 	"time"
 
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
+
+	"github.com/akiyosi/gonvim/util"
 )
 
-// Message isj
+// Message is
 type Message struct {
 	ws      *Workspace
 	kind    string
@@ -18,6 +21,8 @@ type Message struct {
 	layout  *widgets.QGridLayout
 	items   []*MessageItem
 	expires int
+	pos     *core.QPoint
+	isDrag  bool
 }
 
 // MessageItem is
@@ -25,6 +30,7 @@ type MessageItem struct {
 	m       *Message
 	active  bool
 	kind    string
+	attrId  int
 	text    string
 	hideAt  time.Time
 	expired bool
@@ -42,7 +48,6 @@ func initMessage() *Message {
 	layout.SetSpacing(0)
 	layout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 	widget.SetLayout(layout)
-	widget.SetStyleSheet("* {background-color: rgba(24, 29, 34, 1); color: rgba(205, 211, 222, 1);}")
 
 	m := &Message{
 		width:   width,
@@ -51,35 +56,94 @@ func initMessage() *Message {
 		expires: 10,
 	}
 
+	margin := 5
+
 	items := []*MessageItem{}
 	for i := 0; i < 10; i++ {
-		w := widgets.NewQWidget(nil, 0)
-		w.SetContentsMargins(0, 0, 0, 0)
-		w.SetStyleSheet(".QWidget {border-left: 1px solid #000; border-bottom: 1px solid #000;}")
-		w.SetFixedWidth(34)
-		icon := svg.NewQSvgWidget(nil)
-		icon.SetFixedSize2(14, 14)
-		icon.SetParent(w)
-		icon.Move2(10, 10)
-		l := widgets.NewQLabel(nil, 0)
-		l.SetContentsMargins(10, 10, 10, 10)
-		l.SetStyleSheet("border-bottom: 1px solid #000; border-left: 1px solid #000; border-right: 1px solid #000;")
-		l.SetWordWrap(true)
-		l.SetText(fmt.Sprintf("ldksj sdlkfjd  lkdsj sdlkfj sdlfkj lsdlfj  dslfjdsf sdfdslfkjdsf lksdjf sdklfj sldfkj sldkfj sdlfkj sdlkfjsdf test%d", i))
-		layout.AddWidget(w, i, 0, 0)
-		layout.AddWidget(l, i, 1, 0)
-		w.Hide()
-		l.Hide()
-		items = append(items, &MessageItem{
+	 	w := widgets.NewQWidget(m.widget, 0)
+	 	w.SetContentsMargins(0, 0, 0, 0)
+	 	w.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
+	 	w.SetFixedWidth(editor.iconSize)
+	 	icon := svg.NewQSvgWidget(nil)
+	 	icon.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
+	 	icon.SetFixedSize2(editor.iconSize, editor.iconSize)
+	 	icon.SetParent(w)
+	 	icon.Move2(margin, margin)
+	 	l := widgets.NewQLabel(nil, 0)
+	 	l.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
+	 	l.SetContentsMargins(margin, margin, margin, margin)
+	 	l.SetWordWrap(true)
+	 	l.SetText("dummy text")
+		item := &MessageItem{
 			m:      m,
 			label:  l,
 			icon:   icon,
 			widget: w,
-		})
+			active: true,
+			expired: true,
+		}
+		items = append(items, item)
 	}
-	widget.Show()
 	m.items = items
+
+	// Enable widget dragging
+	m.widget.ConnectMousePressEvent(func(event *gui.QMouseEvent) {
+		m.widget.Raise()
+		m.isDrag = true
+		m.pos = event.Pos()
+	})
+	m.widget.ConnectMouseReleaseEvent(func(*gui.QMouseEvent) {
+		m.isDrag = false
+	})
+	m.widget.ConnectMouseMoveEvent(func(event *gui.QMouseEvent) {
+		if m.isDrag == true {
+			x := event.Pos().X() - m.pos.X()
+			y := event.Pos().Y() - m.pos.Y()
+			newPos := core.NewQPoint2(x, y)
+			trans := m.widget.MapToParent(newPos)
+			m.widget.Move(trans)
+		}
+	})
+
+	go func() {
+		// layout message item
+		for i, item := range items {
+		 	layout.AddWidget(item.widget, i, 0, 0)
+			layout.SetAlignment(item.widget, core.Qt__AlignTop)
+		 	layout.AddWidget(item.label, i, 1, 0)
+			layout.SetAlignment(item.label, core.Qt__AlignTop)
+		}
+		// Drop shadow to widget
+		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+		shadow.SetBlurRadius(40)
+		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
+		shadow.SetOffset3(-2, 4)
+		m.widget.SetGraphicsEffect(shadow)
+	}()
+	m.widget.Hide()
+
+	// hide messgaes at startup.
+	m.update()
+
 	return m
+}
+
+func (m *Message) setColor() {
+	fg := editor.colors.widgetFg.String()
+	bg := editor.colors.widgetBg
+	transparent := transparent()
+	m.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }", bg.R, bg.G, bg.B, transparent, fg))
+}
+
+func (m *Message) updateFont(font *Font) {
+	margin := m.ws.font.height / 3
+	for _, item := range m.items {
+		item.widget.SetFixedSize2(m.ws.font.height*5/3, m.ws.font.height*5/3)
+	 	item.icon.SetFixedSize2(m.ws.font.height, m.ws.font.height)
+	 	item.label.SetContentsMargins(margin/2, margin, margin, margin)
+	 	item.icon.Move2(margin*5/4, margin)
+		item.label.SetFont(m.ws.font.fontNew)
+	}
 }
 
 func (m *Message) subscribe() {
@@ -116,41 +180,111 @@ func (m *Message) update() {
 			item.hide()
 		}
 	}
+	m.resize()
 }
 
 func (m *Message) resize() {
-	m.width = m.ws.width / 4
-	m.widget.Move2(m.ws.width-m.width-34, 0)
-	m.widget.Resize2(m.width+34, 0)
+	if m.ws == nil {
+		return
+	}
+	if m.ws.screen == nil {
+		return
+	}
+	m.width = m.ws.screen.widget.Width() / 3
+	ok := m.resizeMessages()
+	if !ok {
+	 	m.width = m.ws.screen.widget.Width() - m.ws.scrollBar.widget.Width() - 12
+		_ = m.resizeMessages()
+	}
+
+	m.widget.Resize2(m.width+editor.iconSize, 0)
+
+	var x, y int
+	if !ok {
+		x = 10
+		y = m.ws.screen.widget.Height() - m.widget.Height() - 10
+	} else {
+		x = m.ws.width-m.width-editor.iconSize-m.ws.scrollBar.widget.Width()-12
+		y = 6 + m.ws.tabline.widget.Height()
+	}
+	m.widget.Move2(x, y)
+}
+
+func (m *Message) resizeMessages() bool {
+	ok := true
+	width := m.ws.font.truewidth
 	for _, item := range m.items {
+		item.widget.SetFixedSize2(m.ws.font.height*5/3, m.ws.font.height*5/3)
 		item.label.SetMinimumHeight(0)
 		item.label.SetMinimumHeight(item.label.HeightForWidth(m.width))
+		item.label.SetAlignment(core.Qt__AlignTop)
+		if !item.active {
+			continue
+		}
+
+		labelWidth := m.width - item.widget.Width()
+		messageWidth := int(width * float64(len(item.label.Text())))
+
+		if labelWidth < messageWidth {
+			ok = false
+		}
+	}
+
+	return ok
+}
+
+func (m *Message) msgShow(args []interface{}) {
+	prevKind := ""
+	for _, arg := range args {
+		kind, ok := arg.([]interface{})[0].(string)
+		if !ok {
+			continue
+		}
+		text := ""
+		var attrId int
+		for _, tupple := range arg.([]interface{})[1].([]interface{}) {
+			chunk, ok := tupple.([]interface{})
+			if !ok {
+				continue
+			}
+			if len(chunk) != 2 {
+				continue
+			}
+			attrId = util.ReflectToInt(chunk[0])
+			if !ok {
+				continue
+			}
+			msg, ok := chunk[1].(string)
+			if !ok {
+				continue
+			}
+			text += msg
+		}
+
+		replaceLast := false
+		if len(arg.([]interface{})) > 2 {
+			replaceLast, ok = arg.([]interface{})[2].(bool)
+		}
+
+		if kind == prevKind {
+			// Do not show message icon if the same kind as the previous kind
+			m.makeMessage("_dup", attrId, text, replaceLast)
+		} else {
+			m.makeMessage(kind, attrId, text, replaceLast)
+		}
+		prevKind = kind
 	}
 }
 
-func (m *Message) chunk(args []interface{}) {
-	text := ""
-	for _, arg := range args {
-		chunk, ok := arg.([]interface{})
-		if !ok {
-			continue
-		}
-		if len(chunk) != 2 {
-			continue
-		}
-		msg, ok := chunk[0].(string)
-		if !ok {
-			continue
-		}
-		text += msg
-	}
-	if text == "" {
+func (m *Message) makeMessage(kind string, attrId int, text string, replaceLast  bool) {
+	defer m.resize()
+	if text == "" || text == "\n" || text == "\r\n" {
 		return
 	}
 	for text[len(text)-1] == '\n' {
 		text = string(text[:len(text)-1])
 		if text == "" {
-			return
+			break
 		}
 	}
 	var item *MessageItem
@@ -167,27 +301,47 @@ func (m *Message) chunk(args []interface{}) {
 		}
 	}
 
+	if replaceLast {
+		for _, i := range m.items {
+			i.hide()
+		}
+	}
+
 	item.hideAt = time.Now().Add(time.Duration(m.expires) * time.Second)
 	time.AfterFunc(time.Duration(m.expires+1)*time.Second, func() {
 		m.ws.signal.MessageSignal()
 	})
-	item.setKind(m.kind)
+	item.attrId = attrId
+	item.setKind(kind)
 	item.setText(text)
 	item.show()
-	m.widget.Resize2(m.width+34, 0)
+	// m.widget.Resize2(m.width+editor.iconSize, 0)
 }
+
+func (m *Message) msgClear() {
+	for _, item := range m.items {
+		item.hide()
+	}
+}
+
+func (m *Message) msgHistoryShow(args []interface{}) {
+	for _, arg := range args {
+		m.msgShow((arg.([]interface{})[0]).([]interface{}))
+	}
+}
+
 
 func (i *MessageItem) setText(text string) {
 	i.text = text
 	label := i.label
 	label.SetMinimumHeight(0)
-	// label.SetMaximumHeight(0)
 	label.SetText(text)
 	height := label.HeightForWidth(i.m.width)
 	label.SetMinimumHeight(height)
 	label.SetMaximumHeight(height)
 	i.widget.SetMinimumHeight(height)
 	i.widget.SetMaximumHeight(height)
+	i.widget.SetFixedSize2(i.m.ws.font.height*5/3, i.m.ws.font.height*5/3)
 }
 
 func (i *MessageItem) copy(item *MessageItem) {
@@ -217,22 +371,37 @@ func (i *MessageItem) show() {
 	i.label.Show()
 	i.icon.Show()
 	i.widget.Show()
+	i.m.widget.Show()
+	i.m.widget.Raise()
+	i.widget.Raise()
 }
 
 func (i *MessageItem) setKind(kind string) {
-	if kind == i.kind {
+	i.kind = kind
+	var style string
+	var color *RGBA
+	if i.m.ws == nil {
 		return
 	}
-	i.kind = kind
-	style := "border-bottom: 1px solid #000; border-left: 1px solid #000; border-right: 1px solid #000;"
+	if i.m.ws.screen.highAttrDef[i.attrId] == nil {
+		return
+	}
 	switch i.kind {
-	case "emsg":
-		style += "color: rgba(204, 62, 68, 1);"
-		svgContent := editor.getSvg("fire", newRGBA(204, 62, 68, 1))
+	case "emsg", "echo", "echomsg", "echoerr", "return_prompt", "quickfix" :
+		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
+		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
+		svgContent := editor.getSvg(i.kind, color)
+		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	case "_dup":
+		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
+		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
+		// hide 
+		svgContent := editor.getSvg("echo", editor.colors.widgetBg)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	default:
-		style += "color: rgba(81, 154, 186, 1);"
-		svgContent := editor.getSvg("comment", nil)
+		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
+		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
+		svgContent := editor.getSvg("echo", color)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	i.label.SetStyleSheet(style)

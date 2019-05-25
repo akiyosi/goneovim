@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -16,17 +17,37 @@ import (
 	"github.com/akiyosi/gonvim/util"
 )
 
+type gridId = int
+
 // Window is
 type Window struct {
+	paintMutex       sync.Mutex
+	redrawMutex      sync.Mutex
+
+	s                *Screen
+	content          [][]*Char
+	colorContent     [][]*RGBA
+
+	id         nvim.Window
+	pos        [2]int
+	anchor     int
+	cols       int
+	rows       int
+
+	widget     *widgets.QWidget
+
+	// maybe only use minimap
 	win        nvim.Window
+	tab        nvim.Tabpage
+	// only use minimap
 	width      int
 	height     int
-	pos        [2]int
-	tab        nvim.Tabpage
-	hl         string
-	bg         *RGBA
 	statusline bool
 	bufName    string
+	hl         string
+	bg         *RGBA
+
+	queueRedrawArea  [4]int
 }
 
 // Screen is the main editor area
@@ -36,18 +57,21 @@ type Screen struct {
 	height           int
 	widget           *widgets.QWidget
 	ws               *Workspace
+	windows          map[gridId]*Window
 	wins             map[nvim.Window]*Window
 	cursor           [2]int
 	lastCursor       [2]int
-	content          [][]*Char
-	colorContent     [][]*RGBA
 	scrollRegion     []int
 	scrollDust       [2]int
 	scrollDustDeltaY int
-	curtab           nvim.Tabpage
 	cmdheight        int
+	highAttrDef      map[int]*Highlight
 	highlight        Highlight
+	curtab           nvim.Tabpage
 	curWins          map[nvim.Window]*Window
+	content          [][]*Char
+	colorContent     [][]*RGBA
+	activeGrid       gridId
 	queueRedrawArea  [4]int
 	paintMutex       sync.Mutex
 	redrawMutex      sync.Mutex
@@ -59,7 +83,7 @@ type Screen struct {
 func newScreen() *Screen {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
-	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	// widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
 	tooltip := widgets.NewQLabel(widget, 0)
@@ -67,26 +91,27 @@ func newScreen() *Screen {
 
 	screen := &Screen{
 		widget:       widget,
+		windows:      make(map[gridId]*Window),
 		cursor:       [2]int{0, 0},
 		lastCursor:   [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
 	}
 
-	widget.ConnectPaintEvent(screen.paint)
 	widget.ConnectMousePressEvent(screen.mouseEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
-	widget.ConnectWheelEvent(screen.wheelEvent)
+	// widget.ConnectWheelEvent(screen.wheelEvent)
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		screen.updateSize()
 	})
-	widget.SetAttribute(core.Qt__WA_KeyCompression, false)
-	widget.SetAcceptDrops(true)
 
-	widget.ConnectDragEnterEvent(screen.dragEnterEvent)
-	widget.ConnectDragMoveEvent(screen.dragMoveEvent)
-	widget.ConnectDropEvent(screen.dropEvent)
+	// widget.SetAttribute(core.Qt__WA_KeyCompression, false)
+	// widget.SetAcceptDrops(true)
+        // 
+	// widget.ConnectDragEnterEvent(screen.dragEnterEvent)
+	// widget.ConnectDragMoveEvent(screen.dragMoveEvent)
+	// widget.ConnectDropEvent(screen.dropEvent)
 
 	return screen
 }
@@ -211,24 +236,32 @@ func (s *Screen) waitTime() time.Duration {
 
 func (s *Screen) updateSize() {
 	w := s.ws
-
 	s.width = s.widget.Width()
-	cols := int(float64(s.width) / w.font.truewidth)
-	rows := s.height / w.font.lineHeight
-	isTryResize := (cols != w.cols || rows != w.rows)
-	if !isTryResize {
+	currentCols := int(float64(s.width) / w.font.truewidth)
+	currentRows := s.height / w.font.lineHeight
+
+	isNeedTryResize := (currentCols != w.cols || currentRows != w.rows)
+	if !isNeedTryResize {
 		return
 	}
-	w.cols = cols
-	w.rows = rows
+
+	w.cols = currentCols
+	w.rows = currentRows
+
 	if !w.uiAttached {
 		return
 	}
+	s.uiTryResize(currentCols, currentRows)
+}
 
+func (s *Screen) uiTryResize(width, height int) {
+	w := s.ws
 	done := make(chan error, 5)
 	var result error
 	go func() {
-		result = w.nvim.TryResizeUI(w.cols, w.rows)
+		result = w.nvim.TryResizeUI(width, height)
+		// rewrite with nvim_ui_try_resize_grid
+		// result = w.nvim.Call("nvim_ui_try_resize_grid", s.activeGrid, currentCols, currentRows)
 		done <- result
 	}()
 	select {
@@ -237,7 +270,7 @@ func (s *Screen) updateSize() {
 		// In this case, assuming that nvim is returning an error
 		//  at startup and the TryResizeUI() function hangs up.
 		w.nvim.Input("<Enter>")
-		w.updateSize()
+		s.uiTryResize(width, height)
 	}
 }
 
@@ -253,7 +286,6 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		y = w.palette.patternPadding + 8
 		candY = y + w.palette.widget.Pos().Y()
 	} else {
-		s.tooltip.SetParent(s.widget)
 		s.toolTipFont(w.font)
 		row := s.cursor[0]
 		col := s.cursor[1]
@@ -287,38 +319,34 @@ func (s *Screen) toolTip(text string) {
 	c.move()
 }
 
-func (s *Screen) paint(vqp *gui.QPaintEvent) {
-	s.paintMutex.Lock()
-	defer s.paintMutex.Unlock()
+func (w *Window) paint(event *gui.QPaintEvent) {
+	w.paintMutex.Lock()
+	defer w.paintMutex.Unlock()
 
-	rect := vqp.M_rect()
-	font := s.ws.font
+	rect := event.M_rect()
+	font := w.s.ws.font
 	top := rect.Y()
 	left := rect.X()
 	width := rect.Width()
 	height := rect.Height()
-	right := left + width
-	bottom := top + height
 	row := int(float64(top) / float64(font.lineHeight))
 	col := int(float64(left) / font.truewidth)
-	rows := int(math.Ceil(float64(bottom)/float64(font.lineHeight))) - row
-	cols := int(math.Ceil(float64(right)/font.truewidth)) - col
+	rows := w.rows
+	cols := w.cols
 
-	p := gui.NewQPainter2(s.widget)
+	p := gui.NewQPainter2(w.widget)
 	p.SetBackgroundMode(core.Qt__TransparentMode)
-	bg := s.ws.background
+	bg := w.s.ws.background
 	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
 	if transparent < 255 {
 		transparent = 0
 	}
-	if s.ws.background != nil {
-		// p.FillRect5(
+	if w.s.ws.background != nil {
 		p.FillRect2(
 			left,
 			top,
 			width,
 			height,
-			// s.ws.background.QColor(),
 			gui.NewQBrush3(gui.NewQColor3(bg.R, bg.G, bg.B, transparent), core.Qt__SolidPattern),
 		)
 	}
@@ -326,18 +354,65 @@ func (s *Screen) paint(vqp *gui.QPaintEvent) {
 	p.SetFont(font.fontNew)
 
 	for y := row; y < row+rows; y++ {
-		if y >= s.ws.rows {
+		if y >= w.rows {
 			continue
 		}
-		s.fillHightlight(p, y, col, cols, [2]int{0, 0})
-		s.drawText(p, y, col, cols, [2]int{0, 0})
+		w.fillHightlight(p, y, col, cols, [2]int{0, 0})
+		w.drawText(p, y, col, cols, [2]int{0, 0})
 	}
 
-	s.drawWindows(p, row, col, rows, cols)
+	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
+		for _, win := range w.s.windows {
+			win.drawBorder(p)
+		}
+	}
+
 	p.DestroyQPainter()
-	s.ws.markdown.updatePos()
+	w.s.ws.markdown.updatePos()
 }
 
+func (w *Window) drawBorder(p *gui.QPainter) {
+	if w == nil {
+		return
+	}
+	x := int(float64(w.pos[0]) * w.s.ws.font.truewidth)
+	y := w.pos[1] * int(w.s.ws.font.lineHeight)
+	width := int(float64(w.cols) * w.s.ws.font.truewidth)
+	winHeight := int((float64(w.rows) + 0.92) * float64(w.s.ws.font.lineHeight))
+	color := gui.NewQColor3(
+		editor.colors.scrollBarFg.R,
+		editor.colors.scrollBarFg.G,
+		editor.colors.scrollBarFg.B,
+		255)
+	// // color for debug
+	// color := gui.NewQColor3(200, 0, 0, 255)
+
+	// Vertical
+	if y + w.s.ws.font.lineHeight + 1 < w.s.widget.Height() {
+		// separetor
+		p.FillRect5(
+			int(float64(x+width)+w.s.ws.font.truewidth/2),
+			y - int(w.s.ws.font.lineHeight/2),
+			1,
+			winHeight, //w.widget.Height(),
+			color,
+		)
+	}
+
+	// Horizontal
+	height := w.rows * int(w.s.ws.font.lineHeight)
+	y2 := y+height-1+w.s.ws.font.lineHeight/2
+	if y2 + w.s.ws.font.lineHeight + w.s.ws.font.lineHeight/2 > w.s.widget.Height() {
+		return
+	}
+	p.FillRect5(
+		int(float64(x)-w.s.ws.font.truewidth/2),
+		y2,
+		int((float64(w.cols) + 0.92) * w.s.ws.font.truewidth),
+		1,
+		color,
+	)
+}
 func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	var m sync.Mutex
 	m.Lock()
@@ -365,7 +440,7 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		dx := math.Abs(float64(s.scrollDust[0]))
 		dy := math.Abs(float64(s.scrollDust[1]))
 
-		fontheight := float64(float64(font.lineHeight))
+		fontheight := float64(font.lineHeight)
 		fontwidth := float64(font.truewidth)
 
 		s.scrollDust[0] += h
@@ -490,365 +565,483 @@ func (s *Screen) convertMouse(event *gui.QMouseEvent) string {
 	return fmt.Sprintf("<%s%s%s><%d,%d>", editor.modPrefix(mod), buttonName, evType, pos[0], pos[1])
 }
 
-func (s *Screen) drawWindows(p *gui.QPainter, row, col, rows, cols int) {
-	done := make(chan struct{}, 1000)
-	go func() {
-		s.getWindows()
-		close(done)
-	}()
-	select {
-	case <-done:
-	//case <-time.After(1 * time.Millisecond):
-	case <-time.After(500 * time.Microsecond):
-	}
-	// for _, win := range s.curWins {
-	// 	if win.pos[0]+win.height < row && (win.pos[1]+win.width+1) < col {
-	// 		continue
-	// 	}
-	// 	if win.pos[0] > (row+rows) && (win.pos[1]+win.width) > (col+cols) {
-	// 		continue
-	// 	}
-	// 	win.drawBorder(p, s)
-	// }
-}
-
-func (s *Screen) getWindows() {
-	wins := map[nvim.Window]*Window{}
-	neovim := s.ws.nvim
-	curtab, _ := neovim.CurrentTabpage()
-	s.curtab = curtab
-	nwins, _ := neovim.TabpageWindows(curtab)
-	b := neovim.NewBatch()
-	for _, nwin := range nwins {
-		win := &Window{
-			win: nwin,
-		}
-		b.WindowWidth(nwin, &win.width)
-		b.WindowHeight(nwin, &win.height)
-		b.WindowPosition(nwin, &win.pos)
-		b.WindowTabpage(nwin, &win.tab)
-		wins[nwin] = win
-	}
-	b.Option("cmdheight", &s.cmdheight)
-	err := b.Execute()
-	if err != nil {
-		return
-	}
-	s.curWins = wins
-	for _, win := range s.curWins {
-		buf, _ := neovim.WindowBuffer(win.win)
-		win.bufName, _ = neovim.BufferName(buf)
-
-		if win.height+win.pos[0] < s.ws.rows-s.cmdheight {
-			win.statusline = true
-		} else {
-			win.statusline = false
-		}
-		neovim.WindowOption(win.win, "winhl", &win.hl)
-		if win.hl != "" {
-			parts := strings.Split(win.hl, ",")
-			for _, part := range parts {
-				if strings.HasPrefix(part, "Normal:") {
-					hl := part[7:]
-					result := ""
-					neovim.Eval(fmt.Sprintf("synIDattr(hlID('%s'), 'bg')", hl), &result)
-					if result != "" {
-						var r, g, b int
-						format := "#%02x%02x%02x"
-						n, err := fmt.Sscanf(result, format, &r, &g, &b)
-						if err != nil {
-							continue
-						}
-						if n != 3 {
-							continue
-						}
-						win.bg = newRGBA(r, g, b, 1)
-					}
-				}
-			}
-		}
-	}
-}
-
-func (s *Screen) size() (int, int) {
-	geo := s.widget.Geometry()
-	return geo.Width(), geo.Height()
-}
-
-func (s *Screen) resize(args []interface{}) {
-	s.cursor[0] = 0
-	s.cursor[1] = 0
-	s.content = make([][]*Char, s.ws.rows)
-	for i := 0; i < s.ws.rows; i++ {
-		s.content[i] = make([]*Char, s.ws.cols)
-	}
-	s.colorContent = make([][]*RGBA, s.ws.rows)
-	for i := 0; i < s.ws.rows; i++ {
-		s.colorContent[i] = make([]*RGBA, s.ws.cols)
-	}
-	s.queueRedrawAll()
-}
-
-func (s *Screen) clear(args []interface{}) {
-	s.cursor[0] = 0
-	s.cursor[1] = 0
-	s.content = make([][]*Char, s.ws.rows)
-	for i := 0; i < s.ws.rows; i++ {
-		s.content[i] = make([]*Char, s.ws.cols)
-	}
-	s.colorContent = make([][]*RGBA, s.ws.rows)
-	for i := 0; i < s.ws.rows; i++ {
-		s.colorContent[i] = make([]*RGBA, s.ws.cols)
-	}
-	s.queueRedrawAll()
-}
-
-func (s *Screen) eolClear(args []interface{}) {
-	row := s.cursor[0]
-	col := s.cursor[1]
-	if row >= s.ws.rows {
-		return
-	}
-	line := s.content[row]
-	numChars := 0
-	for x := col; x < len(line); x++ {
-		line[x] = nil
-		numChars++
-	}
-	s.queueRedraw(col, row, numChars+1, 1)
-}
-
-func (s *Screen) cursorGoto(args []interface{}) {
-	pos, _ := args[0].([]interface{})
-	s.cursor[0] = util.ReflectToInt(pos[0])
-	s.cursor[1] = util.ReflectToInt(pos[1])
-}
-
-func (s *Screen) put(args []interface{}) {
-	numChars := 0
-	x := s.cursor[1]
-	y := s.cursor[0]
-	row := s.cursor[0]
-	col := s.cursor[1]
-	if row >= s.ws.rows {
-		return
-	}
-	line := s.content[row]
-	oldFirstNormal := true
-	if x >= len(line) {
-		x = len(line) - 1
-	}
-	char := line[x] // sometimes crash at this line
-	if char != nil && !char.normalWidth {
-		oldFirstNormal = false
-	}
-	var lastChar *Char
-	oldNormalWidth := true
+func (s *Screen) gridResize(args []interface{}) {
+	var gridid gridId
+	var rows, cols int
 	for _, arg := range args {
-		chars := arg.([]interface{})
-		for _, c := range chars {
-			if col >= len(line) {
+		gridid = util.ReflectToInt(arg.([]interface{})[0])
+		cols = util.ReflectToInt(arg.([]interface{})[1])
+		rows = util.ReflectToInt(arg.([]interface{})[2])
+		if isSkipGlobalId(gridid) {
+			continue
+		}
+		s.assignMdGridid(gridid)
+		s.resizeWindow(gridid, cols, rows)
+	}
+}
+
+func (s *Screen) assignMdGridid(gridid gridId) {
+	if !s.ws.markdown.gridIdTrap || gridid == 1 {
+		return
+	}
+	maxid := 0
+	for id, _ := range s.windows {
+		if maxid < id {
+			maxid = id
+		}
+	}
+	if maxid < gridid {
+		s.ws.markdown.mdGridId = gridid
+		s.ws.markdown.gridIdTrap = false
+	}
+}
+
+func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
+	win := s.windows[gridid]
+	if win != nil {
+		if win.cols == cols && win.rows == rows {
+			return
+		}
+	}
+
+	// make new size content
+	content := make([][]*Char, rows)
+	colorContent := make([][]*RGBA, rows)
+
+	for i := 0; i < rows; i++ {
+		content[i] = make([]*Char, cols)
+	}
+	for i := 0; i < rows; i++ {
+		colorContent[i] = make([]*RGBA, cols)
+	}
+
+	if win != nil && gridid != 1 {
+		for i := 0; i < rows; i++ {
+			if i >= len(win.content) {
 				continue
 			}
-			char := line[col]
-			if char != nil && !char.normalWidth {
-				oldNormalWidth = false
-			} else {
-				oldNormalWidth = true
+			for j := 0; j < cols; j++ {
+				if j >= len(win.content[i]) {
+					continue
+				}
+				content[i][j] = win.content[i][j]
 			}
-			if char == nil {
-				char = &Char{}
-				line[col] = char
-			}
-			char.char = c.(string)
-			char.normalWidth = s.isNormalWidth(char.char)
-			lastChar = char
-			char.highlight = s.highlight
-			col++
-			numChars++
 		}
-	}
-	if lastChar != nil && !lastChar.normalWidth {
-		numChars++
-	}
-	if !oldNormalWidth {
-		numChars++
-	}
-	s.cursor[1] = col
-	if x > 0 {
-		char := line[x-1]
-		if char != nil && char.char != "" && !char.normalWidth {
-			x--
-			numChars++
-		} else {
-			if !oldFirstNormal {
-				x--
-				numChars++
+		for i := 0; i < rows; i++ {
+			if i >= len(win.colorContent) {
+				continue
+			}
+			for j := 0; j < cols; j++ {
+				if j >= len(win.colorContent[i]) {
+					continue
+				}
+				colorContent[i][j] = win.colorContent[i][j]
 			}
 		}
 	}
-	s.queueRedraw(x, y, numChars, 1)
+
+	if win == nil {
+		s.windows[gridid] = s.newWindow()
+		// reassign win
+		win = s.windows[gridid]
+	}
+
+	win.content = content
+	win.colorContent = colorContent
+	win.cols = cols
+	win.rows = rows
+
+	width := int(float64(cols) * s.ws.font.truewidth)
+	height := rows * int(s.ws.font.lineHeight)
+	rect := core.NewQRect4(0, 0, width, height)
+	win.widget.SetGeometry(rect)
+	win.move(win.pos[0], win.pos[1])
+	win.raise()
+
+	s.queueRedrawAll()
 }
 
-func (s *Screen) highlightSet(args []interface{}) {
+func (s *Screen) gridCursorGoto(args []interface{}) {
 	for _, arg := range args {
-		hl := arg.([]interface{})[0].(map[string]interface{})
-		highlight := Highlight{}
-
-		bold := hl["bold"]
-		if bold != nil {
-			highlight.bold = true
-		} else {
-			highlight.bold = false
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
+		s.cursor[1] = util.ReflectToInt(arg.([]interface{})[2])
+		if s.windows[gridid] != nil {
+			s.ws.cursor.widget.SetParent(s.windows[gridid].widget)
 		}
-
-		italic := hl["italic"]
-		if italic != nil {
-			highlight.italic = true
-		} else {
-			highlight.italic = false
+		if gridid == 1 {
+			continue
 		}
+		if s.windows[gridid] != nil {
+			s.windows[gridid].raise()
+		}
+	}
+}
 
-		_, ok := hl["reverse"]
-		if ok {
-			highlight.foreground = s.highlight.background
-			highlight.background = s.highlight.foreground
-			s.highlight = highlight
+func (s *Screen) setHighAttrDef(args []interface{}) {
+	var h map[int]*Highlight
+	if s.highAttrDef == nil {
+		h = make(map[int]*Highlight)
+	} else {
+		h = s.highAttrDef
+	}
+	h[0] = &Highlight{
+		foreground: editor.colors.fg,
+		background: editor.colors.bg,
+	}
+
+	for _, arg := range args {
+		id := util.ReflectToInt(arg.([]interface{})[0])
+		h[id] = s.getHighlight(arg)
+	}
+
+	s.highAttrDef = h
+}
+
+func (s *Screen) getHighlight(args interface{}) *Highlight {
+	arg := args.([]interface{})
+	highlight := Highlight{}
+
+	hl := arg[1].(map[string]interface{})
+	info := make(map[string]interface{})
+	for _, arg := range arg[3].([]interface{}) {
+		info = arg.(map[string]interface{})
+		break
+	}
+
+	kind, ok := info["kind"]
+	if ok {
+		highlight.kind = kind.(string)
+	}
+
+	uiName, ok := info["ui_name"]
+	if ok {
+		highlight.uiName = uiName.(string)
+	}
+
+	hiName, ok := info["hi_name"]
+	if ok {
+		highlight.hiName = hiName.(string)
+	}
+
+	bold := hl["bold"]
+	if bold != nil {
+		highlight.bold = true
+	} else {
+		highlight.bold = false
+	}
+
+	italic := hl["italic"]
+	if italic != nil {
+		highlight.italic = true
+	} else {
+		highlight.italic = false
+	}
+
+	_, ok = hl["reverse"]
+	if ok {
+		highlight.foreground = s.highlight.background
+		highlight.background = s.highlight.foreground
+		s.highlight = highlight
+		return &highlight
+	}
+
+	fg, ok := hl["foreground"]
+	if ok {
+		rgba := calcColor(util.ReflectToInt(fg))
+		highlight.foreground = rgba
+	} else {
+		highlight.foreground = s.ws.foreground
+	}
+
+	bg, ok := hl["background"]
+	if ok {
+		rgba := calcColor(util.ReflectToInt(bg))
+		highlight.background = rgba
+	} else {
+		highlight.background = s.ws.background
+	}
+
+	return &highlight
+}
+
+
+func (s *Screen) gridClear(args []interface{}) {
+	var gridid gridId
+	for _, arg := range args {
+		gridid = util.ReflectToInt(arg.([]interface{})[0])
+		if isSkipGlobalId(gridid) {
 			continue
 		}
 
-		fg, ok := hl["foreground"]
-		if ok {
-			rgba := calcColor(util.ReflectToInt(fg))
-			highlight.foreground = rgba
-		} else {
-			highlight.foreground = s.ws.foreground
-		}
+		s.windows[gridid].content = make([][]*Char, s.windows[gridid].rows)
+		s.windows[gridid].colorContent = make([][]*RGBA, s.windows[gridid].rows)
 
-		bg, ok := hl["background"]
-		if ok {
-			rgba := calcColor(util.ReflectToInt(bg))
-			highlight.background = rgba
-		} else {
-			highlight.background = s.ws.background
+		for i := 0; i < s.windows[gridid].rows; i++ {
+			s.windows[gridid].content[i] = make([]*Char, s.windows[gridid].cols)
 		}
-		s.highlight = highlight
-		//s.ws.minimap.highlight = highlight
+		for i := 0; i < s.windows[gridid].rows; i++ {
+			s.windows[gridid].colorContent[i] = make([]*RGBA, s.windows[gridid].cols)
+		}
+		s.queueRedrawAll()
 	}
 }
 
-func (s *Screen) setScrollRegion(args []interface{}) {
-	arg := args[0].([]interface{})
-	top := util.ReflectToInt(arg[0])
-	bot := util.ReflectToInt(arg[1])
-	left := util.ReflectToInt(arg[2])
-	right := util.ReflectToInt(arg[3])
-	s.scrollRegion[0] = top
-	s.scrollRegion[1] = bot
-	s.scrollRegion[2] = left
-	s.scrollRegion[3] = right
+func (s *Screen) gridLine(args []interface{}) {
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		if isSkipGlobalId(gridid) {
+			continue
+		}
+		s.updateGridContent(arg.([]interface{}))
+		s.windows[gridid].widget.Show()
+	}
 }
 
-func (s *Screen) scroll(args []interface{}) {
-	count := int(args[0].([]interface{})[0].(int64))
+func (s *Screen) updateGridContent(arg []interface{}) {
+	numChars := 0
+	gridid := util.ReflectToInt(arg[0])
+	row := util.ReflectToInt(arg[1])
+	col := util.ReflectToInt(arg[2])
 
+
+	if isSkipGlobalId(gridid) {
+		return
+	}
+
+	s.activeGrid = gridid
+
+	content := s.windows[gridid].content
+	if row >= s.windows[gridid].rows {
+		return
+	}
+	line := content[row]
+	cells := arg[3].([]interface{})
+
+	oldNormalWidth := true
+	lastChar := &Char{}
+
+ 	for _, arg := range cells {
+ 		if col >= len(line) {
+ 			continue
+ 		}
+		cell := arg.([]interface{})
+
+		var hi, repeat int
+		hi = -1
+ 		text := cell[0]
+		if len(cell) >= 2 {
+ 			hi = util.ReflectToInt(cell[1])
+		}
+
+		// if drawborder is true, and row is statusline's row
+		if s.isSkipDrawStatusline(hi) {
+			return
+		}
+
+		if len(cell) == 3 {
+ 			repeat = util.ReflectToInt(cell[2])
+		}
+
+		makeCells := func() {
+			if line[col] != nil && !line[col].normalWidth {
+ 			 	oldNormalWidth = false
+			} else {
+ 			 	oldNormalWidth = true
+			}
+
+			if line[col] == nil {
+				line[col] = &Char{}
+			}
+
+			line[col].char = text.(string)
+			line[col].normalWidth = s.isNormalWidth(line[col].char)
+			lastChar = line[col]
+
+			switch col {
+			case 0:
+				line[col].highlight = *(s.highAttrDef[hi])
+			default:
+				if hi == -1 {
+					line[col].highlight = line[col-1].highlight
+				} else {
+					line[col].highlight = *s.highAttrDef[hi]
+				}
+			}
+			col++
+			numChars++
+
+ 			if lastChar != nil && !lastChar.normalWidth {
+ 				numChars++
+ 			}
+ 			if !oldNormalWidth {
+ 				numChars++
+ 			}
+		} // end of makeCells()
+
+		r := 1
+		if repeat == 0 {
+			repeat = 1
+		}
+		for r <= repeat {
+ 			if col >= len(line) {
+ 				break
+ 			}
+			makeCells()
+			r++
+		}
+		s.windows[gridid].queueRedraw(0, row, s.windows[gridid].cols, 1)
+ 	}
+	return
+}
+
+
+func (s *Screen) isSkipDrawStatusline(hi int) bool {
+	// If ext_statusline is implemented in Neovim, the implementation may be revised
+	if !editor.config.Editor.DrawBorder {
+		return false
+	}
+	if s.highAttrDef[hi] == nil {
+		return false
+	}
+	if s.highAttrDef[hi].hiName == "StatusLine" ||
+	   s.highAttrDef[hi].hiName == "StatusLineNC" || 
+	   s.highAttrDef[hi].hiName == "VertSplit" {
+		return true
+	}
+	return false
+}
+
+func (s *Screen) gridScroll(args []interface{}) {
+	var gridid gridId
+	var rows int
+	for _, arg := range args {
+		gridid = util.ReflectToInt(arg.([]interface{})[0])
+		if isSkipGlobalId(gridid) {
+			continue
+		}
+		s.scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])      // top
+		s.scrollRegion[1] = util.ReflectToInt(arg.([]interface{})[2]) - 1  // bot
+		s.scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3])      // left
+		s.scrollRegion[3] = util.ReflectToInt(arg.([]interface{})[4]) - 1  // right
+		rows = util.ReflectToInt(arg.([]interface{})[5])
+		s.scroll(gridid, rows)
+	}
+
+}
+
+func (s *Screen) scroll(gridid, count int) {
 	top := s.scrollRegion[0]
 	bot := s.scrollRegion[1]
 	left := s.scrollRegion[2]
 	right := s.scrollRegion[3]
+	content := s.windows[gridid].content
 
 	if top == 0 && bot == 0 && left == 0 && right == 0 {
 		top = 0
-		bot = s.ws.rows - 1
+		bot = s.windows[gridid].rows - 1
 		left = 0
-		right = s.ws.cols - 1
+		right = s.windows[gridid].cols - 1
 	}
 
-	s.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
+	s.windows[gridid].queueRedraw(left, top, (right - left + 1), (bot - top + 1))
 
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
 			for col := left; col <= right; col++ {
-				if len(s.content) <= row+count {
-					continue
+				if len(content) <= row+count {
+				        continue
 				}
-				for _, line := range s.content {
-					if len(line) <= col {
-						return
-					}
+				for _, line := range content {
+				        if len(line) <= col {
+				                continue
+				        }
 				}
-				s.content[row][col] = s.content[row+count][col]
+				content[row][col] = content[row+count][col]
 			}
 		}
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
-				if len(s.content) <= row {
-					continue
+				if len(content) <= row {
+				        continue
 				}
-				for _, line := range s.content {
-					if len(line) <= col {
-						return
-					}
+				for _, line := range content {
+				        if len(line) <= col {
+				                continue
+				        }
 				}
-				s.content[row][col] = nil
+				content[row][col] = nil
 			}
 		}
-		s.queueRedraw(left, (bot - count + 1), (right - left), count)
+		s.windows[gridid].queueRedraw(left, (bot - count + 1), (right - left), count)
 		if top > 0 {
-			s.queueRedraw(left, (top - count), (right - left), count)
+			s.windows[gridid].queueRedraw(left, (top - count), (right - left), count)
 		}
 	} else {
 		for row := bot; row >= top-count; row-- {
 			for col := left; col <= right; col++ {
-				if len(s.content) <= row+count {
-					continue
+				if len(content) <= row {
+				        continue
 				}
-				for _, line := range s.content {
-					if len(line) <= col {
-						return
-					}
+				for _, line := range content {
+				        if len(line) <= col {
+				                continue
+				        }
 				}
-				s.content[row][col] = s.content[row+count][col]
+				content[row][col] = content[row+count][col]
 			}
 		}
 		for row := top; row < top-count; row++ {
 			for col := left; col <= right; col++ {
-				if len(s.content) <= row {
-					continue
+				if len(content) <= row {
+				        continue
 				}
-				for _, line := range s.content {
-					if len(line) <= col {
-						return
-					}
+				for _, line := range content {
+				        if len(line) <= col {
+				                continue
+				        }
 				}
-				s.content[row][col] = nil
+				content[row][col] = nil
 			}
 		}
-		s.queueRedraw(left, top, (right - left), -count)
-		if bot < s.ws.rows-1 {
-			s.queueRedraw(left, bot+1, (right - left), -count)
+		s.windows[gridid].queueRedraw(left, top, (right - left), -count)
+		if bot < s.windows[gridid].rows-1 {
+			s.windows[gridid].queueRedraw(left, bot+1, (right - left), -count)
 		}
 	}
 }
 
-func (s *Screen) update() {
-	x := s.queueRedrawArea[0]
-	y := s.queueRedrawArea[1]
-	width := s.queueRedrawArea[2] - x
-	height := s.queueRedrawArea[3] - y
+func (w *Window) update() {
+	if w == nil {
+		return
+	}
+
+	x := int(float64(w.queueRedrawArea[0]) * w.s.ws.font.truewidth)
+	y := w.queueRedrawArea[1] * w.s.ws.font.lineHeight
+	width := int(float64(w.queueRedrawArea[2] - w.queueRedrawArea[0]) * w.s.ws.font.truewidth)
+	height := (w.queueRedrawArea[3] - w.queueRedrawArea[1]) * w.s.ws.font.lineHeight
+
 	if width > 0 && height > 0 {
-		// s.item.SetPixmap(s.pixmap)
-		s.widget.Update2(
-			int(float64(x)*s.ws.font.truewidth),
-			y*s.ws.font.lineHeight,
-			int(float64(width)*s.ws.font.truewidth),
-			height*s.ws.font.lineHeight,
+		w.widget.Update2(
+			x,
+			y,
+			width,
+			height,
 		)
 	}
-	s.queueRedrawArea[0] = s.ws.cols
-	s.queueRedrawArea[1] = s.ws.rows
-	s.queueRedrawArea[2] = 0
-	s.queueRedrawArea[3] = 0
+
+	w.queueRedrawArea[0] = w.cols
+	w.queueRedrawArea[1] = w.rows
+	w.queueRedrawArea[2] = 0
+	w.queueRedrawArea[3] = 0
+}
+
+func (s *Screen) update() {
+	for _, win := range s.windows {
+		if win != nil {
+			win.update()
+		}
+	}
 }
 
 func (s *Screen) queueRedrawAll() {
@@ -859,39 +1052,26 @@ func (s *Screen) redraw() {
 	s.queueRedrawArea = [4]int{s.ws.cols, s.ws.rows, 0, 0}
 }
 
-func (s *Screen) queueRedraw(x, y, width, height int) {
-	if x < s.queueRedrawArea[0] {
-		s.queueRedrawArea[0] = x
+func (w *Window) queueRedraw(x, y, width, height int) {
+	if x < w.queueRedrawArea[0] {
+		w.queueRedrawArea[0] = x
 	}
-	if y < s.queueRedrawArea[1] {
-		s.queueRedrawArea[1] = y
+	if y < w.queueRedrawArea[1] {
+		w.queueRedrawArea[1] = y
 	}
-	if (x + width) > s.queueRedrawArea[2] {
-		s.queueRedrawArea[2] = x + width
+	if (x + width) > w.queueRedrawArea[2] {
+		w.queueRedrawArea[2] = x + width
 	}
-	if (y + height) > s.queueRedrawArea[3] {
-		s.queueRedrawArea[3] = y + height
+	if (y + height) > w.queueRedrawArea[3] {
+		w.queueRedrawArea[3] = y + height
 	}
 }
 
-func (s *Screen) posWin(x, y int) *Window {
-	for _, win := range s.curWins {
-		if win.pos[0] <= y && win.pos[1] <= x && (win.pos[0]+win.height+1) >= y && (win.pos[1]+win.width >= x) {
-			return win
-		}
-	}
-	return nil
-}
-
-func (s *Screen) cursorWin() *Window {
-	return s.posWin(s.cursor[1], s.cursor[0])
-}
-
-func (s *Screen) transparent(bg *RGBA) int {
+func (w *Window) transparent(bg *RGBA) int {
 	t := 255
 	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
 
-	if s.ws.background.equals(bg) {
+	if w.s.ws.background.equals(bg) {
 		t = 0
 	} else {
 		t = transparent
@@ -899,13 +1079,14 @@ func (s *Screen) transparent(bg *RGBA) int {
 	return t
 }
 
-func (s *Screen) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
-	rectF := core.NewQRectF()
-	screen := s.ws.screen
-	if y >= len(screen.content) {
+func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
+	if y >= len(w.content) {
 		return
 	}
-	line := screen.content[y]
+	rectF := core.NewQRectF()
+	font := w.s.ws.font
+	line := w.content[y]
+	colorContent := w.colorContent[y]
 	start := -1
 	end := -1
 	var lastBg *RGBA
@@ -915,7 +1096,7 @@ func (s *Screen) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 		if x >= len(line) {
 			continue
 		}
-		s.colorContent[y][x] = bg
+		colorContent[x] = bg
 		char := line[x]
 		if char != nil {
 			bg = char.highlight.background
@@ -936,15 +1117,14 @@ func (s *Screen) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 				} else {
 					// last bg is different; draw the previous and start a new one
 					rectF.SetRect(
-						float64(start-pos[1])*s.ws.font.truewidth,
-						float64((y-pos[0])*s.ws.font.lineHeight),
-						float64(end-start+1)*s.ws.font.truewidth,
-						float64(s.ws.font.lineHeight),
+						float64(start-pos[1]) * font.truewidth,
+						float64((y-pos[0]) * font.lineHeight),
+						float64(end-start+1) * font.truewidth,
+						float64(font.lineHeight),
 					)
 					p.FillRect(
 						rectF,
-						//gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0*255)), core.Qt__SolidPattern),
-						gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, s.transparent(lastBg)), core.Qt__SolidPattern),
+						gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
 					)
 
 					// start a new one
@@ -956,16 +1136,14 @@ func (s *Screen) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 		} else {
 			if lastBg != nil {
 				rectF.SetRect(
-					float64(start-pos[1])*s.ws.font.truewidth,
-					float64((y-pos[0])*s.ws.font.lineHeight),
-					float64(end-start+1)*s.ws.font.truewidth,
-					float64(s.ws.font.lineHeight),
+					float64(start-pos[1]) * font.truewidth,
+					float64((y-pos[0]) * font.lineHeight),
+					float64(end-start+1) * font.truewidth,
+					float64(font.lineHeight),
 				)
 				p.FillRect(
 					rectF,
-					//gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0.2*255)),
-					// gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0*255)), core.Qt__SolidPattern),
-					gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, s.transparent(lastBg)), core.Qt__SolidPattern),
+					gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
 				)
 
 				// start a new one
@@ -978,33 +1156,31 @@ func (s *Screen) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 	}
 	if lastBg != nil {
 		rectF.SetRect(
-			float64(start-pos[1])*s.ws.font.truewidth,
-			float64((y-pos[0])*s.ws.font.lineHeight),
-			float64(end-start+1)*s.ws.font.truewidth,
-			float64(s.ws.font.lineHeight),
+			float64(start-pos[1]) * font.truewidth,
+			float64((y-pos[0]) * font.lineHeight),
+			float64(end-start+1) * font.truewidth,
+			float64(font.lineHeight),
 		)
 		p.FillRect(
 			rectF,
-			// gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0.2*255)),
-			//gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, int(0*255)), core.Qt__SolidPattern),
-			gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, s.transparent(lastBg)), core.Qt__SolidPattern),
+			gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
 		)
 	}
 }
 
-func (s *Screen) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
-	screen := s.ws.screen
-	if y >= len(screen.content) {
+func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
+	if y >= len(w.content) {
 		return
 	}
+	wsfont := w.s.ws.font
 	font := p.Font()
 	font.SetBold(false)
 	font.SetItalic(false)
 	pointF := core.NewQPointF()
-	line := screen.content[y]
+	line := w.content[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
-	if col > 0 {
+	if col > 0 && len(line) >= col {
 		char := line[col-1]
 		if char != nil && char.char != "" {
 			if !char.normalWidth {
@@ -1012,8 +1188,6 @@ func (s *Screen) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 				cols++
 			}
 		}
-	}
-	if col+cols < s.ws.cols {
 	}
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
@@ -1036,7 +1210,7 @@ func (s *Screen) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 		highlight := Highlight{}
 		fg := char.highlight.foreground
 		if fg == nil {
-			fg = s.ws.foreground
+			fg = w.s.ws.foreground
 		}
 		highlight.foreground = fg
 		highlight.italic = char.highlight.italic
@@ -1071,8 +1245,8 @@ func (s *Screen) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 			if fg != nil {
 				p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 			}
-			pointF.SetX(float64(col-pos[1]) * s.ws.font.truewidth)
-			pointF.SetY(float64((y-pos[0])*s.ws.font.lineHeight + s.ws.font.shift))
+			pointF.SetX(float64(col-pos[1]) * wsfont.truewidth)
+			pointF.SetY(float64((y-pos[0]) * wsfont.lineHeight + wsfont.shift))
 			font.SetBold(highlight.bold)
 			font.SetItalic(highlight.italic)
 			p.DrawText(pointF, text)
@@ -1086,94 +1260,15 @@ func (s *Screen) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 		}
 		fg := char.highlight.foreground
 		if fg == nil {
-			fg = s.ws.foreground
+			fg = w.s.ws.foreground
 		}
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
-		pointF.SetX(float64(x-pos[1]) * s.ws.font.truewidth)
-		pointF.SetY(float64((y-pos[0])*s.ws.font.lineHeight + s.ws.font.shift))
+		pointF.SetX(float64(x-pos[1]) * wsfont.truewidth)
+		pointF.SetY(float64((y-pos[0]) * wsfont.lineHeight + wsfont.shift))
 		font.SetBold(char.highlight.bold)
 		font.SetItalic(char.highlight.italic)
 		p.DrawText(pointF, char.char)
 	}
-}
-
-func (w *Window) drawBorder(p *gui.QPainter, s *Screen) {
-	bg := s.ws.background
-	if w.bg != nil {
-		bg = w.bg
-	}
-	if bg == nil {
-		return
-	}
-	height := w.height
-	if w.statusline {
-		height++
-	}
-	p.FillRect5(
-		int(float64(w.pos[1]+w.width)*s.ws.font.truewidth),
-		w.pos[0]*s.ws.font.lineHeight,
-		int(s.ws.font.truewidth),
-		height*s.ws.font.lineHeight,
-		gui.NewQColor3(bg.R, bg.G, bg.B, 255),
-	)
-	p.FillRect5(
-		int(float64(w.pos[1]+1+w.width)*s.ws.font.truewidth-1),
-		w.pos[0]*s.ws.font.lineHeight,
-		1,
-		height*s.ws.font.lineHeight,
-		gui.NewQColor3(0, 0, 0, 255),
-	)
-
-	gradient := gui.NewQLinearGradient3(
-		(float64(w.width+w.pos[1])+1)*float64(s.ws.font.truewidth),
-		0,
-		(float64(w.width+w.pos[1])+1)*float64(s.ws.font.truewidth)-6,
-		0,
-	)
-	gradient.SetColorAt(0, gui.NewQColor3(10, 10, 10, 125))
-	gradient.SetColorAt(1, gui.NewQColor3(10, 10, 10, 0))
-	brush := gui.NewQBrush10(gradient)
-	p.FillRect2(
-		int((float64(w.width+w.pos[1])+1)*s.ws.font.truewidth)-6,
-		w.pos[0]*s.ws.font.lineHeight,
-		6,
-		height*s.ws.font.lineHeight,
-		brush,
-	)
-
-	// p.FillRect5(
-	// 	int(float64(w.pos[1])*editor.font.truewidth),
-	// 	(w.pos[0]+w.height)*editor.font.lineHeight-1,
-	// 	int(float64(w.width+1)*editor.font.truewidth),
-	// 	1,
-	// 	gui.NewQColor3(0, 0, 0, 255),
-	// )
-
-	if w.pos[0] > 0 {
-		p.FillRect5(
-			int(float64(w.pos[1])*s.ws.font.truewidth),
-			w.pos[0]*s.ws.font.lineHeight-1,
-			int(float64(w.width+1)*s.ws.font.truewidth),
-			1,
-			gui.NewQColor3(0, 0, 0, 255),
-		)
-	}
-	gradient = gui.NewQLinearGradient3(
-		float64(w.pos[1])*s.ws.font.truewidth,
-		float64(w.pos[0]*s.ws.font.lineHeight),
-		float64(w.pos[1])*s.ws.font.truewidth,
-		float64(w.pos[0]*s.ws.font.lineHeight+5),
-	)
-	gradient.SetColorAt(0, gui.NewQColor3(10, 10, 10, 125))
-	gradient.SetColorAt(1, gui.NewQColor3(10, 10, 10, 0))
-	brush = gui.NewQBrush10(gradient)
-	p.FillRect2(
-		int(float64(w.pos[1])*s.ws.font.truewidth),
-		w.pos[0]*s.ws.font.lineHeight,
-		int(float64(w.width+1)*s.ws.font.truewidth),
-		5,
-		brush,
-	)
 }
 
 func (s *Screen) isNormalWidth(char string) bool {
@@ -1183,6 +1278,147 @@ func (s *Screen) isNormalWidth(char string) bool {
 	if char[0] <= 127 {
 		return true
 	}
-	//return s.ws.font.fontMetrics.Width(char) == s.ws.font.truewidth
 	return s.ws.font.fontMetrics.HorizontalAdvance(char, -1) == s.ws.font.truewidth
+}
+
+func (s *Screen) newWindow() *Window {
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetContentsMargins(0, 0, 0, 0)
+	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	widget.SetAttribute(core.Qt__WA_KeyCompression, false)
+	widget.SetAcceptDrops(true)
+	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
+
+	w := &Window{
+		s: s,
+		widget: widget,
+	}
+
+	widget.SetParent(s.widget)
+	widget.ConnectPaintEvent(w.paint)
+	widget.ConnectWheelEvent(s.wheelEvent)
+	widget.ConnectDragEnterEvent(s.dragEnterEvent)
+	widget.ConnectDragMoveEvent(s.dragMoveEvent)
+	widget.ConnectDropEvent(s.dropEvent)
+
+	return w
+}
+
+func (s *Screen) windowPosition(args []interface{}) {
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		id := util.ReflectToInt(arg.([]interface{})[1])
+		startRow := util.ReflectToInt(arg.([]interface{})[2])
+		startCol := util.ReflectToInt(arg.([]interface{})[3])
+		// width := util.ReflectToInt(arg.([]interface{})[4])
+		// height := util.ReflectToInt(arg.([]interface{})[5])
+
+		if isSkipGlobalId(gridid) {
+			continue
+		}
+
+		win := s.windows[gridid]
+		if win == nil {
+			continue
+		}
+
+		win.id = *(*nvim.Window)(unsafe.Pointer(&id))
+		win.pos[0] = startCol
+		win.pos[1] = startRow
+		win.move(startCol, startRow)
+		win.widget.Show()
+	}
+
+}
+
+func (s *Screen) gridDestroy(args []interface{}) {
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		if isSkipGlobalId(gridid) {
+			continue
+		}
+		s.windows[gridid].widget.Hide()
+		s.windows[gridid] = nil
+	}
+}
+
+func (s *Screen) windowFloatPosition(args []interface{}) {
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		if isSkipGlobalId(gridid) {
+			continue
+		}
+		id := util.ReflectToInt(arg.([]interface{})[1])
+		s.windows[gridid].id = *(*nvim.Window)((unsafe.Pointer)(&id))
+		s.windows[gridid].anchor = util.ReflectToInt(arg.([]interface{})[2])
+		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
+		// why float types??
+		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
+		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
+		// focusable := arg.([]interface{})[6]
+
+		s.windows[gridid].pos[0] = anchorCol
+		s.windows[gridid].pos[1] = anchorRow
+		s.windows[gridid].move(s.windows[gridid].pos[0], s.windows[gridid].pos[1])
+		s.windows[gridid].widget.SetParent(s.windows[anchorGrid].widget)
+
+		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+		shadow.SetBlurRadius(38)
+		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
+		shadow.SetOffset3(-2, 6)
+		s.windows[gridid].widget.SetGraphicsEffect(shadow)
+
+		s.windows[gridid].widget.Show()
+	}
+}
+
+func (s *Screen) windowHide(args []interface{}) {
+	for _, win := range s.windows {
+		if win == nil {
+			continue
+		}
+		win.widget.Show()
+	}
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		if isSkipGlobalId(gridid) {
+			continue
+		}
+		s.windows[gridid].widget.Hide()
+	}
+}
+
+func (s *Screen) windowClose(args []interface{}) {
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		if isSkipGlobalId(gridid) {
+			continue
+		}
+		win := s.windows[gridid]
+		s.ws.nvim.SetCurrentWindow(win.id)
+	}
+}
+
+func (w *Window) raise() {
+	w.widget.Raise()
+	w.s.tooltip.SetParent(w.widget)
+	// w.s.tooltip.Raise()
+}
+
+func (w *Window) move(col int, row int) {
+	x := int(float64(col) * w.s.ws.font.truewidth)
+	y := row * int(w.s.ws.font.lineHeight)
+	w.widget.Move2(x, y)
+}
+
+func isSkipGlobalId(id gridId) bool {
+	if editor.config.Editor.SkipGlobalId {
+		if id == 1 {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		return false
+	}
 }

@@ -73,7 +73,7 @@ func RegisterPlugin(nvim *nvim.Nvim, isRemoteAttachment bool) {
 
 // UpdateMax updates the max
 func UpdateMax(nvim *nvim.Nvim, max int) {
-	nvim.Call("rpcnotify", nil, 0, "GonvimFuzzy", "update_max", max)
+	go nvim.Call("rpcnotify", nil, 0, "GonvimFuzzy", "update_max", max)
 }
 
 func (s *Fuzzy) handle(args ...interface{}) {
@@ -105,6 +105,8 @@ func (s *Fuzzy) handle(args ...interface{}) {
 		s.cancel()
 	case "confirm":
 		s.confirm()
+	case "resume":
+		s.resume()
 	case "update_max":
 		s.max = gonvimUtil.ReflectToInt(args[1])
 	default:
@@ -524,15 +526,19 @@ func (s *Fuzzy) left() {
 }
 
 func (s *Fuzzy) outputPattern() {
-	s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_pattern", s.pattern, s.cursor)
+	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_pattern", s.pattern, s.cursor)
 }
 
 func (s *Fuzzy) outputHide() {
-	s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_hide")
+	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_hide")
+}
+
+func (s *Fuzzy) outputShow() {
+	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_show")
 }
 
 func (s *Fuzzy) outputCursor() {
-	s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_pattern_pos", s.cursor)
+	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_pattern_pos", s.cursor)
 }
 
 func outputEqual(a, b []string) bool {
@@ -616,7 +622,7 @@ func (s *Fuzzy) outputResult() {
 	s.lastOutput = output
 	s.lastMatch = match
 
-	s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_show_result", output, selected-start, match, s.options["type"], start, total)
+	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_show_result", output, selected-start, match, s.options["type"], start, total)
 }
 
 func (s *Fuzzy) right() {
@@ -652,7 +658,7 @@ func (s *Fuzzy) processSelected() {
 		s.start = s.selected - s.max + 1
 		s.outputResult()
 	}
-	s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_select", s.selected-s.start)
+	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_select", s.selected-s.start)
 }
 
 func (s *Fuzzy) confirm() {
@@ -664,7 +670,7 @@ func (s *Fuzzy) confirm() {
 
 	sink, ok := s.options["sink"]
 	if ok {
-		s.nvim.Command(fmt.Sprintf("%s %s", sink.(string), arg))
+		go s.nvim.Command(fmt.Sprintf("%s %s", sink.(string), arg))
 		return
 	}
 
@@ -673,16 +679,23 @@ func (s *Fuzzy) confirm() {
 		options := map[string]string{}
 		options["function"] = function.(string)
 		options["arg"] = arg
-		s.nvim.Call("gonvim_fuzzy#exec", nil, options)
+		go s.nvim.Call("gonvim_fuzzy#exec", nil, options)
 	}
 }
 
 func (s *Fuzzy) cancel() {
 	s.running = false
 	s.outputHide()
-	s.cancelled = true
-	s.cancelChan <- true
-	s.reset()
+	// s.cancelled = true
+	// s.cancelChan <- true
+	// s.reset()
+}
+
+func (s *Fuzzy) resume() {
+	s.running = true
+	s.outputShow()
+	// s.cancelled = false
+	// s.cancelChan <- false
 }
 
 func removeAtIndex(in string, i int) string {

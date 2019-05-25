@@ -66,7 +66,7 @@ func (t *Tabline) setColor() {
 		background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; } `, inactiveFg))
 }
 
-func newTabline() *Tabline {
+func initTabline() *Tabline {
 	width := 210
 	widget := widgets.NewQWidget(nil, 0)
 	layout := widgets.NewQLayout2()
@@ -153,11 +153,15 @@ func newTabline() *Tabline {
 		closeIcon.ConnectLeaveEvent(tab.closeIconLeaveEvent)
 
 		tabs = append(tabs, tab)
-		layout.AddWidget(w)
-		if i > 0 {
-			tab.hide()
-		}
 	}
+	go func() {
+		for i, tab := range tabs {
+			layout.AddWidget(tab.widget)
+			if i > 0 {
+				tab.hide()
+			}
+		}
+	}()
 	tabline.Tabs = tabs
 
 	return tabline
@@ -333,7 +337,7 @@ func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
 
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	t.widget.SetCursor(cursor)
 }
 
 func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
@@ -342,8 +346,7 @@ func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
 	svgContent := editor.getSvg("cross", nil)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
-	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__ArrowCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	t.widget.SetCursor(cursor)
 }

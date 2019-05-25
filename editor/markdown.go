@@ -3,9 +3,7 @@ package editor
 import (
 	"fmt"
 	"math"
-	"path/filepath"
 	"runtime"
-	"time"
 
 	"github.com/shurcooL/github_flavored_markdown"
 	"github.com/therecipe/qt/core"
@@ -34,6 +32,8 @@ type Markdown struct {
 	container       *widgets.QPlainTextEdit
 	hidden          bool
 	htmlSet         bool
+	gridIdTrap      bool
+	mdGridId        gridId
 }
 
 func newMarkdown(workspace *Workspace) *Markdown {
@@ -116,29 +116,18 @@ func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
 }
 
 func (m *Markdown) updatePos() {
-	for _, win := range m.ws.screen.curWins {
-		if win.bufName == "" {
-			time.Sleep(500 * time.Microsecond)
+	for gridid, win := range m.ws.screen.windows {
+		if win == nil {
+			continue
 		}
-
-		// * FIXME *
-		// * > path/filepath.Base() /Users/akiyoshi/.goenv/versions/1.10.4/src/path/filepath/path.go:436 (PC: 0x4204b38)
-		// * Command failed: bad access
-		// * (dlv) bt
-		// *  0  0x0000000004204b38 in path/filepath.Base
-		// *     at /Users/akiyoshi/.goenv/versions/1.10.4/src/path/filepath/path.go:436
-		// *  1  0x0000000005c0bd2c in github.com/akiyosi/gonvim/editor.(*Markdown).updatePos
-		// *     at /Users/akiyoshi/go/src/github.com/akiyosi/gonvim/editor/markdown.go:123
-		// *  2  0x0000000005c23ae5 in github.com/akiyosi/gonvim/editor.(*Screen).paint
-		// *     at /Users/akiyoshi/go/src/github.com/akiyosi/gonvim/editor/screen.go:261
-		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
+		if gridid == m.mdGridId {
 			m.webview.Resize2(
-				int(float64(win.width)*m.ws.font.truewidth),
-				win.height*m.ws.font.lineHeight,
+				int(float64(win.cols) * m.ws.font.truewidth),
+				win.rows * m.ws.font.lineHeight,
 			)
 			m.webview.Move2(
-				int(float64(win.pos[1])*m.ws.font.truewidth),
-				win.pos[0]*m.ws.font.lineHeight,
+				int(float64(win.pos[0]) * m.ws.font.truewidth),
+				win.pos[1] * m.ws.font.lineHeight,
 			)
 			m.show()
 			return
@@ -153,6 +142,7 @@ func (m *Markdown) show() {
 	}
 	m.hidden = false
 	m.webview.Show()
+	m.webview.Raise()
 }
 
 func (m *Markdown) hide() {
@@ -172,12 +162,9 @@ func (m *Markdown) scrollDown() {
 }
 
 func (m *Markdown) openReadme(reponame string, readme string) {
-	for _, win := range m.ws.screen.curWins {
-		if win.bufName == "" {
-			time.Sleep(500 * time.Microsecond)
-		}
-		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
-			m.ws.nvim.SetCurrentWindow(win.win)
+	for gridid, win := range m.ws.screen.windows {
+		if gridid == m.mdGridId {
+			m.ws.nvim.SetCurrentWindow(win.id)
 			m.ws.nvim.Command("close")
 			m.htmlSet = false
 			if editor.deinSide.preDisplayedReadme == reponame {
@@ -209,14 +196,16 @@ func (m *Markdown) openReadme(reponame string, readme string) {
 }
 
 func (m *Markdown) toggle() {
-	for _, win := range m.ws.screen.curWins {
-		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
-			m.ws.nvim.SetCurrentWindow(win.win)
+	for gridid, win := range m.ws.screen.windows {
+		if gridid == m.mdGridId && m.mdGridId > 0 {
+			m.ws.nvim.SetCurrentWindow(win.id)
 			m.ws.nvim.Command("close")
+			m.mdGridId = 0
 			m.htmlSet = false
 			return
 		}
 	}
+	m.gridIdTrap = true
 	m.ws.nvim.Command(`keepalt vertical botright split ` + GonvimMarkdownBufName)
 	m.ws.nvim.Command("setlocal filetype=" + GonvimMarkdownBufName)
 	m.ws.nvim.Command("setlocal buftype=nofile")

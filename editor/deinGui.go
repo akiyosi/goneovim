@@ -1206,36 +1206,31 @@ func sinceUpdate(t int) string {
 func (d *DeinPluginItem) enterWidget(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	d.widget.SetCursor(cursor)
 	bg := editor.colors.selectedBg.StringTransparent()
 	d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", bg))
 }
 
 func (d *DeinPluginItem) leaveWidget(event *core.QEvent) {
-	// bg := editor.colors.sideBarBg.String()
-	// d.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", bg))
 	d.widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
-	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__ArrowCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	d.widget.SetCursor(cursor)
 }
 
 func (p *Plugin) enterWidget(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	p.widget.SetCursor(cursor)
 	bg := editor.colors.selectedBg.StringTransparent()
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", bg))
 }
 
 func (p *Plugin) leaveWidget(event *core.QEvent) {
-	// p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background: %s;} ", editor.colors.sideBarBg.StringTransparent()))
 	p.widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0)}")
-	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__ArrowCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	p.widget.SetCursor(cursor)
 }
 
 func (p *Plugin) enterButton(event *core.QEvent) {
@@ -1488,7 +1483,7 @@ func (p *Plugin) pressPluginWidget(event *gui.QMouseEvent) {
 func (side *DeinSide) enterConfigIcon(event *core.QEvent) {
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__PointingHandCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	side.widget.SetCursor(cursor)
 	svgConfigContent := editor.getSvg("configfile", nil)
 	side.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
 }
@@ -1496,10 +1491,9 @@ func (side *DeinSide) enterConfigIcon(event *core.QEvent) {
 func (side *DeinSide) leaveConfigIcon(event *core.QEvent) {
 	svgConfigContent := editor.getSvg("configfile", editor.colors.inactiveFg)
 	side.configIcon.Load2(core.NewQByteArray2(svgConfigContent, len(svgConfigContent)))
-	// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__ArrowCursor)
-	gui.QGuiApplication_SetOverrideCursor(cursor)
+	side.widget.SetCursor(cursor)
 }
 
 func (side *DeinSide) pressConfigIcon(event *gui.QMouseEvent) {

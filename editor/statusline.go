@@ -152,7 +152,7 @@ type StatuslineFileFormat struct {
 	c          *StatuslineComponent
 }
 
-func initStatuslineNew() *Statusline {
+func initStatusline() *Statusline {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 6, 0)
 
@@ -180,8 +180,6 @@ func initStatuslineNew() *Statusline {
 	gitLayout := widgets.NewQHBoxLayout()
 	gitLayout.SetContentsMargins(0, 0, 0, 0)
 	gitLayout.SetSpacing(editor.iconSize / 3)
-	gitLayout.AddWidget(gitIcon, 0, 0)
-	gitLayout.AddWidget(gitLabel, 0, 0)
 	gitWidget := widgets.NewQWidget(nil, 0)
 	gitWidget.SetLayout(gitLayout)
 	gitWidget.Hide()
@@ -238,8 +236,6 @@ func initStatuslineNew() *Statusline {
 	fileLayout := widgets.NewQHBoxLayout()
 	fileLayout.SetContentsMargins(0, 0, 0, 0)
 	fileLayout.SetSpacing(editor.iconSize / 3)
-	fileLayout.AddWidget(fileLabel, 0, 0)
-	fileLayout.AddWidget(roIcon, 0, 0)
 	fileWidget := widgets.NewQWidget(nil, 0)
 	fileWidget.SetLayout(fileLayout)
 	file := &StatuslineFile{
@@ -306,8 +302,6 @@ func initStatuslineNew() *Statusline {
 	notifyLabel.Hide()
 	notifyicon := svg.NewQSvgWidget(nil)
 	notifyicon.SetFixedSize2(editor.iconSize, editor.iconSize)
-	notifyLayout.AddWidget(notifyicon, 0, 0)
-	notifyLayout.AddWidget(notifyLabel, 0, 0)
 	notifyLayout.SetContentsMargins(2, 0, 2, 0)
 	notifyLayout.SetSpacing(2)
 	notify := &StatuslineNotify{
@@ -366,11 +360,6 @@ func initStatuslineNew() *Statusline {
 	lintLayout := widgets.NewQHBoxLayout()
 	lintLayout.SetContentsMargins(0, 0, 0, 0)
 	lintLayout.SetSpacing(0)
-	lintLayout.AddWidget(okIcon, 0, 0)
-	lintLayout.AddWidget(errorIcon, 0, 0)
-	lintLayout.AddWidget(errorLabel, 0, 0)
-	lintLayout.AddWidget(warnIcon, 0, 0)
-	lintLayout.AddWidget(warnLabel, 0, 0)
 	lintWidget := widgets.NewQWidget(nil, 0)
 	lintWidget.SetLayout(lintLayout)
 	lint := &StatuslineLint{
@@ -392,10 +381,24 @@ func initStatuslineNew() *Statusline {
 
 	s.setContentsMarginsForWidgets(0, 7, 0, 9)
 	left.widget.SetLayout(leftLayout)
-	layout.AddWidget(leftWidget)
 
-	left.setWidget()
-	s.setWidget()
+	go func() {
+		gitLayout.AddWidget(gitIcon, 0, 0)
+		gitLayout.AddWidget(gitLabel, 0, 0)
+		fileLayout.AddWidget(fileLabel, 0, 0)
+		fileLayout.AddWidget(roIcon, 0, 0)
+		notifyLayout.AddWidget(notifyicon, 0, 0)
+		notifyLayout.AddWidget(notifyLabel, 0, 0)
+		lintLayout.AddWidget(okIcon, 0, 0)
+		lintLayout.AddWidget(errorIcon, 0, 0)
+		lintLayout.AddWidget(errorLabel, 0, 0)
+		lintLayout.AddWidget(warnIcon, 0, 0)
+		lintLayout.AddWidget(warnLabel, 0, 0)
+		layout.AddWidget(leftWidget)
+
+		left.setWidget()
+		s.setWidget()
+	}()
 
 	return s
 }
@@ -627,14 +630,15 @@ func (s *StatuslineMode) updateStatusline() {
 }
 
 func (s *StatuslineMode) redraw() {
-	if s.s.ws.mode == s.mode && s.fg.equals(s.s.ws.foreground) {
+	iconColor := warpColor(s.fg, 10)
+	isSkipUpdateColor := ! (warpColor(s.s.ws.foreground, 10).equals(iconColor))
+	if s.s.ws.mode == s.mode && isSkipUpdateColor {
 		return
 	}
 	s.fg = s.s.ws.foreground
 	s.mode = s.s.ws.mode
 	text := s.mode
 	bg := newRGBA(102, 153, 204, 1)
-	iconColor := warpColor(s.fg, 10)
 	switch s.mode {
 	case "normal":
 		text = "Normal"

@@ -22,10 +22,15 @@ var editor *Editor
 
 // Highlight is
 type Highlight struct {
+	kind       string
+	uiName     string
+	hiName     string
 	foreground *RGBA
 	background *RGBA
-	bold       bool
 	italic     bool
+	bold       bool
+	underline  bool	
+	undercurl  bool	
 }
 
 // Char is
@@ -77,8 +82,6 @@ type Editor struct {
 	version string
 	app     *widgets.QApplication
 
-	framelesswin *frameless.QFramelessWindow
-
 	activity          *Activity
 	splitter          *widgets.QSplitter
 	notifyStartPos    *core.QPoint
@@ -90,7 +93,7 @@ type Editor struct {
 	workspaces []*Workspace
 	active     int
 	nvim       *nvim.Nvim
-	window     *widgets.QMainWindow
+	window     *frameless.QFramelessWindow
 	wsWidget   *widgets.QWidget
 	wsSide     *WorkspaceSide
 	deinSide   *DeinSide
@@ -147,12 +150,19 @@ func (hl *Highlight) copy() Highlight {
 func InitEditor() {
 	runtime.GOMAXPROCS(16)
 
+	if runtime.GOOS == "linux" {
+		exe, _ := os.Executable()
+		dir, _ := filepath.Split(exe)
+		_ = os.Setenv("LD_LIBRARY_PATH", dir + "lib")
+		_ = os.Setenv("QT_PLUGIN_PATH", dir + "plugins")
+	}
+
 	home, err := homedir.Dir()
 	if err != nil {
 		home = "~"
 	}
 	editor = &Editor{
-		version: "v0.3.4",
+		version: "v0.3.5",
 		signal:  NewEditorSignal(nil),
 		notify:  make(chan *Notify, 10),
 		stop:    make(chan struct{}),
@@ -167,28 +177,24 @@ func InitEditor() {
 	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QWidget")
 	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QLabel")
 
+	// font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
+	e.iconSize = editor.config.Editor.FontSize
+
 	e.initSVGS()
-	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
-	e.iconSize = int(font.Height())
+
 	e.colors = initColorPalette()
 	e.colors.update()
+
 	e.initNotifications()
 
-	//create a window
-	// e.window = widgets.NewQMainWindow(nil, 0)
-	// e.setWindowOptions()
-
-	e.framelesswin = frameless.NewQFramelessWindow()
-	e.window = e.framelesswin.Window
+	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent)
 	e.setWindowOptions()
 
-	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 0, 0, 0)
-	// widget.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); }")
-
-	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, widget)
+	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
+
+	e.window.SetupContent(layout)
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 
@@ -298,13 +304,6 @@ func InitEditor() {
 			e.app.DisconnectEvent()
 			event.Accept()
 		})
-	}
-
-	e.framelesswin.SetContent(layout)
-	if e.config.Editor.Transparent < 1.0 {
-		e.framelesswin.UnsetWindowNativeShadow()
-	} else {
-		e.framelesswin.SetWindowNativeShadow()
 	}
 
 	go func() {
@@ -448,8 +447,17 @@ func (e *Editor) updateGUIColor() {
 
 	e.workspaces[e.active].updateWorkspaceColor()
 
-	e.framelesswin.SetWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B), e.config.Editor.Transparent)
-	e.framelesswin.SetTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
+	e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B))
+	e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
+
+	// On linux, add a frame if alpha is 1.0
+	if runtime.GOOS == "linux" && e.config.Editor.Transparent == 1.0 {
+		e.window.Widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); }", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
+		e.window.TitleBar.Hide()
+		e.window.SetWindowFlag(core.Qt__FramelessWindowHint, false)
+		e.window.SetWindowFlag(core.Qt__NoDropShadowWindowHint, false)
+		e.window.Show()
+	}
 
 	e.window.SetWindowOpacity(1.0)
 }
@@ -490,21 +498,8 @@ func shiftHex(hex string, v int) string {
 }
 
 func (e *Editor) setWindowOptions() {
-	// e.window.SetWindowTitle("Gonvim")
-	// e.width = e.config.Editor.Width
-	// e.height = e.config.Editor.Height
-	// e.window.SetMinimumSize2(e.width, e.height)
-	// e.window.SetContentsMargins(0, 0, 0, 0)
-	// e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
-	// e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
-	// e.window.SetWindowFlag(core.Qt__FramelessWindowHint, true)
-	// e.window.SetWindowOpacity(0.0)
-	// e.initSpecialKeys()
-	// e.window.ConnectKeyPressEvent(e.keyPress)
-	// e.window.SetAcceptDrops(true)
-
-	// e.window.SetWindowTitle("Gonvim")
-	e.framelesswin.SetTitle("Gonvim")
+	e.window.SetupTitle("Gonvim")
+	e.window.SetupWidgetColor(0, 0, 0)
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
 	e.window.SetMinimumSize2(e.width, e.height)

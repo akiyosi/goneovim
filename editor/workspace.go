@@ -47,12 +47,12 @@ type Workspace struct {
 	markdown   *Markdown
 	finder     *Finder
 	palette    *Palette
+	fpalette    *Palette
 	popup      *PopupMenu
 	loc        *Locpopup
 	cmdline    *Cmdline
 	signature  *Signature
-	// Need https://github.com/neovim/neovim/pull/7466 to be merged
-	// message    *Message
+	message    *Message
 	minimap *MiniMap
 	width   int
 	height  int
@@ -95,7 +95,108 @@ func newWorkspace(path string) (*Workspace, error) {
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
 		doneNvimStart: make(chan bool, 1000),
+		foreground:   newRGBA(180, 185, 190, 1),
+	 	background:   newRGBA(9, 13, 17, 1),
+	 	special:  newRGBA(255, 255, 255, 1),
 	}
+	w.font = initFontNew(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, editor.config.Editor.Linespace)
+	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)
+	w.rows = editor.config.Editor.Height / w.font.lineHeight
+
+	// Basic Workspace UI component
+	w.tabline = initTabline()
+	w.tabline.ws = w
+	w.statusline = initStatusline()
+	w.statusline.ws = w
+	w.loc = initLocpopup()
+	w.loc.ws = w
+	w.message = initMessage()
+	w.message.ws = w
+	w.screen = newScreen()
+	w.screen.ws = w
+
+	go w.startNvim(path)
+	w.registerSignal()
+
+	w.palette = initPalette()
+	w.palette.ws = w
+	w.fpalette = initPalette()
+	w.fpalette.ws = w
+
+	w.loc.widget.SetParent(w.screen.widget)
+	w.message.widget.SetParent(editor.window)
+	w.palette.widget.SetParent(editor.window)
+  
+	w.fpalette.widget.SetParent(editor.window)
+	w.scrollBar = newScrollBar()
+	w.scrollBar.ws = w
+	w.markdown = newMarkdown(w)
+	w.markdown.webview.SetParent(w.screen.widget)
+	w.cursor = initCursorNew()
+	w.cursor.ws = w
+	w.popup = initPopupmenuNew(w.font)
+	w.popup.widget.SetParent(w.screen.widget)
+	w.popup.ws = w
+	w.finder = initFinder()
+	w.finder.ws = w
+	w.signature = initSignature()
+	w.signature.widget.SetParent(w.screen.widget)
+	w.signature.ws = w
+	w.cmdline = initCmdline()
+	w.cmdline.ws = w
+	w.minimap = newMiniMap()
+	w.minimap.ws = w
+
+	layout := widgets.NewQVBoxLayout()
+	w.widget = widgets.NewQWidget(nil, 0)
+	w.widget.SetContentsMargins(0, 0, 0, 0)
+	w.widget.SetLayout(layout)
+	w.widget.SetFocusPolicy(core.Qt__WheelFocus)
+	w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	w.widget.ConnectInputMethodEvent(w.InputMethodEvent)
+	w.widget.ConnectInputMethodQuery(w.InputMethodQuery)
+
+	// screen widget and scrollBar widget
+	scrWidget := widgets.NewQWidget(nil, 0)
+	scrWidget.SetContentsMargins(0, 0, 0, 0)
+	scrWidget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	scrLayout := widgets.NewQHBoxLayout()
+	scrLayout.SetContentsMargins(0, 0, 0, 0)
+	scrLayout.SetSpacing(0)
+	scrLayout.AddWidget(w.screen.widget, 0, 0)
+	scrLayout.AddWidget(w.minimap.widget, 0, 0)
+	scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
+	scrWidget.SetLayout(scrLayout)
+
+	layout.AddWidget(w.tabline.widget, 0, 0)
+	layout.AddWidget(scrWidget, 1, 0)
+	layout.AddWidget(w.statusline.widget, 0, 0)
+
+	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(0)
+
+	w.popup.widget.Hide()
+	w.palette.hide()
+	w.fpalette.hide()
+	w.loc.widget.Hide()
+	w.signature.widget.Hide()
+
+	w.widget.SetParent(editor.wsWidget)
+	w.widget.Move2(0, 0)
+	w.updateSize()
+
+	go w.minimap.startMinimapProc()
+
+	if runtime.GOOS == "windows" {
+		select {
+		case <-w.doneNvimStart:
+		}
+	}
+
+	return w, nil
+}
+
+func (w *Workspace) registerSignal() {
 	w.signal.ConnectRedrawSignal(func() {
 		updates := <-w.redrawUpdates
 		w.handleRedraw(updates)
@@ -132,90 +233,6 @@ func newWorkspace(path string) (*Workspace, error) {
 			editor.workspaceUpdate()
 		}
 	})
-	w.font = initFontNew(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, editor.config.Editor.Linespace)
-	w.tabline = newTabline()
-	w.tabline.ws = w
-	w.statusline = initStatuslineNew()
-	w.statusline.ws = w
-	w.screen = newScreen()
-	w.screen.ws = w
-	w.scrollBar = newScrollBar()
-	w.scrollBar.ws = w
-	w.markdown = newMarkdown(w)
-	w.markdown.webview.SetParent(w.screen.widget)
-	w.cursor = initCursorNew()
-	w.cursor.widget.SetParent(w.screen.widget)
-	w.cursor.ws = w
-	w.popup = initPopupmenuNew(w.font)
-	w.popup.widget.SetParent(w.screen.widget)
-	w.popup.ws = w
-	w.finder = initFinder()
-	w.finder.ws = w
-	w.palette = initPalette()
-	w.palette.widget.SetParent(editor.window)
-	w.palette.ws = w
-	w.loc = initLocpopup()
-	w.loc.widget.SetParent(w.screen.widget)
-	w.loc.ws = w
-	w.signature = initSignature()
-	w.signature.widget.SetParent(w.screen.widget)
-	w.signature.ws = w
-	// Need https://github.com/neovim/neovim/pull/7466 to be merged
-	// w.message = initMessage()
-	// w.message.widget.SetParent(w.screen.widget)
-	// w.message.ws = w
-	w.cmdline = initCmdline()
-	w.cmdline.ws = w
-	w.minimap = newMiniMap()
-	w.minimap.ws = w
-
-	layout := widgets.NewQVBoxLayout()
-	w.widget = widgets.NewQWidget(nil, 0)
-	w.widget.SetContentsMargins(0, 0, 0, 0)
-	w.widget.SetLayout(layout)
-	w.widget.SetFocusPolicy(core.Qt__WheelFocus)
-	w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	w.widget.ConnectInputMethodEvent(w.InputMethodEvent)
-	w.widget.ConnectInputMethodQuery(w.InputMethodQuery)
-
-	// screen widget and scrollBar widget
-	scrWidget := widgets.NewQWidget(nil, 0)
-	scrWidget.SetContentsMargins(0, 0, 0, 0)
-	scrWidget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
-	scrLayout := widgets.NewQHBoxLayout()
-	scrLayout.SetContentsMargins(0, 0, 0, 0)
-	scrLayout.SetSpacing(0)
-	scrLayout.AddWidget(w.screen.widget, 0, 0)
-	scrLayout.AddWidget(w.minimap.widget, 0, 0)
-	scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
-	scrWidget.SetLayout(scrLayout)
-
-	layout.AddWidget(w.tabline.widget, 0, 0)
-	layout.AddWidget(scrWidget, 1, 0)
-	layout.AddWidget(w.statusline.widget, 0, 0)
-
-	layout.SetContentsMargins(0, 0, 0, 0)
-	layout.SetSpacing(0)
-
-	w.popup.widget.Hide()
-	w.palette.hide()
-	w.loc.widget.Hide()
-	w.signature.widget.Hide()
-
-	w.widget.SetParent(editor.wsWidget)
-	w.widget.Move2(0, 0)
-	w.updateSize()
-
-	go w.minimap.startMinimapProc()
-	go w.startNvim(path)
-
-	if runtime.GOOS == "windows" {
-		select {
-		case <-w.doneNvimStart:
-		}
-	}
-
-	return w, nil
 }
 
 func (w *Workspace) hide() {
@@ -329,8 +346,7 @@ func (w *Workspace) attachUI(path string) error {
 	w.tabline.subscribe()
 	w.statusline.subscribe()
 	w.loc.subscribe()
-	// NOTE: Need https://github.com/neovim/neovim/pull/7466 to be merged
-	// w.message.subscribe()
+	w.message.subscribe()
 	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
 
 	w.uiAttached = true
@@ -652,6 +668,8 @@ func (i *WorkspaceSideItem) closeFilelist() {
 func (w *Workspace) attachUIOption() map[string]interface{} {
 	o := make(map[string]interface{})
 	o["rgb"] = true
+	o["ext_multigrid"] = true
+	o["ext_hlstate"] = true
 
 	apiInfo, err := w.nvim.APIInfo()
 	if err == nil {
@@ -681,8 +699,10 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 						o["ext_wildmenu"] = editor.config.Editor.ExtWildmenu
 					} else if name == "cmdline_show" {
 						o["ext_cmdline"] = editor.config.Editor.ExtCmdline
-					} else if name == "msg_chunk" {
-						o["ext_messages"] = editor.config.Editor.ExtMessage
+					} else if name == "msg_show" {
+						// // Still experimental
+						// o["ext_messages"] = editor.config.Editor.ExtMessage
+						o["ext_messages"] = true
 					} else if name == "popupmenu_show" {
 						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
 					} else if name == "tabline_update" {
@@ -719,22 +739,19 @@ func (w *Workspace) updateSize() {
 		w.statusline.height = w.statusline.widget.Height()
 	}
 
-	// height = w.height - w.tabline.height - w.statusline.height
-	// rows := height / w.font.lineHeight
-
-	// remainingHeight := height - rows*w.font.lineHeight
-	// remainingHeightBottom := remainingHeight / 2
-	// remainingHeightTop := remainingHeight - remainingHeightBottom
-	// w.tabline.marginTop = w.tabline.marginDefault + remainingHeightTop
-	// w.tabline.marginBottom = w.tabline.marginDefault + remainingHeightBottom
-	// w.tabline.updateMargin()
-	// w.screen.height = height - remainingHeight
-
-	w.screen.height = w.height - w.tabline.height - w.statusline.height
-
-	w.screen.updateSize()
-	w.palette.resize()
-	// w.message.resize() // Need https://github.com/neovim/neovim/pull/7466 to be merged
+	if w.screen != nil {
+		w.screen.height = w.height - w.tabline.height - w.statusline.height
+		w.screen.updateSize()
+	}
+	if w.palette !=  nil {
+		w.palette.resize()
+	}
+	if w.fpalette !=  nil {
+		w.fpalette.resize()
+	}
+	if w.message != nil {
+		w.message.resize()
+	}
 
 	// notification
 	e.updateNotificationPos()
@@ -767,31 +784,80 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		switch event {
 		case "set_title":
 			titleStr := (update[1].([]interface{}))[0].(string)
-			//editor.window.SetWindowTitle((update[1].([]interface{}))[0].(string))
-			editor.framelesswin.SetTitle(titleStr)
+			editor.window.SetupTitle(titleStr)
+			if runtime.GOOS == "linux" {
+				editor.window.SetWindowTitle(titleStr)
+			}
+
 		case "option_set":
 			w.setOption(update)
+
+		case "grid_resize":
+			s.gridResize(args)
+
 		case "default_colors_set":
 			args := update[1].([]interface{})
 			w.setColorsSet(args)
-		case "cursor_goto":
-			s.cursorGoto(args)
+
+		case "hl_attr_define":
+			s.setHighAttrDef(args)
+
+		case "grid_line":
+			s.gridLine(args)
+
+		case "grid_clear":
+			s.gridClear(args)
+
+		case "grid_destroy":
+			s.gridDestroy(args)
+
+		case "grid_cursor_goto":
+			s.gridCursorGoto(args)
 			doMinimapScroll = true
-		case "put":
-			s.put(args)
-		case "eol_clear":
-			s.eolClear(args)
-		case "clear":
-			s.clear(args)
-		case "resize":
-			s.resize(args)
-		case "highlight_set":
-			s.highlightSet(args)
-		case "set_scroll_region":
-			s.setScrollRegion(args)
-		case "scroll":
-			s.scroll(args)
-			doMinimapScroll = true
+
+		case "grid_scroll":
+			s.gridScroll(args)
+
+		case "win_pos":
+			s.windowPosition(args)
+		
+		case "win_float_pos":
+			s.windowFloatPosition(args)
+		
+		case "win_external_pos":
+			fmt.Println("win_external_pos:", args)
+		
+		case "win_hide":
+			s.windowHide(args)
+		
+		case "win_scroll_over_start":
+			fmt.Println("win_scroll_over_start:", args)
+			
+		case "win_scroll_over_reset":
+			fmt.Println("win_scroll_over_reset:", args)
+
+		case "win_close":
+			s.windowClose(args)
+
+		// case "cursor_goto":
+		//	s.cursorGoto(args)
+		//	doMinimapScroll = true
+		// case "put":
+		// 	s.put(args)
+		// case "eol_clear":
+		// 	s.eolClear(args)
+		// case "clear":
+		// 	s.clear(args)
+		// case "resize":
+		// 	s.resize(args)
+		// case "highlight_set":
+		// 	s.highlightSet(args)
+		// case "set_scroll_region":
+		// 	s.setScrollRegion(args)
+		// case "scroll":
+		// 	//s.scroll(args)
+		// 	doMinimapScroll = true
+
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
@@ -822,29 +888,16 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.cmdline.wildmenuSelect(args)
 		case "wildmenu_hide":
 			w.cmdline.wildmenuHide()
-		case "msg_start_kind":
-			// Need https://github.com/neovim/neovim/pull/7466 to be merged
-			// if len(args) > 0 {
-			// 	kinds, ok := args[len(args)-1].([]interface{})
-			// 	if ok {
-			// 		if len(kinds) > 0 {
-			// 			kind, ok := kinds[len(kinds)-1].(string)
-			// 			if ok {
-			// 				w.message.kind = kind
-			// 			}
-			// 		}
-			// 	}
-			// }
-		case "msg_chunk":
-			// Need https://github.com/neovim/neovim/pull/7466 to be merged
-			// w.message.chunk(args)
-		case "msg_end":
-		case "msg_showcmd":
-		case "messages":
+		case "msg_show":
+			w.message.msgShow(args)
+		case "msg_clear":
+			w.message.msgClear()
+		case "msg_history_show":
+			w.message.msgHistoryShow(args)
 		case "busy_start":
 		case "busy_stop":
 		default:
-			fmt.Println("Unhandle event", event)
+			// fmt.Println("Unhandle event", event)
 		}
 	}
 
@@ -888,19 +941,19 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	sp := util.ReflectToInt(args[2])
 
 	if fg != -1 {
-		w.foreground = calcColor(fg)
-	} else {
-		w.foreground = newRGBA(180, 185, 190, 1)
+		w.foreground.R = calcColor(fg).R
+		w.foreground.G = calcColor(fg).G
+		w.foreground.B = calcColor(fg).B
 	}
 	if bg != -1 {
-		w.background = calcColor(bg)
-	} else {
-		w.background = newRGBA(9, 13, 17, 1)
+		w.background.R = calcColor(bg).R
+		w.background.G = calcColor(bg).G
+		w.background.B = calcColor(bg).B
 	}
 	if sp != -1 {
-		w.special = calcColor(sp)
-	} else {
-		w.special = newRGBA(255, 255, 255, 1)
+		w.special.R = calcColor(sp).R
+		w.special.G = calcColor(sp).G
+		w.special.B = calcColor(sp).B
 	}
 
 	w.minimap.foreground = w.foreground
@@ -925,8 +978,8 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	if editor.isSetGuiColor == true {
 		return
 	}
-	editor.colors.fg = w.foreground
-	editor.colors.bg = w.background
+	editor.colors.fg = newRGBA(w.foreground.R, w.foreground.G, w.foreground.B, 1)
+	editor.colors.bg = newRGBA(w.background.R, w.background.G, w.background.B, 1)
 	//w.setGuiColor(editor.colors.fg, editor.colors.bg)
 	editor.colors.update()
 	editor.updateGUIColor()
@@ -935,6 +988,7 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 
 func (w *Workspace) updateWorkspaceColor() {
 	w.palette.setColor()
+	w.fpalette.setColor()
 	w.popup.setColor()
 	w.signature.setColor()
 	w.tabline.setColor()
@@ -942,6 +996,7 @@ func (w *Workspace) updateWorkspaceColor() {
 	w.scrollBar.setColor()
 	w.minimap.setColor()
 	w.loc.setColor()
+	w.message.setColor()
 	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: %s; text-decoration: underline; color: %s; }", editor.colors.selectedBg.String(), editor.colors.fg.String()))
 }
 
@@ -992,18 +1047,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_enter":
 		editor.window.SetWindowOpacity(1.0)
 		w.setCwd(updates[1].(string))
-		go func() {
-			time.Sleep(2000 * time.Millisecond)
-			msg, _ := w.nvimCommandOutput("messages")
-			if msg != "" {
-				editor.pushNotification(NotifyWarn, -1, msg)
-			}
-		}()
 	case "gonvim_exit":
 		editor.workspaces[editor.active].minimap.exit()
-	// case "gonvim_set_colorscheme":
-	// 	fmt.Println("set_colorscheme")
-	// 	editor.isSetGuiColor = false
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
@@ -1015,6 +1060,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.finder.cursorPos(updates[1:])
 	case "finder_show_result":
 		w.finder.showResult(updates[1:])
+	case "finder_show":
+		w.finder.show()
 	case "finder_hide":
 		w.finder.hide()
 	case "finder_select":
@@ -1121,6 +1168,7 @@ func (w *Workspace) guiFont(args string) {
 	w.font.change(parts[0], height)
 	w.updateSize()
 	w.popup.updateFont(w.font)
+	w.message.updateFont(w.font)
 	w.screen.toolTipFont(w.font)
 	w.cursor.updateShape()
 }

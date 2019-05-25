@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 
+	"github.com/neovim/go-client/nvim"
 	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -43,9 +45,6 @@ func initLocpopup() *Locpopup {
 	contentLabel.SetContentsMargins(0, 0, 0, 0)
 	contentLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
-	layout.AddWidget(typeLabel, 0, 0)
-	layout.AddWidget(contentLabel, 0, 0)
-
 	loc := &Locpopup{
 		widget:       widget,
 		typeLabel:    typeLabel,
@@ -57,7 +56,12 @@ func initLocpopup() *Locpopup {
 	shadow.SetBlurRadius(28)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, 80))
 	shadow.SetOffset3(0, 6)
-	loc.widget.SetGraphicsEffect(shadow)
+
+	go func() {
+		layout.AddWidget(loc.typeLabel, 0, 0)
+		layout.AddWidget(loc.contentLabel, 0, 0)
+		loc.widget.SetGraphicsEffect(shadow)
+	}()
 
 	return loc
 }
@@ -128,12 +132,21 @@ func (l *Locpopup) update(args []interface{}) {
 		}
 		l.mutex.Unlock()
 	}()
-	buf, err := l.ws.nvim.CurrentBuffer()
-	if err != nil {
-		return
+
+	doneChannel := make(chan nvim.Buffer, 5)
+	var buf, buftmp nvim.Buffer
+	go func() {
+	        buftmp, _ = l.ws.nvim.CurrentBuffer()
+	        doneChannel <- buftmp
+	}()
+	select {
+	case buf = <-doneChannel:
+	case <-time.After(20 * time.Millisecond):
+	        return
 	}
+
 	buftype := new(string)
-	err = l.ws.nvim.BufferOption(buf, "buftype", buftype)
+	err := l.ws.nvim.BufferOption(buf, "buftype", buftype)
 	if err != nil {
 		return
 	}

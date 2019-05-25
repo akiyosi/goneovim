@@ -2,11 +2,9 @@ package editor
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"runtime"
-	"time"
 
 	"github.com/BurntSushi/toml"
 	homedir "github.com/mitchellh/go-homedir"
@@ -25,6 +23,7 @@ import (
 // disableIMEinNormal = true
 // startFullScreen = true
 // transparent = 0.5
+// SkipGlobalId = true
 // ginitvim = '''
 //   set guifont=FuraCode\ Nerd\ Font\ Mono:h14
 //   if g:gonvim_running == 1
@@ -121,6 +120,8 @@ type editorConfig struct {
 	GinitVim           string
 	StartFullscreen    bool
 	Transparent        float64
+	DrawBorder         bool
+	SkipGlobalId       bool
 }
 
 type statusLineConfig struct {
@@ -193,12 +194,16 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.Editor.ExtPopupmenu = true
 	config.Editor.ExtTabline = true
 
+	config.Editor.SkipGlobalId = false
+	config.Editor.DrawBorder = true
+
 	config.Palette.AreaRatio = 0.6
 	config.Palette.MaxNumberOfResultItems = 30
 
 	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
 		config.Editor.FontSize = 14
+		config.Editor.Transparent = 1.0
 		config.Statusline.Visible = true
 		config.Statusline.ModeIndicatorType = "textLabel"
 		config.Tabline.Visible = true
@@ -208,10 +213,6 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.SideBar.Width = 300
 		config.SideBar.AccentColor = "#5596ea"
 		config.Workspace.PathStyle = "minimum"
-		go func() {
-			time.Sleep(2000 * time.Millisecond)
-			editor.pushNotification(NotifyWarn, -1, "[Gonvim] Error detected while parsing setting.toml: "+fmt.Sprintf("%s", err))
-		}()
 	}
 
 	if config.Editor.Width <= 400 {
@@ -219,6 +220,9 @@ func newGonvimConfig(home string) gonvimConfig {
 	}
 	if config.Editor.Height <= 300 {
 		config.Editor.Height = 300
+	}
+	if config.Editor.Transparent <= 0.1 {
+		config.Editor.Transparent = 1.0
 	}
 	if config.Statusline.ModeIndicatorType == "" {
 		config.Statusline.ModeIndicatorType = "textLabel"

@@ -514,6 +514,61 @@ path fill="%s" d="M5,3C3.89,3 3,3.89 3,5V19C3,20.11 3.89,21 5,21H19C20.11,21 21,
 		height: 24,
 	}
 
+	e.svgs["quickfix"] = &SvgXML{
+		width: 24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><g transform="translate(0,2) scale(0.9)"><path fill="%s" d="M7.5,5.6L5,7L6.4,4.5L5,2L7.5,3.4L10,2L8.6,4.5L10,7L7.5,5.6M19.5,15.4L22,14L20.6,16.5L22,19L19.5,17.6L17,19L18.4,16.5L17,14L19.5,15.4M22,2L20.6,4.5L22,7L19.5,5.6L17,7L18.4,4.5L17,2L19.5,3.4L22,2M13.34,12.78L15.78,10.34L13.66,8.22L11.22,10.66L13.34,12.78M14.37,7.29L16.71,9.63C17.1,10 17.1,10.65 16.71,11.04L5.04,22.71C4.65,23.1 4,23.1 3.63,22.71L1.29,20.37C0.9,20 0.9,19.35 1.29,18.96L12.96,7.29C13.35,6.9 14,6.9 14.37,7.29Z" /></g></svg>`,
+	}
+
+	e.svgs["return_prompt"] = &SvgXML{
+		width: 24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><g transform="translate(0,1) scale(0.9)"><path fill="%s" d="M19,7V11H5.83L9.41,7.41L8,6L2,12L8,18L9.41,16.58L5.83,13H21V7H19Z" /></g></svg>`,
+	}
+
+	e.svgs["echoerr"] = &SvgXML{
+		width: 24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><g transform="translate(0,3) scale(0.88)"><path fill="%s" d="M13,10H11V6H13M13,14H11V12H13M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" /></g></svg>`,
+
+	}
+	// e.svgs["echoerr"] = &SvgXML{
+	// 	width: 24,
+	// 	height: 24,
+	// 	xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M13.5,10A1.5,1.5 0 0,1 12,11.5C11.16,11.5 10.5,10.83 10.5,10A1.5,1.5 0 0,1 12,8.5A1.5,1.5 0 0,1 13.5,10M22,4V16A2,2 0 0,1 20,18H6L2,22V4A2,2 0 0,1 4,2H20A2,2 0 0,1 22,4M16.77,11.32L15.7,10.5C15.71,10.33 15.71,10.16 15.7,10C15.72,9.84 15.72,9.67 15.7,9.5L16.76,8.68C16.85,8.6 16.88,8.47 16.82,8.36L15.82,6.63C15.76,6.5 15.63,6.47 15.5,6.5L14.27,7C14,6.8 13.73,6.63 13.42,6.5L13.23,5.19C13.21,5.08 13.11,5 13,5H11C10.88,5 10.77,5.09 10.75,5.21L10.56,6.53C10.26,6.65 9.97,6.81 9.7,7L8.46,6.5C8.34,6.46 8.21,6.5 8.15,6.61L7.15,8.34C7.09,8.45 7.11,8.58 7.21,8.66L8.27,9.5C8.23,9.82 8.23,10.16 8.27,10.5L7.21,11.32C7.12,11.4 7.09,11.53 7.15,11.64L8.15,13.37C8.21,13.5 8.34,13.53 8.46,13.5L9.7,13C9.96,13.2 10.24,13.37 10.55,13.5L10.74,14.81C10.77,14.93 10.88,15 11,15H13C13.12,15 13.23,14.91 13.25,14.79L13.44,13.47C13.74,13.34 14,13.18 14.28,13L15.53,13.5C15.65,13.5 15.78,13.5 15.84,13.37L16.84,11.64C16.9,11.53 16.87,11.4 16.77,11.32Z" /></svg>`,
+	// }
+
+	e.svgs["echomsg"] = &SvgXML{
+		width: 24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><g transform="translate(0,3) scale(0.88)"><path fill="%s" d="M13,10H11V6H13M13,14H11V12H13M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" /></g></svg>`,
+
+	}
+	// e.svgs["echomsg"] = &SvgXML{
+	// 	width: 24,
+	// 	height: 24,
+	// 	xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M20,2A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H6L2,22V4C2,2.89 2.9,2 4,2H20M4,4V17.17L5.17,16H20V4H4M6,7H18V9H6V7M6,11H15V13H6V11Z" /></svg>`,
+	// }
+
+	e.svgs["echo"] = &SvgXML{
+		width: 24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><g transform="translate(0,3) scale(0.88)"><path fill="%s" d="M13,10H11V6H13M13,14H11V12H13M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" /></g></svg>`,
+
+	}
+	// e.svgs["echo"] = &SvgXML{
+	// 	width: 24,
+	// 	height: 24,
+	// 	xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="%s" d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H6L4,18V4H20" /></svg>`,
+	// }
+
+	e.svgs["emsg"] = &SvgXML{
+		width: 24,
+		height: 24,
+		xml: `<svg style="width:24px;height:24px" viewBox="0 0 24 24"><g transform="translate(0,3) scale(0.88)"><path fill="%s" d="M13,10H11V6H13M13,14H11V12H13M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4C22,2.89 21.1,2 20,2Z" /></g></svg>`,
+
+	}
+
 	e.svgs["lock"] = &SvgXML{
 		width:  24,
 		height: 24,
