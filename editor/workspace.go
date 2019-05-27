@@ -866,6 +866,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
 			w.modeIdx = util.ReflectToInt(arg[1])
+			w.cursor.updateCursorShape()
 			w.disableImeInNormal()
 		case "popupmenu_show":
 			w.popup.showItems(args)
@@ -907,7 +908,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	}
 
 	s.update()
-	w.cursor.update()
+	w.cursor.update2()
 	w.statusline.mode.redraw()
 
 	if s.tooltip.IsVisible() {
@@ -1187,7 +1188,7 @@ func (w *Workspace) guiFont(args string) {
 	w.popup.updateFont(w.font)
 	w.message.updateFont(w.font)
 	w.screen.toolTipFont(w.font)
-	w.cursor.updateShape()
+	// w.cursor.updateShape()
 }
 
 func (w *Workspace) guiLinespace(args interface{}) {
@@ -1209,7 +1210,7 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	}
 	w.font.changeLineSpace(lineSpace)
 	w.updateSize()
-	w.cursor.updateShape()
+	// w.cursor.updateShape()
 }
 
 func (w *Workspace) detectTerminalMode() {

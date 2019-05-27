@@ -3,19 +3,20 @@ package editor
 import (
 	"fmt"
 
-	"github.com/therecipe/qt/core"
+	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/widgets"
 )
 
 // Cursor is
 type Cursor struct {
-	ws     *Workspace
-	widget *widgets.QWidget
-	mode   string
-	x      int
-	y      int
-	isShut bool
-	color  *RGBA
+	ws        *Workspace
+	widget    *widgets.QWidget
+	mode      string
+	modeIdx   int
+	x         int
+	y         int
+	isShut    bool
+	color     *RGBA
 }
 
 func initCursorNew() *Cursor {
@@ -24,12 +25,12 @@ func initCursorNew() *Cursor {
 		widget: widget,
 	}
 
-	if editor.config.Editor.CursorBlink {
-		timer := core.NewQTimer(nil)
-		timer.ConnectTimeout(cursor.blink)
-		timer.Start(1000)
-		timer.SetInterval(500)
-	}
+	// if editor.config.Editor.CursorBlink {
+	// 	timer := core.NewQTimer(nil)
+	// 	timer.ConnectTimeout(cursor.blink)
+	// 	timer.Start(1000)
+	// 	timer.SetInterval(500)
+	// }
 
 	return cursor
 }
@@ -58,8 +59,8 @@ func (c *Cursor) blink() {
 func (c *Cursor) move() {
 	c.widget.Move2(c.x, c.y+int(float64(c.ws.font.lineSpace)/2))
 	c.ws.loc.widget.Move2(c.x, c.y+c.ws.font.lineHeight)
-	c.updateColor()
-	c.updateShape()
+	// c.updateColor()
+	// c.updateShape()
 }
 
 func (c *Cursor) updateColor() {
@@ -87,7 +88,7 @@ func (c *Cursor) updateColor() {
 	// 		c.color = invertColor(color)
 	// 	}
 	// 	if c.color == nil {
-	c.color = invertColor(c.ws.background)
+	// c.color = invertColor(c.ws.background)
 	// 	}
 }
 
@@ -108,6 +109,57 @@ func (c *Cursor) updateShape() {
 		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
 		visualColor := hexToRGBA(editor.config.SideBar.AccentColor)
 		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", visualColor.R, visualColor.G, visualColor.B))
+	}
+}
+
+func (c *Cursor) updateCursorShape() {
+	if !c.ws.cursorStyleEnabled {
+		return
+	}
+	cursorShape := "block"
+	cursorShapeITF, ok := c.ws.modeInfo[c.modeIdx]["cursor_shape"]
+	if ok {
+		cursorShape = cursorShapeITF.(string)
+	}
+	cellPercentage := 100
+	cellPercentageITF, ok := c.ws.modeInfo[c.modeIdx]["cell_percentage"]
+	if ok {
+		cellPercentage = util.ReflectToInt(cellPercentageITF)
+	}
+
+	height := c.ws.font.height+2
+	width := c.ws.font.width
+	switch cursorShape {
+	case "block":
+	case "horizontal":
+		height = int(float64(height) * float64(cellPercentage) / float64(100))
+	case "vertical":
+		width = int(float64(width) * float64(cellPercentage) / float64(100))
+	default:
+	}
+
+	attrId := 0
+	attrIdITF, ok := c.ws.modeInfo[c.modeIdx]["attr_id"]
+	if ok {
+		attrId = util.ReflectToInt(attrIdITF)
+	}
+	bgcolor := c.ws.screen.highAttrDef[attrId].foreground
+
+	c.widget.Resize2(width, height)
+	c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.7)", bgcolor.R, bgcolor.G, bgcolor.B))
+}
+
+func (c *Cursor) update2() {
+	if c.modeIdx != c.ws.modeIdx {
+		c.modeIdx = c.ws.modeIdx
+		c.updateCursorShape()
+	}
+	row := c.ws.screen.cursor[0]
+	col := c.ws.screen.cursor[1]
+	if c.x != row || c.y != col {
+		c.x = int(float64(col) * c.ws.font.truewidth)
+		c.y = row * c.ws.font.lineHeight
+		c.move()
 	}
 }
 
