@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/akiyosi/gonvim/util"
 	"github.com/neovim/go-client/nvim"
@@ -274,79 +273,79 @@ func (m *MiniMap) paint(vqp *gui.QPaintEvent) {
 		m.drawText(p, y, col, cols, [2]int{0, 0})
 	}
 
-	m.drawWindows(p, row, col, rows, cols)
+	// m.drawWindows(p, row, col, rows, cols)
 	p.DestroyQPainter()
 }
 
-func (m *MiniMap) drawWindows(p *gui.QPainter, row, col, rows, cols int) {
-	done := make(chan struct{}, 1000)
-	go func() {
-		m.getWindows()
-		close(done)
-	}()
-	select {
-	case <-done:
-	case <-time.After(1 * time.Millisecond):
-	}
-}
-
-func (m *MiniMap) getWindows() {
-	wins := map[nvim.Window]*Window{}
-	neovim := m.nvim
-	curtab, _ := neovim.CurrentTabpage()
-	m.curtab = curtab
-	nwins, _ := neovim.TabpageWindows(curtab)
-	b := neovim.NewBatch()
-	for _, nwin := range nwins {
-		win := &Window{
-			win: nwin,
-		}
-		b.WindowWidth(nwin, &win.width)
-		b.WindowHeight(nwin, &win.height)
-		b.WindowPosition(nwin, &win.pos)
-		b.WindowTabpage(nwin, &win.tab)
-		wins[nwin] = win
-	}
-	b.Option("cmdheight", &m.cmdheight)
-	err := b.Execute()
-	if err != nil {
-		return
-	}
-	m.curWins = wins
-	for _, win := range m.curWins {
-		buf, _ := neovim.WindowBuffer(win.win)
-		win.bufName, _ = neovim.BufferName(buf)
-
-		if win.height+win.pos[0] < m.rows-m.cmdheight {
-			win.statusline = true
-		} else {
-			win.statusline = false
-		}
-		neovim.WindowOption(win.win, "winhl", &win.hl)
-		if win.hl != "" {
-			parts := strings.Split(win.hl, ",")
-			for _, part := range parts {
-				if strings.HasPrefix(part, "Normal:") {
-					hl := part[7:]
-					result := ""
-					neovim.Eval(fmt.Sprintf("synIDattr(hlID('%s'), 'bg')", hl), &result)
-					if result != "" {
-						var r, g, b int
-						format := "#%02x%02x%02x"
-						n, err := fmt.Sscanf(result, format, &r, &g, &b)
-						if err != nil {
-							continue
-						}
-						if n != 3 {
-							continue
-						}
-						win.bg = newRGBA(r, g, b, 1)
-					}
-				}
-			}
-		}
-	}
-}
+// func (m *MiniMap) drawWindows(p *gui.QPainter, row, col, rows, cols int) {
+// 	done := make(chan struct{}, 1000)
+// 	go func() {
+// 		m.getWindows()
+// 		close(done)
+// 	}()
+// 	select {
+// 	case <-done:
+// 	case <-time.After(1 * time.Millisecond):
+// 	}
+// }
+// 
+// func (m *MiniMap) getWindows() {
+// 	wins := map[nvim.Window]*Window{}
+// 	neovim := m.nvim
+// 	curtab, _ := neovim.CurrentTabpage()
+// 	m.curtab = curtab
+// 	nwins, _ := neovim.TabpageWindows(curtab)
+// 	b := neovim.NewBatch()
+// 	for _, nwin := range nwins {
+// 		win := &Window{
+// 			win: nwin,
+// 		}
+// 		b.WindowWidth(nwin, &win.width)
+// 		b.WindowHeight(nwin, &win.height)
+// 		b.WindowPosition(nwin, &win.pos)
+// 		b.WindowTabpage(nwin, &win.tab)
+// 		wins[nwin] = win
+// 	}
+// 	b.Option("cmdheight", &m.cmdheight)
+// 	err := b.Execute()
+// 	if err != nil {
+// 		return
+// 	}
+// 	m.curWins = wins
+// 	for _, win := range m.curWins {
+// 		buf, _ := neovim.WindowBuffer(win.win)
+// 		win.bufName, _ = neovim.BufferName(buf)
+// 
+// 		if win.height+win.pos[0] < m.rows-m.cmdheight {
+// 			win.statusline = true
+// 		} else {
+// 			win.statusline = false
+// 		}
+// 		neovim.WindowOption(win.win, "winhl", &win.hl)
+// 		if win.hl != "" {
+// 			parts := strings.Split(win.hl, ",")
+// 			for _, part := range parts {
+// 				if strings.HasPrefix(part, "Normal:") {
+// 					hl := part[7:]
+// 					result := ""
+// 					neovim.Eval(fmt.Sprintf("synIDattr(hlID('%s'), 'bg')", hl), &result)
+// 					if result != "" {
+// 						var r, g, b int
+// 						format := "#%02x%02x%02x"
+// 						n, err := fmt.Sscanf(result, format, &r, &g, &b)
+// 						if err != nil {
+// 							continue
+// 						}
+// 						if n != 3 {
+// 							continue
+// 						}
+// 						win.bg = newRGBA(r, g, b, 1)
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// }
 
 func (m *MiniMap) updateRows() bool {
 	var ret bool

@@ -35,20 +35,14 @@ type Window struct {
 	rows       int
 
 	widget     *widgets.QWidget
-
-	// maybe only use minimap
-	win        nvim.Window
-	tab        nvim.Tabpage
-	// only use minimap
-	width      int
-	height     int
-	statusline bool
-	bufName    string
-	hl         string
-	bg         *RGBA
-
 	queueRedrawArea  [4]int
 	scrollRegion     []int
+
+	// NOTE: 
+	// Only use minimap
+	// Plan to remove in the future
+	width      int
+	height     int
 }
 
 // Screen is the main editor area
