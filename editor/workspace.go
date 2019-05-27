@@ -792,6 +792,8 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		case "mode_info_set":
 			w.modeInfoSet(args)
+			w.cursor.modeIdx = 0
+			w.cursor.update()
 
 		case "option_set":
 			w.setOption(update)
@@ -817,6 +819,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		case "grid_cursor_goto":
 			s.gridCursorGoto(args)
+			w.cursor.update()
 			doMinimapScroll = true
 
 		case "grid_scroll":
@@ -866,7 +869,10 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
 			w.modeIdx = util.ReflectToInt(arg[1])
-			w.cursor.updateCursorShape()
+			if w.cursor.modeIdx != w.modeIdx {
+				w.cursor.modeIdx = w.modeIdx
+				w.cursor.update()
+			}
 			w.disableImeInNormal()
 		case "popupmenu_show":
 			w.popup.showItems(args)
@@ -908,7 +914,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	}
 
 	s.update()
-	w.cursor.update2()
 	w.statusline.mode.redraw()
 
 	if s.tooltip.IsVisible() {

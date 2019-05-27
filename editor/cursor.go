@@ -5,6 +5,7 @@ import (
 
 	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/widgets"
+	"github.com/therecipe/qt/core"
 )
 
 // Cursor is
@@ -15,7 +16,10 @@ type Cursor struct {
 	modeIdx   int
 	x         int
 	y         int
+	currAttrId int
+	shift     int
 	isShut    bool
+	timer     *core.QTimer
 	color     *RGBA
 }
 
@@ -23,78 +27,54 @@ func initCursorNew() *Cursor {
 	widget := widgets.NewQWidget(nil, 0)
 	cursor := &Cursor{
 		widget: widget,
+		timer : core.NewQTimer(nil),
 	}
-
-	// if editor.config.Editor.CursorBlink {
-	// 	timer := core.NewQTimer(nil)
-	// 	timer.ConnectTimeout(cursor.blink)
-	// 	timer.Start(1000)
-	// 	timer.SetInterval(500)
-	// }
 
 	return cursor
 }
 
-func (c *Cursor) blink() {
-	if c.color == nil {
-		c.color = invertColor(c.ws.background)
+
+func (c *Cursor) setBlink(wait, on, off int) {
+	bgcolor := c.ws.screen.highAttrDef[c.currAttrId].background
+	c.timer.DisconnectTimeout()
+	if wait == 0 || on == 0 || off == 0 {
+		c.widget.SetStyleSheet(fmt.Sprintf(
+			"background-color: rgba(%d, %d, %d, 0.8)",
+			bgcolor.R,
+			bgcolor.G,
+			bgcolor.B,
+		))
+		return
 	}
-	if c.isShut {
-		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.1)", c.color.R, c.color.G, c.color.B))
-		c.isShut = false
-	} else {
-		switch c.ws.mode {
-		case "visual":
-			visualColor := hexToRGBA(editor.config.SideBar.AccentColor)
-			c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", visualColor.R, visualColor.G, visualColor.B))
-		default:
-			c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.7)", c.color.R, c.color.G, c.color.B))
+	c.timer.ConnectTimeout(func() {
+		alpha := 0.8
+		if !c.isShut {
+			c.timer.SetInterval(off)
+			c.isShut = true
+			alpha = 0.1
+		} else {
+			c.timer.SetInterval(on)
+			c.isShut = false
 		}
-		c.isShut = true
-	}
-	c.widget.Hide()
-	c.widget.Show()
+		c.widget.SetStyleSheet(fmt.Sprintf(
+			"background-color: rgba(%d, %d, %d, %f)",
+			bgcolor.R,
+			bgcolor.G,
+			bgcolor.B,
+			alpha,
+		))
+	})
+	c.timer.Start(wait)
+	c.timer.SetInterval(off)
 }
 
 func (c *Cursor) move() {
 	c.widget.Move2(c.x, c.y+int(float64(c.ws.font.lineSpace)/2))
 	c.ws.loc.widget.Move2(c.x, c.y+c.ws.font.lineHeight)
-	// c.updateColor()
-	// c.updateShape()
 }
 
-func (c *Cursor) updateColor() {
-	// 	screen := c.ws.screen
-	// 	row := screen.cursor[0]
-	// 	col := screen.cursor[1]
-	// 	// s := screen.colorContent
-	// 	if screen.activeGrid == 1 {
-	// 		return
-	// 	}
-	// 	s := screen.windows[screen.activeGrid].colorContent
-	// 	if s == nil {
-	// 		return
-	// 	}
-	// 	if len(s) <= row {
-	// 		return
-	// 	}
-	// 	for _, line := range s {
-	// 		if len(line) <= col+1 {
-	// 			return
-	// 		}
-	// 	}
-	// 	color := s[row][col+1] // FIXME: out of index
-	// 	if color != nil && !c.color.equals(color) {
-	// 		c.color = invertColor(color)
-	// 	}
-	// 	if c.color == nil {
-	// c.color = invertColor(c.ws.background)
-	// 	}
-}
-
-func (c *Cursor) updateShape() {
+func (c *Cursor) updateCursorShape2() {
 	mode := c.ws.mode
-	c.updateColor()
 	switch mode {
 	case "normal":
 		c.widget.Resize2(c.ws.font.width, c.ws.font.height+2)
@@ -129,50 +109,56 @@ func (c *Cursor) updateCursorShape() {
 
 	height := c.ws.font.height+2
 	width := c.ws.font.width
+	p := float64(cellPercentage) / float64(100)
+
 	switch cursorShape {
-	case "block":
 	case "horizontal":
-		height = int(float64(height) * float64(cellPercentage) / float64(100))
+		height = int(float64(height) * p)
+		c.shift = int(float64(c.ws.font.lineHeight) * float64(1.0-p))
 	case "vertical":
-		width = int(float64(width) * float64(cellPercentage) / float64(100))
+		width = int(float64(width) * p)
+		c.shift = 0
 	default:
+		c.shift = 0
 	}
 
 	attrId := 0
 	attrIdITF, ok := c.ws.modeInfo[c.modeIdx]["attr_id"]
 	if ok {
 		attrId = util.ReflectToInt(attrIdITF)
+		c.currAttrId = attrId
 	}
-	bgcolor := c.ws.screen.highAttrDef[attrId].foreground
+	bgcolor := c.ws.screen.highAttrDef[attrId].background
+
+	var blinkWait, blinkOn, blinkOff int
+	blinkWaitITF, ok := c.ws.modeInfo[c.modeIdx]["blinkwait"]
+	if ok {
+		blinkWait = util.ReflectToInt(blinkWaitITF)
+	}
+	blinkOnITF, ok := c.ws.modeInfo[c.modeIdx]["blinkon"]
+	if ok {
+		blinkOn = util.ReflectToInt(blinkOnITF)
+	}
+	blinkOffITF, ok := c.ws.modeInfo[c.modeIdx]["blinkoff"]
+	if ok {
+		blinkOff = util.ReflectToInt(blinkOffITF)
+	}
+	c.setBlink(blinkWait, blinkOn, blinkOff)
 
 	c.widget.Resize2(width, height)
-	c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.7)", bgcolor.R, bgcolor.G, bgcolor.B))
-}
-
-func (c *Cursor) update2() {
-	if c.modeIdx != c.ws.modeIdx {
-		c.modeIdx = c.ws.modeIdx
-		c.updateCursorShape()
-	}
-	row := c.ws.screen.cursor[0]
-	col := c.ws.screen.cursor[1]
-	if c.x != row || c.y != col {
-		c.x = int(float64(col) * c.ws.font.truewidth)
-		c.y = row * c.ws.font.lineHeight
-		c.move()
-	}
+	c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.8)", bgcolor.R, bgcolor.G, bgcolor.B))
 }
 
 func (c *Cursor) update() {
-	if c.mode != c.ws.mode {
-		c.mode = c.ws.mode
-		c.updateShape()
-	}
+	c.updateCursorShape()
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
-	if c.x != row || c.y != col {
-		c.x = int(float64(col) * c.ws.font.truewidth)
-		c.y = row * c.ws.font.lineHeight
+	x2 := int(float64(col) * c.ws.font.truewidth)
+	y2 := row * c.ws.font.lineHeight + c.shift
+	if c.x != x2 || c.y != y2 {
+		c.x = x2
+		c.y = y2
 		c.move()
 	}
 }
+
