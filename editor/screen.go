@@ -48,6 +48,7 @@ type Window struct {
 	bg         *RGBA
 
 	queueRedrawArea  [4]int
+	scrollRegion     []int
 }
 
 // Screen is the main editor area
@@ -917,31 +918,31 @@ func (s *Screen) gridScroll(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		s.scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])      // top
-		s.scrollRegion[1] = util.ReflectToInt(arg.([]interface{})[2]) - 1  // bot
-		s.scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3])      // left
-		s.scrollRegion[3] = util.ReflectToInt(arg.([]interface{})[4]) - 1  // right
+		s.windows[gridid].scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])      // top
+		s.windows[gridid].scrollRegion[1] = util.ReflectToInt(arg.([]interface{})[2]) - 1  // bot
+		s.windows[gridid].scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3])      // left
+		s.windows[gridid].scrollRegion[3] = util.ReflectToInt(arg.([]interface{})[4]) - 1  // right
 		rows = util.ReflectToInt(arg.([]interface{})[5])
-		s.scroll(gridid, rows)
+		s.windows[gridid].scroll(rows)
 	}
 
 }
 
-func (s *Screen) scroll(gridid, count int) {
-	top := s.scrollRegion[0]
-	bot := s.scrollRegion[1]
-	left := s.scrollRegion[2]
-	right := s.scrollRegion[3]
-	content := s.windows[gridid].content
+func (w *Window) scroll(count int) {
+	top := w.scrollRegion[0]
+	bot := w.scrollRegion[1]
+	left := w.scrollRegion[2]
+	right := w.scrollRegion[3]
+	content := w.content
 
 	if top == 0 && bot == 0 && left == 0 && right == 0 {
 		top = 0
-		bot = s.windows[gridid].rows - 1
+		bot = w.rows - 1
 		left = 0
-		right = s.windows[gridid].cols - 1
+		right = w.cols - 1
 	}
 
-	s.windows[gridid].queueRedraw(left, top, (right - left + 1), (bot - top + 1))
+	w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
 
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
@@ -970,9 +971,9 @@ func (s *Screen) scroll(gridid, count int) {
 				content[row][col] = nil
 			}
 		}
-		s.windows[gridid].queueRedraw(left, (bot - count + 1), (right - left), count)
+		w.queueRedraw(left, (bot - count + 1), (right - left), count)
 		if top > 0 {
-			s.windows[gridid].queueRedraw(left, (top - count), (right - left), count)
+			w.queueRedraw(left, (top - count), (right - left), count)
 		}
 	} else {
 		for row := bot; row >= top-count; row-- {
@@ -1001,9 +1002,9 @@ func (s *Screen) scroll(gridid, count int) {
 				content[row][col] = nil
 			}
 		}
-		s.windows[gridid].queueRedraw(left, top, (right - left), -count)
-		if bot < s.windows[gridid].rows-1 {
-			s.windows[gridid].queueRedraw(left, bot+1, (right - left), -count)
+		w.queueRedraw(left, top, (right - left), -count)
+		if bot < w.rows-1 {
+			w.queueRedraw(left, bot+1, (right - left), -count)
 		}
 	}
 }
@@ -1289,6 +1290,7 @@ func (s *Screen) newWindow() *Window {
 	w := &Window{
 		s: s,
 		widget: widget,
+		scrollRegion: []int{0, 0, 0, 0},
 	}
 
 	widget.SetParent(s.widget)
