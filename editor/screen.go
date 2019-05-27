@@ -636,7 +636,15 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	}
 
 	if win == nil {
-		s.windows[gridid] = s.newWindow()
+		s.windows[gridid] = newWindow()
+		s.windows[gridid].s = s
+		s.windows[gridid].widget.SetParent(s.widget)
+		s.windows[gridid].widget.SetAttribute(core.Qt__WA_KeyCompression, true)
+		s.windows[gridid].widget.SetAcceptDrops(true)
+		s.windows[gridid].widget.ConnectWheelEvent(s.wheelEvent)
+		s.windows[gridid].widget.ConnectDragEnterEvent(s.dragEnterEvent)
+		s.windows[gridid].widget.ConnectDragMoveEvent(s.dragMoveEvent)
+		s.windows[gridid].widget.ConnectDropEvent(s.dropEvent)
 		// reassign win
 		win = s.windows[gridid]
 	}
@@ -1273,26 +1281,18 @@ func (s *Screen) isNormalWidth(char string) bool {
 	return s.ws.font.fontMetrics.HorizontalAdvance(char, -1) == s.ws.font.truewidth
 }
 
-func (s *Screen) newWindow() *Window {
+func newWindow() *Window {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
-	widget.SetAttribute(core.Qt__WA_KeyCompression, false)
-	widget.SetAcceptDrops(true)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
 	w := &Window{
-		s: s,
 		widget: widget,
 		scrollRegion: []int{0, 0, 0, 0},
 	}
 
-	widget.SetParent(s.widget)
 	widget.ConnectPaintEvent(w.paint)
-	widget.ConnectWheelEvent(s.wheelEvent)
-	widget.ConnectDragEnterEvent(s.dragEnterEvent)
-	widget.ConnectDragMoveEvent(s.dragMoveEvent)
-	widget.ConnectDropEvent(s.dropEvent)
 
 	return w
 }
