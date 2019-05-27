@@ -122,12 +122,12 @@ func (m *Markdown) updatePos() {
 		}
 		if gridid == m.mdGridId {
 			m.webview.Resize2(
-				int(float64(win.cols) * m.ws.font.truewidth),
-				win.rows * m.ws.font.lineHeight,
+				int(float64(win.cols)*m.ws.font.truewidth),
+				win.rows*m.ws.font.lineHeight,
 			)
 			m.webview.Move2(
-				int(float64(win.pos[0]) * m.ws.font.truewidth),
-				win.pos[1] * m.ws.font.lineHeight,
+				int(float64(win.pos[0])*m.ws.font.truewidth),
+				win.pos[1]*m.ws.font.lineHeight,
 			)
 			m.show()
 			return

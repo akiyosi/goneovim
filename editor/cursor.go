@@ -63,32 +63,32 @@ func (c *Cursor) move() {
 }
 
 func (c *Cursor) updateColor() {
-// 	screen := c.ws.screen
-// 	row := screen.cursor[0]
-// 	col := screen.cursor[1]
-// 	// s := screen.colorContent
-// 	if screen.activeGrid == 1 {
-// 		return
-// 	}
-// 	s := screen.windows[screen.activeGrid].colorContent
-// 	if s == nil {
-// 		return
-// 	}
-// 	if len(s) <= row {
-// 		return
-// 	}
-// 	for _, line := range s {
-// 		if len(line) <= col+1 {
-// 			return
-// 		}
-// 	}
-// 	color := s[row][col+1] // FIXME: out of index
-// 	if color != nil && !c.color.equals(color) {
-// 		c.color = invertColor(color)
-// 	}
-// 	if c.color == nil {
- 		c.color = invertColor(c.ws.background)
-// 	}
+	// 	screen := c.ws.screen
+	// 	row := screen.cursor[0]
+	// 	col := screen.cursor[1]
+	// 	// s := screen.colorContent
+	// 	if screen.activeGrid == 1 {
+	// 		return
+	// 	}
+	// 	s := screen.windows[screen.activeGrid].colorContent
+	// 	if s == nil {
+	// 		return
+	// 	}
+	// 	if len(s) <= row {
+	// 		return
+	// 	}
+	// 	for _, line := range s {
+	// 		if len(line) <= col+1 {
+	// 			return
+	// 		}
+	// 	}
+	// 	color := s[row][col+1] // FIXME: out of index
+	// 	if color != nil && !c.color.equals(color) {
+	// 		c.color = invertColor(color)
+	// 	}
+	// 	if c.color == nil {
+	c.color = invertColor(c.ws.background)
+	// 	}
 }
 
 func (c *Cursor) updateShape() {

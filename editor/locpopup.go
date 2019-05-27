@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/neovim/go-client/nvim"
 	"github.com/akiyosi/gonvim/util"
+	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
@@ -136,13 +136,13 @@ func (l *Locpopup) update(args []interface{}) {
 	doneChannel := make(chan nvim.Buffer, 5)
 	var buf, buftmp nvim.Buffer
 	go func() {
-	        buftmp, _ = l.ws.nvim.CurrentBuffer()
-	        doneChannel <- buftmp
+		buftmp, _ = l.ws.nvim.CurrentBuffer()
+		doneChannel <- buftmp
 	}()
 	select {
 	case buf = <-doneChannel:
 	case <-time.After(20 * time.Millisecond):
-	        return
+		return
 	}
 
 	buftype := new(string)

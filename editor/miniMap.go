@@ -288,7 +288,7 @@ func (m *MiniMap) paint(vqp *gui.QPaintEvent) {
 // 	case <-time.After(1 * time.Millisecond):
 // 	}
 // }
-// 
+//
 // func (m *MiniMap) getWindows() {
 // 	wins := map[nvim.Window]*Window{}
 // 	neovim := m.nvim
@@ -315,7 +315,7 @@ func (m *MiniMap) paint(vqp *gui.QPaintEvent) {
 // 	for _, win := range m.curWins {
 // 		buf, _ := neovim.WindowBuffer(win.win)
 // 		win.bufName, _ = neovim.BufferName(buf)
-// 
+//
 // 		if win.height+win.pos[0] < m.rows-m.cmdheight {
 // 			win.statusline = true
 // 		} else {
