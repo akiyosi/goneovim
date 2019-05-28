@@ -762,6 +762,15 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.background = s.ws.background
 	}
 
+	// for default cursor color
+	if highlight.hiName == "Cursor" {
+		idITF, ok := info["id"]
+		if ok {
+			id := util.ReflectToInt(idITF)
+			s.ws.cursor.defaultColorId = id
+		}
+	}
+
 	return &highlight
 }
 

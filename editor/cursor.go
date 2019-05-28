@@ -4,35 +4,35 @@ import (
 	"fmt"
 
 	"github.com/akiyosi/gonvim/util"
-	"github.com/therecipe/qt/widgets"
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/widgets"
 )
 
 // Cursor is
 type Cursor struct {
-	ws        *Workspace
-	widget    *widgets.QWidget
-	mode      string
-	modeIdx   int
-	x         int
-	y         int
-	currAttrId int
-	shift     int
-	isShut    bool
-	timer     *core.QTimer
-	color     *RGBA
+	ws             *Workspace
+	widget         *widgets.QWidget
+	mode           string
+	modeIdx        int
+	x              int
+	y              int
+	currAttrId     int
+	defaultColorId int
+	shift          int
+	isShut         bool
+	timer          *core.QTimer
+	color          *RGBA
 }
 
 func initCursorNew() *Cursor {
 	widget := widgets.NewQWidget(nil, 0)
 	cursor := &Cursor{
 		widget: widget,
-		timer : core.NewQTimer(nil),
+		timer:  core.NewQTimer(nil),
 	}
 
 	return cursor
 }
-
 
 func (c *Cursor) setBlink(wait, on, off int) {
 	bgcolor := c.ws.screen.highAttrDef[c.currAttrId].background
@@ -107,7 +107,7 @@ func (c *Cursor) updateCursorShape() {
 		cellPercentage = util.ReflectToInt(cellPercentageITF)
 	}
 
-	height := c.ws.font.height+2
+	height := c.ws.font.height + 2
 	width := c.ws.font.width
 	p := float64(cellPercentage) / float64(100)
 
@@ -128,7 +128,16 @@ func (c *Cursor) updateCursorShape() {
 		attrId = util.ReflectToInt(attrIdITF)
 		c.currAttrId = attrId
 	}
-	bgcolor := c.ws.screen.highAttrDef[attrId].background
+
+	var bgcolor *RGBA
+	if attrId != 0 {
+		bgcolor = c.ws.screen.highAttrDef[attrId].background
+	} else {
+		bgcolor = c.ws.screen.highAttrDef[c.defaultColorId].background
+	}
+	if bgcolor == nil {
+		return
+	}
 
 	var blinkWait, blinkOn, blinkOff int
 	blinkWaitITF, ok := c.ws.modeInfo[c.modeIdx]["blinkwait"]
@@ -154,11 +163,10 @@ func (c *Cursor) update() {
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
 	x2 := int(float64(col) * c.ws.font.truewidth)
-	y2 := row * c.ws.font.lineHeight + c.shift
+	y2 := row*c.ws.font.lineHeight + c.shift
 	if c.x != x2 || c.y != y2 {
 		c.x = x2
 		c.y = y2
 		c.move()
 	}
 }
-
