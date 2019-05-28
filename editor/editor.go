@@ -240,11 +240,6 @@ func InitEditor() {
 	splitter.SetObjectName("splitter")
 	e.splitter = splitter
 
-	go func() {
-		layout.AddWidget(splitter, 1, 0)
-		layout.AddWidget(e.activity.widget, 0, 0)
-	}()
-
 	e.workspaces = []*Workspace{}
 	sessionExists := false
 	if err == nil {
@@ -272,6 +267,10 @@ func InitEditor() {
 		e.workspaces = append(e.workspaces, ws)
 	}
 	e.workspaceUpdate()
+
+	layout.AddWidget(splitter, 1, 0)
+	layout.AddWidget(e.activity.widget, 0, 0)
+
 	e.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	e.wsWidget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
 	e.wsWidget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)

@@ -115,12 +115,12 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.loc.ws = w
 	w.message = initMessage()
 	w.message.ws = w
-	w.screen = newScreen()
-	w.screen.ws = w
 
 	go w.startNvim(path)
 	w.registerSignal()
 
+	w.screen = newScreen()
+	w.screen.ws = w
 	w.palette = initPalette()
 	w.palette.ws = w
 	w.fpalette = initPalette()
@@ -188,7 +188,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.Move2(0, 0)
 	w.updateSize()
 
-	go w.minimap.startMinimapProc()
+	w.minimap.startMinimapProc()
 
 	if runtime.GOOS == "windows" {
 		select {
