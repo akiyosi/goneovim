@@ -29,8 +29,8 @@ type Highlight struct {
 	background *RGBA
 	italic     bool
 	bold       bool
-	underline  bool	
-	undercurl  bool	
+	underline  bool
+	undercurl  bool
 }
 
 // Char is
@@ -153,8 +153,8 @@ func InitEditor() {
 	if runtime.GOOS == "linux" {
 		exe, _ := os.Executable()
 		dir, _ := filepath.Split(exe)
-		_ = os.Setenv("LD_LIBRARY_PATH", dir + "lib")
-		_ = os.Setenv("QT_PLUGIN_PATH", dir + "plugins")
+		_ = os.Setenv("LD_LIBRARY_PATH", dir+"lib")
+		_ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
 	}
 
 	home, err := homedir.Dir()

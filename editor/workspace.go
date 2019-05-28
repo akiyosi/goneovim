@@ -47,34 +47,37 @@ type Workspace struct {
 	markdown   *Markdown
 	finder     *Finder
 	palette    *Palette
-	fpalette    *Palette
+	fpalette   *Palette
 	popup      *PopupMenu
 	loc        *Locpopup
 	cmdline    *Cmdline
 	signature  *Signature
 	message    *Message
-	minimap *MiniMap
-	width   int
-	height  int
-	hidden  bool
+	minimap    *MiniMap
+	width      int
+	height     int
+	hidden     bool
 
-	nvim             *nvim.Nvim
-	rows             int
-	cols             int
-	uiAttached       bool
-	uiRemoteAttached bool
-	foreground       *RGBA
-	background       *RGBA
-	special          *RGBA
-	mode             string
-	filepath         string
-	cwd              string
-	cwdBase          string
-	cwdlabel         string
-	maxLine          int
-	curLine          int
-	curColm          int
-	isInTerm         bool
+	nvim               *nvim.Nvim
+	rows               int
+	cols               int
+	uiAttached         bool
+	uiRemoteAttached   bool
+	foreground         *RGBA
+	background         *RGBA
+	special            *RGBA
+	mode               string
+	modeIdx            int
+	filepath           string
+	cwd                string
+	cwdBase            string
+	cwdlabel           string
+	maxLine            int
+	curLine            int
+	curColm            int
+	isInTerm           bool
+	cursorStyleEnabled bool
+	modeInfo           []map[string]interface{}
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -95,9 +98,9 @@ func newWorkspace(path string) (*Workspace, error) {
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
 		doneNvimStart: make(chan bool, 1000),
-		foreground:   newRGBA(180, 185, 190, 1),
-	 	background:   newRGBA(9, 13, 17, 1),
-	 	special:  newRGBA(255, 255, 255, 1),
+		foreground:    newRGBA(180, 185, 190, 1),
+		background:    newRGBA(9, 13, 17, 1),
+		special:       newRGBA(255, 255, 255, 1),
 	}
 	w.font = initFontNew(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, editor.config.Editor.Linespace)
 	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)
@@ -741,10 +744,10 @@ func (w *Workspace) updateSize() {
 		w.screen.height = w.height - w.tabline.height - w.statusline.height
 		w.screen.updateSize()
 	}
-	if w.palette !=  nil {
+	if w.palette != nil {
 		w.palette.resize()
 	}
-	if w.fpalette !=  nil {
+	if w.fpalette != nil {
 		w.fpalette.resize()
 	}
 	if w.message != nil {
@@ -787,6 +790,11 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				editor.window.SetWindowTitle(titleStr)
 			}
 
+		case "mode_info_set":
+			w.modeInfoSet(args)
+			w.cursor.modeIdx = 0
+			w.cursor.update()
+
 		case "option_set":
 			w.setOption(update)
 
@@ -811,6 +819,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		case "grid_cursor_goto":
 			s.gridCursorGoto(args)
+			w.cursor.update()
 			doMinimapScroll = true
 
 		case "grid_scroll":
@@ -818,19 +827,19 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		case "win_pos":
 			s.windowPosition(args)
-		
+
 		case "win_float_pos":
 			s.windowFloatPosition(args)
-		
+
 		case "win_external_pos":
 			fmt.Println("win_external_pos:", args)
-		
+
 		case "win_hide":
 			s.windowHide(args)
-		
+
 		case "win_scroll_over_start":
 			fmt.Println("win_scroll_over_start:", args)
-			
+
 		case "win_scroll_over_reset":
 			fmt.Println("win_scroll_over_reset:", args)
 
@@ -859,6 +868,11 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
+			w.modeIdx = util.ReflectToInt(arg[1])
+			if w.cursor.modeIdx != w.modeIdx {
+				w.cursor.modeIdx = w.modeIdx
+				w.cursor.update()
+			}
 			w.disableImeInNormal()
 		case "popupmenu_show":
 			w.popup.showItems(args)
@@ -900,7 +914,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	}
 
 	s.update()
-	w.cursor.update()
 	w.statusline.mode.redraw()
 
 	if s.tooltip.IsVisible() {
@@ -996,6 +1009,18 @@ func (w *Workspace) updateWorkspaceColor() {
 	w.loc.setColor()
 	w.message.setColor()
 	w.screen.tooltip.SetStyleSheet(fmt.Sprintf(" * {background-color: %s; text-decoration: underline; color: %s; }", editor.colors.selectedBg.String(), editor.colors.fg.String()))
+}
+
+func (w *Workspace) modeInfoSet(args []interface{}) {
+	for _, arg := range args {
+		w.cursorStyleEnabled = arg.([]interface{})[0].(bool)
+		modePropList := arg.([]interface{})[1].([]interface{})
+		w.modeInfo = make([]map[string]interface{}, len(modePropList))
+		for i, modeProp := range modePropList {
+			// Note: i is the index which given by the `mode_idx` of the `mode_change` event
+			w.modeInfo[i] = modeProp.(map[string]interface{})
+		}
+	}
 }
 
 func (w *Workspace) setOption(update []interface{}) {
@@ -1168,7 +1193,7 @@ func (w *Workspace) guiFont(args string) {
 	w.popup.updateFont(w.font)
 	w.message.updateFont(w.font)
 	w.screen.toolTipFont(w.font)
-	w.cursor.updateShape()
+	// w.cursor.updateShape()
 }
 
 func (w *Workspace) guiLinespace(args interface{}) {
@@ -1190,7 +1215,7 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	}
 	w.font.changeLineSpace(lineSpace)
 	w.updateSize()
-	w.cursor.updateShape()
+	// w.cursor.updateShape()
 }
 
 func (w *Workspace) detectTerminalMode() {
@@ -1243,6 +1268,9 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 	if query == core.Qt__ImCursorRectangle {
 		x, y, candX, candY := w.screen.toolTipPos()
 		w.screen.toolTipMove(x, y)
+		w.cursor.x = x
+		w.cursor.y = w.palette.patternPadding+w.cursor.shift
+		w.cursor.widget.Move2(w.cursor.x, w.cursor.y)
 		imrect := core.NewQRect()
 		imrect.SetRect(candX, candY, 1, w.font.lineHeight)
 

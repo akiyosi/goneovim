@@ -125,8 +125,8 @@ type StatuslineMode struct {
 	mode string
 	text string
 
-	fg   *RGBA
-	bg   *RGBA
+	fg *RGBA
+	bg *RGBA
 
 	c *StatuslineComponent
 }
@@ -631,7 +631,7 @@ func (s *StatuslineMode) updateStatusline() {
 
 func (s *StatuslineMode) redraw() {
 	iconColor := warpColor(s.fg, 10)
-	isSkipUpdateColor := ! (warpColor(s.s.ws.foreground, 10).equals(iconColor))
+	isSkipUpdateColor := !(warpColor(s.s.ws.foreground, 10).equals(iconColor))
 	if s.s.ws.mode == s.mode && isSkipUpdateColor {
 		return
 	}

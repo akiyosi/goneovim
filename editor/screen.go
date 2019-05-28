@@ -21,28 +21,28 @@ type gridId = int
 
 // Window is
 type Window struct {
-	paintMutex       sync.Mutex
-	redrawMutex      sync.Mutex
+	paintMutex  sync.Mutex
+	redrawMutex sync.Mutex
 
-	s                *Screen
-	content          [][]*Char
-	colorContent     [][]*RGBA
+	s            *Screen
+	content      [][]*Char
+	colorContent [][]*RGBA
 
-	id         nvim.Window
-	pos        [2]int
-	anchor     int
-	cols       int
-	rows       int
+	id     nvim.Window
+	pos    [2]int
+	anchor int
+	cols   int
+	rows   int
 
-	widget     *widgets.QWidget
-	queueRedrawArea  [4]int
-	scrollRegion     []int
+	widget          *widgets.QWidget
+	queueRedrawArea [4]int
+	scrollRegion    []int
 
-	// NOTE: 
+	// NOTE:
 	// Only use minimap
 	// Plan to remove in the future
-	width      int
-	height     int
+	width  int
+	height int
 }
 
 // Screen is the main editor area
@@ -103,7 +103,7 @@ func newScreen() *Screen {
 
 	// widget.SetAttribute(core.Qt__WA_KeyCompression, false)
 	// widget.SetAcceptDrops(true)
-        // 
+	//
 	// widget.ConnectDragEnterEvent(screen.dragEnterEvent)
 	// widget.ConnectDragMoveEvent(screen.dragMoveEvent)
 	// widget.ConnectDropEvent(screen.dropEvent)
@@ -383,11 +383,11 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	// color := gui.NewQColor3(200, 0, 0, 255)
 
 	// Vertical
-	if y + w.s.ws.font.lineHeight + 1 < w.s.widget.Height() {
+	if y+w.s.ws.font.lineHeight+1 < w.s.widget.Height() {
 		// separetor
 		p.FillRect5(
 			int(float64(x+width)+w.s.ws.font.truewidth/2),
-			y - int(w.s.ws.font.lineHeight/2),
+			y-int(w.s.ws.font.lineHeight/2),
 			1,
 			winHeight, //w.widget.Height(),
 			color,
@@ -396,14 +396,14 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 
 	// Horizontal
 	height := w.rows * int(w.s.ws.font.lineHeight)
-	y2 := y+height-1+w.s.ws.font.lineHeight/2
-	if y2 + w.s.ws.font.lineHeight + w.s.ws.font.lineHeight/2 > w.s.widget.Height() {
+	y2 := y + height - 1 + w.s.ws.font.lineHeight/2
+	if y2+w.s.ws.font.lineHeight+w.s.ws.font.lineHeight/2 > w.s.widget.Height() {
 		return
 	}
 	p.FillRect5(
 		int(float64(x)-w.s.ws.font.truewidth/2),
 		y2,
-		int((float64(w.cols) + 0.92) * w.s.ws.font.truewidth),
+		int((float64(w.cols)+0.92)*w.s.ws.font.truewidth),
 		1,
 		color,
 	)
@@ -672,6 +672,9 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
+
+		s.ws.cursor.gridid = gridid
+
 		if s.windows[gridid] != nil {
 			s.windows[gridid].raise()
 		}
@@ -762,9 +765,17 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.background = s.ws.background
 	}
 
+	// for default cursor color
+	if highlight.hiName == "Cursor" {
+		idITF, ok := info["id"]
+		if ok {
+			id := util.ReflectToInt(idITF)
+			s.ws.cursor.defaultColorId = id
+		}
+	}
+
 	return &highlight
 }
-
 
 func (s *Screen) gridClear(args []interface{}) {
 	var gridid gridId
@@ -804,12 +815,13 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	row := util.ReflectToInt(arg[1])
 	col := util.ReflectToInt(arg[2])
 
-
 	if isSkipGlobalId(gridid) {
 		return
 	}
 
-	s.activeGrid = gridid
+	if gridid != 1 {
+		s.activeGrid = gridid
+	}
 
 	content := s.windows[gridid].content
 	if row >= s.windows[gridid].rows {
@@ -821,17 +833,17 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	oldNormalWidth := true
 	lastChar := &Char{}
 
- 	for _, arg := range cells {
- 		if col >= len(line) {
- 			continue
- 		}
+	for _, arg := range cells {
+		if col >= len(line) {
+			continue
+		}
 		cell := arg.([]interface{})
 
 		var hi, repeat int
 		hi = -1
- 		text := cell[0]
+		text := cell[0]
 		if len(cell) >= 2 {
- 			hi = util.ReflectToInt(cell[1])
+			hi = util.ReflectToInt(cell[1])
 		}
 
 		// if drawborder is true, and row is statusline's row
@@ -840,14 +852,14 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		}
 
 		if len(cell) == 3 {
- 			repeat = util.ReflectToInt(cell[2])
+			repeat = util.ReflectToInt(cell[2])
 		}
 
 		makeCells := func() {
 			if line[col] != nil && !line[col].normalWidth {
- 			 	oldNormalWidth = false
+				oldNormalWidth = false
 			} else {
- 			 	oldNormalWidth = true
+				oldNormalWidth = true
 			}
 
 			if line[col] == nil {
@@ -871,12 +883,12 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			col++
 			numChars++
 
- 			if lastChar != nil && !lastChar.normalWidth {
- 				numChars++
- 			}
- 			if !oldNormalWidth {
- 				numChars++
- 			}
+			if lastChar != nil && !lastChar.normalWidth {
+				numChars++
+			}
+			if !oldNormalWidth {
+				numChars++
+			}
 		} // end of makeCells()
 
 		r := 1
@@ -884,17 +896,16 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			repeat = 1
 		}
 		for r <= repeat {
- 			if col >= len(line) {
- 				break
- 			}
+			if col >= len(line) {
+				break
+			}
 			makeCells()
 			r++
 		}
 		s.windows[gridid].queueRedraw(0, row, s.windows[gridid].cols, 1)
- 	}
+	}
 	return
 }
-
 
 func (s *Screen) isSkipDrawStatusline(hi int) bool {
 	// If ext_statusline is implemented in Neovim, the implementation may be revised
@@ -905,8 +916,8 @@ func (s *Screen) isSkipDrawStatusline(hi int) bool {
 		return false
 	}
 	if s.highAttrDef[hi].hiName == "StatusLine" ||
-	   s.highAttrDef[hi].hiName == "StatusLineNC" || 
-	   s.highAttrDef[hi].hiName == "VertSplit" {
+		s.highAttrDef[hi].hiName == "StatusLineNC" ||
+		s.highAttrDef[hi].hiName == "VertSplit" {
 		return true
 	}
 	return false
@@ -920,10 +931,10 @@ func (s *Screen) gridScroll(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		s.windows[gridid].scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])      // top
-		s.windows[gridid].scrollRegion[1] = util.ReflectToInt(arg.([]interface{})[2]) - 1  // bot
-		s.windows[gridid].scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3])      // left
-		s.windows[gridid].scrollRegion[3] = util.ReflectToInt(arg.([]interface{})[4]) - 1  // right
+		s.windows[gridid].scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])     // top
+		s.windows[gridid].scrollRegion[1] = util.ReflectToInt(arg.([]interface{})[2]) - 1 // bot
+		s.windows[gridid].scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3])     // left
+		s.windows[gridid].scrollRegion[3] = util.ReflectToInt(arg.([]interface{})[4]) - 1 // right
 		rows = util.ReflectToInt(arg.([]interface{})[5])
 		s.windows[gridid].scroll(rows)
 	}
@@ -950,12 +961,12 @@ func (w *Window) scroll(count int) {
 		for row := top; row <= bot-count; row++ {
 			for col := left; col <= right; col++ {
 				if len(content) <= row+count {
-				        continue
+					continue
 				}
 				for _, line := range content {
-				        if len(line) <= col {
-				                continue
-				        }
+					if len(line) <= col {
+						continue
+					}
 				}
 				content[row][col] = content[row+count][col]
 			}
@@ -963,12 +974,12 @@ func (w *Window) scroll(count int) {
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
 				if len(content) <= row {
-				        continue
+					continue
 				}
 				for _, line := range content {
-				        if len(line) <= col {
-				                continue
-				        }
+					if len(line) <= col {
+						continue
+					}
 				}
 				content[row][col] = nil
 			}
@@ -981,12 +992,12 @@ func (w *Window) scroll(count int) {
 		for row := bot; row >= top-count; row-- {
 			for col := left; col <= right; col++ {
 				if len(content) <= row {
-				        continue
+					continue
 				}
 				for _, line := range content {
-				        if len(line) <= col {
-				                continue
-				        }
+					if len(line) <= col {
+						continue
+					}
 				}
 				content[row][col] = content[row+count][col]
 			}
@@ -994,12 +1005,12 @@ func (w *Window) scroll(count int) {
 		for row := top; row < top-count; row++ {
 			for col := left; col <= right; col++ {
 				if len(content) <= row {
-				        continue
+					continue
 				}
 				for _, line := range content {
-				        if len(line) <= col {
-				                continue
-				        }
+					if len(line) <= col {
+						continue
+					}
 				}
 				content[row][col] = nil
 			}
@@ -1018,7 +1029,7 @@ func (w *Window) update() {
 
 	x := int(float64(w.queueRedrawArea[0]) * w.s.ws.font.truewidth)
 	y := w.queueRedrawArea[1] * w.s.ws.font.lineHeight
-	width := int(float64(w.queueRedrawArea[2] - w.queueRedrawArea[0]) * w.s.ws.font.truewidth)
+	width := int(float64(w.queueRedrawArea[2]-w.queueRedrawArea[0]) * w.s.ws.font.truewidth)
 	height := (w.queueRedrawArea[3] - w.queueRedrawArea[1]) * w.s.ws.font.lineHeight
 
 	if width > 0 && height > 0 {
@@ -1117,9 +1128,9 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 				} else {
 					// last bg is different; draw the previous and start a new one
 					rectF.SetRect(
-						float64(start-pos[1]) * font.truewidth,
-						float64((y-pos[0]) * font.lineHeight),
-						float64(end-start+1) * font.truewidth,
+						float64(start-pos[1])*font.truewidth,
+						float64((y-pos[0])*font.lineHeight),
+						float64(end-start+1)*font.truewidth,
 						float64(font.lineHeight),
 					)
 					p.FillRect(
@@ -1136,9 +1147,9 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 		} else {
 			if lastBg != nil {
 				rectF.SetRect(
-					float64(start-pos[1]) * font.truewidth,
-					float64((y-pos[0]) * font.lineHeight),
-					float64(end-start+1) * font.truewidth,
+					float64(start-pos[1])*font.truewidth,
+					float64((y-pos[0])*font.lineHeight),
+					float64(end-start+1)*font.truewidth,
 					float64(font.lineHeight),
 				)
 				p.FillRect(
@@ -1156,9 +1167,9 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 	}
 	if lastBg != nil {
 		rectF.SetRect(
-			float64(start-pos[1]) * font.truewidth,
-			float64((y-pos[0]) * font.lineHeight),
-			float64(end-start+1) * font.truewidth,
+			float64(start-pos[1])*font.truewidth,
+			float64((y-pos[0])*font.lineHeight),
+			float64(end-start+1)*font.truewidth,
 			float64(font.lineHeight),
 		)
 		p.FillRect(
@@ -1246,7 +1257,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 				p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 			}
 			pointF.SetX(float64(col-pos[1]) * wsfont.truewidth)
-			pointF.SetY(float64((y-pos[0]) * wsfont.lineHeight + wsfont.shift))
+			pointF.SetY(float64((y-pos[0])*wsfont.lineHeight + wsfont.shift))
 			font.SetBold(highlight.bold)
 			font.SetItalic(highlight.italic)
 			p.DrawText(pointF, text)
@@ -1264,7 +1275,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 		}
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 		pointF.SetX(float64(x-pos[1]) * wsfont.truewidth)
-		pointF.SetY(float64((y-pos[0]) * wsfont.lineHeight + wsfont.shift))
+		pointF.SetY(float64((y-pos[0])*wsfont.lineHeight + wsfont.shift))
 		font.SetBold(char.highlight.bold)
 		font.SetItalic(char.highlight.italic)
 		p.DrawText(pointF, char.char)
@@ -1288,7 +1299,7 @@ func newWindow() *Window {
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
 	w := &Window{
-		widget: widget,
+		widget:       widget,
 		scrollRegion: []int{0, 0, 0, 0},
 	}
 
@@ -1396,6 +1407,8 @@ func (w *Window) raise() {
 	w.s.ws.loc.widget.SetParent(w.widget)
 	w.s.ws.signature.widget.SetParent(w.widget)
 	w.s.ws.cursor.widget.SetParent(w.widget)
+	w.s.ws.cursor.widget.Hide()
+	w.s.ws.cursor.widget.Show()
 }
 
 func (w *Window) move(col int, row int) {

@@ -2,8 +2,8 @@ package editor
 
 import (
 	"errors"
-	"strconv"
 	"fmt"
+	"strconv"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -171,7 +171,7 @@ func (p *PopupMenu) setPumblend(arg interface{}) {
 	default:
 		return
 	}
-	alpha := float64(100 - pumblend) / float64(100)
+	alpha := float64(100-pumblend) / float64(100)
 	if alpha < 0 {
 		alpha = 0
 	}

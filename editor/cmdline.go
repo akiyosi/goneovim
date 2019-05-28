@@ -141,6 +141,13 @@ func (c *Cmdline) hide(args []interface{}) {
 	}
 	c.preContent = c.content
 	c.content = &CmdContent{}
+	// Move cursor into window
+	win := c.ws.screen.windows[c.ws.cursor.gridid]
+	if win != nil {
+		c.ws.cursor.widget.SetParent(win.widget)
+		c.ws.cursor.widget.Hide()
+		c.ws.cursor.widget.Show()
+	}
 }
 
 func (c *Cmdline) functionShow() {
