@@ -109,10 +109,10 @@ func initPalette() *Palette {
 	patternWidget.SetLayout(patternLayout)
 	patternWidget.SetContentsMargins(padding, padding, padding, padding)
 
-	cursor := widgets.NewQWidget(nil, 0)
-	cursor.SetParent(pattern)
-	cursor.SetFixedSize2(1, pattern.SizeHint().Height()-padding*2)
-	cursor.Move2(padding, padding)
+	// cursor := widgets.NewQWidget(nil, 0)
+	// cursor.SetParent(pattern)
+	// cursor.SetFixedSize2(1, pattern.SizeHint().Height()-padding*2)
+	// cursor.Move2(padding, padding)
 
 	mainLayout.AddWidget(patternWidget, 0, 0)
 	mainLayout.AddWidget(resultMainWidget, 0, 0)
@@ -127,7 +127,7 @@ func initPalette() *Palette {
 		patternWidget:    patternWidget,
 		scrollCol:        scrollCol,
 		scrollBar:        scrollBar,
-		cursor:           cursor,
+		// cursor:           cursor,
 	}
 
 	resultItems := []*PaletteResultItem{}
@@ -171,7 +171,7 @@ func (p *Palette) setColor() {
 	// inputArea := editor.colors.widgetInputArea
 	inactiveFg := editor.colors.inactiveFg
 	transparent := transparent() * transparent()
-	p.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", fg))
+	// p.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", fg))
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg.R, bg.G, bg.B, transparent, fg))
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inactiveFg.R, inactiveFg.G, inactiveFg.B, transparent))
 	if transparent < 1.0 {
@@ -194,7 +194,8 @@ func (p *Palette) resize() {
 
 	padding := 8
 	p.width = int(math.Trunc(float64(editor.width) * 0.7))
-	cursorBoundary := p.cursor.Pos().X() + 35
+	// cursorBoundary := p.cursor.Pos().X() + 35
+	cursorBoundary := p.ws.cursor.widget.Pos().X() + 35
 
 	if cursorBoundary > p.width {
 		p.width = cursorBoundary
@@ -260,7 +261,11 @@ func (p *Palette) cursorMove(x int) {
 	//p.cursorX = int(p.ws.font.defaultFontMetrics.Width(string(p.patternText[:x])))
 	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
 	p.cursorX = int(font.HorizontalAdvance(string(p.patternText[:x]), -1))
-	p.cursor.Move2(p.cursorX+p.patternPadding, p.patternPadding)
+	// p.cursor.Move2(p.cursorX+p.patternPadding, p.patternPadding)
+	p.ws.cursor.x = p.cursorX+p.patternPadding
+	p.ws.cursor.y = p.patternPadding+p.ws.cursor.shift
+	p.ws.cursor.widget.Move2(p.ws.cursor.x, p.ws.cursor.y)
+	p.ws.cursor.widget.SetParent(p.pattern)
 }
 
 func (p *Palette) showSelected(selected int) {

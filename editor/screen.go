@@ -672,6 +672,9 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
+
+		s.ws.cursor.gridid = gridid
+
 		if s.windows[gridid] != nil {
 			s.windows[gridid].raise()
 		}
@@ -816,7 +819,9 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		return
 	}
 
-	s.activeGrid = gridid
+	if gridid != 1 {
+		s.activeGrid = gridid
+	}
 
 	content := s.windows[gridid].content
 	if row >= s.windows[gridid].rows {
@@ -1402,6 +1407,8 @@ func (w *Window) raise() {
 	w.s.ws.loc.widget.SetParent(w.widget)
 	w.s.ws.signature.widget.SetParent(w.widget)
 	w.s.ws.cursor.widget.SetParent(w.widget)
+	w.s.ws.cursor.widget.Hide()
+	w.s.ws.cursor.widget.Show()
 }
 
 func (w *Window) move(col int, row int) {

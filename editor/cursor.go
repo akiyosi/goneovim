@@ -18,6 +18,7 @@ type Cursor struct {
 	y              int
 	currAttrId     int
 	defaultColorId int
+	gridid         int
 	shift          int
 	isShut         bool
 	timer          *core.QTimer
