@@ -1193,7 +1193,7 @@ func (w *Workspace) guiFont(args string) {
 	w.popup.updateFont(w.font)
 	w.message.updateFont(w.font)
 	w.screen.toolTipFont(w.font)
-	// w.cursor.updateShape()
+	w.cursor.widget.SetFont(w.font.fontNew)
 }
 
 func (w *Workspace) guiLinespace(args interface{}) {

@@ -11,11 +11,14 @@ import (
 // Cursor is
 type Cursor struct {
 	ws             *Workspace
-	widget         *widgets.QWidget
+	//widget         *widgets.QWidget
+	widget          *widgets.QLabel
 	mode           string
 	modeIdx        int
 	x              int
 	y              int
+	row            int
+	col            int
 	currAttrId     int
 	defaultColorId int
 	gridid         int
@@ -26,7 +29,9 @@ type Cursor struct {
 }
 
 func initCursorNew() *Cursor {
-	widget := widgets.NewQWidget(nil, 0)
+	// widget := widgets.NewQWidget(nil, 0)
+	widget := widgets.NewQLabel(nil, 0)
+	widget.SetContentsMargins(0, 0, 0, 0)
 	cursor := &Cursor{
 		widget: widget,
 		timer:  core.NewQTimer(nil),
@@ -36,14 +41,18 @@ func initCursorNew() *Cursor {
 }
 
 func (c *Cursor) setBlink(wait, on, off int) {
-	bgcolor := c.ws.screen.highAttrDef[c.currAttrId].background
+	bg:= c.ws.screen.highAttrDef[c.currAttrId].background
+	fg := c.ws.screen.highAttrDef[c.currAttrId].foreground
 	c.timer.DisconnectTimeout()
 	if wait == 0 || on == 0 || off == 0 {
 		c.widget.SetStyleSheet(fmt.Sprintf(
-			"background-color: rgba(%d, %d, %d, 0.8)",
-			bgcolor.R,
-			bgcolor.G,
-			bgcolor.B,
+			"background-color: rgba(%d, %d, %d, 0.8); color: rgba(%d, %d, %d, 1);",
+			bg.R,
+			bg.G,
+			bg.B,
+			fg.R,
+			fg.G,
+			fg.B,
 		))
 		return
 	}
@@ -58,10 +67,14 @@ func (c *Cursor) setBlink(wait, on, off int) {
 			c.isShut = false
 		}
 		c.widget.SetStyleSheet(fmt.Sprintf(
-			"background-color: rgba(%d, %d, %d, %f)",
-			bgcolor.R,
-			bgcolor.G,
-			bgcolor.B,
+			"background-color: rgba(%d, %d, %d, %f); color: rgba(%d, %d, %d, %f);",
+			bg.R,
+			bg.G,
+			bg.B,
+			alpha,
+			fg.R,
+			fg.G,
+			fg.B,
 			alpha,
 		))
 	})
@@ -130,13 +143,15 @@ func (c *Cursor) updateCursorShape() {
 		c.currAttrId = attrId
 	}
 
-	var bgcolor *RGBA
+	var bg, fg *RGBA
 	if attrId != 0 {
-		bgcolor = c.ws.screen.highAttrDef[attrId].background
+		bg= c.ws.screen.highAttrDef[attrId].background
+		fg= c.ws.screen.highAttrDef[attrId].foreground
 	} else {
-		bgcolor = c.ws.screen.highAttrDef[c.defaultColorId].background
+		bg= c.ws.screen.highAttrDef[c.defaultColorId].background
+		fg= c.ws.screen.highAttrDef[c.defaultColorId].foreground
 	}
-	if bgcolor == nil {
+	if bg== nil {
 		return
 	}
 
@@ -156,18 +171,55 @@ func (c *Cursor) updateCursorShape() {
 	c.setBlink(blinkWait, blinkOn, blinkOff)
 
 	c.widget.Resize2(width, height)
-	c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.8)", bgcolor.R, bgcolor.G, bgcolor.B))
+	c.widget.SetStyleSheet(fmt.Sprintf(
+		"background-color: rgba(%d, %d, %d, 0.8); color: rgba(%d, %d, %d, 1.0)",
+		bg.R,
+		bg.G,
+		bg.B,
+		fg.R,
+		fg.G,
+		fg.B,
+	))
 }
 
 func (c *Cursor) update() {
 	c.updateCursorShape()
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
-	x2 := int(float64(col) * c.ws.font.truewidth)
-	y2 := row*c.ws.font.lineHeight + c.shift
-	if c.x != x2 || c.y != y2 {
-		c.x = x2
-		c.y = y2
+	if c.row != row || c.col != col {
+		c.row = row
+		c.col = col
+		x := int(float64(col) * c.ws.font.truewidth)
+		y := row*c.ws.font.lineHeight + c.shift
+		c.x = x
+		c.y = y
 		c.move()
+		c.paint()
 	}
 }
+
+func (c *Cursor) paint() {
+
+	win := c.ws.screen.windows[c.gridid]
+	if win == nil ||
+	win.content == nil {
+		return
+	}
+
+	text := ""
+	y := c.ws.screen.cursor[1]
+	x := c.ws.screen.cursor[0]
+
+	if x >= len(win.content) ||
+	y >= len(win.content[0]) ||
+	win.content[x][y] == nil ||
+	win.content[x][y].char == "" ||
+	c.ws.palette.widget.IsVisible() {
+	} else {
+		text = win.content[x][y].char
+	}
+
+	c.widget.SetText(text)
+	return
+}
+
