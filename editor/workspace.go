@@ -1268,11 +1268,14 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 	if query == core.Qt__ImCursorRectangle {
 		x, y, candX, candY := w.screen.toolTipPos()
 		w.screen.toolTipMove(x, y)
-		w.cursor.x = x
-		w.cursor.y = w.palette.patternPadding+w.cursor.shift
-		w.cursor.widget.Move2(w.cursor.x, w.cursor.y)
 		imrect := core.NewQRect()
 		imrect.SetRect(candX, candY, 1, w.font.lineHeight)
+
+		if w.palette.widget.IsVisible() {
+			w.cursor.x = x
+			w.cursor.y = w.palette.patternPadding+w.cursor.shift
+			w.cursor.widget.Move2(w.cursor.x, w.cursor.y)
+		}
 
 		return core.NewQVariant33(imrect)
 	}
