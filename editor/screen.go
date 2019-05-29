@@ -26,7 +26,6 @@ type Window struct {
 
 	s            *Screen
 	content      [][]*Char
-	colorContent [][]*RGBA
 
 	id     nvim.Window
 	pos    [2]int
@@ -65,7 +64,6 @@ type Screen struct {
 	curtab           nvim.Tabpage
 	curWins          map[nvim.Window]*Window
 	content          [][]*Char
-	colorContent     [][]*RGBA
 	activeGrid       gridId
 	queueRedrawArea  [4]int
 	paintMutex       sync.Mutex
@@ -601,13 +599,9 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 	// make new size content
 	content := make([][]*Char, rows)
-	colorContent := make([][]*RGBA, rows)
 
 	for i := 0; i < rows; i++ {
 		content[i] = make([]*Char, cols)
-	}
-	for i := 0; i < rows; i++ {
-		colorContent[i] = make([]*RGBA, cols)
 	}
 
 	if win != nil && gridid != 1 {
@@ -620,17 +614,6 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 					continue
 				}
 				content[i][j] = win.content[i][j]
-			}
-		}
-		for i := 0; i < rows; i++ {
-			if i >= len(win.colorContent) {
-				continue
-			}
-			for j := 0; j < cols; j++ {
-				if j >= len(win.colorContent[i]) {
-					continue
-				}
-				colorContent[i][j] = win.colorContent[i][j]
 			}
 		}
 	}
@@ -650,7 +633,6 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	}
 
 	win.content = content
-	win.colorContent = colorContent
 	win.cols = cols
 	win.rows = rows
 
@@ -786,13 +768,9 @@ func (s *Screen) gridClear(args []interface{}) {
 		}
 
 		s.windows[gridid].content = make([][]*Char, s.windows[gridid].rows)
-		s.windows[gridid].colorContent = make([][]*RGBA, s.windows[gridid].rows)
 
 		for i := 0; i < s.windows[gridid].rows; i++ {
 			s.windows[gridid].content[i] = make([]*Char, s.windows[gridid].cols)
-		}
-		for i := 0; i < s.windows[gridid].rows; i++ {
-			s.windows[gridid].colorContent[i] = make([]*RGBA, s.windows[gridid].cols)
 		}
 		s.queueRedrawAll()
 	}
@@ -1097,7 +1075,6 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 	rectF := core.NewQRectF()
 	font := w.s.ws.font
 	line := w.content[y]
-	colorContent := w.colorContent[y]
 	start := -1
 	end := -1
 	var lastBg *RGBA
@@ -1107,7 +1084,6 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 		if x >= len(line) {
 			continue
 		}
-		colorContent[x] = bg
 		char := line[x]
 		if char != nil {
 			bg = char.highlight.background
