@@ -24,6 +24,7 @@ type Cursor struct {
 	isShut         bool
 	timer          *core.QTimer
 	color          *RGBA
+	isTextDraw     bool
 }
 
 func initCursorNew() *Cursor {
@@ -127,10 +128,17 @@ func (c *Cursor) updateCursorShape() {
 	case "horizontal":
 		height = int(float64(height) * p)
 		c.shift = int(float64(c.ws.font.lineHeight) * float64(1.0-p))
+		if cellPercentage < 99 {
+			c.isTextDraw = false
+		} else {
+			c.isTextDraw = true
+		}
 	case "vertical":
+		c.isTextDraw = true
 		width = int(float64(width) * p)
 		c.shift = 0
 	default:
+		c.isTextDraw = true
 		c.shift = 0
 	}
 
@@ -194,6 +202,9 @@ func (c *Cursor) update() {
 }
 
 func (c *Cursor) paint() {
+	if !c.isTextDraw {
+		return
+	}
 
 	win := c.ws.screen.windows[c.gridid]
 	if win == nil ||
