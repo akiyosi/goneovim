@@ -1273,7 +1273,7 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 
 		if w.palette.widget.IsVisible() {
 			w.cursor.x = x
-			w.cursor.y = w.palette.patternPadding+w.cursor.shift
+			w.cursor.y = w.palette.patternPadding + w.cursor.shift
 			w.cursor.widget.Move2(w.cursor.x, w.cursor.y)
 		}
 

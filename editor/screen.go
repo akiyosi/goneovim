@@ -24,8 +24,8 @@ type Window struct {
 	paintMutex  sync.Mutex
 	redrawMutex sync.Mutex
 
-	s            *Screen
-	content      [][]*Char
+	s       *Screen
+	content [][]*Char
 
 	id     nvim.Window
 	pos    [2]int

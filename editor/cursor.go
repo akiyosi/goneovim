@@ -10,15 +10,13 @@ import (
 
 // Cursor is
 type Cursor struct {
-	ws             *Workspace
+	ws *Workspace
 	//widget         *widgets.QWidget
-	widget          *widgets.QLabel
+	widget         *widgets.QLabel
 	mode           string
 	modeIdx        int
 	x              int
 	y              int
-	row            int
-	col            int
 	currAttrId     int
 	defaultColorId int
 	gridid         int
@@ -41,7 +39,7 @@ func initCursorNew() *Cursor {
 }
 
 func (c *Cursor) setBlink(wait, on, off int) {
-	bg:= c.ws.screen.highAttrDef[c.currAttrId].background
+	bg := c.ws.screen.highAttrDef[c.currAttrId].background
 	fg := c.ws.screen.highAttrDef[c.currAttrId].foreground
 	c.timer.DisconnectTimeout()
 	if wait == 0 || on == 0 || off == 0 {
@@ -145,13 +143,13 @@ func (c *Cursor) updateCursorShape() {
 
 	var bg, fg *RGBA
 	if attrId != 0 {
-		bg= c.ws.screen.highAttrDef[attrId].background
-		fg= c.ws.screen.highAttrDef[attrId].foreground
+		bg = c.ws.screen.highAttrDef[attrId].background
+		fg = c.ws.screen.highAttrDef[attrId].foreground
 	} else {
-		bg= c.ws.screen.highAttrDef[c.defaultColorId].background
-		fg= c.ws.screen.highAttrDef[c.defaultColorId].foreground
+		bg = c.ws.screen.highAttrDef[c.defaultColorId].background
+		fg = c.ws.screen.highAttrDef[c.defaultColorId].foreground
 	}
-	if bg== nil {
+	if bg == nil {
 		return
 	}
 
@@ -186,23 +184,20 @@ func (c *Cursor) update() {
 	c.updateCursorShape()
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
-	if c.row != row || c.col != col {
-		c.row = row
-		c.col = col
-		x := int(float64(col) * c.ws.font.truewidth)
-		y := row*c.ws.font.lineHeight + c.shift
-		c.x = x
-		c.y = y
-		c.move()
-		c.paint()
-	}
+	x := int(float64(col) * c.ws.font.truewidth)
+	y := row*c.ws.font.lineHeight + c.shift
+	c.x = x
+	c.y = y
+	c.move()
+	c.paint()
+
 }
 
 func (c *Cursor) paint() {
 
 	win := c.ws.screen.windows[c.gridid]
 	if win == nil ||
-	win.content == nil {
+		win.content == nil {
 		return
 	}
 
@@ -211,10 +206,10 @@ func (c *Cursor) paint() {
 	x := c.ws.screen.cursor[0]
 
 	if x >= len(win.content) ||
-	y >= len(win.content[0]) ||
-	win.content[x][y] == nil ||
-	win.content[x][y].char == "" ||
-	c.ws.palette.widget.IsVisible() {
+		y >= len(win.content[0]) ||
+		win.content[x][y] == nil ||
+		win.content[x][y].char == "" ||
+		c.ws.palette.widget.IsVisible() {
 	} else {
 		text = win.content[x][y].char
 	}
@@ -222,4 +217,3 @@ func (c *Cursor) paint() {
 	c.widget.SetText(text)
 	return
 }
-
