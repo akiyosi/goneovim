@@ -421,10 +421,10 @@ func (e *Editor) updateGUIColor() {
 	// if activity & sidebar is enabled
 	if e.activity != nil && e.wsSide != nil {
 		// for splitter
-		e.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", e.colors.sideBarBg.StringTransparent()))
+		e.splitter.SetStyleSheet(" QSplitter::handle:horizontal { background-color: rgba(0, 0, 0, 0); }")
 
 		// for Activity Bar
-		e.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; } ", e.colors.activityBarBg.StringTransparent()))
+		e.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); border-right: 1px solid %s}", editor.colors.windowSeparator.Hex()))
 
 		var svgEditContent string
 		if e.activity.editItem.active == true {

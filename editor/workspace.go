@@ -1445,11 +1445,10 @@ func (i *WorkspaceSideItem) setSideItemLabel(n int) {
 
 func (s *WorkspaceSide) setColor() {
 	fg := editor.colors.sideBarFg.String()
-	bg := editor.colors.sideBarBg.StringTransparent()
 	sfg := editor.colors.scrollBarFg.String()
 	sbg := editor.colors.scrollBarBg.StringTransparent()
 	s.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg))
-	s.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border-color: %s; padding-top: 5px; background-color: %s; } QWidget { color: %s; border-right: 0px solid; }", bg, bg, fg))
+	s.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 0px solid #000; padding-top: 5px; background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; border-right: 0px solid; }", fg))
 	s.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
 
 	if len(editor.workspaces) == 1 {
