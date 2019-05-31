@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"time"
+	"bytes"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/akiyosi/gonvim/util"
 )
+
+const DummyText = "dummy text"
 
 // Message is
 type Message struct {
@@ -32,6 +35,7 @@ type MessageItem struct {
 	kind    string
 	attrId  int
 	text    string
+	textLength int
 	hideAt  time.Time
 	expired bool
 	icon    *svg.QSvgWidget
@@ -53,7 +57,7 @@ func initMessage() *Message {
 		width:   width,
 		widget:  widget,
 		layout:  layout,
-		expires: 10,
+		expires: 6,
 	}
 
 	margin := 5
@@ -73,9 +77,10 @@ func initMessage() *Message {
 		l.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		l.SetContentsMargins(margin, margin, margin, margin)
 		l.SetWordWrap(true)
-		l.SetText("dummy text")
+		l.SetText(DummyText)
 		item := &MessageItem{
 			m:       m,
+			text:    DummyText,
 			label:   l,
 			icon:    icon,
 			widget:  w,
@@ -132,7 +137,14 @@ func (m *Message) setColor() {
 	fg := editor.colors.widgetFg.String()
 	bg := editor.colors.widgetBg
 	transparent := transparent()
-	m.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }", bg.R, bg.G, bg.B, transparent, fg))
+	m.widget.SetStyleSheet(fmt.Sprintf(
+		" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }",
+		bg.R,
+		bg.G,
+		bg.B,
+		transparent,
+		fg,
+	))
 }
 
 func (m *Message) updateFont(font *Font) {
@@ -180,7 +192,6 @@ func (m *Message) update() {
 			item.hide()
 		}
 	}
-	m.resize()
 }
 
 func (m *Message) resize() {
@@ -190,19 +201,18 @@ func (m *Message) resize() {
 	if m.ws.screen == nil {
 		return
 	}
+
+	var x, y int
 	m.width = m.ws.screen.widget.Width() / 3
 	ok := m.resizeMessages()
 	if !ok {
 		m.width = m.ws.screen.widget.Width() - m.ws.scrollBar.widget.Width() - 12
 		_ = m.resizeMessages()
 	}
-
 	m.widget.Resize2(m.width+editor.iconSize, 0)
-
-	var x, y int
 	if !ok {
 		x = 10
-		y = m.ws.screen.widget.Height() - m.widget.Height() - 10
+		y = m.ws.widget.Height() - m.ws.statusline.widget.Height() - m.widget.Height()
 	} else {
 		x = m.ws.width - m.width - editor.iconSize - m.ws.scrollBar.widget.Width() - 12
 		y = 6 + m.ws.tabline.widget.Height()
@@ -223,7 +233,7 @@ func (m *Message) resizeMessages() bool {
 		}
 
 		labelWidth := m.width - item.widget.Width()
-		messageWidth := int(width * float64(len(item.label.Text())))
+		messageWidth := int(width * float64(item.textLength))
 
 		if labelWidth < messageWidth {
 			ok = false
@@ -235,12 +245,15 @@ func (m *Message) resizeMessages() bool {
 
 func (m *Message) msgShow(args []interface{}) {
 	prevKind := ""
+
 	for _, arg := range args {
 		kind, ok := arg.([]interface{})[0].(string)
 		if !ok {
 			continue
 		}
-		text := ""
+		// text := ""
+		var buffer bytes.Buffer
+		length := 0
 		var attrId int
 		for _, tupple := range arg.([]interface{})[1].([]interface{}) {
 			chunk, ok := tupple.([]interface{})
@@ -258,7 +271,16 @@ func (m *Message) msgShow(args []interface{}) {
 			if !ok {
 				continue
 			}
-			text += msg
+			var color *RGBA
+			if m.ws.screen.highAttrDef[attrId] != nil {
+				color = (m.ws.screen.highAttrDef[attrId]).foreground
+			} else {
+				color = m.ws.foreground
+			}
+			formattedMsg := fmt.Sprintf("<font color='%s'>%s</font>", color.Hex(), msg)
+			// text += formattedMsg
+			buffer.WriteString(formattedMsg)
+			length += len(msg)
 		}
 
 		replaceLast := false
@@ -268,15 +290,15 @@ func (m *Message) msgShow(args []interface{}) {
 
 		if kind == prevKind {
 			// Do not show message icon if the same kind as the previous kind
-			m.makeMessage("_dup", attrId, text, replaceLast)
+			m.makeMessage("_dup", attrId, buffer.String(), length, replaceLast)
 		} else {
-			m.makeMessage(kind, attrId, text, replaceLast)
+			m.makeMessage(kind, attrId, buffer.String(), length, replaceLast)
 		}
 		prevKind = kind
 	}
 }
 
-func (m *Message) makeMessage(kind string, attrId int, text string, replaceLast bool) {
+func (m *Message) makeMessage(kind string, attrId int, text string, textLength int, replaceLast bool) {
 	defer m.resize()
 	if text == "" || text == "\n" || text == "\r\n" {
 		return
@@ -290,6 +312,7 @@ func (m *Message) makeMessage(kind string, attrId int, text string, replaceLast 
 	var item *MessageItem
 	allActive := true
 	for _, item = range m.items {
+		item.textLength = textLength
 		if !item.active {
 			allActive = false
 			break
@@ -300,7 +323,6 @@ func (m *Message) makeMessage(kind string, attrId int, text string, replaceLast 
 			m.items[i].copy(m.items[i+1])
 		}
 	}
-
 	if replaceLast {
 		for _, i := range m.items {
 			i.hide()
@@ -313,9 +335,11 @@ func (m *Message) makeMessage(kind string, attrId int, text string, replaceLast 
 	})
 	item.attrId = attrId
 	item.setKind(kind)
+	if item.text == DummyText {
+		item.show()
+	}
 	item.setText(text)
 	item.show()
-	// m.widget.Resize2(m.width+editor.iconSize, 0)
 }
 
 func (m *Message) msgClear() {
@@ -332,12 +356,11 @@ func (m *Message) msgHistoryShow(args []interface{}) {
 
 func (i *MessageItem) setText(text string) {
 	i.text = text
-	label := i.label
-	label.SetMinimumHeight(0)
-	label.SetText(text)
-	height := label.HeightForWidth(i.m.width)
-	label.SetMinimumHeight(height)
-	label.SetMaximumHeight(height)
+	i.label.SetMinimumHeight(0)
+	i.label.SetText(text)
+	height := i.label.HeightForWidth(i.m.width)
+	i.label.SetMinimumHeight(height)
+	i.label.SetMaximumHeight(height)
 	i.widget.SetMinimumHeight(height)
 	i.widget.SetMaximumHeight(height)
 	i.widget.SetFixedSize2(i.m.ws.font.height*5/3, i.m.ws.font.height*5/3)
@@ -377,7 +400,6 @@ func (i *MessageItem) show() {
 
 func (i *MessageItem) setKind(kind string) {
 	i.kind = kind
-	var style string
 	var color *RGBA
 	if i.m.ws == nil {
 		return
@@ -385,23 +407,17 @@ func (i *MessageItem) setKind(kind string) {
 	if i.m.ws.screen.highAttrDef[i.attrId] == nil {
 		return
 	}
+	color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
 	switch i.kind {
 	case "emsg", "echo", "echomsg", "echoerr", "return_prompt", "quickfix":
-		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
-		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
 		svgContent := editor.getSvg(i.kind, color)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "_dup":
-		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
-		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
 		// hide
 		svgContent := editor.getSvg("echo", editor.colors.widgetBg)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	default:
-		color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
-		style = fmt.Sprintf("* { border: 0px solid #000; background-color: rgba(0, 0, 0 ,0); color: %s;}", color.String())
 		svgContent := editor.getSvg("echo", color)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
-	i.label.SetStyleSheet(style)
 }
