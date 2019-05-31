@@ -39,13 +39,14 @@ func newActivity() *Activity {
 	activitySubLayout.SetSpacing(15)
 
 	// fg := editor.colors.fg
+	size := editor.iconSize
 
 	editLayout := widgets.NewQVBoxLayout()
-	editLayout.SetContentsMargins(12, 5, 12, 5)
+	editLayout.SetContentsMargins(size/3, size/3, size/3 + 5, size/3)
 	editLayout.SetSpacing(1)
 	editIcon := svg.NewQSvgWidget(nil)
-	editIcon.SetFixedWidth((editor.iconSize - 2) * 2)
-	editIcon.SetFixedHeight((editor.iconSize - 2) * 2)
+	editIcon.SetFixedWidth((size - 2) * 2)
+	editIcon.SetFixedHeight((size - 2) * 2)
 	svgContent := editor.getSvg("activityedit", nil)
 	editIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	editLayout.AddWidget(editIcon, 0, 0)
@@ -62,7 +63,7 @@ func newActivity() *Activity {
 	// bg := editor.colors.bg
 
 	deinLayout := widgets.NewQVBoxLayout()
-	deinLayout.SetContentsMargins(12, 5, 12, 5)
+	deinLayout.SetContentsMargins(size/3, size/3, size/3 + 5, size/3)
 	deinLayout.SetSpacing(1)
 	deinIcon := svg.NewQSvgWidget(nil)
 	deinIcon.SetFixedWidth((editor.iconSize - 2) * 2)

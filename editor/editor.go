@@ -215,6 +215,7 @@ func InitEditor() {
 	e.wsSide.scrollarea = sideArea
 
 	activityWidget := widgets.NewQWidget(nil, 0)
+	activityWidget.SetObjectName("Activity")
 	activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	activity := newActivity()
 	activity.widget = activityWidget
@@ -424,7 +425,8 @@ func (e *Editor) updateGUIColor() {
 		e.splitter.SetStyleSheet(" QSplitter::handle:horizontal { background-color: rgba(0, 0, 0, 0); }")
 
 		// for Activity Bar
-		e.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); border-right: 1px solid %s}", editor.colors.windowSeparator.Hex()))
+		e.activity.widget.SetStyleSheet(fmt.Sprintf("QWidget#Activity { background-color: rgba(0, 0, 0, 0); border-right: 1px solid %s}", editor.colors.windowSeparator.Hex()))
+		e.activity.sideArea.SetStyleSheet(fmt.Sprintf("* { background-color: rgba(0, 0, 0, 0); border-right: 1px solid %s}", editor.colors.windowSeparator.Hex()))
 
 		var svgEditContent string
 		if e.activity.editItem.active == true {

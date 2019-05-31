@@ -699,11 +699,21 @@ func newDeinSide() *DeinSide {
 	configIcon.ConnectLeaveEvent(side.leaveConfigIcon)
 	configIcon.ConnectMousePressEvent(side.pressConfigIcon)
 
-	deinSideStyle := fmt.Sprintf("QWidget {	color: %s; border-right: 0px solid; }", editor.colors.comment.String())
-	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget {padding-top: 5px; background-color: %s; }", editor.colors.sideBarBg.StringTransparent()) + deinSideStyle)
-	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid %s; border-radius: 1px; background: %s; selection-background-color: %s; color: %s; }", editor.config.SideBar.AccentColor, editor.colors.sideBarBg.StringTransparent(), editor.colors.sideBarSelectedItemBg.StringTransparent(), editor.colors.fg.String()) + deinSideStyle)
+	side.setColor()
 
 	return side
+}
+
+func (side *DeinSide) setColor() {
+	if side == nil {
+		return
+	}
+	deinSideStyle := fmt.Sprintf("QWidget {	color: %s; border-right: 0px solid; }", editor.colors.comment.String())
+	side.widget.SetStyleSheet(
+		fmt.Sprintf(
+			".QWidget {padding-top: 5px; background-color: rgba(0, 0, 0, 0); }",
+		) + deinSideStyle)
+	side.searchbox.editBox.SetStyleSheet(fmt.Sprintf(".QLineEdit { border: 1px solid %s; border-radius: 1px; background: %s; selection-background-color: %s; color: %s; }", editor.config.SideBar.AccentColor, editor.colors.sideBarBg.StringTransparent(), editor.colors.sideBarSelectedItemBg.StringTransparent(), editor.colors.fg.String()) + deinSideStyle)
 }
 
 func readDeinToml() ([]byte, DeinTomlConfig) {
