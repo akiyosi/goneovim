@@ -374,9 +374,9 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	width := int(float64(w.cols) * w.s.ws.font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(w.s.ws.font.lineHeight))
 	color := gui.NewQColor3(
-		editor.colors.scrollBarFg.R,
-		editor.colors.scrollBarFg.G,
-		editor.colors.scrollBarFg.B,
+		editor.colors.windowSeparator.R,
+		editor.colors.windowSeparator.G,
+		editor.colors.windowSeparator.B,
 		255)
 	// // color for debug
 	// color := gui.NewQColor3(200, 0, 0, 255)

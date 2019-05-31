@@ -66,6 +66,7 @@ type ColorPalette struct {
 	widgetBg              *RGBA
 	widgetInputArea       *RGBA
 	minimapCurrentRegion  *RGBA
+	windowSeparator       *RGBA
 }
 
 // Notify is
@@ -413,6 +414,7 @@ func (c *ColorPalette) update() {
 	c.widgetBg = warpColor(bg, -10)
 	c.widgetInputArea = warpColor(bg, -30)
 	c.minimapCurrentRegion = warpColor(bg, 20)
+	c.windowSeparator = warpColor(bg, -40)
 }
 
 func (e *Editor) updateGUIColor() {
