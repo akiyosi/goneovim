@@ -1,9 +1,9 @@
 package editor
 
 import (
+	"bytes"
 	"fmt"
 	"time"
-	"bytes"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -30,17 +30,17 @@ type Message struct {
 
 // MessageItem is
 type MessageItem struct {
-	m       *Message
-	active  bool
-	kind    string
-	attrId  int
-	text    string
+	m          *Message
+	active     bool
+	kind       string
+	attrId     int
+	text       string
 	textLength int
-	hideAt  time.Time
-	expired bool
-	icon    *svg.QSvgWidget
-	label   *widgets.QLabel
-	widget  *widgets.QWidget
+	hideAt     time.Time
+	expired    bool
+	icon       *svg.QSvgWidget
+	label      *widgets.QLabel
+	widget     *widgets.QWidget
 }
 
 func initMessage() *Message {

@@ -846,25 +846,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "win_close":
 			s.windowClose(args)
 
-		// case "cursor_goto":
-		//	s.cursorGoto(args)
-		//	doMinimapScroll = true
-		// case "put":
-		// 	s.put(args)
-		// case "eol_clear":
-		// 	s.eolClear(args)
-		// case "clear":
-		// 	s.clear(args)
-		// case "resize":
-		// 	s.resize(args)
-		// case "highlight_set":
-		// 	s.highlightSet(args)
-		// case "set_scroll_region":
-		// 	s.setScrollRegion(args)
-		// case "scroll":
-		// 	//s.scroll(args)
-		// 	doMinimapScroll = true
-
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)

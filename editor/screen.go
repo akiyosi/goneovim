@@ -1,13 +1,13 @@
 package editor
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
-	"bytes"
 	"unsafe"
 
 	"github.com/neovim/go-client/nvim"
@@ -95,17 +95,9 @@ func newScreen() *Screen {
 	widget.ConnectMousePressEvent(screen.mouseEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
-	// widget.ConnectWheelEvent(screen.wheelEvent)
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		screen.updateSize()
 	})
-
-	// widget.SetAttribute(core.Qt__WA_KeyCompression, false)
-	// widget.SetAcceptDrops(true)
-	//
-	// widget.ConnectDragEnterEvent(screen.dragEnterEvent)
-	// widget.ConnectDragMoveEvent(screen.dragMoveEvent)
-	// widget.ConnectDropEvent(screen.dropEvent)
 
 	return screen
 }
@@ -318,17 +310,19 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	defer w.paintMutex.Unlock()
 
 	rect := event.M_rect()
-	font := w.s.ws.font
 	top := rect.Y()
 	left := rect.X()
 	width := rect.Width()
 	height := rect.Height()
+
+	font := w.s.ws.font
 	row := int(float64(top) / float64(font.lineHeight))
 	col := int(float64(left) / font.truewidth)
 	rows := w.rows
 	cols := w.cols
 
 	p := gui.NewQPainter2(w.widget)
+	p.SetFont(font.fontNew)
 	p.SetBackgroundMode(core.Qt__TransparentMode)
 	bg := w.s.ws.background
 	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
@@ -344,8 +338,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 			gui.NewQBrush3(gui.NewQColor3(bg.R, bg.G, bg.B, transparent), core.Qt__SolidPattern),
 		)
 	}
-
-	p.SetFont(font.fontNew)
 
 	for y := row; y < row+rows; y++ {
 		if y >= w.rows {
@@ -644,7 +636,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win.move(win.pos[0], win.pos[1])
 	win.raise()
 
-	s.queueRedrawAll()
+	win.queueRedrawAll()
 }
 
 func (s *Screen) gridCursorGoto(args []interface{}) {
@@ -773,7 +765,7 @@ func (s *Screen) gridClear(args []interface{}) {
 		for i := 0; i < s.windows[gridid].rows; i++ {
 			s.windows[gridid].content[i] = make([]*Char, s.windows[gridid].cols)
 		}
-		s.queueRedrawAll()
+		s.windows[gridid].queueRedrawAll()
 	}
 }
 
@@ -1005,6 +997,9 @@ func (w *Window) update() {
 	if w == nil {
 		return
 	}
+	if w.queueRedrawArea[2] == 0 || w.queueRedrawArea[3] == 0 {
+		return
+	}
 
 	x := int(float64(w.queueRedrawArea[0]) * w.s.ws.font.truewidth)
 	y := w.queueRedrawArea[1] * w.s.ws.font.lineHeight
@@ -1034,13 +1029,13 @@ func (s *Screen) update() {
 	}
 }
 
-func (s *Screen) queueRedrawAll() {
-	s.queueRedrawArea = [4]int{0, 0, s.ws.cols, s.ws.rows}
+func (w *Window) queueRedrawAll() {
+	w.queueRedrawArea = [4]int{0, 0, w.cols, w.rows}
 }
 
-func (s *Screen) redraw() {
-	s.queueRedrawArea = [4]int{s.ws.cols, s.ws.rows, 0, 0}
-}
+// func (w *Window) redraw() {
+// 	w.queueRedrawArea = [4]int{w.cols, w.rows, 0, 0}
+// }
 
 func (w *Window) queueRedraw(x, y, width, height int) {
 	if x < w.queueRedrawArea[0] {
@@ -1309,6 +1304,7 @@ func (s *Screen) windowPosition(args []interface{}) {
 		}
 
 		win.id = *(*nvim.Window)(unsafe.Pointer(&id))
+
 		win.pos[0] = startCol
 		win.pos[1] = startRow
 		win.move(startCol, startRow)

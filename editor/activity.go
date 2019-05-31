@@ -30,7 +30,7 @@ type ActivityItem struct {
 
 func newActivity() *Activity {
 	activityLayout := widgets.NewQVBoxLayout()
-	activityLayout.SetContentsMargins(1, 10, 0, 0)
+	activityLayout.SetContentsMargins(0, 10, 0, 0)
 	activityLayout.SetSpacing(1)
 
 	activitySubLayout := widgets.NewQVBoxLayout()
@@ -42,7 +42,7 @@ func newActivity() *Activity {
 	size := editor.iconSize
 
 	editLayout := widgets.NewQVBoxLayout()
-	editLayout.SetContentsMargins(size/3, size/3, size/3 + 5, size/3)
+	editLayout.SetContentsMargins(size/3-1, size/3, size/3+5, size/3)
 	editLayout.SetSpacing(1)
 	editIcon := svg.NewQSvgWidget(nil)
 	editIcon.SetFixedWidth((size - 2) * 2)
@@ -63,7 +63,7 @@ func newActivity() *Activity {
 	// bg := editor.colors.bg
 
 	deinLayout := widgets.NewQVBoxLayout()
-	deinLayout.SetContentsMargins(size/3, size/3, size/3 + 5, size/3)
+	deinLayout.SetContentsMargins(size/3-1, size/3, size/3+5, size/3)
 	deinLayout.SetSpacing(1)
 	deinIcon := svg.NewQSvgWidget(nil)
 	deinIcon.SetFixedWidth((editor.iconSize - 2) * 2)
