@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"bytes"
 	"unsafe"
 
 	"github.com/neovim/go-client/nvim"
@@ -1167,15 +1168,17 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 	line := w.content[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
-	if col > 0 && len(line) >= col {
-		char := line[col-1]
-		if char != nil && char.char != "" {
-			if !char.normalWidth {
-				col--
-				cols++
-			}
-		}
-	}
+
+	// if col > 0 && len(line) >= col {
+	// 	char := line[col-1]
+	// 	if char != nil && char.char != "" {
+	// 		if !char.normalWidth {
+	// 			col--
+	// 			cols++
+	// 		}
+	// 	}
+	// }
+
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -1210,8 +1213,9 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 		colorSlice = append(colorSlice, x)
 		chars[highlight] = colorSlice
 	}
+
 	for highlight, colorSlice := range chars {
-		text := ""
+		var buffer bytes.Buffer
 		slice := colorSlice[:]
 		for x := col; x < col+cols; x++ {
 			if len(slice) == 0 {
@@ -1219,14 +1223,16 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 			}
 			index := slice[0]
 			if x < index {
-				text += " "
+				buffer.WriteString(" ")
 				continue
 			}
 			if x == index {
-				text += line[x].char
+				buffer.WriteString(line[x].char)
 				slice = slice[1:]
 			}
 		}
+
+		text := buffer.String()
 		if text != "" {
 			fg := highlight.foreground
 			if fg != nil {
