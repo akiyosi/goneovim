@@ -51,7 +51,6 @@ func (t *Tabline) subscribe() {
 		t.marginDefault = 0
 		t.marginTop = 0
 		t.marginBottom = 0
-		t.ws.updateSize()
 		return
 	}
 }
