@@ -930,28 +930,13 @@ func (w *Window) scroll(count int) {
 
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
-			for col := left; col <= right; col++ {
-				if len(content) <= row+count {
-					continue
-				}
-				for _, line := range content {
-					if len(line) <= col {
-						continue
-					}
-				}
-				content[row][col] = content[row+count][col]
+			if len(content) <= row+count {
+				continue
 			}
+			copy(content[row], content[row+count])
 		}
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
-				if len(content) <= row {
-					continue
-				}
-				for _, line := range content {
-					if len(line) <= col {
-						continue
-					}
-				}
 				content[row][col] = nil
 			}
 		}
@@ -961,28 +946,13 @@ func (w *Window) scroll(count int) {
 		}
 	} else {
 		for row := bot; row >= top-count; row-- {
-			for col := left; col <= right; col++ {
-				if len(content) <= row {
-					continue
-				}
-				for _, line := range content {
-					if len(line) <= col {
-						continue
-					}
-				}
-				content[row][col] = content[row+count][col]
+			if len(content) <= row {
+				continue
 			}
+			copy(content[row], content[row+count])
 		}
 		for row := top; row < top-count; row++ {
 			for col := left; col <= right; col++ {
-				if len(content) <= row {
-					continue
-				}
-				for _, line := range content {
-					if len(line) <= col {
-						continue
-					}
-				}
 				content[row][col] = nil
 			}
 		}
