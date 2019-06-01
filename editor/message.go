@@ -2,6 +2,7 @@ package editor
 
 import (
 	"bytes"
+	"strings"
 	"fmt"
 	"time"
 
@@ -134,8 +135,8 @@ func initMessage() *Message {
 }
 
 func (m *Message) setColor() {
-	fg := editor.colors.widgetFg.String()
-	bg := editor.colors.widgetBg
+	fg := editor.colors.fg.String()
+	bg := editor.colors.bg
 	transparent := transparent()
 	m.widget.SetStyleSheet(fmt.Sprintf(
 		" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }",
@@ -277,6 +278,12 @@ func (m *Message) msgShow(args []interface{}) {
 			} else {
 				color = m.ws.foreground
 			}
+			if msg == "" || msg == "\n" || msg == "\r\n" {
+				continue
+			}
+			msg = strings.Replace(msg, "\r\n", `<br>`, -1)
+			msg = strings.Replace(msg, "\n", `<br>`, -1)
+			msg = strings.Replace(msg, " ", `&nbsp;`, -1)
 			formattedMsg := fmt.Sprintf("<font color='%s'>%s</font>", color.Hex(), msg)
 			// text += formattedMsg
 			buffer.WriteString(formattedMsg)
@@ -300,15 +307,6 @@ func (m *Message) msgShow(args []interface{}) {
 
 func (m *Message) makeMessage(kind string, attrId int, text string, textLength int, replaceLast bool) {
 	defer m.resize()
-	if text == "" || text == "\n" || text == "\r\n" {
-		return
-	}
-	for text[len(text)-1] == '\n' {
-		text = string(text[:len(text)-1])
-		if text == "" {
-			break
-		}
-	}
 	var item *MessageItem
 	allActive := true
 	for _, item = range m.items {
@@ -414,7 +412,7 @@ func (i *MessageItem) setKind(kind string) {
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "_dup":
 		// hide
-		svgContent := editor.getSvg("echo", editor.colors.widgetBg)
+		svgContent := editor.getSvg("echo", editor.colors.bg)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	default:
 		svgContent := editor.getSvg("echo", color)
