@@ -353,8 +353,11 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		}
 	}
 
+	if w != w.s.windows[1] {
+		w.s.ws.markdown.updatePos()
+	}
+
 	p.DestroyQPainter()
-	w.s.ws.markdown.updatePos()
 }
 
 func (w *Window) drawBorder(p *gui.QPainter) {
