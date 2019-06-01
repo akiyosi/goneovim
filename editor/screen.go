@@ -43,6 +43,8 @@ type Window struct {
 	// Plan to remove in the future
 	width  int
 	height int
+
+	d1 time.Duration
 }
 
 // Screen is the main editor area
@@ -329,6 +331,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	if transparent < 255 {
 		transparent = 0
 	}
+
 	if w.s.ws.background != nil {
 		p.FillRect2(
 			left,
@@ -340,11 +343,17 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	for y := row; y < row+rows; y++ {
+		if w == w.s.windows[1] && w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
+			break
+		}
 		if y >= w.rows {
 			continue
 		}
+		bf := time.Now()
 		w.fillHightlight(p, y, col, cols, [2]int{0, 0})
 		w.drawText(p, y, col, cols, [2]int{0, 0})
+		af := time.Now()
+		w.d1 += af.Sub(bf)
 	}
 
 	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
@@ -970,7 +979,7 @@ func (w *Window) update() {
 	if w == nil {
 		return
 	}
-	if w.queueRedrawArea[2] == 0 || w.queueRedrawArea[3] == 0 {
+	if w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
 		return
 	}
 
