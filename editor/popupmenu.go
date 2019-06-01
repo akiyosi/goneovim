@@ -188,7 +188,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	items := arg[0].([]interface{})
 	selected := util.ReflectToInt(arg[1])
 	row := util.ReflectToInt(arg[2])
-	// col := util.ReflectToInt(arg[3])
+	col := util.ReflectToInt(arg[3])
 	gridid := util.ReflectToInt(arg[4])
 
 	p.rawItems = items
@@ -229,8 +229,8 @@ func (p *PopupMenu) showItems(args []interface{}) {
 
 	popupWidth := editor.iconSize + popupItems[0].menuLabel.Width() // + popupItems[0].detailLabel.Width()
 
-	x := p.ws.cursor.x
-	y := p.ws.cursor.y+p.ws.font.lineHeight+p.ws.tabline.widget.Height()
+	x := int(float64(col)*p.ws.font.truewidth)
+	y := row*p.ws.font.lineHeight+p.ws.font.lineHeight+p.ws.tabline.widget.Height()
 	if x+popupWidth >= p.ws.screen.widget.Width() {
 		x = p.ws.screen.widget.Width() - popupWidth - 5
 	}
