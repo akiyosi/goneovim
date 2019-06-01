@@ -111,18 +111,24 @@ func (s *Signature) move() {
 	row := s.ws.screen.cursor[0] + s.cusor[0]
 	col := s.ws.screen.cursor[1] + s.cusor[1]
 	i := strings.Index(text, "(")
-	x := float64(col) * s.ws.font.truewidth
-	if i > -1 {
-		//x -= s.ws.font.defaultFontMetrics.Width(string(text[:i]))
-		x -= s.ws.font.defaultFontMetrics.HorizontalAdvance(string(text[:i]), -1)
+	x := int(float64(col) * s.ws.font.truewidth)
+	y := row*s.ws.font.lineHeight - s.height + s.ws.tabline.widget.Height()
+	win := s.ws.screen.windows[s.ws.cursor.gridid]
+	if win != nil {
+		x += int(float64(win.pos[0])*s.ws.font.truewidth)
+		y += win.pos[1]*s.ws.font.lineHeight
 	}
-	s.x = int(x)
-	s.y = row*s.ws.font.lineHeight - s.height
+	if i > -1 {
+		x -= int(s.ws.font.defaultFontMetrics.HorizontalAdvance(string(text[:i]), -1))
+	}
+	s.x = x
+	s.y = y
 	s.widget.Move2(s.x, s.y)
 }
 
 func (s *Signature) show() {
 	s.widget.Show()
+	s.widget.Raise()
 }
 
 func (s *Signature) hide() {

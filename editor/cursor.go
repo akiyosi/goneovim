@@ -83,7 +83,18 @@ func (c *Cursor) setBlink(wait, on, off int) {
 
 func (c *Cursor) move() {
 	c.widget.Move2(c.x, c.y+int(float64(c.ws.font.lineSpace)/2))
-	c.ws.loc.widget.Move2(c.x, c.y+c.ws.font.lineHeight)
+
+	if !c.ws.loc.shown {
+		return
+	}
+	x := c.x
+	y := c.y-c.ws.font.lineHeight
+	win := c.ws.screen.windows[c.ws.cursor.gridid]
+	if win != nil {
+		x += int(float64(win.pos[0])*c.ws.font.truewidth)
+		y += win.pos[1]*c.ws.font.lineHeight
+	}
+	c.ws.loc.widget.Move2(x, y)
 }
 
 func (c *Cursor) updateCursorShape2() {

@@ -106,6 +106,7 @@ func (l *Locpopup) updateLocpopup() {
 	}
 	l.widget.Hide()
 	l.widget.Show()
+	l.widget.Raise()
 }
 
 func (l *Locpopup) handle(args []interface{}) {

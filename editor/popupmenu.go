@@ -188,7 +188,9 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	items := arg[0].([]interface{})
 	selected := util.ReflectToInt(arg[1])
 	row := util.ReflectToInt(arg[2])
-	col := util.ReflectToInt(arg[3])
+	// col := util.ReflectToInt(arg[3])
+	gridid := util.ReflectToInt(arg[4])
+
 	p.rawItems = items
 	p.selected = selected
 	p.top = 0
@@ -225,22 +227,26 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.scrollCol.Hide()
 	}
 
-	xpos := int(float64(col) * p.ws.font.truewidth)
 	popupWidth := editor.iconSize + popupItems[0].menuLabel.Width() // + popupItems[0].detailLabel.Width()
-	if xpos+popupWidth >= p.ws.screen.widget.Width() {
-		xpos = p.ws.screen.widget.Width() - popupWidth - 5
+
+	x := p.ws.cursor.x
+	y := p.ws.cursor.y+p.ws.font.lineHeight+p.ws.tabline.widget.Height()
+	if x+popupWidth >= p.ws.screen.widget.Width() {
+		x = p.ws.screen.widget.Width() - popupWidth - 5
+	}
+	win := p.ws.screen.windows[gridid]
+	if win != nil {
+		x += int(float64(win.pos[0])*p.ws.font.truewidth)
+		y += win.pos[1]*p.ws.font.lineHeight
 	}
 
-	p.widget.Move2(
-		//int(float64(col)*p.ws.font.truewidth)-popupItems[0].kindLabel.Width()-8,
-		xpos,
-		(row+1)*p.ws.font.lineHeight,
-	)
+	p.widget.Move2(x, y)
 	p.hide()
 	p.show()
 }
 
 func (p *PopupMenu) show() {
+	p.widget.Raise()
 	p.widget.Show()
 }
 
