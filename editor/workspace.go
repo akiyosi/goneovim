@@ -778,7 +778,6 @@ func (e *Editor) updateNotificationPos() {
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
-	doMinimapScroll := false
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -820,7 +819,10 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "grid_cursor_goto":
 			s.gridCursorGoto(args)
 			w.cursor.update()
-			doMinimapScroll = true
+			if w.minimap.visible {
+				go w.updateMinimap()
+				w.minimap.mapScroll()
+			}
 
 		case "grid_scroll":
 			s.gridScroll(args)
@@ -890,23 +892,25 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "busy_start":
 		case "busy_stop":
 		default:
-			// fmt.Println("Unhandle event", event)
 		}
 	}
 
 	s.update()
-	w.statusline.mode.redraw()
+	w.drawOtherUI()
+}
 
+func (w *Workspace) drawOtherUI() {
+	s := w.screen
+
+	if w.statusline.widget.IsVisible() {
+		w.statusline.mode.redraw()
+	}
 	if s.tooltip.IsVisible() {
 		x, y, _, _ := w.screen.toolTipPos()
 		w.screen.toolTipMove(x, y)
 	}
 	if editor.config.ScrollBar.Visible {
 		w.scrollBar.update()
-	}
-	if doMinimapScroll && w.minimap.visible {
-		go w.updateMinimap()
-		w.minimap.mapScroll()
 	}
 }
 

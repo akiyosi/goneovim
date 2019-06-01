@@ -88,11 +88,11 @@ func (c *Cursor) move() {
 		return
 	}
 	x := c.x
-	y := c.y-c.ws.font.lineHeight
+	y := c.y - c.ws.font.lineHeight
 	win := c.ws.screen.windows[c.ws.cursor.gridid]
 	if win != nil {
-		x += int(float64(win.pos[0])*c.ws.font.truewidth)
-		y += win.pos[1]*c.ws.font.lineHeight
+		x += int(float64(win.pos[0]) * c.ws.font.truewidth)
+		y += win.pos[1] * c.ws.font.lineHeight
 	}
 	c.ws.loc.widget.Move2(x, y)
 }

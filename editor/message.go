@@ -2,8 +2,8 @@ package editor
 
 import (
 	"bytes"
-	"strings"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/therecipe/qt/core"

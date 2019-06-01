@@ -229,15 +229,15 @@ func (p *PopupMenu) showItems(args []interface{}) {
 
 	popupWidth := editor.iconSize + popupItems[0].menuLabel.Width() // + popupItems[0].detailLabel.Width()
 
-	x := int(float64(col)*p.ws.font.truewidth)
-	y := row*p.ws.font.lineHeight+p.ws.font.lineHeight+p.ws.tabline.widget.Height()
+	x := int(float64(col) * p.ws.font.truewidth)
+	y := row*p.ws.font.lineHeight + p.ws.font.lineHeight + p.ws.tabline.widget.Height()
 	if x+popupWidth >= p.ws.screen.widget.Width() {
 		x = p.ws.screen.widget.Width() - popupWidth - 5
 	}
 	win := p.ws.screen.windows[gridid]
 	if win != nil {
-		x += int(float64(win.pos[0])*p.ws.font.truewidth)
-		y += win.pos[1]*p.ws.font.lineHeight
+		x += int(float64(win.pos[0]) * p.ws.font.truewidth)
+		y += win.pos[1] * p.ws.font.lineHeight
 	}
 
 	p.widget.Move2(x, y)

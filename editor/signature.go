@@ -115,8 +115,8 @@ func (s *Signature) move() {
 	y := row*s.ws.font.lineHeight - s.height + s.ws.tabline.widget.Height()
 	win := s.ws.screen.windows[s.ws.cursor.gridid]
 	if win != nil {
-		x += int(float64(win.pos[0])*s.ws.font.truewidth)
-		y += win.pos[1]*s.ws.font.lineHeight
+		x += int(float64(win.pos[0]) * s.ws.font.truewidth)
+		y += win.pos[1] * s.ws.font.lineHeight
 	}
 	if i > -1 {
 		x -= int(s.ws.font.defaultFontMetrics.HorizontalAdvance(string(text[:i]), -1))
