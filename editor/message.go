@@ -36,12 +36,12 @@ type MessageItem struct {
 	kind       string
 	attrId     int
 	text       string
-	textLength int
 	hideAt     time.Time
 	expired    bool
 	icon       *svg.QSvgWidget
 	label      *widgets.QLabel
 	widget     *widgets.QWidget
+	textLength int
 }
 
 func initMessage() *Message {
@@ -58,7 +58,7 @@ func initMessage() *Message {
 		width:   width,
 		widget:  widget,
 		layout:  layout,
-		expires: 6,
+		expires: 120,
 	}
 
 	margin := 5
@@ -136,7 +136,7 @@ func initMessage() *Message {
 
 func (m *Message) setColor() {
 	fg := editor.colors.fg.String()
-	bg := editor.colors.bg
+	bg := warpColor(editor.colors.bg, -15)
 	transparent := transparent()
 	m.widget.SetStyleSheet(fmt.Sprintf(
 		" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }",
@@ -255,6 +255,8 @@ func (m *Message) msgShow(args []interface{}) {
 		// text := ""
 		var buffer bytes.Buffer
 		length := 0
+		lineLen := 0
+		maxLen := m.ws.screen.widget.Width() - m.ws.scrollBar.widget.Width() - 12
 		var attrId int
 		for _, tupple := range arg.([]interface{})[1].([]interface{}) {
 			chunk, ok := tupple.([]interface{})
@@ -281,13 +283,25 @@ func (m *Message) msgShow(args []interface{}) {
 			if msg == "" || msg == "\n" || msg == "\r\n" {
 				continue
 			}
+			length += len(msg)
+
+			var cBuffer bytes.Buffer
+			for _, c := range msg {
+				lineLen += len(string(c))
+				msgLen := int(m.ws.font.truewidth * float64(lineLen))
+				if msgLen >= maxLen {
+					cBuffer.WriteString(`<br>`)
+					lineLen = 0
+				}
+				cBuffer.WriteString(string(c))
+			}
+			msg = cBuffer.String()
+
 			msg = strings.Replace(msg, "\r\n", `<br>`, -1)
 			msg = strings.Replace(msg, "\n", `<br>`, -1)
 			msg = strings.Replace(msg, " ", `&nbsp;`, -1)
-			formattedMsg := fmt.Sprintf("<font color='%s'>%s</font>", color.Hex(), msg)
-			// text += formattedMsg
+			formattedMsg := fmt.Sprintf("<font color='%s'>%s</font>", warpColor(color, -20).Hex(), msg)
 			buffer.WriteString(formattedMsg)
-			length += len(msg)
 		}
 
 		replaceLast := false
@@ -305,12 +319,12 @@ func (m *Message) msgShow(args []interface{}) {
 	}
 }
 
-func (m *Message) makeMessage(kind string, attrId int, text string, textLength int, replaceLast bool) {
+func (m *Message) makeMessage(kind string, attrId int, text string, length int, replaceLast bool) {
 	defer m.resize()
 	var item *MessageItem
 	allActive := true
 	for _, item = range m.items {
-		item.textLength = textLength
+		item.textLength = length
 		if !item.active {
 			allActive = false
 			break
@@ -405,14 +419,14 @@ func (i *MessageItem) setKind(kind string) {
 	if i.m.ws.screen.highAttrDef[i.attrId] == nil {
 		return
 	}
-	color = (i.m.ws.screen.highAttrDef[i.attrId]).foreground
+	color = warpColor((i.m.ws.screen.highAttrDef[i.attrId]).foreground, -15)
 	switch i.kind {
 	case "emsg", "echo", "echomsg", "echoerr", "return_prompt", "quickfix":
 		svgContent := editor.getSvg(i.kind, color)
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	case "_dup":
 		// hide
-		svgContent := editor.getSvg("echo", editor.colors.bg)
+		svgContent := editor.getSvg("echo", warpColor(editor.colors.bg, -15))
 		i.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	default:
 		svgContent := editor.getSvg("echo", color)
