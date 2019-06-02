@@ -18,13 +18,14 @@ type Cursor struct {
 	x              int
 	y              int
 	currAttrId     int
-	defaultColorId int
 	gridid         int
 	shift          int
 	isShut         bool
 	timer          *core.QTimer
 	color          *RGBA
 	isTextDraw     bool
+	fg             *RGBA
+	bg             *RGBA
 }
 
 func initCursorNew() *Cursor {
@@ -40,8 +41,8 @@ func initCursorNew() *Cursor {
 }
 
 func (c *Cursor) setBlink(wait, on, off int) {
-	bg := c.ws.screen.highAttrDef[c.currAttrId].background
-	fg := c.ws.screen.highAttrDef[c.currAttrId].foreground
+	bg := c.bg
+	fg := c.fg
 	c.timer.DisconnectTimeout()
 	if wait == 0 || on == 0 || off == 0 {
 		c.widget.SetStyleSheet(fmt.Sprintf(
@@ -97,25 +98,6 @@ func (c *Cursor) move() {
 	c.ws.loc.widget.Move2(x, y)
 }
 
-func (c *Cursor) updateCursorShape2() {
-	mode := c.ws.mode
-	switch mode {
-	case "normal":
-		c.widget.Resize2(c.ws.font.width, c.ws.font.height+2)
-		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.5)")
-		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.7)", c.color.R, c.color.G, c.color.B))
-	case "insert":
-		c.widget.Resize2(2, c.ws.font.height+2)
-		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
-		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.9)", c.color.R, c.color.G, c.color.B))
-	case "visual":
-		c.widget.Resize2(c.ws.font.width, c.ws.font.height+2)
-		//c.widget.SetStyleSheet("background-color: rgba(255, 255, 255, 0.9)")
-		visualColor := hexToRGBA(editor.config.SideBar.AccentColor)
-		c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, 0.5)", visualColor.R, visualColor.G, visualColor.B))
-	}
-}
-
 func (c *Cursor) updateCursorShape() {
 	if !c.ws.cursorStyleEnabled {
 		return
@@ -165,9 +147,11 @@ func (c *Cursor) updateCursorShape() {
 		bg = c.ws.screen.highAttrDef[attrId].background
 		fg = c.ws.screen.highAttrDef[attrId].foreground
 	} else {
-		bg = c.ws.screen.highAttrDef[c.defaultColorId].background
-		fg = c.ws.screen.highAttrDef[c.defaultColorId].foreground
+		fg = c.ws.background
+		bg = c.ws.foreground
 	}
+	c.fg = fg
+	c.bg = bg
 	if bg == nil {
 		return
 	}
