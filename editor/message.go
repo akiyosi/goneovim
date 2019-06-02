@@ -27,6 +27,7 @@ type Message struct {
 	expires int
 	pos     *core.QPoint
 	isDrag  bool
+	isExpand bool
 }
 
 // MessageItem is
@@ -204,11 +205,16 @@ func (m *Message) resize() {
 	}
 
 	var x, y int
-	m.width = m.ws.screen.widget.Width() / 3
-	ok := m.resizeMessages()
-	if !ok {
-		m.width = m.ws.screen.widget.Width() - m.ws.scrollBar.widget.Width() - 12
-		_ = m.resizeMessages()
+	var ok bool
+
+	if !m.isExpand {
+		m.width = m.ws.screen.widget.Width() / 3
+		ok = m.resizeMessages()
+		if !ok {
+			m.isExpand = true
+			m.width = m.ws.screen.widget.Width() - m.ws.scrollBar.widget.Width() - 12
+			_ = m.resizeMessages()
+		}
 	}
 	m.widget.Resize2(m.width+editor.iconSize, 0)
 	if !ok {
@@ -310,6 +316,7 @@ func (m *Message) msgShow(args []interface{}) {
 		if len(arg.([]interface{})) > 2 {
 			replaceLast, ok = arg.([]interface{})[2].(bool)
 		}
+		fmt.Println(length)
 
 		if kind == prevKind {
 			// Do not show message icon if the same kind as the previous kind
@@ -319,6 +326,7 @@ func (m *Message) msgShow(args []interface{}) {
 		}
 		prevKind = kind
 	}
+	m.isExpand = false
 }
 
 func (m *Message) makeMessage(kind string, attrId int, text string, length int, replaceLast bool) {
