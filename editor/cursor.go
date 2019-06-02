@@ -185,6 +185,9 @@ func (c *Cursor) updateCursorShape() {
 
 func (c *Cursor) update() {
 	c.updateCursorShape()
+	if c.ws.palette.widget.IsVisible() {
+		return
+	}
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
 	x := int(float64(col) * c.ws.font.truewidth)
