@@ -285,17 +285,19 @@ func (m *Message) msgShow(args []interface{}) {
 			}
 			length += len(msg)
 
-			var cBuffer bytes.Buffer
-			for _, c := range msg {
-				lineLen += len(string(c))
-				msgLen := int(m.ws.font.truewidth * float64(lineLen))
-				if msgLen >= maxLen {
-					cBuffer.WriteString(`<br>`)
-					lineLen = 0
+			if !strings.Contains(msg, "\n") {
+				var cBuffer bytes.Buffer
+				for _, c := range msg {
+					lineLen += len(string(c))
+					msgLen := int(m.ws.font.truewidth * float64(lineLen))
+					if msgLen >= maxLen {
+						cBuffer.WriteString(`<br>`)
+						lineLen = 0
+					}
+					cBuffer.WriteString(string(c))
 				}
-				cBuffer.WriteString(string(c))
+				msg = cBuffer.String()
 			}
-			msg = cBuffer.String()
 
 			msg = strings.Replace(msg, "\r\n", `<br>`, -1)
 			msg = strings.Replace(msg, "\n", `<br>`, -1)
