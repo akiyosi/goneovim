@@ -43,8 +43,6 @@ type Window struct {
 	// Plan to remove in the future
 	width  int
 	height int
-
-	d1 time.Duration
 }
 
 // Screen is the main editor area
@@ -67,7 +65,6 @@ type Screen struct {
 	curtab           nvim.Tabpage
 	curWins          map[nvim.Window]*Window
 	content          [][]*Char
-	activeGrid       gridId
 	queueRedrawArea  [4]int
 	paintMutex       sync.Mutex
 	redrawMutex      sync.Mutex
@@ -349,11 +346,8 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		if y >= w.rows {
 			continue
 		}
-		bf := time.Now()
 		w.fillHightlight(p, y, col, cols, [2]int{0, 0})
 		w.drawText(p, y, col, cols, [2]int{0, 0})
-		af := time.Now()
-		w.d1 += af.Sub(bf)
 	}
 
 	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
@@ -646,6 +640,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	rect := core.NewQRect4(0, 0, width, height)
 	win.widget.SetGeometry(rect)
 	win.move(win.pos[0], win.pos[1])
+	win.widget.Show()
 	win.raise()
 
 	win.queueRedrawAll()
@@ -660,9 +655,12 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			continue
 		}
 
-		s.ws.cursor.gridid = gridid
+		if s.windows[gridid] == nil {
+			return
+		}
 
-		if s.windows[gridid] != nil {
+		if s.ws.cursor.gridid != gridid {
+			s.ws.cursor.gridid = gridid
 			s.windows[gridid].raise()
 		}
 	}
@@ -787,23 +785,19 @@ func (s *Screen) gridLine(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
+
 		s.updateGridContent(arg.([]interface{}))
-		s.windows[gridid].widget.Show()
+		// s.windows[gridid].widget.Show()
 	}
 }
 
 func (s *Screen) updateGridContent(arg []interface{}) {
-	numChars := 0
 	gridid := util.ReflectToInt(arg[0])
 	row := util.ReflectToInt(arg[1])
 	col := util.ReflectToInt(arg[2])
 
 	if isSkipGlobalId(gridid) {
 		return
-	}
-
-	if gridid != 1 {
-		s.activeGrid = gridid
 	}
 
 	content := s.windows[gridid].content
@@ -864,14 +858,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 				}
 			}
 			col++
-			numChars++
-
-			if lastChar != nil && !lastChar.normalWidth {
-				numChars++
-			}
-			if !oldNormalWidth {
-				numChars++
-			}
 		} // end of makeCells()
 
 		r := 1
@@ -921,7 +907,6 @@ func (s *Screen) gridScroll(args []interface{}) {
 		rows = util.ReflectToInt(arg.([]interface{})[5])
 		s.windows[gridid].scroll(rows)
 	}
-
 }
 
 func (w *Window) scroll(count int) {
@@ -1014,10 +999,6 @@ func (s *Screen) update() {
 func (w *Window) queueRedrawAll() {
 	w.queueRedrawArea = [4]int{0, 0, w.cols, w.rows}
 }
-
-// func (w *Window) redraw() {
-// 	w.queueRedrawArea = [4]int{w.cols, w.rows, 0, 0}
-// }
 
 func (w *Window) queueRedraw(x, y, width, height int) {
 	if x < w.queueRedrawArea[0] {
