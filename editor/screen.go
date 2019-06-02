@@ -656,7 +656,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		}
 
 		if s.windows[gridid] == nil {
-			return
+			continue
 		}
 
 		if s.ws.cursor.gridid != gridid {
