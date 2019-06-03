@@ -320,7 +320,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	p := gui.NewQPainter2(w.widget)
 	p.SetFont(font.fontNew)
-	p.SetBackgroundMode(core.Qt__TransparentMode)
 
 	for y := row; y < row+rows; y++ {
 		if w == w.s.windows[1] && w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
@@ -359,17 +358,14 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		editor.colors.windowSeparator.G,
 		editor.colors.windowSeparator.B,
 		255)
-	// // color for debug
-	// color := gui.NewQColor3(200, 0, 0, 255)
 
 	// Vertical
 	if y+w.s.ws.font.lineHeight+1 < w.s.widget.Height() {
-		// separetor
 		p.FillRect5(
 			int(float64(x+width)+w.s.ws.font.truewidth/2),
 			y-int(w.s.ws.font.lineHeight/2),
 			1,
-			winHeight, //w.widget.Height(),
+			winHeight,
 			color,
 		)
 	}
@@ -761,7 +757,6 @@ func (s *Screen) gridLine(args []interface{}) {
 		}
 
 		s.updateGridContent(arg.([]interface{}))
-		// s.windows[gridid].widget.Show()
 	}
 }
 
@@ -1100,16 +1095,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 	line := w.content[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
-
-	// if col > 0 && len(line) >= col {
-	// 	char := line[col-1]
-	// 	if char != nil && char.char != "" {
-	// 		if !char.normalWidth {
-	// 			col--
-	// 			cols++
-	// 		}
-	// 	}
-	// }
 
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
