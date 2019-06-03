@@ -311,8 +311,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	rect := event.M_rect()
 	top := rect.Y()
 	left := rect.X()
-	width := rect.Width()
-	height := rect.Height()
 
 	font := w.s.ws.font
 	row := int(float64(top) / float64(font.lineHeight))
@@ -323,21 +321,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	p := gui.NewQPainter2(w.widget)
 	p.SetFont(font.fontNew)
 	p.SetBackgroundMode(core.Qt__TransparentMode)
-	bg := w.s.ws.background
-	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
-	if transparent < 255 {
-		transparent = 0
-	}
-
-	if w.s.ws.background != nil {
-		p.FillRect2(
-			left,
-			top,
-			width,
-			height,
-			gui.NewQBrush3(gui.NewQColor3(bg.R, bg.G, bg.B, transparent), core.Qt__SolidPattern),
-		)
-	}
 
 	for y := row; y < row+rows; y++ {
 		if w == w.s.windows[1] && w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
