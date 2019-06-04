@@ -149,8 +149,6 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
-	runtime.GOMAXPROCS(16)
-
 	if runtime.GOOS == "linux" {
 		exe, _ := os.Executable()
 		dir, _ := filepath.Split(exe)

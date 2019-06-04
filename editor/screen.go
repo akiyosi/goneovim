@@ -76,7 +76,6 @@ type Screen struct {
 func newScreen() *Screen {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
-	// widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
 	tooltip := widgets.NewQLabel(widget, 0)
@@ -892,8 +891,6 @@ func (w *Window) scroll(count int) {
 		right = w.cols - 1
 	}
 
-	w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
-
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
 			if len(content) <= row+count {
@@ -905,10 +902,6 @@ func (w *Window) scroll(count int) {
 			for col := left; col <= right; col++ {
 				content[row][col] = nil
 			}
-		}
-		w.queueRedraw(left, (bot - count + 1), (right - left), count)
-		if top > 0 {
-			w.queueRedraw(left, (top - count), (right - left), count)
 		}
 	} else {
 		for row := bot; row >= top-count; row-- {
@@ -922,11 +915,9 @@ func (w *Window) scroll(count int) {
 				content[row][col] = nil
 			}
 		}
-		w.queueRedraw(left, top, (right - left), -count)
-		if bot < w.rows-1 {
-			w.queueRedraw(left, bot+1, (right - left), -count)
-		}
 	}
+
+	w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
 }
 
 func (w *Window) update() {
@@ -1213,8 +1204,6 @@ func (s *Screen) windowPosition(args []interface{}) {
 		id := util.ReflectToInt(arg.([]interface{})[1])
 		startRow := util.ReflectToInt(arg.([]interface{})[2])
 		startCol := util.ReflectToInt(arg.([]interface{})[3])
-		// width := util.ReflectToInt(arg.([]interface{})[4])
-		// height := util.ReflectToInt(arg.([]interface{})[5])
 
 		if isSkipGlobalId(gridid) {
 			continue
