@@ -78,6 +78,7 @@ type Workspace struct {
 	isInTerm           bool
 	cursorStyleEnabled bool
 	modeInfo           []map[string]interface{}
+	ts                 int
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -481,6 +482,10 @@ func (w *Workspace) loadGinitVim() {
 		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, scripts)
 		w.nvim.Command(execGinitVim)
 	}
+
+	ts := 8
+	w.nvim.Option("ts", &ts)
+	w.ts = ts
 }
 
 func (w *Workspace) nvimCommandOutput(s string) (string, error) {

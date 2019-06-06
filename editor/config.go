@@ -20,6 +20,7 @@ import (
 // linespace = 10
 // clipboard = true
 // cursorBlink = true
+// indentGuide = true
 // disableIMEinNormal = true
 // startFullScreen = true
 // transparent = 0.5
@@ -122,6 +123,7 @@ type editorConfig struct {
 	Transparent        float64
 	DrawBorder         bool
 	SkipGlobalId       bool
+	IndentGuide        bool
 }
 
 type statusLineConfig struct {
@@ -196,6 +198,7 @@ func newGonvimConfig(home string) gonvimConfig {
 
 	config.Editor.SkipGlobalId = false
 	config.Editor.DrawBorder = true
+	config.Editor.IndentGuide = true
 
 	config.Palette.AreaRatio = 0.6
 	config.Palette.MaxNumberOfResultItems = 30

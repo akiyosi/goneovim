@@ -12,20 +12,20 @@ import (
 type Cursor struct {
 	ws *Workspace
 	//widget         *widgets.QWidget
-	widget         *widgets.QLabel
-	mode           string
-	modeIdx        int
-	x              int
-	y              int
-	currAttrId     int
-	gridid         int
-	shift          int
-	isShut         bool
-	timer          *core.QTimer
-	color          *RGBA
-	isTextDraw     bool
-	fg             *RGBA
-	bg             *RGBA
+	widget     *widgets.QLabel
+	mode       string
+	modeIdx    int
+	x          int
+	y          int
+	currAttrId int
+	gridid     int
+	shift      int
+	isShut     bool
+	timer      *core.QTimer
+	color      *RGBA
+	isTextDraw bool
+	fg         *RGBA
+	bg         *RGBA
 }
 
 func initCursorNew() *Cursor {

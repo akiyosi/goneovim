@@ -2,6 +2,7 @@ package editor
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math"
 	"runtime"
@@ -328,7 +329,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 			continue
 		}
 		w.fillHightlight(p, y, col, cols, [2]int{0, 0})
-		w.drawText(p, y, col, cols, [2]int{0, 0})
+		w.drawText(p, y, col, cols)
 	}
 
 	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
@@ -337,11 +338,99 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		}
 	}
 
+	if editor.config.Editor.IndentGuide && w == w.s.windows[1] {
+		for _, win := range w.s.windows {
+			win.drawIndentguide(p)
+		}
+	}
+
 	if w != w.s.windows[1] {
 		w.s.ws.markdown.updatePos()
 	}
 
 	p.DestroyQPainter()
+}
+
+func (w *Window) drawIndentguide(p *gui.QPainter) {
+	if w == nil {
+		return
+	}
+	for y := 0; y < len(w.content); y++ {
+		if y+1 == len(w.content) {
+			return
+		}
+		nline := w.content[y+1]
+		line := w.content[y]
+		res := 0
+		for x := 0; x < len(line); x++ {
+			if x+1 == len(line) {
+				break
+			}
+			nd := nline[x+1]
+			if nd == nil {
+				continue
+			}
+			d := nline[x]
+			if d == nil {
+				continue
+			}
+			nc := line[x+1]
+			if nc == nil {
+				continue
+			}
+			c := line[x]
+			if c == nil {
+				continue
+			}
+			if c.isSignColumn() {
+				res++
+			}
+			if c.char != " " && !c.isSignColumn() {
+				break
+			}
+			if x > res &&
+				(x+1-res)%w.s.ws.ts == 0 &&
+				c.char == " " && nc.char != " " &&
+				d.char == " " && nd.char == " " {
+				for row := y; row < len(w.content); row++ {
+					if row+1 == len(w.content) {
+						break
+					}
+					ylen, _ := w.countHeadSpaceOfLine(y)
+					ynlen, _ := w.countHeadSpaceOfLine(y + 1)
+					if ynlen <= ylen {
+						break
+					}
+					if w.content[row+1][x+1] == nil {
+						break
+					}
+					if w.content[row+1][x+1].char != " " {
+						break
+					}
+					w.drawIndentline(p, x+1, row+1)
+				}
+				break
+			}
+		}
+	}
+}
+
+func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
+	X := float64(x) * w.s.ws.font.truewidth
+	Y := float64(y * w.s.ws.font.lineHeight)
+	p.FillRect4(
+		core.NewQRectF4(
+			X,
+			Y,
+			1,
+			float64(w.s.ws.font.lineHeight),
+		),
+		gui.NewQColor3(
+			editor.colors.windowSeparator.R,
+			editor.colors.windowSeparator.G,
+			editor.colors.windowSeparator.B,
+			255),
+	)
 }
 
 func (w *Window) drawBorder(p *gui.QPainter) {
@@ -844,6 +933,52 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	return
 }
 
+func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
+	if w == nil {
+		return 0, errors.New("window is nil")
+	}
+	if y >= len(w.content) || w.content == nil {
+		return 0, errors.New("content is nil")
+	}
+	line := w.content[y]
+	count := 0
+	for _, c := range line {
+		if c == nil {
+			continue
+		}
+
+		if c.char != " " && !c.isSignColumn() {
+			break
+		} else {
+			count++
+		}
+	}
+	if count == len(line) {
+		count = 0
+	}
+	return count, nil
+}
+
+func (c *Char) isSignColumn() bool {
+	switch c.highlight.hiName {
+	case "SignColumn",
+		"ALEErrorSign",
+		"ALEStyleErrorSign",
+		"ALEWarningSign",
+		"ALEStyleWarningSign",
+		"ALEInfoSign",
+		"ALESignColumnWithErrors",
+		"LspErrorHighlight",
+		"LspWarningHighlight",
+		"LspInformationHighlight",
+		"LspHintHighlight":
+		return true
+	default:
+		return false
+
+	}
+}
+
 func (s *Screen) isSkipDrawStatusline(hi int) bool {
 	// If ext_statusline is implemented in Neovim, the implementation may be revised
 	if !editor.config.Editor.DrawBorder {
@@ -1023,8 +1158,8 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 				} else {
 					// last bg is different; draw the previous and start a new one
 					rectF.SetRect(
-						float64(start-pos[1])*font.truewidth,
-						float64((y-pos[0])*font.lineHeight),
+						float64(start)*font.truewidth,
+						float64((y)*font.lineHeight),
 						float64(end-start+1)*font.truewidth,
 						float64(font.lineHeight),
 					)
@@ -1042,8 +1177,8 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 		} else {
 			if lastBg != nil {
 				rectF.SetRect(
-					float64(start-pos[1])*font.truewidth,
-					float64((y-pos[0])*font.lineHeight),
+					float64(start)*font.truewidth,
+					float64((y)*font.lineHeight),
 					float64(end-start+1)*font.truewidth,
 					float64(font.lineHeight),
 				)
@@ -1062,8 +1197,8 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 	}
 	if lastBg != nil {
 		rectF.SetRect(
-			float64(start-pos[1])*font.truewidth,
-			float64((y-pos[0])*font.lineHeight),
+			float64(start)*font.truewidth,
+			float64((y)*font.lineHeight),
 			float64(end-start+1)*font.truewidth,
 			float64(font.lineHeight),
 		)
@@ -1074,7 +1209,7 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [
 	}
 }
 
-func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
+func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
@@ -1122,7 +1257,11 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 		chars[highlight] = colorSlice
 	}
 
+	X := float64(col) * wsfont.truewidth
+	Y := float64((y)*wsfont.lineHeight + wsfont.shift)
+
 	for highlight, colorSlice := range chars {
+
 		var buffer bytes.Buffer
 		slice := colorSlice[:]
 		for x := col; x < col+cols; x++ {
@@ -1146,12 +1285,13 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 			if fg != nil {
 				p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 			}
-			pointF.SetX(float64(col-pos[1]) * wsfont.truewidth)
-			pointF.SetY(float64((y-pos[0])*wsfont.lineHeight + wsfont.shift))
+			pointF.SetX(X)
+			pointF.SetY(Y)
 			font.SetBold(highlight.bold)
 			font.SetItalic(highlight.italic)
 			p.DrawText(pointF, text)
 		}
+
 	}
 
 	for _, x := range specialChars {
@@ -1164,8 +1304,8 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int)
 			fg = w.s.ws.foreground
 		}
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
-		pointF.SetX(float64(x-pos[1]) * wsfont.truewidth)
-		pointF.SetY(float64((y-pos[0])*wsfont.lineHeight + wsfont.shift))
+		pointF.SetX(float64(x) * wsfont.truewidth)
+		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift))
 		font.SetBold(char.highlight.bold)
 		font.SetItalic(char.highlight.italic)
 		p.DrawText(pointF, char.char)
