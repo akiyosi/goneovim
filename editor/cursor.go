@@ -89,7 +89,13 @@ func (c *Cursor) move() {
 		return
 	}
 	x := c.x
-	y := c.y - c.ws.font.lineHeight
+	y := c.y
+	height := c.ws.loc.widget.Height()
+	if c.ws.screen.cursor[0] < 3 {
+		y += height
+	} else {
+		y -= height * 3 / 2
+	}
 	win := c.ws.screen.windows[c.ws.cursor.gridid]
 	if win != nil {
 		x += int(float64(win.pos[0]) * c.ws.font.truewidth)
@@ -191,7 +197,7 @@ func (c *Cursor) update() {
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
 	x := int(float64(col) * c.ws.font.truewidth)
-	y := row*c.ws.font.lineHeight + c.shift
+	y := row*(c.ws.font.lineHeight + c.shift)
 	c.x = x
 	c.y = y
 	c.move()
