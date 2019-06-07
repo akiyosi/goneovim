@@ -962,6 +962,7 @@ func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 func (c *Char) isSignColumn() bool {
 	switch c.highlight.hiName {
 	case "SignColumn",
+		"LineNr",
 		"ALEErrorSign",
 		"ALEStyleErrorSign",
 		"ALEWarningSign",
