@@ -362,7 +362,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 		nline := w.content[y+1]
 		line := w.content[y]
 		res := 0
+		skipDraw := false
 		for x := 0; x < len(line); x++ {
+			skipDraw = false
 			if x+1 == len(line) {
 				break
 			}
@@ -396,6 +398,32 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 					if row+1 == len(w.content) {
 						break
 					}
+
+					for z := y+1; z < len(w.content); z++ {
+						if w.content[z][x+1] == nil {
+							break
+						}
+						if w.content[z][x+1].char != " " {
+							for v := x; v >= res; v-- {
+								if w.content[z][v] == nil {
+									break
+								}
+								if w.content[z][v].char == " " {
+									skipDraw = true
+								} else {
+									skipDraw = false
+									break
+								}
+							}
+							if skipDraw {
+								break
+							}
+						}
+					}
+					if !skipDraw {
+						break
+					}
+
 					ylen, _ := w.countHeadSpaceOfLine(y)
 					ynlen, _ := w.countHeadSpaceOfLine(y + 1)
 					if ynlen <= ylen {
