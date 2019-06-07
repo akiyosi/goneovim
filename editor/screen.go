@@ -416,8 +416,8 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 }
 
 func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
-	X := float64(x) * w.s.ws.font.truewidth
-	Y := float64(y * w.s.ws.font.lineHeight)
+	X := float64(w.pos[0]+x) * w.s.ws.font.truewidth
+	Y := float64((w.pos[1]+y) * w.s.ws.font.lineHeight)
 	p.FillRect4(
 		core.NewQRectF4(
 			X,
