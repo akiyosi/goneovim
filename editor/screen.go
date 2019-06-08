@@ -36,7 +36,7 @@ type Window struct {
 	rows   int
 
 	widget          *widgets.QWidget
-	isShown         bool
+	shown         bool
 	queueRedrawArea [4]int
 	scrollRegion    []int
 
@@ -335,7 +335,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
 		for _, win := range w.s.windows {
-			if !win.isShown {
+			if !win.isShown() {
 				continue
 			}
 			win.drawBorder(p)
@@ -344,7 +344,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	if editor.config.Editor.IndentGuide && w == w.s.windows[1] {
 		for _, win := range w.s.windows {
-			if !win.isShown {
+			if !win.isShown() {
 				continue
 			}
 			win.drawIndentguide(p)
@@ -1374,6 +1374,17 @@ func newWindow() *Window {
 	return w
 }
 
+func (w *Window) isShown() bool {
+	if w == nil {
+		return false
+	}
+	if !w.shown {
+		return false
+	}
+
+	return true
+}
+
 func (s *Screen) windowPosition(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
@@ -1391,7 +1402,7 @@ func (s *Screen) windowPosition(args []interface{}) {
 		}
 
 		win.id = *(*nvim.Window)(unsafe.Pointer(&id))
-		win.isShown = true
+		win.shown = true
 		win.pos[0] = startCol
 		win.pos[1] = startRow
 		win.move(startCol, startRow)
@@ -1447,7 +1458,7 @@ func (s *Screen) windowHide(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		s.windows[gridid].isShown = false
+		s.windows[gridid].shown = false
 		s.windows[gridid].widget.Hide()
 	}
 }
