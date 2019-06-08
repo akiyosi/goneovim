@@ -287,6 +287,10 @@ func InitEditor() {
 		e.app.ConnectEvent(func(event *core.QEvent) bool {
 			switch event.Type() {
 			case core.QEvent__FileOpen:
+				// If gonvim not launched on finder (it is started in terminal)
+				if os.Getppid() != 1 {
+				        return false
+				}
 				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
 				macosArg = fileOpenEvent.File()
 				gonvim := e.workspaces[e.active].nvim
