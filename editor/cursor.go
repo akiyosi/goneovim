@@ -197,7 +197,7 @@ func (c *Cursor) update() {
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
 	x := int(float64(col) * c.ws.font.truewidth)
-	y := row*(c.ws.font.lineHeight + c.shift)
+	y := row * (c.ws.font.lineHeight + c.shift)
 	c.x = x
 	c.y = y
 	c.move()
