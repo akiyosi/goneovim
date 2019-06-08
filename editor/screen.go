@@ -329,7 +329,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		if y >= w.rows {
 			continue
 		}
-		w.fillHightlight(p, y, col, cols, [2]int{0, 0})
+		w.fillHightlight(p, y, col, cols)
 		w.drawText(p, y, col, cols)
 	}
 
@@ -1158,7 +1158,7 @@ func (w *Window) transparent(bg *RGBA) int {
 	return t
 }
 
-func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos [2]int) {
+func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
@@ -1295,9 +1295,10 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 	X := float64(col) * wsfont.truewidth
 	Y := float64((y)*wsfont.lineHeight + wsfont.shift)
+	pointF.SetX(X)
+	pointF.SetY(Y)
 
 	for highlight, colorSlice := range chars {
-
 		var buffer bytes.Buffer
 		slice := colorSlice[:]
 		for x := col; x < col+cols; x++ {
@@ -1321,8 +1322,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			if fg != nil {
 				p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 			}
-			pointF.SetX(X)
-			pointF.SetY(Y)
 			font.SetBold(highlight.bold)
 			font.SetItalic(highlight.italic)
 			p.DrawText(pointF, text)
