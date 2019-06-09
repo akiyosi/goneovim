@@ -33,8 +33,8 @@ type Highlight struct {
 	undercurl  bool
 }
 
-// Char is
-type Char struct {
+// Cell is
+type Cell struct {
 	normalWidth bool
 	char        string
 	highlight   Highlight

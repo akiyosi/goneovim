@@ -36,7 +36,7 @@ type MiniMap struct {
 	visible bool
 
 	font             *Font
-	content          [][]*Char
+	content          [][]*Cell
 	scrollRegion     []int
 	scrollDust       [2]int
 	scrollDustDeltaY int
@@ -558,11 +558,11 @@ func (m *MiniMap) put(args []interface{}) {
 	if x >= len(line) {
 		x = len(line) - 1
 	}
-	char := line[x] // sometimes crash at this line
-	if char != nil && !char.normalWidth {
+	cell := line[x] // sometimes crash at this line
+	if cell != nil && !cell.normalWidth {
 		oldFirstNormal = false
 	}
-	var lastChar *Char
+	var lastCell *Cell
 	oldNormalWidth := true
 	for _, arg := range args {
 		chars := arg.([]interface{})
@@ -570,25 +570,25 @@ func (m *MiniMap) put(args []interface{}) {
 			if col >= len(line) {
 				continue
 			}
-			char := line[col]
-			if char != nil && !char.normalWidth {
+			cell := line[col]
+			if cell != nil && !cell.normalWidth {
 				oldNormalWidth = false
 			} else {
 				oldNormalWidth = true
 			}
-			if char == nil {
-				char = &Char{}
-				line[col] = char
+			if cell == nil {
+				cell = &Cell{}
+				line[col] = cell
 			}
-			char.char = c.(string)
-			char.normalWidth = m.isNormalWidth(char.char)
-			lastChar = char
-			char.highlight = m.highlight
+			cell.char = c.(string)
+			cell.normalWidth = m.isNormalWidth(cell.char)
+			lastCell = cell
+			cell.highlight = m.highlight
 			col++
 			numChars++
 		}
 	}
-	if lastChar != nil && !lastChar.normalWidth {
+	if lastCell != nil && !lastCell.normalWidth {
 		numChars++
 	}
 	if !oldNormalWidth {
@@ -596,8 +596,8 @@ func (m *MiniMap) put(args []interface{}) {
 	}
 	m.cursor[1] = col
 	if x > 0 {
-		char := line[x-1]
-		if char != nil && char.char != "" && !char.normalWidth {
+		cell := line[x-1]
+		if cell != nil && cell.char != "" && !cell.normalWidth {
 			x--
 			numChars++
 		} else {
@@ -791,9 +791,9 @@ func (m *MiniMap) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
 	if col > 0 {
-		char := line[col-1]
-		if char != nil && char.char != "" {
-			if !char.normalWidth {
+		cell := line[col-1]
+		if cell != nil && cell.char != "" {
+			if !cell.normalWidth {
 				col--
 				cols++
 			}
@@ -805,28 +805,28 @@ func (m *MiniMap) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int
 		if x >= len(line) {
 			continue
 		}
-		char := line[x]
-		if char == nil {
+		cell := line[x]
+		if cell == nil {
 			continue
 		}
-		if char.char == " " {
+		if cell.char == " " {
 			continue
 		}
-		if char.char == "" {
+		if cell.char == "" {
 			continue
 		}
-		if !char.normalWidth {
+		if !cell.normalWidth {
 			specialChars = append(specialChars, x)
 			continue
 		}
 		highlight := Highlight{}
-		fg := char.highlight.foreground
+		fg := cell.highlight.foreground
 		if fg == nil {
 			fg = m.foreground
 		}
 		highlight.foreground = fg
-		highlight.italic = char.highlight.italic
-		highlight.bold = char.highlight.bold
+		highlight.italic = cell.highlight.italic
+		highlight.bold = cell.highlight.bold
 
 		colorSlice, ok := chars[highlight]
 		if !ok {
@@ -866,20 +866,20 @@ func (m *MiniMap) drawText(p *gui.QPainter, y int, col int, cols int, pos [2]int
 	}
 
 	for _, x := range specialChars {
-		char := line[x]
-		if char == nil || char.char == " " {
+		cell := line[x]
+		if cell == nil || cell.char == " " {
 			continue
 		}
-		fg := char.highlight.foreground
+		fg := cell.highlight.foreground
 		if fg == nil {
 			fg = m.foreground
 		}
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 		pointF.SetX(float64(x-pos[1]) * m.font.truewidth)
 		pointF.SetY(float64((y-pos[0])*m.font.lineHeight + m.font.shift))
-		font.SetBold(char.highlight.bold)
-		font.SetItalic(char.highlight.italic)
-		p.DrawText(pointF, char.char)
+		font.SetBold(cell.highlight.bold)
+		font.SetItalic(cell.highlight.italic)
+		p.DrawText(pointF, cell.char)
 	}
 }
 
@@ -905,19 +905,19 @@ func (m *MiniMap) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos 
 	end := -1
 	var lastBg *RGBA
 	var bg *RGBA
-	var lastChar *Char
+	var lastCell *Cell
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
 			continue
 		}
-		char := line[x]
-		if char != nil {
-			bg = char.highlight.background
+		cell:= line[x]
+		if cell != nil {
+			bg = cell.highlight.background
 		} else {
 			bg = nil
 		}
-		if lastChar != nil && !lastChar.normalWidth {
-			bg = lastChar.highlight.background
+		if lastCell != nil && !lastCell.normalWidth {
+			bg = lastCell.highlight.background
 		}
 		if bg != nil {
 			if lastBg == nil {
@@ -965,7 +965,7 @@ func (m *MiniMap) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos 
 				lastBg = nil
 			}
 		}
-		lastChar = char
+		lastCell = cell
 	}
 	if lastBg != nil {
 		rectF.SetRect(
@@ -984,9 +984,9 @@ func (m *MiniMap) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos 
 func (m *MiniMap) resize(args []interface{}) {
 	m.cursor[0] = 0
 	m.cursor[1] = 0
-	m.content = make([][]*Char, m.rows)
+	m.content = make([][]*Cell, m.rows)
 	for i := 0; i < m.rows; i++ {
-		m.content[i] = make([]*Char, m.cols)
+		m.content[i] = make([]*Cell, m.cols)
 	}
 	m.queueRedrawAll()
 }
@@ -994,9 +994,9 @@ func (m *MiniMap) resize(args []interface{}) {
 func (m *MiniMap) clear(args []interface{}) {
 	m.cursor[0] = 0
 	m.cursor[1] = 0
-	m.content = make([][]*Char, m.rows)
+	m.content = make([][]*Cell, m.rows)
 	for i := 0; i < m.rows; i++ {
-		m.content[i] = make([]*Char, m.cols)
+		m.content[i] = make([]*Cell, m.cols)
 	}
 	m.queueRedrawAll()
 }

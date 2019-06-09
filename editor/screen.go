@@ -27,7 +27,7 @@ type Window struct {
 	redrawMutex sync.Mutex
 
 	s       *Screen
-	content [][]*Char
+	content [][]*Cell
 
 	id     nvim.Window
 	pos    [2]int
@@ -66,7 +66,7 @@ type Screen struct {
 	highlight        Highlight
 	curtab           nvim.Tabpage
 	curWins          map[nvim.Window]*Window
-	content          [][]*Char
+	content          [][]*Cell
 	queueRedrawArea  [4]int
 	paintMutex       sync.Mutex
 	redrawMutex      sync.Mutex
@@ -699,10 +699,10 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	}
 
 	// make new size content
-	content := make([][]*Char, rows)
+	content := make([][]*Cell, rows)
 
 	for i := 0; i < rows; i++ {
-		content[i] = make([]*Char, cols)
+		content[i] = make([]*Cell, cols)
 	}
 
 	if win != nil && gridid != 1 {
@@ -863,10 +863,10 @@ func (s *Screen) gridClear(args []interface{}) {
 			continue
 		}
 
-		s.windows[gridid].content = make([][]*Char, s.windows[gridid].rows)
+		s.windows[gridid].content = make([][]*Cell, s.windows[gridid].rows)
 
 		for i := 0; i < s.windows[gridid].rows; i++ {
-			s.windows[gridid].content[i] = make([]*Char, s.windows[gridid].cols)
+			s.windows[gridid].content[i] = make([]*Cell, s.windows[gridid].cols)
 		}
 		s.windows[gridid].queueRedrawAll()
 	}
@@ -900,7 +900,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	cells := arg[3].([]interface{})
 
 	oldNormalWidth := true
-	lastChar := &Char{}
+	lastCell := &Cell{}
 
 	for _, arg := range cells {
 		if col >= len(line) {
@@ -932,12 +932,12 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			}
 
 			if line[col] == nil {
-				line[col] = &Char{}
+				line[col] = &Cell{}
 			}
 
 			line[col].char = text.(string)
 			line[col].normalWidth = s.isNormalWidth(line[col].char)
-			lastChar = line[col]
+			lastCell = line[col]
 
 			switch col {
 			case 0:
@@ -994,7 +994,7 @@ func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 	return count, nil
 }
 
-func (c *Char) isSignColumn() bool {
+func (c *Cell) isSignColumn() bool {
 	switch c.highlight.hiName {
 	case "SignColumn",
 		"LineNr",
@@ -1169,19 +1169,19 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 	end := -1
 	var lastBg *RGBA
 	var bg *RGBA
-	var lastChar *Char
+	var lastCell *Cell
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
 			continue
 		}
-		char := line[x]
-		if char != nil {
-			bg = char.highlight.background
+		cell := line[x]
+		if cell != nil {
+			bg = cell.highlight.background
 		} else {
 			bg = nil
 		}
-		if lastChar != nil && !lastChar.normalWidth {
-			bg = lastChar.highlight.background
+		if lastCell != nil && !lastCell.normalWidth {
+			bg = lastCell.highlight.background
 		}
 		if bg != nil {
 			if lastBg == nil {
@@ -1229,7 +1229,7 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 				lastBg = nil
 			}
 		}
-		lastChar = char
+		lastCell = cell
 	}
 	if lastBg != nil {
 		rectF.SetRect(
@@ -1262,28 +1262,28 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		if x >= len(line) {
 			continue
 		}
-		char := line[x]
-		if char == nil {
+		cell := line[x]
+		if cell == nil {
 			continue
 		}
-		if char.char == " " {
+		if cell.char == " " {
 			continue
 		}
-		if char.char == "" {
+		if cell.char == "" {
 			continue
 		}
-		if !char.normalWidth {
+		if !cell.normalWidth {
 			specialChars = append(specialChars, x)
 			continue
 		}
 		highlight := Highlight{}
-		fg := char.highlight.foreground
+		fg := cell.highlight.foreground
 		if fg == nil {
 			fg = w.s.ws.foreground
 		}
 		highlight.foreground = fg
-		highlight.italic = char.highlight.italic
-		highlight.bold = char.highlight.bold
+		highlight.italic = cell.highlight.italic
+		highlight.bold = cell.highlight.bold
 
 		colorSlice, ok := chars[highlight]
 		if !ok {
@@ -1330,20 +1330,20 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 
 	for _, x := range specialChars {
-		char := line[x]
-		if char == nil || char.char == " " {
+		cell := line[x]
+		if cell == nil || cell.char == " " {
 			continue
 		}
-		fg := char.highlight.foreground
+		fg := cell.highlight.foreground
 		if fg == nil {
 			fg = w.s.ws.foreground
 		}
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 		pointF.SetX(float64(x) * wsfont.truewidth)
 		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift))
-		font.SetBold(char.highlight.bold)
-		font.SetItalic(char.highlight.italic)
-		p.DrawText(pointF, char.char)
+		font.SetBold(cell.highlight.bold)
+		font.SetItalic(cell.highlight.italic)
+		p.DrawText(pointF, cell.char)
 	}
 }
 
