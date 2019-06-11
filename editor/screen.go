@@ -541,11 +541,11 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		s.scrollDust[1] += v
 
 		if dx >= fontwidth {
-			horiz = int(math.Trunc(float64(s.scrollDust[0]) / fontheight))
+			horiz = int(math.Trunc(float64(s.scrollDust[0]) / fontwidth))
 			s.scrollDust[0] = 0
 		}
-		if dy >= fontwidth {
-			vert = int(math.Trunc(float64(s.scrollDust[1]) / fontwidth))
+		if dy >= fontheight {
+			vert = int(math.Trunc(float64(s.scrollDust[1]) / fontheight))
 			s.scrollDust[1] = 0
 		}
 
