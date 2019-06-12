@@ -48,7 +48,7 @@ type NotifyButton struct {
 
 // ColorPalette is
 type ColorPalette struct {
-	e                     *Editor
+	e *Editor
 
 	fg                    *RGBA
 	bg                    *RGBA
@@ -163,9 +163,9 @@ func InitEditor() {
 		stop:    make(chan struct{}),
 		guiInit: make(chan bool, 1),
 		config:  newGonvimConfig(home),
+		homeDir: home,
 	}
 	e := editor
-	e.homeDir = home
 
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
@@ -261,7 +261,7 @@ func (e *Editor) loadFileInDarwin() {
 		case core.QEvent__FileOpen:
 			// If gonvim not launched on finder (it is started in terminal)
 			if os.Getppid() != 1 {
-			        return false
+				return false
 			}
 			fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
 			macosArg = fileOpenEvent.File()

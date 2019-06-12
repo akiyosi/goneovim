@@ -910,7 +910,7 @@ func (m *MiniMap) fillHightlight(p *gui.QPainter, y int, col int, cols int, pos 
 		if x >= len(line) {
 			continue
 		}
-		cell:= line[x]
+		cell := line[x]
 		if cell != nil {
 			bg = cell.highlight.background
 		} else {

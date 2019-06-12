@@ -270,8 +270,8 @@ func (w *Workspace) startNvim(path string) error {
 		neovim, err = nvim.NewChildProcess(
 			nvim.ChildProcessArgs(
 				append([]string{
-					"--cmd", 
-					"let g:gonvim_running=1", 
+					"--cmd",
+					"let g:gonvim_running=1",
 					"--embed",
 				}, args...)...,
 			))

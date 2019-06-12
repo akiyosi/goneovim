@@ -36,7 +36,7 @@ type Window struct {
 	rows   int
 
 	widget          *widgets.QWidget
-	shown         bool
+	shown           bool
 	queueRedrawArea [4]int
 	scrollRegion    []int
 
