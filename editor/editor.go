@@ -213,33 +213,34 @@ func InitEditor() {
 	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
 	e.wsSide.scrollarea = sideArea
 
-	activityWidget := widgets.NewQWidget(nil, 0)
-	activityWidget.SetObjectName("Activity")
-	activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
-	activity := newActivity()
-	activity.widget = activityWidget
-	activityWidget.SetLayout(activity.layout)
-	e.activity = activity
-	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
-	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
+	// activityWidget := widgets.NewQWidget(nil, 0)
+	// activityWidget.SetObjectName("Activity")
+	// activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
+	// activity := newActivity()
+	// activity.widget = activityWidget
+	// activityWidget.SetLayout(activity.layout)
+	// e.activity = activity
+	// e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
+	// e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
 
-	go e.dropShadow()
+	// go e.dropShadow()
 
-	if e.config.ActivityBar.Visible == false {
-		e.activity.widget.Hide()
-	}
-	if e.config.SideBar.Visible == false {
-		e.activity.sideArea.Hide()
-	}
+	// if e.config.ActivityBar.Visible == false {
+	// 	e.activity.widget.Hide()
+	// }
 
-	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
-	splitter.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
-	splitter.AddWidget(e.activity.sideArea)
-	splitter.AddWidget(e.wsWidget)
-	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
-	splitter.SetStretchFactor(1, 100)
-	splitter.SetObjectName("splitter")
-	e.splitter = splitter
+	// if e.config.SideBar.Visible == false {
+	// 	e.activity.sideArea.Hide()
+	// }
+
+	// splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+	// splitter.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
+	// splitter.AddWidget(e.activity.sideArea)
+	// splitter.AddWidget(e.wsWidget)
+	// splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
+	// splitter.SetStretchFactor(1, 100)
+	// splitter.SetObjectName("splitter")
+	// e.splitter = splitter
 
 	e.workspaces = []*Workspace{}
 	sessionExists := false
@@ -269,8 +270,13 @@ func InitEditor() {
 	}
 	e.workspaceUpdate()
 
-	layout.AddWidget(splitter, 1, 0)
-	layout.AddWidget(e.activity.widget, 0, 0)
+	layout.AddWidget(e.wsWidget, 1, 0)
+	if editor.config.SideBar.Visible {
+		layout.AddWidget(e.wsSide.scrollarea, 0, 0)
+	}
+
+	// layout.AddWidget(splitter, 1, 0)
+	// layout.AddWidget(e.activity.widget, 0, 0)
 
 	e.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	e.wsWidget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
@@ -424,7 +430,7 @@ func (c *ColorPalette) update() {
 
 func (e *Editor) updateGUIColor() {
 	// if activity & sidebar is enabled
-	if e.activity != nil && e.wsSide != nil {
+	if e.activity != nil {
 		// for splitter
 		e.splitter.SetStyleSheet(" QSplitter::handle:horizontal { background-color: rgba(0, 0, 0, 0); }")
 
@@ -449,6 +455,10 @@ func (e *Editor) updateGUIColor() {
 
 		}
 		e.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
+	}
+
+
+	if e.wsSide != nil {
 		e.wsSide.setColor()
 	}
 

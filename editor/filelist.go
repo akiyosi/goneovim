@@ -63,7 +63,8 @@ func newFilelist(path string) (*Filelist, error) {
 	filelistwidget.SetLayout(filelistlayout)
 	filelist.widget = filelistwidget
 
-	width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+	// width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+	width := editor.wsSide.scrollarea.Width()
 
 	// go func() {
 	fl := editor.wsSide.items[editor.active].Filelist
@@ -259,9 +260,9 @@ func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
 }
 
 func (i *WorkspaceSideItem) setCurrentFileLabel() {
-	if !editor.activity.editItem.active {
-		return
-	}
+	// if !editor.activity.editItem.active {
+	// 	return
+	// }
 
 	bg := editor.colors.sideBarBg.String()
 	sbg := editor.colors.selectedBg.String()
@@ -298,9 +299,9 @@ func (f *Fileitem) setColor() {
 }
 
 func (f *Fileitem) updateModifiedbadge() {
-	if !editor.activity.editItem.active {
-		return
-	}
+	// if !editor.activity.editItem.active {
+	// 	return
+	// }
 
 	// err := editor.workspaces[editor.active].nvim.Call("modified", &f.isModified)
 	// if err != nil {
