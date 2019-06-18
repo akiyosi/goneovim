@@ -267,7 +267,14 @@ func (w *Workspace) startNvim(path string) error {
 		neovim, err = nvim.Dial(opts.ServerPtr)
 		w.uiRemoteAttached = true
 	} else {
-		neovim, err = nvim.NewChildProcess(nvim.ChildProcessArgs(append([]string{"--cmd", "let g:gonvim_running=1", "--embed"}, args...)...))
+		neovim, err = nvim.NewChildProcess(
+			nvim.ChildProcessArgs(
+				append([]string{
+					"--cmd",
+					"let g:gonvim_running=1",
+					"--embed",
+				}, args...)...,
+			))
 	}
 	if err != nil {
 		return err
@@ -281,14 +288,6 @@ func (w *Workspace) startNvim(path string) error {
 		w.redrawUpdates <- updates
 		w.signal.RedrawSignal()
 	})
-
-	// Hide activitybar, sidebar, if gonvim --server mode
-	if w.uiRemoteAttached {
-		if editor.activity != nil {
-			editor.activity.widget.Hide()
-			editor.activity.sideArea.Hide()
-		}
-	}
 
 	go func() {
 		err := w.nvim.Serve()
@@ -570,9 +569,9 @@ func (w *Workspace) setCwd(cwd string) {
 			sideItem.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 			sideItem.cwdpath = path
 
-			if editor.activity.editItem.active == false {
-				continue
-			}
+			// if editor.activity.editItem.active == false {
+			// 	continue
+			// }
 
 			filelist, err := newFilelist(path)
 			if err != nil {
@@ -609,9 +608,9 @@ func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
 	}
 
 	editor.wsSide.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
-		if editor.activity.editItem.active == false {
-			return
-		}
+		// if editor.activity.editItem.active == false {
+		// 	return
+		// }
 		if !i.isload {
 			return
 		}
@@ -619,13 +618,13 @@ func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
 			return
 		}
 
-		width := editor.splitter.Widget(editor.splitter.IndexOf(editor.activity.sideArea)).Width()
+		width := editor.wsSide.scrollarea.Width()
 		charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
 		length := float64(width - (2 * editor.iconSize) - FilewidgetLeftMargin - charWidth - 35)
 
 		for _, item := range editor.wsSide.items {
-			item.label.SetMaximumWidth(editor.activity.sideArea.Width())
-			item.label.SetMinimumWidth(editor.activity.sideArea.Width())
+			item.label.SetMaximumWidth(width)
+			item.label.SetMinimumWidth(width)
 			for _, fileitem := range item.Filelist.Fileitems {
 				fileitem.widget.SetMaximumWidth(width)
 				fileitem.widget.SetMinimumWidth(width)
@@ -1287,7 +1286,6 @@ func newWorkspaceSide() *WorkspaceSide {
 	header := widgets.NewQLabel(nil, 0)
 	header.SetContentsMargins(22, 15, 20, 10)
 	header.SetText("WORKSPACE")
-	header.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 100)
 	widget.SetLayout(layout)
@@ -1312,6 +1310,23 @@ func newWorkspaceSide() *WorkspaceSide {
 	}
 
 	return side
+}
+
+func (s *WorkspaceSide) newScrollArea() {
+	sideArea := widgets.NewQScrollArea(nil)
+	sideArea.SetWidgetResizable(true)
+	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+	sideArea.ConnectEnterEvent(func(event *core.QEvent) {
+		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
+	})
+	sideArea.ConnectLeaveEvent(func(event *core.QEvent) {
+		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+	})
+	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
+	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
+
+	s.scrollarea = sideArea
+	s.scrollarea.SetWidget(s.widget)
 }
 
 type filelistSignal struct {
@@ -1448,16 +1463,12 @@ func (s *WorkspaceSide) setColor() {
 }
 
 func (i *WorkspaceSideItem) setActive() {
-	// if i.active {
-	// 	return
-	// }
 	if editor.colors.fg == nil || editor.colors.bg == nil {
 		return
 	}
 	i.active = true
 	bg := editor.colors.sideBarSelectedItemBg
 	fg := editor.colors.fg
-	// transparent := editor.config.Editor.Transparent / 2.0
 	transparent := transparent()
 	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); color: %s; }", bg.R, bg.G, bg.B, transparent, fg.String()))
 	svgOpenContent := editor.getSvg("chevron-down", fg)
@@ -1467,7 +1478,7 @@ func (i *WorkspaceSideItem) setActive() {
 
 	reloadFilelist := i.cwdpath != i.Filelist.cwdpath
 
-	if reloadFilelist && editor.activity.editItem.active {
+	if reloadFilelist {
 		filelist, err := newFilelist(i.cwdpath)
 		if err != nil {
 			return
@@ -1489,7 +1500,6 @@ func (i *WorkspaceSideItem) setInactive() {
 		return
 	}
 	i.active = false
-	// bg := editor.colors.sideBarBg
 	fg := editor.colors.inactiveFg
 	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; }", fg.String()))
 	svgOpenContent := editor.getSvg("chevron-down", fg)

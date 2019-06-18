@@ -48,6 +48,8 @@ type NotifyButton struct {
 
 // ColorPalette is
 type ColorPalette struct {
+	e *Editor
+
 	fg                    *RGBA
 	bg                    *RGBA
 	inactiveFg            *RGBA
@@ -55,8 +57,6 @@ type ColorPalette struct {
 	abyss                 *RGBA
 	matchFg               *RGBA
 	selectedBg            *RGBA
-	activityBarFg         *RGBA
-	activityBarBg         *RGBA
 	sideBarFg             *RGBA
 	sideBarBg             *RGBA
 	sideBarSelectedItemBg *RGBA
@@ -84,8 +84,8 @@ type Editor struct {
 	version string
 	app     *widgets.QApplication
 
-	activity          *Activity
-	splitter          *widgets.QSplitter
+	homeDir string
+
 	notifyStartPos    *core.QPoint
 	notificationWidth int
 	notify            chan *Notify
@@ -98,7 +98,6 @@ type Editor struct {
 	window     *frameless.QFramelessWindow
 	wsWidget   *widgets.QWidget
 	wsSide     *WorkspaceSide
-	deinSide   *DeinSide
 
 	statuslineHeight int
 	width            int
@@ -150,17 +149,13 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
-	if runtime.GOOS == "linux" {
-		exe, _ := os.Executable()
-		dir, _ := filepath.Split(exe)
-		_ = os.Setenv("LD_LIBRARY_PATH", dir+"lib")
-		_ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
-	}
+	putEnv()
 
 	home, err := homedir.Dir()
 	if err != nil {
 		home = "~"
 	}
+
 	editor = &Editor{
 		version: "v0.3.5",
 		signal:  NewEditorSignal(nil),
@@ -168,150 +163,50 @@ func InitEditor() {
 		stop:    make(chan struct{}),
 		guiInit: make(chan bool, 1),
 		config:  newGonvimConfig(home),
+		homeDir: home,
 	}
 	e := editor
+
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
-		editor.cleanup()
+		e.cleanup()
 	})
-	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QWidget")
-	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QLabel")
 
-	// font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
-	e.iconSize = editor.config.Editor.FontSize * 11 / 9
-
+	e.initFont()
 	e.initSVGS()
-
-	e.colors = initColorPalette()
-	e.colors.update()
-
+	e.initColorPalette()
 	e.initNotifications()
 
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent)
 	e.setWindowOptions()
 
-	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
-	layout.SetContentsMargins(0, 0, 0, 0)
-	layout.SetSpacing(0)
+	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
+	l.SetContentsMargins(0, 0, 0, 0)
+	l.SetSpacing(0)
 
-	e.window.SetupContent(layout)
+	e.window.SetupContent(l)
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
-
 	e.wsSide = newWorkspaceSide()
-	sideArea := widgets.NewQScrollArea(nil)
-	sideArea.SetWidgetResizable(true)
-	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-	sideArea.ConnectEnterEvent(func(event *core.QEvent) {
-		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
-	})
-	sideArea.ConnectLeaveEvent(func(event *core.QEvent) {
-		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-	})
-	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
-	sideArea.SetWidget(e.wsSide.widget)
-	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
-	e.wsSide.scrollarea = sideArea
+	e.wsSide.newScrollArea()
 
-	activityWidget := widgets.NewQWidget(nil, 0)
-	activityWidget.SetObjectName("Activity")
-	activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
-	activity := newActivity()
-	activity.widget = activityWidget
-	activityWidget.SetLayout(activity.layout)
-	e.activity = activity
-	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
-	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
+	e.initWorkspaces()
 
-	go e.dropShadow()
-
-	if e.config.ActivityBar.Visible == false {
-		e.activity.widget.Hide()
+	l.AddWidget(e.wsWidget, 1, 0)
+	if editor.config.SideBar.Visible {
+		l.AddWidget(e.wsSide.scrollarea, 0, 0)
 	}
-	if e.config.SideBar.Visible == false {
-		e.activity.sideArea.Hide()
-	}
-
-	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
-	splitter.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
-	splitter.AddWidget(e.activity.sideArea)
-	splitter.AddWidget(e.wsWidget)
-	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
-	splitter.SetStretchFactor(1, 100)
-	splitter.SetObjectName("splitter")
-	e.splitter = splitter
-
-	e.workspaces = []*Workspace{}
-	sessionExists := false
-	if err == nil {
-		if e.config.Workspace.RestoreSession == true {
-			for i := 0; i < 20; i++ {
-				path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
-				_, err := os.Stat(path)
-				if err != nil {
-					break
-				}
-				sessionExists = true
-				ws, err := newWorkspace(path)
-				if err != nil {
-					break
-				}
-				e.workspaces = append(e.workspaces, ws)
-			}
-		}
-	}
-	if !sessionExists {
-		ws, err := newWorkspace("")
-		if err != nil {
-			return
-		}
-		e.workspaces = append(e.workspaces, ws)
-	}
-	e.workspaceUpdate()
-
-	layout.AddWidget(splitter, 1, 0)
-	layout.AddWidget(e.activity.widget, 0, 0)
-
-	e.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	e.wsWidget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
-	e.wsWidget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
 			ws.updateSize()
 		}
 	})
-	// for macos, open file via Finder
-	macosArg := ""
-	if runtime.GOOS == "darwin" {
-		e.app.ConnectEvent(func(event *core.QEvent) bool {
-			switch event.Type() {
-			case core.QEvent__FileOpen:
-				// If gonvim not launched on finder (it is started in terminal)
-				if os.Getppid() != 1 {
-				        return false
-				}
-				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
-				macosArg = fileOpenEvent.File()
-				gonvim := e.workspaces[e.active].nvim
-				isModified := ""
-				isModified, _ = gonvim.CommandOutput("echo &modified")
-				if isModified == "1" {
-					gonvim.Command(fmt.Sprintf(":tabe %s", macosArg))
-				} else {
-					gonvim.Command(fmt.Sprintf(":e %s", macosArg))
-				}
-			}
-			return true
-		})
-		e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
-			e.app.DisconnectEvent()
-			event.Accept()
-		})
-	}
+
+	e.loadFileInDarwin()
 
 	go func() {
-		<-editor.stop
+		<-e.stop
 		if runtime.GOOS == "darwin" {
 			e.app.DisconnectEvent()
 		}
@@ -323,9 +218,73 @@ func InitEditor() {
 	widgets.QApplication_Exec()
 }
 
+func (e *Editor) initWorkspaces() {
+	e.workspaces = []*Workspace{}
+	sessionExists := false
+	if e.config.Workspace.RestoreSession == true {
+		for i := 0; i < 20; i++ {
+			path := filepath.Join(e.homeDir, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
+			_, err := os.Stat(path)
+			if err != nil {
+				break
+			}
+			sessionExists = true
+			ws, err := newWorkspace(path)
+			if err != nil {
+				break
+			}
+			e.workspaces = append(e.workspaces, ws)
+		}
+	}
+	if !sessionExists {
+		ws, err := newWorkspace("")
+		if err != nil {
+			return
+		}
+		e.workspaces = append(e.workspaces, ws)
+	}
+
+	e.workspaceUpdate()
+
+	e.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	e.wsWidget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
+	e.wsWidget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
+}
+
+func (e *Editor) loadFileInDarwin() {
+	if runtime.GOOS != "darwin" {
+		return
+	}
+	macosArg := ""
+	e.app.ConnectEvent(func(event *core.QEvent) bool {
+		switch event.Type() {
+		case core.QEvent__FileOpen:
+			// If gonvim not launched on finder (it is started in terminal)
+			if os.Getppid() != 1 {
+				return false
+			}
+			fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
+			macosArg = fileOpenEvent.File()
+			gonvim := e.workspaces[e.active].nvim
+			isModified := ""
+			isModified, _ = gonvim.CommandOutput("echo &modified")
+			if isModified == "1" {
+				gonvim.Command(fmt.Sprintf(":tabe %s", macosArg))
+			} else {
+				gonvim.Command(fmt.Sprintf(":e %s", macosArg))
+			}
+		}
+		return true
+	})
+	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
+		e.app.DisconnectEvent()
+		event.Accept()
+	})
+}
+
 func (e *Editor) initNotifications() {
 	e.notifications = []*Notification{}
-	e.notificationWidth = editor.config.Editor.Width * 2 / 3
+	e.notificationWidth = e.config.Editor.Width * 2 / 3
 	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
 	e.signal.ConnectNotifySignal(func() {
 		notify := <-e.notify
@@ -338,6 +297,23 @@ func (e *Editor) initNotifications() {
 			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
+}
+
+func putEnv() {
+	if runtime.GOOS == "linux" {
+		exe, _ := os.Executable()
+		dir, _ := filepath.Split(exe)
+		_ = os.Setenv("LD_LIBRARY_PATH", dir+"lib")
+		_ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
+	}
+	if runtime.GOOS == "windows" {
+		_ = os.Setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
+	}
+}
+
+func (e *Editor) initFont() {
+	e.app.SetFont(gui.NewQFont2(e.config.Editor.FontFamily, e.config.Editor.FontSize, 1, false), "QWidget")
+	e.app.SetFont(gui.NewQFont2(e.config.Editor.FontFamily, e.config.Editor.FontSize, 1, false), "QLabel")
 }
 
 func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
@@ -367,48 +343,30 @@ func (e *Editor) popupNotification(level NotifyLevel, p int, message string, opt
 	notification.show()
 }
 
-func (e *Editor) dropShadow() {
-	// Drop shadow to Side Bar
-	if e.config.SideBar.DropShadow == true {
-		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		shadow.SetBlurRadius(60)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-		shadow.SetOffset3(6, 2)
-		e.activity.sideArea.SetGraphicsEffect(shadow)
-	}
-
-	// Drop shadow for Activity Bar
-	if e.config.ActivityBar.DropShadow == true {
-		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		shadow.SetBlurRadius(60)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-		shadow.SetOffset3(6, 2)
-		e.activity.widget.SetGraphicsEffect(shadow)
-	}
-}
-
-func initColorPalette() *ColorPalette {
-	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+func (e *Editor) initColorPalette() {
+	rgbAccent := hexToRGBA(e.config.SideBar.AccentColor)
 	fg := newRGBA(180, 185, 190, 1)
 	bg := newRGBA(9, 13, 17, 1)
-	return &ColorPalette{
+	c := &ColorPalette{
+		e:          e,
 		bg:         bg,
 		fg:         fg,
 		selectedBg: bg.brend(rgbAccent, 0.3),
 		matchFg:    rgbAccent,
 	}
+
+	e.colors = c
+	e.colors.update()
 }
 
 func (c *ColorPalette) update() {
 	fg := c.fg
 	bg := c.bg
-	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+	rgbAccent := hexToRGBA(c.e.config.SideBar.AccentColor)
 	c.selectedBg = bg.brend(rgbAccent, 0.3)
 	c.inactiveFg = warpColor(bg, -80)
 	c.comment = warpColor(fg, -80)
 	c.abyss = warpColor(bg, 5)
-	c.activityBarFg = fg
-	c.activityBarBg = warpColor(bg, -10)
 	c.sideBarFg = warpColor(fg, -5)
 	c.sideBarBg = warpColor(bg, -5)
 	c.sideBarSelectedItemBg = warpColor(bg, -15)
@@ -423,32 +381,7 @@ func (c *ColorPalette) update() {
 }
 
 func (e *Editor) updateGUIColor() {
-	// if activity & sidebar is enabled
-	if e.activity != nil && e.wsSide != nil {
-		// for splitter
-		e.splitter.SetStyleSheet(" QSplitter::handle:horizontal { background-color: rgba(0, 0, 0, 0); }")
-
-		// for Activity Bar
-		e.activity.widget.SetStyleSheet(fmt.Sprintf("QWidget#Activity { background-color: rgba(0, 0, 0, 0); border-right: 1px solid %s}", editor.colors.windowSeparator.Hex()))
-		e.activity.sideArea.SetStyleSheet(fmt.Sprintf("* { background-color: rgba(0, 0, 0, 0); border-right: 1px solid %s}", editor.colors.windowSeparator.Hex()))
-
-		var svgEditContent string
-		if e.activity.editItem.active == true {
-			svgEditContent = e.getSvg("activityedit", e.colors.fg)
-		} else {
-			svgEditContent = e.getSvg("activityedit", e.colors.inactiveFg)
-		}
-		e.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
-
-		var svgDeinContent string
-		if e.activity.deinItem.active == true {
-			svgDeinContent = e.getSvg("activitydein", e.colors.fg)
-
-		} else {
-			svgDeinContent = e.getSvg("activitydein", e.colors.inactiveFg)
-
-		}
-		e.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
+	if e.wsSide != nil {
 		e.wsSide.setColor()
 	}
 
@@ -539,10 +472,6 @@ func (e *Editor) workspaceNew() {
 		return
 	}
 
-	//e.active++
-	//e.workspaces = append(e.workspaces, nil)
-	//copy(e.workspaces[e.active+1:], e.workspaces[e.active:])
-
 	e.workspaces = append(e.workspaces, nil)
 	e.active = len(e.workspaces) - 1
 
@@ -612,19 +541,12 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 }
 
 func (e *Editor) unfocusGonvimUI() {
-	if e.activity == nil || e.wsSide == nil {
+	if e.wsSide == nil {
 		return
 	}
-	if e.activity.deinItem.active {
-		e.deinSide.searchbox.editBox.ClearFocus()
-		e.deinSide.widget.ClearFocus()
-		e.deinSide.scrollarea.ClearFocus()
-	}
-	if e.activity.editItem.active {
-		e.wsSide.widget.ClearFocus()
-		e.wsSide.widget.ClearFocus()
-		e.wsSide.scrollarea.ClearFocus()
-	}
+	e.wsSide.widget.ClearFocus()
+	e.wsSide.widget.ClearFocus()
+	e.wsSide.scrollarea.ClearFocus()
 }
 
 func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier) string {

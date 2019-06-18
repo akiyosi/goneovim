@@ -161,40 +161,6 @@ func (m *Markdown) scrollDown() {
 	m.webpage.RunJavaScript("window.scrollBy(0, 20)")
 }
 
-func (m *Markdown) openReadme(reponame string, readme string) {
-	for gridid, win := range m.ws.screen.windows {
-		if gridid == m.mdGridId {
-			m.ws.nvim.SetCurrentWindow(win.id)
-			m.ws.nvim.Command("close")
-			m.htmlSet = false
-			if editor.deinSide.preDisplayedReadme == reponame {
-				return
-			}
-		}
-	}
-	m.ws.nvim.Command(`silent vertical split https://raw.githubusercontent.com/` + reponame + "/master/" + readme)
-	m.ws.nvim.Command(`e ` + GonvimMarkdownBufName)
-	m.ws.nvim.Command("setlocal filetype=" + GonvimMarkdownBufName)
-	m.ws.nvim.Command("setlocal buftype=nofile")
-	m.ws.nvim.Command("setlocal bufhidden=hide")
-	m.ws.nvim.Command("setlocal noswapfile")
-	m.ws.nvim.Command("setlocal nobuflisted")
-	m.ws.nvim.Command("setlocal nomodifiable")
-	m.ws.nvim.Command("setlocal nolist")
-	m.ws.nvim.Command("setlocal nowrap")
-	m.ws.nvim.Command(fmt.Sprintf(
-		"nnoremap <silent> <buffer> j :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollDownEvent,
-	))
-	m.ws.nvim.Command(fmt.Sprintf(
-		"nnoremap <silent> <buffer> k :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollUpEvent,
-	))
-	m.ws.nvim.Command("wincmd p")
-
-	editor.deinSide.preDisplayedReadme = reponame
-}
-
 func (m *Markdown) toggle() {
 	for gridid, win := range m.ws.screen.windows {
 		if gridid == m.mdGridId && m.mdGridId > 0 {
