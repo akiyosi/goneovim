@@ -28,6 +28,7 @@ type Window struct {
 
 	s       *Screen
 	content [][]*Cell
+	lenLine []int
 
 	id     nvim.Window
 	pos    [2]int
@@ -307,7 +308,6 @@ func (s *Screen) toolTip(text string) {
 
 func (w *Window) paint(event *gui.QPaintEvent) {
 	w.paintMutex.Lock()
-	defer w.paintMutex.Unlock()
 
 	rect := event.M_rect()
 	top := rect.Y()
@@ -316,21 +316,19 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	font := w.s.ws.font
 	row := int(float64(top) / float64(font.lineHeight))
 	col := int(float64(left) / font.truewidth)
-	rows := w.rows
-	cols := w.cols
 
 	p := gui.NewQPainter2(w.widget)
 	p.SetFont(font.fontNew)
 
-	for y := row; y < row+rows; y++ {
+	for y := row; y < row+w.rows; y++ {
 		if w == w.s.windows[1] && w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
 			break
 		}
 		if y >= w.rows {
 			continue
 		}
-		w.fillHightlight(p, y, col, cols)
-		w.drawText(p, y, col, cols)
+		w.fillHightlight(p, y, col, w.cols)
+		w.drawText(p, y, col, w.cols)
 	}
 
 	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
@@ -356,6 +354,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	p.DestroyQPainter()
+	w.paintMutex.Unlock()
 }
 
 func (w *Window) drawIndentguide(p *gui.QPainter) {
@@ -370,9 +369,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 		line := w.content[y]
 		res := 0
 		skipDraw := false
-		for x := 0; x < len(line); x++ {
+		for x := 0; x < w.lenLine[y]; x++ {
 			skipDraw = false
-			if x+1 == len(line) {
+			if x+1 == w.lenLine[y] {
 				break
 			}
 			nd := nline[x+1]
@@ -700,6 +699,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 	// make new size content
 	content := make([][]*Cell, rows)
+	lenLine := make([]int, rows)
 
 	for i := 0; i < rows; i++ {
 		content[i] = make([]*Cell, cols)
@@ -710,6 +710,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 			if i >= len(win.content) {
 				continue
 			}
+			lenLine[i] = win.lenLine[i]
 			for j := 0; j < cols; j++ {
 				if j >= len(win.content[i]) {
 					continue
@@ -733,6 +734,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win = s.windows[gridid]
 	}
 
+	win.lenLine = lenLine
 	win.content = content
 	win.cols = cols
 	win.rows = rows
@@ -864,6 +866,7 @@ func (s *Screen) gridClear(args []interface{}) {
 		}
 
 		s.windows[gridid].content = make([][]*Cell, s.windows[gridid].rows)
+		s.windows[gridid].lenLine = make([]int, s.windows[gridid].rows)
 
 		for i := 0; i < s.windows[gridid].rows; i++ {
 			s.windows[gridid].content[i] = make([]*Cell, s.windows[gridid].cols)
@@ -899,9 +902,10 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	line := content[row]
 	cells := arg[3].([]interface{})
 
-	oldNormalWidth := true
-	lastCell := &Cell{}
+	buffLenLine := col
+	lenLine := 0
 
+	countLenLine := false
 	for _, arg := range cells {
 		if col >= len(line) {
 			continue
@@ -924,11 +928,13 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			repeat = util.ReflectToInt(cell[2])
 		}
 
-		makeCells := func() {
-			if line[col] != nil && !line[col].normalWidth {
-				oldNormalWidth = false
-			} else {
-				oldNormalWidth = true
+		r := 1
+		if repeat == 0 {
+			repeat = 1
+		}
+		for r <= repeat {
+			if col >= len(line) {
+				break
 			}
 
 			if line[col] == nil {
@@ -937,7 +943,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 
 			line[col].char = text.(string)
 			line[col].normalWidth = s.isNormalWidth(line[col].char)
-			lastCell = line[col]
 
 			switch col {
 			case 0:
@@ -949,22 +954,31 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 					line[col].highlight = *s.highAttrDef[hi]
 				}
 			}
-			col++
-		} // end of makeCells()
 
-		r := 1
-		if repeat == 0 {
-			repeat = 1
-		}
-		for r <= repeat {
-			if col >= len(line) {
-				break
+			// Count Line content length
+			buffLenLine++
+			if line[col].char != " " {
+				countLenLine = true
+			} else if line[col].char == " " {
+				countLenLine = false
 			}
-			makeCells()
+			if countLenLine {
+				lenLine += buffLenLine
+				buffLenLine = 0
+			}
+
+			col++
 			r++
 		}
+
 		s.windows[gridid].queueRedraw(0, row, s.windows[gridid].cols, 1)
 	}
+
+	// Set content length of line
+	if lenLine >= s.windows[gridid].lenLine[row] {
+		s.windows[gridid].lenLine[row] = lenLine
+	}
+
 	return
 }
 
@@ -1054,6 +1068,7 @@ func (w *Window) scroll(count int) {
 	left := w.scrollRegion[2]
 	right := w.scrollRegion[3]
 	content := w.content
+	lenLine := w.lenLine
 
 	if top == 0 && bot == 0 && left == 0 && right == 0 {
 		top = 0
@@ -1068,6 +1083,8 @@ func (w *Window) scroll(count int) {
 				continue
 			}
 			copy(content[row], content[row+count])
+			lenLine[row] = lenLine[row+count]
+
 		}
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
@@ -1080,6 +1097,7 @@ func (w *Window) scroll(count int) {
 				continue
 			}
 			copy(content[row], content[row+count])
+			lenLine[row] = lenLine[row+count]
 		}
 		for row := top; row < top-count; row++ {
 			for col := left; col <= right; col++ {
@@ -1255,10 +1273,14 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	font.SetItalic(false)
 	pointF := core.NewQPointF()
 	line := w.content[y]
+	lenLine := w.lenLine[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
 
 	for x := col; x < col+cols; x++ {
+		if x > lenLine {
+			break
+		}
 		if x >= len(line) {
 			continue
 		}

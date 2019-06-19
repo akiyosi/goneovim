@@ -895,11 +895,12 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.message.msgHistoryShow(args)
 		case "busy_start":
 		case "busy_stop":
+		case "flush":
+			s.update()
 		default:
 		}
 	}
 
-	s.update()
 	w.drawOtherUI()
 }
 
