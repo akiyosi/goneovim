@@ -24,7 +24,6 @@ type Font struct {
 func fontSizeNew(font *gui.QFont) (int, int, float64, float64) {
 	fontMetrics := gui.NewQFontMetricsF(font)
 	h := fontMetrics.Height()
-	//w := fontMetrics.Width("W")
 	w := fontMetrics.HorizontalAdvance("W", -1)
 	ascent := fontMetrics.Ascent()
 	width := int(math.Ceil(w))
@@ -34,7 +33,14 @@ func fontSizeNew(font *gui.QFont) (int, int, float64, float64) {
 
 func initFontNew(family string, size int, lineSpace int) *Font {
 	font := gui.NewQFont2(family, size, int(gui.QFont__Normal), false)
-	width, height, truewidth, ascent := fontSizeNew(font)
+
+	// fontMetrics calculate is too slow, so we calculate approximate font metrics
+	//// width, height, truewidth, ascent := fontSizeNew(font)
+	h := math.Trunc(float64(size)*1.28) + 2.0
+	w := math.Ceil(float64(size) * 0.7)
+	height := int(math.Ceil(h))
+	width := int(math.Ceil(w))
+	ascent := math.Ceil(float64(size) * 1.1)
 	defaultFont := gui.NewQFont()
 	return &Font{
 		fontNew:            font,
@@ -42,7 +48,7 @@ func initFontNew(family string, size int, lineSpace int) *Font {
 		defaultFont:        defaultFont,
 		defaultFontMetrics: gui.NewQFontMetricsF(defaultFont),
 		width:              width,
-		truewidth:          truewidth,
+		truewidth:          w,
 		height:             height,
 		lineHeight:         height + lineSpace,
 		lineSpace:          lineSpace,

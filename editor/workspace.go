@@ -3,6 +3,7 @@ package editor
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -104,6 +105,17 @@ func newWorkspace(path string) (*Workspace, error) {
 		special:       newRGBA(255, 255, 255, 1),
 	}
 	w.font = initFontNew(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, editor.config.Editor.Linespace)
+	go func() {
+		height := w.font.fontMetrics.Height()
+		width := w.font.fontMetrics.HorizontalAdvance("W", -1)
+		ascent := w.font.fontMetrics.Ascent()
+		w.font.height = int(math.Ceil(height))
+		w.font.width = int(math.Ceil(width))
+		w.font.truewidth = width
+		w.font.ascent = ascent
+		w.font.lineHeight = w.font.height + w.font.lineSpace
+	}()
+
 	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)
 	w.rows = editor.config.Editor.Height / w.font.lineHeight
 
