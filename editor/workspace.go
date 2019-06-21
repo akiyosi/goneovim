@@ -584,6 +584,9 @@ func (w *Workspace) setCwd(cwd string) {
 			// if editor.activity.editItem.active == false {
 			// 	continue
 			// }
+			if editor.wsSide.scrollarea == nil {
+				continue
+			}
 
 			filelist, err := newFilelist(path)
 			if err != nil {
@@ -1467,6 +1470,9 @@ func (s *WorkspaceSide) setColor() {
 	sbg := editor.colors.scrollBarBg.StringTransparent()
 	s.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg))
 	s.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 0px solid #000; padding-top: 5px; background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; border-right: 0px solid; }", fg))
+	if s.scrollarea == nil {
+		return
+	}
 	s.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
 
 	if len(editor.workspaces) == 1 {
@@ -1477,6 +1483,9 @@ func (s *WorkspaceSide) setColor() {
 
 func (i *WorkspaceSideItem) setActive() {
 	if editor.colors.fg == nil || editor.colors.bg == nil {
+		return
+	}
+	if editor.wsSide.scrollarea == nil {
 		return
 	}
 	i.active = true

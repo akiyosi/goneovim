@@ -188,12 +188,13 @@ func InitEditor() {
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
-	e.wsSide.newScrollArea()
 
 	e.initWorkspaces()
 
 	l.AddWidget(e.wsWidget, 1, 0)
+
 	if editor.config.SideBar.Visible {
+		e.wsSide.newScrollArea()
 		l.AddWidget(e.wsSide.scrollarea, 0, 0)
 	}
 
@@ -542,6 +543,9 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 
 func (e *Editor) unfocusGonvimUI() {
 	if e.wsSide == nil {
+		return
+	}
+	if e.wsSide.scrollarea == nil {
 		return
 	}
 	e.wsSide.widget.ClearFocus()
