@@ -201,7 +201,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.Move2(0, 0)
 	w.updateSize()
 
-	w.minimap.startMinimapProc()
+	go w.minimap.startMinimapProc()
 
 	if runtime.GOOS == "windows" {
 		select {
