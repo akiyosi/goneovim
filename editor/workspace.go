@@ -842,7 +842,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		case "grid_cursor_goto":
 			s.gridCursorGoto(args)
-			w.cursor.update()
 			if w.minimap.visible {
 				go w.updateMinimap()
 				w.minimap.mapScroll()
@@ -917,6 +916,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "busy_stop":
 		case "flush":
 			s.update()
+			w.cursor.update()
 		default:
 		}
 	}
