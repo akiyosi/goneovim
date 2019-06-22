@@ -371,8 +371,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 		skipDraw := false
 		for x := 0; x < w.lenLine[y]; x++ {
 			skipDraw = false
+
 			if x+1 == w.lenLine[y+1] {
-				break
+			        break
 			}
 			nlnc := nextline[x+1]
 			if nlnc == nil {
@@ -400,6 +401,13 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 				(x+1-res)%w.s.ws.ts == 0 &&
 				c.char == " " && nc.char != " " &&
 				nlc.char == " " && nlnc.char == " " {
+
+				if w.lenLine[y] >= len(line) {
+					break
+				}
+				bra := line[w.lenLine[y]-1].char
+				cket := getCket(bra)
+
 				for row := y; row < len(w.content); row++ {
 					if row+1 == len(w.content) {
 						break
@@ -410,6 +418,10 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 							break
 						}
 						if w.content[z][x+1].char != " " {
+							if w.content[z][x+1].char != cket {
+								break
+							}
+
 							for v := x; v >= res; v-- {
 								if w.content[z][v] == nil {
 									break
@@ -447,6 +459,29 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 			}
 		}
 	}
+}
+
+func getCket(bra string) string {
+	cket := " "
+
+	switch bra {
+	case "{":
+		cket = "}"
+	case "[":
+		cket = "]"
+	case "(":
+		cket = ")"
+	case "<":
+		cket = ">"
+	case `"`:
+		cket = `"`
+	case `'`:
+		cket = `'`
+	case "`":
+		cket = "`"
+	}
+
+	return cket
 }
 
 func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
@@ -889,7 +924,7 @@ func (s *Screen) gridLine(args []interface{}) {
 func (s *Screen) updateGridContent(arg []interface{}) {
 	gridid := util.ReflectToInt(arg[0])
 	row := util.ReflectToInt(arg[1])
-	col := util.ReflectToInt(arg[2])
+	colStart := util.ReflectToInt(arg[2])
 
 	if isSkipGlobalId(gridid) {
 		return
@@ -899,10 +934,11 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	if row >= s.windows[gridid].rows {
 		return
 	}
+	col := colStart
 	line := content[row]
 	cells := arg[3].([]interface{})
 
-	buffLenLine := col
+	buffLenLine := colStart
 	lenLine := 0
 
 	countLenLine := false
@@ -965,6 +1001,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			if countLenLine {
 				lenLine += buffLenLine
 				buffLenLine = 0
+				countLenLine = false
 			}
 
 			col++
@@ -975,9 +1012,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	}
 
 	// Set content length of line
-	if lenLine >= s.windows[gridid].lenLine[row] {
-		s.windows[gridid].lenLine[row] = lenLine
-	}
+	s.windows[gridid].lenLine[row] = lenLine
 
 	return
 }
@@ -1276,6 +1311,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	lenLine := w.lenLine[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
+
 
 	for x := col; x < col+cols; x++ {
 		if x > lenLine {
