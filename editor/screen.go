@@ -1011,6 +1011,28 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		s.windows[gridid].queueRedraw(0, row, s.windows[gridid].cols, 1)
 	}
 
+	// If the array of cell changes doesn't reach to the end of the line,
+	// the rest should remain unchanged.
+	buffLenLine = 0
+	if lenLine < s.windows[gridid].lenLine[row] {
+		for x := col; x < s.windows[gridid].lenLine[row]; x++ {
+			if x >= len(line) {
+				break
+			}
+			// Count Line content length
+			buffLenLine++
+			if line[x].char != " " {
+				countLenLine = true
+			} else if line[x].char == " " {
+				countLenLine = false
+			}
+			if countLenLine {
+				lenLine += buffLenLine
+				buffLenLine = 0
+				countLenLine = false
+			}
+		}
+	}
 	// Set content length of line
 	s.windows[gridid].lenLine[row] = lenLine
 
