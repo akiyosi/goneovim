@@ -365,21 +365,21 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 		if y+1 == len(w.content) {
 			return
 		}
-		nline := w.content[y+1]
+		nextline := w.content[y+1]
 		line := w.content[y]
 		res := 0
 		skipDraw := false
 		for x := 0; x < w.lenLine[y]; x++ {
 			skipDraw = false
-			if x+1 == w.lenLine[y] {
+			if x+1 == w.lenLine[y+1] {
 				break
 			}
-			nd := nline[x+1]
-			if nd == nil {
+			nlnc := nextline[x+1]
+			if nlnc == nil {
 				continue
 			}
-			d := nline[x]
-			if d == nil {
+			nlc := nextline[x]
+			if nlc == nil {
 				continue
 			}
 			nc := line[x+1]
@@ -399,7 +399,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 			if x > res &&
 				(x+1-res)%w.s.ws.ts == 0 &&
 				c.char == " " && nc.char != " " &&
-				d.char == " " && nd.char == " " {
+				nlc.char == " " && nlnc.char == " " {
 				for row := y; row < len(w.content); row++ {
 					if row+1 == len(w.content) {
 						break
@@ -1410,8 +1410,8 @@ func (s *Screen) windowPosition(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		id := util.ReflectToInt(arg.([]interface{})[1])
-		startRow := util.ReflectToInt(arg.([]interface{})[2])
-		startCol := util.ReflectToInt(arg.([]interface{})[3])
+		row := util.ReflectToInt(arg.([]interface{})[2])
+		col := util.ReflectToInt(arg.([]interface{})[3])
 
 		if isSkipGlobalId(gridid) {
 			continue
@@ -1424,9 +1424,9 @@ func (s *Screen) windowPosition(args []interface{}) {
 
 		win.id = *(*nvim.Window)(unsafe.Pointer(&id))
 		win.shown = true
-		win.pos[0] = startCol
-		win.pos[1] = startRow
-		win.move(startCol, startRow)
+		win.pos[0] = col
+		win.pos[1] = row
+		win.move(col, row)
 		win.widget.Show()
 	}
 

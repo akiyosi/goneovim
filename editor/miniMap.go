@@ -468,13 +468,8 @@ func (m *MiniMap) mapScroll() {
 
 	var regionHeight int
 	var winpos [2]int
-	for _, win := range m.ws.screen.curWins {
-		if win.pos[0] <= m.ws.screen.cursor[0] && m.ws.screen.cursor[0] <= win.pos[0]+win.height {
-			regionHeight = win.height
-			winpos = win.pos
-			break
-		}
-	}
+	regionHeight = m.ws.screen.windows[m.ws.cursor.gridid].rows
+	winpos = m.ws.screen.windows[m.ws.cursor.gridid].pos
 	m.curRegion.SetFixedHeight(int(float64(regionHeight) * float64(m.font.lineHeight)))
 	pos := int(float64(m.font.lineHeight) * float64(absScreenTop-absMapTop+winpos[0]))
 	m.curRegion.Move2(0, pos)
