@@ -362,7 +362,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 		return
 	}
 	for y := 0; y < len(w.content); y++ {
-		if y+1 == len(w.content) {
+		if y+1 >= len(w.content) {
 			return
 		}
 		nextline := w.content[y+1]
@@ -372,8 +372,11 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 		for x := 0; x < w.lenLine[y]; x++ {
 			skipDraw = false
 
-			if x+1 == w.lenLine[y+1] {
-			        break
+			// if x+1 == w.lenLine[y+1] {
+			//         break
+			// }
+			if x+1 >= len(nextline) {
+				break
 			}
 			nlnc := nextline[x+1]
 			if nlnc == nil {
@@ -1015,8 +1018,11 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	// the rest should remain unchanged.
 	buffLenLine = 0
 	if lenLine < s.windows[gridid].lenLine[row] {
-		for x := col; x < s.windows[gridid].lenLine[row]; x++ {
+		for x := lenLine; x < s.windows[gridid].lenLine[row]; x++ {
 			if x >= len(line) {
+				break
+			}
+			if line[x] == nil {
 				break
 			}
 			// Count Line content length
