@@ -499,9 +499,9 @@ func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
 			float64(w.s.ws.font.lineHeight),
 		),
 		gui.NewQColor3(
-			editor.colors.windowSeparator.R,
-			editor.colors.windowSeparator.G,
-			editor.colors.windowSeparator.B,
+			editor.colors.indentGuide.R,
+			editor.colors.indentGuide.G,
+			editor.colors.indentGuide.B,
 			255),
 	)
 }
@@ -1266,7 +1266,6 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
-	rectF := core.NewQRectF()
 	font := w.s.ws.font
 	line := w.content[y]
 	start := -1
@@ -1278,9 +1277,8 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 		if x >= len(line) {
 			continue
 		}
-		cell := line[x]
-		if cell != nil {
-			bg = cell.highlight.background
+		if line[x] != nil {
+			bg = line[x].highlight.background
 		} else {
 			bg = nil
 		}
@@ -1296,9 +1294,10 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 				if lastBg.equals(bg) {
 					end = x
 				} else {
-					if lastBg != editor.colors.bg {
+					// Draw a background only when it's color differs from the entire background
+					if !lastBg.equals(editor.colors.bg) {
 						// last bg is different; draw the previous and start a new one
-						rectF.SetRect(
+						rectF := core.NewQRectF4(
 							float64(start)*font.truewidth,
 							float64((y)*font.lineHeight),
 							float64(end-start+1)*font.truewidth,
@@ -1306,7 +1305,15 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 						)
 						p.FillRect(
 							rectF,
-							gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
+							gui.NewQBrush3(
+								gui.NewQColor3(
+									lastBg.R,
+									lastBg.G,
+									lastBg.B,
+									w.transparent(lastBg),
+								),
+								core.Qt__SolidPattern,
+							),
 						)
 					}
 
@@ -1318,8 +1325,8 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 			}
 		} else {
 			if lastBg != nil {
-				if lastBg != editor.colors.bg {
-					rectF.SetRect(
+				if !lastBg.equals(editor.colors.bg) {
+					rectF := core.NewQRectF4(
 						float64(start)*font.truewidth,
 						float64((y)*font.lineHeight),
 						float64(end-start+1)*font.truewidth,
@@ -1327,7 +1334,15 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 					)
 					p.FillRect(
 						rectF,
-						gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
+						gui.NewQBrush3(
+							gui.NewQColor3(
+								lastBg.R,
+								lastBg.G,
+								lastBg.B,
+								w.transparent(lastBg),
+							),
+							core.Qt__SolidPattern,
+						),
 					)
 				}
 
@@ -1337,11 +1352,11 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 				lastBg = nil
 			}
 		}
-		lastCell = cell
+		lastCell = line[x]
 	}
 	if lastBg != nil {
-		if lastBg != editor.colors.bg {
-			rectF.SetRect(
+		if !lastBg.equals(editor.colors.bg) {
+			rectF := core.NewQRectF4(
 				float64(start)*font.truewidth,
 				float64((y)*font.lineHeight),
 				float64(end-start+1)*font.truewidth,
@@ -1349,7 +1364,15 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 			)
 			p.FillRect(
 				rectF,
-				gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
+				gui.NewQBrush3(
+					gui.NewQColor3(
+						lastBg.R,
+						lastBg.G,
+						lastBg.B,
+						w.transparent(lastBg),
+					),
+					core.Qt__SolidPattern,
+				),
 			)
 		}
 	}
@@ -1363,7 +1386,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	font := p.Font()
 	font.SetBold(false)
 	font.SetItalic(false)
-	pointF := core.NewQPointF()
 	line := w.content[y]
 	lenLine := w.lenLine[y]
 	chars := map[Highlight][]int{}
@@ -1410,8 +1432,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 	X := float64(col) * wsfont.truewidth
 	Y := float64((y)*wsfont.lineHeight + wsfont.shift)
-	pointF.SetX(X)
-	pointF.SetY(Y)
+	pointF := core.NewQPointF3(X, Y)
 
 	for highlight, colorSlice := range chars {
 		var buffer bytes.Buffer
@@ -1467,8 +1488,12 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		return
 	}
 	line := w.content[y]
+	lenLine := w.lenLine[y]
 	font := w.s.ws.font
 	for x := col; x < col+cols; x++ {
+		if x > lenLine {
+			break
+		}
 		if x >= len(line) {
 			continue
 		}
@@ -1497,7 +1522,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			linef := core.NewQLineF3(start, Y, end, Y)
 			p.DrawLine(linef)
 		} else if cell.highlight.undercurl {
-			height := 2.0
+			height := font.ascent / 3.0
 			amplitude := font.ascent / 8.0
 			freq := 1.0
 			phase := 0.0
@@ -1582,6 +1607,9 @@ func (s *Screen) gridDestroy(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
+		if s.windows[gridid] == nil {
+			continue
+		}
 		s.windows[gridid].widget.Hide()
 		s.windows[gridid] = nil
 	}
@@ -1623,6 +1651,9 @@ func (s *Screen) windowHide(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
+		if s.windows[gridid] == nil {
+			continue
+		}
 		s.windows[gridid].shown = false
 		s.windows[gridid].widget.Hide()
 	}
@@ -1634,8 +1665,6 @@ func (s *Screen) windowClose(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		win := s.windows[gridid]
-		s.ws.nvim.SetCurrentWindow(win.id)
 	}
 }
 
