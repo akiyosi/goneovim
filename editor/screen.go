@@ -1273,7 +1273,29 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 				if lastBg.equals(bg) {
 					end = x
 				} else {
-					// last bg is different; draw the previous and start a new one
+					if lastBg != editor.colors.bg {
+						// last bg is different; draw the previous and start a new one
+						rectF.SetRect(
+							float64(start)*font.truewidth,
+							float64((y)*font.lineHeight),
+							float64(end-start+1)*font.truewidth,
+							float64(font.lineHeight),
+						)
+						p.FillRect(
+							rectF,
+							gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
+						)
+					}
+
+					// start a new one
+					start = x
+					end = x
+					lastBg = bg
+				}
+			}
+		} else {
+			if lastBg != nil {
+				if lastBg != editor.colors.bg {
 					rectF.SetRect(
 						float64(start)*font.truewidth,
 						float64((y)*font.lineHeight),
@@ -1284,25 +1306,7 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 						rectF,
 						gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
 					)
-
-					// start a new one
-					start = x
-					end = x
-					lastBg = bg
 				}
-			}
-		} else {
-			if lastBg != nil {
-				rectF.SetRect(
-					float64(start)*font.truewidth,
-					float64((y)*font.lineHeight),
-					float64(end-start+1)*font.truewidth,
-					float64(font.lineHeight),
-				)
-				p.FillRect(
-					rectF,
-					gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
-				)
 
 				// start a new one
 				start = x
@@ -1313,16 +1317,18 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 		lastCell = cell
 	}
 	if lastBg != nil {
-		rectF.SetRect(
-			float64(start)*font.truewidth,
-			float64((y)*font.lineHeight),
-			float64(end-start+1)*font.truewidth,
-			float64(font.lineHeight),
-		)
-		p.FillRect(
-			rectF,
-			gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
-		)
+		if lastBg != editor.colors.bg {
+			rectF.SetRect(
+				float64(start)*font.truewidth,
+				float64((y)*font.lineHeight),
+				float64(end-start+1)*font.truewidth,
+				float64(font.lineHeight),
+			)
+			p.FillRect(
+				rectF,
+				gui.NewQBrush3(gui.NewQColor3(lastBg.R, lastBg.G, lastBg.B, w.transparent(lastBg)), core.Qt__SolidPattern),
+			)
+		}
 	}
 }
 
