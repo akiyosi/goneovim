@@ -329,6 +329,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		}
 		w.fillHightlight(p, y, col, w.cols)
 		w.drawText(p, y, col, w.cols)
+		w.drawTextDecoration(p, y, col, w.cols)
 	}
 
 	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
@@ -854,6 +855,13 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.hiName = hiName.(string)
 	}
 
+	italic := hl["italic"]
+	if italic != nil {
+		highlight.italic = true
+	} else {
+		highlight.italic = false
+	}
+
 	bold := hl["bold"]
 	if bold != nil {
 		highlight.bold = true
@@ -861,11 +869,18 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.bold = false
 	}
 
-	italic := hl["italic"]
-	if italic != nil {
-		highlight.italic = true
+	underline := hl["underline"]
+	if underline != nil {
+		highlight.underline= true
 	} else {
-		highlight.italic = false
+		highlight.underline = false
+	}
+
+	undercurl := hl["undercurl"]
+	if undercurl != nil {
+		highlight.undercurl = true
+	} else {
+		highlight.undercurl = false
 	}
 
 	_, ok = hl["reverse"]
@@ -890,6 +905,14 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.background = rgba
 	} else {
 		highlight.background = s.ws.background
+	}
+
+	sp, ok := hl["special"]
+	if ok {
+		rgba := calcColor(util.ReflectToInt(sp))
+		highlight.special = rgba
+	} else {
+		highlight.special = highlight.foreground
 	}
 
 	return &highlight
@@ -1436,6 +1459,53 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		font.SetBold(cell.highlight.bold)
 		font.SetItalic(cell.highlight.italic)
 		p.DrawText(pointF, cell.char)
+	}
+}
+
+func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
+	if y >= len(w.content) {
+		return
+	}
+	line := w.content[y]
+	font := w.s.ws.font
+	for x := col; x < col+cols; x++ {
+		if x >= len(line) {
+			continue
+		}
+		cell := line[x]
+		if cell == nil {
+			continue
+		}
+		if !cell.highlight.underline && !cell.highlight.undercurl {
+			continue
+		}
+		pen := gui.NewQPen()
+		sp := cell.highlight.special
+		if sp != nil {
+			color := gui.NewQColor3(sp.R, sp.G, sp.B, 255)
+			pen.SetColor(color)
+		} else {
+			fg := editor.colors.fg
+			color := gui.NewQColor3(fg.R, fg.G, fg.B, 255)
+			pen.SetColor(color)
+		}
+		p.SetPen(pen)
+		start := float64(x) * font.truewidth
+		end := float64(x+1) * font.truewidth
+		Y := float64((y) * font.lineHeight) + font.ascent + float64(font.lineSpace)
+		if cell.highlight.underline {
+			linef := core.NewQLineF3(start, Y, end, Y)
+			p.DrawLine(linef)
+		} else if cell.highlight.undercurl {
+			seed := [8]float64{1.0, 0, 0, 1.0, 1.0, 2.0, 2.0, 2.0}
+			point := core.NewQPointF3(start, Y)
+			path := gui.NewQPainterPath2(point)
+			for i := int(point.X()); i<=int(end); i++ {
+				offset := seed[i%8]
+				path.LineTo(core.NewQPointF3(float64(i), Y - offset))
+			}
+			p.DrawPath(path)
+		}
 	}
 }
 

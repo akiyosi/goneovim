@@ -27,6 +27,7 @@ type Highlight struct {
 	hiName     string
 	foreground *RGBA
 	background *RGBA
+	special    *RGBA
 	italic     bool
 	bold       bool
 	underline  bool
