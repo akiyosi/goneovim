@@ -1497,12 +1497,16 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			linef := core.NewQLineF3(start, Y, end, Y)
 			p.DrawLine(linef)
 		} else if cell.highlight.undercurl {
-			seed := [8]float64{1.0, 0, 0, 1.0, 1.0, 2.0, 2.0, 2.0}
-			point := core.NewQPointF3(start, Y)
+			height := 2.0
+			amplitude := font.ascent / 8.0
+			freq := 1.0
+			phase := 0.0
+			y := Y + height / 2 + amplitude * math.Sin(0)
+			point := core.NewQPointF3(start, y)
 			path := gui.NewQPainterPath2(point)
 			for i := int(point.X()); i<=int(end); i++ {
-				offset := seed[i%8]
-				path.LineTo(core.NewQPointF3(float64(i), Y - offset))
+				y = Y + height / 2 + amplitude * math.Sin(2 * math.Pi * freq * float64(i) / font.truewidth + phase)
+				path.LineTo(core.NewQPointF3(float64(i), y))
 			}
 			p.DrawPath(path)
 		}
