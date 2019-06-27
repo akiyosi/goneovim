@@ -19,6 +19,9 @@ type Font struct {
 	lineHeight         int
 	lineSpace          int
 	shift              int
+
+	family      string
+	size        int
 }
 
 func fontSizeNew(font *gui.QFont) (int, int, float64, float64) {
@@ -54,6 +57,9 @@ func initFontNew(family string, size int, lineSpace int) *Font {
 		lineSpace:          lineSpace,
 		shift:              int(float64(lineSpace)/2 + ascent),
 		ascent:             ascent,
+
+		family: family,
+		size:   size,
 	}
 }
 

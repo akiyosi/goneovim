@@ -76,6 +76,20 @@ type Screen struct {
 	tooltip          *widgets.QLabel
 
 	glyph            map[Cell]*gui.QImage
+	// glyph            map[Cell]*gui.QPixmap
+
+	d1 time.Duration
+	d2 time.Duration
+	d3 time.Duration
+	d4 time.Duration
+	d5 time.Duration
+	d6 time.Duration
+	d7 time.Duration
+	d8 time.Duration
+	d9 time.Duration
+	d10 time.Duration
+	d11 time.Duration
+	d12 time.Duration
 }
 
 func newScreen() *Screen {
@@ -94,6 +108,7 @@ func newScreen() *Screen {
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
 		glyph:        make(map[Cell]*gui.QImage),
+		// glyph:        make(map[Cell]*gui.QPixmap),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -321,7 +336,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	col := int(float64(left) / font.truewidth)
 
 	p := gui.NewQPainter2(w.widget)
-	// p.SetFont(font.fontNew)
+	p.SetFont(font.fontNew)
 
 	for y := row; y < row+w.rows; y++ {
 		if w == w.s.windows[1] && w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
@@ -330,7 +345,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		if y >= w.rows {
 			continue
 		}
-		// w.fillHightlight(p, y, col, w.cols)
+		w.fillHightlight(p, y, col, w.cols)
 		// w.drawText(p, y, col, w.cols)
 		w.drawChars(p, y, col, w.cols)
 
@@ -1393,9 +1408,13 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 	font.SetBold(false)
 	font.SetItalic(false)
 	line := w.content[y]
+	lenLine := w.lenLine[y]
 	specialChars := []int{}
 
 	for x := col; x < col+cols; x++ {
+		if x > lenLine {
+			break
+		}
 		if x >= len(line) {
 			continue
 		}
@@ -1403,9 +1422,9 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if cell == nil {
 			continue
 		}
-		// if cell.char == " " {
-		// 	continue
-		// }
+		if cell.char == " " {
+			continue
+		}
 		if cell.char == "" {
 			continue
 		}
@@ -1432,25 +1451,119 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			wsfont.truewidth,
 			float64(wsfont.lineHeight),
 		)
+		
 		char := cell.char
+
+		b := time.Now()
 		glyph := w.s.glyph[*cell]
+		a := time.Now()
+		w.s.d1 += a.Sub(b)
+
 		if glyph == nil {
+
+			// b = time.Now()
 			glyph = gui.NewQImage2(
 				rectF.Size().ToSize(),
-				gui.QImage__Format_ARGB32_Premultiplied,
+				// gui.QImage__Format_ARGB32_Premultiplied,
+				// gui.QImage__Format_ARGB32,
+				gui.QImage__Format_ARGB32,
 			)
+			// glyph.SetDevicePixelRatio(w.s.widget.DevicePixelRatioF())
+
+			// a = time.Now()
+			// w.s.d2 += a.Sub(b)
+			// b = time.Now()
+
 			glyph.Fill2(gui.NewQColor3(bg.R, bg.G, bg.B, 255))
-			pp := gui.NewQPainter2(glyph)
-			pp.SetFont(wsfont.fontNew)
-			pp.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, 255))
-			pp.Font().SetBold(highlight.bold)
-			pp.Font().SetItalic(highlight.italic)
-			pp.DrawText5(rectF, int(core.Qt__AlignVCenter), char, nil)
+			// glyph.Fill3(core.Qt__transparent)
+	
+			// a = time.Now()
+			// w.s.d3 += a.Sub(b)
+			b = time.Now()
+
+			pm := gui.NewQPainter2(glyph)
+			
+			a = time.Now()
+			w.s.d4 += a.Sub(b)
+			// b = time.Now()
+
+			// pm.SetFont(wsfont.fontNew)
+			font := gui.NewQFont3(wsfont.fontNew, glyph)
+			pm.SetFont(font)
+			
+			// a = time.Now()
+			// w.s.d5 += a.Sub(b)
+			// b = time.Now()
+
+			// pm.SetCompositionMode(gui.QPainter__CompositionMode_Xor)
+			// pm.SetCompositionMode(gui.QPainter__CompositionMode_DestinationOver)
+			// pm.SetCompositionMode(gui.QPainter__CompositionMode_Destination)
+			// pm.SetCompositionMode(gui.QPainter__CompositionMode_Source)
+			// pm.SetCompositionMode(gui.QPainter__CompositionMode_SourceIn)
+			// pm.SetCompositionMode(gui.QPainter__CompositionMode_DestinationAtop)
+			// pm.SetCompositionMode(gui.QPainter__RasterOp_SourceOrDestination)
+			// pm.SetCompositionMode(gui.QPainter__RasterOp_SourceXorDestination)
+			
+			// a = time.Now()
+			// w.s.d6 += a.Sub(b)
+			// b = time.Now()
+
+			pm.SetRenderHints(gui.QPainter__TextAntialiasing, true)
+			pm.SetRenderHints(gui.QPainter__HighQualityAntialiasing, true)
+			pm.SetRenderHints(gui.QPainter__SmoothPixmapTransform, true)
+
+			
+			// a = time.Now()
+			// w.s.d7 += a.Sub(b)
+			// b = time.Now()
+
+			pm.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, 255))
+			
+			// a = time.Now()
+			// w.s.d8 += a.Sub(b)
+			// b = time.Now()
+
+			pm.Font().SetBold(highlight.bold)
+			pm.Font().SetItalic(highlight.italic)
+			
+			// a = time.Now()
+			// w.s.d9 += a.Sub(b)
+			b = time.Now()
+
+			pm.DrawText5(rectF, int(core.Qt__AlignVCenter), char, nil)
+			
+			a = time.Now()
+			w.s.d10 += a.Sub(b)
+			b = time.Now()
+
 			w.s.glyph[*cell] = glyph
+			
+			a = time.Now()
+			w.s.d11 += a.Sub(b)
+
 		}
 
+		b = time.Now()
 		p.DrawImage7(pointF, glyph)
+		a = time.Now()
+		w.s.d12 += a.Sub(b)
+
+		// fmt.Println("img:", glyph.DevicePixelRatio())
+		// fmt.Println("app:", editor.app.DevicePixelRatio())
 	}
+
+	// fmt.Println("debug 1: ", w.s.d1)
+	// fmt.Println("debug 2: ", w.s.d2)
+	// fmt.Println("debug 3: ", w.s.d3)
+	// fmt.Println("debug 4: ", w.s.d4)
+	// fmt.Println("debug 5: ", w.s.d5)
+	// fmt.Println("debug 6: ", w.s.d6)
+	// fmt.Println("debug 7: ", w.s.d7)
+	// fmt.Println("debug 8: ", w.s.d8)
+	// fmt.Println("debug 9: ", w.s.d9)
+	// fmt.Println("debug 10: ", w.s.d10)
+	// fmt.Println("debug 11: ", w.s.d11)
+	// fmt.Println("debug 12: ", w.s.d12)
 }
 
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {

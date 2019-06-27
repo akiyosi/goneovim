@@ -172,6 +172,7 @@ func InitEditor() {
 	e.app.ConnectAboutToQuit(func() {
 		e.cleanup()
 	})
+	e.app.SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 
 	e.initFont()
 	e.initSVGS()
