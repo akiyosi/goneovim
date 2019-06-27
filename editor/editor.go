@@ -27,6 +27,7 @@ type Highlight struct {
 	hiName     string
 	foreground *RGBA
 	background *RGBA
+	special    *RGBA
 	italic     bool
 	bold       bool
 	underline  bool
@@ -378,7 +379,7 @@ func (c *ColorPalette) update() {
 	c.widgetInputArea = warpColor(bg, -30)
 	c.minimapCurrentRegion = warpColor(bg, 20)
 	c.windowSeparator = warpColor(bg, -40)
-	c.indentGuide = warpColor(bg, -2)
+	c.indentGuide = warpColor(bg, -15)
 }
 
 func (e *Editor) updateGUIColor() {
