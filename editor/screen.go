@@ -74,6 +74,8 @@ type Screen struct {
 	drawSplit        bool
 	resizeCount      uint
 	tooltip          *widgets.QLabel
+
+	glyph            map[Cell]*gui.QImage
 }
 
 func newScreen() *Screen {
@@ -91,6 +93,7 @@ func newScreen() *Screen {
 		lastCursor:   [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
+		glyph:        make(map[Cell]*gui.QImage),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -318,7 +321,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	col := int(float64(left) / font.truewidth)
 
 	p := gui.NewQPainter2(w.widget)
-	p.SetFont(font.fontNew)
+	// p.SetFont(font.fontNew)
 
 	for y := row; y < row+w.rows; y++ {
 		if w == w.s.windows[1] && w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
@@ -327,8 +330,11 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		if y >= w.rows {
 			continue
 		}
-		w.fillHightlight(p, y, col, w.cols)
-		w.drawText(p, y, col, w.cols)
+		// w.fillHightlight(p, y, col, w.cols)
+		// w.drawText(p, y, col, w.cols)
+		w.drawChars(p, y, col, w.cols)
+
+
 		w.drawTextDecoration(p, y, col, w.cols)
 	}
 
@@ -1375,6 +1381,75 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 				),
 			)
 		}
+	}
+}
+
+func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
+	if y >= len(w.content) {
+		return
+	}
+	wsfont := w.s.ws.font
+	font := p.Font()
+	font.SetBold(false)
+	font.SetItalic(false)
+	line := w.content[y]
+	specialChars := []int{}
+
+	for x := col; x < col+cols; x++ {
+		if x >= len(line) {
+			continue
+		}
+		cell := line[x]
+		if cell == nil {
+			continue
+		}
+		// if cell.char == " " {
+		// 	continue
+		// }
+		if cell.char == "" {
+			continue
+		}
+		if !cell.normalWidth {
+			specialChars = append(specialChars, x)
+			continue
+		}
+		highlight := Highlight{}
+		fg := cell.highlight.foreground
+		if fg == nil {
+			fg = w.s.ws.foreground
+		}
+		bg := cell.highlight.background
+		if bg == nil {
+			bg = w.s.ws.background
+		}
+
+		X := float64(x) * wsfont.truewidth
+		Y := float64(y * wsfont.lineHeight)
+		pointF := core.NewQPointF3(X, Y)
+		rectF := core.NewQRectF4(
+			0,
+			0,
+			wsfont.truewidth,
+			float64(wsfont.lineHeight),
+		)
+		char := cell.char
+		glyph := w.s.glyph[*cell]
+		if glyph == nil {
+			glyph = gui.NewQImage2(
+				rectF.Size().ToSize(),
+				gui.QImage__Format_ARGB32_Premultiplied,
+			)
+			glyph.Fill2(gui.NewQColor3(bg.R, bg.G, bg.B, 255))
+			pp := gui.NewQPainter2(glyph)
+			pp.SetFont(wsfont.fontNew)
+			pp.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, 255))
+			pp.Font().SetBold(highlight.bold)
+			pp.Font().SetItalic(highlight.italic)
+			pp.DrawText5(rectF, int(core.Qt__AlignVCenter), char, nil)
+			w.s.glyph[*cell] = glyph
+		}
+
+		p.DrawImage7(pointF, glyph)
 	}
 }
 
