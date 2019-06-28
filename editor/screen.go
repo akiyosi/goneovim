@@ -320,6 +320,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	p := gui.NewQPainter2(w.widget)
 	p.SetFont(font.fontNew)
 
+	// Draw contents
 	for y := row; y < row+w.rows; y++ {
 		if w == w.s.windows[1] && w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
 			break
@@ -332,6 +333,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawTextDecoration(p, y, col, w.cols)
 	}
 
+	// Draw vim window separator
 	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
 		for _, win := range w.s.windows {
 			if !win.isShown() {
@@ -341,6 +343,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		}
 	}
 
+	// Draw indent guide
 	if editor.config.Editor.IndentGuide && w == w.s.windows[1] {
 		for _, win := range w.s.windows {
 			if !win.isShown() {
@@ -350,6 +353,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		}
 	}
 
+	// Update markdown preview
 	if w != w.s.windows[1] {
 		w.s.ws.markdown.updatePos()
 	}
@@ -990,6 +994,9 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			repeat = util.ReflectToInt(cell[2])
 		}
 
+		// If `repeat` is present, the cell should be
+		// repeated `repeat` times (including the first time), otherwise just
+		// once.
 		r := 1
 		if repeat == 0 {
 			repeat = 1
@@ -1006,9 +1013,12 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			line[col].char = text.(string)
 			line[col].normalWidth = s.isNormalWidth(line[col].char)
 
+			// If `hl_id` is not present the most recently seen `hl_id` in
+			//	the same call should be used (it is always sent for the first
+			//	cell in the event).
 			switch col {
 			case 0:
-				line[col].highlight = *(s.highAttrDef[hi])
+				line[col].highlight = *s.highAttrDef[hi]
 			default:
 				if hi == -1 {
 					line[col].highlight = line[col-1].highlight
@@ -1384,55 +1394,45 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 	wsfont := w.s.ws.font
 	font := p.Font()
-	font.SetBold(false)
-	font.SetItalic(false)
 	line := w.content[y]
-	lenLine := w.lenLine[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
 
-
 	for x := col; x < col+cols; x++ {
-		if x > lenLine {
+		if x > w.lenLine[y] {
 			break
 		}
 		if x >= len(line) {
 			continue
 		}
-		cell := line[x]
-		if cell == nil {
+		if line[x] == nil {
 			continue
 		}
-		if cell.char == " " {
+		if line[x].char == " " {
 			continue
 		}
-		if cell.char == "" {
+		if line[x].char == "" {
 			continue
 		}
-		if !cell.normalWidth {
+		if !line[x].normalWidth {
 			specialChars = append(specialChars, x)
 			continue
 		}
-		highlight := Highlight{}
-		fg := cell.highlight.foreground
-		if fg == nil {
-			fg = w.s.ws.foreground
-		}
-		highlight.foreground = fg
-		highlight.italic = cell.highlight.italic
-		highlight.bold = cell.highlight.bold
 
+		highlight := line[x].highlight
 		colorSlice, ok := chars[highlight]
 		if !ok {
 			colorSlice = []int{}
 		}
 		colorSlice = append(colorSlice, x)
 		chars[highlight] = colorSlice
+
 	}
 
-	X := float64(col) * wsfont.truewidth
-	Y := float64((y)*wsfont.lineHeight + wsfont.shift)
-	pointF := core.NewQPointF3(X, Y)
+	pointF := core.NewQPointF3(
+		float64(col) * wsfont.truewidth,
+		float64((y)*wsfont.lineHeight + wsfont.shift),
+	)
 
 	for highlight, colorSlice := range chars {
 		var buffer bytes.Buffer
@@ -1466,20 +1466,16 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 
 	for _, x := range specialChars {
-		cell := line[x]
-		if cell == nil || cell.char == " " {
+		if line[x] == nil || line[x].char == " " {
 			continue
 		}
-		fg := cell.highlight.foreground
-		if fg == nil {
-			fg = w.s.ws.foreground
-		}
+		fg := line[x].highlight.foreground
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 		pointF.SetX(float64(x) * wsfont.truewidth)
 		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift))
-		font.SetBold(cell.highlight.bold)
-		font.SetItalic(cell.highlight.italic)
-		p.DrawText(pointF, cell.char)
+		font.SetBold(line[x].highlight.bold)
+		font.SetItalic(line[x].highlight.italic)
+		p.DrawText(pointF, line[x].char)
 	}
 }
 
@@ -1497,15 +1493,14 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		if x >= len(line) {
 			continue
 		}
-		cell := line[x]
-		if cell == nil {
+		if line[x] == nil {
 			continue
 		}
-		if !cell.highlight.underline && !cell.highlight.undercurl {
+		if !line[x].highlight.underline && !line[x].highlight.undercurl {
 			continue
 		}
 		pen := gui.NewQPen()
-		sp := cell.highlight.special
+		sp := line[x].highlight.special
 		if sp != nil {
 			color := gui.NewQColor3(sp.R, sp.G, sp.B, 255)
 			pen.SetColor(color)
@@ -1518,10 +1513,10 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		start := float64(x) * font.truewidth
 		end := float64(x+1) * font.truewidth
 		Y := float64((y) * font.lineHeight) + font.ascent + float64(font.lineSpace)
-		if cell.highlight.underline {
+		if line[x].highlight.underline {
 			linef := core.NewQLineF3(start, Y, end, Y)
 			p.DrawLine(linef)
-		} else if cell.highlight.undercurl {
+		} else if line[x].highlight.undercurl {
 			height := font.ascent / 3.0
 			amplitude := font.ascent / 8.0
 			freq := 1.0
