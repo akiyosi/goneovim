@@ -76,6 +76,10 @@ type Screen struct {
 	resizeCount      uint
 	tooltip          *widgets.QLabel
 	glyph            map[Cell]*gui.QImage
+
+	d1 time.Duration
+	d2 time.Duration
+
 }
 
 func newScreen() *Screen {
@@ -327,7 +331,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	cols := int(math.Ceil(float64(right)/font.truewidth)) - col
 
 	p := gui.NewQPainter2(w.widget)
-	p.SetFont(font.fontNew)
 
 	// Draw contents
 	for y := row; y < row+rows; y++ {
@@ -1407,22 +1410,17 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		return
 	}
 	wsfont := w.s.ws.font
-	font := p.Font()
-	font.SetBold(false)
-	font.SetItalic(false)
-	line := w.content[y]
-	lenLine := w.lenLine[y]
 	specialChars := []int{}
 
 	for x := col; x < col+cols; x++ {
-		if x > lenLine {
+		if x > w.lenLine[y] {
 			break
 		}
-		if x >= len(line) {
+		if x >= len(w.content[y]) {
 			continue
 		}
 
-		cell := line[x]
+		cell := w.content[y][x]
 		if cell == nil {
 			continue
 		}
@@ -1441,6 +1439,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if glyph == nil {
 			glyph = w.newGlyph(p, cell)
 		}
+
 		p.DrawImage7(
 			core.NewQPointF3(
 				float64(x)*wsfont.truewidth,
@@ -1451,7 +1450,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 	}
 
 	for _, x := range specialChars {
-		cell := line[x]
+		cell := w.content[y][x]
 		if cell == nil || cell.char == " " {
 			continue
 		}
