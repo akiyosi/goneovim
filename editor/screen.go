@@ -40,6 +40,7 @@ type Window struct {
 	shown           bool
 	queueRedrawArea [4]int
 	scrollRegion    []int
+	devicePixelRatio float64
 
 	// NOTE:
 	// Only use minimap
@@ -348,8 +349,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.fillHightlight(p, y, col, w.cols)
 		// w.drawText(p, y, col, w.cols)
 		w.drawChars(p, y, col, w.cols)
-
-
 		w.drawTextDecoration(p, y, col, w.cols)
 	}
 
@@ -919,7 +918,8 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	if ok {
 		rgba := calcColor(util.ReflectToInt(fg))
 		highlight.foreground = rgba
-	} else {
+	}
+	if highlight.foreground == nil {
 		highlight.foreground = s.ws.foreground
 	}
 
@@ -927,7 +927,8 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	if ok {
 		rgba := calcColor(util.ReflectToInt(bg))
 		highlight.background = rgba
-	} else {
+	}
+	if highlight.background == nil {
 		highlight.background = s.ws.background
 	}
 
@@ -1448,71 +1449,38 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			specialChars = append(specialChars, x)
 			continue
 		}
-		highlight := cell.highlight
-		fg := cell.highlight.foreground
-		if fg == nil {
-			fg = w.s.ws.foreground
-		}
-		bg := cell.highlight.background
-		if bg == nil {
-			bg = w.s.ws.background
-		}
-
-		X := float64(x) * wsfont.truewidth
-		Y := float64(y * wsfont.lineHeight)
-		pointF := core.NewQPointF3(X, Y)
-		
-		glyph := w.s.glyph[*cell]
-
-		var devicePixelRatio float64
-		if runtime.GOOS == "darwin" {
-			devicePixelRatio = 2.0
-		} else {
-			devicePixelRatio = 1.0
-		}
-
-		//// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
-		if glyph == nil {
-			// QImage default device pixel ratio is 1.0,
-			// So we set the correct device pixel ratio
-			glyph = gui.NewQImage2(
-				core.NewQRectF4(
-					0,
-					0,
-					devicePixelRatio * wsfont.truewidth,
-					devicePixelRatio * float64(wsfont.lineHeight),
-				).Size().ToSize(),
-				gui.QImage__Format_ARGB32_Premultiplied,
-				// gui.QImage__Format_ARGB32,
-			)
-			glyph.SetDevicePixelRatio(devicePixelRatio)
-			glyph.Fill2(gui.NewQColor3(bg.R, bg.G, bg.B, 255))
 	
-			p := gui.NewQPainter2(glyph)
-			p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, 255))
-			
-			p.SetFont(wsfont.fontNew)
-			font := p.Font()
-			font.SetBold(highlight.bold)
-			font.SetItalic(highlight.italic)
-			p.SetFont(font)
-
-			p.DrawText5(
-				core.NewQRectF4(
-					0,
-					0,
-					wsfont.truewidth,
-					float64(wsfont.lineHeight),
-				),
-				int(core.Qt__AlignVCenter),
-				cell.char,
-				nil,
-			)
-			w.s.glyph[*cell] = glyph
+		glyph := w.s.glyph[*cell]
+		if glyph == nil {
+			glyph = w.newGlyph(p, cell)
 		}
-
-		p.DrawImage7(pointF, glyph)
+		p.DrawImage7(
+			core.NewQPointF3(
+				float64(x) * wsfont.truewidth,
+				float64(y * wsfont.lineHeight),
+			),
+			glyph,
+		)
 	}
+
+	for _, x := range specialChars {
+		cell := line[x]
+		if cell == nil || cell.char == " " {
+			continue
+		}
+		glyph := w.s.glyph[*cell]
+		if glyph == nil {
+			glyph = w.newGlyph(p, cell)
+		}
+		p.DrawImage7(
+			core.NewQPointF3(
+				float64(x) * wsfont.truewidth,
+				float64(y * wsfont.lineHeight),
+			),
+			glyph,
+		)
+	}
+
 }
 
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
@@ -1620,6 +1588,61 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
+func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
+	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
+
+	width := w.s.ws.font.truewidth
+	if !cell.normalWidth {
+		width = width * 2.0
+	}
+
+	// QImage default device pixel ratio is 1.0,
+	// So we set the correct device pixel ratio
+	glyph := gui.NewQImage2(
+		core.NewQRectF4(
+			0,
+			0,
+			w.devicePixelRatio * width,
+			w.devicePixelRatio * float64(w.s.ws.font.lineHeight),
+		).Size().ToSize(),
+		gui.QImage__Format_ARGB32_Premultiplied,
+	)
+	glyph.SetDevicePixelRatio(w.devicePixelRatio)
+	glyph.Fill2(gui.NewQColor3(
+		cell.highlight.background.R,
+		cell.highlight.background.G,
+		cell.highlight.background.B,
+		255))
+	
+	p = gui.NewQPainter2(glyph)
+	p.SetPen2(gui.NewQColor3(
+		cell.highlight.foreground.R,
+		cell.highlight.foreground.G,
+		cell.highlight.foreground.B,
+		255))
+	
+	p.SetFont(w.s.ws.font.fontNew)
+	font := p.Font()
+	font.SetBold(cell.highlight.bold)
+	font.SetItalic(cell.highlight.italic)
+	p.SetFont(font)
+
+	p.DrawText5(
+		core.NewQRectF4(
+			0,
+			0,
+			width,
+			float64(w.s.ws.font.lineHeight),
+		),
+		int(core.Qt__AlignVCenter),
+		cell.char,
+		nil,
+	)
+	w.s.glyph[*cell] = glyph
+
+	return glyph
+}
+
 func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
@@ -1691,9 +1714,17 @@ func newWindow() *Window {
 	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
+	var devicePixelRatio float64
+	if runtime.GOOS == "darwin" {
+		devicePixelRatio = 2.0
+	} else {
+		devicePixelRatio = 1.0
+	}
+
 	w := &Window{
 		widget:       widget,
 		scrollRegion: []int{0, 0, 0, 0},
+		devicePixelRatio: devicePixelRatio,
 	}
 
 	widget.ConnectPaintEvent(w.paint)
