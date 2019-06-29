@@ -337,7 +337,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		if y >= w.rows {
 			continue
 		}
-		w.fillHightlight(p, y, col, cols)
+		// w.fillHightlight(p, y, col, cols)
 		w.drawChars(p, y, col, cols)
 		w.drawTextDecoration(p, y, col, cols)
 	}
@@ -1413,18 +1413,12 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 	specialChars := []int{}
 
 	for x := col; x < col+cols; x++ {
-		if x > w.lenLine[y] {
-			break
-		}
 		if x >= len(w.content[y]) {
 			continue
 		}
 
 		cell := w.content[y][x]
 		if cell == nil {
-			continue
-		}
-		if cell.char == " " {
 			continue
 		}
 		if cell.char == "" {
@@ -1434,19 +1428,45 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			specialChars = append(specialChars, x)
 			continue
 		}
-
-		glyph := w.s.glyph[*cell]
-		if glyph == nil {
-			glyph = w.newGlyph(p, cell)
+		if cell.highlight.background == nil {
+			cell.highlight.background = w.s.ws.background
 		}
-
-		p.DrawImage7(
-			core.NewQPointF3(
+		if cell.char == " " && cell.highlight.background.equals(w.s.ws.background) {
+			continue
+		}
+		if cell.char == " " {
+			rectF := core.NewQRectF4(
 				float64(x)*wsfont.truewidth,
-				float64(y*wsfont.lineHeight),
-			),
-			glyph,
-		)
+				float64((y)*wsfont.lineHeight),
+				wsfont.truewidth,
+				float64(wsfont.lineHeight),
+			)
+			p.FillRect(
+				rectF,
+				gui.NewQBrush3(
+					gui.NewQColor3(
+						cell.highlight.background.R,
+						cell.highlight.background.G,
+						cell.highlight.background.B,
+						int(transparent() * 255.0),
+					),
+					core.Qt__SolidPattern,
+				),
+			)
+		} else {
+			glyph := w.s.glyph[*cell]
+			if glyph == nil {
+				glyph = w.newGlyph(p, cell)
+			}
+
+			p.DrawImage7(
+				core.NewQPointF3(
+					float64(x)*wsfont.truewidth,
+					float64(y*wsfont.lineHeight),
+				),
+				glyph,
+			)
+		}
 	}
 
 	for _, x := range specialChars {
@@ -1579,6 +1599,13 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 	width := w.s.ws.font.truewidth
 	if !cell.normalWidth {
 		width = width * 2.0
+	}
+
+	if cell.highlight.background == nil {
+		cell.highlight.background = w.s.ws.background
+	}
+	if cell.highlight.foreground == nil {
+		cell.highlight.foreground = w.s.ws.foreground
 	}
 
 	// QImage default device pixel ratio is 1.0,
