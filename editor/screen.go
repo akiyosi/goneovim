@@ -36,10 +36,10 @@ type Window struct {
 	cols   int
 	rows   int
 
-	widget          *widgets.QWidget
-	shown           bool
-	queueRedrawArea [4]int
-	scrollRegion    []int
+	widget           *widgets.QWidget
+	shown            bool
+	queueRedrawArea  [4]int
+	scrollRegion     []int
 	devicePixelRatio float64
 
 	// NOTE:
@@ -75,22 +75,7 @@ type Screen struct {
 	drawSplit        bool
 	resizeCount      uint
 	tooltip          *widgets.QLabel
-
 	glyph            map[Cell]*gui.QImage
-	// glyph            map[Cell]*gui.QPixmap
-
-	d1 time.Duration
-	d2 time.Duration
-	d3 time.Duration
-	d4 time.Duration
-	d5 time.Duration
-	d6 time.Duration
-	d7 time.Duration
-	d8 time.Duration
-	d9 time.Duration
-	d10 time.Duration
-	d11 time.Duration
-	d12 time.Duration
 }
 
 func newScreen() *Screen {
@@ -330,26 +315,28 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	rect := event.M_rect()
 	top := rect.Y()
 	left := rect.X()
+	width := rect.Width()
+	height := rect.Height()
+	right := left + width
+	bottom := top + height
 
 	font := w.s.ws.font
 	row := int(float64(top) / float64(font.lineHeight))
 	col := int(float64(left) / font.truewidth)
+	rows := int(math.Ceil(float64(bottom)/float64(font.lineHeight))) - row
+	cols := int(math.Ceil(float64(right)/font.truewidth)) - col
 
 	p := gui.NewQPainter2(w.widget)
 	p.SetFont(font.fontNew)
 
 	// Draw contents
-	for y := row; y < row+w.rows; y++ {
-		if w == w.s.windows[1] && w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
-			break
-		}
+	for y := row; y < row+rows; y++ {
 		if y >= w.rows {
 			continue
 		}
-		w.fillHightlight(p, y, col, w.cols)
-		// w.drawText(p, y, col, w.cols)
-		w.drawChars(p, y, col, w.cols)
-		w.drawTextDecoration(p, y, col, w.cols)
+		w.fillHightlight(p, y, col, cols)
+		w.drawChars(p, y, col, cols)
+		w.drawTextDecoration(p, y, col, cols)
 	}
 
 	// Draw vim window separator
@@ -894,7 +881,7 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 
 	underline := hl["underline"]
 	if underline != nil {
-		highlight.underline= true
+		highlight.underline = true
 	} else {
 		highlight.underline = false
 	}
@@ -1449,15 +1436,16 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			specialChars = append(specialChars, x)
 			continue
 		}
-	
+
 		glyph := w.s.glyph[*cell]
 		if glyph == nil {
+			fmt.Println(cell.char)
 			glyph = w.newGlyph(p, cell)
 		}
 		p.DrawImage7(
 			core.NewQPointF3(
-				float64(x) * wsfont.truewidth,
-				float64(y * wsfont.lineHeight),
+				float64(x)*wsfont.truewidth,
+				float64(y*wsfont.lineHeight),
 			),
 			glyph,
 		)
@@ -1474,8 +1462,8 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		}
 		p.DrawImage7(
 			core.NewQPointF3(
-				float64(x) * wsfont.truewidth,
-				float64(y * wsfont.lineHeight),
+				float64(x)*wsfont.truewidth,
+				float64(y*wsfont.lineHeight),
 			),
 			glyph,
 		)
@@ -1495,7 +1483,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	lenLine := w.lenLine[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
-
 
 	for x := col; x < col+cols; x++ {
 		if x > lenLine {
@@ -1602,8 +1589,8 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		core.NewQRectF4(
 			0,
 			0,
-			w.devicePixelRatio * width,
-			w.devicePixelRatio * float64(w.s.ws.font.lineHeight),
+			w.devicePixelRatio*width,
+			w.devicePixelRatio*float64(w.s.ws.font.lineHeight),
 		).Size().ToSize(),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
@@ -1613,14 +1600,14 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		cell.highlight.background.G,
 		cell.highlight.background.B,
 		255))
-	
+
 	p = gui.NewQPainter2(glyph)
 	p.SetPen2(gui.NewQColor3(
 		cell.highlight.foreground.R,
 		cell.highlight.foreground.G,
 		cell.highlight.foreground.B,
 		255))
-	
+
 	p.SetFont(w.s.ws.font.fontNew)
 	font := p.Font()
 	font.SetBold(cell.highlight.bold)
@@ -1677,7 +1664,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		p.SetPen(pen)
 		start := float64(x) * font.truewidth
 		end := float64(x+1) * font.truewidth
-		Y := float64((y) * font.lineHeight) + font.ascent + float64(font.lineSpace)
+		Y := float64((y)*font.lineHeight) + font.ascent + float64(font.lineSpace)
 		if cell.highlight.underline {
 			linef := core.NewQLineF3(start, Y, end, Y)
 			p.DrawLine(linef)
@@ -1686,11 +1673,11 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			amplitude := font.ascent / 8.0
 			freq := 1.0
 			phase := 0.0
-			y := Y + height / 2 + amplitude * math.Sin(0)
+			y := Y + height/2 + amplitude*math.Sin(0)
 			point := core.NewQPointF3(start, y)
 			path := gui.NewQPainterPath2(point)
-			for i := int(point.X()); i<=int(end); i++ {
-				y = Y + height / 2 + amplitude * math.Sin(2 * math.Pi * freq * float64(i) / font.truewidth + phase)
+			for i := int(point.X()); i <= int(end); i++ {
+				y = Y + height/2 + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.truewidth+phase)
 				path.LineTo(core.NewQPointF3(float64(i), y))
 			}
 			p.DrawPath(path)
@@ -1722,8 +1709,8 @@ func newWindow() *Window {
 	}
 
 	w := &Window{
-		widget:       widget,
-		scrollRegion: []int{0, 0, 0, 0},
+		widget:           widget,
+		scrollRegion:     []int{0, 0, 0, 0},
 		devicePixelRatio: devicePixelRatio,
 	}
 

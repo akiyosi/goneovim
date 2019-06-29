@@ -203,10 +203,10 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.updateSize()
 
 	go func() {
-	        if !editor.config.MiniMap.Visible {
-	                time.Sleep(1500 * time.Millisecond)
-	        }
-	        w.minimap.startMinimapProc()
+		if !editor.config.MiniMap.Visible {
+			time.Sleep(1500 * time.Millisecond)
+		}
+		w.minimap.startMinimapProc()
 	}()
 
 	if runtime.GOOS == "windows" {
