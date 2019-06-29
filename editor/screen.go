@@ -1298,6 +1298,12 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 		if x >= len(line) {
 			continue
 		}
+		if line[x] == nil {
+			continue
+		}
+		if line[x].char != " " {
+			continue
+		}
 		if line[x] != nil {
 			bg = line[x].highlight.background
 		} else {
