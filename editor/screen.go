@@ -108,7 +108,6 @@ func newScreen() *Screen {
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
 		glyph:        make(map[Cell]*gui.QImage),
-		// glyph:        make(map[Cell]*gui.QPixmap),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -338,6 +337,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	p := gui.NewQPainter2(w.widget)
 	p.SetFont(font.fontNew)
 
+	// Draw contents
 	for y := row; y < row+w.rows; y++ {
 		if w == w.s.windows[1] && w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
 			break
@@ -353,6 +353,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawTextDecoration(p, y, col, w.cols)
 	}
 
+	// Draw vim window separator
 	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
 		for _, win := range w.s.windows {
 			if !win.isShown() {
@@ -362,6 +363,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		}
 	}
 
+	// Draw indent guide
 	if editor.config.Editor.IndentGuide && w == w.s.windows[1] {
 		for _, win := range w.s.windows {
 			if !win.isShown() {
@@ -371,6 +373,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		}
 	}
 
+	// Update markdown preview
 	if w != w.s.windows[1] {
 		w.s.ws.markdown.updatePos()
 	}
@@ -1011,6 +1014,9 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			repeat = util.ReflectToInt(cell[2])
 		}
 
+		// If `repeat` is present, the cell should be
+		// repeated `repeat` times (including the first time), otherwise just
+		// once.
 		r := 1
 		if repeat == 0 {
 			repeat = 1
@@ -1027,9 +1033,12 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			line[col].char = text.(string)
 			line[col].normalWidth = s.isNormalWidth(line[col].char)
 
+			// If `hl_id` is not present the most recently seen `hl_id` in
+			//	the same call should be used (it is always sent for the first
+			//	cell in the event).
 			switch col {
 			case 0:
-				line[col].highlight = *(s.highAttrDef[hi])
+				line[col].highlight = *s.highAttrDef[hi]
 			default:
 				if hi == -1 {
 					line[col].highlight = line[col-1].highlight
