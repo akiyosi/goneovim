@@ -79,7 +79,6 @@ type Screen struct {
 
 	d1 time.Duration
 	d2 time.Duration
-
 }
 
 func newScreen() *Screen {
@@ -1434,7 +1433,26 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if cell.char == " " && cell.highlight.background.equals(w.s.ws.background) {
 			continue
 		}
-		if cell.char == " " {
+		if !cell.highlight.background.equals(w.s.ws.background) {
+			// Set diff pattern
+			pattern := core.Qt__BrushStyle(1)
+			transparent := int(transparent() * 255.0)
+			if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.uiName == "DiffAdd" {
+				pattern = core.Qt__BrushStyle(editor.config.Editor.DiffAddPattern)
+				if editor.config.Editor.DiffAddPattern >= 7 &&
+					editor.config.Editor.DiffAddPattern <= 14 {
+					transparent = int(editor.config.Editor.Transparent * 255)
+				}
+			}
+			if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.uiName == "DiffDelete" {
+				pattern = core.Qt__BrushStyle(editor.config.Editor.DiffDeletePattern)
+				if editor.config.Editor.DiffDeletePattern >= 7 &&
+					editor.config.Editor.DiffDeletePattern <= 14 {
+					transparent = int(editor.config.Editor.Transparent * 255)
+				}
+			}
+
+			// Fill background with pattern
 			rectF := core.NewQRectF4(
 				float64(x)*wsfont.truewidth,
 				float64((y)*wsfont.lineHeight),
@@ -1448,25 +1466,26 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 						cell.highlight.background.R,
 						cell.highlight.background.G,
 						cell.highlight.background.B,
-						int(transparent() * 255.0),
+						transparent,
 					),
-					core.Qt__SolidPattern,
+					pattern,
 				),
-			)
-		} else {
-			glyph := w.s.glyph[*cell]
-			if glyph == nil {
-				glyph = w.newGlyph(p, cell)
-			}
-
-			p.DrawImage7(
-				core.NewQPointF3(
-					float64(x)*wsfont.truewidth,
-					float64(y*wsfont.lineHeight),
-				),
-				glyph,
 			)
 		}
+		// } else {
+		glyph := w.s.glyph[*cell]
+		if glyph == nil {
+			glyph = w.newGlyph(p, cell)
+		}
+
+		p.DrawImage7(
+			core.NewQPointF3(
+				float64(x)*wsfont.truewidth,
+				float64(y*wsfont.lineHeight),
+			),
+			glyph,
+		)
+		// }
 	}
 
 	for _, x := range specialChars {
@@ -1601,6 +1620,16 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		width = width * 2.0
 	}
 
+	char := cell.char
+
+	// Skip draw char if
+	if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.uiName == "DiffAdd" {
+		char = " "
+	}
+	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.uiName == "DiffDelete" {
+		char = " "
+	}
+
 	if cell.highlight.background == nil {
 		cell.highlight.background = w.s.ws.background
 	}
@@ -1620,11 +1649,12 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 	glyph.SetDevicePixelRatio(w.devicePixelRatio)
-	glyph.Fill2(gui.NewQColor3(
-		cell.highlight.background.R,
-		cell.highlight.background.G,
-		cell.highlight.background.B,
-		w.transparent(cell.highlight.background)))
+	// glyph.Fill2(gui.NewQColor3(
+	// 	cell.highlight.background.R,
+	// 	cell.highlight.background.G,
+	// 	cell.highlight.background.B,
+	// 	int(transparent() * 255.0)))
+	glyph.Fill3(core.Qt__transparent)
 
 	p = gui.NewQPainter2(glyph)
 	p.SetPen2(gui.NewQColor3(
@@ -1648,7 +1678,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 			float64(w.s.ws.font.lineHeight),
 		),
 		int(core.Qt__AlignVCenter),
-		cell.char,
+		char,
 		nil,
 	)
 	w.s.glyph[*cell] = glyph
