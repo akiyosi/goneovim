@@ -1598,13 +1598,14 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		cell.highlight.background.R,
 		cell.highlight.background.G,
 		cell.highlight.background.B,
-		255))
+		w.transparent(cell.highlight.background)))
 
 	p = gui.NewQPainter2(glyph)
 	p.SetPen2(gui.NewQColor3(
 		cell.highlight.foreground.R,
 		cell.highlight.foreground.G,
 		cell.highlight.foreground.B,
+		// w.transparent(cell.highlight.foreground)))
 		255))
 
 	p.SetFont(w.s.ws.font.fontNew)
