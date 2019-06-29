@@ -1418,6 +1418,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if x >= len(line) {
 			continue
 		}
+
 		cell := line[x]
 		if cell == nil {
 			continue
@@ -1432,7 +1433,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			specialChars = append(specialChars, x)
 			continue
 		}
-		highlight := Highlight{}
+		highlight := cell.highlight
 		fg := cell.highlight.foreground
 		if fg == nil {
 			fg = w.s.ws.foreground
@@ -1445,125 +1446,58 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		X := float64(x) * wsfont.truewidth
 		Y := float64(y * wsfont.lineHeight)
 		pointF := core.NewQPointF3(X, Y)
-		rectF := core.NewQRectF4(
-			0,
-			0,
-			wsfont.truewidth,
-			float64(wsfont.lineHeight),
-		)
 		
-		char := cell.char
-
-		b := time.Now()
 		glyph := w.s.glyph[*cell]
-		a := time.Now()
-		w.s.d1 += a.Sub(b)
 
-		if glyph == nil {
-
-			// b = time.Now()
-			glyph = gui.NewQImage2(
-				rectF.Size().ToSize(),
-				// gui.QImage__Format_ARGB32_Premultiplied,
-				// gui.QImage__Format_ARGB32,
-				gui.QImage__Format_ARGB32,
-			)
-			// glyph.SetDevicePixelRatio(w.s.widget.DevicePixelRatioF())
-
-			// a = time.Now()
-			// w.s.d2 += a.Sub(b)
-			// b = time.Now()
-
-			glyph.Fill2(gui.NewQColor3(bg.R, bg.G, bg.B, 255))
-			// glyph.Fill3(core.Qt__transparent)
-	
-			// a = time.Now()
-			// w.s.d3 += a.Sub(b)
-			b = time.Now()
-
-			pm := gui.NewQPainter2(glyph)
-			
-			a = time.Now()
-			w.s.d4 += a.Sub(b)
-			// b = time.Now()
-
-			// pm.SetFont(wsfont.fontNew)
-			font := gui.NewQFont3(wsfont.fontNew, glyph)
-			pm.SetFont(font)
-			
-			// a = time.Now()
-			// w.s.d5 += a.Sub(b)
-			// b = time.Now()
-
-			// pm.SetCompositionMode(gui.QPainter__CompositionMode_Xor)
-			// pm.SetCompositionMode(gui.QPainter__CompositionMode_DestinationOver)
-			// pm.SetCompositionMode(gui.QPainter__CompositionMode_Destination)
-			// pm.SetCompositionMode(gui.QPainter__CompositionMode_Source)
-			// pm.SetCompositionMode(gui.QPainter__CompositionMode_SourceIn)
-			// pm.SetCompositionMode(gui.QPainter__CompositionMode_DestinationAtop)
-			// pm.SetCompositionMode(gui.QPainter__RasterOp_SourceOrDestination)
-			// pm.SetCompositionMode(gui.QPainter__RasterOp_SourceXorDestination)
-			
-			// a = time.Now()
-			// w.s.d6 += a.Sub(b)
-			// b = time.Now()
-
-			pm.SetRenderHints(gui.QPainter__TextAntialiasing, true)
-			pm.SetRenderHints(gui.QPainter__HighQualityAntialiasing, true)
-			pm.SetRenderHints(gui.QPainter__SmoothPixmapTransform, true)
-
-			
-			// a = time.Now()
-			// w.s.d7 += a.Sub(b)
-			// b = time.Now()
-
-			pm.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, 255))
-			
-			// a = time.Now()
-			// w.s.d8 += a.Sub(b)
-			// b = time.Now()
-
-			pm.Font().SetBold(highlight.bold)
-			pm.Font().SetItalic(highlight.italic)
-			
-			// a = time.Now()
-			// w.s.d9 += a.Sub(b)
-			b = time.Now()
-
-			pm.DrawText5(rectF, int(core.Qt__AlignVCenter), char, nil)
-			
-			a = time.Now()
-			w.s.d10 += a.Sub(b)
-			b = time.Now()
-
-			w.s.glyph[*cell] = glyph
-			
-			a = time.Now()
-			w.s.d11 += a.Sub(b)
-
+		var devicePixelRatio float64
+		if runtime.GOOS == "darwin" {
+			devicePixelRatio = 2.0
+		} else {
+			devicePixelRatio = 1.0
 		}
 
-		b = time.Now()
+		//// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
+		if glyph == nil {
+			// QImage default device pixel ratio is 1.0,
+			// So we set the correct device pixel ratio
+			glyph = gui.NewQImage2(
+				core.NewQRectF4(
+					0,
+					0,
+					devicePixelRatio * wsfont.truewidth,
+					devicePixelRatio * float64(wsfont.lineHeight),
+				).Size().ToSize(),
+				gui.QImage__Format_ARGB32_Premultiplied,
+				// gui.QImage__Format_ARGB32,
+			)
+			glyph.SetDevicePixelRatio(devicePixelRatio)
+			glyph.Fill2(gui.NewQColor3(bg.R, bg.G, bg.B, 255))
+	
+			p := gui.NewQPainter2(glyph)
+			p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, 255))
+			
+			p.SetFont(wsfont.fontNew)
+			font := p.Font()
+			font.SetBold(highlight.bold)
+			font.SetItalic(highlight.italic)
+			p.SetFont(font)
+
+			p.DrawText5(
+				core.NewQRectF4(
+					0,
+					0,
+					wsfont.truewidth,
+					float64(wsfont.lineHeight),
+				),
+				int(core.Qt__AlignVCenter),
+				cell.char,
+				nil,
+			)
+			w.s.glyph[*cell] = glyph
+		}
+
 		p.DrawImage7(pointF, glyph)
-		a = time.Now()
-		w.s.d12 += a.Sub(b)
-
-		// fmt.Println("img:", glyph.DevicePixelRatio())
-		// fmt.Println("app:", editor.app.DevicePixelRatio())
 	}
-
-	// fmt.Println("debug 1: ", w.s.d1)
-	// fmt.Println("debug 2: ", w.s.d2)
-	// fmt.Println("debug 3: ", w.s.d3)
-	// fmt.Println("debug 4: ", w.s.d4)
-	// fmt.Println("debug 5: ", w.s.d5)
-	// fmt.Println("debug 6: ", w.s.d6)
-	// fmt.Println("debug 7: ", w.s.d7)
-	// fmt.Println("debug 8: ", w.s.d8)
-	// fmt.Println("debug 9: ", w.s.d9)
-	// fmt.Println("debug 10: ", w.s.d10)
-	// fmt.Println("debug 11: ", w.s.d11)
-	// fmt.Println("debug 12: ", w.s.d12)
 }
 
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
