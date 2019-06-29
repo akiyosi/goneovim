@@ -1439,7 +1439,6 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 
 		glyph := w.s.glyph[*cell]
 		if glyph == nil {
-			fmt.Println(cell.char)
 			glyph = w.newGlyph(p, cell)
 		}
 		p.DrawImage7(
