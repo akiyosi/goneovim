@@ -15,6 +15,10 @@ type RGBA struct {
 	A float64
 }
 
+type HSV struct {
+	H, S, V float64
+}
+
 func (rgba *RGBA) copy() *RGBA {
 	return &RGBA{
 		R: rgba.R,
@@ -48,11 +52,6 @@ func transparent() float64 {
 // Hex is
 func (rgba *RGBA) Hex() string {
 	return fmt.Sprintf("#%02x%02x%02x", uint8(rgba.R), uint8(rgba.G), uint8(rgba.B))
-}
-
-// Hex is
-func (rgba *RGBA) HexDigits() string {
-	return fmt.Sprintf("%02x%02x%02x", uint8(rgba.R), uint8(rgba.G), uint8(rgba.B))
 }
 
 // input color *RGBA, aplpha (0.0...-1.0..) int
@@ -214,5 +213,110 @@ func newRGBA(r int, g int, b int, a float64) *RGBA {
 		G: g,
 		B: b,
 		A: a, // Not use this value
+	}
+}
+
+func (rgba *RGBA) HSV() *HSV {
+	r := float64(rgba.R) / 255.0
+	g := float64(rgba.G) / 255.0
+	b := float64(rgba.B) / 255.0
+
+	min := math.Min(r, math.Min(g, b))
+	max := math.Max(r, math.Max(g, b))
+	del := max - min
+
+	v := max
+
+	var h, s float64
+
+	if del == 0 {
+		h = 0
+		s = 0
+	} else {
+		s = del / max
+
+		delR := (((max - r) / 6) + (del / 2)) / del
+		delG := (((max - g) / 6) + (del / 2)) / del
+		delB := (((max - b) / 6) + (del / 2)) / del
+
+		if r == max {
+			h = delB - delG
+		} else if g == max {
+			h = (1 / 3) + delR - delB
+		} else if b == max {
+			h = (2 / 3) + delG - delR
+		}
+
+		if h < 0 {
+			h += 1
+		}
+		if h > 1 {
+			h -= 1
+		}
+	}
+
+	return &HSV{h, s, v}
+}
+
+func (hsv *HSV) Colorfulness() *HSV {
+	return &HSV{
+		H: hsv.H,
+		S: math.Sqrt(hsv.S),
+		V: math.Sqrt(hsv.V),
+	}
+}
+
+func (hsv *HSV) RGB() *RGBA {
+	var r, g, b float64
+	if hsv.S == 0 {
+		r = hsv.V * 255
+		g = hsv.V * 255
+		b = hsv.V * 255
+	} else {
+		h := hsv.H * 6
+		if h == 6 {
+			h = 0
+		}
+		i := math.Floor(h)
+		v1 := hsv.V * (1 - hsv.S)
+		v2 := hsv.V * (1 - hsv.S*(h-i))
+		v3 := hsv.V * (1 - hsv.S*(1-(h-i)))
+
+		if i == 0 {
+			r = hsv.V
+			g = v3
+			b = v1
+		} else if i == 1 {
+			r = v2
+			g = hsv.V
+			b = v1
+		} else if i == 2 {
+			r = v1
+			g = hsv.V
+			b = v3
+		} else if i == 3 {
+			r = v1
+			g = v2
+			b = hsv.V
+		} else if i == 4 {
+			r = v3
+			g = v1
+			b = hsv.V
+		} else {
+			r = hsv.V
+			g = v1
+			b = v2
+		}
+
+		r = r * 255
+		g = g * 255
+		b = b * 255
+	}
+
+	return &RGBA{
+		R: int(r),
+		G: int(g),
+		B: int(b),
+		A: 255,
 	}
 }

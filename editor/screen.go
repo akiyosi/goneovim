@@ -1637,14 +1637,14 @@ func getFillpatternAndTransparent(cell *Cell, color *RGBA) (core.Qt__BrushStyle,
 			editor.config.Editor.DiffDeletePattern <= 14 {
 			transparent = int(editor.config.Editor.Transparent * 255)
 		}
-		color = warpColor(color, 10)
+		color = color.HSV().Colorfulness().RGB()
 	} else if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hiName == "DiffAdd" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffAddPattern)
 		if editor.config.Editor.DiffAddPattern >= 7 &&
 			editor.config.Editor.DiffAddPattern <= 14 {
 			transparent = int(editor.config.Editor.Transparent * 255)
 		}
-		color = warpColor(color, 10)
+		color = color.HSV().Colorfulness().RGB()
 	}
 
 	return pattern, color, transparent
