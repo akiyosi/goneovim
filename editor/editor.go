@@ -20,33 +20,6 @@ import (
 
 var editor *Editor
 
-// Highlight is
-type Highlight struct {
-	kind       string
-	uiName     string
-	hiName     string
-	foreground *RGBA
-	background *RGBA
-	special    *RGBA
-	italic     bool
-	bold       bool
-	underline  bool
-	undercurl  bool
-}
-
-// Cell is
-type Cell struct {
-	normalWidth bool
-	char        string
-	highlight   Highlight
-}
-
-// NotifyButton is
-type NotifyButton struct {
-	action func()
-	text   string
-}
-
 // ColorPalette is
 type ColorPalette struct {
 	e *Editor
@@ -69,6 +42,12 @@ type ColorPalette struct {
 	minimapCurrentRegion  *RGBA
 	windowSeparator       *RGBA
 	indentGuide           *RGBA
+}
+
+// NotifyButton is
+type NotifyButton struct {
+	action func()
+	text   string
 }
 
 // Notify is

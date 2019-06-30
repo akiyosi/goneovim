@@ -50,6 +50,11 @@ func (rgba *RGBA) Hex() string {
 	return fmt.Sprintf("#%02x%02x%02x", uint8(rgba.R), uint8(rgba.G), uint8(rgba.B))
 }
 
+// Hex is
+func (rgba *RGBA) HexDigits() string {
+	return fmt.Sprintf("%02x%02x%02x", uint8(rgba.R), uint8(rgba.G), uint8(rgba.B))
+}
+
 // input color *RGBA, aplpha (0.0...-1.0..) int
 func (rgba *RGBA) brend(color *RGBA, alpha float64) *RGBA {
 	return &RGBA{

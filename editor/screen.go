@@ -21,6 +21,27 @@ import (
 
 type gridId = int
 
+// Highlight is
+type Highlight struct {
+	// kind       string
+	// uiName     string
+	hiName     string
+	foreground *RGBA
+	background *RGBA
+	special    *RGBA
+	italic     bool
+	bold       bool
+	underline  bool
+	undercurl  bool
+}
+
+// Cell is
+type Cell struct {
+	normalWidth bool
+	char        string
+	highlight   Highlight
+}
+
 // Window is
 type Window struct {
 	paintMutex  sync.Mutex
@@ -41,6 +62,7 @@ type Window struct {
 	queueRedrawArea  [4]int
 	scrollRegion     []int
 	devicePixelRatio float64
+	jkScroll         bool
 
 	// NOTE:
 	// Only use minimap
@@ -75,10 +97,7 @@ type Screen struct {
 	drawSplit        bool
 	resizeCount      uint
 	tooltip          *widgets.QLabel
-	glyph            map[Cell]*gui.QImage
-
-	d1 time.Duration
-	d2 time.Duration
+	glyphSet         map[Cell]*gui.QImage
 }
 
 func newScreen() *Screen {
@@ -96,7 +115,7 @@ func newScreen() *Screen {
 		lastCursor:   [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
-		glyph:        make(map[Cell]*gui.QImage),
+		glyphSet:     make(map[Cell]*gui.QImage),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -557,6 +576,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		color,
 	)
 }
+
 func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	var m sync.Mutex
 	m.Lock()
@@ -852,15 +872,15 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		break
 	}
 
-	kind, ok := info["kind"]
-	if ok {
-		highlight.kind = kind.(string)
-	}
+	// kind, ok := info["kind"]
+	// if ok {
+	// 	highlight.kind = kind.(string)
+	// }
 
-	uiName, ok := info["ui_name"]
-	if ok {
-		highlight.uiName = uiName.(string)
-	}
+	// uiName, ok := info["ui_name"]
+	// if ok {
+	// 	highlight.uiName = uiName.(string)
+	// }
 
 	hiName, ok := info["hi_name"]
 	if ok {
@@ -1212,6 +1232,12 @@ func (w *Window) scroll(count int) {
 		}
 	}
 
+	if math.Abs(float64(count)) == 1 {
+		w.jkScroll = true
+	} else {
+		w.jkScroll = false
+	}
+
 	w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
 }
 
@@ -1469,28 +1495,28 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 					width = 0
 				}
 				if width > 0 {
-				 	// Set diff pattern
-				 	pattern, color, transparent := getFillpatternAndTransparent(lastCell, lastBg)
+					// Set diff pattern
+					pattern, color, transparent := getFillpatternAndTransparent(lastCell, lastBg)
 
-				 	// Fill background with pattern
-				 	rectF := core.NewQRectF4(
-				 		float64(start)*font.truewidth,
-				 		float64((y)*font.lineHeight),
-				 		float64(width)*font.truewidth,
-				 		float64(font.lineHeight),
-				 	)
-				 	p.FillRect(
-				 		rectF,
-				 		gui.NewQBrush3(
-				 			gui.NewQColor3(
-				 				color.R,
-				 				color.G,
-				 				color.B,
-				 				transparent,
-				 			),
-				 			pattern,
-				 		),
-				 	)
+					// Fill background with pattern
+					rectF := core.NewQRectF4(
+						float64(start)*font.truewidth,
+						float64((y)*font.lineHeight),
+						float64(width)*font.truewidth,
+						float64(font.lineHeight),
+					)
+					p.FillRect(
+						rectF,
+						gui.NewQBrush3(
+							gui.NewQColor3(
+								color.R,
+								color.G,
+								color.B,
+								transparent,
+							),
+							pattern,
+						),
+					)
 				}
 				start = x
 				end = x
@@ -1534,7 +1560,6 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 
-
 		// // If drawing background in drawchar()
 		// if cell.highlight.background == nil {
 		// 	cell.highlight.background = w.s.ws.background
@@ -1545,7 +1570,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		// if !cell.highlight.background.equals(w.s.ws.background) {
 		// 	// Set diff pattern
 		// 	pattern, color, transparent := getFillpatternAndTransparent(cell, nil)
-                // 
+		//
 		// 	// Fill background with pattern
 		// 	rectF := core.NewQRectF4(
 		// 		float64(x)*wsfont.truewidth,
@@ -1567,7 +1592,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		// 	)
 		// }
 
-		glyph := w.s.glyph[*cell]
+		glyph := w.s.glyphSet[*cell]
 		if glyph == nil {
 			glyph = w.newGlyph(p, cell)
 		}
@@ -1585,7 +1610,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if cell == nil || cell.char == " " {
 			continue
 		}
-		glyph := w.s.glyph[*cell]
+		glyph := w.s.glyphSet[*cell]
 		if glyph == nil {
 			glyph = w.newGlyph(p, cell)
 		}
@@ -1606,14 +1631,14 @@ func getFillpatternAndTransparent(cell *Cell, color *RGBA) (core.Qt__BrushStyle,
 	}
 	pattern := core.Qt__BrushStyle(1)
 	transparent := int(transparent() * 255.0)
-	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.uiName == "DiffDelete" {
+	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hiName == "DiffDelete" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffDeletePattern)
 		if editor.config.Editor.DiffDeletePattern >= 7 &&
 			editor.config.Editor.DiffDeletePattern <= 14 {
 			transparent = int(editor.config.Editor.Transparent * 255)
 		}
 		color = warpColor(color, 10)
-	} else 	if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.uiName == "DiffAdd" {
+	} else if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hiName == "DiffAdd" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffAddPattern)
 		if editor.config.Editor.DiffAddPattern >= 7 &&
 			editor.config.Editor.DiffAddPattern <= 14 {
@@ -1740,10 +1765,10 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 	char := cell.char
 
 	// Skip draw char if
-	if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.uiName == "DiffAdd" {
+	if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hiName == "DiffAdd" {
 		char = " "
 	}
-	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.uiName == "DiffDelete" {
+	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hiName == "DiffDelete" {
 		char = " "
 	}
 
@@ -1798,7 +1823,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		char,
 		nil,
 	)
-	w.s.glyph[*cell] = glyph
+	w.s.glyphSet[*cell] = glyph
 
 	return glyph
 }
