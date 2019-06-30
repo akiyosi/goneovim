@@ -23,6 +23,7 @@ type gridId = int
 
 // Highlight is
 type Highlight struct {
+	id int
 	// kind       string
 	// uiName     string
 	hiName     string
@@ -40,6 +41,12 @@ type Cell struct {
 	normalWidth bool
 	char        string
 	highlight   Highlight
+}
+
+// Char is an object for map access with reduced Cell information.
+type Char struct {
+	char string
+	hi   int
 }
 
 // Window is
@@ -97,7 +104,7 @@ type Screen struct {
 	drawSplit        bool
 	resizeCount      uint
 	tooltip          *widgets.QLabel
-	glyphSet         map[Cell]*gui.QImage
+	glyphSet         map[Char]*gui.QImage
 }
 
 func newScreen() *Screen {
@@ -115,7 +122,7 @@ func newScreen() *Screen {
 		lastCursor:   [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
-		glyphSet:     make(map[Cell]*gui.QImage),
+		glyphSet:     make(map[Char]*gui.QImage),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -882,6 +889,11 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	// 	highlight.uiName = uiName.(string)
 	// }
 
+	id, ok := info["id"]
+	if ok {
+		highlight.id = util.ReflectToInt(id)
+	}
+
 	hiName, ok := info["hi_name"]
 	if ok {
 		highlight.hiName = hiName.(string)
@@ -1592,7 +1604,11 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		// 	)
 		// }
 
-		glyph := w.s.glyphSet[*cell]
+		// glyph := w.s.glyphSet[*cell]
+		glyph := w.s.glyphSet[Char{
+			char: cell.char,
+			hi:   cell.highlight.id,
+		}]
 		if glyph == nil {
 			glyph = w.newGlyph(p, cell)
 		}
@@ -1610,7 +1626,11 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if cell == nil || cell.char == " " {
 			continue
 		}
-		glyph := w.s.glyphSet[*cell]
+		// glyph := w.s.glyphSet[*cell]
+		glyph := w.s.glyphSet[Char{
+			char: cell.char,
+			hi:   cell.highlight.id,
+		}]
 		if glyph == nil {
 			glyph = w.newGlyph(p, cell)
 		}
@@ -1791,11 +1811,6 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 	glyph.SetDevicePixelRatio(w.devicePixelRatio)
-	// glyph.Fill2(gui.NewQColor3(
-	// 	cell.highlight.background.R,
-	// 	cell.highlight.background.G,
-	// 	cell.highlight.background.B,
-	// 	int(transparent() * 255.0)))
 	glyph.Fill3(core.Qt__transparent)
 
 	p = gui.NewQPainter2(glyph)
@@ -1803,7 +1818,6 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		cell.highlight.foreground.R,
 		cell.highlight.foreground.G,
 		cell.highlight.foreground.B,
-		// w.transparent(cell.highlight.foreground)))
 		255))
 
 	p.SetFont(w.s.ws.font.fontNew)
@@ -1823,7 +1837,10 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		char,
 		nil,
 	)
-	w.s.glyphSet[*cell] = glyph
+	w.s.glyphSet[Char{
+		char: cell.char,
+		hi:   cell.highlight.id,
+	}] = glyph
 
 	return glyph
 }
