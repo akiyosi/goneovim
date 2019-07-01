@@ -43,12 +43,6 @@ type Cell struct {
 	highlight   Highlight
 }
 
-// Char is an object for map access with reduced Cell information.
-type Char struct {
-	char string
-	hi   *int
-}
-
 // Window is
 type Window struct {
 	paintMutex  sync.Mutex
@@ -104,7 +98,7 @@ type Screen struct {
 	drawSplit        bool
 	resizeCount      uint
 	tooltip          *widgets.QLabel
-	glyphSet         map[Char]*gui.QImage
+	glyphSet         map[Cell]*gui.QImage
 }
 
 func newScreen() *Screen {
@@ -122,7 +116,7 @@ func newScreen() *Screen {
 		lastCursor:   [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
-		glyphSet:     make(map[Char]*gui.QImage),
+		glyphSet:     make(map[Cell]*gui.QImage),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -1604,11 +1598,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		// 	)
 		// }
 
-		// glyph := w.s.glyphSet[*cell]
-		glyph := w.s.glyphSet[Char{
-			char: cell.char,
-			hi:   &cell.highlight.id,
-		}]
+		glyph := w.s.glyphSet[*cell]
 		if glyph == nil {
 			glyph = w.newGlyph(p, cell)
 		}
@@ -1626,11 +1616,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if cell == nil || cell.char == " " {
 			continue
 		}
-		// glyph := w.s.glyphSet[*cell]
-		glyph := w.s.glyphSet[Char{
-			char: cell.char,
-			hi:   &cell.highlight.id,
-		}]
+		glyph := w.s.glyphSet[*cell]
 		if glyph == nil {
 			glyph = w.newGlyph(p, cell)
 		}
@@ -1837,10 +1823,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		char,
 		nil,
 	)
-	w.s.glyphSet[Char{
-		char: cell.char,
-		hi:   &cell.highlight.id,
-	}] = glyph
+	w.s.glyphSet[*cell] = glyph
 
 	return glyph
 }
