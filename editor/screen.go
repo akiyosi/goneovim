@@ -817,7 +817,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win.widget.SetGeometry(rect)
 	win.move(win.pos[0], win.pos[1])
 	win.widget.Show()
-	win.raise()
+	// win.raise()
 
 	win.queueRedrawAll()
 }
