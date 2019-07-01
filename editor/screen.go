@@ -99,6 +99,8 @@ type Screen struct {
 	resizeCount      uint
 	tooltip          *widgets.QLabel
 	glyphSet         map[Cell]*gui.QImage
+	isScrollOver     bool
+	scrollOverCount int
 }
 
 func newScreen() *Screen {
@@ -984,6 +986,18 @@ func (s *Screen) gridLine(args []interface{}) {
 		}
 
 		s.updateGridContent(arg.([]interface{}))
+	}
+	if s.isScrollOver {
+		s.gridScrollOver()
+	}
+}
+
+func (s *Screen) gridScrollOver() {
+	s.scrollOverCount++
+	for _, win := range s.windows {
+		if win != s.windows[1] {
+			win.move(win.pos[0], win.pos[1]-s.scrollOverCount)
+		}
 	}
 }
 
@@ -1998,13 +2012,22 @@ func (s *Screen) windowHide(args []interface{}) {
 	}
 }
 
-func (s *Screen) windowClose(args []interface{}) {
-	for _, arg := range args {
-		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		if isSkipGlobalId(gridid) {
-			continue
+func (s *Screen) windowScrollOverStart() {
+	s.isScrollOver = true
+}
+
+func (s *Screen) windowScrollOverReset() {
+	s.isScrollOver = false
+	s.scrollOverCount = 0
+	for _, win := range s.windows {
+		if win != s.windows[1] {
+			win.move(win.pos[0], win.pos[1])
 		}
 	}
+	// some processes
+}
+
+func (s *Screen) windowClose() {
 }
 
 func (w *Window) raise() {
