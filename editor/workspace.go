@@ -115,6 +115,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		w.font.ascent = ascent
 		w.font.lineHeight = w.font.height + w.font.lineSpace
 	}()
+	w.font.ws = w
 
 	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)
 	w.rows = editor.config.Editor.Height / w.font.lineHeight
@@ -202,10 +203,10 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.updateSize()
 
 	go func() {
-	        if !editor.config.MiniMap.Visible {
-	                time.Sleep(1500 * time.Millisecond)
-	        }
-	        w.minimap.startMinimapProc()
+		if !editor.config.MiniMap.Visible {
+			time.Sleep(1500 * time.Millisecond)
+		}
+		w.minimap.startMinimapProc()
 	}()
 
 	if runtime.GOOS == "windows" {

@@ -24,6 +24,27 @@ import (
 // disableIMEinNormal = true
 // startFullScreen = true
 // transparent = 0.5
+// // -- diffpattern enum --
+// // SolidPattern             1
+// // Dense1Pattern            2
+// // Dense2Pattern            3
+// // Dense3Pattern            4
+// // Dense4Pattern            5
+// // Dense5Pattern            6
+// // Dense6Pattern            7
+// // Dense7Pattern            8
+// // HorPattern               9
+// // VerPattern               10
+// // CrossPattern             11
+// // BDiagPattern             12
+// // FDiagPattern             13
+// // DiagCrossPattern         14
+// // LinearGradientPattern    15
+// // RadialGradientPattern    16
+// // ConicalGradientPattern   17
+// // TexturePattern           24
+// diffdeletepattern = 12
+// diffaddpattern = 1
 // SkipGlobalId = true
 // ginitvim = '''
 //   set guifont=FuraCode\ Nerd\ Font\ Mono:h14
@@ -124,6 +145,8 @@ type editorConfig struct {
 	DrawBorder         bool
 	SkipGlobalId       bool
 	IndentGuide        bool
+	DiffAddPattern     int
+	DiffDeletePattern  int
 }
 
 type statusLineConfig struct {
@@ -203,6 +226,9 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.Palette.AreaRatio = 0.6
 	config.Palette.MaxNumberOfResultItems = 30
 
+	config.Editor.DiffAddPattern = 1
+	config.Editor.DiffDeletePattern = 12
+
 	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
 		config.Editor.FontSize = 14
@@ -216,6 +242,13 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.SideBar.Width = 300
 		config.SideBar.AccentColor = "#5596ea"
 		config.Workspace.PathStyle = "minimum"
+	}
+
+	if config.Editor.DiffAddPattern < 1 || config.Editor.DiffAddPattern > 24 {
+		config.Editor.DiffAddPattern = 1
+	}
+	if config.Editor.DiffDeletePattern < 1 || config.Editor.DiffDeletePattern > 24 {
+		config.Editor.DiffDeletePattern = 1
 	}
 
 	if config.Editor.Width <= 400 {

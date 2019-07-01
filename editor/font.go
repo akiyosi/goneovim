@@ -8,6 +8,7 @@ import (
 
 // Font is
 type Font struct {
+	ws                 *Workspace
 	fontNew            *gui.QFont
 	fontMetrics        *gui.QFontMetricsF
 	defaultFont        *gui.QFont
@@ -68,6 +69,9 @@ func (f *Font) change(family string, size int) {
 	f.lineHeight = height + f.lineSpace
 	f.ascent = ascent
 	f.shift = int(float64(f.lineSpace)/2 + ascent)
+
+	// reset character cache
+	f.ws.screen.glyphSet = make(map[Cell]*gui.QImage)
 }
 
 func (f *Font) changeLineSpace(lineSpace int) {

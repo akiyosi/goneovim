@@ -21,6 +21,28 @@ import (
 
 type gridId = int
 
+// Highlight is
+type Highlight struct {
+	id int
+	// kind       string
+	// uiName     string
+	hiName     string
+	foreground *RGBA
+	background *RGBA
+	special    *RGBA
+	italic     bool
+	bold       bool
+	underline  bool
+	undercurl  bool
+}
+
+// Cell is
+type Cell struct {
+	normalWidth bool
+	char        string
+	highlight   Highlight
+}
+
 // Window is
 type Window struct {
 	paintMutex  sync.Mutex
@@ -36,10 +58,12 @@ type Window struct {
 	cols   int
 	rows   int
 
-	widget          *widgets.QWidget
-	shown           bool
-	queueRedrawArea [4]int
-	scrollRegion    []int
+	widget           *widgets.QWidget
+	shown            bool
+	queueRedrawArea  [4]int
+	scrollRegion     []int
+	devicePixelRatio float64
+	jkScroll         bool
 
 	// NOTE:
 	// Only use minimap
@@ -74,6 +98,7 @@ type Screen struct {
 	drawSplit        bool
 	resizeCount      uint
 	tooltip          *widgets.QLabel
+	glyphSet         map[Cell]*gui.QImage
 }
 
 func newScreen() *Screen {
@@ -91,6 +116,7 @@ func newScreen() *Screen {
 		lastCursor:   [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
+		glyphSet:     make(map[Cell]*gui.QImage),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -312,25 +338,27 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	rect := event.M_rect()
 	top := rect.Y()
 	left := rect.X()
+	width := rect.Width()
+	height := rect.Height()
+	right := left + width
+	bottom := top + height
 
 	font := w.s.ws.font
 	row := int(float64(top) / float64(font.lineHeight))
 	col := int(float64(left) / font.truewidth)
+	rows := int(math.Ceil(float64(bottom)/float64(font.lineHeight))) - row
+	cols := int(math.Ceil(float64(right)/font.truewidth)) - col
 
 	p := gui.NewQPainter2(w.widget)
-	p.SetFont(font.fontNew)
 
 	// Draw contents
-	for y := row; y < row+w.rows; y++ {
-		if w == w.s.windows[1] && w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
-			break
-		}
+	for y := row; y < row+rows; y++ {
 		if y >= w.rows {
 			continue
 		}
-		w.fillHightlight(p, y, col, w.cols)
-		w.drawText(p, y, col, w.cols)
-		w.drawTextDecoration(p, y, col, w.cols)
+		w.fillBackground(p, y, col, cols)
+		w.drawChars(p, y, col, cols)
+		w.drawTextDecoration(p, y, col, cols)
 	}
 
 	// Draw vim window separator
@@ -549,6 +577,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		color,
 	)
 }
+
 func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	var m sync.Mutex
 	m.Lock()
@@ -844,14 +873,19 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		break
 	}
 
-	kind, ok := info["kind"]
-	if ok {
-		highlight.kind = kind.(string)
-	}
+	// kind, ok := info["kind"]
+	// if ok {
+	// 	highlight.kind = kind.(string)
+	// }
 
-	uiName, ok := info["ui_name"]
+	// uiName, ok := info["ui_name"]
+	// if ok {
+	// 	highlight.uiName = uiName.(string)
+	// }
+
+	id, ok := info["id"]
 	if ok {
-		highlight.uiName = uiName.(string)
+		highlight.id = util.ReflectToInt(id)
 	}
 
 	hiName, ok := info["hi_name"]
@@ -875,7 +909,7 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 
 	underline := hl["underline"]
 	if underline != nil {
-		highlight.underline= true
+		highlight.underline = true
 	} else {
 		highlight.underline = false
 	}
@@ -899,7 +933,8 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	if ok {
 		rgba := calcColor(util.ReflectToInt(fg))
 		highlight.foreground = rgba
-	} else {
+	}
+	if highlight.foreground == nil {
 		highlight.foreground = s.ws.foreground
 	}
 
@@ -907,7 +942,8 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	if ok {
 		rgba := calcColor(util.ReflectToInt(bg))
 		highlight.background = rgba
-	} else {
+	}
+	if highlight.background == nil {
 		highlight.background = s.ws.background
 	}
 
@@ -1202,6 +1238,12 @@ func (w *Window) scroll(count int) {
 		}
 	}
 
+	if math.Abs(float64(count)) == 1 {
+		w.jkScroll = true
+	} else {
+		w.jkScroll = false
+	}
+
 	w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
 }
 
@@ -1285,6 +1327,12 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 	var lastCell *Cell
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
+			continue
+		}
+		if line[x] == nil {
+			continue
+		}
+		if line[x].char != " " {
 			continue
 		}
 		if line[x] != nil {
@@ -1388,6 +1436,226 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
+func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
+	if y >= len(w.content) {
+		return
+	}
+	font := w.s.ws.font
+	line := w.content[y]
+	var bg *RGBA
+
+	start := -1
+	end := -1
+	var lastBg *RGBA
+	var lastCell *Cell
+
+	for x := col; x < col+cols; x++ {
+		if x >= len(line) {
+			continue
+		}
+		if line[x] == nil {
+			continue
+		}
+		bg = line[x].highlight.background
+		if bg == nil {
+			bg = w.s.ws.background
+		}
+
+		// if !bg.equals(w.s.ws.background) {
+		// 	// Set diff pattern
+		// 	pattern, color, transparent := getFillpatternAndTransparent(w.content[y][x], bg)
+
+		// 	// Fill background with pattern
+		// 	rectF := core.NewQRectF4(
+		// 		float64(x)*font.truewidth,
+		// 		float64((y)*font.lineHeight),
+		// 		font.truewidth,
+		// 		float64(font.lineHeight),
+		// 	)
+		// 	p.FillRect(
+		// 		rectF,
+		// 		gui.NewQBrush3(
+		// 			gui.NewQColor3(
+		// 				color.R,
+		// 				color.G,
+		// 				color.B,
+		// 				transparent,
+		// 			),
+		// 			pattern,
+		// 		),
+		// 	)
+		// }
+
+		if lastBg == nil {
+			start = x
+			lastBg = bg
+		}
+		if lastBg != nil {
+			if lastBg.equals(bg) {
+				lastCell = line[x]
+				end = x
+			}
+			if !lastBg.equals(bg) || x+1 == col+cols {
+				width := end - start + 1
+				if lastBg.equals(w.s.ws.background) {
+					width = 0
+				}
+				if width > 0 {
+					// Set diff pattern
+					pattern, color, transparent := getFillpatternAndTransparent(lastCell, lastBg)
+
+					// Fill background with pattern
+					rectF := core.NewQRectF4(
+						float64(start)*font.truewidth,
+						float64((y)*font.lineHeight),
+						float64(width)*font.truewidth,
+						float64(font.lineHeight),
+					)
+					p.FillRect(
+						rectF,
+						gui.NewQBrush3(
+							gui.NewQColor3(
+								color.R,
+								color.G,
+								color.B,
+								transparent,
+							),
+							pattern,
+						),
+					)
+				}
+				start = x
+				end = x
+				lastBg = bg
+			}
+		}
+	}
+}
+
+func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
+	if y >= len(w.content) {
+		return
+	}
+	wsfont := w.s.ws.font
+	specialChars := []int{}
+
+	for x := col; x < col+cols; x++ {
+		if x >= len(w.content[y]) {
+			continue
+		}
+
+		// If not drawing background in drawchar()
+		if x >= w.lenLine[y] {
+			break
+		}
+
+		cell := w.content[y][x]
+		if cell == nil {
+			continue
+		}
+		if cell.char == "" {
+			continue
+		}
+		if !cell.normalWidth {
+			specialChars = append(specialChars, x)
+			continue
+		}
+
+		// If not drawing background in drawchar()
+		if cell.char == " " {
+			continue
+		}
+
+		// // If drawing background in drawchar()
+		// if cell.highlight.background == nil {
+		// 	cell.highlight.background = w.s.ws.background
+		// }
+		// if cell.char == " " && cell.highlight.background.equals(w.s.ws.background) {
+		// 	continue
+		// }
+		// if !cell.highlight.background.equals(w.s.ws.background) {
+		// 	// Set diff pattern
+		// 	pattern, color, transparent := getFillpatternAndTransparent(cell, nil)
+		//
+		// 	// Fill background with pattern
+		// 	rectF := core.NewQRectF4(
+		// 		float64(x)*wsfont.truewidth,
+		// 		float64((y)*wsfont.lineHeight),
+		// 		wsfont.truewidth,
+		// 		float64(wsfont.lineHeight),
+		// 	)
+		// 	p.FillRect(
+		// 		rectF,
+		// 		gui.NewQBrush3(
+		// 			gui.NewQColor3(
+		// 				color.R,
+		// 				color.G,
+		// 				color.B,
+		// 				transparent,
+		// 			),
+		// 			pattern,
+		// 		),
+		// 	)
+		// }
+
+		glyph := w.s.glyphSet[*cell]
+		if glyph == nil {
+			glyph = w.newGlyph(p, cell)
+		}
+		p.DrawImage7(
+			core.NewQPointF3(
+				float64(x)*wsfont.truewidth,
+				float64(y*wsfont.lineHeight),
+			),
+			glyph,
+		)
+	}
+
+	for _, x := range specialChars {
+		cell := w.content[y][x]
+		if cell == nil || cell.char == " " {
+			continue
+		}
+		glyph := w.s.glyphSet[*cell]
+		if glyph == nil {
+			glyph = w.newGlyph(p, cell)
+		}
+		p.DrawImage7(
+			core.NewQPointF3(
+				float64(x)*wsfont.truewidth,
+				float64(y*wsfont.lineHeight),
+			),
+			glyph,
+		)
+	}
+
+}
+
+func getFillpatternAndTransparent(cell *Cell, color *RGBA) (core.Qt__BrushStyle, *RGBA, int) {
+	if color == nil {
+		color = cell.highlight.background
+	}
+	pattern := core.Qt__BrushStyle(1)
+	transparent := int(transparent() * 255.0)
+	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hiName == "DiffDelete" {
+		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffDeletePattern)
+		if editor.config.Editor.DiffDeletePattern >= 7 &&
+			editor.config.Editor.DiffDeletePattern <= 14 {
+			transparent = int(editor.config.Editor.Transparent * 255)
+		}
+		color = color.HSV().Colorfulness().RGB()
+	} else if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hiName == "DiffAdd" {
+		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffAddPattern)
+		if editor.config.Editor.DiffAddPattern >= 7 &&
+			editor.config.Editor.DiffAddPattern <= 14 {
+			transparent = int(editor.config.Editor.Transparent * 255)
+		}
+		color = color.HSV().Colorfulness().RGB()
+	}
+
+	return pattern, color, transparent
+}
+
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
@@ -1479,6 +1747,74 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
+func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
+	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
+
+	width := w.s.ws.font.truewidth
+	if !cell.normalWidth {
+		width = width * 2.0
+	}
+
+	char := cell.char
+
+	// Skip draw char if
+	if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hiName == "DiffAdd" {
+		char = " "
+	}
+	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hiName == "DiffDelete" {
+		char = " "
+	}
+
+	if cell.highlight.background == nil {
+		cell.highlight.background = w.s.ws.background
+	}
+	if cell.highlight.foreground == nil {
+		cell.highlight.foreground = w.s.ws.foreground
+	}
+
+	// QImage default device pixel ratio is 1.0,
+	// So we set the correct device pixel ratio
+	glyph := gui.NewQImage2(
+		core.NewQRectF4(
+			0,
+			0,
+			w.devicePixelRatio*width,
+			w.devicePixelRatio*float64(w.s.ws.font.lineHeight),
+		).Size().ToSize(),
+		gui.QImage__Format_ARGB32_Premultiplied,
+	)
+	glyph.SetDevicePixelRatio(w.devicePixelRatio)
+	glyph.Fill3(core.Qt__transparent)
+
+	p = gui.NewQPainter2(glyph)
+	p.SetPen2(gui.NewQColor3(
+		cell.highlight.foreground.R,
+		cell.highlight.foreground.G,
+		cell.highlight.foreground.B,
+		255))
+
+	p.SetFont(w.s.ws.font.fontNew)
+	font := p.Font()
+	font.SetBold(cell.highlight.bold)
+	font.SetItalic(cell.highlight.italic)
+	p.SetFont(font)
+
+	p.DrawText5(
+		core.NewQRectF4(
+			0,
+			0,
+			width,
+			float64(w.s.ws.font.lineHeight),
+		),
+		int(core.Qt__AlignVCenter),
+		char,
+		nil,
+	)
+	w.s.glyphSet[*cell] = glyph
+
+	return glyph
+}
+
 func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
@@ -1521,11 +1857,11 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			amplitude := font.ascent / 8.0
 			freq := 1.0
 			phase := 0.0
-			y := Y + height / 2 + amplitude * math.Sin(0)
+			y := Y + height/2 + amplitude*math.Sin(0)
 			point := core.NewQPointF3(start, y)
 			path := gui.NewQPainterPath2(point)
-			for i := int(point.X()); i<=int(end); i++ {
-				y = Y + height / 2 + amplitude * math.Sin(2 * math.Pi * freq * float64(i) / font.truewidth + phase)
+			for i := int(point.X()); i <= int(end); i++ {
+				y = Y + height/2 + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.truewidth+phase)
 				path.LineTo(core.NewQPointF3(float64(i), y))
 			}
 			p.DrawPath(path)
@@ -1549,9 +1885,17 @@ func newWindow() *Window {
 	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
+	var devicePixelRatio float64
+	if runtime.GOOS == "darwin" {
+		devicePixelRatio = 2.0
+	} else {
+		devicePixelRatio = 1.0
+	}
+
 	w := &Window{
-		widget:       widget,
-		scrollRegion: []int{0, 0, 0, 0},
+		widget:           widget,
+		scrollRegion:     []int{0, 0, 0, 0},
+		devicePixelRatio: devicePixelRatio,
 	}
 
 	widget.ConnectPaintEvent(w.paint)
