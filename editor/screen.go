@@ -993,8 +993,10 @@ func (s *Screen) gridLine(args []interface{}) {
 }
 
 func (s *Screen) gridScrollOver() {
-	s.scrollOverCount++
 	for _, win := range s.windows {
+		if win == s.windows[1] {
+			s.scrollOverCount++
+		}
 		if win != s.windows[1] {
 			win.move(win.pos[0], win.pos[1]-s.scrollOverCount)
 		}
@@ -2013,6 +2015,8 @@ func (s *Screen) windowHide(args []interface{}) {
 }
 
 func (s *Screen) windowScrollOverStart() {
+	// main purposs is to scroll over the windows in the `grid_line` event
+	// when messages is shown
 	s.isScrollOver = true
 }
 
@@ -2024,7 +2028,39 @@ func (s *Screen) windowScrollOverReset() {
 			win.move(win.pos[0], win.pos[1])
 		}
 	}
-	// some processes
+
+	// reset message contents in global grid 
+	gwin := s.windows[1]
+	content := make([][]*Cell, gwin.rows)
+	lenLine := make([]int, gwin.rows)
+
+	for i := 0; i < gwin.rows; i++ {
+		content[i] = make([]*Cell, gwin.cols)
+	}
+
+	for i := 0; i < gwin.rows; i++ {
+		if i >= len(gwin.content) {
+			continue
+		}
+		lenLine[i] = gwin.cols
+		for j := 0; j < gwin.cols; j++ {
+			if j >= len(gwin.content[i]) {
+				continue
+			}
+			if gwin.content[i][j] == nil {
+				continue
+			}
+			if gwin.content[i][j].highlight.hiName == "StatusLine" ||
+			gwin.content[i][j].highlight.hiName == "StatusLineNC" ||
+			gwin.content[i][j].highlight.hiName == "VertSplit" {
+				content[i][j] = gwin.content[i][j]
+			}
+		}
+	}
+	s.windows[1].content = content
+	s.windows[1].lenLine = lenLine
+
+	gwin.queueRedrawAll()
 }
 
 func (s *Screen) windowClose() {
