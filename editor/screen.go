@@ -46,7 +46,7 @@ type Cell struct {
 // Char is an object for map access with reduced Cell information.
 type Char struct {
 	char string
-	hi   int
+	hi   *int
 }
 
 // Window is
@@ -1607,7 +1607,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		// glyph := w.s.glyphSet[*cell]
 		glyph := w.s.glyphSet[Char{
 			char: cell.char,
-			hi:   cell.highlight.id,
+			hi:   &cell.highlight.id,
 		}]
 		if glyph == nil {
 			glyph = w.newGlyph(p, cell)
@@ -1629,7 +1629,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		// glyph := w.s.glyphSet[*cell]
 		glyph := w.s.glyphSet[Char{
 			char: cell.char,
-			hi:   cell.highlight.id,
+			hi:   &cell.highlight.id,
 		}]
 		if glyph == nil {
 			glyph = w.newGlyph(p, cell)
@@ -1839,7 +1839,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 	)
 	w.s.glyphSet[Char{
 		char: cell.char,
-		hi:   cell.highlight.id,
+		hi:   &cell.highlight.id,
 	}] = glyph
 
 	return glyph
