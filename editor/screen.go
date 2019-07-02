@@ -545,7 +545,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		return
 	}
 	x := int(float64(w.pos[0]) * w.s.ws.font.truewidth)
-	y := w.pos[1] * int(w.s.ws.font.lineHeight)
+	y := (w.pos[1]-w.s.scrollOverCount) * int(w.s.ws.font.lineHeight)
 	width := int(float64(w.cols) * w.s.ws.font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(w.s.ws.font.lineHeight))
 	color := gui.NewQColor3(
@@ -998,6 +998,12 @@ func (s *Screen) gridScrollOver() {
 			s.scrollOverCount++
 		}
 		if win != s.windows[1] {
+			if win == nil {
+				continue
+			}
+			if !win.isShown() {
+				continue
+			}
 			win.move(win.pos[0], win.pos[1]-s.scrollOverCount)
 		}
 	}
@@ -2024,6 +2030,9 @@ func (s *Screen) windowScrollOverReset() {
 	s.isScrollOver = false
 	s.scrollOverCount = 0
 	for _, win := range s.windows {
+		if win == nil {
+			continue
+		}
 		if win != s.windows[1] {
 			win.move(win.pos[0], win.pos[1])
 		}
