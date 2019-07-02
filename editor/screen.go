@@ -99,6 +99,8 @@ type Screen struct {
 	resizeCount      uint
 	tooltip          *widgets.QLabel
 	glyphSet         map[Cell]*gui.QImage
+	isScrollOver     bool
+	scrollOverCount int
 }
 
 func newScreen() *Screen {
@@ -543,7 +545,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		return
 	}
 	x := int(float64(w.pos[0]) * w.s.ws.font.truewidth)
-	y := w.pos[1] * int(w.s.ws.font.lineHeight)
+	y := (w.pos[1]-w.s.scrollOverCount) * int(w.s.ws.font.lineHeight)
 	width := int(float64(w.cols) * w.s.ws.font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(w.s.ws.font.lineHeight))
 	color := gui.NewQColor3(
@@ -984,6 +986,26 @@ func (s *Screen) gridLine(args []interface{}) {
 		}
 
 		s.updateGridContent(arg.([]interface{}))
+	}
+	if s.isScrollOver {
+		s.gridScrollOver()
+	}
+}
+
+func (s *Screen) gridScrollOver() {
+	for _, win := range s.windows {
+		if win == s.windows[1] {
+			s.scrollOverCount++
+		}
+		if win != s.windows[1] {
+			if win == nil {
+				continue
+			}
+			if !win.isShown() {
+				continue
+			}
+			win.move(win.pos[0], win.pos[1]-s.scrollOverCount)
+		}
 	}
 }
 
@@ -1998,13 +2020,59 @@ func (s *Screen) windowHide(args []interface{}) {
 	}
 }
 
-func (s *Screen) windowClose(args []interface{}) {
-	for _, arg := range args {
-		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		if isSkipGlobalId(gridid) {
+func (s *Screen) windowScrollOverStart() {
+	// main purposs is to scroll over the windows in the `grid_line` event
+	// when messages is shown
+	s.isScrollOver = true
+}
+
+func (s *Screen) windowScrollOverReset() {
+	s.isScrollOver = false
+	s.scrollOverCount = 0
+	for _, win := range s.windows {
+		if win == nil {
 			continue
 		}
+		if win != s.windows[1] {
+			win.move(win.pos[0], win.pos[1])
+		}
 	}
+
+	// reset message contents in global grid 
+	gwin := s.windows[1]
+	content := make([][]*Cell, gwin.rows)
+	lenLine := make([]int, gwin.rows)
+
+	for i := 0; i < gwin.rows; i++ {
+		content[i] = make([]*Cell, gwin.cols)
+	}
+
+	for i := 0; i < gwin.rows; i++ {
+		if i >= len(gwin.content) {
+			continue
+		}
+		lenLine[i] = gwin.cols
+		for j := 0; j < gwin.cols; j++ {
+			if j >= len(gwin.content[i]) {
+				continue
+			}
+			if gwin.content[i][j] == nil {
+				continue
+			}
+			if gwin.content[i][j].highlight.hiName == "StatusLine" ||
+			gwin.content[i][j].highlight.hiName == "StatusLineNC" ||
+			gwin.content[i][j].highlight.hiName == "VertSplit" {
+				content[i][j] = gwin.content[i][j]
+			}
+		}
+	}
+	s.windows[1].content = content
+	s.windows[1].lenLine = lenLine
+
+	gwin.queueRedrawAll()
+}
+
+func (s *Screen) windowClose() {
 }
 
 func (w *Window) raise() {
