@@ -71,7 +71,7 @@ func (f *Font) change(family string, size int) {
 	f.shift = int(float64(f.lineSpace)/2 + ascent)
 
 	// reset character cache
-	f.ws.screen.glyphSet = make(map[Cell]*gui.QImage)
+	f.ws.screen.glyphMap = make(map[Cell]gui.QImage)
 }
 
 func (f *Font) changeLineSpace(lineSpace int) {

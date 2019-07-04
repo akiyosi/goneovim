@@ -862,13 +862,18 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.windowHide(args)
 
 		case "win_scroll_over_start":
-			s.windowScrollOverStart()
+			// old impl
+			// s.windowScrollOverStart()
 
 		case "win_scroll_over_reset":
-			s.windowScrollOverReset()
+			// old impl
+			// s.windowScrollOverReset()
 
 		case "win_close":
 			s.windowClose()
+
+		case "msg_set_pos":
+			fmt.Println("msg_set_pos:", args)
 
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})

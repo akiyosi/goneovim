@@ -98,9 +98,9 @@ type Screen struct {
 	drawSplit        bool
 	resizeCount      uint
 	tooltip          *widgets.QLabel
-	glyphSet         map[Cell]*gui.QImage
+	glyphMap         map[Cell]gui.QImage
 	isScrollOver     bool
-	scrollOverCount int
+	scrollOverCount  int
 }
 
 func newScreen() *Screen {
@@ -118,7 +118,7 @@ func newScreen() *Screen {
 		lastCursor:   [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
-		glyphSet:     make(map[Cell]*gui.QImage),
+		glyphMap:     make(map[Cell]gui.QImage),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -545,7 +545,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		return
 	}
 	x := int(float64(w.pos[0]) * w.s.ws.font.truewidth)
-	y := (w.pos[1]-w.s.scrollOverCount) * int(w.s.ws.font.lineHeight)
+	y := (w.pos[1] - w.s.scrollOverCount) * int(w.s.ws.font.lineHeight)
 	width := int(float64(w.cols) * w.s.ws.font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(w.s.ws.font.lineHeight))
 	color := gui.NewQColor3(
@@ -1479,9 +1479,6 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 		bg = line[x].highlight.background
-		if bg == nil {
-			bg = w.s.ws.background
-		}
 
 		// if !bg.equals(w.s.ws.background) {
 		// 	// Set diff pattern
@@ -1509,6 +1506,9 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		// }
 
 		if lastBg == nil {
+			if bg.equals(w.s.ws.background) {
+				continue
+			}
 			start = x
 			lastBg = bg
 		}
@@ -1620,8 +1620,8 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		// 	)
 		// }
 
-		glyph := w.s.glyphSet[*cell]
-		if glyph == nil {
+		glyph, ok := w.s.glyphMap[*cell]
+		if !ok {
 			glyph = w.newGlyph(p, cell)
 		}
 		p.DrawImage7(
@@ -1629,7 +1629,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 				float64(x)*wsfont.truewidth,
 				float64(y*wsfont.lineHeight),
 			),
-			glyph,
+			&glyph,
 		)
 	}
 
@@ -1638,8 +1638,8 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if cell == nil || cell.char == " " {
 			continue
 		}
-		glyph := w.s.glyphSet[*cell]
-		if glyph == nil {
+		glyph, ok := w.s.glyphMap[*cell]
+		if !ok {
 			glyph = w.newGlyph(p, cell)
 		}
 		p.DrawImage7(
@@ -1647,7 +1647,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 				float64(x)*wsfont.truewidth,
 				float64(y*wsfont.lineHeight),
 			),
-			glyph,
+			&glyph,
 		)
 	}
 
@@ -1720,8 +1720,8 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 
 	pointF := core.NewQPointF3(
-		float64(col) * wsfont.truewidth,
-		float64((y)*wsfont.lineHeight + wsfont.shift),
+		float64(col)*wsfont.truewidth,
+		float64((y)*wsfont.lineHeight+wsfont.shift),
 	)
 
 	for highlight, colorSlice := range chars {
@@ -1769,7 +1769,8 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
+func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
+	// * TODO: Further optimization, whether it is possible
 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
 
 	width := w.s.ws.font.truewidth
@@ -1787,9 +1788,10 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		char = " "
 	}
 
-	if cell.highlight.background == nil {
-		cell.highlight.background = w.s.ws.background
-	}
+	// If drawing background
+	// if cell.highlight.background == nil {
+	// 	cell.highlight.background = w.s.ws.background
+	// }
 	if cell.highlight.foreground == nil {
 		cell.highlight.foreground = w.s.ws.foreground
 	}
@@ -1806,6 +1808,14 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 	glyph.SetDevicePixelRatio(w.devicePixelRatio)
+
+	// If drawing background
+	// glyph.Fill2(gui.NewQColor3(
+	// 	cell.highlight.background.R,
+	// 	cell.highlight.background.G,
+	// 	cell.highlight.background.B,
+	// 	int(editor.config.Editor.Transparent * 255),
+	// ))
 	glyph.Fill3(core.Qt__transparent)
 
 	p = gui.NewQPainter2(glyph)
@@ -1816,10 +1826,12 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		255))
 
 	p.SetFont(w.s.ws.font.fontNew)
-	font := p.Font()
-	font.SetBold(cell.highlight.bold)
-	font.SetItalic(cell.highlight.italic)
-	p.SetFont(font)
+	if cell.highlight.bold {
+		p.Font().SetBold(true)
+	}
+	if cell.highlight.italic {
+		p.Font().SetItalic(true)
+	}
 
 	p.DrawText5(
 		core.NewQRectF4(
@@ -1832,9 +1844,9 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) *gui.QImage {
 		char,
 		nil,
 	)
-	w.s.glyphSet[*cell] = glyph
+	w.s.glyphMap[*cell] = *glyph
 
-	return glyph
+	return *glyph
 }
 
 func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
@@ -1870,7 +1882,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		p.SetPen(pen)
 		start := float64(x) * font.truewidth
 		end := float64(x+1) * font.truewidth
-		Y := float64((y) * font.lineHeight) + font.ascent + float64(font.lineSpace)
+		Y := float64((y)*font.lineHeight) + font.ascent + float64(font.lineSpace)
 		if line[x].highlight.underline {
 			linef := core.NewQLineF3(start, Y, end, Y)
 			p.DrawLine(linef)
@@ -2038,7 +2050,7 @@ func (s *Screen) windowScrollOverReset() {
 		}
 	}
 
-	// reset message contents in global grid 
+	// reset message contents in global grid
 	gwin := s.windows[1]
 	content := make([][]*Cell, gwin.rows)
 	lenLine := make([]int, gwin.rows)
@@ -2060,8 +2072,8 @@ func (s *Screen) windowScrollOverReset() {
 				continue
 			}
 			if gwin.content[i][j].highlight.hiName == "StatusLine" ||
-			gwin.content[i][j].highlight.hiName == "StatusLineNC" ||
-			gwin.content[i][j].highlight.hiName == "VertSplit" {
+				gwin.content[i][j].highlight.hiName == "StatusLineNC" ||
+				gwin.content[i][j].highlight.hiName == "VertSplit" {
 				content[i][j] = gwin.content[i][j]
 			}
 		}
