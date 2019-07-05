@@ -1799,12 +1799,16 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 	// QImage default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
 	glyph := gui.NewQImage2(
-		core.NewQRectF4(
-			0,
-			0,
-			w.devicePixelRatio*width,
-			w.devicePixelRatio*float64(w.s.ws.font.lineHeight),
-		).Size().ToSize(),
+		// core.NewQRectF4(
+		// 	0,
+		// 	0,
+		// 	w.devicePixelRatio*width,
+		// 	w.devicePixelRatio*float64(w.s.ws.font.lineHeight),
+		// ).Size().ToSize(),
+		core.NewQSize2(
+			int(w.devicePixelRatio*width),
+			int(w.devicePixelRatio*float64(w.s.ws.font.lineHeight)),
+		),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 	glyph.SetDevicePixelRatio(w.devicePixelRatio)
