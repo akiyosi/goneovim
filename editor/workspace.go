@@ -873,7 +873,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.windowClose()
 
 		case "msg_set_pos":
-			fmt.Println("msg_set_pos:", args)
+			s.msgSetPos(args)
 
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})

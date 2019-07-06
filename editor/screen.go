@@ -57,6 +57,7 @@ type Window struct {
 	anchor int
 	cols   int
 	rows   int
+	isMsgGrid bool
 
 	widget           *widgets.QWidget
 	shown            bool
@@ -101,6 +102,9 @@ type Screen struct {
 	glyphMap         map[Cell]gui.QImage
 	isScrollOver     bool
 	scrollOverCount  int
+
+	d1 time.Duration
+	d2 time.Duration
 }
 
 func newScreen() *Screen {
@@ -358,8 +362,14 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		if y >= w.rows {
 			continue
 		}
+		b := time.Now()
 		w.fillBackground(p, y, col, cols)
+		a := time.Now()
+		w.s.d1 += a.Sub(b)
+		b = time.Now()
 		w.drawChars(p, y, col, cols)
+		a = time.Now()
+		w.s.d2 += a.Sub(b)
 		w.drawTextDecoration(p, y, col, cols)
 	}
 
@@ -386,6 +396,18 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	// Update markdown preview
 	if w != w.s.windows[1] {
 		w.s.ws.markdown.updatePos()
+	}
+
+	fmt.Println("d1:", w.s.d1)
+	fmt.Println("d2:", w.s.d2)
+
+	for _, win := range w.s.windows {
+		if win == nil {
+			continue
+		}
+		if win.isMsgGrid {
+			fmt.Println("msg grid:", win.cols, win.rows, win.pos[0], win.pos[1])
+		}
 	}
 
 	p.DestroyQPainter()
@@ -2088,6 +2110,18 @@ func (s *Screen) windowScrollOverReset() {
 	gwin.queueRedrawAll()
 }
 
+func (s *Screen) msgSetPos(args []interface{}) {
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		msgCount := util.ReflectToInt(arg.([]interface{})[1])
+		win := s.windows[gridid]
+		win.shown = true
+		win.isMsgGrid = true
+		win.pos[1] = msgCount
+		win.move(win.pos[0], win.pos[1])
+	}
+}
+
 func (s *Screen) windowClose() {
 }
 
@@ -2103,8 +2137,15 @@ func (w *Window) raise() {
 }
 
 func (w *Window) move(col int, row int) {
+	res := 0
+	if w.isMsgGrid {
+		res = w.s.widget.Height() - w.rows * w.s.ws.font.lineHeight
+	}
+	if res < 0 {
+		res = 0
+	}
 	x := int(float64(col) * w.s.ws.font.truewidth)
-	y := row * int(w.s.ws.font.lineHeight)
+	y := row * int(w.s.ws.font.lineHeight) + res
 	w.widget.Move2(x, y)
 }
 
