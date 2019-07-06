@@ -389,15 +389,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.s.ws.markdown.updatePos()
 	}
 
-	for _, win := range w.s.windows {
-		if win == nil {
-			continue
-		}
-		if win.isMsgGrid {
-			fmt.Println("msg grid:", win.cols, win.rows, win.pos[0], win.pos[1])
-		}
-	}
-
 	p.DestroyQPainter()
 	w.paintMutex.Unlock()
 }
