@@ -1788,7 +1788,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 		char = " "
 	}
 
-	// If drawing background
+	// // If drawing background
 	// if cell.highlight.background == nil {
 	// 	cell.highlight.background = w.s.ws.background
 	// }
@@ -1813,7 +1813,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 	)
 	glyph.SetDevicePixelRatio(w.devicePixelRatio)
 
-	// If drawing background
+	// // If drawing background
 	// glyph.Fill2(gui.NewQColor3(
 	// 	cell.highlight.background.R,
 	// 	cell.highlight.background.G,
