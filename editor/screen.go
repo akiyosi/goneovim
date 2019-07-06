@@ -102,9 +102,6 @@ type Screen struct {
 	glyphMap         map[Cell]gui.QImage
 	isScrollOver     bool
 	scrollOverCount  int
-
-	d1 time.Duration
-	d2 time.Duration
 }
 
 func newScreen() *Screen {
@@ -362,14 +359,8 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		if y >= w.rows {
 			continue
 		}
-		b := time.Now()
 		w.fillBackground(p, y, col, cols)
-		a := time.Now()
-		w.s.d1 += a.Sub(b)
-		b = time.Now()
 		w.drawChars(p, y, col, cols)
-		a = time.Now()
-		w.s.d2 += a.Sub(b)
 		w.drawTextDecoration(p, y, col, cols)
 	}
 
@@ -397,9 +388,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	if w != w.s.windows[1] {
 		w.s.ws.markdown.updatePos()
 	}
-
-	fmt.Println("d1:", w.s.d1)
-	fmt.Println("d2:", w.s.d2)
 
 	for _, win := range w.s.windows {
 		if win == nil {
