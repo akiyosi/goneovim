@@ -354,6 +354,8 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	p := gui.NewQPainter2(w.widget)
 
+	// p.SetFont(font.fontNew)
+
 	// Draw contents
 	for y := row; y < row+rows; y++ {
 		if y >= w.rows {
@@ -361,6 +363,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		}
 		w.fillBackground(p, y, col, cols)
 		w.drawChars(p, y, col, cols)
+		// w.drawText(p, y, col, cols)
 		w.drawTextDecoration(p, y, col, cols)
 	}
 
@@ -1472,6 +1475,12 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	var lastBg *RGBA
 	var lastCell *Cell
 
+	// draw default background color if window is float window or msg grid
+	var drawDefaultBackground bool
+	if w.anchor > 1 || w.isMsgGrid {
+		drawDefaultBackground = true
+	}
+
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -1507,7 +1516,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		// }
 
 		if lastBg == nil {
-			if bg.equals(w.s.ws.background) {
+			if !drawDefaultBackground && bg.equals(w.s.ws.background) {
 				continue
 			}
 			start = x
@@ -1520,7 +1529,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			}
 			if !lastBg.equals(bg) || x+1 == col+cols {
 				width := end - start + 1
-				if lastBg.equals(w.s.ws.background) {
+				if !drawDefaultBackground && lastBg.equals(w.s.ws.background) {
 					width = 0
 				}
 				if width > 0 {
@@ -2015,7 +2024,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 		shadow.SetBlurRadius(38)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
+		shadow.SetColor(gui.NewQColor3(0, 0, 0, 100))
 		shadow.SetOffset3(-2, 6)
 		s.windows[gridid].widget.SetGraphicsEffect(shadow)
 
