@@ -663,6 +663,7 @@ func (s *Fuzzy) processSelected() {
 
 func (s *Fuzzy) confirm() {
 	if s.selected >= len(s.result) {
+		s.cancel()
 		return
 	}
 	arg := s.result[s.selected].output
