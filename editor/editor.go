@@ -78,6 +78,7 @@ type Editor struct {
 	window     *frameless.QFramelessWindow
 	wsWidget   *widgets.QWidget
 	wsSide     *WorkspaceSide
+	sysTray    *widgets.QSystemTrayIcon
 
 	statuslineHeight int
 	width            int
@@ -157,6 +158,7 @@ func InitEditor() {
 	e.initSVGS()
 	e.initColorPalette()
 	e.initNotifications()
+	e.initSysTray()
 
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent)
 	e.setWindowOptions()
@@ -279,6 +281,12 @@ func (e *Editor) initNotifications() {
 			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
+}
+
+func (e *Editor) initSysTray() {
+	image := filepath.Join(e.homeDir, ".gonvim", "trayicon.png")
+	trayIcon := gui.NewQIcon5(image)
+	e.sysTray = widgets.NewQSystemTrayIcon2(trayIcon, e.app)
 }
 
 func putEnv() {

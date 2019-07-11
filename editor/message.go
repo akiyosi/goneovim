@@ -251,6 +251,8 @@ func (m *Message) resizeMessages() bool {
 
 func (m *Message) msgShow(args []interface{}) {
 	prevKind := ""
+	winState := editor.window.WindowState()
+	notifyText := ""
 
 	for _, arg := range args {
 		kind, ok := arg.([]interface{})[0].(string)
@@ -288,6 +290,12 @@ func (m *Message) msgShow(args []interface{}) {
 			if msg == "" || msg == "\n" || msg == "\r\n" {
 				continue
 			}
+
+			// If window is minimize, then message notified as a desktop notifications
+			if winState == core.Qt__WindowMinimized {
+				notifyText += msg
+			}
+
 			length += len(msg)
 
 			if !strings.Contains(msg, "\n") {
@@ -309,6 +317,12 @@ func (m *Message) msgShow(args []interface{}) {
 			msg = strings.Replace(msg, " ", `&nbsp;`, -1)
 			formattedMsg := fmt.Sprintf("<font color='%s'>%s</font>", warpColor(color, -20).Hex(), msg)
 			buffer.WriteString(formattedMsg)
+		}
+
+		// If window is minimize, then message notified as a desktop notifications
+		if winState == core.Qt__WindowMinimized && notifyText != "" {
+			editor.sysTray.ShowMessage("Gonvim", notifyText, widgets.QSystemTrayIcon__NoIcon, 10)
+			return
 		}
 
 		replaceLast := false
