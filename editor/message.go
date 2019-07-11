@@ -321,7 +321,8 @@ func (m *Message) msgShow(args []interface{}) {
 
 		// If window is minimize, then message notified as a desktop notifications
 		if winState == core.Qt__WindowMinimized && notifyText != "" {
-			editor.sysTray.ShowMessage("Gonvim", notifyText, widgets.QSystemTrayIcon__NoIcon, 10)
+			fmt.Println("notify!")
+			editor.sysTray.ShowMessage("Gonvim", notifyText, widgets.QSystemTrayIcon__NoIcon, 2000)
 			return
 		}
 

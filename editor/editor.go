@@ -287,6 +287,7 @@ func (e *Editor) initSysTray() {
 	image := filepath.Join(e.homeDir, ".gonvim", "trayicon.png")
 	trayIcon := gui.NewQIcon5(image)
 	e.sysTray = widgets.NewQSystemTrayIcon2(trayIcon, e.app)
+	e.sysTray.Show()
 }
 
 func putEnv() {
