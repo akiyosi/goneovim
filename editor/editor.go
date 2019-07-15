@@ -288,7 +288,7 @@ func (e *Editor) initSysTray() {
 	color := ""
 	size := 0.95
 	if runtime.GOOS == "darwin" {
-		color = "#505050"
+		color = "#434343"
 		size = 0.9
 	} else {
 		color = "#179A33"
