@@ -24,6 +24,7 @@ import (
 // disableIMEinNormal = true
 // startFullScreen = true
 // transparent = 0.5
+// desktopNotifications = true
 // // -- diffpattern enum --
 // // SolidPattern             1
 // // Dense1Pattern            2
@@ -145,6 +146,7 @@ type editorConfig struct {
 	DrawBorder         bool
 	SkipGlobalId       bool
 	IndentGuide        bool
+	DesktopNotifications bool
 	DiffAddPattern     int
 	DiffDeletePattern  int
 }
@@ -223,11 +225,12 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.Editor.DrawBorder = true
 	config.Editor.IndentGuide = true
 
-	config.Palette.AreaRatio = 0.6
-	config.Palette.MaxNumberOfResultItems = 30
-
 	config.Editor.DiffAddPattern = 1
 	config.Editor.DiffDeletePattern = 12
+
+	config.Palette.AreaRatio = 0.5
+	config.Palette.MaxNumberOfResultItems = 30
+
 
 	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
