@@ -284,6 +284,9 @@ func (e *Editor) initNotifications() {
 }
 
 func (e *Editor) initSysTray() {
+	if !e.config.Editor.DesktopNotifications {
+		return
+	}
 	pixmap := gui.NewQPixmap()
 	color := ""
 	size := 0.95
