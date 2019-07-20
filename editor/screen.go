@@ -1577,9 +1577,9 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		}
 
 		// If not drawing background in drawchar()
-		if x >= w.lenLine[y] {
-			break
-		}
+		// if x >= w.lenLine[y] {
+		// 	break
+		// }
 
 		cell := w.content[y][x]
 		if cell == nil {
