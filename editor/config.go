@@ -213,8 +213,8 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.Editor.Width = 800
 	config.Editor.Height = 600
 	config.FileExplorer.MaxItems = 50
-	config.Statusline.Left = []string{"mode", "filepath", "filename"}
-	config.Statusline.Right = []string{"message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
+	config.Statusline.Left = []string{"mode", "filename"}
+	config.Statusline.Right = []string{"git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
 	config.Editor.ExtCmdline = true
 	config.Editor.ExtMessage = true
 	config.Editor.ExtWildmenu = true
