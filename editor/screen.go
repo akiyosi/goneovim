@@ -30,6 +30,7 @@ type Highlight struct {
 	foreground *RGBA
 	background *RGBA
 	special    *RGBA
+	reverse    bool
 	italic     bool
 	bold       bool
 	underline  bool
@@ -927,12 +928,11 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.undercurl = false
 	}
 
-	_, ok = hl["reverse"]
-	if ok {
-		highlight.foreground = s.highlight.background
-		highlight.background = s.highlight.foreground
-		s.highlight = highlight
-		return &highlight
+	reverse := hl["reverse"]
+	if reverse != nil {
+		highlight.reverse = true
+	} else {
+		highlight.reverse = false
 	}
 
 	fg, ok := hl["foreground"]
@@ -1488,7 +1488,11 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		if line[x] == nil {
 			continue
 		}
-		bg = line[x].highlight.background
+		if line[x].highlight.reverse {
+			bg = line[x].highlight.foreground
+		} else {
+			bg = line[x].highlight.background
+		}
 
 		// if !bg.equals(w.s.ws.background) {
 		// 	// Set diff pattern
@@ -1665,7 +1669,8 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 
 func getFillpatternAndTransparent(cell *Cell, color *RGBA) (core.Qt__BrushStyle, *RGBA, int) {
 	if color == nil {
-		color = cell.highlight.background
+		// color = cell.highlight.background
+		color = editor.colors.bg
 	}
 	pattern := core.Qt__BrushStyle(1)
 	transparent := int(transparent() * 255.0)
@@ -1800,10 +1805,19 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 
 	// // If drawing background
 	// if cell.highlight.background == nil {
-	//      cell.highlight.background = w.s.ws.background
+	// 	cell.highlight.background = w.s.ws.background
 	// }
-	if cell.highlight.foreground == nil {
-		cell.highlight.foreground = w.s.ws.foreground
+	var fg *RGBA
+	if cell.highlight.reverse {
+		fg = cell.highlight.background
+		if fg == nil {
+			fg = w.s.ws.background
+		}
+	} else {
+		fg = cell.highlight.foreground
+		if fg == nil {
+			fg = w.s.ws.foreground
+		}
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -1834,9 +1848,9 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 
 	p = gui.NewQPainter2(glyph)
 	p.SetPen2(gui.NewQColor3(
-		cell.highlight.foreground.R,
-		cell.highlight.foreground.G,
-		cell.highlight.foreground.B,
+		fg.R,
+		fg.G,
+		fg.B,
 		255))
 
 	p.SetFont(w.s.ws.font.fontNew)
