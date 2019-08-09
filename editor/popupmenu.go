@@ -105,9 +105,9 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		menu.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 		detail.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
-		layout.AddWidget(kindWidget, i, 0, 0)
-		layout.AddWidget(menu, i, 1, 0)
-		layout.AddWidget(detail, i, 2, 0)
+		layout.AddWidget2(kindWidget, i, 0, 0)
+		layout.AddWidget2(menu, i, 1, 0)
+		layout.AddWidget2(detail, i, 2, 0)
 
 		popupItem := &PopupItem{
 			// kindLabel:   kind,
@@ -131,7 +131,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(38)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
-	shadow.SetOffset3(-2, 6)
+	shadow.SetOffset2(-2, 6)
 	popup.widget.SetGraphicsEffect(shadow)
 
 	return popup

@@ -66,7 +66,7 @@ func initPalette() *Palette {
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(35)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
-	shadow.SetOffset3(-2, 8)
+	shadow.SetOffset2(-2, 8)
 	widget.SetGraphicsEffect(shadow)
 
 	resultMainLayout := widgets.NewQHBoxLayout()
@@ -174,6 +174,9 @@ func (p *Palette) setColor() {
 	// p.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", fg))
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg.R, bg.G, bg.B, transparent, fg))
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inactiveFg.R, inactiveFg.G, inactiveFg.B, transparent))
+	for _, item := range p.resultItems {
+		item.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(0, 0, 0, 0.0); } * { color: %s; } ", fg))
+	}
 	if transparent < 1.0 {
 		p.patternWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 		p.pattern.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")

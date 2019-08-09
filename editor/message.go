@@ -115,16 +115,16 @@ func initMessage() *Message {
 	go func() {
 		// layout message item
 		for i, item := range items {
-			layout.AddWidget(item.widget, i, 0, 0)
+			layout.AddWidget2(item.widget, i, 0, 0)
 			layout.SetAlignment(item.widget, core.Qt__AlignTop)
-			layout.AddWidget(item.label, i, 1, 0)
+			layout.AddWidget2(item.label, i, 1, 0)
 			layout.SetAlignment(item.label, core.Qt__AlignTop)
 		}
 		// Drop shadow to widget
 		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 		shadow.SetBlurRadius(40)
 		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
-		shadow.SetOffset3(-2, 4)
+		shadow.SetOffset2(-2, 4)
 		m.widget.SetGraphicsEffect(shadow)
 	}()
 	m.widget.Hide()

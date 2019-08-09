@@ -55,7 +55,7 @@ func initLocpopup() *Locpopup {
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(28)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, 80))
-	shadow.SetOffset3(0, 6)
+	shadow.SetOffset2(0, 6)
 
 	go func() {
 		layout.AddWidget(loc.typeLabel, 0, 0)

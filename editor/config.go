@@ -127,28 +127,28 @@ type paletteConfig struct {
 	MaxNumberOfResultItems int
 }
 type editorConfig struct {
-	Width              int
-	Height             int
-	FontFamily         string
-	FontSize           int
-	Linespace          int
-	ExtCmdline         bool
-	ExtMessage         bool
-	ExtWildmenu        bool
-	ExtPopupmenu       bool
-	ExtTabline         bool
-	Clipboard          bool
-	CursorBlink        bool
-	DisableImeInNormal bool
-	GinitVim           string
-	StartFullscreen    bool
-	Transparent        float64
-	DrawBorder         bool
-	SkipGlobalId       bool
-	IndentGuide        bool
+	Width                int
+	Height               int
+	FontFamily           string
+	FontSize             int
+	Linespace            int
+	ExtCmdline           bool
+	ExtMessage           bool
+	ExtWildmenu          bool
+	ExtPopupmenu         bool
+	ExtTabline           bool
+	Clipboard            bool
+	CursorBlink          bool
+	DisableImeInNormal   bool
+	GinitVim             string
+	StartFullscreen      bool
+	Transparent          float64
+	DrawBorder           bool
+	SkipGlobalId         bool
+	IndentGuide          bool
 	DesktopNotifications bool
-	DiffAddPattern     int
-	DiffDeletePattern  int
+	DiffAddPattern       int
+	DiffDeletePattern    int
 }
 
 type statusLineConfig struct {
@@ -220,6 +220,7 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.Editor.ExtWildmenu = true
 	config.Editor.ExtPopupmenu = true
 	config.Editor.ExtTabline = true
+	config.Editor.Transparent = 1.0
 
 	config.Editor.SkipGlobalId = false
 	config.Editor.DrawBorder = true
@@ -230,7 +231,6 @@ func newGonvimConfig(home string) gonvimConfig {
 
 	config.Palette.AreaRatio = 0.5
 	config.Palette.MaxNumberOfResultItems = 30
-
 
 	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
