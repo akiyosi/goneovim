@@ -231,7 +231,7 @@ func (m *MiniMap) paint(vqp *gui.QPaintEvent) {
 	m.paintMutex.Lock()
 	defer m.paintMutex.Unlock()
 
-	rect := vqp.M_rect()
+	rect := vqp.Rect()
 	font := m.font
 	top := rect.Y()
 	left := rect.X()

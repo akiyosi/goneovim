@@ -52,11 +52,11 @@ type Window struct {
 	content [][]*Cell
 	lenLine []int
 
-	id     nvim.Window
-	pos    [2]int
-	anchor int
-	cols   int
-	rows   int
+	id        nvim.Window
+	pos       [2]int
+	anchor    int
+	cols      int
+	rows      int
 	isMsgGrid bool
 
 	widget           *widgets.QWidget
@@ -338,7 +338,7 @@ func (s *Screen) toolTip(text string) {
 func (w *Window) paint(event *gui.QPaintEvent) {
 	w.paintMutex.Lock()
 
-	rect := event.M_rect()
+	rect := event.Rect()
 	top := rect.Y()
 	left := rect.X()
 	width := rect.Width()
@@ -1800,7 +1800,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 
 	// // If drawing background
 	// if cell.highlight.background == nil {
-	// 	cell.highlight.background = w.s.ws.background
+	//      cell.highlight.background = w.s.ws.background
 	// }
 	if cell.highlight.foreground == nil {
 		cell.highlight.foreground = w.s.ws.foreground
@@ -1847,16 +1847,15 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 		p.Font().SetItalic(true)
 	}
 
-	p.DrawText5(
+	p.DrawText6(
 		core.NewQRectF4(
 			0,
 			0,
 			width,
 			float64(w.s.ws.font.lineHeight),
 		),
-		int(core.Qt__AlignVCenter),
 		char,
-		nil,
+		gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
 	w.s.glyphMap[*cell] = *glyph
 
@@ -2025,7 +2024,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 		shadow.SetBlurRadius(38)
 		shadow.SetColor(gui.NewQColor3(0, 0, 0, 100))
-		shadow.SetOffset3(-2, 6)
+		shadow.SetOffset2(-2, 6)
 		s.windows[gridid].widget.SetGraphicsEffect(shadow)
 
 		s.windows[gridid].widget.Show()
@@ -2127,13 +2126,13 @@ func (w *Window) raise() {
 func (w *Window) move(col int, row int) {
 	res := 0
 	if w.isMsgGrid {
-		res = w.s.widget.Height() - w.rows * w.s.ws.font.lineHeight
+		res = w.s.widget.Height() - w.rows*w.s.ws.font.lineHeight
 	}
 	if res < 0 {
 		res = 0
 	}
 	x := int(float64(col) * w.s.ws.font.truewidth)
-	y := row * int(w.s.ws.font.lineHeight) + res
+	y := row*int(w.s.ws.font.lineHeight) + res
 	w.widget.Move2(x, y)
 }
 
