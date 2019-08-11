@@ -1783,7 +1783,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 
 	width := w.s.ws.font.truewidth
 	if !cell.normalWidth {
-		width = width * 2.0
+		width = math.Ceil(w.s.ws.font.fontMetrics.HorizontalAdvance(cell.char, -1))
 	}
 
 	char := cell.char
@@ -1864,6 +1864,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 		char,
 		gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
+
 	w.s.glyphMap[*cell] = *glyph
 
 	return *glyph
