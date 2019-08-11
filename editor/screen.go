@@ -65,7 +65,6 @@ type Window struct {
 	queueRedrawArea  [4]int
 	scrollRegion     []int
 	devicePixelRatio float64
-	jkScroll         bool
 
 	// NOTE:
 	// Only use minimap
@@ -1262,12 +1261,6 @@ func (w *Window) scroll(count int) {
 				content[row][col] = nil
 			}
 		}
-	}
-
-	if math.Abs(float64(count)) == 1 {
-		w.jkScroll = true
-	} else {
-		w.jkScroll = false
 	}
 
 	w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
