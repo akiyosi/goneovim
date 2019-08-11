@@ -308,7 +308,7 @@ func (t *Tab) leaveEvent(event *core.QEvent) {
 
 func (t *Tab) pressEvent(event *gui.QMouseEvent) {
 	targetTab := nvim.Tabpage(t.ID)
-	t.t.ws.nvim.SetCurrentTabpage(targetTab)
+	go t.t.ws.nvim.SetCurrentTabpage(targetTab)
 }
 
 func (t *Tab) closeIconPressEvent(event *gui.QMouseEvent) {
@@ -320,11 +320,13 @@ func (t *Tab) closeIconPressEvent(event *gui.QMouseEvent) {
 
 func (t *Tab) closeIconReleaseEvent(event *gui.QMouseEvent) {
 	if t.ID == 1 {
-		t.t.ws.nvim.Command(fmt.Sprintf("q"))
+		go t.t.ws.nvim.Command(fmt.Sprintf("q"))
 	} else {
 		targetTab := nvim.Tabpage(t.ID)
-		t.t.ws.nvim.SetCurrentTabpage(targetTab)
-		t.t.ws.nvim.Command("tabclose!")
+		go func() {
+			t.t.ws.nvim.SetCurrentTabpage(targetTab)
+			t.t.ws.nvim.Command("tabclose!")
+		}()
 	}
 }
 
