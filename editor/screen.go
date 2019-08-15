@@ -1998,9 +1998,12 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		s.windows[gridid].pos[0] = anchorCol
 		s.windows[gridid].pos[1] = anchorRow
 		s.windows[gridid].isFloatWin = true
-		s.windows[gridid].move(s.windows[gridid].pos[0], s.windows[gridid].pos[1])
-		s.windows[gridid].setParent(s.windows[anchorGrid].widget)
+
+		x := s.windows[anchorGrid].pos[0] + s.windows[gridid].pos[0]
+		y := s.windows[anchorGrid].pos[1] + s.windows[gridid].pos[1]
+		s.windows[gridid].move(x, y)
 		s.windows[gridid].setShadow()
+
 		s.windows[gridid].show()
 	}
 }
