@@ -53,15 +53,15 @@ type Window struct {
 	content [][]*Cell
 	lenLine []int
 
-	id        nvim.Window
-	pos       [2]int
-	anchor    int
-	cols      int
-	rows      int
-	isMsgGrid bool
+	id         nvim.Window
+	pos        [2]int
+	anchor     int
+	cols       int
+	rows       int
+	isMsgGrid  bool
+	isFloatWin bool
 
 	widget           *widgets.QWidget
-	bgWidget         *widgets.QWidget
 	shown            bool
 	queueRedrawArea  [4]int
 	scrollRegion     []int
@@ -372,6 +372,9 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
 		for _, win := range w.s.windows {
 			if !win.isShown() {
+				continue
+			}
+			if win.isFloatWin {
 				continue
 			}
 			win.drawBorder(p)
@@ -844,7 +847,6 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		if s.ws.cursor.gridid != gridid {
 			s.ws.cursor.gridid = gridid
 			s.windows[gridid].raise()
-			s.setColor()
 		}
 	}
 }
@@ -990,10 +992,15 @@ func (s *Screen) gridLine(args []interface{}) {
 		}
 
 		s.updateGridContent(arg.([]interface{}))
+		if !s.windows[gridid].isShown() {
+			s.windows[gridid].show()
+		}
 	}
-	if s.isScrollOver {
-		s.gridScrollOver()
-	}
+
+	// // For legacy UI API
+	// if s.isScrollOver {
+	// 	s.gridScrollOver()
+	// }
 }
 
 func (s *Screen) gridScrollOver() {
@@ -1469,6 +1476,12 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	var lastBg *RGBA
 	var lastCell *Cell
 
+	// draw default background color if window is float window or msg grid
+	var drawDefaultBackground bool
+	if w.anchor > 1 || w.isMsgGrid {
+	        drawDefaultBackground = true
+	}
+
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -1508,6 +1521,9 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		// }
 
 		if lastBg == nil {
+			if !drawDefaultBackground && bg.equals(w.s.ws.background) {
+			        continue
+			}
 			start = x
 			lastBg = bg
 		}
@@ -1518,7 +1534,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			}
 			if !lastBg.equals(bg) || x+1 == col+cols {
 				width := end - start + 1
-				if lastBg.equals(w.s.ws.background) {
+				if !drawDefaultBackground && lastBg.equals(w.s.ws.background) {
 					width = 0
 				}
 				if width > 0 {
@@ -1943,7 +1959,6 @@ func (s *Screen) windowPosition(args []interface{}) {
 		}
 
 		win.id = *(*nvim.Window)(unsafe.Pointer(&id))
-		win.shown = true
 		win.pos[0] = col
 		win.pos[1] = row
 		win.move(col, row)
@@ -1976,13 +1991,13 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		s.windows[gridid].id = *(*nvim.Window)((unsafe.Pointer)(&id))
 		s.windows[gridid].anchor = util.ReflectToInt(arg.([]interface{})[2])
 		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
-		// why float types??
 		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := arg.([]interface{})[6]
 
 		s.windows[gridid].pos[0] = anchorCol
 		s.windows[gridid].pos[1] = anchorRow
+		s.windows[gridid].isFloatWin = true
 		s.windows[gridid].move(s.windows[gridid].pos[0], s.windows[gridid].pos[1])
 		s.windows[gridid].setParent(s.windows[anchorGrid].widget)
 		s.windows[gridid].setShadow()
@@ -1999,7 +2014,6 @@ func (s *Screen) windowHide(args []interface{}) {
 		if s.windows[gridid] == nil {
 			continue
 		}
-		s.windows[gridid].shown = false
 		s.windows[gridid].hide()
 	}
 }
@@ -2061,10 +2075,10 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		msgCount := util.ReflectToInt(arg.([]interface{})[1])
 		win := s.windows[gridid]
-		win.shown = true
 		win.isMsgGrid = true
 		win.pos[1] = msgCount
 		win.move(win.pos[0], win.pos[1])
+		win.show()
 	}
 }
 
@@ -2072,23 +2086,6 @@ func (s *Screen) windowClose() {
 }
 
 func (s *Screen) setColor() {
-	transparent := editor.config.Editor.Transparent
-	if transparent < 1.0 {
-		transparent = 0.0
-	}
-	for _, win := range s.windows {
-		if win != nil {
-			win.bgWidget.SetStyleSheet(
-				fmt.Sprintf(
-					" * { background-color: rgba(%d, %d, %d, %f);}",
-					editor.colors.bg.R,
-					editor.colors.bg.G,
-					editor.colors.bg.B,
-					transparent,
-				),
-			)
-		}
-	}
 	s.tooltip.SetStyleSheet(
 		fmt.Sprintf(
 			" * {background-color: %s; text-decoration: underline; color: %s; }",
@@ -2104,9 +2101,6 @@ func newWindow() *Window {
 	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
-	bgWidget := widgets.NewQWidget(nil, 0)
-	bgWidget.SetContentsMargins(0, 0, 0, 0)
-
 	var devicePixelRatio float64
 	if runtime.GOOS == "darwin" {
 		devicePixelRatio = 2.0
@@ -2115,7 +2109,6 @@ func newWindow() *Window {
 	}
 
 	w := &Window{
-		bgWidget:         bgWidget,
 		widget:           widget,
 		scrollRegion:     []int{0, 0, 0, 0},
 		devicePixelRatio: devicePixelRatio,
@@ -2141,7 +2134,6 @@ func (w *Window) raise() {
 	if w == w.s.windows[1] {
 		return
 	}
-	w.bgWidget.Raise()
 	w.widget.Raise()
 	w.s.tooltip.SetParent(w.widget)
 	w.s.ws.cursor.widget.SetParent(w.widget)
@@ -2149,23 +2141,42 @@ func (w *Window) raise() {
 	w.s.ws.cursor.widget.Show()
 }
 
+func (w *Window) hideOverlappingWindows() {
+	if w.isMsgGrid {
+		return
+	}
+	for _, win := range w.s.windows {
+		if win == nil {
+			continue
+		}
+		if win == w.s.windows[1] {
+			continue
+		}
+		if !win.shown {
+			continue
+		}
+		if w.widget.Geometry().Contains2(win.widget.Geometry(), false) {
+			win.hide()
+		}
+	}
+}
+
 func (w *Window) show() {
-	w.bgWidget.Show()
+	w.hideOverlappingWindows()
 	w.widget.Show()
+	w.shown = true
 }
 
 func (w *Window) hide() {
-	w.bgWidget.Hide()
 	w.widget.Hide()
+	w.shown = false
 }
 
 func (w *Window) setParent(a widgets.QWidget_ITF) {
-	w.bgWidget.SetParent(a)
-	w.widget.SetParent(w.bgWidget)
+	w.widget.SetParent(a)
 }
 
 func (w *Window) setGeometry(rect core.QRect_ITF) {
-	w.bgWidget.SetGeometry(rect)
 	w.widget.SetGeometry(rect)
 }
 
@@ -2174,7 +2185,7 @@ func (w *Window) setShadow() {
 	shadow.SetBlurRadius(38)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, 100))
 	shadow.SetOffset2(-2, 6)
-	w.bgWidget.SetGraphicsEffect(shadow)
+	w.widget.SetGraphicsEffect(shadow)
 }
 
 func (w *Window) move(col int, row int) {
@@ -2187,7 +2198,8 @@ func (w *Window) move(col int, row int) {
 	}
 	x := int(float64(col) * w.s.ws.font.truewidth)
 	y := row*int(w.s.ws.font.lineHeight) + res
-	w.bgWidget.Move2(x, y)
+	w.widget.Move2(x, y)
+
 }
 
 func isSkipGlobalId(id gridId) bool {
