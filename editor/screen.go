@@ -844,6 +844,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		if s.ws.cursor.gridid != gridid {
 			s.ws.cursor.gridid = gridid
 			s.windows[gridid].raise()
+			s.setColor()
 		}
 	}
 }
