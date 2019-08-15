@@ -2071,9 +2071,21 @@ func (s *Screen) windowClose() {
 }
 
 func (s *Screen) setColor() {
+	transparent := editor.config.Editor.Transparent
+	if transparent < 1.0 {
+		transparent = 0.0
+	}
 	for _, win := range s.windows {
 		if win != nil {
-			win.bgWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s;}", editor.colors.bg.String()))
+			win.bgWidget.SetStyleSheet(
+				fmt.Sprintf(
+					" * { background-color: rgba(%d, %d, %d, %f);}",
+					editor.colors.bg.R,
+					editor.colors.bg.G,
+					editor.colors.bg.B,
+					transparent,
+				),
+			)
 		}
 	}
 	s.tooltip.SetStyleSheet(
