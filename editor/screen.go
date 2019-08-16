@@ -377,6 +377,9 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 			if win.isFloatWin {
 				continue
 			}
+			if win.isMsgGrid {
+				continue
+			}
 			win.drawBorder(p)
 		}
 	}
