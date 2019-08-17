@@ -522,13 +522,14 @@ func (s *Statusline) setColor() {
 
 	fg := s.ws.background
 	bg := s.ws.foreground
-
-	s.path.c.label.SetStyleSheet(fmt.Sprintf("color: %s;", editor.colors.comment.String()))
 	s.widget.SetStyleSheet(fmt.Sprintf(
 		"QWidget#statusline { background-color: %s; } * { color: %s; }",
 		bg.String(),
 		fg.String(),
 	))
+
+	s.path.c.label.SetStyleSheet(fmt.Sprintf("color: %s;", editor.colors.comment.String()))
+	s.file.c.label.SetStyleSheet(fmt.Sprintf("color: %s;", fg.String()))
 
 	s.lint.c.fg = fg
 	s.lint.c.bg = bg
