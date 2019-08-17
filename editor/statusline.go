@@ -345,8 +345,8 @@ func initStatusline() *Statusline {
 		okLabel:    okLabel,
 		errorLabel: errorLabel,
 		warnLabel:  warnLabel,
-		errors:     -1,
-		warnings:   -1,
+		errors:     0,
+		warnings:   0,
 	}
 	s.lint = lint
 	s.lint.c.hide()
@@ -527,6 +527,7 @@ func (s *Statusline) setColor() {
 
 	s.lint.c.fg = fg
 	s.lint.c.bg = bg
+	s.lint.redraw(s.lint.errors, s.lint.warnings)
 }
 
 func (c *StatuslineComponent) setColor(fg, bg *RGBA) {
@@ -604,7 +605,6 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
 		s.fileFormat.redraw(fileFormat)
-		s.lint.redraw(0, 0)
 		go s.git.redraw(s.ws.filepath)
 	default:
 		fmt.Println("unhandled statusline event", event)
@@ -915,17 +915,6 @@ func (s *StatuslineNotify) update() {
 func (s *StatuslineLint) update() {
 	s.errorLabel.SetText(strconv.Itoa(s.errors))
 	s.warnLabel.SetText(strconv.Itoa(s.warnings))
-	if !s.svgLoaded {
-		s.svgLoaded = true
-		s.setColor(s.c.fg)
-	}
-
-	s.okIcon.Hide()
-	s.okLabel.Hide()
-	s.errorIcon.Show()
-	s.errorLabel.Show()
-	s.warnIcon.Show()
-	s.warnLabel.Show()
 }
 
 func (s *StatuslineLint) setColor(color *RGBA) {
