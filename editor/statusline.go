@@ -527,8 +527,6 @@ func (s *Statusline) setColor() {
 
 	s.lint.c.fg = fg
 	s.lint.c.bg = bg
-	s.lint.errorLabel.SetStyleSheet(fmt.Sprintf("color: %s;", fg.String()))
-	s.lint.warnLabel.SetStyleSheet(fmt.Sprintf("color: %s;", fg.String()))
 }
 
 func (c *StatuslineComponent) setColor(fg, bg *RGBA) {
@@ -606,6 +604,7 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
 		s.fileFormat.redraw(fileFormat)
+		s.lint.redraw(0, 0)
 		go s.git.redraw(s.ws.filepath)
 	default:
 		fmt.Println("unhandled statusline event", event)
@@ -629,8 +628,7 @@ func (s *StatuslineMode) updateStatusline() {
 }
 
 func (s *StatuslineMode) redraw() {
-	iconColor := warpColor(s.c.fg, 10)
-	isSkipUpdateColor := !(warpColor(s.s.ws.foreground, 10).equals(iconColor))
+	isSkipUpdateColor := !(s.s.ws.background.equals(s.c.fg))
 	if s.s.ws.mode == s.mode && isSkipUpdateColor {
 		return
 	}
@@ -642,37 +640,37 @@ func (s *StatuslineMode) redraw() {
 	case "normal":
 		text = "NORMAL"
 		bg = hexToRGBA(editor.config.Statusline.NormalModeColor)
-		svgContent := editor.getSvg("thought", iconColor)
+		svgContent := editor.getSvg("thought", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "cmdline_normal":
 		text = "NORMAL"
 		bg = hexToRGBA(editor.config.Statusline.CommandModeColor)
-		svgContent := editor.getSvg("command", iconColor)
+		svgContent := editor.getSvg("command", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "insert":
 		text = "INSERT"
 		bg = hexToRGBA(editor.config.Statusline.InsertModeColor)
-		svgContent := editor.getSvg("edit", iconColor)
+		svgContent := editor.getSvg("edit", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "visual":
 		text = "VISUAL"
 		bg = hexToRGBA(editor.config.Statusline.VisualModeColor)
-		svgContent := editor.getSvg("select", iconColor)
+		svgContent := editor.getSvg("select", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
 	case "replace":
 		text = "REPLACE"
 		bg = hexToRGBA(editor.config.Statusline.ReplaceModeColor)
-		svgContent := editor.getSvg("replace", iconColor)
+		svgContent := editor.getSvg("replace", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-2, 1, false))
 	case "terminal-input":
 		text = "TERMINAL"
 		bg = hexToRGBA(editor.config.Statusline.TerminalModeColor)
-		svgContent := editor.getSvg("terminal", iconColor)
+		svgContent := editor.getSvg("terminal", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-3, 1, false))
 	default:
@@ -945,15 +943,18 @@ func (s *StatuslineLint) setColor(color *RGBA) {
 
 	s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
 	s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
+	s.errorLabel.SetStyleSheet(fmt.Sprintf("color: %s;", color.String()))
+	s.warnLabel.SetStyleSheet(fmt.Sprintf("color: %s;", color.String()))
 }
 
 func (s *StatuslineLint) redraw(errors, warnings int) {
-	if errors == s.errors && warnings == s.warnings {
+	isSkipUpdateColor := !(s.s.ws.background.equals(s.c.fg))
+	if errors == s.errors && warnings == s.warnings && isSkipUpdateColor {
 		return
 	}
-	if s.c.fg == nil {
-		s.c.fg = s.s.ws.background
-	}
+
+	s.c.fg = s.s.ws.background
+	s.c.bg = s.s.ws.foreground
 
 	var lintNoErrColor *RGBA
 	if editor.config.Statusline.ModeIndicatorType == "background" {
