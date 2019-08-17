@@ -1,9 +1,9 @@
+package editor
+
 // TODO
 //  * Add 'charcode' to show the character codepoint under the cursor
 //    vimscript: char2nr(matchstr(getline('.'), '\%' . col('.') . 'c.'))
 //  * Add user defined component feature
-
-package editor
 
 import (
 	"fmt"
@@ -520,11 +520,10 @@ func (s *Statusline) setColor() {
 		return
 	}
 
-	comment := editor.colors.comment.String()
 	fg := s.ws.background
 	bg := s.ws.foreground
 
-	s.path.c.label.SetStyleSheet(fmt.Sprintf("color: %s;", comment))
+	s.path.c.label.SetStyleSheet(fmt.Sprintf("color: %s;", editor.colors.comment.String()))
 	s.widget.SetStyleSheet(fmt.Sprintf(
 		"QWidget#statusline { background-color: %s; } * { color: %s; }",
 		bg.String(),
@@ -533,11 +532,11 @@ func (s *Statusline) setColor() {
 
 	s.lint.c.fg = fg
 	s.lint.c.bg = bg
-	var svgContent string
-	svgContent = editor.getSvg("git", fg)
-	s.git.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	svgContent = editor.getSvg("bell", fg)
-	s.notify.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	s.lint.errorLabel.SetStyleSheet(fmt.Sprintf("color: %s;", fg.String()))
+	s.lint.warnLabel.SetStyleSheet(fmt.Sprintf("color: %s;", fg.String()))
+
+	s.git.c.icon.Load2(core.NewQByteArray2(editor.getSvg("git", fg), len(editor.getSvg("git", fg))))
+	s.git.c.label.SetStyleSheet(fmt.Sprintf("color: %s;", fg.String()))
 }
 
 func (s *Statusline) subscribe() {
@@ -618,20 +617,7 @@ func (s *StatuslineMode) updateStatusline() {
 	s.s.git.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	svgContent = editor.getSvg("bell", newRGBA(255, 255, 255, 1))
 	s.s.notify.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-
-	var svgErrContent, svgWrnContent string
-	if s.s.lint.errors != 0 {
-		svgErrContent = editor.getSvg("bad", newRGBA(204, 62, 68, 1))
-	} else {
-		svgErrContent = editor.getSvg("bad", newRGBA(255, 255, 255, 1))
-	}
-	if s.s.lint.warnings != 0 {
-		svgWrnContent = editor.getSvg("exclamation", newRGBA(203, 203, 65, 1))
-	} else {
-		svgWrnContent = editor.getSvg("exclamation", newRGBA(255, 255, 255, 1))
-	}
-	s.s.lint.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
-	s.s.lint.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
+	s.s.lint.setColor(newRGBA(255, 255, 255, 1))
 }
 
 func (s *StatuslineMode) redraw() {
@@ -942,15 +928,16 @@ func (s *StatuslineLint) update() {
 func (s *StatuslineLint) setColor(color *RGBA) {
 	var svgErrContent, svgWrnContent string
 	if s.errors != 0 {
-		svgErrContent = editor.getSvg("bad", newRGBA(204, 62, 68, 1))
+		svgErrContent = editor.getSvg("linterr", newRGBA(204, 62, 68, 1))
 	} else {
 		svgErrContent = editor.getSvg("bad", color)
 	}
 	if s.warnings != 0 {
-		svgWrnContent = editor.getSvg("exclamation", newRGBA(203, 203, 65, 1))
+		svgWrnContent = editor.getSvg("lintwrn", newRGBA(253, 190, 65, 1))
 	} else {
 		svgWrnContent = editor.getSvg("exclamation", color)
 	}
+
 	s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
 	s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 }
@@ -959,33 +946,20 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 	if errors == s.errors && warnings == s.warnings {
 		return
 	}
-	var svgErrContent, svgWrnContent string
+	if s.c.fg == nil {
+		s.c.fg = s.s.ws.background
+	}
 
 	var lintNoErrColor *RGBA
-	switch editor.colors.fg {
-	case nil:
-		return
-	default:
-		if editor.config.Statusline.ModeIndicatorType == "background" {
-			lintNoErrColor = newRGBA(255, 255, 255, 1)
-		} else {
-			lintNoErrColor = editor.colors.fg
-		}
+	if editor.config.Statusline.ModeIndicatorType == "background" {
+		lintNoErrColor = newRGBA(255, 255, 255, 1)
+	} else {
+		lintNoErrColor = s.c.fg
 	}
 
-	if errors != 0 {
-		svgErrContent = editor.getSvg("bad", newRGBA(204, 62, 68, 1))
-	} else {
-		svgErrContent = editor.getSvg("bad", lintNoErrColor)
-	}
-	if warnings != 0 {
-		svgWrnContent = editor.getSvg("exclamation", newRGBA(203, 203, 65, 1))
-	} else {
-		svgWrnContent = editor.getSvg("exclamation", lintNoErrColor)
-	}
-	s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
-	s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 	s.errors = errors
 	s.warnings = warnings
 	s.s.ws.signal.LintSignal()
+
+	s.setColor(lintNoErrColor)
 }

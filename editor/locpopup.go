@@ -101,7 +101,7 @@ func (l *Locpopup) updateLocpopup() {
 	} else if l.typeText == "W" {
 		//l.typeLabel.SetText("Warning")
 		//l.typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1);")
-		svgContent := editor.getSvg("lintwrn", newRGBA(204, 203, 65, 1))
+		svgContent := editor.getSvg("lintwrn", newRGBA(253, 190, 65, 1))
 		l.typeLabel.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	l.widget.Hide()
