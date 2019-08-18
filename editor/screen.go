@@ -1031,6 +1031,9 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	if isSkipGlobalId(gridid) {
 		return
 	}
+	if colStart < 0 {
+		return
+	}
 
 	content := s.windows[gridid].content
 	if row >= s.windows[gridid].rows {
