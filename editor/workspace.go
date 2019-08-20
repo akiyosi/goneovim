@@ -805,76 +805,21 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		event := update[0].(string)
 		args := update[1:]
 		switch event {
+
+		// Global Events
 		case "set_title":
 			titleStr := (update[1].([]interface{}))[0].(string)
 			editor.window.SetupTitle(titleStr)
 			if runtime.GOOS == "linux" {
 				editor.window.SetWindowTitle(titleStr)
 			}
-
+		case "set_icon":
 		case "mode_info_set":
 			w.modeInfoSet(args)
 			w.cursor.modeIdx = 0
 			w.cursor.update()
-
 		case "option_set":
 			w.setOption(update)
-
-		case "grid_resize":
-			s.gridResize(args)
-
-		case "default_colors_set":
-			args := update[1].([]interface{})
-			w.setColorsSet(args)
-
-		case "hl_attr_define":
-			s.setHighAttrDef(args)
-
-		case "grid_line":
-			s.gridLine(args)
-
-		case "grid_clear":
-			s.gridClear(args)
-
-		case "grid_destroy":
-			s.gridDestroy(args)
-
-		case "grid_cursor_goto":
-			s.gridCursorGoto(args)
-			if w.minimap.visible {
-				go w.updateMinimap()
-				w.minimap.mapScroll()
-			}
-
-		case "grid_scroll":
-			s.gridScroll(args)
-
-		case "win_pos":
-			s.windowPosition(args)
-
-		case "win_float_pos":
-			s.windowFloatPosition(args)
-
-		case "win_external_pos":
-			fmt.Println("win_external_pos:", args)
-
-		case "win_hide":
-			s.windowHide(args)
-
-		case "win_scroll_over_start":
-			// old impl
-			// s.windowScrollOverStart()
-
-		case "win_scroll_over_reset":
-			// old impl
-			// s.windowScrollOverReset()
-
-		case "win_close":
-			s.windowClose()
-
-		case "msg_set_pos":
-			s.msgSetPos(args)
-
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
@@ -884,18 +829,79 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.cursor.update()
 			}
 			w.disableImeInNormal()
+		case "mouse_on":
+		case "mouse_off":
+		case "busy_start":
+		case "busy_stop":
+		case "suspend":
+		case "update_menu":
+		case "bell":
+		case "visual_bell":
+		case "flush":
+			s.update()
+			w.cursor.update()
+
+		// Grid Events
+		case "grid_resize":
+			s.gridResize(args)
+		case "default_colors_set":
+			args := update[1].([]interface{})
+			w.setColorsSet(args)
+		case "hl_attr_define":
+			s.setHighAttrDef(args)
+		case "hl_group_set":
+		case "grid_line":
+			s.gridLine(args)
+		case "grid_clear":
+			s.gridClear(args)
+		case "grid_destroy":
+			s.gridDestroy(args)
+		case "grid_cursor_goto":
+			s.gridCursorGoto(args)
+			if w.minimap.visible {
+				go w.updateMinimap()
+				w.minimap.mapScroll()
+			}
+		case "grid_scroll":
+			s.gridScroll(args)
+
+		// Multigrid Events
+		case "win_pos":
+			s.windowPosition(args)
+		case "win_float_pos":
+			s.windowFloatPosition(args)
+		case "win_external_pos":
+		case "win_hide":
+			s.windowHide(args)
+		case "win_scroll_over_start":
+			// old impl
+			// s.windowScrollOverStart()
+		case "win_scroll_over_reset":
+			// old impl
+			// s.windowScrollOverReset()
+		case "win_close":
+			s.windowClose()
+		case "msg_set_pos":
+			s.msgSetPos(args)
+
+		// Popupmenu Events
 		case "popupmenu_show":
 			w.popup.showItems(args)
-		case "popupmenu_hide":
-			w.popup.hide()
 		case "popupmenu_select":
 			w.popup.selectItem(args)
+		case "popupmenu_hide":
+			w.popup.hide()
+
+		// Tabline Events
 		case "tabline_update":
 			w.tabline.update(args)
+
+		// Cmdline Events
 		case "cmdline_show":
 			w.cmdline.show(args)
 		case "cmdline_pos":
 			w.cmdline.changePos(args)
+		case "cmdline_special_char":
 		case "cmdline_char":
 			w.cmdline.putChar(args)
 		case "cmdline_hide":
@@ -904,23 +910,32 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.cmdline.functionShow()
 		case "cmdline_function_hide":
 			w.cmdline.functionHide()
+		case "cmdline_block_show":
+		case "cmdline_block_append":
+		case "cmdline_block_hide":
+		// -- deprecated events
 		case "wildmenu_show":
 			w.cmdline.wildmenuShow(args)
 		case "wildmenu_select":
 			w.cmdline.wildmenuSelect(args)
 		case "wildmenu_hide":
 			w.cmdline.wildmenuHide()
+
+		// Message/Dialog Events
 		case "msg_show":
 			w.message.msgShow(args)
 		case "msg_clear":
 			w.message.msgClear()
+		case "msg_showmode":
+		case "msg_showcmd":
+		case "msg_ruler":
 		case "msg_history_show":
 			w.message.msgHistoryShow(args)
-		case "busy_start":
-		case "busy_stop":
-		case "flush":
-			s.update()
-			w.cursor.update()
+
+
+
+
+
 		default:
 		}
 	}
@@ -1054,10 +1069,18 @@ func (w *Workspace) setOption(update []interface{}) {
 		case "guifontwide":
 		case "linespace":
 			w.guiLinespace(val)
-		case "showtabline":
-		case "termguicolors":
 		case "pumblend":
 			w.popup.setPumblend(val)
+		case "showtabline":
+		case "termguicolors":
+		// case "ext_cmdline":
+		// case "ext_hlstate":
+		// case "ext_linegrid":
+		// case "ext_messages":
+		// case "ext_multigrid":
+		// case "ext_popupmenu":
+		// case "ext_tabline":
+		// case "ext_termcolors":
 		default:
 		}
 	}
