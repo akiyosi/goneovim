@@ -256,6 +256,7 @@ func initStatusline() *Statusline {
 	leftLayout.SetContentsMargins(0, 0, 0, 1)
 	leftLayout.SetSpacing(8)
 	leftWidget := widgets.NewQWidget(nil, 0)
+	leftWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0.0);")
 	left := &LeftStatusItem{
 		widget: leftWidget,
 	}
@@ -534,8 +535,10 @@ func (c *StatuslineComponent) setColor(fg, bg *RGBA) {
 	c.fg = fg
 	c.bg = bg
 	if editor.config.Statusline.ModeIndicatorType == "background" {
+		c.widget.SetStyleSheet(fmt.Sprintf("color: %s; background-color: rgba(0, 0, 0, 0.0);", c.fg.String()))
 		c.label.SetStyleSheet(fmt.Sprintf("color: %s; background-color: rgba(0, 0, 0, 0.0);", c.fg.String()))
 	} else {
+		c.widget.SetStyleSheet(fmt.Sprintf("color: %s; background-color: %s;", c.fg.String(), c.bg.String()))
 		c.label.SetStyleSheet(fmt.Sprintf("color: %s; background-color: %s;", c.fg.String(), c.bg.String()))
 	}
 	if c.iconStr != "" {
@@ -624,7 +627,9 @@ func (s *StatuslineMode) updateStatusline() {
 
 	svgContent := editor.getSvg("git", newRGBA(255, 255, 255, 1))
 	s.s.git.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-	s.s.lint.setColor(newRGBA(255, 255, 255, 1))
+	s.s.lint.c.fg = newRGBA(255, 255, 255, 1)
+	s.s.lint.update()
+	s.s.lint.setColor()
 }
 
 func (s *StatuslineMode) redraw() {
@@ -917,23 +922,24 @@ func (s *StatuslineLint) update() {
 	s.warnLabel.SetText(strconv.Itoa(s.warnings))
 }
 
-func (s *StatuslineLint) setColor(color *RGBA) {
+func (s *StatuslineLint) setColor() {
 	var svgErrContent, svgWrnContent string
 	if s.errors != 0 {
 		svgErrContent = editor.getSvg("linterr", newRGBA(204, 62, 68, 1))
 	} else {
-		svgErrContent = editor.getSvg("bad", color)
+		svgErrContent = editor.getSvg("bad", s.c.fg)
 	}
 	if s.warnings != 0 {
 		svgWrnContent = editor.getSvg("lintwrn", newRGBA(253, 190, 65, 1))
 	} else {
-		svgWrnContent = editor.getSvg("exclamation", color)
+		svgWrnContent = editor.getSvg("exclamation", s.c.fg)
 	}
 
 	s.errorIcon.Load2(core.NewQByteArray2(svgErrContent, len(svgErrContent)))
 	s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
-	s.errorLabel.SetStyleSheet(fmt.Sprintf("color: %s;", color.String()))
-	s.warnLabel.SetStyleSheet(fmt.Sprintf("color: %s;", color.String()))
+	s.errorLabel.SetStyleSheet(fmt.Sprintf("color: %s; background-color: rgba(0, 0, 0, 0.0);", s.c.fg.String()))
+	s.warnLabel.SetStyleSheet(fmt.Sprintf("color: %s; background-color: rgba(0, 0, 0, 0.0);", s.c.fg.String()))
+	s.c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(0, 0, 0, 0.0);"))
 }
 
 func (s *StatuslineLint) redraw(errors, warnings int) {
@@ -945,16 +951,13 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 	s.c.fg = s.s.ws.background
 	s.c.bg = s.s.ws.foreground
 
-	var lintNoErrColor *RGBA
 	if editor.config.Statusline.ModeIndicatorType == "background" {
-		lintNoErrColor = newRGBA(255, 255, 255, 1)
-	} else {
-		lintNoErrColor = s.c.fg
+		s.c.fg = newRGBA(255, 255, 255, 1)
 	}
 
 	s.errors = errors
 	s.warnings = warnings
 	s.s.ws.signal.LintSignal()
 
-	s.setColor(lintNoErrColor)
+	s.setColor()
 }
