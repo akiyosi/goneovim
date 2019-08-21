@@ -721,16 +721,18 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 					if !ok {
 						continue
 					}
-					if name == "wildmenu_show" {
-						o["ext_wildmenu"] = editor.config.Editor.ExtWildmenu
-					} else if name == "cmdline_show" {
-						o["ext_cmdline"] = editor.config.Editor.ExtCmdline
-					} else if name == "msg_show" {
-						o["ext_messages"] = editor.config.Editor.ExtMessage
-					} else if name == "popupmenu_show" {
-						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
-					} else if name == "tabline_update" {
-						o["ext_tabline"] = editor.config.Editor.ExtTabline
+
+					switch name {
+						// case "wildmenu_show" :
+						// 	o["ext_wildmenu"] = editor.config.Editor.ExtCmdline
+						case "cmdline_show" :
+							o["ext_cmdline"] = editor.config.Editor.ExtCmdline
+						case "msg_show":
+							o["ext_messages"] = editor.config.Editor.ExtMessage
+						case "popupmenu_show" :
+							o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
+						case "tabline_update" :
+							o["ext_tabline"] = editor.config.Editor.ExtTabline
 					}
 				}
 			}
@@ -886,11 +888,23 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Popupmenu Events
 		case "popupmenu_show":
-			w.popup.showItems(args)
+			if w.cmdline.shown {
+				w.cmdline.cmdWildmenuShow(args)
+			} else {
+				w.popup.showItems(args)
+			}
 		case "popupmenu_select":
-			w.popup.selectItem(args)
+			if w.cmdline.shown {
+				w.cmdline.cmdWildmenuSelect(args)
+			} else {
+				w.popup.selectItem(args)
+			}
 		case "popupmenu_hide":
-			w.popup.hide()
+			if w.cmdline.shown {
+				w.cmdline.cmdWildmenuHide()
+			} else {
+				w.popup.hide()
+			}
 
 		// Tabline Events
 		case "tabline_update":
@@ -913,13 +927,14 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "cmdline_block_show":
 		case "cmdline_block_append":
 		case "cmdline_block_hide":
-		// -- deprecated events
-		case "wildmenu_show":
-			w.cmdline.wildmenuShow(args)
-		case "wildmenu_select":
-			w.cmdline.wildmenuSelect(args)
-		case "wildmenu_hide":
-			w.cmdline.wildmenuHide()
+
+		// // -- deprecated events
+		// case "wildmenu_show":
+		// 	w.cmdline.wildmenuShow(args)
+		// case "wildmenu_select":
+		// 	w.cmdline.wildmenuSelect(args)
+		// case "wildmenu_hide":
+		// 	w.cmdline.wildmenuHide()
 
 		// Message/Dialog Events
 		case "msg_show":
