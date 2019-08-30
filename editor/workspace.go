@@ -1316,7 +1316,6 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 
 // InputMethodQuery is
 func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
-	qv := core.NewQVariant()
 	if query == core.Qt__ImCursorRectangle {
 		x, y, candX, candY := w.screen.toolTipPos()
 		w.screen.toolTipMove(x, y)
@@ -1331,7 +1330,7 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 
 		return core.NewQVariant31(imrect)
 	}
-	return qv
+	return core.NewQVariant()
 }
 
 // WorkspaceSide is

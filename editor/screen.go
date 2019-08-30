@@ -298,9 +298,9 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		s.tooltip.SetParent(s.ws.palette.widget)
 		font := gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false)
 		s.tooltip.SetFont(font)
-		x = w.palette.cursorX + w.palette.patternPadding + 8
+		x = w.palette.cursorX + w.palette.patternPadding
 		candX = x + w.palette.widget.Pos().X()
-		y = w.palette.patternPadding + 8
+		y = w.palette.patternPadding + s.ws.palette.padding
 		candY = y + w.palette.widget.Pos().Y()
 	} else {
 		s.toolTipFont(w.font)
@@ -315,7 +315,11 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 }
 
 func (s *Screen) toolTipMove(x int, y int) {
-	s.tooltip.Move(core.NewQPoint2(x, y))
+	padding := 0
+	if s.ws.palette.widget.IsVisible() {
+		padding = s.ws.palette.padding
+	}
+	s.tooltip.Move(core.NewQPoint2(x+padding, y))
 }
 
 func (s *Screen) toolTipFont(font *Font) {

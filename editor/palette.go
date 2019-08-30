@@ -19,6 +19,7 @@ type Palette struct {
 	ws               *Workspace
 	hidden           bool
 	widget           *widgets.QWidget
+	padding          int
 	patternText      string
 	resultItems      []*PaletteResultItem
 	resultWidget     *widgets.QWidget
@@ -120,6 +121,7 @@ func initPalette() *Palette {
 	palette := &Palette{
 		width:            width,
 		widget:           widget,
+		padding:          padding,
 		resultWidget:     resultWidget,
 		resultMainWidget: resultMainWidget,
 		pattern:          pattern,
