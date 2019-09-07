@@ -60,7 +60,25 @@ func (c *Cmdline) getText(ch string) string {
 
 func (c *Cmdline) show(args []interface{}) {
 	arg := args[0].([]interface{})
-	content := arg[0].([]interface{})[0].([]interface{})[1].(string)
+
+	content := ""
+	for _, e := range arg[0].([]interface{}) {
+		a := e.([]interface{})
+
+		if len(a) < 2 {
+			content += a[0].(string)
+		} else {
+			color := c.ws.foreground
+			_, ok := c.ws.screen.highAttrDef[util.ReflectToInt(a[0])]
+			if ok {
+				color = c.ws.screen.highAttrDef[util.ReflectToInt(a[0])].foreground
+			}
+
+			content += fmt.Sprintf("<font color='%s'>%s</font>", color.Hex(), a[1].(string))
+		}
+	}
+	// content := arg[0].([]interface{})[0].([]interface{})[1].(string)
+
 	pos := util.ReflectToInt(arg[1])
 	firstc := arg[2].(string)
 	prompt := arg[3].(string)

@@ -264,7 +264,14 @@ func (p *Palette) setPattern(text string) {
 
 func (p *Palette) cursorMove(x int) {
 	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
-	p.cursorX = int(font.HorizontalAdvance(string(p.patternText[:x]), -1))
+	t := gui.NewQTextDocument(nil)
+	t.SetHtml(p.patternText)
+	p.cursorX = int(
+		font.HorizontalAdvance(
+			t.ToPlainText(),
+			-1,
+		),
+	)
 	p.ws.cursor.x = p.cursorX + p.patternPadding
 	p.ws.cursor.y = p.patternPadding + p.ws.cursor.shift
 	p.ws.cursor.widget.Move2(p.ws.cursor.x, p.ws.cursor.y)

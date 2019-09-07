@@ -25,7 +25,7 @@ type gridId = int
 type Highlight struct {
 	id int
 	// kind       string
-	// uiName     string
+	uiName     string
 	hiName     string
 	foreground *RGBA
 	background *RGBA
@@ -894,10 +894,10 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	// 	highlight.kind = kind.(string)
 	// }
 
-	// uiName, ok := info["ui_name"]
-	// if ok {
-	// 	highlight.uiName = uiName.(string)
-	// }
+	uiName, ok := info["ui_name"]
+	if ok {
+		highlight.uiName = uiName.(string)
+	}
 
 	id, ok := info["id"]
 	if ok {
