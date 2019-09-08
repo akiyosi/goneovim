@@ -62,7 +62,8 @@ func (c *Cmdline) show(args []interface{}) {
 	arg := args[0].([]interface{})
 
 	content := ""
-	for _, e := range arg[0].([]interface{}) {
+	contentChunks := arg[0].([]interface{})
+	for _, e := range contentChunks {
 		a := e.([]interface{})
 
 		if len(a) < 2 {
@@ -74,7 +75,17 @@ func (c *Cmdline) show(args []interface{}) {
 				color = c.ws.screen.highAttrDef[util.ReflectToInt(a[0])].foreground
 			}
 
-			content += fmt.Sprintf("<font color='%s'>%s</font>", color.Hex(), a[1].(string))
+			// I don't know how to set sticking out direction of 
+			// the contents of a qlabel with html text to the left.
+			if len(contentChunks) == 1 {
+				content += a[1].(string)
+			} else {
+				content += fmt.Sprintf(
+					"<font color='%s'>%s</font>",
+					color.Hex(),
+					strings.Replace(a[1].(string), " ", `&nbsp;`, -1),
+				)
+			}
 		}
 	}
 	// content := arg[0].([]interface{})[0].([]interface{})[1].(string)

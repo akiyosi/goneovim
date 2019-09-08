@@ -55,6 +55,8 @@ type PaletteResultItem struct {
 
 func initPalette() *Palette {
 	width := 600
+	padding := 8
+
 	mainLayout := widgets.NewQVBoxLayout()
 	mainLayout.SetContentsMargins(0, 0, 0, 0)
 	mainLayout.SetSpacing(0)
@@ -64,6 +66,7 @@ func initPalette() *Palette {
 	widget.SetContentsMargins(1, 1, 1, 1)
 	// widget.SetFixedWidth(width)
 	widget.SetObjectName("palette")
+
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(35)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
@@ -75,7 +78,6 @@ func initPalette() *Palette {
 	resultMainLayout.SetSpacing(0)
 	resultMainLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 
-	padding := 8
 	resultLayout := widgets.NewQVBoxLayout()
 	resultLayout.SetContentsMargins(0, 0, 0, 0)
 	resultLayout.SetSpacing(0)
@@ -170,10 +172,8 @@ func initPalette() *Palette {
 func (p *Palette) setColor() {
 	fg := editor.colors.widgetFg.String()
 	bg := editor.colors.widgetBg
-	// inputArea := editor.colors.widgetInputArea
 	inactiveFg := editor.colors.inactiveFg
 	transparent := transparent() * transparent()
-	// p.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", fg))
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg.R, bg.G, bg.B, transparent, fg))
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inactiveFg.R, inactiveFg.G, inactiveFg.B, transparent))
 	for _, item := range p.resultItems {
@@ -188,19 +188,8 @@ func (p *Palette) setColor() {
 }
 
 func (p *Palette) resize() {
-	// if p.procCount > 0 {
-	// 	return
-	// }
-	// go func() {
-	// p.mu.Lock()
-	// defer p.mu.Unlock()
-	// p.procCount = 1
-	// defer func() { p.procCount = 0 }()
-
-	padding := 8
 	p.width = int(math.Trunc(float64(editor.width) * 0.7))
-	// cursorBoundary := p.cursor.Pos().X() + 35
-	cursorBoundary := p.ws.cursor.widget.Pos().X() + 35
+	cursorBoundary := p.padding*4 + p.textLength() + p.patternPadding
 
 	if cursorBoundary > p.width {
 		p.width = cursorBoundary
@@ -216,7 +205,7 @@ func (p *Palette) resize() {
 		}
 	}
 
-	p.pattern.SetFixedWidth(p.width - padding*2)
+	p.pattern.SetFixedWidth(p.width - p.padding*2)
 	p.widget.SetMaximumWidth(p.width)
 	p.widget.SetMinimumWidth(p.width)
 
@@ -235,7 +224,6 @@ func (p *Palette) resize() {
 	for i := p.showTotal; i < len(p.resultItems); i++ {
 		p.resultItems[i].hide()
 	}
-	// }()
 }
 
 func (p *Palette) show() {
@@ -263,20 +251,31 @@ func (p *Palette) setPattern(text string) {
 }
 
 func (p *Palette) cursorMove(x int) {
-	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
-	t := gui.NewQTextDocument(nil)
-	t.SetHtml(p.patternText)
-	p.cursorX = int(
-		font.HorizontalAdvance(
-			t.ToPlainText(),
-			-1,
-		),
-	)
+	X := p.textLength()
+	boundary := p.pattern.Width() - (p.padding*2)
+	if X >= boundary {
+		X = boundary
+	}
+
+	p.cursorX = X
 	p.ws.cursor.x = p.cursorX + p.patternPadding
 	p.ws.cursor.y = p.patternPadding + p.ws.cursor.shift
 	p.ws.cursor.widget.Move2(p.ws.cursor.x, p.ws.cursor.y)
 	p.ws.cursor.widget.SetText("")
 	p.ws.cursor.widget.SetParent(p.pattern)
+}
+
+
+func (p *Palette) textLength() int {
+	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
+	t := gui.NewQTextDocument(nil)
+	t.SetHtml(p.patternText)
+	return int(
+		font.HorizontalAdvance(
+			t.ToPlainText(),
+			-1,
+		),
+	)
 }
 
 func (p *Palette) showSelected(selected int) {
