@@ -1549,7 +1549,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 
 	// draw default background color if window is float window or msg grid
 	var drawDefaultBackground bool
-	if w.anchor > 1 || w.isMsgGrid {
+	if w.isFloatWin || w.isMsgGrid {
 	        drawDefaultBackground = true
 	}
 
