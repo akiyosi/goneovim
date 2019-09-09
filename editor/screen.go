@@ -405,6 +405,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 	if w == nil {
 		return
 	}
+	if w.s.ws.ts == 0 {
+		return
+	}
 	if !w.isShown() {
 		return
 	}
