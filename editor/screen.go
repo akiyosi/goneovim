@@ -90,6 +90,7 @@ type Screen struct {
 	scrollDustDeltaY int
 	cmdheight        int
 	highAttrDef      map[int]*Highlight
+	highlightGroup   map[string]int
 	highlight        Highlight
 	curtab           nvim.Tabpage
 	curWins          map[nvim.Window]*Window
@@ -372,18 +373,14 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawTextDecoration(p, y, col, cols)
 	}
 
+	// If Window is Message Area, draw separator
+	if w.isMsgGrid {
+		w.drawMsgSeparator(p)
+	}
+
 	// Draw vim window separator
 	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
 		for _, win := range w.s.windows {
-			if !win.isShown() {
-				continue
-			}
-			if win.isFloatWin {
-				continue
-			}
-			if win.isMsgGrid {
-				continue
-			}
 			win.drawBorder(p)
 		}
 	}
@@ -391,9 +388,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	// Draw indent guide
 	if editor.config.Editor.IndentGuide && w == w.s.windows[1] {
 		for _, win := range w.s.windows {
-			if !win.isShown() {
-				continue
-			}
 			win.drawIndentguide(p)
 		}
 	}
@@ -409,6 +403,9 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 func (w *Window) drawIndentguide(p *gui.QPainter) {
 	if w == nil {
+		return
+	}
+	if !w.isShown() {
 		return
 	}
 	for y := 0; y < len(w.content); y++ {
@@ -555,12 +552,39 @@ func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
 	)
 }
 
+func (w *Window) drawMsgSeparator(p *gui.QPainter) {
+	color := w.s.highAttrDef[w.s.highlightGroup["MsgSeparator"]].foreground
+	p.FillRect4(
+		core.NewQRectF4(
+			0,
+			0,
+			float64(w.widget.Width()),
+			1,
+		),
+		gui.NewQColor3(
+			color.R,
+			color.G,
+			color.B,
+			200),
+	)
+}
+
 func (w *Window) drawBorder(p *gui.QPainter) {
 	if w == nil {
 		return
 	}
+	if !w.isShown() {
+		return
+	}
+	if w.isFloatWin {
+		return
+	}
+	if w.isMsgGrid {
+		return
+	}
 	x := int(float64(w.pos[0]) * w.s.ws.font.truewidth)
-	y := (w.pos[1] - w.s.scrollOverCount) * int(w.s.ws.font.lineHeight)
+	// y := (w.pos[1] - w.s.scrollOverCount) * int(w.s.ws.font.lineHeight)
+	y := w.pos[1] * int(w.s.ws.font.lineHeight)
 	width := int(float64(w.cols) * w.s.ws.font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(w.s.ws.font.lineHeight))
 	color := gui.NewQColor3(
@@ -580,12 +604,14 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		)
 	}
 
+	if w.widget.MapToGlobal(w.widget.Pos()).Y() == w.s.bottomWindowPos() {
+		return
+	}
+
 	// Horizontal
 	height := w.rows * int(w.s.ws.font.lineHeight)
 	y2 := y + height - 1 + w.s.ws.font.lineHeight/2
-	if y2+w.s.ws.font.lineHeight+w.s.ws.font.lineHeight/2 > w.s.widget.Height() {
-		return
-	}
+
 	p.FillRect5(
 		int(float64(x)-w.s.ws.font.truewidth/2),
 		y2,
@@ -593,6 +619,27 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		1,
 		color,
 	)
+}
+
+func (s *Screen) bottomWindowPos() int {
+	pos := 0
+	for _, win := range s.windows {
+		if win == nil {
+			continue
+		}
+		if win == s.windows[1] {
+			continue
+		}
+		if win.isMsgGrid {
+			continue
+		}
+		position := win.widget.MapToGlobal(win.widget.Pos()).Y()
+		if pos < position {
+			pos = position
+		}
+	}
+
+	return pos
 }
 
 func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
@@ -832,6 +879,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	height := rows * int(s.ws.font.lineHeight)
 	rect := core.NewQRect4(0, 0, width, height)
 	win.setGeometry(rect)
+
 	win.move(win.pos[0], win.pos[1])
 	win.show()
 
@@ -876,6 +924,16 @@ func (s *Screen) setHighAttrDef(args []interface{}) {
 	}
 
 	s.highAttrDef = h
+}
+
+func (s *Screen) setHighlightGroup(args []interface{}) {
+	h := make(map[string]int)
+	for _, arg := range args {
+		a := arg.([]interface{})
+		hlName := a[0].(string)
+		hlIndex := util.ReflectToInt(a[1])
+		h[hlName] = hlIndex
+	}
 }
 
 func (s *Screen) getHighlight(args interface{}) *Highlight {
@@ -1972,6 +2030,7 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.pos[0] = col
 		win.pos[1] = row
 		win.move(col, row)
+		win.hideOverlappingWindows()
 		win.show()
 	}
 
@@ -2165,6 +2224,12 @@ func (w *Window) hideOverlappingWindows() {
 		if win == w.s.windows[1] {
 			continue
 		}
+		if w == win {
+			continue
+		}
+		if win.isMsgGrid {
+			continue
+		}
 		if !win.shown {
 			continue
 		}
@@ -2175,7 +2240,7 @@ func (w *Window) hideOverlappingWindows() {
 }
 
 func (w *Window) show() {
-	w.hideOverlappingWindows()
+	// w.hideOverlappingWindows()
 	w.widget.Show()
 	w.shown = true
 }

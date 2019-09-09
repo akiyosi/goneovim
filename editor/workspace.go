@@ -852,6 +852,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "hl_attr_define":
 			s.setHighAttrDef(args)
 		case "hl_group_set":
+			s.setHighlightGroup(args)
 		case "grid_line":
 			s.gridLine(args)
 		case "grid_clear":
