@@ -58,7 +58,17 @@ func (c *Cmdline) getText(ch string) string {
 	return fmt.Sprintf("%s%s%s", c.content.firstc, indentStr, c.content.content[:c.pos]+ch+c.content.content[c.pos:])
 }
 
+func sanitize(s string) string {
+	s = strings.Replace(s, " ", `&nbsp;`, -1)
+	s = strings.Replace(s, "\t", `&nbsp;&nbsp;`, -1)
+	s = strings.Replace(s, "<", `&lt;`, -1)
+	s = strings.Replace(s, ">", `&gt;`, -1)
+
+	return s
+}
+
 func (c *Cmdline) show(args []interface{}) {
+	palette := c.ws.palette
 	arg := args[0].([]interface{})
 
 	content := ""
@@ -67,7 +77,8 @@ func (c *Cmdline) show(args []interface{}) {
 		a := e.([]interface{})
 
 		if len(a) < 2 {
-			content += a[0].(string)
+			// content += a[0].(string)
+			content += strings.Replace(a[0].(string), "\t", `  `, -1)
 		} else {
 			color := c.ws.foreground
 			_, ok := c.ws.screen.highAttrDef[util.ReflectToInt(a[0])]
@@ -78,13 +89,15 @@ func (c *Cmdline) show(args []interface{}) {
 			// I don't know how to set sticking out direction of 
 			// the contents of a qlabel with html text to the left.
 			if len(contentChunks) == 1 {
-				content += a[1].(string)
+				// content += a[1].(string)
+				content += strings.Replace(a[1].(string), "\t", `  `, -1)
 			} else {
 				content += fmt.Sprintf(
 					"<font color='%s'>%s</font>",
 					color.Hex(),
-					strings.Replace(a[1].(string), " ", `&nbsp;`, -1),
+					sanitize(a[1].(string)),
 				)
+				palette.isHTMLText = true
 			}
 		}
 	}
@@ -104,7 +117,6 @@ func (c *Cmdline) show(args []interface{}) {
 	c.content.indent = indent
 	c.content.prompt = prompt
 	text := c.getText("")
-	palette := c.ws.palette
 	palette.setPattern(text)
 	c.cursorMove()
 	if isResize {

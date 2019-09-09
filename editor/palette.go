@@ -21,6 +21,7 @@ type Palette struct {
 	widget           *widgets.QWidget
 	padding          int
 	patternText      string
+	isHTMLText       bool
 	resultItems      []*PaletteResultItem
 	resultWidget     *widgets.QWidget
 	resultMainWidget *widgets.QWidget
@@ -268,14 +269,26 @@ func (p *Palette) cursorMove(x int) {
 
 func (p *Palette) textLength() int {
 	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
-	t := gui.NewQTextDocument(nil)
-	t.SetHtml(p.patternText)
-	return int(
-		font.HorizontalAdvance(
-			t.ToPlainText(),
-			-1,
-		),
-	)
+	l := 0
+	if p.isHTMLText {
+		t := gui.NewQTextDocument(nil)
+		t.SetHtml(p.patternText)
+		l = int(
+			font.HorizontalAdvance(
+				t.ToPlainText(),
+				-1,
+			),
+		)
+	} else {
+		l = int(
+			font.HorizontalAdvance(
+				p.patternText,
+				-1,
+			),
+		)
+	}
+
+	return l
 }
 
 func (p *Palette) showSelected(selected int) {
