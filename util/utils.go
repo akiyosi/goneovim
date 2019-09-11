@@ -1,6 +1,7 @@
 package util
 
 import (
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )
@@ -61,6 +62,15 @@ func IsTrue(d interface{}) bool {
 		}
 	}
 	return false
+}
+
+func DropShadow(x, y float64, radius, alpha int) *widgets.QGraphicsDropShadowEffect{
+	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+	shadow.SetBlurRadius(38)
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
+	shadow.SetOffset2(x, y)
+
+	return shadow
 }
 
 func NewHFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {

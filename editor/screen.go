@@ -2262,11 +2262,7 @@ func (w *Window) setGeometry(rect core.QRect_ITF) {
 }
 
 func (w *Window) setShadow() {
-	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	shadow.SetBlurRadius(38)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 100))
-	shadow.SetOffset2(-2, 6)
-	w.widget.SetGraphicsEffect(shadow)
+	w.widget.SetGraphicsEffect(util.DropShadow(-2, 6, 40, 100))
 }
 
 func (w *Window) move(col int, row int) {

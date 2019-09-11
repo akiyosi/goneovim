@@ -5,6 +5,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
@@ -220,11 +221,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 
 	// Drop shadow to widget
 	go func() {
-		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		shadow.SetBlurRadius(40)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
-		shadow.SetOffset2(-2, -1)
-		widget.SetGraphicsEffect(shadow)
+		widget.SetGraphicsEffect(util.DropShadow(-2, -1, 40, 200))
 	}()
 
 	// Notification hiding

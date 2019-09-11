@@ -9,7 +9,6 @@ import (
 	"github.com/akiyosi/gonvim/util"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
@@ -52,15 +51,10 @@ func initLocpopup() *Locpopup {
 		updates:      make(chan []interface{}, 1000),
 	}
 
-	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	shadow.SetBlurRadius(28)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 80))
-	shadow.SetOffset2(0, 6)
-
 	go func() {
 		layout.AddWidget(loc.typeLabel, 0, 0)
 		layout.AddWidget(loc.contentLabel, 0, 0)
-		loc.widget.SetGraphicsEffect(shadow)
+		loc.widget.SetGraphicsEffect(util.DropShadow(0, 6, 30, 80))
 	}()
 
 	return loc

@@ -121,11 +121,7 @@ func initMessage() *Message {
 			layout.SetAlignment(item.label, core.Qt__AlignTop)
 		}
 		// Drop shadow to widget
-		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		shadow.SetBlurRadius(40)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
-		shadow.SetOffset2(-2, 4)
-		m.widget.SetGraphicsEffect(shadow)
+		m.widget.SetGraphicsEffect(util.DropShadow(-2, 4, 40, 200))
 	}()
 	m.widget.Hide()
 

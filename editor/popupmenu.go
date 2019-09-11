@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 
@@ -128,11 +127,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		scrollCol: scrollCol,
 	}
 
-	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	shadow.SetBlurRadius(38)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
-	shadow.SetOffset2(-2, 6)
-	popup.widget.SetGraphicsEffect(shadow)
+	popup.widget.SetGraphicsEffect(util.DropShadow(-2, 6, 40, 200))
 
 	return popup
 }
