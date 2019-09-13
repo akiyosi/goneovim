@@ -139,6 +139,7 @@ type editorConfig struct {
 	ExtTabline           bool
 	Clipboard            bool
 	CursorBlink          bool
+	CachedDrawing        bool
 	DisableImeInNormal   bool
 	GinitVim             string
 	StartFullscreen      bool
@@ -221,6 +222,8 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.Editor.ExtPopupmenu = true
 	config.Editor.ExtTabline = true
 	config.Editor.Transparent = 1.0
+
+	config.Editor.CachedDrawing = false
 
 	config.Editor.SkipGlobalId = false
 	config.Editor.DrawBorder = true

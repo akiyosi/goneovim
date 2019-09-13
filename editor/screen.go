@@ -360,7 +360,9 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	p := gui.NewQPainter2(w.widget)
 
-	// p.SetFont(font.fontNew)
+	if !editor.config.Editor.CachedDrawing {
+		p.SetFont(font.fontNew)
+	}
 
 	// Draw contents
 	for y := row; y < row+rows; y++ {
@@ -368,8 +370,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 			continue
 		}
 		w.fillBackground(p, y, col, cols)
-		w.drawChars(p, y, col, cols)
-		// w.drawText(p, y, col, cols)
+		w.drawContents(p, y, col, cols)
 		w.drawTextDecoration(p, y, col, cols)
 	}
 
@@ -1562,8 +1563,14 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		}
 		if line[x].highlight.reverse {
 			bg = line[x].highlight.foreground
+			if bg == nil {
+				bg = w.s.ws.foreground
+			}
 		} else {
 			bg = line[x].highlight.background
+			if bg == nil {
+				bg = w.s.ws.background
+			}
 		}
 
 		// if !bg.equals(w.s.ws.background) {
@@ -1776,9 +1783,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	specialChars := []int{}
 
 	for x := col; x < col+cols; x++ {
-		if x > w.lenLine[y] {
-			break
-		}
 		if x >= len(line) {
 			continue
 		}
@@ -1803,7 +1807,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		}
 		colorSlice = append(colorSlice, x)
 		chars[highlight] = colorSlice
-
 	}
 
 	pointF := core.NewQPointF3(
@@ -1831,7 +1834,18 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 		text := buffer.String()
 		if text != "" {
-			fg := highlight.foreground
+			var fg *RGBA
+			if highlight.reverse {
+				fg = highlight.background
+				if fg == nil {
+					fg = w.s.ws.background
+				}
+			} else {
+				fg = highlight.foreground
+				if fg == nil {
+					fg = w.s.ws.foreground
+				}
+			}
 			if fg != nil {
 				p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 			}
@@ -1947,6 +1961,14 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 	w.s.glyphMap[*cell] = *glyph
 
 	return *glyph
+}
+
+func (w *Window) drawContents(p *gui.QPainter, y int, col int, cols int) {
+	if editor.config.Editor.CachedDrawing {
+		w.drawChars(p, y, col, cols)
+	} else {
+		w.drawText(p, y, col, cols)
+	}
 }
 
 func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
