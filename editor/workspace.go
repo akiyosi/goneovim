@@ -694,7 +694,7 @@ func (i *WorkspaceSideItem) closeFilelist() {
 func (w *Workspace) attachUIOption() map[string]interface{} {
 	o := make(map[string]interface{})
 	o["rgb"] = true
-	o["ext_multigrid"] = true
+	o["ext_multigrid"] = editor.config.Editor.ExtMultigrid
 	o["ext_hlstate"] = true
 
 	apiInfo, err := w.nvim.APIInfo()

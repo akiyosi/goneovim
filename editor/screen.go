@@ -872,6 +872,11 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		s.windows[gridid].widget.ConnectDropEvent(s.dropEvent)
 		// reassign win
 		win = s.windows[gridid]
+
+		// first cursor pos at startup app
+		if gridid == 1 {
+			s.ws.cursor.widget.SetParent(win.widget)
+		}
 	}
 
 	win.lenLine = lenLine

@@ -13,6 +13,7 @@ import (
 // gonvimConfig is the following toml file
 // # Gonvim config toml
 // [editor]
+// ui = "trans"
 // width = 1000  # >= 400
 // height = 800  # >= 300
 // fontFamily = "FuraCode Nerd Font Mono"
@@ -21,6 +22,7 @@ import (
 // clipboard = true
 // cursorBlink = true
 // indentGuide = true
+// cachedDrawing = false
 // disableIMEinNormal = true
 // startFullScreen = true
 // transparent = 0.5
@@ -127,16 +129,18 @@ type paletteConfig struct {
 	MaxNumberOfResultItems int
 }
 type editorConfig struct {
+	Ui                   string
 	Width                int
 	Height               int
 	FontFamily           string
 	FontSize             int
 	Linespace            int
 	ExtCmdline           bool
-	ExtMessage           bool
 	ExtWildmenu          bool
 	ExtPopupmenu         bool
 	ExtTabline           bool
+	ExtMultigrid         bool
+	ExtMessage           bool
 	Clipboard            bool
 	CursorBlink          bool
 	CachedDrawing        bool
@@ -210,30 +214,7 @@ type deinConfig struct {
 func newGonvimConfig(home string) gonvimConfig {
 	var config gonvimConfig
 
-	// Set default value
-	config.Editor.Width = 800
-	config.Editor.Height = 600
-	config.FileExplorer.MaxItems = 50
-	config.Statusline.Left = []string{"mode", "filename"}
-	config.Statusline.Right = []string{"git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
-	config.Editor.ExtCmdline = true
-	config.Editor.ExtMessage = true
-	config.Editor.ExtWildmenu = true
-	config.Editor.ExtPopupmenu = true
-	config.Editor.ExtTabline = true
-	config.Editor.Transparent = 1.0
-
-	config.Editor.CachedDrawing = false
-
-	config.Editor.SkipGlobalId = false
-	config.Editor.DrawBorder = true
-	config.Editor.IndentGuide = true
-
-	config.Editor.DiffAddPattern = 1
-	config.Editor.DiffDeletePattern = 12
-
-	config.Palette.AreaRatio = 0.5
-	config.Palette.MaxNumberOfResultItems = 30
+	config.init()
 
 	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
@@ -248,6 +229,23 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.SideBar.Width = 300
 		config.SideBar.AccentColor = "#5596ea"
 		config.Workspace.PathStyle = "minimum"
+	}
+
+	if config.Editor.Ui == "extended" {
+		// extended UI
+		config.Editor.ExtMultigrid = false
+		config.Editor.ExtCmdline = true
+		config.Editor.ExtWildmenu = true
+		config.Editor.ExtPopupmenu = true
+		config.Editor.ExtTabline = true
+	} else if config.Editor.Ui == "trans" {
+		// trans UI
+		config.Editor.ExtMultigrid = true
+		config.Editor.ExtCmdline = true
+		config.Editor.ExtWildmenu = true
+		config.Editor.ExtPopupmenu = true
+		config.Editor.ExtTabline = true
+		config.Editor.DrawBorder = true
 	}
 
 	if config.Editor.DiffAddPattern < 1 || config.Editor.DiffAddPattern > 24 {
@@ -322,6 +320,42 @@ func newGonvimConfig(home string) gonvimConfig {
 	}
 
 	return config
+}
+
+func (c *gonvimConfig) init() {
+	// Set default value
+	c.Editor.Width = 800
+	c.Editor.Height = 600
+	c.FileExplorer.MaxItems = 50
+	c.Statusline.Left = []string{"mode", "filename"}
+	c.Statusline.Right = []string{"git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
+
+	// UI options:
+	c.Editor.SkipGlobalId = false
+	c.Editor.CachedDrawing = false
+	c.Editor.Transparent = 1.0
+	// There is so meny combinations of UI's.
+	// So, We provides an interface to set a certain combination of UI's pattern
+
+	// basic UI
+	c.Editor.ExtMultigrid = false
+	c.Editor.ExtCmdline = false
+	c.Editor.ExtWildmenu = false
+	c.Editor.ExtPopupmenu = false
+	c.Editor.ExtTabline = false
+	c.Editor.ExtMessage = false
+	c.Editor.DrawBorder = false
+
+	// Indent guide
+	c.Editor.IndentGuide = false
+
+	// replace diff color drawing pattern
+	c.Editor.DiffAddPattern = 1
+	c.Editor.DiffDeletePattern = 12
+
+	// palette size
+	c.Palette.AreaRatio = 0.5
+	c.Palette.MaxNumberOfResultItems = 30
 }
 
 func outputGonvimConfig() {
