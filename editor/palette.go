@@ -262,9 +262,14 @@ func (p *Palette) cursorMove(x int) {
 	p.ws.cursor.widget.SetParent(p.pattern)
 }
 
+func (p *Palette) updateFont() {
+	font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
+	p.widget.SetFont(font)
+	p.pattern.SetFont(font)
+}
 
 func (p *Palette) textLength() int {
-	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
+	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
 	l := 0
 	if p.isHTMLText {
 		t := gui.NewQTextDocument(nil)

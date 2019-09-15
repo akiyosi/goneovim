@@ -297,7 +297,7 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 	w := s.ws
 	if s.ws.palette.widget.IsVisible() {
 		s.tooltip.SetParent(s.ws.palette.widget)
-		font := gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false)
+		font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
 		s.tooltip.SetFont(font)
 		x = w.palette.cursorX + w.palette.patternPadding
 		candX = x + w.palette.widget.Pos().X()

@@ -104,7 +104,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		background:    newRGBA(9, 13, 17, 1),
 		special:       newRGBA(255, 255, 255, 1),
 	}
-	w.font = initFontNew(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, editor.config.Editor.Linespace)
+	w.font = initFontNew(editor.extFontFamily, editor.extFontSize, editor.config.Editor.Linespace)
 	go func() {
 		height := w.font.fontMetrics.Height()
 		width := w.font.fontMetrics.HorizontalAdvance("W", -1)
@@ -584,7 +584,7 @@ func (w *Workspace) setCwd(cwd string) {
 			}
 
 			sideItem.label.SetText(w.cwdlabel)
-			sideItem.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+			sideItem.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
 			sideItem.cwdpath = path
 
 			// if editor.activity.editItem.active == false {
@@ -1245,8 +1245,20 @@ func (w *Workspace) guiFont(args string) {
 	w.updateSize()
 	w.popup.updateFont(w.font)
 	w.message.updateFont(w.font)
+	w.cursor.updateFont(w.font)
 	w.screen.toolTipFont(w.font)
-	w.cursor.widget.SetFont(w.font.fontNew)
+	
+	// Change external font if font setting of setting.yml is nothing
+	if editor.config.Editor.FontFamily == "" {
+		editor.extFontFamily = parts[0]
+	}
+	if editor.config.Editor.FontSize == 0 {
+		editor.extFontSize = height
+	}
+
+	w.palette.updateFont()
+	w.tabline.updateFont()
+	w.statusline.updateFont()
 }
 
 func (w *Workspace) guiLinespace(args interface{}) {

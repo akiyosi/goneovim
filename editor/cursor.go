@@ -104,6 +104,10 @@ func (c *Cursor) move() {
 	c.ws.loc.widget.Move2(x, y)
 }
 
+func (c *Cursor) updateFont(font *Font) {
+	c.widget.SetFont(font.fontNew)
+}
+
 func (c *Cursor) updateCursorShape() {
 	if !c.ws.cursorStyleEnabled {
 		return

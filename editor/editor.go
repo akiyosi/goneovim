@@ -107,6 +107,9 @@ type Editor struct {
 	isSetGuiColor bool
 	colors        *ColorPalette
 	svgs          map[string]*SvgXML
+	
+	extFontFamily string
+	extFontSize   int
 }
 
 type editorSignal struct {
@@ -320,8 +323,23 @@ func putEnv() {
 }
 
 func (e *Editor) initFont() {
-	e.app.SetFont(gui.NewQFont2(e.config.Editor.FontFamily, e.config.Editor.FontSize, 1, false), "QWidget")
-	e.app.SetFont(gui.NewQFont2(e.config.Editor.FontFamily, e.config.Editor.FontSize, 1, false), "QLabel")
+	e.extFontFamily = e.config.Editor.FontFamily
+	e.extFontSize = e.config.Editor.FontSize
+	if e.extFontFamily == "" {
+		switch runtime.GOOS {
+		case "windows":
+			e.extFontFamily = "Consolas"
+		case "darwin":
+			e.extFontFamily = "Monaco"
+		default:
+			e.extFontFamily = "Monospace"
+		}
+	}
+	if e.extFontSize <= 5 {
+		e.extFontSize = 13
+	}
+	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QWidget")
+	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QLabel")
 }
 
 func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {

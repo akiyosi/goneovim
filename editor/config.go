@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io/ioutil"
 	"path/filepath"
-	"runtime"
 
 	"github.com/BurntSushi/toml"
 	homedir "github.com/mitchellh/go-homedir"
@@ -218,7 +217,6 @@ func newGonvimConfig(home string) gonvimConfig {
 
 	// Read toml
 	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
-		config.Editor.FontSize = 14
 		config.Editor.Transparent = 1.0
 		config.Statusline.Visible = true
 		config.Statusline.ModeIndicatorType = "textLabel"
@@ -231,6 +229,7 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Workspace.PathStyle = "minimum"
 	}
 
+	// Decide UI mode
 	if config.Editor.Ui == "extended" {
 		// extended UI
 		config.Editor.ExtMultigrid = false
@@ -268,19 +267,6 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Statusline.ModeIndicatorType = "textLabel"
 	}
 
-	if config.Editor.FontFamily == "" {
-		switch runtime.GOOS {
-		case "windows":
-			config.Editor.FontFamily = "Consolas"
-		case "darwin":
-			config.Editor.FontFamily = "Monaco"
-		default:
-			config.Editor.FontFamily = "Monospace"
-		}
-	}
-	if config.Editor.FontSize <= 5 {
-		config.Editor.FontSize = 13
-	}
 	if config.Editor.Linespace < 0 {
 		config.Editor.Linespace = 6
 	}

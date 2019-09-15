@@ -103,8 +103,8 @@ func initTabline() *Tabline {
 	widget.SetLayout(layout)
 
 	marginDefault := 10
-	marginTop := editor.config.Editor.FontSize / 3    // No effect now
-	marginBottom := editor.config.Editor.FontSize / 3 // No effect now
+	marginTop := editor.extFontSize / 3    // No effect now
+	marginBottom := editor.extFontSize / 3 // No effect now
 	tabline := &Tabline{
 		widget:        widget,
 		layout:        layout,
@@ -191,6 +191,18 @@ func (t *Tab) updateActive() {
 		t.widget.SetStyleSheet(inActiveStyle)
 		svgContent := editor.getSvg("cross", inactiveFg)
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	}
+}
+
+func (t *Tabline) updateFont() {
+	size := 13
+	if editor.config.Editor.FontSize != 0 {
+		size = editor.config.Editor.FontSize
+	}
+	font := gui.NewQFont2(editor.extFontFamily, size, 1, false)
+	t.widget.SetFont(font)
+	for _, tab := range t.Tabs {
+		tab.widget.SetFont(font)
 	}
 }
 

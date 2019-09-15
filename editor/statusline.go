@@ -198,7 +198,7 @@ func initStatusline() *Statusline {
 
 	modeLabel := widgets.NewQLabel(nil, 0)
 	modeLabel.SetContentsMargins(4, 1, 4, 1)
-	modeLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+	modeLabel.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
 	modeIcon := svg.NewQSvgWidget(nil)
 	modeIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	switch editor.config.Statusline.ModeIndicatorType {
@@ -551,6 +551,29 @@ func (c *StatuslineComponent) setColor(fg, bg *RGBA) {
 	}
 }
 
+func (s *Statusline) updateFont() {
+	size := 13
+	if editor.config.Editor.FontSize != 0 {
+		size = editor.config.Editor.FontSize
+	}
+	font := gui.NewQFont2(editor.extFontFamily, size, 1, false)
+	s.widget.SetFont(font)
+
+	s.lint.okLabel.SetFont(font)
+	s.lint.errorLabel.SetFont(font)
+	s.lint.warnLabel.SetFont(font)
+
+	s.pos.c.label.SetFont(font)
+	s.mode.c.label.SetFont(font)
+	s.path.c.label.SetFont(font)
+	s.file.c.label.SetFont(font)
+	s.notify.c.label.SetFont(font)
+	s.filetype.c.label.SetFont(font)
+	s.git.c.label.SetFont(font)
+	s.encoding.c.label.SetFont(font)
+	s.fileFormat.c.label.SetFont(font)
+}
+
 func (s *Statusline) subscribe() {
 	if !s.ws.drawStatusline {
 		s.widget.Hide()
@@ -647,37 +670,37 @@ func (s *StatuslineMode) redraw() {
 		bg = hexToRGBA(editor.config.Statusline.NormalModeColor)
 		svgContent := editor.getSvg("thought", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.c.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
 	case "cmdline_normal":
 		text = "NORMAL"
 		bg = hexToRGBA(editor.config.Statusline.CommandModeColor)
 		svgContent := editor.getSvg("command", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.c.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
 	case "insert":
 		text = "INSERT"
 		bg = hexToRGBA(editor.config.Statusline.InsertModeColor)
 		svgContent := editor.getSvg("edit", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.c.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
 	case "visual":
 		text = "VISUAL"
 		bg = hexToRGBA(editor.config.Statusline.VisualModeColor)
 		svgContent := editor.getSvg("select", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+		s.c.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
 	case "replace":
 		text = "REPLACE"
 		bg = hexToRGBA(editor.config.Statusline.ReplaceModeColor)
 		svgContent := editor.getSvg("replace", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-2, 1, false))
+		s.c.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-2, 1, false))
 	case "terminal-input":
 		text = "TERMINAL"
 		bg = hexToRGBA(editor.config.Statusline.TerminalModeColor)
 		svgContent := editor.getSvg("terminal", s.c.fg)
 		s.c.icon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		s.c.label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-3, 1, false))
+		s.c.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-3, 1, false))
 	default:
 	}
 
