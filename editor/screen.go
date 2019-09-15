@@ -1566,6 +1566,9 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		if line[x] == nil {
 			continue
 		}
+		if line[x].highlight.uiName == "TermCursor" {
+			continue
+		}
 		if line[x].highlight.reverse {
 			bg = line[x].highlight.foreground
 			if bg == nil {
