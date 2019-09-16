@@ -254,7 +254,7 @@ func (p *Palette) cursorMove(x int) {
 		X = boundary
 	}
 
-	p.cursorX = X
+	p.cursorX = p.cursorPos(x)
 	p.ws.cursor.x = p.cursorX + p.patternPadding
 	p.ws.cursor.y = p.patternPadding + p.ws.cursor.shift
 	p.ws.cursor.widget.Move2(p.ws.cursor.x, p.ws.cursor.y)
@@ -284,6 +284,30 @@ func (p *Palette) textLength() int {
 		l = int(
 			font.HorizontalAdvance(
 				p.patternText,
+				-1,
+			),
+		)
+	}
+
+	return l
+}
+
+func (p *Palette) cursorPos(x int) int {
+	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+	l := 0
+	if p.isHTMLText {
+		t := gui.NewQTextDocument(nil)
+		t.SetHtml(p.patternText[:x])
+		l = int(
+			font.HorizontalAdvance(
+				t.ToPlainText(),
+				-1,
+			),
+		)
+	} else {
+		l = int(
+			font.HorizontalAdvance(
+				p.patternText[:x],
 				-1,
 			),
 		)
