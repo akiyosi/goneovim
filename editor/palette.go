@@ -254,6 +254,7 @@ func (p *Palette) cursorMove(x int) {
 		X = boundary
 	}
 
+	fmt.Println(x)
 	p.cursorX = p.cursorPos(x)
 	p.ws.cursor.x = p.cursorX + p.patternPadding
 	p.ws.cursor.y = p.patternPadding + p.ws.cursor.shift
@@ -297,10 +298,10 @@ func (p *Palette) cursorPos(x int) int {
 	l := 0
 	if p.isHTMLText {
 		t := gui.NewQTextDocument(nil)
-		t.SetHtml(p.patternText[:x])
+		t.SetHtml(p.patternText)
 		l = int(
 			font.HorizontalAdvance(
-				t.ToPlainText(),
+				t.ToPlainText()[:x],
 				-1,
 			),
 		)
