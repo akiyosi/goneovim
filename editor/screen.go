@@ -26,7 +26,7 @@ type Highlight struct {
 	id int
 	// kind       string
 	uiName     string
-	hiName     string
+	hlName     string
 	foreground *RGBA
 	background *RGBA
 	special    *RGBA
@@ -973,9 +973,9 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.id = util.ReflectToInt(id)
 	}
 
-	hiName, ok := info["hi_name"]
+	hlName, ok := info["hi_name"]
 	if ok {
-		highlight.hiName = hiName.(string)
+		highlight.hlName = hlName.(string)
 	}
 
 	italic := hl["italic"]
@@ -1257,7 +1257,7 @@ func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 }
 
 func (c *Cell) isSignColumn() bool {
-	switch c.highlight.hiName {
+	switch c.highlight.hlName {
 	case "SignColumn",
 		"LineNr",
 		"ALEErrorSign",
@@ -1285,9 +1285,9 @@ func (s *Screen) isSkipDrawStatusline(hi int) bool {
 	if s.highAttrDef[hi] == nil {
 		return false
 	}
-	if s.highAttrDef[hi].hiName == "StatusLine" ||
-		s.highAttrDef[hi].hiName == "StatusLineNC" ||
-		s.highAttrDef[hi].hiName == "VertSplit" {
+	if s.highAttrDef[hi].hlName == "StatusLine" ||
+		s.highAttrDef[hi].hlName == "StatusLineNC" ||
+		s.highAttrDef[hi].hlName == "VertSplit" {
 		return true
 	}
 	return false
@@ -1771,21 +1771,21 @@ func getFillpatternAndTransparent(cell *Cell, color *RGBA) (core.Qt__BrushStyle,
 	pattern := core.Qt__BrushStyle(1)
 	transparent := int(transparent() * 255.0)
 
-	if editor.config.Editor.DiffChangePattern != 1 && cell.highlight.hiName == "DiffChange" {
+	if editor.config.Editor.DiffChangePattern != 1 && cell.highlight.hlName == "DiffChange" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffChangePattern)
 		if editor.config.Editor.DiffChangePattern >= 7 &&
 			editor.config.Editor.DiffChangePattern <= 14 {
 			transparent = int(editor.config.Editor.Transparent * 255)
 		}
 		color = color.HSV().Colorfulness().RGB()
-	} else if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hiName == "DiffDelete" {
+	} else if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hlName == "DiffDelete" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffDeletePattern)
 		if editor.config.Editor.DiffDeletePattern >= 7 &&
 			editor.config.Editor.DiffDeletePattern <= 14 {
 			transparent = int(editor.config.Editor.Transparent * 255)
 		}
 		color = color.HSV().Colorfulness().RGB()
-	} else if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hiName == "DiffAdd" {
+	} else if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hlName == "DiffAdd" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffAddPattern)
 		if editor.config.Editor.DiffAddPattern >= 7 &&
 			editor.config.Editor.DiffAddPattern <= 14 {
@@ -1907,10 +1907,10 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 	char := cell.char
 
 	// Skip draw char if
-	if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hiName == "DiffAdd" {
+	if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hlName == "DiffAdd" {
 		char = " "
 	}
-	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hiName == "DiffDelete" {
+	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hlName == "DiffDelete" {
 		char = " "
 	}
 
@@ -2179,9 +2179,9 @@ func (s *Screen) windowScrollOverReset() {
 			if gwin.content[i][j] == nil {
 				continue
 			}
-			if gwin.content[i][j].highlight.hiName == "StatusLine" ||
-				gwin.content[i][j].highlight.hiName == "StatusLineNC" ||
-				gwin.content[i][j].highlight.hiName == "VertSplit" {
+			if gwin.content[i][j].highlight.hlName == "StatusLine" ||
+				gwin.content[i][j].highlight.hlName == "StatusLineNC" ||
+				gwin.content[i][j].highlight.hlName == "VertSplit" {
 				content[i][j] = gwin.content[i][j]
 			}
 		}
