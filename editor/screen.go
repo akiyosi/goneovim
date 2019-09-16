@@ -1119,6 +1119,8 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	buffLenLine := colStart
 	lenLine := 0
 
+	isMulitigridAndGlobalGrid := gridid == 1 && editor.config.Editor.ExtMultigrid
+
 	countLenLine := false
 	for _, arg := range cells {
 		if col >= len(line) {
@@ -1158,8 +1160,10 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 				line[col] = &Cell{}
 			}
 
-			line[col].char = text.(string)
-			line[col].normalWidth = s.isNormalWidth(line[col].char)
+			if !isMulitigridAndGlobalGrid {
+				line[col].char = text.(string)
+				line[col].normalWidth = s.isNormalWidth(line[col].char)
+			}
 
 			// If `hl_id` is not present the most recently seen `hl_id` in
 			//	the same call should be used (it is always sent for the first
