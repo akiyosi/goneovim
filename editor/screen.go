@@ -53,6 +53,7 @@ type Window struct {
 	content [][]*Cell
 	lenLine []int
 
+	grid       gridId
 	id         nvim.Window
 	pos        [2]int
 	anchor     int
@@ -380,21 +381,21 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	// Draw vim window separator
-	if editor.config.Editor.DrawBorder && w == w.s.windows[1] {
+	if editor.config.Editor.DrawBorder && w.grid == 1 {
 		for _, win := range w.s.windows {
 			win.drawBorder(p)
 		}
 	}
 
 	// Draw indent guide
-	if editor.config.Editor.IndentGuide && w == w.s.windows[1] {
+	if editor.config.Editor.IndentGuide && w.grid == 1 {
 		for _, win := range w.s.windows {
 			win.drawIndentguide(p)
 		}
 	}
 
 	// Update markdown preview
-	if w != w.s.windows[1] {
+	if w.grid != 1 {
 		w.s.ws.markdown.updatePos()
 	}
 
@@ -631,7 +632,7 @@ func (s *Screen) bottomWindowPos() int {
 		if win == nil {
 			continue
 		}
-		if win == s.windows[1] {
+		if win.grid == 1 {
 			continue
 		}
 		if win.isMsgGrid {
@@ -864,6 +865,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		s.windows[gridid] = newWindow()
 		s.windows[gridid].s = s
 		s.windows[gridid].setParent(s.widget)
+		s.windows[gridid].grid = gridid
 		s.windows[gridid].widget.SetAttribute(core.Qt__WA_KeyCompression, true)
 		s.windows[gridid].widget.SetAcceptDrops(true)
 		s.windows[gridid].widget.ConnectWheelEvent(s.wheelEvent)
@@ -1079,10 +1081,10 @@ func (s *Screen) gridLine(args []interface{}) {
 
 func (s *Screen) gridScrollOver() {
 	for _, win := range s.windows {
-		if win == s.windows[1] {
+		if win.grid == 1 {
 			s.scrollOverCount++
 		}
-		if win != s.windows[1] {
+		if win.grid != 1 {
 			if win == nil {
 				continue
 			}
@@ -1756,12 +1758,23 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 
 func getFillpatternAndTransparent(cell *Cell, color *RGBA) (core.Qt__BrushStyle, *RGBA, int) {
 	if color == nil {
-		// color = cell.highlight.background
-		color = editor.colors.bg
+		if cell.highlight.reverse {
+			color = editor.colors.fg
+		} else {
+			color = editor.colors.bg
+		}
 	}
 	pattern := core.Qt__BrushStyle(1)
 	transparent := int(transparent() * 255.0)
-	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hiName == "DiffDelete" {
+
+	if editor.config.Editor.DiffChangePattern != 1 && cell.highlight.hiName == "DiffChange" {
+		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffChangePattern)
+		if editor.config.Editor.DiffChangePattern >= 7 &&
+			editor.config.Editor.DiffChangePattern <= 14 {
+			transparent = int(editor.config.Editor.Transparent * 255)
+		}
+		color = color.HSV().Colorfulness().RGB()
+	} else if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hiName == "DiffDelete" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffDeletePattern)
 		if editor.config.Editor.DiffDeletePattern >= 7 &&
 			editor.config.Editor.DiffDeletePattern <= 14 {
@@ -2136,7 +2149,7 @@ func (s *Screen) windowScrollOverReset() {
 		if win == nil {
 			continue
 		}
-		if win != s.windows[1] {
+		if win.grid != 1 {
 			win.move(win.pos[0], win.pos[1])
 		}
 	}
@@ -2236,7 +2249,7 @@ func (w *Window) isShown() bool {
 }
 
 func (w *Window) raise() {
-	if w == w.s.windows[1] {
+	if w.grid == 1 {
 		return
 	}
 	w.widget.Raise()
@@ -2254,7 +2267,7 @@ func (w *Window) hideOverlappingWindows() {
 		if win == nil {
 			continue
 		}
-		if win == w.s.windows[1] {
+		if win.grid == 1 {
 			continue
 		}
 		if w == win {

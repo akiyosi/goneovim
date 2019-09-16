@@ -46,6 +46,7 @@ import (
 // // ConicalGradientPattern   17
 // // TexturePattern           24
 // diffdeletepattern = 12
+// diffchangepattern = 12
 // diffaddpattern = 1
 // SkipGlobalId = true
 // ginitvim = '''
@@ -153,6 +154,7 @@ type editorConfig struct {
 	DesktopNotifications bool
 	DiffAddPattern       int
 	DiffDeletePattern    int
+	DiffChangePattern    int
 }
 
 type statusLineConfig struct {
@@ -252,6 +254,9 @@ func newGonvimConfig(home string) gonvimConfig {
 	}
 	if config.Editor.DiffDeletePattern < 1 || config.Editor.DiffDeletePattern > 24 {
 		config.Editor.DiffDeletePattern = 1
+	}
+	if config.Editor.DiffChangePattern < 1 || config.Editor.DiffChangePattern > 24 {
+		config.Editor.DiffChangePattern = 1
 	}
 
 	if config.Editor.Width <= 400 {
