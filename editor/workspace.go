@@ -1257,6 +1257,7 @@ func (w *Workspace) guiFont(args string) {
 	}
 
 	w.palette.updateFont()
+	w.fpalette.updateFont()
 	w.tabline.updateFont()
 	w.statusline.updateFont()
 }
