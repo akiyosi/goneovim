@@ -254,7 +254,6 @@ func (p *Palette) cursorMove(x int) {
 		X = boundary
 	}
 
-	fmt.Println(x)
 	p.cursorX = p.cursorPos(x)
 	p.ws.cursor.x = p.cursorX + p.patternPadding
 	p.ws.cursor.y = p.patternPadding + p.ws.cursor.shift
