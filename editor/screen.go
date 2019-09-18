@@ -7,6 +7,7 @@ import (
 	"math"
 	"runtime"
 	"strings"
+	"strconv"
 	"sync"
 	"time"
 	"unsafe"
@@ -76,6 +77,8 @@ type Window struct {
 	queueRedrawArea  [4]int
 	scrollRegion     []int
 	devicePixelRatio float64
+	font             *Font
+	glyphMap         map[HlChar]gui.QImage
 }
 
 // Screen is the main editor area
@@ -276,8 +279,6 @@ func (s *Screen) uiTryResize(width, height int) {
 	var result error
 	go func() {
 		result = ws.nvim.TryResizeUI(width, height)
-		// rewrite with nvim_ui_try_resize_grid
-		// result = w.nvim.Call("nvim_ui_try_resize_grid", s.activeGrid, currentCols, currentRows)
 		done <- result
 	}()
 	select {
@@ -288,6 +289,51 @@ func (s *Screen) uiTryResize(width, height int) {
 		ws.nvim.Input("<Enter>")
 		s.uiTryResize(width, height)
 	}
+}
+
+func (s *Screen) gridFont(update interface{}) {
+	win := s.windows[s.ws.cursor.gridid]
+	if win == nil {
+		return
+	}
+
+	args := update.(string)
+	if args == "" {
+		return
+	}
+	parts := strings.Split(args, ":")
+	if len(parts) < 1 {
+		return
+	}
+
+	fontfamily := parts[0]
+	height := 14
+
+	for _, p := range parts[1:] {
+		if strings.HasPrefix(p, "h") {
+			var err error
+			height, err = strconv.Atoi(p[1:])
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	oldHeight := win.rows * win.getFont().height
+	oldWidth := float64(win.cols) * win.getFont().truewidth
+
+	// fontMetrics := gui.NewQFontMetricsF(gui.NewQFont2(fontfamily, height, 1, false))
+	win.font = initFontNew(fontfamily, height, 1, false)
+
+	// Calculate new cols, rows of current grid
+
+	newCols := int(float64(oldWidth) / win.font.truewidth)
+	newRows := oldHeight / win.font.height
+
+	win.glyphMap = make(map[HlChar]gui.QImage)
+	_ = s.ws.nvim.TryResizeUIGrid(s.ws.cursor.gridid, newCols, newRows)
+	font := win.getFont()
+	s.ws.cursor.updateFont(font)
 }
 
 func (s *Screen) toolTipPos() (int, int, int, int) {
@@ -344,7 +390,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	rect := event.Rect()
 
-	font := w.s.ws.font
+	font := w.getFont()
 	row := int(float64(rect.Top()) / float64(font.lineHeight))
 	col := int(float64(rect.Left()) / font.truewidth)
 	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
@@ -391,6 +437,22 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	p.DestroyQPainter()
 	w.paintMutex.Unlock()
+}
+
+func (w *Window) getGlyphMap() map[HlChar]gui.QImage {
+	if w.font != nil {
+		return w.glyphMap
+	}
+
+	return w.s.glyphMap
+}
+
+func (w *Window) getFont() *Font {
+	if w.font == nil {
+		return w.s.ws.font
+	} else {
+		return w.font
+	}
 }
 
 func (w *Window) drawIndentguide(p *gui.QPainter) {
@@ -530,14 +592,15 @@ func getCket(bra string) string {
 }
 
 func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
-	X := float64(w.pos[0]+x) * w.s.ws.font.truewidth
-	Y := float64((w.pos[1] + y) * w.s.ws.font.lineHeight)
+	font := w.getFont()
+	X := float64(w.pos[0]+x) * font.truewidth
+	Y := float64((w.pos[1] + y) * font.lineHeight)
 	p.FillRect4(
 		core.NewQRectF4(
 			X,
 			Y,
 			1,
-			float64(w.s.ws.font.lineHeight),
+			float64(font.lineHeight),
 		),
 		editor.colors.indentGuide.QColor(),
 	)
@@ -573,18 +636,20 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	if w.isMsgGrid {
 		return
 	}
+	font := w.getFont()
+
+	// window position is based on cols, rows of global font setting
 	x := int(float64(w.pos[0]) * w.s.ws.font.truewidth)
-	// y := (w.pos[1] - w.s.scrollOverCount) * int(w.s.ws.font.lineHeight)
 	y := w.pos[1] * int(w.s.ws.font.lineHeight)
-	width := int(float64(w.cols) * w.s.ws.font.truewidth)
-	winHeight := int((float64(w.rows) + 0.92) * float64(w.s.ws.font.lineHeight))
+	width := int(float64(w.cols) * font.truewidth)
+	winHeight := int((float64(w.rows) + 0.92) * float64(font.lineHeight))
 	color := editor.colors.windowSeparator.QColor()
 
 	// Vertical
-	if y+w.s.ws.font.lineHeight+1 < w.s.widget.Height() {
+	if y+font.lineHeight+1 < w.s.widget.Height() {
 		p.FillRect5(
-			int(float64(x+width)+w.s.ws.font.truewidth/2),
-			y-int(w.s.ws.font.lineHeight/2),
+			int(float64(x+width)+font.truewidth/2),
+			y-int(font.lineHeight/2),
 			1,
 			winHeight,
 			color,
@@ -596,13 +661,13 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	}
 
 	// Horizontal
-	height := w.rows * int(w.s.ws.font.lineHeight)
-	y2 := y + height - 1 + w.s.ws.font.lineHeight/2
+	height := w.rows * int(font.lineHeight)
+	y2 := y + height - 1 + font.lineHeight/2
 
 	p.FillRect5(
-		int(float64(x)-w.s.ws.font.truewidth/2),
+		int(float64(x)-font.truewidth/2),
 		y2,
-		int((float64(w.cols)+0.92)*w.s.ws.font.truewidth),
+		int((float64(w.cols)+0.92)*font.truewidth),
 		1,
 		color,
 	)
@@ -788,6 +853,7 @@ func (s *Screen) gridResize(args []interface{}) {
 		gridid = util.ReflectToInt(arg.([]interface{})[0])
 		cols = util.ReflectToInt(arg.([]interface{})[1])
 		rows = util.ReflectToInt(arg.([]interface{})[2])
+
 		if isSkipGlobalId(gridid) {
 			continue
 		}
@@ -868,8 +934,9 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win.cols = cols
 	win.rows = rows
 
-	width := int(float64(cols) * s.ws.font.truewidth)
-	height := rows * int(s.ws.font.lineHeight)
+	font := win.getFont()
+	width := int(float64(cols) * font.truewidth)
+	height := rows * int(font.lineHeight)
 	rect := core.NewQRect4(0, 0, width, height)
 	win.setGeometry(rect)
 
@@ -1183,7 +1250,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 
 			if !isMulitigridAndGlobalGrid {
 				line[col].char = text.(string)
-				line[col].normalWidth = s.isNormalWidth(line[col].char)
+				line[col].normalWidth = s.windows[gridid].isNormalWidth(line[col].char)
 			}
 
 			// If `hl_id` is not present the most recently seen `hl_id` in
@@ -1393,10 +1460,11 @@ func (w *Window) update() {
 		return
 	}
 
-	x := int(float64(w.queueRedrawArea[0]) * w.s.ws.font.truewidth)
-	y := w.queueRedrawArea[1] * w.s.ws.font.lineHeight
-	width := int(float64(w.queueRedrawArea[2]-w.queueRedrawArea[0]) * w.s.ws.font.truewidth)
-	height := (w.queueRedrawArea[3] - w.queueRedrawArea[1]) * w.s.ws.font.lineHeight
+	font := w.getFont()
+	x := int(float64(w.queueRedrawArea[0]) * font.truewidth)
+	y := w.queueRedrawArea[1] * font.lineHeight
+	width := int(float64(w.queueRedrawArea[2]-w.queueRedrawArea[0]) * font.truewidth)
+	height := (w.queueRedrawArea[3] - w.queueRedrawArea[1]) * font.lineHeight
 
 	if width > 0 && height > 0 {
 		w.widget.Update2(
@@ -1456,7 +1524,7 @@ func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
-	font := w.s.ws.font
+	font := w.getFont()
 	line := w.content[y]
 	start := -1
 	end := -1
@@ -1578,7 +1646,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
-	font := w.s.ws.font
+	font := w.getFont()
 	line := w.content[y]
 	var bg *RGBA
 
@@ -1673,8 +1741,9 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
-	wsfont := w.s.ws.font
+	wsfont := w.getFont()
 	specialChars := []int{}
+	glyphMap := w.getGlyphMap()
 
 	for x := col; x < col+cols; x++ {
 		if x >= len(w.content[y]) {
@@ -1696,12 +1765,12 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 
-		glyph, ok := w.s.glyphMap[HlChar{
-			char:   cell.char,
-			fg:     cell.highlight.fg(),
-			bg:     cell.highlight.bg(),
+		glyph, ok := glyphMap[HlChar{
+			char: cell.char,
+			fg: cell.highlight.fg(),
+			bg: cell.highlight.bg(),
 			italic: cell.highlight.italic,
-			bold:   cell.highlight.bold,
+			bold: cell.highlight.bold,
 		}]
 		if !ok {
 			glyph = w.newGlyph(p, cell)
@@ -1721,10 +1790,17 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if cell == nil || cell.char == " " {
 			continue
 		}
+<<<<<<< HEAD
 		glyph, ok := w.s.glyphMap[HlChar{
 			char:   cell.char,
 			fg:     cell.highlight.fg(),
 			bg:     cell.highlight.bg(),
+=======
+		glyph, ok := glyphMap[HlChar{
+			char: cell.char,
+			fg: cell.highlight.fg(),
+			bg: cell.highlight.bg(),
+>>>>>>> WIP: add feature that allows font setting for each window
 			italic: cell.highlight.italic,
 			bold:   cell.highlight.bold,
 		}]
@@ -1776,7 +1852,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
-	wsfont := w.s.ws.font
+	wsfont := w.getFont()
 	font := p.Font()
 	line := w.content[y]
 	chars := map[Highlight][]int{}
@@ -1863,9 +1939,10 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 	// * TODO: Further optimization, whether it is possible
 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
 
-	width := w.s.ws.font.italicWidth
+	font := w.getFont()
+	width := font.italicWidth
 	if !cell.normalWidth {
-		width = math.Ceil(w.s.ws.font.fontMetrics.HorizontalAdvance(cell.char, -1))
+		width = math.Ceil(font.fontMetrics.HorizontalAdvance(cell.char, -1))
 	}
 
 	char := cell.char
@@ -1883,11 +1960,11 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 		// 	0,
 		// 	0,
 		// 	w.devicePixelRatio*width,
-		// 	w.devicePixelRatio*float64(w.s.ws.font.lineHeight),
+		// 	w.devicePixelRatio*float64(font.lineHeight),
 		// ).Size().ToSize(),
 		core.NewQSize2(
 			int(w.devicePixelRatio*width),
-			int(w.devicePixelRatio*float64(w.s.ws.font.lineHeight)),
+			int(w.devicePixelRatio*float64(font.lineHeight)),
 		),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
@@ -1905,7 +1982,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 	p = gui.NewQPainter2(glyph)
 	p.SetPen2(fg.QColor())
 
-	p.SetFont(w.s.ws.font.fontNew)
+	p.SetFont(font.fontNew)
 	if cell.highlight.bold {
 		p.Font().SetBold(true)
 	}
@@ -1918,12 +1995,13 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 			0,
 			0,
 			width,
-			float64(w.s.ws.font.lineHeight),
+			float64(font.lineHeight),
 		),
 		char,
 		gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
 
+<<<<<<< HEAD
 	w.s.glyphMap[HlChar{
 		char:   cell.char,
 		fg:     fg,
@@ -1931,6 +2009,26 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 		italic: cell.highlight.italic,
 		bold:   cell.highlight.bold,
 	}] = *glyph
+=======
+	if w.font != nil {
+		w.glyphMap[HlChar{
+			char: cell.char,
+			fg: fg,
+			bg: cell.highlight.bg(),
+			italic: cell.highlight.italic,
+			bold: cell.highlight.bold,
+		}] = *glyph
+
+	} else {
+		w.s.glyphMap[HlChar{
+			char: cell.char,
+			fg: fg,
+			bg: cell.highlight.bg(),
+			italic: cell.highlight.italic,
+			bold: cell.highlight.bold,
+		}] = *glyph
+	}
+>>>>>>> WIP: add feature that allows font setting for each window
 
 	return *glyph
 }
@@ -1949,7 +2047,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	}
 	line := w.content[y]
 	lenLine := w.lenLine[y]
-	font := w.s.ws.font
+	font := w.getFont()
 	for x := col; x < col+cols; x++ {
 		if x > lenLine {
 			break
@@ -2003,14 +2101,15 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (s *Screen) isNormalWidth(char string) bool {
+func (w *Window) isNormalWidth(char string) bool {
 	if len(char) == 0 {
 		return true
 	}
 	if char[0] <= 127 {
 		return true
 	}
-	return s.ws.font.fontMetrics.HorizontalAdvance(char, -1) == s.ws.font.truewidth
+	font := w.getFont()
+	return font.fontMetrics.HorizontalAdvance(char, -1) == font.truewidth
 }
 
 func (s *Screen) windowPosition(args []interface{}) {
@@ -2211,9 +2310,13 @@ func (w *Window) raise() {
 	}
 	w.widget.Raise()
 	w.s.tooltip.SetParent(w.widget)
+
+	font := w.getFont()
+	w.s.ws.cursor.updateFont(font)
 	w.s.ws.cursor.widget.SetParent(w.widget)
 	w.s.ws.cursor.widget.Hide()
 	w.s.ws.cursor.widget.Show()
+
 }
 
 func (w *Window) hideOverlappingWindows() {
@@ -2267,14 +2370,17 @@ func (w *Window) setShadow() {
 
 func (w *Window) move(col int, row int) {
 	res := 0
+	// window position is based on cols, rows of global font setting
+	// font := w.getFont()
+	font := w.s.ws.font
 	if w.isMsgGrid {
-		res = w.s.widget.Height() - w.rows*w.s.ws.font.lineHeight
+		res = w.s.widget.Height() - w.rows*font.lineHeight
 	}
 	if res < 0 {
 		res = 0
 	}
-	x := int(float64(col) * w.s.ws.font.truewidth)
-	y := row*int(w.s.ws.font.lineHeight) + res
+	x := int(float64(col) * font.truewidth)
+	y := row*int(font.lineHeight) + res
 	w.widget.Move2(x, y)
 
 }
