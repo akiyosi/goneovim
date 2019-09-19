@@ -1042,6 +1042,44 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	return &highlight
 }
 
+func (h *Highlight) fg() *RGBA {
+	var color *RGBA
+	if h.reverse {
+		color = h.background
+		if color == nil {
+			// color = w.s.ws.background
+			color = editor.colors.bg
+		}
+	} else {
+		color = h.foreground
+		if color == nil {
+			// color = w.s.ws.foreground
+			color = editor.colors.fg
+		}
+	}
+
+	return color
+}
+
+func (h *Highlight) bg() *RGBA {
+	var color *RGBA
+	if h.reverse {
+		color = h.foreground
+		if color == nil {
+			// color = w.s.ws.foreground
+			color = editor.colors.fg
+		}
+	} else {
+		color = h.background
+		if color == nil {
+			// color = w.s.ws.background
+			color = editor.colors.bg
+		}
+	}
+
+	return color
+}
+
 func (s *Screen) gridClear(args []interface{}) {
 	var gridid gridId
 	for _, arg := range args {
@@ -1575,17 +1613,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		if line[x].highlight.uiName == "TermCursor" {
 			continue
 		}
-		if line[x].highlight.reverse {
-			bg = line[x].highlight.foreground
-			if bg == nil {
-				bg = w.s.ws.foreground
-			}
-		} else {
-			bg = line[x].highlight.background
-			if bg == nil {
-				bg = w.s.ws.background
-			}
-		}
+		bg = line[x].highlight.bg()
 
 		// if !bg.equals(w.s.ws.background) {
 		// 	// Set diff pattern
@@ -1762,11 +1790,7 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 
 func getFillpatternAndTransparent(cell *Cell, color *RGBA) (core.Qt__BrushStyle, *RGBA, int) {
 	if color == nil {
-		if cell.highlight.reverse {
-			color = editor.colors.fg
-		} else {
-			color = editor.colors.bg
-		}
+		color = cell.highlight.bg()
 	}
 	pattern := core.Qt__BrushStyle(1)
 	transparent := int(transparent() * 255.0)
@@ -1859,18 +1883,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 		text := buffer.String()
 		if text != "" {
-			var fg *RGBA
-			if highlight.reverse {
-				fg = highlight.background
-				if fg == nil {
-					fg = w.s.ws.background
-				}
-			} else {
-				fg = highlight.foreground
-				if fg == nil {
-					fg = w.s.ws.foreground
-				}
-			}
+			fg := highlight.fg()
 			if fg != nil {
 				p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 			}
@@ -1885,7 +1898,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		if line[x] == nil || line[x].char == " " {
 			continue
 		}
-		fg := line[x].highlight.foreground
+		fg := line[x].highlight.fg()
 		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
 		pointF.SetX(float64(x) * wsfont.truewidth)
 		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift))
@@ -1918,18 +1931,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 	// if cell.highlight.background == nil {
 	// 	cell.highlight.background = w.s.ws.background
 	// }
-	var fg *RGBA
-	if cell.highlight.reverse {
-		fg = cell.highlight.background
-		if fg == nil {
-			fg = w.s.ws.background
-		}
-	} else {
-		fg = cell.highlight.foreground
-		if fg == nil {
-			fg = w.s.ws.foreground
-		}
-	}
+	fg := cell.highlight.fg()
 
 	// QImage default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
