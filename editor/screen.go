@@ -25,16 +25,17 @@ type gridId = int
 type Highlight struct {
 	id int
 	// kind       string
-	uiName     string
-	hlName     string
-	foreground *RGBA
-	background *RGBA
-	special    *RGBA
-	reverse    bool
-	italic     bool
-	bold       bool
-	underline  bool
-	undercurl  bool
+	uiName        string
+	hlName        string
+	foreground    *RGBA
+	background    *RGBA
+	special       *RGBA
+	reverse       bool
+	italic        bool
+	bold          bool
+	underline     bool
+	undercurl     bool
+	strikethrough bool
 }
 
 // Cell is
@@ -1004,6 +1005,13 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.undercurl = true
 	} else {
 		highlight.undercurl = false
+	}
+
+	strikethrough := hl["strikethrough"]
+	if strikethrough != nil {
+		highlight.strikethrough = true
+	} else {
+		highlight.strikethrough = false
 	}
 
 	reverse := hl["reverse"]
@@ -2015,7 +2023,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		if line[x] == nil {
 			continue
 		}
-		if !line[x].highlight.underline && !line[x].highlight.undercurl {
+		if !line[x].highlight.underline && !line[x].highlight.undercurl && !line[x].highlight.strikethrough {
 			continue
 		}
 		pen := gui.NewQPen()
@@ -2032,10 +2040,16 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		start := float64(x) * font.truewidth
 		end := float64(x+1) * font.truewidth
 		Y := float64((y)*font.lineHeight) + font.ascent + float64(font.lineSpace)
+		halfY := float64(y-1)*float64(font.lineHeight) + float64(font.lineHeight)/2.0 + font.ascent + float64(font.ascent)/2.0 + float64(font.lineSpace)
+		if line[x].highlight.strikethrough {
+			strikeLinef := core.NewQLineF3(start, halfY, end, halfY)
+			p.DrawLine(strikeLinef)
+		}
 		if line[x].highlight.underline {
 			linef := core.NewQLineF3(start, Y, end, Y)
 			p.DrawLine(linef)
-		} else if line[x].highlight.undercurl {
+		}
+		if line[x].highlight.undercurl {
 			height := font.ascent / 3.0
 			amplitude := font.ascent / 8.0
 			freq := 1.0
