@@ -76,7 +76,6 @@ type Workspace struct {
 	maxLine            int
 	curLine            int
 	curColm            int
-	isInTerm           bool
 	cursorStyleEnabled bool
 	modeInfo           []map[string]interface{}
 	ts                 int
@@ -387,8 +386,8 @@ func (w *Workspace) initGonvim() {
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
 	au GonvimAu VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")
 	au GonvimAu CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))
-	au GonvimAu TermOpen * call rpcnotify(0, "Gui", "gonvim_termopen")
-	au GonvimAu TermClose * call rpcnotify(0, "Gui", "gonvim_termclose")
+	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
+	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
 	aug GonvimAuWorkspace | au! | aug END
 	au GonvimAuWorkspace DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())
 	aug GonvimAuMd | au! | aug END
@@ -1201,11 +1200,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 				fl.Fileitems[fl.active].updateModifiedbadge()
 			}
 		}
-	case "gonvim_termopen":
-		w.isInTerm = true
-		w.detectTerminalMode()
-	case "gonvim_termclose":
-		w.isInTerm = false
+	case "gonvim_termenter":
+		w.mode = "terminal-input"
+	case "gonvim_termleave":
+		w.mode = "normal"
 	case GonvimMarkdownNewBufferEvent:
 		go w.markdown.newBuffer()
 	case GonvimMarkdownUpdateEvent:
