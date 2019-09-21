@@ -224,26 +224,26 @@ func (s *Screen) howToOpen(file string) {
 
 func (s *Screen) updateRows() bool {
 	var ret bool
-	w := s.ws
-	rows := s.height / w.font.lineHeight
+	ws := s.ws
+	rows := s.height / ws.font.lineHeight
 
-	if rows != w.rows {
+	if rows != ws.rows {
 		ret = true
 	}
-	w.rows = rows
+	ws.rows = rows
 	return ret
 }
 
 func (s *Screen) updateCols() bool {
 	var ret bool
-	w := s.ws
+	ws := s.ws
 	s.width = s.widget.Width()
-	cols := int(float64(s.width) / w.font.truewidth)
+	cols := int(float64(s.width) / ws.font.truewidth)
 
-	if cols != w.cols {
+	if cols != ws.cols {
 		ret = true
 	}
-	w.cols = cols
+	ws.cols = cols
 	return ret
 }
 
@@ -263,31 +263,31 @@ func (s *Screen) waitTime() time.Duration {
 }
 
 func (s *Screen) updateSize() {
-	w := s.ws
+	ws := s.ws
 	s.width = s.widget.Width()
-	currentCols := int(float64(s.width) / w.font.truewidth)
-	currentRows := s.height / w.font.lineHeight
+	currentCols := int(float64(s.width) / ws.font.truewidth)
+	currentRows := s.height / ws.font.lineHeight
 
-	isNeedTryResize := (currentCols != w.cols || currentRows != w.rows)
+	isNeedTryResize := (currentCols != ws.cols || currentRows != ws.rows)
 	if !isNeedTryResize {
 		return
 	}
 
-	w.cols = currentCols
-	w.rows = currentRows
+	ws.cols = currentCols
+	ws.rows = currentRows
 
-	if !w.uiAttached {
+	if !ws.uiAttached {
 		return
 	}
 	s.uiTryResize(currentCols, currentRows)
 }
 
 func (s *Screen) uiTryResize(width, height int) {
-	w := s.ws
+	ws := s.ws
 	done := make(chan error, 5)
 	var result error
 	go func() {
-		result = w.nvim.TryResizeUI(width, height)
+		result = ws.nvim.TryResizeUI(width, height)
 		// rewrite with nvim_ui_try_resize_grid
 		// result = w.nvim.Call("nvim_ui_try_resize_grid", s.activeGrid, currentCols, currentRows)
 		done <- result
@@ -297,30 +297,30 @@ func (s *Screen) uiTryResize(width, height int) {
 	case <-time.After(s.waitTime() * time.Millisecond):
 		// In this case, assuming that nvim is returning an error
 		//  at startup and the TryResizeUI() function hangs up.
-		w.nvim.Input("<Enter>")
+		ws.nvim.Input("<Enter>")
 		s.uiTryResize(width, height)
 	}
 }
 
 func (s *Screen) toolTipPos() (int, int, int, int) {
 	var x, y, candX, candY int
-	w := s.ws
-	if s.ws.palette.widget.IsVisible() {
+	ws := s.ws
+	if ws.palette.widget.IsVisible() {
 		s.tooltip.SetParent(s.ws.palette.widget)
 		font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
 		s.tooltip.SetFont(font)
-		x = w.palette.cursorX + w.palette.patternPadding
-		candX = x + w.palette.widget.Pos().X()
-		y = w.palette.patternPadding + s.ws.palette.padding
-		candY = y + w.palette.widget.Pos().Y()
+		x = ws.palette.cursorX + ws.palette.patternPadding
+		candX = x + ws.palette.widget.Pos().X()
+		y = ws.palette.patternPadding + ws.palette.padding
+		candY = y + ws.palette.widget.Pos().Y()
 	} else {
-		s.toolTipFont(w.font)
+		s.toolTipFont(ws.font)
 		row := s.cursor[0]
 		col := s.cursor[1]
-		x = int(float64(col) * w.font.truewidth)
-		y = row * w.font.lineHeight
-		candX = int(float64(col) * w.font.truewidth)
-		candY = row*w.font.lineHeight + w.tabline.height + w.tabline.marginTop + w.tabline.marginBottom
+		x = int(float64(col) * ws.font.truewidth)
+		y = row * ws.font.lineHeight
+		candX = int(float64(col) * ws.font.truewidth)
+		candY = row*ws.font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
 	}
 	return x, y, candX, candY
 }
