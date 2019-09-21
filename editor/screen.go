@@ -1376,9 +1376,12 @@ func (w *Window) scroll(count int) {
 			if len(content) <= row+count {
 				continue
 			}
-			copy(content[row], content[row+count])
+			
+			// copy(content[row], content[row+count])
+			for col := left; col <= right; col++ {
+				content[row][col] = content[row+count][col]
+			}
 			lenLine[row] = lenLine[row+count]
-
 		}
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
@@ -1390,7 +1393,11 @@ func (w *Window) scroll(count int) {
 			if len(content) <= row {
 				continue
 			}
-			copy(content[row], content[row+count])
+
+			// copy(content[row], content[row+count])
+			for col := left; col <= right; col++ {
+				content[row][col] = content[row+count][col]
+			}
 			lenLine[row] = lenLine[row+count]
 		}
 		for row := top; row < top-count; row++ {
