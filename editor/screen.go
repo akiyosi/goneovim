@@ -1600,16 +1600,15 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	line := w.content[y]
 	var bg *RGBA
 
-	start := -1
-	end := -1
+	// draw default background color if window is float window or msg grid
+	idDrawDefaultBg := false
+	if w.isFloatWin || w.isMsgGrid {
+	        idDrawDefaultBg = true
+	}
+
+	var start, end int
 	var lastBg *RGBA
 	var lastCell *Cell
-
-	// draw default background color if window is float window or msg grid
-	var drawDefaultBackground bool
-	if w.isFloatWin || w.isMsgGrid {
-	        drawDefaultBackground = true
-	}
 
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
@@ -1618,14 +1617,11 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		if line[x] == nil {
 			continue
 		}
-		if line[x].highlight.uiName == "TermCursor" {
-			continue
-		}
 		bg = line[x].highlight.bg()
 
-		// if !bg.equals(w.s.ws.background) {
+		// if !bg.equals(w.s.ws.background) || idDrawDefaultBg {
 		// 	// Set diff pattern
-		// 	pattern, color, transparent := getFillpatternAndTransparent(w.content[y][x], bg)
+		// 	pattern, color, transparent := getFillpatternAndTransparent(&line[x].highlight)
 
 		// 	// Fill background with pattern
 		// 	rectF := core.NewQRectF4(
@@ -1648,50 +1644,65 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		// 	)
 		// }
 
-		if lastBg == nil {
-			if !drawDefaultBackground && bg.equals(w.s.ws.background) {
-			        continue
+		fillCellRect := func() {
+			width := end - start + 1
+			if width < 0 {
+				width = 0
 			}
+			if !idDrawDefaultBg && lastBg.equals(w.s.ws.background) {
+				width = 0
+			}
+			if width > 0 {
+				// Set diff pattern
+				pattern, color, transparent := getFillpatternAndTransparent(&lastCell.highlight)
+
+				// Fill background with pattern
+				rectF := core.NewQRectF4(
+					float64(start)*font.truewidth,
+					float64((y)*font.lineHeight),
+					float64(width)*font.truewidth,
+					float64(font.lineHeight),
+				)
+				p.FillRect(
+					rectF,
+					gui.NewQBrush3(
+						gui.NewQColor3(
+							color.R,
+							color.G,
+							color.B,
+							transparent,
+						),
+						pattern,
+					),
+				)
+			}
+		}
+
+		if lastBg == nil {
 			start = x
+			end = x
 			lastBg = bg
+			lastCell = line[x]
 		}
 		if lastBg != nil {
 			if lastBg.equals(bg) {
-				lastCell = line[x]
 				end = x
+
+				if x+1 < col+cols {
+					continue
+				}
 			}
 			if !lastBg.equals(bg) || x+1 == col+cols {
-				width := end - start + 1
-				if !drawDefaultBackground && lastBg.equals(w.s.ws.background) {
-					width = 0
-				}
-				if width > 0 {
-					// Set diff pattern
-					pattern, color, transparent := getFillpatternAndTransparent(lastCell, lastBg)
+				fillCellRect()
 
-					// Fill background with pattern
-					rectF := core.NewQRectF4(
-						float64(start)*font.truewidth,
-						float64((y)*font.lineHeight),
-						float64(width)*font.truewidth,
-						float64(font.lineHeight),
-					)
-					p.FillRect(
-						rectF,
-						gui.NewQBrush3(
-							gui.NewQColor3(
-								color.R,
-								color.G,
-								color.B,
-								transparent,
-							),
-							pattern,
-						),
-					)
-				}
 				start = x
 				end = x
 				lastBg = bg
+				lastCell = line[x]
+
+				if x+1 == col+cols {
+					fillCellRect()
+				}
 			}
 		}
 	}
@@ -1709,11 +1720,6 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 
-		// If not drawing background in drawchar()
-		// if x >= w.lenLine[y] {
-		// 	break
-		// }
-
 		cell := w.content[y][x]
 		if cell == nil {
 			continue
@@ -1725,43 +1731,9 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			specialChars = append(specialChars, x)
 			continue
 		}
-
-		// If not drawing background in drawchar()
 		if cell.char == " " {
 			continue
 		}
-
-		// // If drawing background in drawchar()
-		// if cell.highlight.background == nil {
-		// 	cell.highlight.background = w.s.ws.background
-		// }
-		// if cell.char == " " && cell.highlight.background.equals(w.s.ws.background) {
-		// 	continue
-		// }
-		// if !cell.highlight.background.equals(w.s.ws.background) {
-		// 	// Set diff pattern
-		// 	pattern, color, transparent := getFillpatternAndTransparent(cell, nil)
-		//
-		// 	// Fill background with pattern
-		// 	rectF := core.NewQRectF4(
-		// 		float64(x)*wsfont.truewidth,
-		// 		float64((y)*wsfont.lineHeight),
-		// 		wsfont.truewidth,
-		// 		float64(wsfont.lineHeight),
-		// 	)
-		// 	p.FillRect(
-		// 		rectF,
-		// 		gui.NewQBrush3(
-		// 			gui.NewQColor3(
-		// 				color.R,
-		// 				color.G,
-		// 				color.B,
-		// 				transparent,
-		// 			),
-		// 			pattern,
-		// 		),
-		// 	)
-		// }
 
 		glyph, ok := w.s.glyphMap[*cell]
 		if !ok {
@@ -1796,28 +1768,26 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 
 }
 
-func getFillpatternAndTransparent(cell *Cell, color *RGBA) (core.Qt__BrushStyle, *RGBA, int) {
-	if color == nil {
-		color = cell.highlight.bg()
-	}
+func getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyle, *RGBA, int) {
+	color := hl.bg()
 	pattern := core.Qt__BrushStyle(1)
 	transparent := int(transparent() * 255.0)
 
-	if editor.config.Editor.DiffChangePattern != 1 && cell.highlight.hlName == "DiffChange" {
+	if editor.config.Editor.DiffChangePattern != 1 && hl.hlName == "DiffChange" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffChangePattern)
 		if editor.config.Editor.DiffChangePattern >= 7 &&
 			editor.config.Editor.DiffChangePattern <= 14 {
 			transparent = int(editor.config.Editor.Transparent * 255)
 		}
 		color = color.HSV().Colorfulness().RGB()
-	} else if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hlName == "DiffDelete" {
+	} else if editor.config.Editor.DiffDeletePattern != 1 && hl.hlName == "DiffDelete" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffDeletePattern)
 		if editor.config.Editor.DiffDeletePattern >= 7 &&
 			editor.config.Editor.DiffDeletePattern <= 14 {
 			transparent = int(editor.config.Editor.Transparent * 255)
 		}
 		color = color.HSV().Colorfulness().RGB()
-	} else if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hlName == "DiffAdd" {
+	} else if editor.config.Editor.DiffAddPattern != 1 && hl.hlName == "DiffAdd" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffAddPattern)
 		if editor.config.Editor.DiffAddPattern >= 7 &&
 			editor.config.Editor.DiffAddPattern <= 14 {
