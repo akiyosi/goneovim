@@ -72,7 +72,7 @@ func (f *Font) change(family string, size int) {
 
 	// reset character cache
 	if editor.config.Editor.CachedDrawing {
-		f.ws.screen.glyphMap = make(map[Cell]gui.QImage)
+		f.ws.screen.glyphMap = make(map[HlChar]gui.QImage)
 	}
 }
 

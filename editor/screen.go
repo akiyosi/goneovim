@@ -38,6 +38,14 @@ type Highlight struct {
 	strikethrough bool
 }
 
+type HlChar struct {
+	char          string
+	fg            *RGBA
+	bg            *RGBA
+	italic        bool
+	bold          bool
+}
+
 // Cell is
 type Cell struct {
 	normalWidth bool
@@ -103,7 +111,7 @@ type Screen struct {
 	drawSplit        bool
 	resizeCount      uint
 	tooltip          *widgets.QLabel
-	glyphMap         map[Cell]gui.QImage
+	glyphMap         map[HlChar]gui.QImage
 	isScrollOver     bool
 	scrollOverCount  int
 }
@@ -123,7 +131,7 @@ func newScreen() *Screen {
 		lastCursor:   [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
-		glyphMap:     make(map[Cell]gui.QImage),
+		glyphMap:     make(map[HlChar]gui.QImage),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -1742,9 +1750,17 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 
-		glyph, ok := w.s.glyphMap[*cell]
+		glyph, ok := w.s.glyphMap[HlChar{
+			char: cell.char,
+			fg: cell.highlight.fg(),
+			bg: cell.highlight.bg(),
+			italic: cell.highlight.italic,
+			bold: cell.highlight.bold,
+
+		}]
 		if !ok {
 			glyph = w.newGlyph(p, cell)
+		} else {
 		}
 		p.DrawImage7(
 			core.NewQPointF3(
@@ -1760,7 +1776,13 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if cell == nil || cell.char == " " {
 			continue
 		}
-		glyph, ok := w.s.glyphMap[*cell]
+		glyph, ok := w.s.glyphMap[HlChar{
+			char: cell.char,
+			fg: cell.highlight.fg(),
+			bg: cell.highlight.bg(),
+			italic: cell.highlight.italic,
+			bold: cell.highlight.bold,
+		}]
 		if !ok {
 			glyph = w.newGlyph(p, cell)
 		}
@@ -1772,7 +1794,6 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			&glyph,
 		)
 	}
-
 }
 
 func getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyle, *RGBA, int) {
@@ -1904,14 +1925,6 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 
 	char := cell.char
 
-	// Skip draw char if
-	if editor.config.Editor.DiffAddPattern != 1 && cell.highlight.hlName == "DiffAdd" {
-		char = " "
-	}
-	if editor.config.Editor.DiffDeletePattern != 1 && cell.highlight.hlName == "DiffDelete" {
-		char = " "
-	}
-
 	// // If drawing background
 	// if cell.highlight.background == nil {
 	// 	cell.highlight.background = w.s.ws.background
@@ -1970,7 +1983,13 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 		gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
 
-	w.s.glyphMap[*cell] = *glyph
+	w.s.glyphMap[HlChar{
+		char: cell.char,
+		fg: fg,
+		bg: cell.highlight.bg(),
+		italic: cell.highlight.italic,
+		bold: cell.highlight.bold,
+	}] = *glyph
 
 	return *glyph
 }
