@@ -1912,7 +1912,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 	// * TODO: Further optimization, whether it is possible
 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
 
-	width := w.s.ws.font.truewidth
+	width := w.s.ws.font.italicWidth
 	if !cell.normalWidth {
 		width = math.Ceil(w.s.ws.font.fontMetrics.HorizontalAdvance(cell.char, -1))
 	}

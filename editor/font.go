@@ -15,6 +15,7 @@ type Font struct {
 	defaultFontMetrics *gui.QFontMetricsF
 	width              int
 	truewidth          float64
+	italicWidth        float64
 	ascent             float64
 	height             int
 	lineHeight         int
@@ -22,14 +23,19 @@ type Font struct {
 	shift              int
 }
 
-func fontSizeNew(font *gui.QFont) (int, int, float64, float64) {
+func fontSizeNew(font *gui.QFont) (int, int, float64, float64, float64) {
 	fontMetrics := gui.NewQFontMetricsF(font)
 	h := fontMetrics.Height()
 	w := fontMetrics.HorizontalAdvance("W", -1)
 	ascent := fontMetrics.Ascent()
 	width := int(math.Ceil(w))
 	height := int(math.Ceil(h))
-	return width, height, w, ascent
+	font.SetStyle(gui.QFont__StyleItalic)
+	italicFontMetrics := gui.NewQFontMetricsF(font)
+	italicWidth := italicFontMetrics.BoundingRect("f").Width()
+	font.SetStyle(gui.QFont__StyleNormal)
+
+	return width, height, w, ascent, italicWidth
 }
 
 func initFontNew(family string, size int, lineSpace int) *Font {
@@ -62,13 +68,14 @@ func (f *Font) change(family string, size int) {
 	f.fontNew.SetFamily(family)
 	f.fontNew.SetPointSize(size)
 	f.fontMetrics = gui.NewQFontMetricsF(f.fontNew)
-	width, height, truewidth, ascent := fontSizeNew(f.fontNew)
+	width, height, truewidth, ascent, italicWidth := fontSizeNew(f.fontNew)
 	f.width = width
 	f.height = height
 	f.truewidth = truewidth
 	f.lineHeight = height + f.lineSpace
 	f.ascent = ascent
 	f.shift = int(float64(f.lineSpace)/2 + ascent)
+	f.italicWidth = italicWidth
 
 	// reset character cache
 	if editor.config.Editor.CachedDrawing {

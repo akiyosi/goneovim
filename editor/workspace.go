@@ -3,7 +3,6 @@ package editor
 import (
 	"errors"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -105,14 +104,13 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 	w.font = initFontNew(editor.extFontFamily, editor.extFontSize, editor.config.Editor.Linespace)
 	go func() {
-		height := w.font.fontMetrics.Height()
-		width := w.font.fontMetrics.HorizontalAdvance("W", -1)
-		ascent := w.font.fontMetrics.Ascent()
-		w.font.height = int(math.Ceil(height))
-		w.font.width = int(math.Ceil(width))
-		w.font.truewidth = width
+		width, height, truewidth, ascent, italicWidth := fontSizeNew(w.font.fontNew)
+		w.font.width = width
+		w.font.height = height
+		w.font.truewidth = truewidth
+		w.font.lineHeight = height + w.font.lineSpace
 		w.font.ascent = ascent
-		w.font.lineHeight = w.font.height + w.font.lineSpace
+		w.font.italicWidth = italicWidth
 	}()
 	w.font.ws = w
 
