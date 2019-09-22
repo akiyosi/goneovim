@@ -76,12 +76,6 @@ type Window struct {
 	queueRedrawArea  [4]int
 	scrollRegion     []int
 	devicePixelRatio float64
-
-	// NOTE:
-	// Only use minimap
-	// Plan to remove in the future
-	width  int
-	height int
 }
 
 // Screen is the main editor area
