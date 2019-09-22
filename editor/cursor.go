@@ -130,7 +130,12 @@ func (c *Cursor) updateCursorShape() {
 	if win == nil {
 		return
 	}
-	font := win.getFont()
+	var font *Font
+	if c.ws.palette.widget.IsVisible() {
+		font = c.ws.font
+	} else {
+		font = win.getFont()
+	}
 
 	height := font.height + 2
 	width := font.width
