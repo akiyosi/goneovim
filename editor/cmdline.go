@@ -60,7 +60,7 @@ func (c *Cmdline) getText(ch string) string {
 
 func sanitize(s string) string {
 	s = strings.Replace(s, " ", `&nbsp;`, -1)
-	s = strings.Replace(s, "\t", `&nbsp;&nbsp;`, -1)
+	s = strings.Replace(s, "\t", `&nbsp;`, -1)
 	s = strings.Replace(s, "<", `&lt;`, -1)
 	s = strings.Replace(s, ">", `&gt;`, -1)
 
@@ -78,7 +78,7 @@ func (c *Cmdline) show(args []interface{}) {
 
 		if len(a) < 2 {
 			// content += a[0].(string)
-			content += strings.Replace(a[0].(string), "\t", `  `, -1)
+			content += strings.Replace(a[0].(string), "\t", " ", -1)
 		} else {
 			color := c.ws.foreground
 			_, ok := c.ws.screen.highAttrDef[util.ReflectToInt(a[0])]
@@ -90,7 +90,7 @@ func (c *Cmdline) show(args []interface{}) {
 			// the contents of a qlabel with html text to the left.
 			if len(contentChunks) == 1 {
 				// content += a[1].(string)
-				content += strings.Replace(a[1].(string), "\t", `  `, -1)
+				content += strings.Replace(a[1].(string), "\t", " ", -1)
 			} else {
 				content += fmt.Sprintf(
 					"<font color='%s'>%s</font>",
