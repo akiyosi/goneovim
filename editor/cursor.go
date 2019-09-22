@@ -131,7 +131,7 @@ func (c *Cursor) updateCursorShape() {
 	case "horizontal":
 		height = int(float64(height) * p)
 		c.shift = int(float64(c.ws.font.lineHeight) * float64(1.0-p))
-		if cellPercentage < 99 {
+		if cellPercentage <= 99 {
 			c.isTextDraw = false
 		} else {
 			c.isTextDraw = true
@@ -220,6 +220,7 @@ func (c *Cursor) update() {
 
 func (c *Cursor) paint() {
 	if !c.isTextDraw {
+		c.widget.SetText("")
 		return
 	}
 
