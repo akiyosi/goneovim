@@ -194,6 +194,15 @@ func (c *Cursor) updateCursorShape() {
 }
 
 func (c *Cursor) update() {
+	if c.mode != c.ws.mode {
+		c.mode = c.ws.mode
+		if c.mode == "terminal-input" {
+			c.widget.Hide()
+			return
+		} else {
+			c.widget.Show()
+		}
+	}
 	c.updateCursorShape()
 	if c.ws.palette.widget.IsVisible() {
 		return
