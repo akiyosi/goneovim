@@ -239,7 +239,7 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Editor.ExtWildmenu = true
 		config.Editor.ExtPopupmenu = true
 		config.Editor.ExtTabline = true
-	} else if config.Editor.Ui == "trans" {
+	} else if config.Editor.Ui == "multigrid" {
 		// trans UI
 		config.Editor.ExtMultigrid = true
 		config.Editor.ExtCmdline = true
@@ -247,6 +247,11 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Editor.ExtPopupmenu = true
 		config.Editor.ExtTabline = true
 		config.Editor.DrawBorder = true
+	}
+
+	if !config.Editor.Ui == "multigrid" {
+		config.Editor.DrawBorder = false
+		config.Editor.IndentGuide = false
 	}
 
 	if config.Editor.DiffAddPattern < 1 || config.Editor.DiffAddPattern > 24 {
