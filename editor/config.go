@@ -249,7 +249,7 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Editor.DrawBorder = true
 	}
 
-	if !config.Editor.Ui == "multigrid" {
+	if config.Editor.Ui != "multigrid" {
 		config.Editor.DrawBorder = false
 		config.Editor.IndentGuide = false
 	}
