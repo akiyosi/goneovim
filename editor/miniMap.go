@@ -20,7 +20,6 @@ type miniMapSignal struct {
 	core.QObject
 	_ func() `signal:"stopSignal"`
 	_ func() `signal:"redrawSignal"`
-	_ func() `signal:"guiSignal"`
 }
 
 // MiniMap is
@@ -36,25 +35,23 @@ type MiniMap struct {
 	visible bool
 
 	font             *Font
+
 	content          [][]*Cell
+	cursor           [2]int
 	scrollRegion     []int
 	scrollDust       [2]int
 	scrollDustDeltaY int
 	queueRedrawArea  [4]int
 	paintMutex       sync.Mutex
 	redrawMutex      sync.Mutex
-	bg               *RGBA
-	curtab           nvim.Tabpage
-	cursor           [2]int
-	cmdheight        int
-	curWins          map[nvim.Window]*Window
+
 	highlight        Highlight
+
 	isSetColorscheme bool
 
 	sync          sync.Mutex
 	signal        *miniMapSignal
 	redrawUpdates chan [][]interface{}
-	guiUpdates    chan []interface{}
 	stopOnce      sync.Once
 	stop          chan struct{}
 
@@ -88,15 +85,10 @@ func newMiniMap() *MiniMap {
 		stop:          make(chan struct{}),
 		signal:        NewMiniMapSignal(nil),
 		redrawUpdates: make(chan [][]interface{}, 1000),
-		guiUpdates:    make(chan []interface{}, 1000),
 	}
 	m.signal.ConnectRedrawSignal(func() {
 		updates := <-m.redrawUpdates
 		m.handleRedraw(updates)
-	})
-	m.signal.ConnectGuiSignal(func() {
-		updates := <-m.guiUpdates
-		m.handleRPCGui(updates)
 	})
 	m.signal.ConnectStopSignal(func() {
 	})
@@ -126,10 +118,6 @@ func (m *MiniMap) startMinimapProc() {
 		fmt.Println(err)
 	}
 	m.nvim = neovim
-	m.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
-		m.guiUpdates <- updates
-		m.signal.GuiSignal()
-	})
 	m.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
 		m.redrawUpdates <- updates
 		m.signal.RedrawSignal()
@@ -273,79 +261,8 @@ func (m *MiniMap) paint(vqp *gui.QPaintEvent) {
 		m.drawText(p, y, col, cols, [2]int{0, 0})
 	}
 
-	// m.drawWindows(p, row, col, rows, cols)
 	p.DestroyQPainter()
 }
-
-// func (m *MiniMap) drawWindows(p *gui.QPainter, row, col, rows, cols int) {
-// 	done := make(chan struct{}, 1000)
-// 	go func() {
-// 		m.getWindows()
-// 		close(done)
-// 	}()
-// 	select {
-// 	case <-done:
-// 	case <-time.After(1 * time.Millisecond):
-// 	}
-// }
-//
-// func (m *MiniMap) getWindows() {
-// 	wins := map[nvim.Window]*Window{}
-// 	neovim := m.nvim
-// 	curtab, _ := neovim.CurrentTabpage()
-// 	m.curtab = curtab
-// 	nwins, _ := neovim.TabpageWindows(curtab)
-// 	b := neovim.NewBatch()
-// 	for _, nwin := range nwins {
-// 		win := &Window{
-// 			win: nwin,
-// 		}
-// 		b.WindowWidth(nwin, &win.width)
-// 		b.WindowHeight(nwin, &win.height)
-// 		b.WindowPosition(nwin, &win.pos)
-// 		b.WindowTabpage(nwin, &win.tab)
-// 		wins[nwin] = win
-// 	}
-// 	b.Option("cmdheight", &m.cmdheight)
-// 	err := b.Execute()
-// 	if err != nil {
-// 		return
-// 	}
-// 	m.curWins = wins
-// 	for _, win := range m.curWins {
-// 		buf, _ := neovim.WindowBuffer(win.win)
-// 		win.bufName, _ = neovim.BufferName(buf)
-//
-// 		if win.height+win.pos[0] < m.rows-m.cmdheight {
-// 			win.statusline = true
-// 		} else {
-// 			win.statusline = false
-// 		}
-// 		neovim.WindowOption(win.win, "winhl", &win.hl)
-// 		if win.hl != "" {
-// 			parts := strings.Split(win.hl, ",")
-// 			for _, part := range parts {
-// 				if strings.HasPrefix(part, "Normal:") {
-// 					hl := part[7:]
-// 					result := ""
-// 					neovim.Eval(fmt.Sprintf("synIDattr(hlID('%s'), 'bg')", hl), &result)
-// 					if result != "" {
-// 						var r, g, b int
-// 						format := "#%02x%02x%02x"
-// 						n, err := fmt.Sscanf(result, format, &r, &g, &b)
-// 						if err != nil {
-// 							continue
-// 						}
-// 						if n != 3 {
-// 							continue
-// 						}
-// 						win.bg = newRGBA(r, g, b, 1)
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
 
 func (m *MiniMap) updateRows() bool {
 	var ret bool
@@ -526,17 +443,6 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 		}
 	}
 	m.update()
-}
-
-func (m *MiniMap) handleRPCGui(updates []interface{}) {
-	event := updates[0].(string)
-	switch event {
-	// case "minimap_cursormoved":
-	// 	pos := updates[1].([]interface{})
-	// 	ln := util.ReflectToInt(pos[1])
-	// 	m.curLine = ln
-	default:
-	}
 }
 
 func (m *MiniMap) put(args []interface{}) {

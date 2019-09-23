@@ -80,34 +80,29 @@ type Window struct {
 
 // Screen is the main editor area
 type Screen struct {
-	bg               *RGBA
+	ws               *Workspace
+
+	widget           *widgets.QWidget
+	windows          map[gridId]*Window
+	glyphMap         map[HlChar]gui.QImage
 	width            int
 	height           int
-	widget           *widgets.QWidget
-	ws               *Workspace
-	windows          map[gridId]*Window
-	wins             map[nvim.Window]*Window
+
 	cursor           [2]int
-	lastCursor       [2]int
 	scrollRegion     []int
 	scrollDust       [2]int
 	scrollDustDeltaY int
-	cmdheight        int
+
 	highAttrDef      map[int]*Highlight
 	highlightGroup   map[string]int
-	highlight        Highlight
-	curtab           nvim.Tabpage
-	curWins          map[nvim.Window]*Window
-	content          [][]*Cell
+
+	tooltip          *widgets.QLabel
+
 	queueRedrawArea  [4]int
+	resizeCount      uint
+
 	paintMutex       sync.Mutex
 	redrawMutex      sync.Mutex
-	drawSplit        bool
-	resizeCount      uint
-	tooltip          *widgets.QLabel
-	glyphMap         map[HlChar]gui.QImage
-	isScrollOver     bool
-	scrollOverCount  int
 }
 
 func newScreen() *Screen {
@@ -122,7 +117,6 @@ func newScreen() *Screen {
 		widget:       widget,
 		windows:      make(map[gridId]*Window),
 		cursor:       [2]int{0, 0},
-		lastCursor:   [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
 		tooltip:      tooltip,
 		glyphMap:     make(map[HlChar]gui.QImage),
@@ -1120,29 +1114,24 @@ func (s *Screen) gridLine(args []interface{}) {
 			s.windows[gridid].show()
 		}
 	}
-
-	// // For legacy UI API
-	// if s.isScrollOver {
-	// 	s.gridScrollOver()
-	// }
 }
 
-func (s *Screen) gridScrollOver() {
-	for _, win := range s.windows {
-		if win.grid == 1 {
-			s.scrollOverCount++
-		}
-		if win.grid != 1 {
-			if win == nil {
-				continue
-			}
-			if !win.isShown() {
-				continue
-			}
-			win.move(win.pos[0], win.pos[1]-s.scrollOverCount)
-		}
-	}
-}
+// func (s *Screen) gridScrollOver() {
+// 	for _, win := range s.windows {
+// 		if win.grid == 1 {
+// 			s.scrollOverCount++
+// 		}
+// 		if win.grid != 1 {
+// 			if win == nil {
+// 				continue
+// 			}
+// 			if !win.isShown() {
+// 				continue
+// 			}
+// 			win.move(win.pos[0], win.pos[1]-s.scrollOverCount)
+// 		}
+// 	}
+// }
 
 func (s *Screen) updateGridContent(arg []interface{}) {
 	gridid := util.ReflectToInt(arg[0])
@@ -1378,7 +1367,7 @@ func (w *Window) scroll(count int) {
 			if len(content) <= row+count {
 				continue
 			}
-			
+
 			// copy(content[row], content[row+count])
 			for col := left; col <= right; col++ {
 				content[row][col] = content[row+count][col]
@@ -2146,57 +2135,57 @@ func (s *Screen) windowHide(args []interface{}) {
 	}
 }
 
-func (s *Screen) windowScrollOverStart() {
-	// main purposs is to scroll over the windows in the `grid_line` event
-	// when messages is shown
-	s.isScrollOver = true
-}
-
-func (s *Screen) windowScrollOverReset() {
-	s.isScrollOver = false
-	s.scrollOverCount = 0
-	for _, win := range s.windows {
-		if win == nil {
-			continue
-		}
-		if win.grid != 1 {
-			win.move(win.pos[0], win.pos[1])
-		}
-	}
-
-	// reset message contents in global grid
-	gwin := s.windows[1]
-	content := make([][]*Cell, gwin.rows)
-	lenLine := make([]int, gwin.rows)
-
-	for i := 0; i < gwin.rows; i++ {
-		content[i] = make([]*Cell, gwin.cols)
-	}
-
-	for i := 0; i < gwin.rows; i++ {
-		if i >= len(gwin.content) {
-			continue
-		}
-		lenLine[i] = gwin.cols
-		for j := 0; j < gwin.cols; j++ {
-			if j >= len(gwin.content[i]) {
-				continue
-			}
-			if gwin.content[i][j] == nil {
-				continue
-			}
-			if gwin.content[i][j].highlight.hlName == "StatusLine" ||
-				gwin.content[i][j].highlight.hlName == "StatusLineNC" ||
-				gwin.content[i][j].highlight.hlName == "VertSplit" {
-				content[i][j] = gwin.content[i][j]
-			}
-		}
-	}
-	s.windows[1].content = content
-	s.windows[1].lenLine = lenLine
-
-	gwin.queueRedrawAll()
-}
+// func (s *Screen) windowScrollOverStart() {
+// 	// main purposs is to scroll over the windows in the `grid_line` event
+// 	// when messages is shown
+// 	s.isScrollOver = true
+// }
+// 
+// func (s *Screen) windowScrollOverReset() {
+// 	s.isScrollOver = false
+// 	s.scrollOverCount = 0
+// 	for _, win := range s.windows {
+// 		if win == nil {
+// 			continue
+// 		}
+// 		if win.grid != 1 {
+// 			win.move(win.pos[0], win.pos[1])
+// 		}
+// 	}
+// 
+// 	// reset message contents in global grid
+// 	gwin := s.windows[1]
+// 	content := make([][]*Cell, gwin.rows)
+// 	lenLine := make([]int, gwin.rows)
+// 
+// 	for i := 0; i < gwin.rows; i++ {
+// 		content[i] = make([]*Cell, gwin.cols)
+// 	}
+// 
+// 	for i := 0; i < gwin.rows; i++ {
+// 		if i >= len(gwin.content) {
+// 			continue
+// 		}
+// 		lenLine[i] = gwin.cols
+// 		for j := 0; j < gwin.cols; j++ {
+// 			if j >= len(gwin.content[i]) {
+// 				continue
+// 			}
+// 			if gwin.content[i][j] == nil {
+// 				continue
+// 			}
+// 			if gwin.content[i][j].highlight.hlName == "StatusLine" ||
+// 				gwin.content[i][j].highlight.hlName == "StatusLineNC" ||
+// 				gwin.content[i][j].highlight.hlName == "VertSplit" {
+// 				content[i][j] = gwin.content[i][j]
+// 			}
+// 		}
+// 	}
+// 	s.windows[1].content = content
+// 	s.windows[1].lenLine = lenLine
+// 
+// 	gwin.queueRedrawAll()
+// }
 
 func (s *Screen) msgSetPos(args []interface{}) {
 	for _, arg := range args {
