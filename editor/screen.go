@@ -100,9 +100,6 @@ type Screen struct {
 
 	queueRedrawArea  [4]int
 	resizeCount      uint
-
-	paintMutex       sync.Mutex
-	redrawMutex      sync.Mutex
 }
 
 func newScreen() *Screen {
