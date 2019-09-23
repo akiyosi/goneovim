@@ -343,21 +343,14 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	w.paintMutex.Lock()
 
 	rect := event.Rect()
-	top := rect.Y()
-	left := rect.X()
-	width := rect.Width()
-	height := rect.Height()
-	right := left + width
-	bottom := top + height
 
 	font := w.s.ws.font
-	row := int(float64(top) / float64(font.lineHeight))
-	col := int(float64(left) / font.truewidth)
-	rows := int(math.Ceil(float64(bottom)/float64(font.lineHeight))) - row
-	cols := int(math.Ceil(float64(right)/font.truewidth)) - col
+	row := int(float64(rect.Top()) / float64(font.lineHeight))
+	col := int(float64(rect.Left()) / font.truewidth)
+	rows := int(math.Ceil(float64(rect.Height())/float64(font.lineHeight)))
+	cols := int(math.Ceil(float64(rect.Width())/font.truewidth))
 
 	p := gui.NewQPainter2(w.widget)
-
 	if !editor.config.Editor.CachedDrawing {
 		p.SetFont(font.fontNew)
 	}
