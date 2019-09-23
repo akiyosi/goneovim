@@ -539,11 +539,7 @@ func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
 			1,
 			float64(w.s.ws.font.lineHeight),
 		),
-		gui.NewQColor3(
-			editor.colors.indentGuide.R,
-			editor.colors.indentGuide.G,
-			editor.colors.indentGuide.B,
-			255),
+		editor.colors.indentGuide.QColor(),
 	)
 }
 
@@ -582,11 +578,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	y := w.pos[1] * int(w.s.ws.font.lineHeight)
 	width := int(float64(w.cols) * w.s.ws.font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(w.s.ws.font.lineHeight))
-	color := gui.NewQColor3(
-		editor.colors.windowSeparator.R,
-		editor.colors.windowSeparator.G,
-		editor.colors.windowSeparator.B,
-		255)
+	color := editor.colors.windowSeparator.QColor()
 
 	// Vertical
 	if y+w.s.ws.font.lineHeight+1 < w.s.widget.Height() {
@@ -1867,7 +1859,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		if text != "" {
 			fg := highlight.fg()
 			if fg != nil {
-				p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
+				p.SetPen2(fg.QColor())
 			}
 			font.SetBold(highlight.bold)
 			font.SetItalic(highlight.italic)
@@ -1881,7 +1873,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 		fg := line[x].highlight.fg()
-		p.SetPen2(gui.NewQColor3(fg.R, fg.G, fg.B, int(fg.A*255)))
+		p.SetPen2(fg.QColor())
 		pointF.SetX(float64(x) * wsfont.truewidth)
 		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift))
 		font.SetBold(line[x].highlight.bold)
@@ -1934,11 +1926,7 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 	glyph.Fill3(core.Qt__transparent)
 
 	p = gui.NewQPainter2(glyph)
-	p.SetPen2(gui.NewQColor3(
-		fg.R,
-		fg.G,
-		fg.B,
-		255))
+	p.SetPen2(fg.QColor())
 
 	p.SetFont(w.s.ws.font.fontNew)
 	if cell.highlight.bold {
@@ -2001,11 +1989,11 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		pen := gui.NewQPen()
 		sp := line[x].highlight.special
 		if sp != nil {
-			color := gui.NewQColor3(sp.R, sp.G, sp.B, 255)
+			color := sp.QColor()
 			pen.SetColor(color)
 		} else {
 			fg := editor.colors.fg
-			color := gui.NewQColor3(fg.R, fg.G, fg.B, 255)
+			color := fg.QColor()
 			pen.SetColor(color)
 		}
 		p.SetPen(pen)
