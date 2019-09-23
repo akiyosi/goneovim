@@ -562,7 +562,6 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 			e.unfocusGonvimUI()
 		}
 		e.workspaces[e.active].nvim.Input(input)
-		e.workspaces[e.active].detectTerminalMode()
 	}
 }
 

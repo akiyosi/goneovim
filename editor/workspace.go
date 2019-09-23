@@ -1281,34 +1281,6 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	// w.cursor.updateShape()
 }
 
-func (w *Workspace) detectTerminalMode() {
-	// Note: I'm waiting for the merge of neovim/neovim#8550
-	if !strings.HasPrefix(w.filepath, `term://`) {
-		return
-	}
-	m := new(sync.Mutex)
-
-	go func() {
-		m.Lock()
-		mode, _ := w.nvim.Mode()
-		switch mode.Mode {
-		case "t":
-			w.mode = "terminal-input"
-		case "n":
-			w.mode = "normal"
-		case "c":
-			w.mode = "cmdline_normal"
-		case "i":
-			w.mode = "insert"
-		case "v":
-			w.mode = "visual"
-		case "R":
-			w.mode = "replace"
-		}
-		m.Unlock()
-	}()
-}
-
 // InputMethodEvent is
 func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 	if event.CommitString() != "" {
