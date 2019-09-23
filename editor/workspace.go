@@ -132,6 +132,7 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	w.screen = newScreen()
 	w.screen.ws = w
+	w.screen.initInputMethodWidget()
 	w.palette = initPalette()
 	w.palette.ws = w
 	w.fpalette = initPalette()

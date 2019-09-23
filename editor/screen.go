@@ -110,15 +110,11 @@ func newScreen() *Screen {
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
-	tooltip := widgets.NewQLabel(widget, 0)
-	tooltip.SetVisible(false)
-
 	screen := &Screen{
 		widget:       widget,
 		windows:      make(map[gridId]*Window),
 		cursor:       [2]int{0, 0},
 		scrollRegion: []int{0, 0, 0, 0},
-		tooltip:      tooltip,
 		glyphMap:     make(map[HlChar]gui.QImage),
 	}
 
@@ -130,6 +126,12 @@ func newScreen() *Screen {
 	})
 
 	return screen
+}
+
+func (s *Screen) initInputMethodWidget() {
+	tooltip := widgets.NewQLabel(s.widget, 0)
+	tooltip.SetVisible(false)
+	s.tooltip = tooltip
 }
 
 func (s *Screen) dragEnterEvent(e *gui.QDragEnterEvent) {
@@ -307,8 +309,8 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		col := s.cursor[1]
 		x = int(float64(col) * ws.font.truewidth)
 		y = row * ws.font.lineHeight
-		candX = int(float64(col) * ws.font.truewidth)
-		candY = row*ws.font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
+		candX = int(float64(col + s.windows[s.ws.cursor.gridid].pos[0]) * ws.font.truewidth)
+		candY = (row + s.windows[s.ws.cursor.gridid].pos[1])*ws.font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
 	}
 	return x, y, candX, candY
 }
