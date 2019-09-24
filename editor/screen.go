@@ -1588,46 +1588,17 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	        idDrawDefaultBg = true
 	}
 
-	var start, end int
+	var start, end, width int
 	var lastBg *RGBA
 	var lastCell *Cell
 
 	for x := col; x < col+cols; x++ {
-		if x >= len(line) {
-			continue
-		}
-		if line[x] == nil {
-			continue
-		}
-		bg = line[x].highlight.bg()
-
-		// if !bg.equals(w.s.ws.background) || idDrawDefaultBg {
-		// 	// Set diff pattern
-		// 	pattern, color, transparent := getFillpatternAndTransparent(&line[x].highlight)
-
-		// 	// Fill background with pattern
-		// 	rectF := core.NewQRectF4(
-		// 		float64(x)*font.truewidth,
-		// 		float64((y)*font.lineHeight),
-		// 		font.truewidth,
-		// 		float64(font.lineHeight),
-		// 	)
-		// 	p.FillRect(
-		// 		rectF,
-		// 		gui.NewQBrush3(
-		// 			gui.NewQColor3(
-		// 				color.R,
-		// 				color.G,
-		// 				color.B,
-		// 				transparent,
-		// 			),
-		// 			pattern,
-		// 		),
-		// 	)
-		// }
 
 		fillCellRect := func() {
-			width := end - start + 1
+			if lastCell == nil {
+				return
+			}
+			width = end - start + 1
 			if width < 0 {
 				width = 0
 			}
@@ -1657,8 +1628,45 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 						pattern,
 					),
 				)
+				width = 0
 			}
 		}
+
+		if x >= len(line) {
+			continue
+		}
+		if line[x] == nil {
+			if x+1 == col+cols {
+				fillCellRect()
+			}
+			continue
+		}
+		bg = line[x].highlight.bg()
+
+		// if !bg.equals(w.s.ws.background) || idDrawDefaultBg {
+		// 	// Set diff pattern
+		// 	pattern, color, transparent := getFillpatternAndTransparent(&line[x].highlight)
+
+		// 	// Fill background with pattern
+		// 	rectF := core.NewQRectF4(
+		// 		float64(x)*font.truewidth,
+		// 		float64((y)*font.lineHeight),
+		// 		font.truewidth,
+		// 		float64(font.lineHeight),
+		// 	)
+		// 	p.FillRect(
+		// 		rectF,
+		// 		gui.NewQBrush3(
+		// 			gui.NewQColor3(
+		// 				color.R,
+		// 				color.G,
+		// 				color.B,
+		// 				transparent,
+		// 			),
+		// 			pattern,
+		// 		),
+		// 	)
+		// }
 
 		if lastBg == nil {
 			start = x
@@ -1669,22 +1677,14 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		if lastBg != nil {
 			if lastBg.equals(bg) {
 				end = x
-
-				if x+1 < col+cols {
-					continue
-				}
 			}
-			if !lastBg.equals(bg) || x+1 == col+cols {
+			if !lastBg.equals(bg) {
 				fillCellRect()
 
 				start = x
 				end = x
 				lastBg = bg
 				lastCell = line[x]
-
-				if x+1 == col+cols {
-					fillCellRect()
-				}
 			}
 		}
 	}
