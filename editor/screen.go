@@ -1640,6 +1640,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		} else {
 			highlight = &line[x].highlight
 		}
+
 		bg = highlight.bg()
 
 		if lastBg == nil {
