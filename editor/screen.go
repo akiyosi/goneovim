@@ -1678,13 +1678,17 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			if lastBg.equals(bg) {
 				end = x
 			}
-			if !lastBg.equals(bg) {
+			if !lastBg.equals(bg) || x+1 == col+cols {
 				fillCellRect()
 
 				start = x
 				end = x
 				lastBg = bg
 				lastCell = line[x]
+
+				if x+1 == col+cols {
+					fillCellRect()
+				}
 			}
 		}
 	}
