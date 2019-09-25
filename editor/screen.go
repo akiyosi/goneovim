@@ -1590,12 +1590,12 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 
 	var start, end, width int
 	var lastBg *RGBA
-	var lastCell *Cell
+	var lastHighlight, highlight *Highlight
 
 	for x := col; x < col+cols; x++ {
 
 		fillCellRect := func() {
-			if lastCell == nil {
+			if lastHighlight == nil {
 				return
 			}
 			width = end - start + 1
@@ -1607,7 +1607,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			}
 			if width > 0 {
 				// Set diff pattern
-				pattern, color, transparent := getFillpatternAndTransparent(&lastCell.highlight)
+				pattern, color, transparent := getFillpatternAndTransparent(lastHighlight)
 
 				// Fill background with pattern
 				rectF := core.NewQRectF4(
@@ -1636,43 +1636,17 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 		if line[x] == nil {
-			if x+1 == col+cols {
-				fillCellRect()
-			}
-			continue
+			highlight = w.s.highAttrDef[0]
+		} else {
+			highlight = &line[x].highlight
 		}
-		bg = line[x].highlight.bg()
-
-		// if !bg.equals(w.s.ws.background) || idDrawDefaultBg {
-		// 	// Set diff pattern
-		// 	pattern, color, transparent := getFillpatternAndTransparent(&line[x].highlight)
-
-		// 	// Fill background with pattern
-		// 	rectF := core.NewQRectF4(
-		// 		float64(x)*font.truewidth,
-		// 		float64((y)*font.lineHeight),
-		// 		font.truewidth,
-		// 		float64(font.lineHeight),
-		// 	)
-		// 	p.FillRect(
-		// 		rectF,
-		// 		gui.NewQBrush3(
-		// 			gui.NewQColor3(
-		// 				color.R,
-		// 				color.G,
-		// 				color.B,
-		// 				transparent,
-		// 			),
-		// 			pattern,
-		// 		),
-		// 	)
-		// }
+		bg = highlight.bg()
 
 		if lastBg == nil {
 			start = x
 			end = x
 			lastBg = bg
-			lastCell = line[x]
+			lastHighlight = highlight
 		}
 		if lastBg != nil {
 			if lastBg.equals(bg) {
@@ -1684,7 +1658,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 				start = x
 				end = x
 				lastBg = bg
-				lastCell = line[x]
+				lastHighlight = highlight
 
 				if x+1 == col+cols {
 					fillCellRect()
