@@ -108,11 +108,12 @@ func newScreen() *Screen {
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
 	screen := &Screen{
-		widget:       widget,
-		windows:      make(map[gridId]*Window),
-		cursor:       [2]int{0, 0},
-		scrollRegion: []int{0, 0, 0, 0},
-		glyphMap:     make(map[HlChar]gui.QImage),
+		widget:            widget,
+		windows:           make(map[gridId]*Window),
+		cursor:            [2]int{0, 0},
+		scrollRegion:      []int{0, 0, 0, 0},
+		glyphMap:          make(map[HlChar]gui.QImage),
+		highlightGroup:    make(map[string]int),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -919,12 +920,11 @@ func (s *Screen) setHighAttrDef(args []interface{}) {
 }
 
 func (s *Screen) setHighlightGroup(args []interface{}) {
-	h := make(map[string]int)
 	for _, arg := range args {
 		a := arg.([]interface{})
 		hlName := a[0].(string)
 		hlIndex := util.ReflectToInt(a[1])
-		h[hlName] = hlIndex
+		s.highlightGroup[hlName] = hlIndex
 	}
 }
 

@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/akiyosi/gonvim/util"
+	shortpath "github.com/akiyosi/short_path"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -24,6 +26,10 @@ type Tabline struct {
 	marginTop       int
 	marginBottom    int
 	height          int
+
+	font            *gui.QFont
+	fontfamily      string
+	fontsize        int
 }
 
 // Tab in the tabline
@@ -66,91 +72,65 @@ func (t *Tabline) setColor() {
 }
 
 func initTabline() *Tabline {
-	width := 210
 	widget := widgets.NewQWidget(nil, 0)
-	layout := widgets.NewQLayout2()
-	layout.SetSpacing(0)
-	layout.SetContentsMargins(0, 0, 0, 0)
-	items := []*widgets.QLayoutItem{}
-	layout.ConnectSizeHint(func() *core.QSize {
-		size := core.NewQSize()
-		for _, item := range items {
-			size = size.ExpandedTo(item.MinimumSize())
-		}
-		return size
-	})
-	layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
-		items = append(items, item)
-	})
-	layout.ConnectSetGeometry(func(r *core.QRect) {
-		for i := 0; i < len(items); i++ {
-			items[i].SetGeometry(core.NewQRect4(width*i, 0, width, r.Height()))
-		}
-	})
-	layout.ConnectItemAt(func(index int) *widgets.QLayoutItem {
-		if index < len(items) {
-			return items[index]
-		}
-		return nil
-	})
-	layout.ConnectTakeAt(func(index int) *widgets.QLayoutItem {
-		if index < len(items) {
-			return items[index]
-		}
-		return nil
-	})
-	widget.SetContentsMargins(0, 0, 0, 0)
+	widget.SetContentsMargins(5, 5, 5, 5)
+
+	layout := util.NewVFlowLayout(16, 10, 1, 0, 0)
+	// layout := widgets.NewQLayout2()
+	// layout.SetSpacing(0)
+	// layout.SetContentsMargins(0, 0, 0, 0)
+
+	// // width := 210
+	// items := []*widgets.QLayoutItem{}
+	// layout.ConnectSizeHint(func() *core.QSize {
+	// 	size := core.NewQSize()
+	// 	for _, item := range items {
+	// 		size = size.ExpandedTo(item.MinimumSize())
+	// 	}
+	// 	return size
+	// })
+	// layout.ConnectAddItem(func(item *widgets.QLayoutItem) {
+	// 	fmt.Println("connect add widget")
+	// 	items = append(items, item)
+	// })
+	// layout.ConnectSetGeometry(func(r *core.QRect) {
+	// 	fmt.Println("connect set geometry")
+	// 	for i := 0; i < len(items); i++ {
+	// 		items[i].SetGeometry(core.NewQRect4(width*i, 0, width, r.Height()))
+	// 	}
+	// })
+	// layout.ConnectItemAt(func(index int) *widgets.QLayoutItem {
+	// 	fmt.Println("connect Item at")
+	// 	if index < len(items) {
+	// 		return items[index]
+	// 	}
+	// 	return nil
+	// })
+	// layout.ConnectTakeAt(func(index int) *widgets.QLayoutItem {
+	// 	fmt.Println("connect Take at")
+	// 	if index < len(items) {
+	// 		return items[index]
+	// 	}
+	// 	return nil
+	// })
+
 	widget.SetLayout(layout)
 
 	marginDefault := 10
-	marginTop := editor.extFontSize / 3    // No effect now
-	marginBottom := editor.extFontSize / 3 // No effect now
+	marginTop := int(float64(editor.extFontSize) / 2.2) // No effect now
+	marginBot := int(float64(editor.extFontSize) / 1.8) // No effect now
 	tabline := &Tabline{
 		widget:        widget,
 		layout:        layout,
 		marginDefault: marginDefault,
 		marginTop:     marginTop,
-		marginBottom:  marginBottom,
+		marginBottom:  marginBot,
 	}
 
 	tabs := []*Tab{}
 	for i := 0; i < 10; i++ {
-		w := widgets.NewQWidget(nil, 0)
-		w.SetContentsMargins(10, 0, 10, 0)
-		l := widgets.NewQHBoxLayout()
-		l.SetContentsMargins(8, 2, 0, 2) // tab margins
-		l.SetSpacing(10)
-		// fileIcon := svg.NewQSvgWidget(nil)
-		// fileIcon.SetFixedWidth(12)
-		// fileIcon.SetFixedHeight(12)
-		file := widgets.NewQLabel(nil, 0)
-		file.SetContentsMargins(0, marginTop, 0, marginBottom)
-		closeIcon := svg.NewQSvgWidget(nil)
-		closeIcon.SetFixedWidth(editor.iconSize)
-		closeIcon.SetFixedHeight(editor.iconSize)
-		// l.AddWidget(fileIcon, 0, 0)
-		l.AddWidget(file, 1, 0)
-		l.AddWidget(closeIcon, 0, 0)
-		w.SetLayout(l)
-		tab := &Tab{
-			t:      tabline,
-			widget: w,
-			layout: l,
-			file:   file,
-			// fileIcon:  fileIcon,
-			closeIcon: closeIcon,
-		}
-		tab.closeIcon.Hide()
-
-		tab.widget.ConnectEnterEvent(tab.enterEvent)
-		tab.widget.ConnectLeaveEvent(tab.leaveEvent)
-		tab.widget.ConnectMousePressEvent(tab.pressEvent)
-
-		closeIcon.ConnectMousePressEvent(tab.closeIconPressEvent)
-		closeIcon.ConnectMouseReleaseEvent(tab.closeIconReleaseEvent)
-		closeIcon.ConnectEnterEvent(tab.closeIconEnterEvent)
-		closeIcon.ConnectLeaveEvent(tab.closeIconLeaveEvent)
-
+		tab := newTab()
+		tab.t = tabline
 		tabs = append(tabs, tab)
 	}
 	go func() {
@@ -166,28 +146,67 @@ func initTabline() *Tabline {
 	return tabline
 }
 
+func newTab() *Tab {
+	w := widgets.NewQWidget(nil, 0)
+	w.SetContentsMargins(5, 0, 10, 0)
+	l := widgets.NewQHBoxLayout()
+	l.SetContentsMargins(0, 0, 0, 0) // tab margins
+	l.SetSpacing(0)
+	// fileIcon := svg.NewQSvgWidget(nil)
+	// fileIcon.SetFixedWidth(12)
+	// fileIcon.SetFixedHeight(12)
+	file := widgets.NewQLabel(nil, 0)
+	closeIcon := svg.NewQSvgWidget(nil)
+	closeIcon.SetFixedWidth(editor.iconSize)
+	closeIcon.SetFixedHeight(editor.iconSize)
+	// l.AddWidget(fileIcon, 0, 0)
+	l.AddWidget(file, 1, 0)
+	l.AddWidget(closeIcon, 0, 0)
+	w.SetLayout(l)
+	tab := &Tab{
+		widget: w,
+		layout: l,
+		file:   file,
+		// fileIcon:  fileIcon,
+		closeIcon: closeIcon,
+	}
+	tab.closeIcon.Hide()
+
+	tab.widget.ConnectEnterEvent(tab.enterEvent)
+	tab.widget.ConnectLeaveEvent(tab.leaveEvent)
+	tab.widget.ConnectMousePressEvent(tab.pressEvent)
+
+	closeIcon.ConnectMousePressEvent(tab.closeIconPressEvent)
+	closeIcon.ConnectMouseReleaseEvent(tab.closeIconReleaseEvent)
+	closeIcon.ConnectEnterEvent(tab.closeIconEnterEvent)
+	closeIcon.ConnectLeaveEvent(tab.closeIconLeaveEvent)
+
+	return tab
+}
+
 func (t *Tab) updateActive() {
 	if editor.colors.fg == nil || editor.colors.bg == nil {
 		return
 	}
-	bg := editor.colors.bg
-	fg := editor.colors.fg.String()
+	fg := editor.colors.fg
 	inactiveFg := editor.colors.inactiveFg
+	accent := t.t.ws.screen.highAttrDef[t.t.ws.screen.highlightGroup["TabLineFill"]].foreground.Hex()
+
 	if t.active {
 		activeStyle := fmt.Sprintf(`
 		.QWidget { 
-			border-left: 2px solid %s; 
-			background-color: rgba(%d, %d, %d, %d); 
-		} QWidget{ color: %s; } `, editor.config.SideBar.AccentColor, bg.R, bg.G, bg.B, 0, fg)
+			border-bottom: 2.0px solid %s; 
+			background-color: rgba(0, 0, 0, 0); 
+		} QWidget{ color: %s; } `, accent, warpColor(fg, -30))
 		t.widget.SetStyleSheet(activeStyle)
 		svgContent := editor.getSvg("cross", nil)
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else {
 		inActiveStyle := fmt.Sprintf(`
 		.QWidget { 
-			border-left: 0px solid %s; 
-			background-color: rgba(%d, %d, %d, %d); 
-		} QWidget{ color: %s; } `, editor.config.SideBar.AccentColor, bg.R, bg.G, bg.B, 0, inactiveFg)
+			border: 0px solid %s; 
+			background-color: rgba(0, 0, 0, 0); 
+		} QWidget{ color: %s; } `, accent, warpColor(inactiveFg, -30))
 		t.widget.SetStyleSheet(inActiveStyle)
 		svgContent := editor.getSvg("cross", inactiveFg)
 		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -195,14 +214,18 @@ func (t *Tab) updateActive() {
 }
 
 func (t *Tabline) updateFont() {
-	size := 13
-	if editor.config.Editor.FontSize != 0 {
-		size = editor.config.Editor.FontSize
+	size := editor.extFontSize - 1
+	if size <= 0 {
+		size = editor.extFontSize
 	}
-	font := gui.NewQFont2(editor.extFontFamily, size, 1, false)
-	t.widget.SetFont(font)
+	if t.fontfamily == editor.extFontFamily && t.fontsize == size {
+		return
+	}
+	t.font = gui.NewQFont2(editor.extFontFamily, size, 1, false)
+
+	// t.widget.SetFont(t.font)
 	for _, tab := range t.Tabs {
-		tab.widget.SetFont(font)
+		tab.file.SetFont(t.font)
 	}
 }
 
@@ -231,8 +254,23 @@ func (t *Tab) setActive(active bool) {
 }
 
 func (t *Tab) updateFileText() {
-	text := t.t.ws.font.defaultFontMetrics.ElidedText(t.fileText, core.Qt__ElideLeft, float64(t.file.Width()), 0)
-	t.file.SetText(text)
+	path, _ := shortpath.PrettyMinimum(t.fileText)
+	t.file.SetText(path)
+	t.updateSize()
+}
+
+func (t *Tab) updateSize() {
+	if t.t.font == nil {
+		return
+	}
+
+	fontmetrics := gui.NewQFontMetricsF(t.t.font)
+	width := int(fontmetrics.HorizontalAdvance(
+		t.file.Text(),
+		-1,
+	))
+	height := int(fontmetrics.Height()) + t.t.marginTop + t.t.marginBottom
+	t.widget.SetFixedSize2(width+editor.iconSize+5+10+5, height)
 }
 
 func (t *Tab) updateFileIcon() {
@@ -247,6 +285,12 @@ func (t *Tabline) updateMargin() {
 			tab.hide()
 			tab.show()
 		}
+	}
+}
+
+func (t *Tabline) updateSize() {
+	for _, tab := range t.Tabs {
+		tab.updateSize()
 	}
 }
 

@@ -1126,7 +1126,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
-		//w.guiLinespace(updates[1:])
 		w.guiLinespace(updates[1])
 	case "finder_pattern":
 		w.finder.showPattern(updates[1:])
@@ -1244,7 +1243,7 @@ func (w *Workspace) guiFont(args string) {
 	w.message.updateFont(w.font)
 	w.cursor.updateFont(w.font)
 	w.screen.toolTipFont(w.font)
-	
+
 	// Change external font if font setting of setting.yml is nothing
 	if editor.config.Editor.FontFamily == "" {
 		editor.extFontFamily = parts[0]
