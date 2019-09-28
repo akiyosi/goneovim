@@ -44,7 +44,7 @@ type Statusline struct {
 	fileFormat *StatuslineFileFormat
 	lint       *StatuslineLint
 
-	updates    chan []interface{}
+	updates chan []interface{}
 }
 
 // LeftStatusItem is left side statusline component
@@ -61,8 +61,8 @@ type StatuslineComponent struct {
 	icon      *svg.QSvgWidget
 	iconStr   string
 	label     *widgets.QLabel
-	fg *RGBA
-	bg *RGBA
+	fg        *RGBA
+	bg        *RGBA
 }
 
 // StatuslineNotify is
@@ -74,7 +74,7 @@ type StatuslineNotify struct {
 
 // StatuslineLint is
 type StatuslineLint struct {
-	s        *Statusline
+	s *Statusline
 	c *StatuslineComponent
 
 	errors   int

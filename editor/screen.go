@@ -39,11 +39,11 @@ type Highlight struct {
 }
 
 type HlChar struct {
-	char          string
-	fg            *RGBA
-	bg            *RGBA
-	italic        bool
-	bold          bool
+	char   string
+	fg     *RGBA
+	bg     *RGBA
+	italic bool
+	bold   bool
 }
 
 // Cell is
@@ -80,26 +80,26 @@ type Window struct {
 
 // Screen is the main editor area
 type Screen struct {
-	ws               *Workspace
+	ws *Workspace
 
-	widget           *widgets.QWidget
-	windows          map[gridId]*Window
-	glyphMap         map[HlChar]gui.QImage
-	width            int
-	height           int
+	widget   *widgets.QWidget
+	windows  map[gridId]*Window
+	glyphMap map[HlChar]gui.QImage
+	width    int
+	height   int
 
 	cursor           [2]int
 	scrollRegion     []int
 	scrollDust       [2]int
 	scrollDustDeltaY int
 
-	highAttrDef      map[int]*Highlight
-	highlightGroup   map[string]int
+	highAttrDef    map[int]*Highlight
+	highlightGroup map[string]int
 
-	tooltip          *widgets.QLabel
+	tooltip *widgets.QLabel
 
-	queueRedrawArea  [4]int
-	resizeCount      uint
+	queueRedrawArea [4]int
+	resizeCount     uint
 }
 
 func newScreen() *Screen {
@@ -108,12 +108,12 @@ func newScreen() *Screen {
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
 	screen := &Screen{
-		widget:            widget,
-		windows:           make(map[gridId]*Window),
-		cursor:            [2]int{0, 0},
-		scrollRegion:      []int{0, 0, 0, 0},
-		glyphMap:          make(map[HlChar]gui.QImage),
-		highlightGroup:    make(map[string]int),
+		widget:         widget,
+		windows:        make(map[gridId]*Window),
+		cursor:         [2]int{0, 0},
+		scrollRegion:   []int{0, 0, 0, 0},
+		glyphMap:       make(map[HlChar]gui.QImage),
+		highlightGroup: make(map[string]int),
 	}
 
 	widget.ConnectMousePressEvent(screen.mouseEvent)
@@ -307,8 +307,8 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		col := s.cursor[1]
 		x = int(float64(col) * ws.font.truewidth)
 		y = row * ws.font.lineHeight
-		candX = int(float64(col + s.windows[s.ws.cursor.gridid].pos[0]) * ws.font.truewidth)
-		candY = (row + s.windows[s.ws.cursor.gridid].pos[1])*ws.font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
+		candX = int(float64(col+s.windows[s.ws.cursor.gridid].pos[0]) * ws.font.truewidth)
+		candY = (row+s.windows[s.ws.cursor.gridid].pos[1])*ws.font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
 	}
 	return x, y, candX, candY
 }
@@ -347,8 +347,8 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	font := w.s.ws.font
 	row := int(float64(rect.Top()) / float64(font.lineHeight))
 	col := int(float64(rect.Left()) / font.truewidth)
-	rows := int(math.Ceil(float64(rect.Height())/float64(font.lineHeight)))
-	cols := int(math.Ceil(float64(rect.Width())/font.truewidth))
+	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
+	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
 
 	p := gui.NewQPainter2(w.widget)
 	if !editor.config.Editor.CachedDrawing {
@@ -1585,7 +1585,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	// draw default background color if window is float window or msg grid
 	idDrawDefaultBg := false
 	if w.isFloatWin || w.isMsgGrid {
-	        idDrawDefaultBg = true
+		idDrawDefaultBg = true
 	}
 
 	var start, end, width int
@@ -1696,12 +1696,11 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		}
 
 		glyph, ok := w.s.glyphMap[HlChar{
-			char: cell.char,
-			fg: cell.highlight.fg(),
-			bg: cell.highlight.bg(),
+			char:   cell.char,
+			fg:     cell.highlight.fg(),
+			bg:     cell.highlight.bg(),
 			italic: cell.highlight.italic,
-			bold: cell.highlight.bold,
-
+			bold:   cell.highlight.bold,
 		}]
 		if !ok {
 			glyph = w.newGlyph(p, cell)
@@ -1722,11 +1721,11 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 		glyph, ok := w.s.glyphMap[HlChar{
-			char: cell.char,
-			fg: cell.highlight.fg(),
-			bg: cell.highlight.bg(),
+			char:   cell.char,
+			fg:     cell.highlight.fg(),
+			bg:     cell.highlight.bg(),
 			italic: cell.highlight.italic,
-			bold: cell.highlight.bold,
+			bold:   cell.highlight.bold,
 		}]
 		if !ok {
 			glyph = w.newGlyph(p, cell)
@@ -1925,11 +1924,11 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 	)
 
 	w.s.glyphMap[HlChar{
-		char: cell.char,
-		fg: fg,
-		bg: cell.highlight.bg(),
+		char:   cell.char,
+		fg:     fg,
+		bg:     cell.highlight.bg(),
 		italic: cell.highlight.italic,
-		bold: cell.highlight.bold,
+		bold:   cell.highlight.bold,
 	}] = *glyph
 
 	return *glyph
@@ -2098,7 +2097,7 @@ func (s *Screen) windowHide(args []interface{}) {
 // 	// when messages is shown
 // 	s.isScrollOver = true
 // }
-// 
+//
 // func (s *Screen) windowScrollOverReset() {
 // 	s.isScrollOver = false
 // 	s.scrollOverCount = 0
@@ -2110,16 +2109,16 @@ func (s *Screen) windowHide(args []interface{}) {
 // 			win.move(win.pos[0], win.pos[1])
 // 		}
 // 	}
-// 
+//
 // 	// reset message contents in global grid
 // 	gwin := s.windows[1]
 // 	content := make([][]*Cell, gwin.rows)
 // 	lenLine := make([]int, gwin.rows)
-// 
+//
 // 	for i := 0; i < gwin.rows; i++ {
 // 		content[i] = make([]*Cell, gwin.cols)
 // 	}
-// 
+//
 // 	for i := 0; i < gwin.rows; i++ {
 // 		if i >= len(gwin.content) {
 // 			continue
@@ -2141,7 +2140,7 @@ func (s *Screen) windowHide(args []interface{}) {
 // 	}
 // 	s.windows[1].content = content
 // 	s.windows[1].lenLine = lenLine
-// 
+//
 // 	gwin.queueRedrawAll()
 // }
 

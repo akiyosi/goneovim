@@ -107,7 +107,7 @@ type Editor struct {
 	isSetGuiColor bool
 	colors        *ColorPalette
 	svgs          map[string]*SvgXML
-	
+
 	extFontFamily string
 	extFontSize   int
 }

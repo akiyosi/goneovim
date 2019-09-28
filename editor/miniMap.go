@@ -34,7 +34,7 @@ type MiniMap struct {
 
 	visible bool
 
-	font             *Font
+	font *Font
 
 	content          [][]*Cell
 	cursor           [2]int
@@ -45,7 +45,7 @@ type MiniMap struct {
 	paintMutex       sync.Mutex
 	redrawMutex      sync.Mutex
 
-	highlight        Highlight
+	highlight Highlight
 
 	isSetColorscheme bool
 

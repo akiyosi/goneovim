@@ -86,7 +86,7 @@ func (c *Cmdline) show(args []interface{}) {
 				color = c.ws.screen.highAttrDef[util.ReflectToInt(a[0])].foreground
 			}
 
-			// I don't know how to set sticking out direction of 
+			// I don't know how to set sticking out direction of
 			// the contents of a qlabel with html text to the left.
 			if len(contentChunks) == 1 {
 				// content += a[1].(string)
@@ -298,8 +298,6 @@ func (c *Cmdline) wildmenuScroll(n int) {
 func (c *Cmdline) wildmenuHide() {
 	c.wildmenuShown = false
 }
-
-
 
 func (c *Cmdline) cmdWildmenuShow(args []interface{}) {
 	c.wildmenuShown = true

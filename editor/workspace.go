@@ -721,16 +721,16 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 					}
 
 					switch name {
-						// case "wildmenu_show" :
-						// 	o["ext_wildmenu"] = editor.config.Editor.ExtCmdline
-						case "cmdline_show" :
-							o["ext_cmdline"] = editor.config.Editor.ExtCmdline
-						case "msg_show":
-							o["ext_messages"] = editor.config.Editor.ExtMessage
-						case "popupmenu_show" :
-							o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
-						case "tabline_update" :
-							o["ext_tabline"] = editor.config.Editor.ExtTabline
+					// case "wildmenu_show" :
+					// 	o["ext_wildmenu"] = editor.config.Editor.ExtCmdline
+					case "cmdline_show":
+						o["ext_cmdline"] = editor.config.Editor.ExtCmdline
+					case "msg_show":
+						o["ext_messages"] = editor.config.Editor.ExtMessage
+					case "popupmenu_show":
+						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
+					case "tabline_update":
+						o["ext_tabline"] = editor.config.Editor.ExtTabline
 					}
 				}
 			}
@@ -945,10 +945,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "msg_ruler":
 		case "msg_history_show":
 			w.message.msgHistoryShow(args)
-
-
-
-
 
 		default:
 		}

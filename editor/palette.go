@@ -249,7 +249,7 @@ func (p *Palette) setPattern(text string) {
 
 func (p *Palette) cursorMove(x int) {
 	X := p.textLength()
-	boundary := p.pattern.Width() - (p.padding*2)
+	boundary := p.pattern.Width() - (p.padding * 2)
 	if X >= boundary {
 		X = boundary
 	}

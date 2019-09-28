@@ -27,9 +27,9 @@ type Tabline struct {
 	marginBottom    int
 	height          int
 
-	font            *gui.QFont
-	fontfamily      string
-	fontsize        int
+	font       *gui.QFont
+	fontfamily string
+	fontsize   int
 }
 
 // Tab in the tabline
