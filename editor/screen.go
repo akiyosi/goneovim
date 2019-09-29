@@ -1790,17 +1790,10 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if cell == nil || cell.char == " " {
 			continue
 		}
-<<<<<<< HEAD
-		glyph, ok := w.s.glyphMap[HlChar{
-			char:   cell.char,
-			fg:     cell.highlight.fg(),
-			bg:     cell.highlight.bg(),
-=======
 		glyph, ok := glyphMap[HlChar{
 			char: cell.char,
 			fg: cell.highlight.fg(),
 			bg: cell.highlight.bg(),
->>>>>>> WIP: add feature that allows font setting for each window
 			italic: cell.highlight.italic,
 			bold:   cell.highlight.bold,
 		}]
@@ -2001,15 +1994,6 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 		gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
 
-<<<<<<< HEAD
-	w.s.glyphMap[HlChar{
-		char:   cell.char,
-		fg:     fg,
-		bg:     cell.highlight.bg(),
-		italic: cell.highlight.italic,
-		bold:   cell.highlight.bold,
-	}] = *glyph
-=======
 	if w.font != nil {
 		w.glyphMap[HlChar{
 			char: cell.char,
@@ -2028,7 +2012,6 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 			bold: cell.highlight.bold,
 		}] = *glyph
 	}
->>>>>>> WIP: add feature that allows font setting for each window
 
 	return *glyph
 }
