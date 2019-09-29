@@ -944,14 +944,14 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	// 	highlight.kind = kind.(string)
 	// }
 
-	uiName, ok := info["ui_name"]
-	if ok {
-		highlight.uiName = uiName.(string)
-	}
-
 	id, ok := info["id"]
 	if ok {
 		highlight.id = util.ReflectToInt(id)
+	}
+
+	uiName, ok := info["ui_name"]
+	if ok {
+		highlight.uiName = uiName.(string)
 	}
 
 	hlName, ok := info["hi_name"]

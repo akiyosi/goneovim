@@ -23,6 +23,8 @@ import (
 type Statusline struct {
 	ws     *Workspace
 	widget *widgets.QWidget
+
+	hl     *Highlight
 	bg     *RGBA
 
 	borderTopWidth int
@@ -490,8 +492,18 @@ func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 }
 
 func (s *Statusline) setColor() {
-	fg := s.ws.background
-	bg := s.ws.foreground
+	// fg := s.ws.background
+	// bg := s.ws.foreground
+	if s.ws.screen.highlightGroup == nil || s.ws.screen.highAttrDef == nil {
+		return
+	}
+	hl, ok := s.ws.screen.highAttrDef[s.ws.screen.highlightGroup["StatusLine"]]
+	if !ok {
+		return
+	}
+	s.hl = hl
+	fg := s.hl.fg()
+	bg := s.hl.bg()
 	s.widget.SetStyleSheet(fmt.Sprintf(
 		"QWidget#statusline { background-color: %s; } * { color: %s; }",
 		bg.String(),
@@ -660,7 +672,11 @@ func (s *StatuslineMode) redraw() {
 	if s.s.ws.mode == s.mode && isSkipUpdateColor {
 		return
 	}
-	s.c.fg = s.s.ws.background
+	// s.c.fg = s.s.ws.background
+	if s.s.hl == nil {
+		return
+	}
+	s.c.fg = s.s.hl.fg()
 	s.mode = s.s.ws.mode
 	text := s.mode
 	bg := newRGBA(0, 0, 0, 0.0)
@@ -971,8 +987,13 @@ func (s *StatuslineLint) redraw(errors, warnings int) {
 		return
 	}
 
-	s.c.fg = s.s.ws.background
-	s.c.bg = s.s.ws.foreground
+	// s.c.fg = s.s.ws.background
+	// s.c.bg = s.s.ws.foreground
+	if s.s.hl == nil {
+		return
+	}
+	s.c.fg = s.s.hl.fg()
+	s.c.bg = s.s.hl.bg()
 
 	if editor.config.Statusline.ModeIndicatorType == "background" {
 		s.c.fg = newRGBA(255, 255, 255, 1)
