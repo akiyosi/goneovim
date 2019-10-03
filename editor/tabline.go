@@ -156,6 +156,7 @@ func newTab() *Tab {
 	// fileIcon.SetFixedWidth(12)
 	// fileIcon.SetFixedHeight(12)
 	file := widgets.NewQLabel(nil, 0)
+	file.SetStyleSheet(" .QLabel { padding: 2px; background-color: rgba(0, 0, 0, 0); }")
 	closeIcon := svg.NewQSvgWidget(nil)
 	closeIcon.SetFixedWidth(editor.iconSize)
 	closeIcon.SetFixedHeight(editor.iconSize)
