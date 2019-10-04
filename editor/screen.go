@@ -662,6 +662,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 
 	// Vertical
 	if y+font.lineHeight+1 < w.s.widget.Height() {
+
 		p.FillRect5(
 			int(float64(x+width)+font.truewidth/2),
 			y-int(font.lineHeight/2),
@@ -1400,11 +1401,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			hi = util.ReflectToInt(cell[1])
 		}
 
-		// if drawborder is true, and row is statusline's row
-		if s.isSkipDrawStatusline(hi) {
-			return
-		}
-
 		if len(cell) == 3 {
 			repeat = util.ReflectToInt(cell[2])
 		}
@@ -1540,6 +1536,22 @@ func (c *Cell) isSignColumn() bool {
 		return false
 
 	}
+}
+
+func (c *Cell) isStatuslineOrVertSplit() bool {
+	// If ext_statusline is implemented in Neovim, the implementation may be revised
+	if !editor.config.Editor.DrawBorder {
+		return false
+	}
+	if &c.highlight == nil {
+		return false
+	}
+	if c.highlight.hlName == "StatusLine" ||
+		c.highlight.hlName == "StatusLineNC" ||
+		c.highlight.hlName == "VertSplit" {
+		return true
+	}
+	return false
 }
 
 func (s *Screen) isSkipDrawStatusline(hi int) bool {
@@ -1880,7 +1892,10 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		if x >= len(line) {
 			continue
 		}
+
 		if line[x] == nil {
+			highlight = w.s.highAttrDef[0]
+		} else if line[x].isStatuslineOrVertSplit() {
 			highlight = w.s.highAttrDef[0]
 		} else {
 			highlight = &line[x].highlight
@@ -1939,6 +1954,11 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 		if cell.char == " " {
+			continue
+		}
+
+		// if drawborder is true, and row is statusline's row
+		if cell.isStatuslineOrVertSplit() {
 			continue
 		}
 
