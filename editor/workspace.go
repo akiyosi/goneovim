@@ -132,6 +132,7 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	w.screen = newScreen()
 	w.screen.ws = w
+	w.screen.font = w.font
 	w.screen.initInputMethodWidget()
 	w.palette = initPalette()
 	w.palette.ws = w
@@ -1007,9 +1008,9 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 		w.special.B = calcColor(sp).B
 	}
 
-	w.minimap.foreground = w.foreground
-	w.minimap.background = w.background
-	w.minimap.special = w.special
+	// w.minimap.foreground = w.foreground
+	// w.minimap.background = w.background
+	// w.minimap.special = w.special
 
 	var isChangeFg, isChangeBg bool
 	if editor.colors.fg != nil {
@@ -1045,7 +1046,6 @@ func (w *Workspace) updateWorkspaceColor() {
 	w.tabline.setColor()
 	w.statusline.setColor()
 	w.scrollBar.setColor()
-	w.minimap.setColor()
 	w.loc.setColor()
 	w.message.setColor()
 	w.screen.setColor()

@@ -96,7 +96,9 @@ type localWindow struct {
 // Screen is the main editor area
 type Screen struct {
 	ws *Workspace
+	font *Font
 
+	name string
 	widget   *widgets.QWidget
 	windows  map[gridId]*Window
 	glyphMap map[HlChar]gui.QImage
@@ -228,7 +230,7 @@ func (s *Screen) howToOpen(file string) {
 func (s *Screen) updateRows() bool {
 	var ret bool
 	ws := s.ws
-	rows := s.height / ws.font.lineHeight
+	rows := s.height / s.font.lineHeight
 
 	if rows != ws.rows {
 		ret = true
@@ -241,7 +243,7 @@ func (s *Screen) updateCols() bool {
 	var ret bool
 	ws := s.ws
 	s.width = s.widget.Width()
-	cols := int(float64(s.width) / ws.font.truewidth)
+	cols := int(float64(s.width) / s.font.truewidth)
 
 	if cols != ws.cols {
 		ret = true
@@ -268,8 +270,8 @@ func (s *Screen) waitTime() time.Duration {
 func (s *Screen) updateSize() {
 	ws := s.ws
 	s.width = s.widget.Width()
-	currentCols := int(float64(s.width) / ws.font.truewidth)
-	currentRows := s.height / ws.font.lineHeight
+	currentCols := int(float64(s.width) / s.font.truewidth)
+	currentRows := s.height / s.font.lineHeight
 
 	isNeedTryResize := (currentCols != ws.cols || currentRows != ws.rows)
 	if !isNeedTryResize {
@@ -374,13 +376,13 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		y = ws.palette.patternPadding + ws.palette.padding
 		candY = y + ws.palette.widget.Pos().Y()
 	} else {
-		s.toolTipFont(ws.font)
+		s.toolTipFont(s.font)
 		row := s.cursor[0]
 		col := s.cursor[1]
-		x = int(float64(col) * ws.font.truewidth)
-		y = row * ws.font.lineHeight
-		candX = int(float64(col+s.windows[s.ws.cursor.gridid].pos[0]) * ws.font.truewidth)
-		candY = (row+s.windows[s.ws.cursor.gridid].pos[1])*ws.font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
+		x = int(float64(col) * s.font.truewidth)
+		y = row * s.font.lineHeight
+		candX = int(float64(col+s.windows[s.ws.cursor.gridid].pos[0]) * s.font.truewidth)
+		candY = (row+s.windows[s.ws.cursor.gridid].pos[1])*s.font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
 	}
 	return x, y, candX, candY
 }
@@ -406,8 +408,8 @@ func (s *Screen) toolTip(text string) {
 	row := s.cursor[0]
 	col := s.cursor[1]
 	c := s.ws.cursor
-	c.x = int(float64(col)*s.ws.font.truewidth) + s.tooltip.Width()
-	c.y = row * s.ws.font.lineHeight
+	c.x = int(float64(col)*s.font.truewidth) + s.tooltip.Width()
+	c.y = row * s.font.lineHeight
 	c.move()
 }
 
@@ -423,7 +425,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
 
 	p := gui.NewQPainter2(w.widget)
-	if !editor.config.Editor.CachedDrawing {
+	if w.s.name == "minimap" || !editor.config.Editor.CachedDrawing {
 		p.SetFont(font.fontNew)
 	}
 
@@ -475,7 +477,7 @@ func (w *Window) getGlyphMap() map[HlChar]gui.QImage {
 
 func (w *Window) getFont() *Font {
 	if w.font == nil {
-		return w.s.ws.font
+		return w.s.font
 	} else {
 		return w.font
 	}
@@ -665,8 +667,8 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	font := w.getFont()
 
 	// window position is based on cols, rows of global font setting
-	x := int(float64(w.pos[0]) * w.s.ws.font.truewidth)
-	y := w.pos[1] * int(w.s.ws.font.lineHeight)
+	x := int(float64(w.pos[0]) * w.s.font.truewidth)
+	y := w.pos[1] * int(w.s.font.lineHeight)
 	width := int(float64(w.cols) * font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(font.lineHeight))
 	color := editor.colors.windowSeparator.QColor()
@@ -729,7 +731,7 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	var v, h, vert, horiz int
 	var horizKey string
 	var accel int
-	font := s.ws.font
+	font := s.font
 
 	switch runtime.GOOS {
 	case "darwin":
@@ -824,7 +826,7 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 }
 
 func (s *Screen) convertMouse(event *gui.QMouseEvent) string {
-	font := s.ws.font
+	font := s.font
 	x := int(float64(event.X()) / font.truewidth)
 	y := int(float64(event.Y()) / float64(font.lineHeight))
 	pos := []int{x, y}
@@ -891,6 +893,9 @@ func (s *Screen) gridResize(args []interface{}) {
 }
 
 func (s *Screen) assignMdGridid(gridid gridId) {
+	if s.name == "minimap" {
+		return
+	}
 	if !s.ws.markdown.gridIdTrap || gridid == 1 {
 		return
 	}
@@ -952,7 +957,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win = s.windows[gridid]
 
 		// first cursor pos at startup app
-		if gridid == 1 {
+		if gridid == 1 && s.name != "minimap" {
 			s.ws.cursor.widget.SetParent(win.widget)
 		}
 	}
@@ -1055,11 +1060,11 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			// left window is gridfont window
 			// calcurate win window posision aa w window coordinate
 			var resizeflag bool
-			winPosX := float64(win.pos[0]) * win.s.ws.font.truewidth
-			rightWindowPos1 := float64(w.cols) * w.getFont().truewidth +   float64(w.pos[0] + 1 - deltaCols + 1) * win.s.ws.font.truewidth
-			rightWindowPos2 := float64(w.cols-1) * w.getFont().truewidth + float64(w.pos[0] + 1 - deltaCols + 1) * win.s.ws.font.truewidth
-			rightWindowPos := int(float64(w.cols) * w.getFont().truewidth / win.s.ws.font.truewidth) + w.pos[0] + 1 - deltaCols + 1
-			if win.s.ws.font.truewidth < w.getFont().truewidth {
+			winPosX := float64(win.pos[0]) * win.s.font.truewidth
+			rightWindowPos1 := float64(w.cols) * w.getFont().truewidth +   float64(w.pos[0] + 1 - deltaCols + 1) * win.s.font.truewidth
+			rightWindowPos2 := float64(w.cols-1) * w.getFont().truewidth + float64(w.pos[0] + 1 - deltaCols + 1) * win.s.font.truewidth
+			rightWindowPos := int(float64(w.cols) * w.getFont().truewidth / win.s.font.truewidth) + w.pos[0] + 1 - deltaCols + 1
+			if win.s.font.truewidth < w.getFont().truewidth {
 				resizeflag = winPosX <= rightWindowPos1 && winPosX >= rightWindowPos2
 			} else {
 				resizeflag = win.pos[0] == rightWindowPos
@@ -1104,11 +1109,11 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			// top window is gridfont window
 			// calcurate win window posision aa w window coordinate
 			var resizeflag bool
-			winPosY := win.pos[1] * win.s.ws.font.height
-			bottomWindowPos1 :=   w.rows * w.getFont().height + (w.pos[1] + 1 - deltaRows + 1) * win.s.ws.font.height
-			bottomWindowPos2 := (w.rows-1) * w.getFont().height + (w.pos[1] + 1 - deltaRows + 1) * win.s.ws.font.height
-			bottomWindowPos := int(w.rows * w.getFont().height / win.s.ws.font.height) + w.pos[1] + 1 - deltaRows + 1
-			if win.s.ws.font.height < w.getFont().height {
+			winPosY := win.pos[1] * win.s.font.height
+			bottomWindowPos1 :=   w.rows * w.getFont().height + (w.pos[1] + 1 - deltaRows + 1) * win.s.font.height
+			bottomWindowPos2 := (w.rows-1) * w.getFont().height + (w.pos[1] + 1 - deltaRows + 1) * win.s.font.height
+			bottomWindowPos := int(w.rows * w.getFont().height / win.s.font.height) + w.pos[1] + 1 - deltaRows + 1
+			if win.s.font.height < w.getFont().height {
 				resizeflag = winPosY <= bottomWindowPos1 && winPosY >= bottomWindowPos2
 			} else {
 				resizeflag = win.pos[1] == bottomWindowPos
@@ -1396,7 +1401,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	buffLenLine := colStart
 	lenLine := 0
 
-	isMulitigridAndGlobalGrid := gridid == 1 && editor.config.Editor.ExtMultigrid
+	isMulitigridAndGlobalGrid := gridid == 1 && editor.config.Editor.ExtMultigrid && s.name != "minimap"
 
 	countLenLine := false
 	for _, arg := range cells {
@@ -2225,10 +2230,12 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 }
 
 func (w *Window) drawContents(p *gui.QPainter, y int, col int, cols int) {
-	if editor.config.Editor.CachedDrawing {
-		w.drawChars(p, y, col, cols)
-	} else {
+	if w.s.name == "minimap" {
+		w.drawMinimap(p, y, col, cols)
+	} else if !editor.config.Editor.CachedDrawing {
 		w.drawText(p, y, col, cols)
+	} else {
+		w.drawChars(p, y, col, cols)
 	}
 }
 
@@ -2563,7 +2570,7 @@ func (w *Window) move(col int, row int) {
 	res := 0
 	// window position is based on cols, rows of global font setting
 	// font := w.getFont()
-	font := w.s.ws.font
+	font := w.s.font
 	if w.isMsgGrid {
 		res = w.s.widget.Height() - w.rows*font.lineHeight
 	}
