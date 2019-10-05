@@ -282,6 +282,17 @@ func (s *Screen) updateSize() {
 	if !ws.uiAttached {
 		return
 	}
+
+	for _, win := range s.windows {
+		if win == nil {
+			continue
+		}
+		if win.font != nil {
+			win.width = 0
+			win.height = 0
+		}
+	}
+
 	s.uiTryResize(currentCols, currentRows)
 }
 
@@ -331,8 +342,8 @@ func (s *Screen) gridFont(update interface{}) {
 		}
 	}
 
-	oldHeight := win.rows * win.getFont().height
 	oldWidth := float64(win.cols) * win.getFont().truewidth
+	oldHeight := win.rows * win.getFont().height
 	win.width = oldWidth
 	win.height = oldHeight
 	win.localWindows = &[4]localWindow{}
@@ -1021,7 +1032,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			continue
 		}
 
-		if isResizeWidth {
+		if isResizeWidth && w.width > 0 {
 
 			// right window is gridfont window
 			if w.localWindows[2].grid == win.grid || (w.pos[1] == win.pos[1] && w.pos[0] == leftWindowPos) {
@@ -1071,7 +1082,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			}
 
 		}
-		if isResizeHeight {
+		if isResizeHeight && w.height > 0 {
 			// bottom window is gridfont window
 			if w.localWindows[1].grid == win.grid || (w.pos[0] == win.pos[0] && w.pos[1] == topWindowPos) {
 				if w.localWindows[1].grid == 0 {
