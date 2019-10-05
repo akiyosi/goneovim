@@ -102,7 +102,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		background:    newRGBA(9, 13, 17, 1),
 		special:       newRGBA(255, 255, 255, 1),
 	}
-	w.font = initFontNew(editor.extFontFamily, editor.extFontSize, editor.config.Editor.Linespace)
+	w.font = initFontNew(editor.extFontFamily, editor.extFontSize, editor.config.Editor.Linespace, true)
 	go func() {
 		width, height, truewidth, ascent, italicWidth := fontSizeNew(w.font.fontNew)
 		w.font.width = width
@@ -456,6 +456,7 @@ func (w *Workspace) initGonvim() {
 	command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
 	command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
 	command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
+	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
 	`
 	}
 
@@ -1148,6 +1149,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.statusline.pos.redraw(ln, col)
 		w.curLine = ln
 		w.curColm = col
+	case "gonvim_grid_font":
+		w.screen.gridFont(updates[1])
 	case "gonvim_minimap_update":
 		if w.minimap.visible {
 			w.minimap.bufUpdate()

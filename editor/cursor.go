@@ -83,7 +83,12 @@ func (c *Cursor) setBlink(wait, on, off int) {
 }
 
 func (c *Cursor) move() {
-	c.widget.Move2(c.x, c.y+int(float64(c.ws.font.lineSpace)/2))
+	win := c.ws.screen.windows[c.gridid]
+	if win == nil {
+		return
+	}
+	font := win.getFont()
+	c.widget.Move2(c.x, c.y+int(float64(font.lineSpace)/2))
 
 	if !c.ws.loc.shown {
 		return
@@ -96,11 +101,9 @@ func (c *Cursor) move() {
 	} else {
 		y -= height * 3 / 2
 	}
-	win := c.ws.screen.windows[c.ws.cursor.gridid]
-	if win != nil {
-		x += int(float64(win.pos[0]) * c.ws.font.truewidth)
-		y += win.pos[1] * c.ws.font.lineHeight
-	}
+
+	x += int(float64(win.pos[0]) * font.truewidth)
+	y += win.pos[1] * font.lineHeight
 	c.ws.loc.widget.Move2(x, y)
 }
 
@@ -123,15 +126,26 @@ func (c *Cursor) updateCursorShape() {
 		cellPercentage = util.ReflectToInt(cellPercentageITF)
 	}
 
-	height := c.ws.font.height + 2
-	width := c.ws.font.width
+	win := c.ws.screen.windows[c.gridid]
+	if win == nil {
+		return
+	}
+	var font *Font
+	if c.ws.palette.widget.IsVisible() {
+		font = c.ws.font
+	} else {
+		font = win.getFont()
+	}
+
+	height := font.height + 2
+	width := font.width
 	p := float64(cellPercentage) / float64(100)
 
 	switch cursorShape {
 	case "horizontal":
 		height = int(float64(height) * p)
-		c.shift = int(float64(c.ws.font.lineHeight) * float64(1.0-p))
-		if cellPercentage <= 99 {
+		c.shift = int(float64(font.lineHeight) * float64(1.0-p))
+		if cellPercentage < 99 {
 			c.isTextDraw = false
 		} else {
 			c.isTextDraw = true
@@ -207,10 +221,16 @@ func (c *Cursor) update() {
 	if c.ws.palette.widget.IsVisible() {
 		return
 	}
+	win := c.ws.screen.windows[c.gridid]
+	if win == nil {
+		return
+	}
+	font := win.getFont()
+
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
-	x := int(float64(col) * c.ws.font.truewidth)
-	y := row*c.ws.font.lineHeight + c.shift
+	x := int(float64(col) * font.truewidth)
+	y := row*font.lineHeight + c.shift
 	c.x = x
 	c.y = y
 	c.move()
