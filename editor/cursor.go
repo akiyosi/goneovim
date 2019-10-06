@@ -88,7 +88,12 @@ func (c *Cursor) move() {
 		return
 	}
 	font := win.getFont()
-	c.widget.Move2(c.x, c.y+int(float64(font.lineSpace)/2))
+
+	if editor.config.Editor.CachedDrawing {
+		c.widget.Move2(c.x, c.y)
+	} else {
+		c.widget.Move2(c.x, c.y+int(float64(font.lineSpace)/2))
+	}
 
 	if !c.ws.loc.shown {
 		return
