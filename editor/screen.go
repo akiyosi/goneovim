@@ -345,7 +345,7 @@ func (s *Screen) gridFont(update interface{}) {
 	}
 
 	oldWidth := float64(win.cols) * win.getFont().truewidth
-	oldHeight := win.rows * win.getFont().height
+	oldHeight := win.rows * win.getFont().lineHeight
 	win.width = oldWidth
 	win.height = oldHeight
 	win.localWindows = &[4]localWindow{}
@@ -356,7 +356,7 @@ func (s *Screen) gridFont(update interface{}) {
 	// Calculate new cols, rows of current grid
 
 	newCols := int(float64(oldWidth) / win.font.truewidth)
-	newRows := oldHeight / win.font.height
+	newRows := oldHeight / win.font.lineHeight
 
 	win.glyphMap = make(map[HlChar]gui.QImage)
 	_ = s.ws.nvim.TryResizeUIGrid(s.ws.cursor.gridid, newCols, newRows)
@@ -1095,13 +1095,13 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 				}
 				if !w.localWindows[1].isResized {
 					w.localWindows[1].isResized = true
-					w.localWindows[1].localHeight = w.height + oldRows * win.getFont().height
+					w.localWindows[1].localHeight = w.height + oldRows * win.getFont().lineHeight
 				}
-				newHeight := w.localWindows[1].localHeight - (win.rows * win.getFont().height)
-				newRows := int(newHeight / w.font.height)
+				newHeight := w.localWindows[1].localHeight - (win.rows * win.getFont().lineHeight)
+				newRows := int(newHeight / w.font.lineHeight)
 				if newRows != w.rows {
 					_ = s.ws.nvim.TryResizeUIGrid(w.grid, w.cols, newRows)
-					w.height = newRows * w.getFont().height
+					w.height = newRows * w.getFont().lineHeight
 					w.localWindows[3].isResized = false
 				}
 			}
@@ -1109,11 +1109,11 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			// top window is gridfont window
 			// calcurate win window posision aa w window coordinate
 			var resizeflag bool
-			winPosY := win.pos[1] * win.s.font.height
-			bottomWindowPos1 :=   w.rows * w.getFont().height + (w.pos[1] + 1 - deltaRows + 1) * win.s.font.height
-			bottomWindowPos2 := (w.rows-1) * w.getFont().height + (w.pos[1] + 1 - deltaRows + 1) * win.s.font.height
-			bottomWindowPos := int(w.rows * w.getFont().height / win.s.font.height) + w.pos[1] + 1 - deltaRows + 1
-			if win.s.font.height < w.getFont().height {
+			winPosY := win.pos[1] * win.s.font.lineHeight
+			bottomWindowPos1 :=   w.rows * w.getFont().lineHeight + (w.pos[1] + 1 - deltaRows + 1) * win.s.font.lineHeight
+			bottomWindowPos2 := (w.rows-1) * w.getFont().lineHeight + (w.pos[1] + 1 - deltaRows + 1) * win.s.font.lineHeight
+			bottomWindowPos := int(w.rows * w.getFont().lineHeight / win.s.font.lineHeight) + w.pos[1] + 1 - deltaRows + 1
+			if win.s.font.lineHeight < w.getFont().lineHeight {
 				resizeflag = winPosY <= bottomWindowPos1 && winPosY >= bottomWindowPos2
 			} else {
 				resizeflag = win.pos[1] == bottomWindowPos
@@ -1124,13 +1124,13 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 				}
 				if !w.localWindows[3].isResized {
 					w.localWindows[3].isResized = true
-					w.localWindows[3].localHeight = w.height + oldRows * win.getFont().height
+					w.localWindows[3].localHeight = w.height + oldRows * win.getFont().lineHeight
 				}
-				newHeight := w.localWindows[3].localHeight - (win.rows * win.getFont().height)
-				newRows := int(newHeight / w.font.height)
+				newHeight := w.localWindows[3].localHeight - (win.rows * win.getFont().lineHeight)
+				newRows := int(newHeight / w.font.lineHeight)
 				if newRows != w.rows {
 					_ = s.ws.nvim.TryResizeUIGrid(w.grid, w.cols, newRows)
-					w.height = newRows * w.getFont().height
+					w.height = newRows * w.getFont().lineHeight
 					w.localWindows[1].isResized = false
 				}
 			}
