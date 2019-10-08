@@ -679,13 +679,15 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		p.FillRect5(
 			int(float64(x+width)+font.truewidth/2),
 			y-int(font.lineHeight/2),
-			1,
+			2,
 			winHeight,
 			color,
 		)
 	}
 
-	if w.widget.MapToGlobal(w.widget.Pos()).Y() == w.s.bottomWindowPos() {
+	bottomBorderPos := w.pos[1]*w.s.font.lineHeight + w.widget.Rect().Bottom()
+	isSkipDrawBottomBorder := bottomBorderPos > w.s.bottomWindowPos() - w.s.font.lineHeight && bottomBorderPos < w.s.bottomWindowPos() + w.s.font.lineHeight
+	if isSkipDrawBottomBorder {
 		return
 	}
 
@@ -697,7 +699,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		int(float64(x)-font.truewidth/2),
 		y2,
 		int((float64(w.cols)+0.92)*font.truewidth),
-		1,
+		2,
 		color,
 	)
 }
@@ -714,7 +716,7 @@ func (s *Screen) bottomWindowPos() int {
 		if win.isMsgGrid {
 			continue
 		}
-		position := win.widget.MapToGlobal(win.widget.Pos()).Y()
+		position := win.pos[1] * win.s.font.lineHeight + win.widget.Rect().Bottom()
 		if pos < position {
 			pos = position
 		}
