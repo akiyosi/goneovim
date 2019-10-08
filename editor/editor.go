@@ -141,7 +141,7 @@ func InitEditor() {
 	}
 
 	editor = &Editor{
-		version: "v0.3.5",
+		version: "v0.4.0",
 		signal:  NewEditorSignal(nil),
 		notify:  make(chan *Notify, 10),
 		stop:    make(chan struct{}),
