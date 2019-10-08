@@ -56,7 +56,7 @@ type PopupItem struct {
 	hidden    bool
 }
 
-func initPopupmenuNew(font *Font) *PopupMenu {
+func initPopupmenuNew() *PopupMenu {
 	layout := widgets.NewQGridLayout2()
 	layout.SetSpacing(0)
 	layout.SetContentsMargins(0, editor.iconSize/5, 0, 0)
@@ -91,12 +91,10 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 
 		menu := widgets.NewQLabel(nil, 0)
 		menu.SetContentsMargins(1, margin, margin, margin)
-		menu.SetFont(font.fontNew)
 		menu.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 		detail := widgets.NewQLabel(nil, 0)
 		detail.SetContentsMargins(margin, margin, margin, margin)
-		detail.SetFont(font.fontNew)
 		detail.SetObjectName("detailpopup")
 		detail.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 

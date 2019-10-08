@@ -150,7 +150,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.markdown.webview.SetParent(w.screen.widget)
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
-	w.popup = initPopupmenuNew(w.font)
+	w.popup = initPopupmenuNew()
 	w.popup.widget.SetParent(editor.wsWidget)
 	w.popup.ws = w
 	w.finder = initFinder()
