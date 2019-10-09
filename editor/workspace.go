@@ -1211,6 +1211,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.markdown.scrollDown()
 	case GonvimMarkdownScrollUpEvent:
 		w.markdown.scrollUp()
+	case GonvimMarkdownScrollTopEvent:
+		w.markdown.scrollTop()
+	case GonvimMarkdownScrollBottomEvent:
+		w.markdown.scrollBottom()
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}

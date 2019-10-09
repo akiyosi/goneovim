@@ -65,6 +65,7 @@ type Window struct {
 
 	grid       gridId
 	id         nvim.Window
+	bufName    string
 	pos        [2]int
 	anchor     int
 	cols       int
@@ -889,29 +890,29 @@ func (s *Screen) gridResize(args []interface{}) {
 			continue
 		}
 
-		s.assignMdGridid(gridid)
+		// s.assignMdGridid(gridid)
 		s.resizeWindow(gridid, cols, rows)
 	}
 }
 
-func (s *Screen) assignMdGridid(gridid gridId) {
-	if s.name == "minimap" {
-		return
-	}
-	if !s.ws.markdown.gridIdTrap || gridid == 1 {
-		return
-	}
-	maxid := 0
-	for id, _ := range s.windows {
-		if maxid < id {
-			maxid = id
-		}
-	}
-	if maxid < gridid {
-		s.ws.markdown.mdGridId = gridid
-		s.ws.markdown.gridIdTrap = false
-	}
-}
+// func (s *Screen) assignMdGridid(gridid gridId) {
+// 	if s.name == "minimap" {
+// 		return
+// 	}
+// 	if !s.ws.markdown.gridIdTrap || gridid == 1 {
+// 		return
+// 	}
+// 	maxid := 0
+// 	for id, _ := range s.windows {
+// 		if maxid < id {
+// 			maxid = id
+// 		}
+// 	}
+// 	if maxid < gridid {
+// 		s.ws.markdown.mdGridId = gridid
+// 		s.ws.markdown.gridIdTrap = false
+// 	}
+// }
 
 func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win := s.windows[gridid]
@@ -2315,7 +2316,7 @@ func (w *Window) isNormalWidth(char string) bool {
 func (s *Screen) windowPosition(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		id := util.ReflectToInt(arg.([]interface{})[1])
+		id := arg.([]interface{})[1].(nvim.Window)
 		row := util.ReflectToInt(arg.([]interface{})[2])
 		col := util.ReflectToInt(arg.([]interface{})[3])
 
@@ -2328,7 +2329,7 @@ func (s *Screen) windowPosition(args []interface{}) {
 			continue
 		}
 
-		win.id = *(*nvim.Window)(unsafe.Pointer(&id))
+		win.id = id
 		win.pos[0] = col
 		win.pos[1] = row
 		win.move(col, row)
@@ -2336,6 +2337,21 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.show()
 	}
 
+	go s.setBufferNames()
+}
+
+func (s *Screen) setBufferNames() {
+	for _, win := range s.ws.screen.windows {
+		if win == nil {
+			continue
+		}
+		if win.isMsgGrid {
+			continue
+		}
+		buf, _ := s.ws.nvim.WindowBuffer(win.id)
+		bufName, _ := s.ws.nvim.BufferName(buf)
+		win.bufName = bufName
+	}
 }
 
 func (s *Screen) gridDestroy(args []interface{}) {

@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"math"
+	"path/filepath"
 	"runtime"
 
 	"github.com/shurcooL/github_flavored_markdown"
@@ -21,6 +22,8 @@ const (
 	GonvimMarkdownUpdateEvent     = "gonvim_markdown_update"
 	GonvimMarkdownScrollDownEvent = "gonvim_markdown_scroll_down"
 	GonvimMarkdownScrollUpEvent   = "gonvim_markdown_scroll_up"
+	GonvimMarkdownScrollTopEvent = "gonvim_markdown_scroll_top"
+	GonvimMarkdownScrollBottomEvent   = "gonvim_markdown_scroll_bottom"
 )
 
 // Markdown is the markdown preview window
@@ -32,8 +35,6 @@ type Markdown struct {
 	container       *widgets.QPlainTextEdit
 	hidden          bool
 	htmlSet         bool
-	gridIdTrap      bool
-	mdGridId        gridId
 }
 
 func newMarkdown(workspace *Workspace) *Markdown {
@@ -116,19 +117,23 @@ func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
 }
 
 func (m *Markdown) updatePos() {
-	for gridid, win := range m.ws.screen.windows {
+	for _, win := range m.ws.screen.windows {
 		if win == nil {
 			continue
 		}
-		if gridid == m.mdGridId {
+		if win.isMsgGrid || win.isFloatWin {
+			continue
+		}
+		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
 			m.webview.Resize2(
 				int(float64(win.cols)*m.ws.font.truewidth),
 				win.rows*m.ws.font.lineHeight,
 			)
-			m.webview.Move2(
-				int(float64(win.pos[0])*m.ws.font.truewidth),
-				win.pos[1]*m.ws.font.lineHeight,
-			)
+			m.webview.SetParent(win.widget)
+			// m.webview.Move2(
+			// 	int(float64(win.pos[0])*m.ws.font.truewidth),
+			// 	win.pos[1]*m.ws.font.lineHeight,
+			// )
 			m.show()
 			return
 		}
@@ -153,6 +158,10 @@ func (m *Markdown) hide() {
 	m.webview.Hide()
 }
 
+func (m *Markdown) scrollTop() {
+	m.webpage.RunJavaScript("window.scrollBy(0, -9999)")
+}
+
 func (m *Markdown) scrollUp() {
 	m.webpage.RunJavaScript("window.scrollBy(0, -20)")
 }
@@ -161,17 +170,25 @@ func (m *Markdown) scrollDown() {
 	m.webpage.RunJavaScript("window.scrollBy(0, 20)")
 }
 
+func (m *Markdown) scrollBottom() {
+	m.webpage.RunJavaScript("window.scrollBy(0, 9999)")
+}
+
 func (m *Markdown) toggle() {
-	for gridid, win := range m.ws.screen.windows {
-		if gridid == m.mdGridId && m.mdGridId > 0 {
+	for _, win := range m.ws.screen.windows {
+		if win == nil {
+			continue
+		}
+		if win.isMsgGrid || win.isFloatWin {
+			continue
+		}
+		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
 			m.ws.nvim.SetCurrentWindow(win.id)
 			m.ws.nvim.Command("close")
-			m.mdGridId = 0
 			m.htmlSet = false
 			return
 		}
 	}
-	m.gridIdTrap = true
 	m.ws.nvim.Command(`keepalt vertical botright split ` + GonvimMarkdownBufName)
 	m.ws.nvim.Command("setlocal filetype=" + GonvimMarkdownBufName)
 	m.ws.nvim.Command("setlocal buftype=nofile")
@@ -183,12 +200,20 @@ func (m *Markdown) toggle() {
 	m.ws.nvim.Command("setlocal nowrap")
 
 	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> gg :call rpcnotify(0, 'Gui', '%s')<CR>",
+		GonvimMarkdownScrollTopEvent,
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> j :call rpcnotify(0, 'Gui', '%s')<CR>",
 		GonvimMarkdownScrollDownEvent,
 	))
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> k :call rpcnotify(0, 'Gui', '%s')<CR>",
 		GonvimMarkdownScrollUpEvent,
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> G :call rpcnotify(0, 'Gui', '%s')<CR>",
+		GonvimMarkdownScrollBottomEvent,
 	))
 
 	m.ws.nvim.Command("wincmd p")
