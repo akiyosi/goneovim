@@ -133,7 +133,9 @@ func (m *Markdown) updatePos() {
 				int(float64(win.cols)*m.ws.font.truewidth),
 				win.rows*m.ws.font.lineHeight,
 			)
-			m.webview.SetParent(win.widget)
+			if m.webview.ParentWidget() != win.widget {
+				m.webview.SetParent(win.widget)
+			}
 			// m.webview.Move2(
 			// 	int(float64(win.pos[0])*m.ws.font.truewidth),
 			// 	win.pos[1]*m.ws.font.lineHeight,

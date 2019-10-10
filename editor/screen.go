@@ -2345,6 +2345,9 @@ func (s *Screen) setBufferNames() {
 		if win == nil {
 			continue
 		}
+		if win.grid == 1 {
+			continue
+		}
 		if win.isMsgGrid {
 			continue
 		}
