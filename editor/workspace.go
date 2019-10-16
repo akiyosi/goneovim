@@ -1347,7 +1347,7 @@ type WorkspaceSide struct {
 	header     *widgets.QLabel
 	items      []*WorkspaceSideItem
 
-	isShown    bool
+	isShown bool
 }
 
 func newWorkspaceSide() *WorkspaceSide {

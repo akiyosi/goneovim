@@ -16,16 +16,16 @@ import (
 
 //
 const (
-	GonvimMarkdownBufName         = "__GonvimMarkdownPreview__"
-	GonvimMarkdownToggleEvent     = "gonvim_markdown_toggle"
-	GonvimMarkdownNewBufferEvent  = "gonvim_markdown_new_buffer"
-	GonvimMarkdownUpdateEvent     = "gonvim_markdown_update"
-	GonvimMarkdownScrollDownEvent = "gonvim_markdown_scroll_down"
-	GonvimMarkdownScrollUpEvent   = "gonvim_markdown_scroll_up"
-	GonvimMarkdownScrollTopEvent = "gonvim_markdown_scroll_top"
-	GonvimMarkdownScrollBottomEvent   = "gonvim_markdown_scroll_bottom"
-	GonvimMarkdownScrollPageDownEvent = "gonvim_markdown_scroll_pagedown"
-	GonvimMarkdownScrollPageUpEvent   = "gonvim_markdown_scroll_pageup"
+	GonvimMarkdownBufName                 = "__GonvimMarkdownPreview__"
+	GonvimMarkdownToggleEvent             = "gonvim_markdown_toggle"
+	GonvimMarkdownNewBufferEvent          = "gonvim_markdown_new_buffer"
+	GonvimMarkdownUpdateEvent             = "gonvim_markdown_update"
+	GonvimMarkdownScrollDownEvent         = "gonvim_markdown_scroll_down"
+	GonvimMarkdownScrollUpEvent           = "gonvim_markdown_scroll_up"
+	GonvimMarkdownScrollTopEvent          = "gonvim_markdown_scroll_top"
+	GonvimMarkdownScrollBottomEvent       = "gonvim_markdown_scroll_bottom"
+	GonvimMarkdownScrollPageDownEvent     = "gonvim_markdown_scroll_pagedown"
+	GonvimMarkdownScrollPageUpEvent       = "gonvim_markdown_scroll_pageup"
 	GonvimMarkdownScrollHalfPageDownEvent = "gonvim_markdown_scroll_halfpagedown"
 	GonvimMarkdownScrollHalfPageUpEvent   = "gonvim_markdown_scroll_halfpageup"
 )

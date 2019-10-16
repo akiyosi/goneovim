@@ -24,8 +24,8 @@ type Statusline struct {
 	ws     *Workspace
 	widget *widgets.QWidget
 
-	hl     *Highlight
-	bg     *RGBA
+	hl *Highlight
+	bg *RGBA
 
 	borderTopWidth int
 	paddingLeft    int
