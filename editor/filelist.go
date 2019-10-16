@@ -40,6 +40,7 @@ type Fileitem struct {
 	fileModified   *svg.QSvgWidget
 	isOpened       bool
 	isModified     bool
+	isSelected     bool
 }
 
 func newFilelist(path string) (*Filelist, error) {
@@ -166,7 +167,6 @@ func (f *Fileitem) makeWidget(width int) {
 }
 
 func (fl *Filelist) newFileitem(f os.FileInfo, path string) (*Fileitem, error) {
-
 	filename := f.Name()
 	filepath := filepath.Join(path, f.Name())
 
@@ -192,6 +192,27 @@ func (fl *Filelist) newFileitem(f os.FileInfo, path string) (*Fileitem, error) {
 	return fileitem, nil
 }
 
+func (fl *Filelist) openSelectedItem() {
+	for _, item := range fl.Fileitems {
+		if item == nil {
+			continue
+		}
+		if item.isSelected {
+			item.open()
+		}
+	}
+}
+
+func (f *Fileitem) selectItem() {
+	f.isSelected = true
+	f.setSelectedColor()
+}
+
+func (f *Fileitem) unselectItem() {
+	f.isSelected = false
+	f.setUnselectedColor()
+}
+
 func (f *Fileitem) setFilename(length float64) {
 	metrics := gui.NewQFontMetricsF(gui.NewQFont())
 	elidedfilename := metrics.ElidedText(f.fileText, core.Qt__ElideRight, length, 0)
@@ -199,7 +220,7 @@ func (f *Fileitem) setFilename(length float64) {
 	go f.fileLabel.SetText(elidedfilename)
 }
 
-func (f *Fileitem) enterEvent(event *core.QEvent) {
+func (f *Fileitem) setSelectedColor() {
 	fg := editor.colors.fg
 	selectedBg := editor.colors.selectedBg
 
@@ -218,13 +239,9 @@ func (f *Fileitem) enterEvent(event *core.QEvent) {
 		svgModified = editor.getSvg("circle", selectedBg)
 	}
 	f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
-
-	cursor := gui.NewQCursor()
-	cursor.SetShape(core.Qt__PointingHandCursor)
-	f.widget.SetCursor(cursor)
 }
 
-func (f *Fileitem) leaveEvent(event *core.QEvent) {
+func (f *Fileitem) setUnselectedColor() {
 	c := editor.colors.sideBarBg
 	svgModified := ""
 	currFilepath := editor.workspaces[editor.active].filepath
@@ -235,12 +252,28 @@ func (f *Fileitem) leaveEvent(event *core.QEvent) {
 		svgModified = editor.getSvg("circle", c)
 		f.fileModified.Load2(core.NewQByteArray2(svgModified, len(svgModified)))
 	}
+}
+
+func (f *Fileitem) enterEvent(event *core.QEvent) {
+	f.setSelectedColor()
+	cursor := gui.NewQCursor()
+	cursor.SetShape(core.Qt__PointingHandCursor)
+	f.widget.SetCursor(cursor)
+}
+
+func (f *Fileitem) leaveEvent(event *core.QEvent) {
+	f.setUnselectedColor()
 	cursor := gui.NewQCursor()
 	cursor.SetShape(core.Qt__ArrowCursor)
 	f.widget.SetCursor(cursor)
 }
 
 func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
+	f.open()
+	f.fl.WSitem.setCurrentFileLabel()
+}
+
+func (f *Fileitem) open() {
 	openCommand := ""
 	switch f.fileType {
 	case "/":
@@ -256,7 +289,6 @@ func (f *Fileitem) mouseEvent(event *gui.QMouseEvent) {
 
 	}
 	go editor.workspaces[editor.active].nvim.Command(openCommand)
-	f.fl.WSitem.setCurrentFileLabel()
 }
 
 func (i *WorkspaceSideItem) setCurrentFileLabel() {

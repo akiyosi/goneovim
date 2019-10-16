@@ -2,10 +2,10 @@ package editor
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
 	"fmt"
+	"io/ioutil"
 	"math"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -43,7 +43,6 @@ type MiniMap struct {
 	uiAttached bool
 	rows       int
 	cols       int
-
 }
 
 func newMiniMap() *MiniMap {
@@ -61,8 +60,8 @@ func newMiniMap() *MiniMap {
 
 	m := &MiniMap{
 		Screen: Screen{
-			name:          "minimap",
-			widget:        widget,
+			name:           "minimap",
+			widget:         widget,
 			windows:        make(map[gridId]*Window),
 			cursor:         [2]int{0, 0},
 			scrollRegion:   []int{0, 0, 0, 0},

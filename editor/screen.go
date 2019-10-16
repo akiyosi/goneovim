@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"math"
 	"runtime"
-	"strings"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -63,13 +63,13 @@ type Window struct {
 	content [][]*Cell
 	lenLine []int
 
-	grid       gridId
-	id         nvim.Window
-	bufName    string
-	pos        [2]int
-	anchor     int
-	cols       int
-	rows       int
+	grid    gridId
+	id      nvim.Window
+	bufName string
+	pos     [2]int
+	anchor  int
+	cols    int
+	rows    int
 
 	isMsgGrid  bool
 	isFloatWin bool
@@ -81,10 +81,10 @@ type Window struct {
 	devicePixelRatio float64
 	glyphMap         map[HlChar]gui.QImage
 
-	font                                 *Font
-	width                                float64
-	height                               int
-	localWindows                         *[4]localWindow
+	font         *Font
+	width        float64
+	height       int
+	localWindows *[4]localWindow
 }
 
 type localWindow struct {
@@ -96,10 +96,10 @@ type localWindow struct {
 
 // Screen is the main editor area
 type Screen struct {
-	ws *Workspace
+	ws   *Workspace
 	font *Font
 
-	name string
+	name     string
 	widget   *widgets.QWidget
 	windows  map[gridId]*Window
 	glyphMap map[HlChar]gui.QImage
@@ -687,7 +687,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	}
 
 	bottomBorderPos := w.pos[1]*w.s.font.lineHeight + w.widget.Rect().Bottom()
-	isSkipDrawBottomBorder := bottomBorderPos > w.s.bottomWindowPos() - w.s.font.lineHeight && bottomBorderPos < w.s.bottomWindowPos() + w.s.font.lineHeight
+	isSkipDrawBottomBorder := bottomBorderPos > w.s.bottomWindowPos()-w.s.font.lineHeight && bottomBorderPos < w.s.bottomWindowPos()+w.s.font.lineHeight
 	if isSkipDrawBottomBorder {
 		return
 	}
@@ -717,7 +717,7 @@ func (s *Screen) bottomWindowPos() int {
 		if win.isMsgGrid {
 			continue
 		}
-		position := win.pos[1] * win.s.font.lineHeight + win.widget.Rect().Bottom()
+		position := win.pos[1]*win.s.font.lineHeight + win.widget.Rect().Bottom()
 		if pos < position {
 			pos = position
 		}
@@ -1020,15 +1020,15 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 		isResizeHeight = true
 	}
 
-	leftWindowPos := win.pos[0]+oldCols+1+deltaCols
-	topWindowPos := win.pos[1]+oldRows+1+deltaRows
+	leftWindowPos := win.pos[0] + oldCols + 1 + deltaCols
+	topWindowPos := win.pos[1] + oldRows + 1 + deltaRows
 
 	for _, w := range s.windows {
 		if w == nil {
-		      continue
+			continue
 		}
 		if w.grid == 1 {
-		      continue
+			continue
 		}
 		if w.isMsgGrid {
 			continue
@@ -1049,7 +1049,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 				}
 				if !w.localWindows[2].isResized {
 					w.localWindows[2].isResized = true
-					w.localWindows[2].localWidth = w.width + float64(oldCols) * win.getFont().truewidth
+					w.localWindows[2].localWidth = w.width + float64(oldCols)*win.getFont().truewidth
 				}
 				newWidth := w.localWindows[2].localWidth - (float64(win.cols) * win.getFont().truewidth)
 				newCols := int(newWidth / w.font.truewidth)
@@ -1064,9 +1064,9 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			// calcurate win window posision aa w window coordinate
 			var resizeflag bool
 			winPosX := float64(win.pos[0]) * win.s.font.truewidth
-			rightWindowPos1 := float64(w.cols) * w.getFont().truewidth +   float64(w.pos[0] + 1 - deltaCols + 1) * win.s.font.truewidth
-			rightWindowPos2 := float64(w.cols-1) * w.getFont().truewidth + float64(w.pos[0] + 1 - deltaCols + 1) * win.s.font.truewidth
-			rightWindowPos := int(float64(w.cols) * w.getFont().truewidth / win.s.font.truewidth) + w.pos[0] + 1 - deltaCols + 1
+			rightWindowPos1 := float64(w.cols)*w.getFont().truewidth + float64(w.pos[0]+1-deltaCols+1)*win.s.font.truewidth
+			rightWindowPos2 := float64(w.cols-1)*w.getFont().truewidth + float64(w.pos[0]+1-deltaCols+1)*win.s.font.truewidth
+			rightWindowPos := int(float64(w.cols)*w.getFont().truewidth/win.s.font.truewidth) + w.pos[0] + 1 - deltaCols + 1
 			if win.s.font.truewidth < w.getFont().truewidth {
 				resizeflag = winPosX <= rightWindowPos1 && winPosX >= rightWindowPos2
 			} else {
@@ -1078,7 +1078,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 				}
 				if !w.localWindows[0].isResized {
 					w.localWindows[0].isResized = true
-					w.localWindows[0].localWidth = w.width + float64(oldCols) * win.getFont().truewidth
+					w.localWindows[0].localWidth = w.width + float64(oldCols)*win.getFont().truewidth
 				}
 				newWidth := w.localWindows[0].localWidth - (float64(win.cols) * win.getFont().truewidth)
 				newCols := int(newWidth / w.font.truewidth)
@@ -1098,7 +1098,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 				}
 				if !w.localWindows[1].isResized {
 					w.localWindows[1].isResized = true
-					w.localWindows[1].localHeight = w.height + oldRows * win.getFont().lineHeight
+					w.localWindows[1].localHeight = w.height + oldRows*win.getFont().lineHeight
 				}
 				newHeight := w.localWindows[1].localHeight - (win.rows * win.getFont().lineHeight)
 				newRows := int(newHeight / w.font.lineHeight)
@@ -1113,9 +1113,9 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			// calcurate win window posision aa w window coordinate
 			var resizeflag bool
 			winPosY := win.pos[1] * win.s.font.lineHeight
-			bottomWindowPos1 :=   w.rows * w.getFont().lineHeight + (w.pos[1] + 1 - deltaRows + 1) * win.s.font.lineHeight
-			bottomWindowPos2 := (w.rows-1) * w.getFont().lineHeight + (w.pos[1] + 1 - deltaRows + 1) * win.s.font.lineHeight
-			bottomWindowPos := int(w.rows * w.getFont().lineHeight / win.s.font.lineHeight) + w.pos[1] + 1 - deltaRows + 1
+			bottomWindowPos1 := w.rows*w.getFont().lineHeight + (w.pos[1]+1-deltaRows+1)*win.s.font.lineHeight
+			bottomWindowPos2 := (w.rows-1)*w.getFont().lineHeight + (w.pos[1]+1-deltaRows+1)*win.s.font.lineHeight
+			bottomWindowPos := int(w.rows*w.getFont().lineHeight/win.s.font.lineHeight) + w.pos[1] + 1 - deltaRows + 1
 			if win.s.font.lineHeight < w.getFont().lineHeight {
 				resizeflag = winPosY <= bottomWindowPos1 && winPosY >= bottomWindowPos2
 			} else {
@@ -1127,7 +1127,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 				}
 				if !w.localWindows[3].isResized {
 					w.localWindows[3].isResized = true
-					w.localWindows[3].localHeight = w.height + oldRows * win.getFont().lineHeight
+					w.localWindows[3].localHeight = w.height + oldRows*win.getFont().lineHeight
 				}
 				newHeight := w.localWindows[3].localHeight - (win.rows * win.getFont().lineHeight)
 				newRows := int(newHeight / w.font.lineHeight)
@@ -1982,11 +1982,11 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		}
 
 		glyph, ok := glyphMap[HlChar{
-			char: cell.char,
-			fg: cell.highlight.fg(),
-			bg: cell.highlight.bg(),
+			char:   cell.char,
+			fg:     cell.highlight.fg(),
+			bg:     cell.highlight.bg(),
 			italic: cell.highlight.italic,
-			bold: cell.highlight.bold,
+			bold:   cell.highlight.bold,
 		}]
 		if !ok {
 			glyph = w.newGlyph(p, cell)
@@ -2007,9 +2007,9 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 		glyph, ok := glyphMap[HlChar{
-			char: cell.char,
-			fg: cell.highlight.fg(),
-			bg: cell.highlight.bg(),
+			char:   cell.char,
+			fg:     cell.highlight.fg(),
+			bg:     cell.highlight.bg(),
 			italic: cell.highlight.italic,
 			bold:   cell.highlight.bold,
 		}]
@@ -2212,20 +2212,20 @@ func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
 
 	if w.font != nil {
 		w.glyphMap[HlChar{
-			char: cell.char,
-			fg: fg,
-			bg: cell.highlight.bg(),
+			char:   cell.char,
+			fg:     fg,
+			bg:     cell.highlight.bg(),
 			italic: cell.highlight.italic,
-			bold: cell.highlight.bold,
+			bold:   cell.highlight.bold,
 		}] = *glyph
 
 	} else {
 		w.s.glyphMap[HlChar{
-			char: cell.char,
-			fg: fg,
-			bg: cell.highlight.bg(),
+			char:   cell.char,
+			fg:     fg,
+			bg:     cell.highlight.bg(),
 			italic: cell.highlight.italic,
-			bold: cell.highlight.bold,
+			bold:   cell.highlight.bold,
 		}] = *glyph
 	}
 
