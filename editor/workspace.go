@@ -452,11 +452,15 @@ func (w *Workspace) initGonvim() {
 	command! GonvimVersion echo "%s"`, editor.version)
 	if !w.uiRemoteAttached {
 		gonvimCommands = gonvimCommands + `
+	command! GonvimSidebarShow call rpcnotify(0, "Gui", "gonvim_sidebar_toggle")
 	command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
 	command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
 	command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
 	command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
 	command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
+	command! GonvimFileItemNext call rpcnotify(0, "Gui", "gonvim_fileitem_next")
+	command! GonvimFileItemPrev call rpcnotify(0, "Gui", "gonvim_fileitem_prev")
+	command! GonvimFileItemOpen call rpcnotify(0, "Gui", "gonvim_fileitem_open")
 	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
 	`
 	}
@@ -1161,6 +1165,16 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		go editor.copyClipBoard()
 	case "gonvim_get_maxline":
 		w.maxLine = util.ReflectToInt(updates[1])
+	case "gonvim_sidebar_toggle":
+		editor.sidebarToggle()
+
+	case "gonvim_fileitem_next":
+		editor.fileitemNext()
+	case "gonvim_fileitem_prev":
+		editor.fileitemPrev()
+	case "gonvim_fileitem_open":
+		editor.fileitemOpen()
+
 	case "gonvim_workspace_new":
 		editor.workspaceNew()
 	case "gonvim_workspace_next":
@@ -1332,6 +1346,8 @@ type WorkspaceSide struct {
 	scrollarea *widgets.QScrollArea
 	header     *widgets.QLabel
 	items      []*WorkspaceSideItem
+
+	isShown    bool
 }
 
 func newWorkspaceSide() *WorkspaceSide {
@@ -1377,11 +1393,15 @@ func (s *WorkspaceSide) newScrollArea() {
 	sideArea.ConnectLeaveEvent(func(event *core.QEvent) {
 		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
 	})
-	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
+	sideArea.SetFocusPolicy(core.Qt__NoFocus | core.Qt__ClickFocus)
 	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
+	sideArea.SetFixedWidth(editor.config.SideBar.Width)
 
 	s.scrollarea = sideArea
 	s.scrollarea.SetWidget(s.widget)
+	// s.scrollarea.ConnectKeyPressEvent(func(event *gui.QKeyEvent){
+	// 	return
+	// })
 }
 
 type filelistSignal struct {

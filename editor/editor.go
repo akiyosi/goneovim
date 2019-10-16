@@ -179,10 +179,13 @@ func InitEditor() {
 
 	l.AddWidget(e.wsWidget, 1, 0)
 
-	if editor.config.SideBar.Visible {
-		e.wsSide.newScrollArea()
-		l.AddWidget(e.wsSide.scrollarea, 0, 0)
-	}
+	// if editor.config.SideBar.Visible {
+	// 	e.wsSide.newScrollArea()
+	// 	l.AddWidget(e.wsSide.scrollarea, 0, 0)
+	// }
+	e.wsSide.newScrollArea()
+	l.AddWidget(e.wsSide.scrollarea, 0, 0)
+	e.wsSide.scrollarea.Hide()
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
@@ -491,6 +494,97 @@ func (e *Editor) copyClipBoard() {
 
 }
 
+func (e *Editor) sidebarToggle() {
+	side := e.wsSide
+	if side == nil {
+		return
+	}
+	if side.isShown {
+		side.scrollarea.Hide()
+		side.isShown = false
+	} else {
+		side.scrollarea.Show()
+		side.isShown = true
+		for _, item := range side.items {
+			if item.active {
+				fileitems := item.Filelist.Fileitems
+				fileitems[0].selectItem()
+			}
+		}
+	}
+}
+
+func (e *Editor) fileitemNext() {
+	side := e.wsSide
+	if side == nil {
+		return
+	}
+	if !side.isShown {
+		return
+	}
+	for _, item := range side.items {
+		if item.active {
+			fileitems := item.Filelist.Fileitems
+			for i, fileitem := range fileitems {
+				if fileitem.isSelected {
+					if i+1 == len(fileitems) {
+						fileitems[0].selectItem()
+					} else {
+						fileitems[i+1].selectItem()
+					}
+
+					fileitem.unselectItem()
+					return
+				}
+			}
+			fileitems[0].selectItem()
+		}
+	}
+}
+
+func (e *Editor) fileitemPrev() {
+	side := e.wsSide
+	if side == nil {
+		return
+	}
+	if !side.isShown {
+		return
+	}
+	for _, item := range side.items {
+		if item.active {
+			fileitems := item.Filelist.Fileitems
+			for i, fileitem := range fileitems {
+				if fileitem.isSelected {
+					if i == 0 {
+						fileitems[len(fileitems)-1].selectItem()
+					} else {
+						fileitems[i-1].selectItem()
+					}
+
+					fileitem.unselectItem()
+					return
+				}
+			}
+			fileitems[0].selectItem()
+		}
+	}
+}
+
+func (e *Editor) fileitemOpen() {
+	side := e.wsSide
+	if side == nil {
+		return
+	}
+	if !side.isShown {
+		return
+	}
+	for _, item := range side.items {
+		if item.active {
+			item.Filelist.openSelectedItem()
+		}
+	}
+}
+
 func (e *Editor) workspaceNew() {
 	editor.isSetGuiColor = false
 	ws, err := newWorkspace("")
@@ -558,23 +652,8 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 		input = `<C-\>`
 	}
 	if input != "" {
-		if input == "<Esc>" {
-			e.unfocusGonvimUI()
-		}
 		e.workspaces[e.active].nvim.Input(input)
 	}
-}
-
-func (e *Editor) unfocusGonvimUI() {
-	if e.wsSide == nil {
-		return
-	}
-	if e.wsSide.scrollarea == nil {
-		return
-	}
-	e.wsSide.widget.ClearFocus()
-	e.wsSide.widget.ClearFocus()
-	e.wsSide.scrollarea.ClearFocus()
 }
 
 func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier) string {
