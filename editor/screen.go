@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -2523,11 +2524,14 @@ func (w *Window) isShown() bool {
 	return true
 }
 
+
 func (w *Window) raise() {
 	if w.grid == 1 {
 		return
 	}
 	w.widget.Raise()
+	w.s.raiseFloatWins()
+
 	w.s.tooltip.SetParent(w.widget)
 
 	font := w.getFont()
@@ -2536,6 +2540,23 @@ func (w *Window) raise() {
 	w.s.ws.cursor.widget.Hide()
 	w.s.ws.cursor.widget.Show()
 
+}
+
+func (s *Screen) raiseFloatWins() {
+	keys := make([]int, 0, len(s.windows))
+	for k := range s.windows {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+	for _, k := range keys {
+		win := s.windows[k]
+		if win == nil {
+			continue
+		}
+		if win.isFloatWin {
+			win.widget.Raise()
+		}
+	}
 }
 
 func (w *Window) hideOverlappingWindows() {
