@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -2384,6 +2383,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := arg.([]interface{})[6]
 
+		s.windows[gridid].widget.SetParent(editor.wsWidget)
+
 		s.windows[gridid].pos[0] = anchorCol
 		s.windows[gridid].pos[1] = anchorRow
 		s.windows[gridid].isFloatWin = true
@@ -2528,7 +2529,6 @@ func (w *Window) raise() {
 		return
 	}
 	w.widget.Raise()
-	w.s.raiseFloatWins()
 
 	w.s.tooltip.SetParent(w.widget)
 
@@ -2538,23 +2538,6 @@ func (w *Window) raise() {
 	w.s.ws.cursor.widget.Hide()
 	w.s.ws.cursor.widget.Show()
 
-}
-
-func (s *Screen) raiseFloatWins() {
-	keys := make([]int, 0, len(s.windows))
-	for k := range s.windows {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-	for _, k := range keys {
-		win := s.windows[k]
-		if win == nil {
-			continue
-		}
-		if win.isFloatWin {
-			win.widget.Raise()
-		}
-	}
 }
 
 func (w *Window) hideOverlappingWindows() {
@@ -2572,6 +2555,9 @@ func (w *Window) hideOverlappingWindows() {
 			continue
 		}
 		if win.isMsgGrid {
+			continue
+		}
+		if win.isFloatWin {
 			continue
 		}
 		if !win.shown {
@@ -2603,7 +2589,7 @@ func (w *Window) setGeometry(rect core.QRect_ITF) {
 }
 
 func (w *Window) setShadow() {
-	w.widget.SetGraphicsEffect(util.DropShadow(-2, 6, 40, 100))
+	w.widget.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))
 }
 
 func (w *Window) move(col int, row int) {
@@ -2619,6 +2605,9 @@ func (w *Window) move(col int, row int) {
 	}
 	x := int(float64(col) * font.truewidth)
 	y := row*int(font.lineHeight) + res
+	if w.isFloatWin {
+		y += 6 + w.s.ws.tabline.widget.Height()
+	}
 	w.widget.Move2(x, y)
 
 }

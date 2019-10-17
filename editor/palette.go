@@ -68,7 +68,7 @@ func initPalette() *Palette {
 	// widget.SetFixedWidth(width)
 	widget.SetObjectName("palette")
 
-	widget.SetGraphicsEffect(util.DropShadow(-2, 8, 40, 200))
+	widget.SetGraphicsEffect(util.DropShadow(0, 15, 130, 120))
 
 	resultMainLayout := widgets.NewQHBoxLayout()
 	resultMainLayout.SetContentsMargins(0, 0, 0, 0)

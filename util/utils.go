@@ -64,10 +64,10 @@ func IsTrue(d interface{}) bool {
 	return false
 }
 
-func DropShadow(x, y float64, radius, alpha int) *widgets.QGraphicsDropShadowEffect{
+func DropShadow(x, y, radius float64, alpha int) *widgets.QGraphicsDropShadowEffect{
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	shadow.SetBlurRadius(38)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
+	shadow.SetBlurRadius(radius)
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, alpha))
 	shadow.SetOffset2(x, y)
 
 	return shadow
