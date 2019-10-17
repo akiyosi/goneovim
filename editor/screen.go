@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -68,7 +67,7 @@ type Window struct {
 	id      nvim.Window
 	bufName string
 	pos     [2]int
-	anchor  int
+	anchor  string
 	cols    int
 	rows    int
 
@@ -2378,9 +2377,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		id := util.ReflectToInt(arg.([]interface{})[1])
-		s.windows[gridid].id = *(*nvim.Window)((unsafe.Pointer)(&id))
-		s.windows[gridid].anchor = util.ReflectToInt(arg.([]interface{})[2])
+		s.windows[gridid].id = arg.([]interface{})[1].(nvim.Window)
+		s.windows[gridid].anchor = arg.([]interface{})[2].(string)
 		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
 		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
