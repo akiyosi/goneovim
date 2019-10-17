@@ -227,6 +227,7 @@ func (w *Workspace) registerSignal() {
 		w.handleRPCGui(updates)
 	})
 	w.signal.ConnectStopSignal(func() {
+		editor.workspaces[editor.active].minimap.exit()
 		workspaces := []*Workspace{}
 		index := 0
 		for i, ws := range editor.workspaces {
@@ -384,7 +385,6 @@ func (w *Workspace) initGonvim() {
 	gonvimAutoCmds := `
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
-	au GonvimAu VimLeavePre * call rpcnotify(1, "Gui", "gonvim_exit")
 	au GonvimAu CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
@@ -1122,8 +1122,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_enter":
 		editor.window.SetWindowOpacity(1.0)
 		w.setCwd(updates[1].(string))
-	case "gonvim_exit":
-		editor.workspaces[editor.active].minimap.exit()
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
