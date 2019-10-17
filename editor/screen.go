@@ -2606,7 +2606,9 @@ func (w *Window) move(col int, row int) {
 	x := int(float64(col) * font.truewidth)
 	y := row*int(font.lineHeight) + res
 	if w.isFloatWin {
-		y += 6 + w.s.ws.tabline.widget.Height()
+		if w.s.ws.drawTabline {
+			y += 6 + w.s.ws.tabline.widget.Height()
+		}
 	}
 	w.widget.Move2(x, y)
 
