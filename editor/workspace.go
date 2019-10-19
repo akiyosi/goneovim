@@ -444,8 +444,9 @@ func (w *Workspace) initGonvim() {
 	au GonvimAuLint CursorMoved,CursorHold,InsertEnter,InsertLeave * call rpcnotify(0, "LocPopup", "update")
 	`
 	}
-	registerAutocmds := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimAutoCmds))
-	w.nvim.Command(registerAutocmds)
+
+	registerScripts := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimAutoCmds))
+	w.nvim.Command(registerScripts)
 
 	gonvimCommands := fmt.Sprintf(`
 	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
@@ -483,6 +484,9 @@ func (w *Workspace) initGonvim() {
 }
 
 func splitVimscript(s string) string {
+	if string(s[0]) == "\n" {
+		s = strings.TrimPrefix(s, string("\n"))
+	}
 	listLines := "["
 	lines := strings.Split(s, "\n")
 	for i, line := range lines {

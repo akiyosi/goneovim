@@ -133,6 +133,11 @@ func newScreen() *Screen {
 		highlightGroup: make(map[string]int),
 	}
 
+	widget.SetAcceptDrops(true)
+	widget.ConnectWheelEvent(screen.wheelEvent)
+	widget.ConnectDragEnterEvent(screen.dragEnterEvent)
+	widget.ConnectDragMoveEvent(screen.dragMoveEvent)
+	widget.ConnectDropEvent(screen.dropEvent)
 	widget.ConnectMousePressEvent(screen.mouseEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
@@ -731,6 +736,7 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	defer m.Unlock()
 
 	var v, h, vert, horiz int
+	// var vertKey string
 	var horizKey string
 	var accel int
 	font := s.font
@@ -776,6 +782,9 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		} else if s.scrollDustDeltaY > 2 {
 			accel = int(float64(s.scrollDustDeltaY) / float64(4))
 		}
+		if accel == 0 {
+			accel = 1
+		}
 
 	default:
 		vert = event.AngleDelta().Y()
@@ -785,38 +794,75 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 
 	mod := event.Modifiers()
 
+	// if vert > 0 {
+	// 	vertKey = "Up"
+	// } else {
+	// 	vertKey = "Down"
+	// }
 	if horiz > 0 {
 		horizKey = "Left"
 	} else {
 		horizKey = "Right"
 	}
 
-	x := int(float64(event.X()) / font.truewidth)
-	y := int(float64(event.Y()) / float64(font.lineHeight))
-	pos := []int{x, y}
-
 	if vert == 0 && horiz == 0 {
 		return
 	}
 
+	s.focusWindow(event)
+
 	mode := s.ws.mode
 	if mode == "insert" {
-		s.ws.nvim.Input(fmt.Sprintf("<Esc>"))
+		s.ws.nvim.Input("<Esc>")
 	} else if mode == "terminal-input" {
-		s.ws.nvim.Input(fmt.Sprintf(`<C-\><C-n>`))
+		s.ws.nvim.Input(`<C-\><C-n>`)
 	}
 
+	x := int(float64(event.X()) / font.truewidth)
+	y := int(float64(event.Y()) / float64(font.lineHeight))
+	pos := []int{x, y}
+
 	if vert > 0 {
-		s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
+		s.ws.nvim.Input(fmt.Sprintf("%v<C-Y>", accel))
 	} else if vert < 0 {
-		s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
+		s.ws.nvim.Input(fmt.Sprintf("%v<C-E>", accel))
 	}
+	// if vert != 0 {
+	// 	s.ws.nvim.Input(fmt.Sprintf("%v<%sScrollWheel%s><%d,%d>", accel, editor.modPrefix(mod), vertKey, pos[0], pos[1]))
+	// }
 
 	if horiz != 0 {
 		s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
 	}
 
 	event.Accept()
+}
+
+func (s *Screen) focusWindow(event *gui.QWheelEvent) {
+	mod := event.Modifiers()
+	col := int(float64(event.X()) / s.font.truewidth)
+	row := int(float64(event.Y()) / float64(s.font.lineHeight))
+	for _, win := range s.windows {
+		if win == nil {
+			continue
+		}
+		if win.grid == 1 {
+			continue
+		}
+		if win.isMsgGrid {
+			continue
+		}
+		X := event.X()
+		Y := event.Y()
+		rect := win.widget.Geometry()
+		if rect.Contains3(X, Y) {
+			s.ws.nvim.InputMouse("left", "press", editor.modPrefix(mod), win.grid, row, col)
+			s.ws.nvim.InputMouse("left", "release", editor.modPrefix(mod), win.grid, row, col)
+			go s.ws.nvim.Input("<Esc>")
+
+			return
+		}
+	}
 }
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
@@ -950,11 +996,6 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		s.windows[gridid].setParent(s.widget)
 		s.windows[gridid].grid = gridid
 		s.windows[gridid].widget.SetAttribute(core.Qt__WA_KeyCompression, true)
-		s.windows[gridid].widget.SetAcceptDrops(true)
-		s.windows[gridid].widget.ConnectWheelEvent(s.wheelEvent)
-		s.windows[gridid].widget.ConnectDragEnterEvent(s.dragEnterEvent)
-		s.windows[gridid].widget.ConnectDragMoveEvent(s.dragMoveEvent)
-		s.windows[gridid].widget.ConnectDropEvent(s.dropEvent)
 		// reassign win
 		win = s.windows[gridid]
 
@@ -2522,7 +2563,6 @@ func (w *Window) isShown() bool {
 
 	return true
 }
-
 
 func (w *Window) raise() {
 	if w.grid == 1 {
