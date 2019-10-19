@@ -223,12 +223,36 @@ func (s *Fuzzy) scoreSource(source string) {
 	n := &[]int{}
 
 	if s.pattern != "" {
-		chars := util.ToChars([]byte(source))
+
+		var chars util.Chars
+		var parts []string
+
+		// if fuzzy type is "file_line", 
+		// then exclude file name string from source string
+		if s.options["type"] == "file_line" {
+			parts = strings.SplitN(source, ":", 2)
+			filecontents := parts[1]
+			chars = util.ToChars([]byte(filecontents))
+		} else {
+			chars = util.ToChars([]byte(source))
+		}
+
 		// fuzzy match like smart case
 		if strings.ContainsAny(s.pattern, "ABCDEFZHIJKLMNOPQRSTUVWXYZ") {
 			r, n = algo.FuzzyMatchV1(true, true, true, &chars, []rune(s.pattern), true, s.slab)
 		} else {
 			r, n = algo.FuzzyMatchV1(false, true, true, &chars, []rune(s.pattern), true, s.slab)
+		}
+
+		// Since the file name is excluded from the source string,
+		// the number of characters of the file name is added to the index.
+		if n != nil && s.options["type"] == "file_line" {
+			var newN []int
+			for _, idx := range *n {
+				newN = append(newN, idx+len(parts[0]))
+
+			}
+			n = &newN
 		}
 	}
 	if r.Score == -1 || r.Score > 0 {
@@ -250,7 +274,9 @@ func (s *Fuzzy) scoreSource(source string) {
 					output: source,
 					match:  n,
 				}},
-				s.result[i:]...)...)
+				s.result[i:]...,
+			)...,
+		)
 
 		// if s.start <= i && i <= s.start+s.max-1 {
 		// 	s.outputResult()
