@@ -229,11 +229,19 @@ func (s *Fuzzy) scoreSource(source string) {
 
 		// if fuzzy type is "file_line", 
 		// then exclude file name string from source string
-		if s.options["type"] == "file_line" {
-			parts = strings.SplitN(source, ":", 2)
+		indexOffset := 0
+		switch s.options["type"] {
+		case "file_line" :
+			parts = strings.SplitN(source, ":", 4)
+			filecontents := parts[3]
+			chars = util.ToChars([]byte(filecontents))
+			indexOffset = len(parts[0])+1+len(parts[1])+1+len(parts[2])+1
+		case "line" :
+			parts = strings.SplitN(source, "\t", 2)
 			filecontents := parts[1]
 			chars = util.ToChars([]byte(filecontents))
-		} else {
+			indexOffset = len(parts[0])+1
+		default :
 			chars = util.ToChars([]byte(source))
 		}
 
@@ -246,10 +254,13 @@ func (s *Fuzzy) scoreSource(source string) {
 
 		// Since the file name is excluded from the source string,
 		// the number of characters of the file name is added to the index.
-		if n != nil && s.options["type"] == "file_line" {
+		if n != nil && indexOffset != 0 {
 			var newN []int
 			for _, idx := range *n {
-				newN = append(newN, idx+len(parts[0]))
+				newN = append(
+					newN,
+					idx+indexOffset,
+				)
 
 			}
 			n = &newN
