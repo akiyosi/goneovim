@@ -505,83 +505,12 @@ func (e *Editor) sidebarToggle() {
 	} else {
 		side.scrollarea.Show()
 		side.isShown = true
-		for _, item := range side.items {
-			if item.active {
-				fileitems := item.Filelist.Fileitems
-				fileitems[0].selectItem()
-			}
-		}
-	}
-}
-
-func (e *Editor) fileitemNext() {
-	side := e.wsSide
-	if side == nil {
-		return
-	}
-	if !side.isShown {
-		return
-	}
-	for _, item := range side.items {
-		if item.active {
-			fileitems := item.Filelist.Fileitems
-			for i, fileitem := range fileitems {
-				if fileitem.isSelected {
-					if i+1 == len(fileitems) {
-						fileitems[0].selectItem()
-					} else {
-						fileitems[i+1].selectItem()
-					}
-
-					fileitem.unselectItem()
-					return
-				}
-			}
-			fileitems[0].selectItem()
-		}
-	}
-}
-
-func (e *Editor) fileitemPrev() {
-	side := e.wsSide
-	if side == nil {
-		return
-	}
-	if !side.isShown {
-		return
-	}
-	for _, item := range side.items {
-		if item.active {
-			fileitems := item.Filelist.Fileitems
-			for i, fileitem := range fileitems {
-				if fileitem.isSelected {
-					if i == 0 {
-						fileitems[len(fileitems)-1].selectItem()
-					} else {
-						fileitems[i-1].selectItem()
-					}
-
-					fileitem.unselectItem()
-					return
-				}
-			}
-			fileitems[0].selectItem()
-		}
-	}
-}
-
-func (e *Editor) fileitemOpen() {
-	side := e.wsSide
-	if side == nil {
-		return
-	}
-	if !side.isShown {
-		return
-	}
-	for _, item := range side.items {
-		if item.active {
-			item.Filelist.openSelectedItem()
-		}
+		// for _, item := range side.items {
+		// 	if item.active {
+		// 		fileitems := item.Filelist.Fileitems
+		// 		fileitems[0].selectItem()
+		// 	}
+		// }
 	}
 }
 
