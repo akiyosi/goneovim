@@ -233,12 +233,12 @@ func (s *Fuzzy) scoreSource(source string) {
 		switch s.options["type"] {
 		case "file_line" :
 			parts = strings.SplitN(source, ":", 4)
-			filecontents := parts[3]
+			filecontents := parts[len(parts)-1]
 			chars = util.ToChars([]byte(filecontents))
 			indexOffset = len(parts[0])+1+len(parts[1])+1+len(parts[2])+1
 		case "line" :
 			parts = strings.SplitN(source, "\t", 2)
-			filecontents := parts[1]
+			filecontents := parts[len(parts)-1]
 			chars = util.ToChars([]byte(filecontents))
 			indexOffset = len(parts[0])+1
 		default :
