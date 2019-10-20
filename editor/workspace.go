@@ -1248,10 +1248,11 @@ func (s *WorkspaceSide) newScrollArea() {
 	})
 	sideArea.SetFocusPolicy(core.Qt__NoFocus | core.Qt__ClickFocus)
 	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
-	sideArea.SetFixedWidth(editor.config.SideBar.Width)
+	// sideArea.SetFixedWidth(editor.config.SideBar.Width)
 
 	s.scrollarea = sideArea
 	s.scrollarea.SetWidget(s.widget)
+
 	// s.scrollarea.ConnectKeyPressEvent(func(event *gui.QKeyEvent){
 	// 	return
 	// })

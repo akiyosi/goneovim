@@ -76,6 +76,7 @@ type Editor struct {
 	active     int
 	nvim       *nvim.Nvim
 	window     *frameless.QFramelessWindow
+	split      *widgets.QSplitter
 	wsWidget   *widgets.QWidget
 	wsSide     *WorkspaceSide
 	sysTray    *widgets.QSystemTrayIcon
@@ -177,14 +178,10 @@ func InitEditor() {
 
 	e.initWorkspaces()
 
-	l.AddWidget(e.wsWidget, 1, 0)
-
-	// if editor.config.SideBar.Visible {
-	// 	e.wsSide.newScrollArea()
-	// 	l.AddWidget(e.wsSide.scrollarea, 0, 0)
-	// }
 	e.wsSide.newScrollArea()
-	l.AddWidget(e.wsSide.scrollarea, 0, 0)
+	e.newSplitter()
+
+	l.AddWidget(e.split, 1, 0)
 	e.wsSide.scrollarea.Hide()
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
@@ -206,6 +203,17 @@ func InitEditor() {
 	e.window.Show()
 	e.wsWidget.SetFocus2()
 	widgets.QApplication_Exec()
+}
+
+func (e *Editor) newSplitter() {
+	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
+	splitter.AddWidget(e.wsSide.scrollarea)
+	splitter.AddWidget(e.wsWidget)
+	splitter.SetSizes([]int{e.config.SideBar.Width, e.width - e.config.SideBar.Width})
+	splitter.SetStretchFactor(1, 100)
+	splitter.SetObjectName("splitter")
+	e.split = splitter
 }
 
 func (e *Editor) initWorkspaces() {
