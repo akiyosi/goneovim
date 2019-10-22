@@ -362,9 +362,6 @@ func (w *Workspace) configure() {
 func (w *Workspace) attachUI(path string) error {
 	w.nvim.Subscribe("Gui")
 	go w.initGonvim()
-	if path != "" {
-		go w.nvim.Command("so " + path)
-	}
 	w.tabline.subscribe()
 	w.statusline.subscribe()
 	w.loc.subscribe()
@@ -380,6 +377,9 @@ func (w *Workspace) attachUI(path string) error {
 		fmt.Println(err)
 		editor.close()
 		return err
+	}
+	if path != "" {
+		go w.nvim.Command("so " + path)
 	}
 
 	return nil
@@ -899,10 +899,12 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	if !isChangeFg || !isChangeBg {
 		editor.isSetGuiColor = false
 	}
-	// Ignore setting GUI color when create second workspace and fg, bg equals -1
-	if len(editor.workspaces) > 1 && fg == -1 && bg == -1 {
+	if len(editor.workspaces) > 1 {
 		w.updateWorkspaceColor()
-		editor.isSetGuiColor = true
+		// Ignore setting GUI color when create second workspace and fg, bg equals -1
+		if fg == -1 && bg == -1 {
+			editor.isSetGuiColor = true
+		}
 	}
 	if editor.isSetGuiColor == true {
 		return
@@ -926,6 +928,9 @@ func (w *Workspace) updateWorkspaceColor() {
 	w.loc.setColor()
 	w.message.setColor()
 	w.screen.setColor()
+	if editor.wsSide != nil {
+		editor.wsSide.setColor()
+	}
 }
 
 func (w *Workspace) modeInfoSet(args []interface{}) {
@@ -1481,6 +1486,7 @@ func (s *WorkspaceSide) setColor() {
 	s.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
 
 	for _, item := range s.items {
+		item.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; }", editor.colors.inactiveFg.String()))
 		item.content.SetStyleSheet(fmt.Sprintf(`
   QListWidget::item {
      color: %s;
@@ -1492,10 +1498,8 @@ func (s *WorkspaceSide) setColor() {
 	`, fg, editor.colors.selectedBg.String()))
 	}
 
-	if len(editor.workspaces) == 1 {
-		s.items[0].active = true
-		s.items[0].labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", editor.colors.sideBarSelectedItemBg, fg))
-	}
+	s.items[0].active = true
+	s.items[0].labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", editor.colors.sideBarSelectedItemBg, fg))
 }
 
 func (i *WorkspaceSideItem) setActive() {

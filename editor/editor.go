@@ -20,6 +20,10 @@ import (
 
 var editor *Editor
 
+const (
+	WorkspaceLen int = 20
+)
+
 // ColorPalette is
 type ColorPalette struct {
 	e *Editor
@@ -224,7 +228,7 @@ func (e *Editor) initWorkspaces() {
 	e.workspaces = []*Workspace{}
 	sessionExists := false
 	if e.config.Workspace.RestoreSession == true {
-		for i := 0; i < 20; i++ {
+		for i := 0; i <= WorkspaceLen; i++ {
 			path := filepath.Join(e.homeDir, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
 			_, err := os.Stat(path)
 			if err != nil {
@@ -422,12 +426,7 @@ func (c *ColorPalette) update() {
 }
 
 func (e *Editor) updateGUIColor() {
-	if e.wsSide != nil {
-		e.wsSide.setColor()
-	}
-
 	e.workspaces[e.active].updateWorkspaceColor()
-
 	e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B))
 	e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 
