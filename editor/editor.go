@@ -502,26 +502,6 @@ func (e *Editor) copyClipBoard() {
 
 }
 
-func (e *Editor) sidebarToggle() {
-	side := e.wsSide
-	if side == nil {
-		return
-	}
-	if side.isShown {
-		side.scrollarea.Hide()
-		side.isShown = false
-	} else {
-		side.scrollarea.Show()
-		side.isShown = true
-		// for _, item := range side.items {
-		// 	if item.active {
-		// 		fileitems := item.Filelist.Fileitems
-		// 		fileitems[0].selectItem()
-		// 	}
-		// }
-	}
-}
-
 func (e *Editor) workspaceNew() {
 	editor.isSetGuiColor = false
 	ws, err := newWorkspace("")
