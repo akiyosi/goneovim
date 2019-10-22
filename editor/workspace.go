@@ -1029,8 +1029,11 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "side_toggle":
 		editor.wsSide.toggle()
 	case "filer_update":
-		go w.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
+		if !editor.wsSide.items[editor.active].isContentHide {
+			go w.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
+		}
 	case "filer_open":
+		editor.wsSide.items[editor.active].isContentHide = false
 		editor.wsSide.items[editor.active].openContent()
 	case "filer_clear":
 		editor.wsSide.items[editor.active].clear()

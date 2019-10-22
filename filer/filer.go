@@ -102,7 +102,7 @@ func (f *Filer) handle(args ...interface{}) {
 func (f *Filer) open() {
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "side_open")
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_open")
-	// f.redraw()
+	f.redraw()
 }
 
 func (f *Filer) redraw() {
@@ -118,12 +118,10 @@ func (f *Filer) redraw() {
 	if pwd != string(`/`) {
 		pwdlen++
 	}
-	fmt.Println(pwd)
 
 	command := fmt.Sprintf("globpath(expand(getcwd()), '{,.}*', 1, 0)")
 	files := ""
 	f.nvim.Eval(command, &files)
-
 
 	var items []map[string]string
 	for _, file := range strings.Split(files, "\n") {
@@ -174,7 +172,6 @@ func (f *Filer) down() {
 func (f *Filer) left() {
 	go func() {
 		f.nvim.Command("silent :tchdir ..")
-		f.open()
 	}()
 }
 
@@ -192,10 +189,9 @@ func (f *Filer) right() {
 	}
 	go func() {
 		f.nvim.Command(command)
-		f.open()
 		if filetype != "/" {
 			f.nvim.Input("<Esc>")
-			f.nvim.Command("GonvimFilerOpen")
+			// f.nvim.Command("GonvimFilerOpen")
 		}
 	}()
 
