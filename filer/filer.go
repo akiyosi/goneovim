@@ -114,17 +114,22 @@ func (f *Filer) redraw() {
 		f.selectnum = 0
 	}
 	f.cwd = pwd
-	pwdlen := utf8.RuneCountInString(pwd) + 1
+	pwdlen := utf8.RuneCountInString(pwd)
+	if pwd != string(`/`) {
+		pwdlen++
+	}
+	fmt.Println(pwd)
 
 	command := fmt.Sprintf("globpath(expand(getcwd()), '{,.}*', 1, 0)")
 	files := ""
 	f.nvim.Eval(command, &files)
 
+
 	var items []map[string]string
 	for _, file := range strings.Split(files, "\n") {
 		file = file[pwdlen:]
 		// Skip './' and '../'
-		if file[len(file)-2:] == "./" || file[len(file)-3:] == "../" {
+		if file == "./" || file == "../" {
 			continue
 		}
 
@@ -137,7 +142,7 @@ func (f *Filer) redraw() {
 
 		// If it is directory
 		if file[len(file)-1] == '/' {
-			filetype = `/`
+			filetype = string("/")
 		}
 
 		f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_add", file, filetype)
