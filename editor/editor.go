@@ -179,10 +179,10 @@ func InitEditor() {
 	e.initWorkspaces()
 
 	e.wsSide.newScrollArea()
+	e.wsSide.scrollarea.Hide()
 	e.newSplitter()
 
 	l.AddWidget(e.split, 1, 0)
-	e.wsSide.scrollarea.Hide()
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
@@ -214,6 +214,10 @@ func (e *Editor) newSplitter() {
 	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
 	e.split = splitter
+
+	if editor.config.SideBar.Visible {
+		e.wsSide.show()
+	}
 }
 
 func (e *Editor) initWorkspaces() {

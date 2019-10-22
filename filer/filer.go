@@ -5,20 +5,20 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	// "github.com/akiyosi/gonvim/util"
+	"github.com/akiyosi/gonvim/util"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/widgets"
 )
 
 type Filer struct {
-	Widget   *widgets.QListWidget
-	nvim     *nvim.Nvim
-	isOpen   bool
-	cancelled          bool
+	Widget    *widgets.QListWidget
+	nvim      *nvim.Nvim
+	isOpen    bool
+	cancelled bool
 
-	cwd         string
-	selectnum   int
-	items       [](map[string]string)
+	cwd       string
+	selectnum int
+	items     [](map[string]string)
 }
 
 // RegisterPlugin registers this remote plugin
@@ -26,11 +26,47 @@ func RegisterPlugin(nvim *nvim.Nvim) {
 	nvim.Subscribe("GonvimFiler")
 
 	shim := &Filer{
-		nvim:               nvim,
+		nvim: nvim,
 	}
 	nvim.RegisterHandler("GonvimFiler", func(args ...interface{}) {
 		go shim.handle(args...)
 	})
+	finderFunction := `
+	aug GonvimAuFiler | au! | aug END
+        au GonvimAuFiler BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "filer_update")
+	command! GonvimFilerOpen call Gonvim_filer_run()
+	function! Gonvim_filer_run()
+	    call rpcnotify(0, "GonvimFiler", "open")
+	    let l:keymaps = { "\<Esc>": "cancel", "\<C-c>": "cancel", "\<Enter>": "right", "h": "left", "j": "down", "k": "up", "l": "right", "/": "search", }
+	
+	    while v:true
+	        let l:input = getchar()
+	        let l:char = nr2char(l:input)
+	    
+	        let event = get(l:keymaps, l:char, "noevent")
+	        if (l:input is# "\<BS>")
+	            call rpcnotify(0, "GonvimFiler", "up")
+	        elseif (l:input is# "\<DEL>")
+	            call rpcnotify(0, "GonvimFiler", "up")
+	        elseif (event == "noevent")
+	            call rpcnotify(0, "GonvimFiler", "char", l:char)
+	        else
+	            call rpcnotify(0, "GonvimFiler", event)
+	        endif
+	    
+	        if (event == "cancel")
+	            call rpcnotify(0, "GonvimFiler", event)
+	            return
+	        endif
+	    endwhile
+	endfunction
+	`
+
+	registerFunction := fmt.Sprintf(
+		`call execute(%s)`,
+		util.SplitVimscript(finderFunction),
+	)
+	nvim.Command(registerFunction)
 }
 
 func (f *Filer) handle(args ...interface{}) {
@@ -46,6 +82,8 @@ func (f *Filer) handle(args ...interface{}) {
 		f.cancel()
 	case "open":
 		f.open()
+	case "redraw":
+		f.redraw()
 	case "left":
 		f.left()
 	case "right":
@@ -55,15 +93,19 @@ func (f *Filer) handle(args ...interface{}) {
 	case "down":
 		f.down()
 	case "search":
-		f.search(args[1:])
+		f.search()
 	default:
 		fmt.Println("unhandleld filer event", event)
 	}
 }
 
-
 func (f *Filer) open() {
-	f.nvim.Call("rpcnotify", nil, 0, "Gui", "side_show")
+	f.nvim.Call("rpcnotify", nil, 0, "Gui", "side_open")
+	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_open")
+	// f.redraw()
+}
+
+func (f *Filer) redraw() {
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_clear")
 	pwd := ""
 	f.nvim.Eval(`expand(getcwd())`, &pwd)
@@ -72,7 +114,7 @@ func (f *Filer) open() {
 		f.selectnum = 0
 	}
 	f.cwd = pwd
-	pwdlen := utf8.RuneCountInString(pwd)+1
+	pwdlen := utf8.RuneCountInString(pwd) + 1
 
 	command := fmt.Sprintf("globpath(expand(getcwd()), '{,.}*', 1, 0)")
 	files := ""
@@ -99,7 +141,7 @@ func (f *Filer) open() {
 		}
 
 		f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_add", file, filetype)
-		item :=  make(map[string]string)
+		item := make(map[string]string)
 		item["filename"] = file
 		item["filetype"] = filetype
 		items = append(items, item)
@@ -119,14 +161,14 @@ func (f *Filer) up() {
 func (f *Filer) down() {
 	f.selectnum++
 	if f.selectnum >= len(f.items) {
-		f.selectnum = len(f.items)-1
+		f.selectnum = len(f.items) - 1
 	}
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_select", f.selectnum)
 }
 
 func (f *Filer) left() {
 	go func() {
-		f.nvim.Command("cd ..")
+		f.nvim.Command("silent :tchdir ..")
 		f.open()
 	}()
 }
@@ -134,29 +176,30 @@ func (f *Filer) left() {
 func (f *Filer) right() {
 	filename := f.items[f.selectnum]["filename"]
 	filetype := f.items[f.selectnum]["filetype"]
-	openCommand := ""
+	command := ""
+	cdCommand := ":tchdir"
+	editCommand := ":e"
 	switch filetype {
 	case "/":
-		openCommand = ":cd " + filename
+		command = "silent " + cdCommand + " " + filename + " | <CR><CR> | :redraw!"
 	default:
-		openCommand = ":e " + filename
+		command = "silent " + editCommand + " " + filename + " | <CR><CR> | :redraw!"
 	}
-	fmt.Println(openCommand)
 	go func() {
-		f.nvim.Command(openCommand)
+		f.nvim.Command(command)
 		f.open()
-		f.nvim.Input("<Esc>")
+		if filetype != "/" {
+			f.nvim.Input("<Esc>")
+			f.nvim.Command("GonvimFilerOpen")
+		}
 	}()
 
 }
 
-
-func (f *Filer) search(args []interface{}) {
-}
-
 func (f *Filer) cancel() {
-
+	f.nvim.Call("rpcnotify", nil, 0, "Gui", "side_close")
 }
 
-
-
+// TODO
+func (f *Filer) search() {
+}

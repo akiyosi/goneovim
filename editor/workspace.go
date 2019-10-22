@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/akiyosi/gonvim/fuzzy"
 	"github.com/akiyosi/gonvim/filer"
+	"github.com/akiyosi/gonvim/fuzzy"
 	"github.com/akiyosi/gonvim/util"
 	shortpath "github.com/akiyosi/short_path"
 	"github.com/jessevdk/go-flags"
@@ -454,7 +454,7 @@ func (w *Workspace) initGonvim() {
 	command! GonvimVersion echo "%s"`, editor.version)
 	if !w.uiRemoteAttached {
 		gonvimCommands = gonvimCommands + `
-	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_show")
+	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
 	command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
 	command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
 	command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
@@ -463,7 +463,6 @@ func (w *Workspace) initGonvim() {
 	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
 	`
 	}
-
 	registerCommands := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	w.nvim.Command(registerCommands)
 
@@ -551,24 +550,23 @@ func (w *Workspace) setCwd(cwd string) {
 	w.cwdlabel = labelpath
 	w.cwdBase = filepath.Base(cwd)
 	for i, ws := range editor.workspaces {
-	        if i >= len(editor.wsSide.items) {
-	                return
-	        }
+		if i >= len(editor.wsSide.items) {
+			return
+		}
 
-	        if ws == w {
-	                path, _ := filepath.Abs(cwd)
-	                sideItem := editor.wsSide.items[i]
-	                if sideItem.cwdpath == path {
-	                        continue
-	                }
+		if ws == w {
+			path, _ := filepath.Abs(cwd)
+			sideItem := editor.wsSide.items[i]
+			if sideItem.cwdpath == path {
+				continue
+			}
 
-	                sideItem.label.SetText(w.cwdlabel)
-	                sideItem.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
-	                sideItem.cwdpath = path
+			sideItem.label.SetText(w.cwdlabel)
+			sideItem.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
+			sideItem.cwdpath = path
 		}
 	}
 }
-
 
 func (w *Workspace) attachUIOption() map[string]interface{} {
 	o := make(map[string]interface{})
@@ -1019,16 +1017,22 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.signature.pos(updates[1:])
 	case "signature_hide":
 		w.signature.hide()
-	case "side_show":
+	case "side_open":
 		editor.wsSide.show()
+	case "side_close":
+		editor.wsSide.hide()
+	case "side_toggle":
+		editor.wsSide.toggle()
+	case "filer_update":
+		go w.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
+	case "filer_open":
+		editor.wsSide.items[editor.active].openContent()
 	case "filer_clear":
 		editor.wsSide.items[editor.active].clear()
 	case "filer_item_add":
 		editor.wsSide.items[editor.active].addItem(updates[1:])
 	case "filer_item_select":
 		editor.wsSide.items[editor.active].selectItem(updates[1:])
-	case "side_toggle":
-		editor.wsSide.toggle()
 	case "gonvim_cursormoved":
 		pos := updates[1].([]interface{})
 		ln := util.ReflectToInt(pos[1])
@@ -1248,13 +1252,13 @@ func (s *WorkspaceSide) newScrollArea() {
 	s.scrollarea.SetWidget(s.widget)
 
 	s.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
-	        width := s.scrollarea.Width()
-	        for _, item := range s.items {
-	                item.label.SetMaximumWidth(width)
-	                item.label.SetMinimumWidth(width)
-	                item.content.SetMinimumWidth(width)
-	                item.content.SetMinimumWidth(width)
-	        }
+		width := s.scrollarea.Width()
+		for _, item := range s.items {
+			item.label.SetMaximumWidth(width)
+			item.label.SetMinimumWidth(width)
+			item.content.SetMinimumWidth(width)
+			item.content.SetMinimumWidth(width)
+		}
 
 	})
 }
@@ -1287,12 +1291,25 @@ func (side *WorkspaceSide) show() {
 	}
 	side.scrollarea.Show()
 	side.isShown = true
-	side.items[editor.active].openContent()
+}
+
+func (side *WorkspaceSide) hide() {
+	if side == nil {
+		return
+	}
+	if editor.config.SideBar.Visible {
+		return
+	}
+	if !side.isShown {
+		return
+	}
+	side.scrollarea.Hide()
+	side.isShown = false
 }
 
 // WorkspaceSideItem is
 type WorkspaceSideItem struct {
-	mu             sync.Mutex
+	mu sync.Mutex
 
 	hidden    bool
 	active    bool
@@ -1307,11 +1324,11 @@ type WorkspaceSideItem struct {
 	text    string
 	cwdpath string
 
-	labelWidget    *widgets.QWidget
-	label          *widgets.QLabel
+	labelWidget *widgets.QWidget
+	label       *widgets.QLabel
 
-	content        *widgets.QListWidget
-	isContentHide  bool
+	content       *widgets.QListWidget
+	isContentHide bool
 }
 
 func newWorkspaceSideItem() *WorkspaceSideItem {
@@ -1325,7 +1342,7 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	labelLayout := widgets.NewQHBoxLayout()
 	labelWidget.SetLayout(labelLayout)
 	labelLayout.SetContentsMargins(15, 1, 1, 1)
-	labelLayout.SetSpacing(editor.iconSize/2)
+	labelLayout.SetSpacing(editor.iconSize / 2)
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(0, 0, 0, 0)
@@ -1361,16 +1378,17 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	layout.SetAlignment(content, core.Qt__AlignLeft)
 
 	openIcon.Hide()
-	closeIcon.Hide()
+	closeIcon.Show()
 
 	sideitem := &WorkspaceSideItem{
-		widget:      widget,
-		layout:      layout,
-		labelWidget: labelWidget,
-		label:       label,
-		openIcon:    openIcon,
-		closeIcon:   closeIcon,
-		content:     content,
+		widget:        widget,
+		layout:        layout,
+		labelWidget:   labelWidget,
+		label:         label,
+		openIcon:      openIcon,
+		closeIcon:     closeIcon,
+		content:       content,
+		isContentHide: true,
 	}
 
 	sideitem.widget.ConnectMousePressEvent(sideitem.toggleContent)
@@ -1378,32 +1396,30 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	return sideitem
 }
 
-
 func (i *WorkspaceSideItem) toggleContent(event *gui.QMouseEvent) {
-       if i.hidden {
-               return
-       }
-       if i.isContentHide {
-               i.openContent()
-       } else {
-               i.closeContent()
-       }
+	if i.hidden {
+		return
+	}
+	if i.isContentHide {
+		i.openContent()
+	} else {
+		i.closeContent()
+	}
 }
 
 func (i *WorkspaceSideItem) openContent() {
-       i.openIcon.Show()
-       i.closeIcon.Hide()
-       i.isContentHide = false
-       i.content.Show()
+	i.openIcon.Show()
+	i.closeIcon.Hide()
+	i.isContentHide = false
+	i.content.Show()
 }
 
 func (i *WorkspaceSideItem) closeContent() {
-       i.openIcon.Hide()
-       i.closeIcon.Show()
-       i.isContentHide = true
-       i.content.Hide()
+	i.openIcon.Hide()
+	i.closeIcon.Show()
+	i.isContentHide = true
+	i.content.Hide()
 }
-
 
 func (i *WorkspaceSideItem) setText(text string) {
 	if i.text == text {
