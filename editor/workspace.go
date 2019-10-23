@@ -1402,8 +1402,34 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	}
 
 	sideitem.widget.ConnectMousePressEvent(sideitem.toggleContent)
+	content.ConnectItemDoubleClicked(sideitem.fileDoubleClicked)
 
 	return sideitem
+}
+
+func (i *WorkspaceSideItem) fileDoubleClicked(item *widgets.QListWidgetItem) {
+	filename := item.Text()
+	path := i.cwdpath
+	sep := ""
+	if runtime.GOOS == "windows" {
+		sep = `\`
+	} else {
+		sep = `/`
+	}
+	filepath := path + sep + filename
+
+	exec := ""
+	switch runtime.GOOS {
+	case "darwin":
+		exec = ":silent !open "
+	case "windows":
+		exec = ":silent !explorer "
+	case "linux":
+		exec = ":silent !xdg-open "
+	}
+
+	execCommand := exec + filepath
+	go editor.workspaces[editor.active].nvim.Command(execCommand)
 }
 
 func (i *WorkspaceSideItem) toggleContent(event *gui.QMouseEvent) {
