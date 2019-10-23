@@ -20,6 +20,10 @@ import (
 
 var editor *Editor
 
+const (
+	WorkspaceLen int = 20
+)
+
 // ColorPalette is
 type ColorPalette struct {
 	e *Editor
@@ -76,6 +80,7 @@ type Editor struct {
 	active     int
 	nvim       *nvim.Nvim
 	window     *frameless.QFramelessWindow
+	split      *widgets.QSplitter
 	wsWidget   *widgets.QWidget
 	wsSide     *WorkspaceSide
 	sysTray    *widgets.QSystemTrayIcon
@@ -177,15 +182,11 @@ func InitEditor() {
 
 	e.initWorkspaces()
 
-	l.AddWidget(e.wsWidget, 1, 0)
-
-	// if editor.config.SideBar.Visible {
-	// 	e.wsSide.newScrollArea()
-	// 	l.AddWidget(e.wsSide.scrollarea, 0, 0)
-	// }
 	e.wsSide.newScrollArea()
-	l.AddWidget(e.wsSide.scrollarea, 0, 0)
 	e.wsSide.scrollarea.Hide()
+	e.newSplitter()
+
+	l.AddWidget(e.split, 1, 0)
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
@@ -208,11 +209,26 @@ func InitEditor() {
 	widgets.QApplication_Exec()
 }
 
+func (e *Editor) newSplitter() {
+	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
+	splitter.AddWidget(e.wsSide.scrollarea)
+	splitter.AddWidget(e.wsWidget)
+	splitter.SetSizes([]int{e.config.SideBar.Width, e.width - e.config.SideBar.Width})
+	splitter.SetStretchFactor(1, 100)
+	splitter.SetObjectName("splitter")
+	e.split = splitter
+
+	if editor.config.SideBar.Visible {
+		e.wsSide.show()
+	}
+}
+
 func (e *Editor) initWorkspaces() {
 	e.workspaces = []*Workspace{}
 	sessionExists := false
 	if e.config.Workspace.RestoreSession == true {
-		for i := 0; i < 20; i++ {
+		for i := 0; i <= WorkspaceLen; i++ {
 			path := filepath.Join(e.homeDir, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
 			_, err := os.Stat(path)
 			if err != nil {
@@ -410,12 +426,7 @@ func (c *ColorPalette) update() {
 }
 
 func (e *Editor) updateGUIColor() {
-	if e.wsSide != nil {
-		e.wsSide.setColor()
-	}
-
 	e.workspaces[e.active].updateWorkspaceColor()
-
 	e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B))
 	e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 
@@ -492,97 +503,6 @@ func (e *Editor) copyClipBoard() {
 		}
 	}()
 
-}
-
-func (e *Editor) sidebarToggle() {
-	side := e.wsSide
-	if side == nil {
-		return
-	}
-	if side.isShown {
-		side.scrollarea.Hide()
-		side.isShown = false
-	} else {
-		side.scrollarea.Show()
-		side.isShown = true
-		for _, item := range side.items {
-			if item.active {
-				fileitems := item.Filelist.Fileitems
-				fileitems[0].selectItem()
-			}
-		}
-	}
-}
-
-func (e *Editor) fileitemNext() {
-	side := e.wsSide
-	if side == nil {
-		return
-	}
-	if !side.isShown {
-		return
-	}
-	for _, item := range side.items {
-		if item.active {
-			fileitems := item.Filelist.Fileitems
-			for i, fileitem := range fileitems {
-				if fileitem.isSelected {
-					if i+1 == len(fileitems) {
-						fileitems[0].selectItem()
-					} else {
-						fileitems[i+1].selectItem()
-					}
-
-					fileitem.unselectItem()
-					return
-				}
-			}
-			fileitems[0].selectItem()
-		}
-	}
-}
-
-func (e *Editor) fileitemPrev() {
-	side := e.wsSide
-	if side == nil {
-		return
-	}
-	if !side.isShown {
-		return
-	}
-	for _, item := range side.items {
-		if item.active {
-			fileitems := item.Filelist.Fileitems
-			for i, fileitem := range fileitems {
-				if fileitem.isSelected {
-					if i == 0 {
-						fileitems[len(fileitems)-1].selectItem()
-					} else {
-						fileitems[i-1].selectItem()
-					}
-
-					fileitem.unselectItem()
-					return
-				}
-			}
-			fileitems[0].selectItem()
-		}
-	}
-}
-
-func (e *Editor) fileitemOpen() {
-	side := e.wsSide
-	if side == nil {
-		return
-	}
-	if !side.isShown {
-		return
-	}
-	for _, item := range side.items {
-		if item.active {
-			item.Filelist.openSelectedItem()
-		}
-	}
 }
 
 func (e *Editor) workspaceNew() {

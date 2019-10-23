@@ -1,6 +1,8 @@
 package util
 
 import (
+	"strings"
+
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
@@ -62,6 +64,24 @@ func IsTrue(d interface{}) bool {
 		}
 	}
 	return false
+}
+
+func SplitVimscript(s string) string {
+	if string(s[0]) == "\n" {
+		s = strings.TrimPrefix(s, string("\n"))
+	}
+	listLines := "["
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		listLines = listLines + `'` + line + `'`
+		if i == len(lines)-1 {
+			listLines = listLines + "]"
+		} else {
+			listLines = listLines + ","
+		}
+	}
+
+	return listLines
 }
 
 func DropShadow(x, y, radius float64, alpha int) *widgets.QGraphicsDropShadowEffect{

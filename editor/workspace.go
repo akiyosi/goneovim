@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/akiyosi/gonvim/filer"
 	"github.com/akiyosi/gonvim/fuzzy"
 	"github.com/akiyosi/gonvim/util"
 	shortpath "github.com/akiyosi/short_path"
@@ -361,14 +362,14 @@ func (w *Workspace) configure() {
 func (w *Workspace) attachUI(path string) error {
 	w.nvim.Subscribe("Gui")
 	go w.initGonvim()
-	if path != "" {
-		go w.nvim.Command("so " + path)
-	}
 	w.tabline.subscribe()
 	w.statusline.subscribe()
 	w.loc.subscribe()
 	w.message.subscribe()
+
+	// Add editor feature
 	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
+	filer.RegisterPlugin(w.nvim)
 
 	w.uiAttached = true
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
@@ -376,6 +377,9 @@ func (w *Workspace) attachUI(path string) error {
 		fmt.Println(err)
 		editor.close()
 		return err
+	}
+	if path != "" {
+		go w.nvim.Command("so " + path)
 	}
 
 	return nil
@@ -393,12 +397,9 @@ func (w *Workspace) initGonvim() {
 	aug GonvimAuMd | au! | aug END
 	au GonvimAuMd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "gonvim_markdown_update")
 	au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
-	aug GonvimAuFileExplorer | au! | aug END
-	au GonvimAuFileExplorer BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "gonvim_workspace_setCurrentFileLabel", expand("%:p"))
 	`
 	if !w.uiRemoteAttached {
 		gonvimAutoCmds = gonvimAutoCmds + `
-		au GonvimAuFileExplorer TextChanged,TextChangedI,BufEnter,BufWrite,DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
 		aug GonvimAuMinimap | au! | aug END
 		au GonvimAuMinimap BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
 		`
@@ -445,7 +446,7 @@ func (w *Workspace) initGonvim() {
 	`
 	}
 
-	registerScripts := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimAutoCmds))
+	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
 	w.nvim.Command(registerScripts)
 
 	gonvimCommands := fmt.Sprintf(`
@@ -453,20 +454,16 @@ func (w *Workspace) initGonvim() {
 	command! GonvimVersion echo "%s"`, editor.version)
 	if !w.uiRemoteAttached {
 		gonvimCommands = gonvimCommands + `
-	command! GonvimSidebarShow call rpcnotify(0, "Gui", "gonvim_sidebar_toggle")
+	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
 	command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
 	command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
 	command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
 	command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
 	command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
-	command! GonvimFileItemNext call rpcnotify(0, "Gui", "gonvim_fileitem_next")
-	command! GonvimFileItemPrev call rpcnotify(0, "Gui", "gonvim_fileitem_prev")
-	command! GonvimFileItemOpen call rpcnotify(0, "Gui", "gonvim_fileitem_open")
 	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
 	`
 	}
-
-	registerCommands := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimCommands))
+	registerCommands := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	w.nvim.Command(registerCommands)
 
 	gonvimInitNotify := `
@@ -475,30 +472,11 @@ func (w *Workspace) initGonvim() {
 	`
 	if !w.uiRemoteAttached {
 		gonvimInitNotify = gonvimInitNotify + `
-		call rpcnotify(0, "Gui", "gonvim_workspace_updateMoifiedbadge")
 		call rpcnotify(0, "Gui", "gonvim_minimap_update")
 		`
 	}
-	initialNotify := fmt.Sprintf(`call execute(%s)`, splitVimscript(gonvimInitNotify))
+	initialNotify := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimInitNotify))
 	w.nvim.Command(initialNotify)
-}
-
-func splitVimscript(s string) string {
-	if string(s[0]) == "\n" {
-		s = strings.TrimPrefix(s, string("\n"))
-	}
-	listLines := "["
-	lines := strings.Split(s, "\n")
-	for i, line := range lines {
-		listLines = listLines + `'` + line + `'`
-		if i == len(lines)-1 {
-			listLines = listLines + "]"
-		} else {
-			listLines = listLines + ","
-		}
-	}
-
-	return listLines
 }
 
 func (w *Workspace) loadGinitVim() {
@@ -546,14 +524,6 @@ func (w *Workspace) nvimEval(s string) (interface{}, error) {
 }
 
 func (w *Workspace) initCwd() {
-	// cwdITF, err := w.nvimEval("getcwd()")
-	// if err != nil {
-	// 	return
-	// }
-	// cwd := cwdITF.(string)
-	// if cwd == "" {
-	// 	return
-	// }
 	if w.cwd == "" {
 		return
 	}
@@ -587,116 +557,15 @@ func (w *Workspace) setCwd(cwd string) {
 		if ws == w {
 			path, _ := filepath.Abs(cwd)
 			sideItem := editor.wsSide.items[i]
-			if sideItem.cwdpath == path && sideItem.isload {
+			if sideItem.cwdpath == path {
 				continue
 			}
 
 			sideItem.label.SetText(w.cwdlabel)
 			sideItem.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
 			sideItem.cwdpath = path
-
-			// if editor.activity.editItem.active == false {
-			// 	continue
-			// }
-			if editor.wsSide.scrollarea == nil {
-				continue
-			}
-
-			filelist, err := newFilelist(path)
-			if err != nil {
-				continue
-			}
-			sideItem.setFilelistwidget(filelist)
 		}
 	}
-}
-
-func (i *WorkspaceSideItem) setFilelistwidget(f *Filelist) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
-
-	// if i.Filelistwidget != nil {
-	// 	i.Filelistwidget.DestroyQWidget()
-	// }
-	// i.layout.AddWidget(f.widget, 0, 0)
-
-	i.Filelistwidget.Hide()
-	i.layout.RemoveWidget(i.Filelistwidget)
-	i.layout.AddWidget(f.widget, 0, 0)
-
-	i.Filelistwidget = f.widget
-	i.Filelist = f
-	i.Filelist.WSitem = i
-	i.active = true
-	i.isload = true
-
-	if i.isFilelistHide {
-		i.closeFilelist()
-	} else {
-		i.openFilelist()
-	}
-
-	editor.wsSide.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
-		// if editor.activity.editItem.active == false {
-		// 	return
-		// }
-		if !i.isload {
-			return
-		}
-		if len(i.Filelist.Fileitems) == 0 {
-			return
-		}
-
-		width := editor.wsSide.scrollarea.Width()
-		charWidth := int(editor.workspaces[editor.active].font.defaultFontMetrics.HorizontalAdvance("W", -1))
-		length := float64(width - (2 * editor.iconSize) - FilewidgetLeftMargin - charWidth - 35)
-
-		for _, item := range editor.wsSide.items {
-			item.label.SetMaximumWidth(width)
-			item.label.SetMinimumWidth(width)
-			for _, fileitem := range item.Filelist.Fileitems {
-				fileitem.widget.SetMaximumWidth(width)
-				fileitem.widget.SetMinimumWidth(width)
-				fileitem.setFilename(length)
-			}
-		}
-
-	})
-}
-
-// slow...
-func (i *WorkspaceSideItem) addFilewidget(f *Fileitem) {
-	// f.makeWidget()
-	// i.Filelist.Fileitems = append(i.Filelist.Fileitems, f)
-	// i.Filelist.widget.Layout().AddWidget(f.widget)
-
-	i.Filelist.Fileitems = append(i.Filelist.Fileitems, f)
-	i.Filelist.widget.Layout().AddWidget(f.widget)
-}
-
-func (i *WorkspaceSideItem) toggleFilelist(event *gui.QMouseEvent) {
-	if i.hidden {
-		return
-	}
-	if i.isFilelistHide {
-		i.openFilelist()
-	} else {
-		i.closeFilelist()
-	}
-}
-
-func (i *WorkspaceSideItem) openFilelist() {
-	i.Filelistwidget.Show()
-	i.openIcon.Show()
-	i.closeIcon.Hide()
-	i.isFilelistHide = false
-}
-
-func (i *WorkspaceSideItem) closeFilelist() {
-	i.Filelistwidget.Hide()
-	i.openIcon.Hide()
-	i.closeIcon.Show()
-	i.isFilelistHide = true
 }
 
 func (w *Workspace) attachUIOption() map[string]interface{} {
@@ -1030,10 +899,12 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	if !isChangeFg || !isChangeBg {
 		editor.isSetGuiColor = false
 	}
-	// Ignore setting GUI color when create second workspace and fg, bg equals -1
-	if len(editor.workspaces) > 1 && fg == -1 && bg == -1 {
+	if len(editor.workspaces) > 1 {
 		w.updateWorkspaceColor()
-		editor.isSetGuiColor = true
+		// Ignore setting GUI color when create second workspace and fg, bg equals -1
+		if fg == -1 && bg == -1 {
+			editor.isSetGuiColor = true
+		}
 	}
 	if editor.isSetGuiColor == true {
 		return
@@ -1057,6 +928,9 @@ func (w *Workspace) updateWorkspaceColor() {
 	w.loc.setColor()
 	w.message.setColor()
 	w.screen.setColor()
+	if editor.wsSide != nil {
+		editor.wsSide.setColor()
+	}
 }
 
 func (w *Workspace) modeInfoSet(args []interface{}) {
@@ -1148,6 +1022,25 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.signature.pos(updates[1:])
 	case "signature_hide":
 		w.signature.hide()
+	case "side_open":
+		editor.wsSide.show()
+	case "side_close":
+		editor.wsSide.hide()
+	case "side_toggle":
+		editor.wsSide.toggle()
+	case "filer_update":
+		if !editor.wsSide.items[editor.active].isContentHide {
+			go w.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
+		}
+	case "filer_open":
+		editor.wsSide.items[editor.active].isContentHide = false
+		editor.wsSide.items[editor.active].openContent()
+	case "filer_clear":
+		editor.wsSide.items[editor.active].clear()
+	case "filer_item_add":
+		editor.wsSide.items[editor.active].addItem(updates[1:])
+	case "filer_item_select":
+		editor.wsSide.items[editor.active].selectItem(updates[1:])
 	case "gonvim_cursormoved":
 		pos := updates[1].([]interface{})
 		ln := util.ReflectToInt(pos[1])
@@ -1167,16 +1060,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		go editor.copyClipBoard()
 	case "gonvim_get_maxline":
 		w.maxLine = util.ReflectToInt(updates[1])
-	case "gonvim_sidebar_toggle":
-		editor.sidebarToggle()
-
-	case "gonvim_fileitem_next":
-		editor.fileitemNext()
-	case "gonvim_fileitem_prev":
-		editor.fileitemPrev()
-	case "gonvim_fileitem_open":
-		editor.fileitemOpen()
-
 	case "gonvim_workspace_new":
 		editor.workspaceNew()
 	case "gonvim_workspace_next":
@@ -1187,32 +1070,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.workspaceSwitch(util.ReflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
 		w.setCwd(updates[1].(string))
-	case "gonvim_workspace_setCurrentFileLabel":
-		file := updates[1].(string)
-		w.filepath = file
-		if w.uiRemoteAttached {
-			return
-		}
-		if editor.wsSide == nil {
-			return
-		}
-		if strings.Contains(w.filepath, "[denite]") || w.filepath == "" {
-			return
-		}
-		editor.wsSide.items[editor.active].setCurrentFileLabel()
-	case "gonvim_workspace_updateMoifiedbadge":
-		if editor.wsSide == nil {
-			return
-		}
-		if strings.Contains(w.filepath, "[denite]") || w.filepath == "" {
-			return
-		}
-		fl := editor.wsSide.items[editor.active].Filelist
-		if fl.active != -1 {
-			if len(fl.Fileitems) != 0 {
-				fl.Fileitems[fl.active].updateModifiedbadge()
-			}
-		}
 	case "gonvim_termenter":
 		w.mode = "terminal-input"
 	case "gonvim_termleave":
@@ -1374,7 +1231,7 @@ func newWorkspaceSide() *WorkspaceSide {
 
 	items := []*WorkspaceSideItem{}
 	side.items = items
-	for i := 0; i < 20; i++ {
+	for i := 0; i < WorkspaceLen; i++ {
 		item := newWorkspaceSideItem()
 		side.items = append(side.items, item)
 		side.items[len(side.items)-1].side = side
@@ -1397,25 +1254,70 @@ func (s *WorkspaceSide) newScrollArea() {
 	})
 	sideArea.SetFocusPolicy(core.Qt__NoFocus | core.Qt__ClickFocus)
 	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
-	sideArea.SetFixedWidth(editor.config.SideBar.Width)
+	// sideArea.SetFixedWidth(editor.config.SideBar.Width)
 
 	s.scrollarea = sideArea
 	s.scrollarea.SetWidget(s.widget)
-	// s.scrollarea.ConnectKeyPressEvent(func(event *gui.QKeyEvent){
-	// 	return
-	// })
+
+	s.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
+		width := s.scrollarea.Width()
+		for _, item := range s.items {
+			item.label.SetMaximumWidth(width)
+			item.label.SetMinimumWidth(width)
+			item.content.SetMinimumWidth(width)
+			item.content.SetMinimumWidth(width)
+		}
+
+	})
 }
 
-type filelistSignal struct {
-	core.QObject
-	_ func() `signal:"filelistUpdateSignal"`
+func (side *WorkspaceSide) toggle() {
+	if side == nil {
+		return
+	}
+	if side.isShown {
+		side.scrollarea.Hide()
+		side.isShown = false
+	} else {
+		side.scrollarea.Show()
+		side.isShown = true
+		// for _, item := range side.items {
+		// 	if item.active {
+		// 		fileitems := item.Filelist.Fileitems
+		// 		fileitems[0].selectItem()
+		// 	}
+		// }
+	}
+}
+
+func (side *WorkspaceSide) show() {
+	if side == nil {
+		return
+	}
+	if side.isShown {
+		return
+	}
+	side.scrollarea.Show()
+	side.isShown = true
+}
+
+func (side *WorkspaceSide) hide() {
+	if side == nil {
+		return
+	}
+	if editor.config.SideBar.Visible {
+		return
+	}
+	if !side.isShown {
+		return
+	}
+	side.scrollarea.Hide()
+	side.isShown = false
 }
 
 // WorkspaceSideItem is
 type WorkspaceSideItem struct {
-	signal         *filelistSignal
-	filelistUpdate chan *Fileitem
-	mu             sync.Mutex
+	mu sync.Mutex
 
 	hidden    bool
 	active    bool
@@ -1430,12 +1332,11 @@ type WorkspaceSideItem struct {
 	text    string
 	cwdpath string
 
-	Filelist       *Filelist
-	isload         bool
-	labelWidget    *widgets.QWidget
-	label          *widgets.QLabel
-	Filelistwidget *widgets.QWidget
-	isFilelistHide bool
+	labelWidget *widgets.QWidget
+	label       *widgets.QLabel
+
+	content       *widgets.QListWidget
+	isContentHide bool
 }
 
 func newWorkspaceSideItem() *WorkspaceSideItem {
@@ -1449,11 +1350,11 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	labelLayout := widgets.NewQHBoxLayout()
 	labelWidget.SetLayout(labelLayout)
 	labelLayout.SetContentsMargins(15, 1, 1, 1)
+	labelLayout.SetSpacing(editor.iconSize / 2)
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(0, 0, 0, 0)
-	label.SetMaximumWidth(editor.config.SideBar.Width)
-	label.SetMinimumWidth(editor.config.SideBar.Width)
+	label.SetAlignment(core.Qt__AlignLeft)
 
 	openIcon := svg.NewQSvgWidget(nil)
 	openIcon.SetFixedWidth(editor.iconSize - 1)
@@ -1467,44 +1368,93 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	svgContent = editor.getSvg("chevron-right", nil)
 	closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
-	// flwidget := widgets.NewQWidget(nil, 0)
-
-	filelist := &Filelist{}
-	// filelist := &Filelist{
-	// 	widget: flwidget,
-	// }
+	content := widgets.NewQListWidget(nil)
+	content.SetFocusPolicy(core.Qt__NoFocus)
+	content.SetFrameShape(widgets.QFrame__NoFrame)
+	content.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
 
 	labelLayout.AddWidget(openIcon, 0, 0)
 	labelLayout.AddWidget(closeIcon, 0, 0)
 	labelLayout.AddWidget(label, 0, 0)
+
+	labelLayout.SetAlignment(openIcon, core.Qt__AlignLeft)
+	labelLayout.SetAlignment(closeIcon, core.Qt__AlignLeft)
+	labelLayout.SetAlignment(label, core.Qt__AlignLeft)
 	// layout.AddWidget(flwidget, 0, 0)
 
-	layout.AddWidget(labelWidget, 0, 0)
+	layout.AddWidget(labelWidget, 1, 0)
+	layout.AddWidget(content, 0, 0)
+	layout.SetAlignment(labelWidget, core.Qt__AlignLeft)
+	layout.SetAlignment(content, core.Qt__AlignLeft)
+
 	openIcon.Hide()
-	closeIcon.Hide()
+	closeIcon.Show()
 
 	sideitem := &WorkspaceSideItem{
-		filelistUpdate: make(chan *Fileitem, 20000),
-		signal:         NewFilelistSignal(nil),
-
-		widget:      widget,
-		layout:      layout,
-		labelWidget: labelWidget,
-		label:       label,
-		openIcon:    openIcon,
-		closeIcon:   closeIcon,
-		Filelist:    filelist,
-		// Filelistwidget: flwidget,
+		widget:        widget,
+		layout:        layout,
+		labelWidget:   labelWidget,
+		label:         label,
+		openIcon:      openIcon,
+		closeIcon:     closeIcon,
+		content:       content,
+		isContentHide: true,
 	}
-	sideitem.Filelist.WSitem = sideitem
-	sideitem.signal.ConnectFilelistUpdateSignal(func() {
-		update := <-sideitem.filelistUpdate
-		sideitem.addFilewidget(update)
-	})
 
-	sideitem.widget.ConnectMousePressEvent(sideitem.toggleFilelist)
+	sideitem.widget.ConnectMousePressEvent(sideitem.toggleContent)
+	content.ConnectItemDoubleClicked(sideitem.fileDoubleClicked)
 
 	return sideitem
+}
+
+func (i *WorkspaceSideItem) fileDoubleClicked(item *widgets.QListWidgetItem) {
+	filename := item.Text()
+	path := i.cwdpath
+	sep := ""
+	if runtime.GOOS == "windows" {
+		sep = `\`
+	} else {
+		sep = `/`
+	}
+	filepath := path + sep + filename
+
+	exec := ""
+	switch runtime.GOOS {
+	case "darwin":
+		exec = ":silent !open "
+	case "windows":
+		exec = ":silent !explorer "
+	case "linux":
+		exec = ":silent !xdg-open "
+	}
+
+	execCommand := exec + filepath
+	go editor.workspaces[editor.active].nvim.Command(execCommand)
+}
+
+func (i *WorkspaceSideItem) toggleContent(event *gui.QMouseEvent) {
+	if i.hidden {
+		return
+	}
+	if i.isContentHide {
+		i.openContent()
+	} else {
+		i.closeContent()
+	}
+}
+
+func (i *WorkspaceSideItem) openContent() {
+	i.openIcon.Show()
+	i.closeIcon.Hide()
+	i.isContentHide = false
+	i.content.Show()
+}
+
+func (i *WorkspaceSideItem) closeContent() {
+	i.openIcon.Hide()
+	i.closeIcon.Show()
+	i.isContentHide = true
+	i.content.Hide()
 }
 
 func (i *WorkspaceSideItem) setText(text string) {
@@ -1525,6 +1475,36 @@ func (i *WorkspaceSideItem) setSideItemLabel(n int) {
 	i.label.SetContentsMargins(1, 3, 0, 3)
 }
 
+func (i *WorkspaceSideItem) clear() {
+	i.content.Clear()
+}
+
+func (i *WorkspaceSideItem) addItem(args []interface{}) {
+	filename := args[0].(string)
+	filetype := args[1].(string)
+	l := widgets.NewQListWidgetItem(i.content, 1)
+	// l.SetSizeHint(core.NewQSize2(200, 25))
+	// w := widgets.NewQWidget(i.content, 0)
+	var svg string
+	if filetype == `/` {
+		svg = editor.getSvg("directory", nil)
+	} else {
+		svg = editor.getSvg(filetype, nil)
+	}
+	pixmap := gui.NewQPixmap()
+	pixmap.LoadFromData2(core.NewQByteArray2(svg, len(svg)), "SVG", core.Qt__ColorOnly)
+	icon := gui.NewQIcon2(pixmap)
+
+	i.content.AddItem2(l)
+	// i.content.SetItemWidget(l, w)
+	l.SetIcon(icon)
+	l.SetText(filename)
+}
+
+func (i *WorkspaceSideItem) selectItem(args []interface{}) {
+	i.content.SetCurrentRow(util.ReflectToInt(args[0]))
+}
+
 func (s *WorkspaceSide) setColor() {
 	fg := editor.colors.sideBarFg.String()
 	sfg := editor.colors.scrollBarFg.String()
@@ -1536,10 +1516,21 @@ func (s *WorkspaceSide) setColor() {
 	}
 	s.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
 
-	if len(editor.workspaces) == 1 {
-		s.items[0].active = true
-		s.items[0].labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", editor.colors.sideBarSelectedItemBg, fg))
+	for _, item := range s.items {
+		item.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; }", editor.colors.inactiveFg.String()))
+		item.content.SetStyleSheet(fmt.Sprintf(`
+  QListWidget::item {
+     color: %s;
+     background-color: rgba(0, 0, 0, 0.0);
+  }
+  QListWidget::item:selected {
+     background-color: %s;
+  }
+	`, fg, editor.colors.selectedBg.String()))
 	}
+
+	s.items[0].active = true
+	s.items[0].labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", editor.colors.sideBarSelectedItemBg, fg))
 }
 
 func (i *WorkspaceSideItem) setActive() {
@@ -1558,21 +1549,6 @@ func (i *WorkspaceSideItem) setActive() {
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
 	svgCloseContent := editor.getSvg("chevron-right", fg)
 	i.closeIcon.Load2(core.NewQByteArray2(svgCloseContent, len(svgCloseContent)))
-
-	reloadFilelist := i.cwdpath != i.Filelist.cwdpath
-
-	if reloadFilelist {
-		filelist, err := newFilelist(i.cwdpath)
-		if err != nil {
-			return
-		}
-		i.setFilelistwidget(filelist)
-	}
-	if !i.isFilelistHide {
-		i.Filelistwidget.Show()
-	} else {
-		i.Filelistwidget.Hide()
-	}
 }
 
 func (i *WorkspaceSideItem) setInactive() {
@@ -1589,8 +1565,6 @@ func (i *WorkspaceSideItem) setInactive() {
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
 	svgCloseContent := editor.getSvg("chevron-right", fg)
 	i.closeIcon.Load2(core.NewQByteArray2(svgCloseContent, len(svgCloseContent)))
-
-	i.Filelistwidget.Hide()
 }
 
 func (i *WorkspaceSideItem) show() {
@@ -1599,12 +1573,13 @@ func (i *WorkspaceSideItem) show() {
 	}
 	i.hidden = false
 	i.label.Show()
-	if !i.isFilelistHide {
-		i.Filelistwidget.Show()
+
+	if !i.isContentHide {
+		i.content.Show()
 		i.openIcon.Show()
 		i.closeIcon.Hide()
 	} else {
-		i.Filelistwidget.Hide()
+		i.content.Hide()
 		i.openIcon.Hide()
 		i.closeIcon.Show()
 	}
@@ -1616,7 +1591,8 @@ func (i *WorkspaceSideItem) hide() {
 	}
 	i.hidden = true
 	i.label.Hide()
-	i.Filelistwidget.Hide()
 	i.openIcon.Hide()
 	i.closeIcon.Hide()
+
+	i.content.Hide()
 }
