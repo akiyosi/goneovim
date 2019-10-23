@@ -1231,7 +1231,7 @@ func newWorkspaceSide() *WorkspaceSide {
 
 	items := []*WorkspaceSideItem{}
 	side.items = items
-	for i := 0; i < 20; i++ {
+	for i := 0; i < WorkspaceLen; i++ {
 		item := newWorkspaceSideItem()
 		side.items = append(side.items, item)
 		side.items[len(side.items)-1].side = side
@@ -1371,6 +1371,7 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	content := widgets.NewQListWidget(nil)
 	content.SetFocusPolicy(core.Qt__NoFocus)
 	content.SetFrameShape(widgets.QFrame__NoFrame)
+	content.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
 
 	labelLayout.AddWidget(openIcon, 0, 0)
 	labelLayout.AddWidget(closeIcon, 0, 0)
