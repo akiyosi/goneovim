@@ -2,8 +2,8 @@ package filer
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/akiyosi/gonvim/util"
 	"github.com/neovim/go-client/nvim"
@@ -114,14 +114,37 @@ func (f *Filer) redraw() {
 		f.selectnum = 0
 	}
 	f.cwd = pwd
-	pwdlen := utf8.RuneCountInString(pwd)
-	if pwd != string(`/`) {
-		pwdlen++
+	pwdlen := len(pwd)
+	if runtime.GOOS != "windows" {
+		if pwd != string(`/`) {
+			pwdlen++
+		}
+	} else {
+		if len(pwd) != 3 { // it means that Windows root is 'C:\', 'D:\', etc
+			pwdlen++
+		}
 	}
 
-	command := fmt.Sprintf("globpath(expand(getcwd()), '{,.}*', 1, 0)")
+	command := "globpath(expand(getcwd()), '{,.}*', 1, 0)"
 	files := ""
 	f.nvim.Eval(command, &files)
+	if len(files) <= pwdlen {
+		return
+	}
+
+	// In windows, we need to detect file or directory
+	var directories []string
+	if runtime.GOOS == "windows" {
+		command := "let dir = globpath(expand(getcwd()), '*', 0, 1) | echo filter(dir, 'isdirectory(v:val)')"
+		dirstring, err := f.nvim.CommandOutput(command)
+		if err == nil && len(dirstring) > 2 {
+			dirstring = dirstring[2 : len(dirstring)-2]
+			for _, dir := range strings.Split(dirstring, `', '`) {
+				dir = dir[pwdlen:]
+				directories = append(directories, dir)
+			}
+		}
+	}
 
 	var items []map[string]string
 	for _, file := range strings.Split(files, "\n") {
@@ -139,8 +162,16 @@ func (f *Filer) redraw() {
 		}
 
 		// If it is directory
-		if file[len(file)-1] == '/' {
-			filetype = string("/")
+		if runtime.GOOS == "windows" {
+			for _, dir := range directories {
+				if file == dir {
+					filetype = string("/")
+				}
+			}
+		} else {
+			if file[len(file)-1] == '/' {
+				filetype = string("/")
+			}
 		}
 
 		f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_add", file, filetype)

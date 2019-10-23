@@ -1370,6 +1370,7 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 
 	content := widgets.NewQListWidget(nil)
 	content.SetFocusPolicy(core.Qt__NoFocus)
+	content.SetFrameShape(widgets.QFrame__NoFrame)
 
 	labelLayout.AddWidget(openIcon, 0, 0)
 	labelLayout.AddWidget(closeIcon, 0, 0)
