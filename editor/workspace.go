@@ -449,12 +449,16 @@ func (w *Workspace) initGonvim() {
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
 	w.nvim.Command(registerScripts)
 
+	gonvimScripts := `
+	noremap <ScrollWheelUp> <C-Y>
+	noremap <ScrollWheelDown> <C-E>
+	`
 	gonvimCommands := fmt.Sprintf(`
+	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
 	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
 	command! GonvimVersion echo "%s"`, editor.version)
 	if !w.uiRemoteAttached {
 		gonvimCommands = gonvimCommands + `
-	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
 	command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
 	command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
 	command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
@@ -463,8 +467,8 @@ func (w *Workspace) initGonvim() {
 	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
 	`
 	}
-	registerCommands := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
-	w.nvim.Command(registerCommands)
+	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimScripts+gonvimCommands))
+	w.nvim.Command(registerScripts)
 
 	gonvimInitNotify := `
 	call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat, &ro)

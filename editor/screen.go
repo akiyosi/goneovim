@@ -736,7 +736,7 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	defer m.Unlock()
 
 	var v, h, vert, horiz int
-	// var vertKey string
+	var vertKey string
 	var horizKey string
 	var accel int
 	font := s.font
@@ -794,11 +794,11 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 
 	mod := event.Modifiers()
 
-	// if vert > 0 {
-	// 	vertKey = "Up"
-	// } else {
-	// 	vertKey = "Down"
-	// }
+	if vert > 0 {
+		vertKey = "Up"
+	} else {
+		vertKey = "Down"
+	}
 	if horiz > 0 {
 		horizKey = "Left"
 	} else {
@@ -822,14 +822,15 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	y := int(float64(event.Y()) / float64(font.lineHeight))
 	pos := []int{x, y}
 
-	if vert > 0 {
-		s.ws.nvim.Input(fmt.Sprintf("%v<C-Y>", accel))
-	} else if vert < 0 {
-		s.ws.nvim.Input(fmt.Sprintf("%v<C-E>", accel))
-	}
-	// if vert != 0 {
-	// 	s.ws.nvim.Input(fmt.Sprintf("%v<%sScrollWheel%s><%d,%d>", accel, editor.modPrefix(mod), vertKey, pos[0], pos[1]))
+	// if vert > 0 {
+	// 	s.ws.nvim.Input(fmt.Sprintf("%v<C-Y>", accel))
+	// } else if vert < 0 {
+	// 	s.ws.nvim.Input(fmt.Sprintf("%v<C-E>", accel))
 	// }
+	if vert != 0 {
+		// s.ws.nvim.Input(fmt.Sprintf("%v<%sScrollWheel%s><%d,%d>", accel, editor.modPrefix(mod), vertKey, pos[0], pos[1]))
+		s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
+	}
 
 	if horiz != 0 {
 		s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
