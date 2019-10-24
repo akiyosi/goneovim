@@ -453,11 +453,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	// Draw vim window separator
-	if editor.config.Editor.DrawBorder && w.grid == 1 {
-		for _, win := range w.s.windows {
-			win.drawBorder(p)
-		}
-	}
+	w.drawBorders(p, row, col, rows, cols)
 
 	// Draw indent guide
 	if editor.config.Editor.IndentGuide && w.grid == 1 {
@@ -659,19 +655,41 @@ func (w *Window) drawMsgSeparator(p *gui.QPainter) {
 	)
 }
 
-func (w *Window) drawBorder(p *gui.QPainter) {
+func (w *Window) drawBorders(p *gui.QPainter, row, col, rows, cols int) {
 	if w == nil {
 		return
 	}
-	if !w.isShown() {
+	if w.grid != 1 {
 		return
 	}
-	if w.isFloatWin {
+	if !editor.config.Editor.DrawBorder {
 		return
 	}
-	if w.isMsgGrid {
-		return
+	for _, win := range w.s.windows {
+		if win == nil {
+			continue
+		}
+		if !win.isShown() {
+			continue
+		}
+		if win.isFloatWin {
+			continue
+		}
+		if win.isMsgGrid {
+			continue
+		}
+		if win.pos[0]+win.cols < row && (win.pos[1]+win.rows+1) < col {
+			continue
+		}
+		if win.pos[0] > (row+rows) && (win.pos[1]+win.rows) > (col+cols) {
+			continue
+		}
+		win.drawBorder(p)
 	}
+
+}
+
+func (w *Window) drawBorder(p *gui.QPainter) {
 	font := w.getFont()
 
 	// window position is based on cols, rows of global font setting
@@ -939,29 +957,9 @@ func (s *Screen) gridResize(args []interface{}) {
 			continue
 		}
 
-		// s.assignMdGridid(gridid)
 		s.resizeWindow(gridid, cols, rows)
 	}
 }
-
-// func (s *Screen) assignMdGridid(gridid gridId) {
-// 	if s.name == "minimap" {
-// 		return
-// 	}
-// 	if !s.ws.markdown.gridIdTrap || gridid == 1 {
-// 		return
-// 	}
-// 	maxid := 0
-// 	for id, _ := range s.windows {
-// 		if maxid < id {
-// 			maxid = id
-// 		}
-// 	}
-// 	if maxid < gridid {
-// 		s.ws.markdown.mdGridId = gridid
-// 		s.ws.markdown.gridIdTrap = false
-// 	}
-// }
 
 func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win := s.windows[gridid]
