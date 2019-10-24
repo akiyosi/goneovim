@@ -179,14 +179,12 @@ func InitEditor() {
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
-
-	e.initWorkspaces()
-
 	e.wsSide.newScrollArea()
 	e.wsSide.scrollarea.Hide()
 	e.newSplitter()
-
 	l.AddWidget(e.split, 1, 0)
+
+	e.initWorkspaces()
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {

@@ -372,6 +372,9 @@ func (s *Screen) gridFont(update interface{}) {
 func (s *Screen) toolTipPos() (int, int, int, int) {
 	var x, y, candX, candY int
 	ws := s.ws
+	if len(s.windows) == 0 {
+		return 0, 0, 0, 0
+	}
 	if ws.palette.widget.IsVisible() {
 		s.tooltip.SetParent(s.ws.palette.widget)
 		font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)

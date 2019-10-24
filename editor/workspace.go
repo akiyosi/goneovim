@@ -127,6 +127,10 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.loc.ws = w
 	w.message = initMessage()
 	w.message.ws = w
+	w.palette = initPalette()
+	w.palette.ws = w
+	w.fpalette = initPalette()
+	w.fpalette.ws = w
 
 	go w.startNvim(path)
 	w.registerSignal()
@@ -135,10 +139,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.screen.ws = w
 	w.screen.font = w.font
 	w.screen.initInputMethodWidget()
-	w.palette = initPalette()
-	w.palette.ws = w
-	w.fpalette = initPalette()
-	w.fpalette.ws = w
 
 	w.loc.widget.SetParent(editor.wsWidget)
 	w.message.widget.SetParent(editor.window)
@@ -188,7 +188,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	layout.AddWidget(w.tabline.widget, 0, 0)
 	layout.AddWidget(scrWidget, 1, 0)
 	layout.AddWidget(w.statusline.widget, 0, 0)
-
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
