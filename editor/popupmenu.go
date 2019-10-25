@@ -290,17 +290,13 @@ func (p *PopupItem) updateMenu() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		if p.selected {
-			go func() {
-				p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-				p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-				p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			}()
+			p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 		} else {
-			go func() {
-				p.kindWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-				p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-				p.detailLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-			}()
+			p.kindWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			p.detailLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 		}
 	}
 	if p.menuTextRequest != p.menuText {
