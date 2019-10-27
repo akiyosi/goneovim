@@ -1583,9 +1583,10 @@ func (c *Cell) isStatuslineOrVertSplit() bool {
 	if &c.highlight == nil {
 		return false
 	}
-	if editor.config.Editor.DrawBorder &&
-	(c.highlight.hlName == "StatusLine" || c.highlight.hlName == "StatusLineNC" || c.highlight.hlName == "VertSplit") {
-		return true
+	if c.highlight.hlName == "StatusLine" || c.highlight.hlName == "StatusLineNC" || c.highlight.hlName == "VertSplit" {
+		if editor.config.Editor.DrawBorder {
+			return true
+		}
 	}
 	return false
 }
@@ -2571,6 +2572,7 @@ func (w *Window) hideOverlappingWindows() {
 
 func (w *Window) show() {
 	// w.hideOverlappingWindows()
+	w.fill()
 	w.widget.Show()
 	w.shown = true
 }
@@ -2586,7 +2588,10 @@ func (w *Window) setParent(a widgets.QWidget_ITF) {
 
 func (w *Window) setGeometryAndPalette(rect core.QRect_ITF) {
 	w.widget.SetGeometry(rect)
+	w.fill()
+}
 
+func (w *Window) fill() {
 	if editor.config.Editor.DrawBorder {
 		return
 	}
