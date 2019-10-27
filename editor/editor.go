@@ -425,16 +425,18 @@ func (c *ColorPalette) update() {
 
 func (e *Editor) updateGUIColor() {
 	e.workspaces[e.active].updateWorkspaceColor()
-	e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B))
-	e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 
-	// On linux, add a frame if alpha is 1.0
-	if runtime.GOOS == "linux" && e.config.Editor.Transparent == 1.0 {
-		e.window.Widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); }", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
+	// Do not use frameless drawing on linux
+	if runtime.GOOS == "linux" {
+		// e.window.Widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); }", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
 		e.window.TitleBar.Hide()
+		e.window.WindowWidget.SetStyleSheet(fmt.Sprintf(" #QFramelessWidget { background-color: rgba(%d, %d, %d, %f); border-radius: 0px;}", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
 		e.window.SetWindowFlag(core.Qt__FramelessWindowHint, false)
 		e.window.SetWindowFlag(core.Qt__NoDropShadowWindowHint, false)
 		e.window.Show()
+	} else {
+		e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B))
+		e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 	}
 
 	e.window.SetWindowOpacity(1.0)
