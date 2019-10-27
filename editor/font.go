@@ -4,6 +4,8 @@ import (
 	"math"
 
 	"github.com/therecipe/qt/gui"
+	// lru "github.com/hashicorp/golang-lru"
+	lru "github.com/bluele/gcache"
 )
 
 // Font is
@@ -86,7 +88,27 @@ func (f *Font) change(family string, size int) {
 
 	// reset character cache
 	if editor.config.Editor.CachedDrawing {
-		f.ws.screen.glyphMap = make(map[HlChar]gui.QImage)
+		for _, win := range f.ws.screen.windows {
+			if win == nil {
+				continue
+			}
+			if win.font != nil {
+				continue
+			}
+			// cache, err := lru.New2Q(LRUSIZE)
+			// if err != nil {
+			// 	panic(err)
+			// }
+			// win.textCache = cache
+			cache := lru.New(LRUSIZE).LRU().
+			 EvictedFunc(func(key, value interface{}) {
+			         image := value.(*gui.QImage)
+			         image.DestroyQImageDefault()
+				 image = nil
+			 }).
+			Build()
+			win.textCache = cache
+		}
 	}
 }
 

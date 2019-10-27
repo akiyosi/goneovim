@@ -65,7 +65,7 @@ func newMiniMap() *MiniMap {
 			windows:        make(map[gridId]*Window),
 			cursor:         [2]int{0, 0},
 			scrollRegion:   []int{0, 0, 0, 0},
-			glyphMap:       make(map[HlChar]gui.QImage),
+			// glyphMap:       make(map[HlChar]gui.QImage),
 			highlightGroup: make(map[string]int),
 		},
 		curRegion:     curRegion,

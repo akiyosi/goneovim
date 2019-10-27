@@ -15,8 +15,13 @@ import (
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
-
 	"github.com/akiyosi/gonvim/util"
+	// lru "github.com/hashicorp/golang-lru"
+	lru "github.com/bluele/gcache"
+)
+
+const (
+	LRUSIZE int = 64
 )
 
 type gridId = int
@@ -36,6 +41,14 @@ type Highlight struct {
 	underline     bool
 	undercurl     bool
 	strikethrough bool
+}
+
+type HlChars struct {
+	text   string
+	fg     *RGBA
+	bg     *RGBA
+	italic bool
+	bold   bool
 }
 
 type HlChar struct {
@@ -78,6 +91,7 @@ type Window struct {
 	queueRedrawArea  [4]int
 	scrollRegion     []int
 	devicePixelRatio float64
+	textCache        lru.Cache
 	glyphMap         map[HlChar]gui.QImage
 
 	font         *Font
@@ -101,7 +115,6 @@ type Screen struct {
 	name     string
 	widget   *widgets.QWidget
 	windows  map[gridId]*Window
-	glyphMap map[HlChar]gui.QImage
 	width    int
 	height   int
 
@@ -114,6 +127,7 @@ type Screen struct {
 	highlightGroup map[string]int
 
 	tooltip *widgets.QLabel
+	glyphMap         map[HlChar]gui.QImage
 
 	queueRedrawArea [4]int
 	resizeCount     uint
@@ -129,7 +143,6 @@ func newScreen() *Screen {
 		windows:        make(map[gridId]*Window),
 		cursor:         [2]int{0, 0},
 		scrollRegion:   []int{0, 0, 0, 0},
-		glyphMap:       make(map[HlChar]gui.QImage),
 		highlightGroup: make(map[string]int),
 	}
 
@@ -363,7 +376,21 @@ func (s *Screen) gridFont(update interface{}) {
 	newCols := int(float64(oldWidth) / win.font.truewidth)
 	newRows := oldHeight / win.font.lineHeight
 
-	win.glyphMap = make(map[HlChar]gui.QImage)
+	// win.glyphMap = make(map[HlChar]gui.QImage)
+	// cache, err := lru.New2Q(LRUSIZE)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// win.textCache = cache
+	cache := lru.New(LRUSIZE).LRU().
+	 EvictedFunc(func(key, value interface{}) {
+	         image := value.(*gui.QImage)
+	         image.DestroyQImageDefault()
+		 image = nil
+	 }).
+	Build()
+	win.textCache = cache
+
 	_ = s.ws.nvim.TryResizeUIGrid(s.ws.cursor.gridid, newCols, newRows)
 	font := win.getFont()
 	s.ws.cursor.updateFont(font)
@@ -1961,6 +1988,184 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
+func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
+	if y >= len(w.content) {
+		return
+	}
+	wsfont := w.s.ws.font
+	// font := p.Font()
+	line := w.content[y]
+	chars := map[Highlight][]int{}
+	specialChars := []int{}
+	var image *gui.QImage
+
+	for x := col; x < col+cols; x++ {
+		if x > w.lenLine[y] {
+			break
+		}
+		if x >= len(line) {
+			continue
+		}
+		if line[x] == nil {
+			continue
+		}
+		if line[x].char == " " {
+			continue
+		}
+		if line[x].char == "" {
+			continue
+		}
+		// if drawborder is true, and row is statusline's row
+		if line[x].isStatuslineOrVertSplit() {
+			continue
+		}
+		if !line[x].normalWidth {
+			specialChars = append(specialChars, x)
+			continue
+		}
+
+		highlight := line[x].highlight
+		colorSlice, ok := chars[highlight]
+		if !ok {
+			colorSlice = []int{}
+		}
+		colorSlice = append(colorSlice, x)
+		chars[highlight] = colorSlice
+
+	}
+
+	pointF := core.NewQPointF3(
+		float64(col) * wsfont.truewidth,
+		float64(y*wsfont.lineHeight),
+	)
+
+	for highlight, colorSlice := range chars {
+		var buffer bytes.Buffer
+		slice := colorSlice[:]
+		for x := col; x < col+cols; x++ {
+			if len(slice) == 0 {
+				break
+			}
+			index := slice[0]
+			if x < index {
+				buffer.WriteString(" ")
+				continue
+			}
+			if x == index {
+				buffer.WriteString(line[x].char)
+				slice = slice[1:]
+			}
+		}
+
+		text := buffer.String()
+		if text != "" {
+			imagev, err := w.textCache.Get(HlChars{
+				text: text,
+				fg:     highlight.fg(),
+				bg:     highlight.bg(),
+				italic: highlight.italic,
+				bold:   highlight.bold,
+			})
+			if err != nil {
+				image = w.newTextCache(p, text, highlight)
+			} else {
+				image = imagev.(*gui.QImage)
+			}
+			p.DrawImage7(
+				pointF,
+				image,
+			)
+		}
+
+	}
+
+	for _, x := range specialChars {
+		if line[x] == nil || line[x].char == " " {
+			continue
+		}
+		imagev, err := w.textCache.Get(HlChars{
+			text: line[x].char,
+			fg:     line[x].highlight.fg(),
+			bg:     line[x].highlight.bg(),
+			italic: line[x].highlight.italic,
+			bold:   line[x].highlight.bold,
+		})
+		if err != nil {
+			image = w.newTextCache(p, line[x].char, line[x].highlight)
+		} else {
+			image = imagev.(*gui.QImage)
+		}
+		p.DrawImage7(
+			core.NewQPointF3(
+				float64(x)*wsfont.truewidth,
+				float64(y*wsfont.lineHeight),
+			),
+			image,
+		)
+	}
+}
+
+func (w *Window) newTextCache(p *gui.QPainter, text string, highlight Highlight) *gui.QImage {
+	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
+
+	width := float64(len(text)) * w.getFont().italicWidth
+
+	if highlight.foreground == nil {
+		highlight.foreground = w.s.ws.foreground
+	}
+
+	// QImage default device pixel ratio is 1.0,
+	// So we set the correct device pixel ratio
+	image := gui.NewQImage2(
+		core.NewQRectF4(
+			0,
+			0,
+			w.devicePixelRatio*width,
+			w.devicePixelRatio*float64(w.s.ws.font.lineHeight),
+		).Size().ToSize(),
+		gui.QImage__Format_ARGB32_Premultiplied,
+	)
+	image.SetDevicePixelRatio(w.devicePixelRatio)
+	image.Fill3(core.Qt__transparent)
+
+	p = gui.NewQPainter2(image)
+	p.SetPen2(gui.NewQColor3(
+		highlight.foreground.R,
+		highlight.foreground.G,
+		highlight.foreground.B,
+		255))
+
+	p.SetFont(w.s.ws.font.fontNew)
+	font := p.Font()
+	font.SetBold(highlight.bold)
+	font.SetItalic(highlight.italic)
+	p.SetFont(font)
+
+	p.DrawText6(
+		core.NewQRectF4(
+			0,
+			0,
+			width,
+			float64(w.s.ws.font.lineHeight),
+		),
+		text,
+		gui.NewQTextOption2(core.Qt__AlignVCenter),
+	)
+	// w.textCache.Add(
+	w.textCache.Set(
+		HlChars{
+			text: text,
+			fg:     highlight.fg(),
+			bg:     highlight.bg(),
+			italic: highlight.italic,
+			bold:   highlight.bold,
+		},
+		image,
+	)
+
+	return image
+}
+
 func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
@@ -2249,8 +2454,11 @@ func (w *Window) drawContents(p *gui.QPainter, y int, col int, cols int) {
 		w.drawMinimap(p, y, col, cols)
 	} else if !editor.config.Editor.CachedDrawing {
 		w.drawText(p, y, col, cols)
+		// w.drawTexts(p, y, col, cols)
 	} else {
-		w.drawChars(p, y, col, cols)
+		// w.drawText(p, y, col, cols)
+		// w.drawChars(p, y, col, cols)
+		w.drawTexts(p, y, col, cols)
 	}
 }
 
@@ -2514,10 +2722,23 @@ func newWindow() *Window {
 		devicePixelRatio = 1.0
 	}
 
+	// cache, err := lru.New2Q(LRUSIZE)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	cache := lru.New(LRUSIZE).LRU().
+	 EvictedFunc(func(key, value interface{}) {
+		 image := value.(*gui.QImage)
+		 image.DestroyQImageDefault()
+		 image = nil
+	 }).
+	Build()
+
 	w := &Window{
 		widget:           widget,
 		scrollRegion:     []int{0, 0, 0, 0},
 		devicePixelRatio: devicePixelRatio,
+		textCache:        cache,
 	}
 
 	widget.ConnectPaintEvent(w.paint)
