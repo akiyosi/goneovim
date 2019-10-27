@@ -81,6 +81,7 @@ func initPalette() *Palette {
 	resultLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 	resultWidget := widgets.NewQWidget(nil, 0)
 	resultWidget.SetLayout(resultLayout)
+	resultWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0); white-space: pre-wrap;")
 	resultWidget.SetContentsMargins(0, 0, 0, 0)
 
 	scrollCol := widgets.NewQWidget(nil, 0)
@@ -139,18 +140,18 @@ func initPalette() *Palette {
 		itemLayout := util.NewVFlowLayout(padding, padding*2, 0, 0, 9999)
 		itemLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 		itemWidget.SetLayout(itemLayout)
-		itemWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+		// itemWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 		resultLayout.AddWidget(itemWidget, 0, 0)
 		icon := svg.NewQSvgWidget(nil)
 		icon.SetFixedWidth(editor.iconSize - 1)
 		icon.SetFixedHeight(editor.iconSize - 1)
 		icon.SetContentsMargins(0, 0, 0, 0)
-		icon.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+		// icon.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 		base := widgets.NewQLabel(nil, 0)
 		base.SetText("base")
 		base.SetContentsMargins(0, padding, 0, padding)
-		base.SetStyleSheet("background-color: rgba(0, 0, 0, 0); white-space: pre-wrap;")
-		// base.SetSizePolicy2(widgets.QSizePolicy__Preferred, widgets.QSizePolicy__Maximum)
+		// base.SetStyleSheet("background-color: rgba(0, 0, 0, 0); white-space: pre-wrap;")
+		base.SetSizePolicy2(widgets.QSizePolicy__Preferred, widgets.QSizePolicy__Maximum)
 		itemLayout.AddWidget(icon)
 		itemLayout.AddWidget(base)
 		resultItem := &PaletteResultItem{
@@ -339,8 +340,8 @@ func (f *PaletteResultItem) update() {
 	} else {
 		f.widget.SetStyleSheet("")
 	}
-	f.p.widget.Hide()
-	f.p.widget.Show()
+	// f.p.widget.Hide()
+	// f.p.widget.Show()
 
 }
 

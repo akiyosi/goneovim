@@ -34,15 +34,13 @@ func initLocpopup() *Locpopup {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(4)
 	widget.SetLayout(layout)
-	//typeLabel := widgets.NewQLabel(nil, 0)
-	//typeLabel.SetContentsMargins(4, 1, 4, 1)
 	typeLabel := svg.NewQSvgWidget(nil)
 	typeLabel.SetFixedSize2(editor.iconSize-1, editor.iconSize-1)
-	typeLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+	// typeLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 	contentLabel := widgets.NewQLabel(nil, 0)
 	contentLabel.SetContentsMargins(0, 0, 0, 0)
-	contentLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+	// contentLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 	loc := &Locpopup{
 		widget:       widget,
@@ -51,11 +49,9 @@ func initLocpopup() *Locpopup {
 		updates:      make(chan []interface{}, 1000),
 	}
 
-	go func() {
-		layout.AddWidget(loc.typeLabel, 0, 0)
-		layout.AddWidget(loc.contentLabel, 0, 0)
-		loc.widget.SetGraphicsEffect(util.DropShadow(0, 6, 30, 80))
-	}()
+	layout.AddWidget(loc.typeLabel, 0, 0)
+	layout.AddWidget(loc.contentLabel, 0, 0)
+	loc.widget.SetGraphicsEffect(util.DropShadow(0, 6, 30, 80))
 
 	return loc
 }

@@ -48,6 +48,7 @@ type MessageItem struct {
 func initMessage() *Message {
 	width := 250
 	widget := widgets.NewQWidget(nil, 0)
+	widget.SetObjectName("message")
 	widget.SetContentsMargins(0, 0, 0, 0)
 	layout := widgets.NewQGridLayout2()
 	layout.SetContentsMargins(0, 0, 0, 0)
@@ -68,15 +69,15 @@ func initMessage() *Message {
 	for i := 0; i < 10; i++ {
 		w := widgets.NewQWidget(m.widget, 0)
 		w.SetContentsMargins(0, 0, 0, 0)
-		w.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
+		w.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		w.SetFixedWidth(editor.iconSize)
 		icon := svg.NewQSvgWidget(nil)
-		icon.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
+		// icon.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		icon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		icon.SetParent(w)
 		icon.Move2(margin, margin)
 		l := widgets.NewQLabel(nil, 0)
-		l.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
+		// l.SetStyleSheet("* { background-color: rgba(0, 0, 0, 0); border: 0px solid #000;}")
 		l.SetContentsMargins(margin, margin, margin, margin)
 		l.SetWordWrap(true)
 		l.SetText(DummyText)
@@ -112,17 +113,15 @@ func initMessage() *Message {
 		}
 	})
 
-	go func() {
-		// layout message item
-		for i, item := range items {
-			layout.AddWidget2(item.widget, i, 0, 0)
-			layout.SetAlignment(item.widget, core.Qt__AlignTop)
-			layout.AddWidget2(item.label, i, 1, 0)
-			layout.SetAlignment(item.label, core.Qt__AlignTop)
-		}
-		// Drop shadow to widget
-		m.widget.SetGraphicsEffect(util.DropShadow(-2, 4, 40, 200))
-	}()
+	// layout message item
+	for i, item := range items {
+		layout.AddWidget2(item.widget, i, 0, 0)
+		layout.SetAlignment(item.widget, core.Qt__AlignTop)
+		layout.AddWidget2(item.label, i, 1, 0)
+		layout.SetAlignment(item.label, core.Qt__AlignTop)
+	}
+	// Drop shadow to widget
+	m.widget.SetGraphicsEffect(util.DropShadow(-2, 4, 40, 200))
 	m.widget.Hide()
 
 	// hide messgaes at startup.
@@ -134,9 +133,9 @@ func initMessage() *Message {
 func (m *Message) setColor() {
 	fg := editor.colors.fg.String()
 	bg := warpColor(editor.colors.bg, -15)
-	transparent := transparent()
+	transparent := transparent() * transparent()
 	m.widget.SetStyleSheet(fmt.Sprintf(
-		" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }",
+		" #message { background-color: rgba(%d, %d, %d, %f);  color: %s; }",
 		bg.R,
 		bg.G,
 		bg.B,
