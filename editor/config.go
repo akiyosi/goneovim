@@ -254,6 +254,10 @@ func newGonvimConfig(home string) gonvimConfig {
 	// 	config.Editor.IndentGuide = false
 	// }
 
+	if config.Editor.Transparent < 1.0 {
+		config.Editor.DrawBorder = true
+	}
+
 	if config.Editor.DiffAddPattern < 1 || config.Editor.DiffAddPattern > 24 {
 		config.Editor.DiffAddPattern = 1
 	}
