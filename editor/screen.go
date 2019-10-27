@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	LRUSIZE int = 64
+	LRUSIZE int = 512
 )
 
 type gridId = int
@@ -383,11 +383,10 @@ func (s *Screen) gridFont(update interface{}) {
 	// }
 	// win.textCache = cache
 	cache := lru.New(LRUSIZE).LRU().
-	 EvictedFunc(func(key, value interface{}) {
-	         image := value.(*gui.QImage)
-	         image.DestroyQImageDefault()
-		 image = nil
-	 }).
+	EvictedFunc(func(key, value interface{}) {
+	        image := value.(*gui.QImage)
+	        image.DestroyQImage()
+	}).
 	Build()
 	win.textCache = cache
 
@@ -1992,7 +1991,7 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
-	wsfont := w.s.ws.font
+	wsfont := w.getFont()
 	// font := p.Font()
 	line := w.content[y]
 	chars := map[Highlight][]int{}
@@ -2000,19 +1999,16 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 	var image *gui.QImage
 
 	for x := col; x < col+cols; x++ {
-		if x > w.lenLine[y] {
-			break
-		}
 		if x >= len(line) {
 			continue
 		}
 		if line[x] == nil {
 			continue
 		}
-		if line[x].char == " " {
+		if line[x].char == "" {
 			continue
 		}
-		if line[x].char == "" {
+		if line[x].char == " " {
 			continue
 		}
 		// if drawborder is true, and row is statusline's row
@@ -2067,7 +2063,7 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 				bold:   highlight.bold,
 			})
 			if err != nil {
-				image = w.newTextCache(p, text, highlight)
+				image = w.newTextCache(p, text, highlight, true)
 			} else {
 				image = imagev.(*gui.QImage)
 			}
@@ -2091,7 +2087,7 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 			bold:   line[x].highlight.bold,
 		})
 		if err != nil {
-			image = w.newTextCache(p, line[x].char, line[x].highlight)
+			image = w.newTextCache(p, line[x].char, line[x].highlight, false)
 		} else {
 			image = imagev.(*gui.QImage)
 		}
@@ -2105,13 +2101,14 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (w *Window) newTextCache(p *gui.QPainter, text string, highlight Highlight) *gui.QImage {
+func (w *Window) newTextCache(p *gui.QPainter, text string, highlight Highlight, isNormalWidth bool) *gui.QImage {
 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
 
-	width := float64(len(text)) * w.getFont().italicWidth
-
-	if highlight.foreground == nil {
-		highlight.foreground = w.s.ws.foreground
+	font := w.getFont()
+	width := float64(len(text)) * font.italicWidth
+	fg := highlight.fg()
+	if !isNormalWidth {
+		width = math.Ceil(font.fontMetrics.HorizontalAdvance(text, -1))
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -2128,20 +2125,18 @@ func (w *Window) newTextCache(p *gui.QPainter, text string, highlight Highlight)
 	image.SetDevicePixelRatio(w.devicePixelRatio)
 	image.Fill3(core.Qt__transparent)
 
-	p = gui.NewQPainter2(image)
-	p.SetPen2(gui.NewQColor3(
-		highlight.foreground.R,
-		highlight.foreground.G,
-		highlight.foreground.B,
-		255))
+	pi := gui.NewQPainter2(image)
+	pi.SetPen2(fg.QColor())
 
-	p.SetFont(w.s.ws.font.fontNew)
-	font := p.Font()
-	font.SetBold(highlight.bold)
-	font.SetItalic(highlight.italic)
-	p.SetFont(font)
+	pi.SetFont(font.fontNew)
+	if highlight.bold {
+		p.Font().SetBold(true)
+	}
+	if highlight.italic {
+		p.Font().SetItalic(true)
+	}
 
-	p.DrawText6(
+	pi.DrawText6(
 		core.NewQRectF4(
 			0,
 			0,
@@ -2162,6 +2157,8 @@ func (w *Window) newTextCache(p *gui.QPainter, text string, highlight Highlight)
 		},
 		image,
 	)
+
+	pi.DestroyQPainter()
 
 	return image
 }
@@ -2727,11 +2724,10 @@ func newWindow() *Window {
 	// 	panic(err)
 	// }
 	cache := lru.New(LRUSIZE).LRU().
-	 EvictedFunc(func(key, value interface{}) {
-		 image := value.(*gui.QImage)
-		 image.DestroyQImageDefault()
-		 image = nil
-	 }).
+	EvictedFunc(func(key, value interface{}) {
+	        image := value.(*gui.QImage)
+	        image.DestroyQImage()
+	}).
 	Build()
 
 	w := &Window{

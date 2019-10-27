@@ -101,11 +101,10 @@ func (f *Font) change(family string, size int) {
 			// }
 			// win.textCache = cache
 			cache := lru.New(LRUSIZE).LRU().
-			 EvictedFunc(func(key, value interface{}) {
-			         image := value.(*gui.QImage)
-			         image.DestroyQImageDefault()
-				 image = nil
-			 }).
+			EvictedFunc(func(key, value interface{}) {
+			        image := value.(*gui.QImage)
+			        image.DestroyQImage()
+			}).
 			Build()
 			win.textCache = cache
 		}
