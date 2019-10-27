@@ -1020,7 +1020,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	width := int(float64(cols) * font.truewidth)
 	height := rows * int(font.lineHeight)
 	rect := core.NewQRect4(0, 0, width, height)
-	win.setGeometry(rect)
+	win.setGeometryAndPalette(rect)
 
 	win.move(win.pos[0], win.pos[1])
 
@@ -1406,23 +1406,6 @@ func (s *Screen) gridLine(args []interface{}) {
 	}
 }
 
-// func (s *Screen) gridScrollOver() {
-// 	for _, win := range s.windows {
-// 		if win.grid == 1 {
-// 			s.scrollOverCount++
-// 		}
-// 		if win.grid != 1 {
-// 			if win == nil {
-// 				continue
-// 			}
-// 			if !win.isShown() {
-// 				continue
-// 			}
-// 			win.move(win.pos[0], win.pos[1]-s.scrollOverCount)
-// 		}
-// 	}
-// }
-
 func (s *Screen) updateGridContent(arg []interface{}) {
 	gridid := util.ReflectToInt(arg[0])
 	row := util.ReflectToInt(arg[1])
@@ -1445,8 +1428,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 
 	buffLenLine := colStart
 	lenLine := 0
-
-	isMulitigridAndGlobalGrid := gridid == 1 && editor.config.Editor.ExtMultigrid && s.name != "minimap"
 
 	countLenLine := false
 	for _, arg := range cells {
@@ -1482,10 +1463,8 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 				line[col] = &Cell{}
 			}
 
-			if !isMulitigridAndGlobalGrid {
-				line[col].char = text.(string)
-				line[col].normalWidth = s.windows[gridid].isNormalWidth(line[col].char)
-			}
+			line[col].char = text.(string)
+			line[col].normalWidth = s.windows[gridid].isNormalWidth(line[col].char)
 
 			// If `hl_id` is not present the most recently seen `hl_id` in
 			//	the same call should be used (it is always sent for the first
@@ -1601,31 +1580,11 @@ func (c *Cell) isSignColumn() bool {
 
 func (c *Cell) isStatuslineOrVertSplit() bool {
 	// If ext_statusline is implemented in Neovim, the implementation may be revised
-	if !editor.config.Editor.DrawBorder {
-		return false
-	}
 	if &c.highlight == nil {
 		return false
 	}
-	if c.highlight.hlName == "StatusLine" ||
-		c.highlight.hlName == "StatusLineNC" ||
-		c.highlight.hlName == "VertSplit" {
-		return true
-	}
-	return false
-}
-
-func (s *Screen) isSkipDrawStatusline(hi int) bool {
-	// If ext_statusline is implemented in Neovim, the implementation may be revised
-	if !editor.config.Editor.DrawBorder {
-		return false
-	}
-	if s.highAttrDef[hi] == nil {
-		return false
-	}
-	if s.highAttrDef[hi].hlName == "StatusLine" ||
-		s.highAttrDef[hi].hlName == "StatusLineNC" ||
-		s.highAttrDef[hi].hlName == "VertSplit" {
+	if editor.config.Editor.DrawBorder &&
+	(c.highlight.hlName == "StatusLine" || c.highlight.hlName == "StatusLineNC" || c.highlight.hlName == "VertSplit") {
 		return true
 	}
 	return false
@@ -2010,16 +1969,15 @@ func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
 		if cell.char == "" {
 			continue
 		}
+		// if drawborder is true, and row is statusline's row
+		if cell.isStatuslineOrVertSplit() {
+			continue
+		}
 		if !cell.normalWidth {
 			specialChars = append(specialChars, x)
 			continue
 		}
 		if cell.char == " " {
-			continue
-		}
-
-		// if drawborder is true, and row is statusline's row
-		if cell.isStatuslineOrVertSplit() {
 			continue
 		}
 
@@ -2626,9 +2584,20 @@ func (w *Window) setParent(a widgets.QWidget_ITF) {
 	w.widget.SetParent(a)
 }
 
-func (w *Window) setGeometry(rect core.QRect_ITF) {
+func (w *Window) setGeometryAndPalette(rect core.QRect_ITF) {
 	w.widget.SetGeometry(rect)
+
+	if editor.config.Editor.DrawBorder {
+		return
+	}
+	if w.s.ws.background != nil {
+		w.widget.SetAutoFillBackground(true)
+		p := gui.NewQPalette()
+		p.SetColor2(gui.QPalette__Background, w.s.ws.background.QColor())
+		w.widget.SetPalette(p)
+	}
 }
+
 
 func (w *Window) setShadow() {
 	w.widget.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))
