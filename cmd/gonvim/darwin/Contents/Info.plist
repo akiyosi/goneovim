@@ -10,7 +10,7 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>CFBundleIconFile</key>
-	<string>gonvim.icns</string>
+	<string>goneovim.icns</string>
 	<key>CFBundleName</key>
 	<string>gonvim</string>
 	<key>CFBundlePackageType</key>
