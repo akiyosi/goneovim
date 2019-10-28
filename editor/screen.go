@@ -17,11 +17,11 @@ import (
 	"github.com/therecipe/qt/widgets"
 	"github.com/akiyosi/gonvim/util"
 	// lru "github.com/hashicorp/golang-lru"
-	lru "github.com/bluele/gcache"
+	"github.com/bluele/gcache"
 )
 
 const (
-	LRUSIZE int = 512
+	CACHESIZE int = 386
 )
 
 type gridId = int
@@ -91,7 +91,7 @@ type Window struct {
 	queueRedrawArea  [4]int
 	scrollRegion     []int
 	devicePixelRatio float64
-	textCache        lru.Cache
+	textCache        gcache.Cache
 	glyphMap         map[HlChar]gui.QImage
 
 	font         *Font
@@ -382,7 +382,7 @@ func (s *Screen) gridFont(update interface{}) {
 	// 	panic(err)
 	// }
 	// win.textCache = cache
-	cache := lru.New(LRUSIZE).LRU().
+	cache := gcache.New(CACHESIZE).LRU().
 	EvictedFunc(func(key, value interface{}) {
 	        image := value.(*gui.QImage)
 	        image.DestroyQImage()
@@ -2723,7 +2723,7 @@ func newWindow() *Window {
 	// if err != nil {
 	// 	panic(err)
 	// }
-	cache := lru.New(LRUSIZE).LRU().
+	cache := gcache.New(CACHESIZE).LRU().
 	EvictedFunc(func(key, value interface{}) {
 	        image := value.(*gui.QImage)
 	        image.DestroyQImage()
