@@ -2130,10 +2130,10 @@ func (w *Window) newTextCache(p *gui.QPainter, text string, highlight Highlight,
 
 	pi.SetFont(font.fontNew)
 	if highlight.bold {
-		p.Font().SetBold(true)
+		pi.Font().SetBold(true)
 	}
 	if highlight.italic {
-		p.Font().SetItalic(true)
+		pi.Font().SetItalic(true)
 	}
 
 	pi.DrawText6(
