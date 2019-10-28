@@ -408,10 +408,21 @@ func (s *Screen) toolTipFont(font *Font) {
 	s.tooltip.SetContentsMargins(0, font.lineSpace/2, 0, font.lineSpace/2)
 }
 
+func (s *Screen) toolTipShow() {
+	if !s.ws.palette.widget.IsVisible() {
+		win, ok := s.windows[s.ws.cursor.gridid]
+		if ok {
+			s.tooltip.SetParent(win.widget)
+		}
+	}
+	s.tooltip.AdjustSize()
+	s.tooltip.Show()
+}
+
 func (s *Screen) toolTip(text string) {
 	s.tooltip.SetText(text)
 	s.tooltip.AdjustSize()
-	s.tooltip.Show()
+	s.toolTipShow()
 
 	row := s.cursor[0]
 	col := s.cursor[1]
@@ -2530,8 +2541,6 @@ func (w *Window) raise() {
 		return
 	}
 	w.widget.Raise()
-
-	w.s.tooltip.SetParent(w.widget)
 
 	font := w.getFont()
 	w.s.ws.cursor.updateFont(font)
