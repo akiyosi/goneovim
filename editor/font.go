@@ -5,7 +5,7 @@ import (
 
 	"github.com/therecipe/qt/gui"
 	// lru "github.com/hashicorp/golang-lru"
-	"github.com/bluele/gcache"
+	lru "github.com/bluele/gcache"
 )
 
 // Font is
@@ -100,7 +100,7 @@ func (f *Font) change(family string, size int) {
 			// 	panic(err)
 			// }
 			// win.textCache = cache
-			cache := gcache.New(CACHESIZE).LRU().
+			cache := lru.New(LRUSIZE).LRU().
 			EvictedFunc(func(key, value interface{}) {
 			        image := value.(*gui.QImage)
 			        image.DestroyQImage()
