@@ -89,22 +89,26 @@ func (c *Cursor) move() {
 	}
 	font := win.getFont()
 
+	shift := 0
 	if editor.config.Editor.CachedDrawing {
 		c.widget.Move2(c.x, c.y)
 	} else {
-		c.widget.Move2(c.x, c.y+int(float64(font.lineSpace)/2))
+		shift = int(float64(font.lineSpace)/2)
+		c.widget.Move2(c.x, c.y+shift)
 	}
 
 	if !c.ws.loc.shown {
 		return
 	}
-	x := c.x
-	y := c.y
-	height := c.ws.loc.widget.Height()
-	if c.ws.screen.cursor[0] < 3 {
-		y += height
+
+	col := c.ws.screen.cursor[1]
+	row := c.ws.screen.cursor[0]
+	x := int(float64(col) * font.truewidth)
+	y := row * font.lineHeight + shift
+	if row < 3 {
+		y += c.ws.loc.widget.Height()
 	} else {
-		y -= height * 3 / 2
+		y -= c.ws.loc.widget.Height()
 	}
 
 	x += int(float64(win.pos[0]) * font.truewidth)
