@@ -11,13 +11,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/akiyosi/gonvim/util"
+	"github.com/bluele/gcache"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
-	"github.com/akiyosi/gonvim/util"
-	// lru "github.com/hashicorp/golang-lru"
-	"github.com/bluele/gcache"
 )
 
 const (
@@ -44,20 +43,20 @@ type Highlight struct {
 }
 
 type HlChars struct {
-	text   string
-	fg     *RGBA
-	bg     *RGBA
+	text string
+	fg   *RGBA
+	// bg     *RGBA
 	italic bool
 	bold   bool
 }
 
-type HlChar struct {
-	char   string
-	fg     *RGBA
-	bg     *RGBA
-	italic bool
-	bold   bool
-}
+// type HlChar struct {
+// 	char   string
+// 	fg     *RGBA
+// 	bg     *RGBA
+// 	italic bool
+// 	bold   bool
+// }
 
 // Cell is
 type Cell struct {
@@ -92,7 +91,7 @@ type Window struct {
 	scrollRegion     []int
 	devicePixelRatio float64
 	textCache        gcache.Cache
-	glyphMap         map[HlChar]gui.QImage
+	// glyphMap         map[HlChar]gui.QImage
 
 	font         *Font
 	width        float64
@@ -112,11 +111,11 @@ type Screen struct {
 	ws   *Workspace
 	font *Font
 
-	name     string
-	widget   *widgets.QWidget
-	windows  map[gridId]*Window
-	width    int
-	height   int
+	name    string
+	widget  *widgets.QWidget
+	windows map[gridId]*Window
+	width   int
+	height  int
 
 	cursor           [2]int
 	scrollRegion     []int
@@ -127,7 +126,6 @@ type Screen struct {
 	highlightGroup map[string]int
 
 	tooltip *widgets.QLabel
-	glyphMap         map[HlChar]gui.QImage
 
 	queueRedrawArea [4]int
 	resizeCount     uint
@@ -372,22 +370,16 @@ func (s *Screen) gridFont(update interface{}) {
 	win.font = initFontNew(fontfamily, height, 1, false)
 
 	// Calculate new cols, rows of current grid
-
 	newCols := int(float64(oldWidth) / win.font.truewidth)
 	newRows := oldHeight / win.font.lineHeight
 
-	// win.glyphMap = make(map[HlChar]gui.QImage)
-	// cache, err := lru.New2Q(LRUSIZE)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// win.textCache = cache
+	// new texts cache
 	cache := gcache.New(CACHESIZE).LRU().
-	EvictedFunc(func(key, value interface{}) {
-	        image := value.(*gui.QImage)
-	        image.DestroyQImage()
-	}).
-	Build()
+		EvictedFunc(func(key, value interface{}) {
+			image := value.(*gui.QImage)
+			image.DestroyQImage()
+		}).
+		Build()
 	win.textCache = cache
 
 	_ = s.ws.nvim.TryResizeUIGrid(s.ws.cursor.gridid, newCols, newRows)
@@ -494,9 +486,10 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	// Draw indent guide
 	if editor.config.Editor.IndentGuide {
-		for _, win := range w.s.windows {
-			win.drawIndentguide(p)
-		}
+		w.drawIndentguide(p, row, rows)
+		// for _, win := range w.s.windows {
+		// 	win.drawIndentguide(p)
+		// }
 	}
 
 	// Update markdown preview
@@ -508,14 +501,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	w.paintMutex.Unlock()
 }
 
-func (w *Window) getGlyphMap() map[HlChar]gui.QImage {
-	if w.font != nil {
-		return w.glyphMap
-	}
-
-	return w.s.glyphMap
-}
-
 func (w *Window) getFont() *Font {
 	if w.font == nil {
 		return w.s.font
@@ -524,8 +509,14 @@ func (w *Window) getFont() *Font {
 	}
 }
 
-func (w *Window) drawIndentguide(p *gui.QPainter) {
+func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if w == nil {
+		return
+	}
+	if w.isMsgGrid {
+		return
+	}
+	if w.isFloatWin {
 		return
 	}
 	if w.s.ws.ts == 0 {
@@ -534,7 +525,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 	if !w.isShown() {
 		return
 	}
-	for y := 0; y < len(w.content); y++ {
+	for y := row; y < rows; y++ {
 		if y+1 >= len(w.content) {
 			return
 		}
@@ -545,9 +536,6 @@ func (w *Window) drawIndentguide(p *gui.QPainter) {
 		for x := 0; x < w.lenLine[y]; x++ {
 			skipDraw = false
 
-			// if x+1 == w.lenLine[y+1] {
-			//         break
-			// }
 			if x+1 >= len(nextline) {
 				break
 			}
@@ -662,8 +650,8 @@ func getCket(bra string) string {
 
 func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
 	font := w.getFont()
-	X := float64(w.pos[0]+x) * font.truewidth
-	Y := float64((w.pos[1] + y) * font.lineHeight)
+	X := float64(x) * font.truewidth
+	Y := float64(y * font.lineHeight)
 	p.FillRect4(
 		core.NewQRectF4(
 			X,
@@ -1618,18 +1606,18 @@ func (c *Cell) isSignColumn() bool {
 	}
 }
 
-func (c *Cell) isStatuslineOrVertSplit() bool {
-	// If ext_statusline is implemented in Neovim, the implementation may be revised
-	if &c.highlight == nil {
-		return false
-	}
-	if c.highlight.hlName == "StatusLine" || c.highlight.hlName == "StatusLineNC" || c.highlight.hlName == "VertSplit" {
-		if editor.config.Editor.DrawBorder {
-			return true
-		}
-	}
-	return false
-}
+// func (c *Cell) isStatuslineOrVertSplit() bool {
+// 	// If ext_statusline is implemented in Neovim, the implementation may be revised
+// 	if &c.highlight == nil {
+// 		return false
+// 	}
+// 	if c.highlight.hlName == "StatusLine" || c.highlight.hlName == "StatusLineNC" || c.highlight.hlName == "VertSplit" {
+// 		if editor.config.Editor.DrawBorder {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
 
 func (s *Screen) gridScroll(args []interface{}) {
 	var gridid gridId
@@ -2031,7 +2019,7 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 	}
 
 	pointF := core.NewQPointF3(
-		float64(col) * wsfont.truewidth,
+		float64(col)*wsfont.truewidth,
 		float64(y*wsfont.lineHeight),
 	)
 
@@ -2056,9 +2044,8 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 		text := buffer.String()
 		if text != "" {
 			imagev, err := w.textCache.Get(HlChars{
-				text: text,
+				text:   text,
 				fg:     highlight.fg(),
-				bg:     highlight.bg(),
 				italic: highlight.italic,
 				bold:   highlight.bold,
 			})
@@ -2080,9 +2067,8 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 		imagev, err := w.textCache.Get(HlChars{
-			text: line[x].char,
+			text:   line[x].char,
 			fg:     line[x].highlight.fg(),
-			bg:     line[x].highlight.bg(),
 			italic: line[x].highlight.italic,
 			bold:   line[x].highlight.bold,
 		})
@@ -2149,9 +2135,8 @@ func (w *Window) newTextCache(p *gui.QPainter, text string, highlight Highlight,
 	// w.textCache.Add(
 	w.textCache.Set(
 		HlChars{
-			text: text,
+			text:   text,
 			fg:     highlight.fg(),
-			bg:     highlight.bg(),
 			italic: highlight.italic,
 			bold:   highlight.bold,
 		},
@@ -2163,113 +2148,166 @@ func (w *Window) newTextCache(p *gui.QPainter, text string, highlight Highlight,
 	return image
 }
 
-func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
-	if y >= len(w.content) {
-		return
-	}
-	wsfont := w.getFont()
-	specialChars := []int{}
-	glyphMap := w.getGlyphMap()
+// func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
+// 	if y >= len(w.content) {
+// 		return
+// 	}
+// 	wsfont := w.getFont()
+// 	specialChars := []int{}
+// 	glyphMap := w.getGlyphMap()
+//
+// 	for x := col; x < col+cols; x++ {
+// 		if x >= len(w.content[y]) {
+// 			continue
+// 		}
+//
+// 		cell := w.content[y][x]
+// 		if cell == nil {
+// 			continue
+// 		}
+// 		if cell.char == "" {
+// 			continue
+// 		}
+// 		if !cell.normalWidth {
+// 			specialChars = append(specialChars, x)
+// 			continue
+// 		}
+// 		if cell.char == " " {
+// 			continue
+// 		}
+//
+// 		glyph, ok := glyphMap[HlChar{
+// 			char:   cell.char,
+// 			fg:     cell.highlight.fg(),
+// 			bg:     cell.highlight.bg(),
+// 			italic: cell.highlight.italic,
+// 			bold:   cell.highlight.bold,
+// 		}]
+// 		if !ok {
+// 			glyph = w.newGlyph(p, cell)
+// 		} else {
+// 		}
+// 		p.DrawImage7(
+// 			core.NewQPointF3(
+// 				float64(x)*wsfont.truewidth,
+// 				float64(y*wsfont.lineHeight),
+// 			),
+// 			&glyph,
+// 		)
+// 	}
+//
+// 	for _, x := range specialChars {
+// 		cell := w.content[y][x]
+// 		if cell == nil || cell.char == " " {
+// 			continue
+// 		}
+// 		glyph, ok := glyphMap[HlChar{
+// 			char:   cell.char,
+// 			fg:     cell.highlight.fg(),
+// 			bg:     cell.highlight.bg(),
+// 			italic: cell.highlight.italic,
+// 			bold:   cell.highlight.bold,
+// 		}]
+// 		if !ok {
+// 			glyph = w.newGlyph(p, cell)
+// 		}
+// 		p.DrawImage7(
+// 			core.NewQPointF3(
+// 				float64(x)*wsfont.truewidth,
+// 				float64(y*wsfont.lineHeight),
+// 			),
+// 			&glyph,
+// 		)
+// 	}
+// }
 
-	for x := col; x < col+cols; x++ {
-		if x >= len(w.content[y]) {
-			continue
-		}
-
-		cell := w.content[y][x]
-		if cell == nil {
-			continue
-		}
-		if cell.char == "" {
-			continue
-		}
-		// if drawborder is true, and row is statusline's row
-		if cell.isStatuslineOrVertSplit() {
-			continue
-		}
-		if !cell.normalWidth {
-			specialChars = append(specialChars, x)
-			continue
-		}
-		if cell.char == " " {
-			continue
-		}
-
-		glyph, ok := glyphMap[HlChar{
-			char:   cell.char,
-			fg:     cell.highlight.fg(),
-			bg:     cell.highlight.bg(),
-			italic: cell.highlight.italic,
-			bold:   cell.highlight.bold,
-		}]
-		if !ok {
-			glyph = w.newGlyph(p, cell)
-		} else {
-		}
-		p.DrawImage7(
-			core.NewQPointF3(
-				float64(x)*wsfont.truewidth,
-				float64(y*wsfont.lineHeight),
-			),
-			&glyph,
-		)
-	}
-
-	for _, x := range specialChars {
-		cell := w.content[y][x]
-		if cell == nil || cell.char == " " {
-			continue
-		}
-		glyph, ok := glyphMap[HlChar{
-			char:   cell.char,
-			fg:     cell.highlight.fg(),
-			bg:     cell.highlight.bg(),
-			italic: cell.highlight.italic,
-			bold:   cell.highlight.bold,
-		}]
-		if !ok {
-			glyph = w.newGlyph(p, cell)
-		}
-		p.DrawImage7(
-			core.NewQPointF3(
-				float64(x)*wsfont.truewidth,
-				float64(y*wsfont.lineHeight),
-			),
-			&glyph,
-		)
-	}
-}
-
-func getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyle, *RGBA, int) {
-	color := hl.bg()
-	pattern := core.Qt__BrushStyle(1)
-	transparent := int(transparent() * 255.0)
-
-	if editor.config.Editor.DiffChangePattern != 1 && hl.hlName == "DiffChange" {
-		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffChangePattern)
-		if editor.config.Editor.DiffChangePattern >= 7 &&
-			editor.config.Editor.DiffChangePattern <= 14 {
-			transparent = int(editor.config.Editor.Transparent * 255)
-		}
-		color = color.HSV().Colorfulness().RGB()
-	} else if editor.config.Editor.DiffDeletePattern != 1 && hl.hlName == "DiffDelete" {
-		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffDeletePattern)
-		if editor.config.Editor.DiffDeletePattern >= 7 &&
-			editor.config.Editor.DiffDeletePattern <= 14 {
-			transparent = int(editor.config.Editor.Transparent * 255)
-		}
-		color = color.HSV().Colorfulness().RGB()
-	} else if editor.config.Editor.DiffAddPattern != 1 && hl.hlName == "DiffAdd" {
-		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffAddPattern)
-		if editor.config.Editor.DiffAddPattern >= 7 &&
-			editor.config.Editor.DiffAddPattern <= 14 {
-			transparent = int(editor.config.Editor.Transparent * 255)
-		}
-		color = color.HSV().Colorfulness().RGB()
-	}
-
-	return pattern, color, transparent
-}
+// func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
+// 	// * TODO: Further optimization, whether it is possible
+// 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
+//
+// 	font := w.getFont()
+// 	width := font.italicWidth
+// 	if !cell.normalWidth {
+// 		width = math.Ceil(font.fontMetrics.HorizontalAdvance(cell.char, -1))
+// 	}
+//
+// 	char := cell.char
+//
+// 	// // If drawing background
+// 	// if cell.highlight.background == nil {
+// 	// 	cell.highlight.background = w.s.ws.background
+// 	// }
+// 	fg := cell.highlight.fg()
+//
+// 	// QImage default device pixel ratio is 1.0,
+// 	// So we set the correct device pixel ratio
+// 	glyph := gui.NewQImage2(
+// 		// core.NewQRectF4(
+// 		// 	0,
+// 		// 	0,
+// 		// 	w.devicePixelRatio*width,
+// 		// 	w.devicePixelRatio*float64(font.lineHeight),
+// 		// ).Size().ToSize(),
+// 		core.NewQSize2(
+// 			int(w.devicePixelRatio*width),
+// 			int(w.devicePixelRatio*float64(font.lineHeight)),
+// 		),
+// 		gui.QImage__Format_ARGB32_Premultiplied,
+// 	)
+// 	glyph.SetDevicePixelRatio(w.devicePixelRatio)
+//
+// 	// // If drawing background
+// 	// glyph.Fill2(gui.NewQColor3(
+// 	// 	cell.highlight.background.R,
+// 	// 	cell.highlight.background.G,
+// 	// 	cell.highlight.background.B,
+// 	// 	int(editor.config.Editor.Transparent * 255),
+// 	// ))
+// 	glyph.Fill3(core.Qt__transparent)
+//
+// 	p = gui.NewQPainter2(glyph)
+// 	p.SetPen2(fg.QColor())
+//
+// 	p.SetFont(font.fontNew)
+// 	if cell.highlight.bold {
+// 		p.Font().SetBold(true)
+// 	}
+// 	if cell.highlight.italic {
+// 		p.Font().SetItalic(true)
+// 	}
+//
+// 	p.DrawText6(
+// 		core.NewQRectF4(
+// 			0,
+// 			0,
+// 			width,
+// 			float64(font.lineHeight),
+// 		),
+// 		char,
+// 		gui.NewQTextOption2(core.Qt__AlignVCenter),
+// 	)
+//
+// 	if w.font != nil {
+// 		w.glyphMap[HlChar{
+// 			char:   cell.char,
+// 			fg:     fg,
+// 			bg:     cell.highlight.bg(),
+// 			italic: cell.highlight.italic,
+// 			bold:   cell.highlight.bold,
+// 		}] = *glyph
+//
+// 	} else {
+// 		w.s.glyphMap[HlChar{
+// 			char:   cell.char,
+// 			fg:     fg,
+// 			bg:     cell.highlight.bg(),
+// 			italic: cell.highlight.italic,
+// 			bold:   cell.highlight.bold,
+// 		}] = *glyph
+// 	}
+//
+// 	return *glyph
+// }
 
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
@@ -2358,100 +2396,9 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
-	// * TODO: Further optimization, whether it is possible
-	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
-
-	font := w.getFont()
-	width := font.italicWidth
-	if !cell.normalWidth {
-		width = math.Ceil(font.fontMetrics.HorizontalAdvance(cell.char, -1))
-	}
-
-	char := cell.char
-
-	// // If drawing background
-	// if cell.highlight.background == nil {
-	// 	cell.highlight.background = w.s.ws.background
-	// }
-	fg := cell.highlight.fg()
-
-	// QImage default device pixel ratio is 1.0,
-	// So we set the correct device pixel ratio
-	glyph := gui.NewQImage2(
-		// core.NewQRectF4(
-		// 	0,
-		// 	0,
-		// 	w.devicePixelRatio*width,
-		// 	w.devicePixelRatio*float64(font.lineHeight),
-		// ).Size().ToSize(),
-		core.NewQSize2(
-			int(w.devicePixelRatio*width),
-			int(w.devicePixelRatio*float64(font.lineHeight)),
-		),
-		gui.QImage__Format_ARGB32_Premultiplied,
-	)
-	glyph.SetDevicePixelRatio(w.devicePixelRatio)
-
-	// // If drawing background
-	// glyph.Fill2(gui.NewQColor3(
-	// 	cell.highlight.background.R,
-	// 	cell.highlight.background.G,
-	// 	cell.highlight.background.B,
-	// 	int(editor.config.Editor.Transparent * 255),
-	// ))
-	glyph.Fill3(core.Qt__transparent)
-
-	p = gui.NewQPainter2(glyph)
-	p.SetPen2(fg.QColor())
-
-	p.SetFont(font.fontNew)
-	if cell.highlight.bold {
-		p.Font().SetBold(true)
-	}
-	if cell.highlight.italic {
-		p.Font().SetItalic(true)
-	}
-
-	p.DrawText6(
-		core.NewQRectF4(
-			0,
-			0,
-			width,
-			float64(font.lineHeight),
-		),
-		char,
-		gui.NewQTextOption2(core.Qt__AlignVCenter),
-	)
-
-	if w.font != nil {
-		w.glyphMap[HlChar{
-			char:   cell.char,
-			fg:     fg,
-			bg:     cell.highlight.bg(),
-			italic: cell.highlight.italic,
-			bold:   cell.highlight.bold,
-		}] = *glyph
-
-	} else {
-		w.s.glyphMap[HlChar{
-			char:   cell.char,
-			fg:     fg,
-			bg:     cell.highlight.bg(),
-			italic: cell.highlight.italic,
-			bold:   cell.highlight.bold,
-		}] = *glyph
-	}
-
-	return *glyph
-}
-
 func (w *Window) drawContents(p *gui.QPainter, y int, col int, cols int) {
 	if w.s.name == "minimap" {
 		w.drawMinimap(p, y, col, cols)
-	} else if !editor.config.Editor.CachedDrawing {
-		w.drawText(p, y, col, cols)
-		// w.drawTexts(p, y, col, cols)
 	} else {
 		// w.drawText(p, y, col, cols)
 		// w.drawChars(p, y, col, cols)
@@ -2517,6 +2464,37 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			p.DrawPath(path)
 		}
 	}
+}
+
+func getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyle, *RGBA, int) {
+	color := hl.bg()
+	pattern := core.Qt__BrushStyle(1)
+	transparent := int(transparent() * 255.0)
+
+	if editor.config.Editor.DiffChangePattern != 1 && hl.hlName == "DiffChange" {
+		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffChangePattern)
+		if editor.config.Editor.DiffChangePattern >= 7 &&
+			editor.config.Editor.DiffChangePattern <= 14 {
+			transparent = int(editor.config.Editor.Transparent * 255)
+		}
+		color = color.HSV().Colorfulness().RGB()
+	} else if editor.config.Editor.DiffDeletePattern != 1 && hl.hlName == "DiffDelete" {
+		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffDeletePattern)
+		if editor.config.Editor.DiffDeletePattern >= 7 &&
+			editor.config.Editor.DiffDeletePattern <= 14 {
+			transparent = int(editor.config.Editor.Transparent * 255)
+		}
+		color = color.HSV().Colorfulness().RGB()
+	} else if editor.config.Editor.DiffAddPattern != 1 && hl.hlName == "DiffAdd" {
+		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffAddPattern)
+		if editor.config.Editor.DiffAddPattern >= 7 &&
+			editor.config.Editor.DiffAddPattern <= 14 {
+			transparent = int(editor.config.Editor.Transparent * 255)
+		}
+		color = color.HSV().Colorfulness().RGB()
+	}
+
+	return pattern, color, transparent
 }
 
 func (w *Window) isNormalWidth(char string) bool {
@@ -2719,16 +2697,12 @@ func newWindow() *Window {
 		devicePixelRatio = 1.0
 	}
 
-	// cache, err := lru.New2Q(LRUSIZE)
-	// if err != nil {
-	// 	panic(err)
-	// }
 	cache := gcache.New(CACHESIZE).LRU().
-	EvictedFunc(func(key, value interface{}) {
-	        image := value.(*gui.QImage)
-	        image.DestroyQImage()
-	}).
-	Build()
+		EvictedFunc(func(key, value interface{}) {
+			image := value.(*gui.QImage)
+			image.DestroyQImage()
+		}).
+		Build()
 
 	w := &Window{
 		widget:           widget,
@@ -2828,7 +2802,6 @@ func (w *Window) fill() {
 		w.widget.SetPalette(p)
 	}
 }
-
 
 func (w *Window) setShadow() {
 	w.widget.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))

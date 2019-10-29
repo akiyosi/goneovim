@@ -3,9 +3,8 @@ package editor
 import (
 	"math"
 
-	"github.com/therecipe/qt/gui"
-	// lru "github.com/hashicorp/golang-lru"
 	"github.com/bluele/gcache"
+	"github.com/therecipe/qt/gui"
 )
 
 // Font is
@@ -95,17 +94,12 @@ func (f *Font) change(family string, size int) {
 			if win.font != nil {
 				continue
 			}
-			// cache, err := lru.New2Q(LRUSIZE)
-			// if err != nil {
-			// 	panic(err)
-			// }
-			// win.textCache = cache
 			cache := gcache.New(CACHESIZE).LRU().
-			EvictedFunc(func(key, value interface{}) {
-			        image := value.(*gui.QImage)
-			        image.DestroyQImage()
-			}).
-			Build()
+				EvictedFunc(func(key, value interface{}) {
+					image := value.(*gui.QImage)
+					image.DestroyQImage()
+				}).
+				Build()
 			win.textCache = cache
 		}
 	}

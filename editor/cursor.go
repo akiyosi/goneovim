@@ -93,7 +93,7 @@ func (c *Cursor) move() {
 	if editor.config.Editor.CachedDrawing {
 		c.widget.Move2(c.x, c.y)
 	} else {
-		shift = int(float64(font.lineSpace)/2)
+		shift = int(float64(font.lineSpace) / 2)
 		c.widget.Move2(c.x, c.y+shift)
 	}
 
@@ -104,7 +104,7 @@ func (c *Cursor) move() {
 	col := c.ws.screen.cursor[1]
 	row := c.ws.screen.cursor[0]
 	x := int(float64(col) * font.truewidth)
-	y := row * font.lineHeight + shift
+	y := row*font.lineHeight + shift
 	if row < 3 {
 		y += c.ws.loc.widget.Height()
 	} else {
@@ -116,7 +116,7 @@ func (c *Cursor) move() {
 		tabheight = c.ws.tabline.widget.Height()
 	}
 	x += int(float64(win.pos[0]) * font.truewidth)
-	y += win.pos[1] * font.lineHeight + tabheight
+	y += win.pos[1]*font.lineHeight + tabheight
 	c.ws.loc.widget.Move2(x, y)
 }
 
