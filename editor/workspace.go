@@ -927,12 +927,20 @@ func (w *Workspace) updateWorkspaceColor() {
 	w.fpalette.setColor()
 	w.popup.setColor()
 	w.signature.setColor()
-	w.tabline.setColor()
-	w.statusline.setColor()
-	w.scrollBar.setColor()
-	w.loc.setColor()
 	w.message.setColor()
 	w.screen.setColor()
+	if w.drawTabline {
+		w.tabline.setColor()
+	}
+	if w.drawStatusline {
+		w.statusline.setColor()
+	}
+	if editor.config.ScrollBar.Visible {
+		w.scrollBar.setColor()
+	}
+	if editor.config.Lint.Visible {
+		w.loc.setColor()
+	}
 	if editor.wsSide != nil {
 		editor.wsSide.setColor()
 	}
