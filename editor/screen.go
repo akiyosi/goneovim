@@ -1451,6 +1451,9 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	if isSkipGlobalId(gridid) {
 		return
 	}
+	if editor.config.Editor.DrawBorder && gridid == 1 {
+		return
+	}
 	if colStart < 0 {
 		return
 	}
@@ -1953,8 +1956,6 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 
 		if line[x] == nil {
 			highlight = w.s.highAttrDef[0]
-		} else if line[x].isStatuslineOrVertSplit() {
-			highlight = w.s.highAttrDef[0]
 		} else {
 			highlight = &line[x].highlight
 		}
@@ -1999,6 +2000,9 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 	var image *gui.QImage
 
 	for x := col; x < col+cols; x++ {
+		if x > w.lenLine[y] {
+			continue
+		}
 		if x >= len(line) {
 			continue
 		}
@@ -2009,10 +2013,6 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 		if line[x].char == " " {
-			continue
-		}
-		// if drawborder is true, and row is statusline's row
-		if line[x].isStatuslineOrVertSplit() {
 			continue
 		}
 		if !line[x].normalWidth {
