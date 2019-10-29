@@ -420,7 +420,7 @@ func (c *ColorPalette) update() {
 	c.widgetInputArea = warpColor(bg, -30)
 	c.minimapCurrentRegion = warpColor(bg, 20)
 	c.windowSeparator = warpColor(bg, -40)
-	c.indentGuide = warpColor(bg, -15)
+	c.indentGuide = warpColor(bg, -30)
 }
 
 func (e *Editor) updateGUIColor() {

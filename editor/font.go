@@ -3,6 +3,7 @@ package editor
 import (
 	"math"
 
+	"github.com/bluele/gcache"
 	"github.com/therecipe/qt/gui"
 )
 
@@ -86,7 +87,21 @@ func (f *Font) change(family string, size int) {
 
 	// reset character cache
 	if editor.config.Editor.CachedDrawing {
-		f.ws.screen.glyphMap = make(map[HlChar]gui.QImage)
+		for _, win := range f.ws.screen.windows {
+			if win == nil {
+				continue
+			}
+			if win.font != nil {
+				continue
+			}
+			cache := gcache.New(CACHESIZE).LRU().
+				EvictedFunc(func(key, value interface{}) {
+					image := value.(*gui.QImage)
+					image.DestroyQImage()
+				}).
+				Build()
+			win.textCache = cache
+		}
 	}
 }
 
