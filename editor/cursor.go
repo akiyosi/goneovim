@@ -111,8 +111,12 @@ func (c *Cursor) move() {
 		y -= c.ws.loc.widget.Height()
 	}
 
+	tabheight := 0
+	if c.ws.drawTabline {
+		tabheight = c.ws.tabline.widget.Height()
+	}
 	x += int(float64(win.pos[0]) * font.truewidth)
-	y += win.pos[1] * font.lineHeight
+	y += win.pos[1] * font.lineHeight + tabheight
 	c.ws.loc.widget.Move2(x, y)
 }
 
