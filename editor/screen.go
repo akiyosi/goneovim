@@ -493,7 +493,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	w.drawBorders(p, row, col, rows, cols)
 
 	// Draw indent guide
-	if editor.config.Editor.IndentGuide && w.grid == 1 {
+	if editor.config.Editor.IndentGuide {
 		for _, win := range w.s.windows {
 			win.drawIndentguide(p)
 		}

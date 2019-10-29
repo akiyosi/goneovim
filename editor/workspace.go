@@ -724,6 +724,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "flush":
 			s.update()
 			w.cursor.update()
+			w.drawOtherUI()
 
 		// Grid Events
 		case "grid_resize":
@@ -833,8 +834,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		default:
 		}
 	}
-
-	w.drawOtherUI()
 }
 
 func (w *Workspace) drawOtherUI() {
