@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	CACHESIZE int = 386
+	CACHESIZE int = 256
 )
 
 type gridId = int
