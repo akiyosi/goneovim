@@ -128,6 +128,8 @@ type Screen struct {
 	tooltip *widgets.QLabel
 
 	queueRedrawArea [4]int
+	textCache        gcache.Cache
+
 	resizeCount     uint
 }
 
@@ -136,12 +138,22 @@ func newScreen() *Screen {
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
+	purgeQimage := func(key, value interface{}) {
+		image := value.(*gui.QImage)
+		image.DestroyQImage()
+	}
+	cache := gcache.New(CACHESIZE).LRU().
+		EvictedFunc(purgeQimage).
+		PurgeVisitorFunc(purgeQimage).
+		Build()
+
 	screen := &Screen{
 		widget:         widget,
 		windows:        make(map[gridId]*Window),
 		cursor:         [2]int{0, 0},
 		scrollRegion:   []int{0, 0, 0, 0},
 		highlightGroup: make(map[string]int),
+		textCache:      cache,
 	}
 
 	widget.SetAcceptDrops(true)
@@ -373,14 +385,20 @@ func (s *Screen) gridFont(update interface{}) {
 	newCols := int(float64(oldWidth) / win.font.truewidth)
 	newRows := oldHeight / win.font.lineHeight
 
-	// new texts cache
-	cache := gcache.New(CACHESIZE).LRU().
-		EvictedFunc(func(key, value interface{}) {
+	// Cache
+	if win.textCache == nil {
+		purgeQimage := func(key, value interface{}) {
 			image := value.(*gui.QImage)
 			image.DestroyQImage()
-		}).
-		Build()
-	win.textCache = cache
+		}
+		cache := gcache.New(CACHESIZE).LRU().
+			EvictedFunc(purgeQimage).
+			PurgeVisitorFunc(purgeQimage).
+			Build()
+		win.textCache = cache
+	} else {
+		win.textCache.Purge()
+	}
 
 	_ = s.ws.nvim.TryResizeUIGrid(s.ws.cursor.gridid, newCols, newRows)
 	font := win.getFont()
@@ -1976,7 +1994,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
+func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
@@ -1985,6 +2003,7 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 	line := w.content[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
+	textCache := w.getCache()
 	var image *gui.QImage
 
 	for x := col; x < col+cols; x++ {
@@ -2043,7 +2062,7 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 
 		text := buffer.String()
 		if text != "" {
-			imagev, err := w.textCache.Get(HlChars{
+			imagev, err := textCache.Get(HlChars{
 				text:   text,
 				fg:     highlight.fg(),
 				italic: highlight.italic,
@@ -2066,7 +2085,7 @@ func (w *Window) drawTexts(p *gui.QPainter, y int, col int, cols int) {
 		if line[x] == nil || line[x].char == " " {
 			continue
 		}
-		imagev, err := w.textCache.Get(HlChars{
+		imagev, err := textCache.Get(HlChars{
 			text:   line[x].char,
 			fg:     line[x].highlight.fg(),
 			italic: line[x].highlight.italic,
@@ -2132,19 +2151,32 @@ func (w *Window) newTextCache(p *gui.QPainter, text string, highlight Highlight,
 		text,
 		gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
-	// w.textCache.Add(
-	w.textCache.Set(
-		HlChars{
-			text:   text,
-			fg:     highlight.fg(),
-			italic: highlight.italic,
-			bold:   highlight.bold,
-		},
-		image,
-	)
+
+	if w.font != nil {
+		// If window has own font setting
+		w.textCache.Set(
+			HlChars{
+				text:   text,
+				fg:     highlight.fg(),
+				italic: highlight.italic,
+				bold:   highlight.bold,
+			},
+			image,
+		)
+	} else {
+		// screen text cache
+		w.s.textCache.Set(
+			HlChars{
+				text:   text,
+				fg:     highlight.fg(),
+				italic: highlight.italic,
+				bold:   highlight.bold,
+			},
+			image,
+		)
+	}
 
 	pi.DestroyQPainter()
-
 	return image
 }
 
@@ -2399,10 +2431,11 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 func (w *Window) drawContents(p *gui.QPainter, y int, col int, cols int) {
 	if w.s.name == "minimap" {
 		w.drawMinimap(p, y, col, cols)
+	} else if !editor.config.Editor.CachedDrawing {
+		w.drawText(p, y, col, cols)
 	} else {
-		// w.drawText(p, y, col, cols)
 		// w.drawChars(p, y, col, cols)
-		w.drawTexts(p, y, col, cols)
+		w.drawTextWithCache(p, y, col, cols)
 	}
 }
 
@@ -2684,6 +2717,15 @@ func (s *Screen) setColor() {
 	)
 }
 
+
+func (w *Window) getCache() gcache.Cache {
+       if w.font != nil {
+               return w.textCache
+       }
+
+       return w.s.textCache
+}
+
 func newWindow() *Window {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
@@ -2697,18 +2739,10 @@ func newWindow() *Window {
 		devicePixelRatio = 1.0
 	}
 
-	cache := gcache.New(CACHESIZE).LRU().
-		EvictedFunc(func(key, value interface{}) {
-			image := value.(*gui.QImage)
-			image.DestroyQImage()
-		}).
-		Build()
-
 	w := &Window{
 		widget:           widget,
 		scrollRegion:     []int{0, 0, 0, 0},
 		devicePixelRatio: devicePixelRatio,
-		textCache:        cache,
 	}
 
 	widget.ConnectPaintEvent(w.paint)
