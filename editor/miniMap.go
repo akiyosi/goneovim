@@ -52,9 +52,8 @@ func newMiniMap() *MiniMap {
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	widget.SetFixedWidth(140)
 
-	curRegion := widgets.NewQWidget(widget, 0)
+	curRegion := widgets.NewQWidget(nil, 0)
 	curRegion.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
-	curRegion.SetStyleSheet(" * { background-color: rgba(255, 255, 255, 30);}")
 	curRegion.SetFixedWidth(140)
 	curRegion.SetFixedHeight(1)
 
@@ -65,7 +64,6 @@ func newMiniMap() *MiniMap {
 			windows:      make(map[gridId]*Window),
 			cursor:       [2]int{0, 0},
 			scrollRegion: []int{0, 0, 0, 0},
-			// glyphMap:       make(map[HlChar]gui.QImage),
 			highlightGroup: make(map[string]int),
 		},
 		curRegion:     curRegion,
@@ -191,9 +189,8 @@ func (m *MiniMap) attachUIOption() map[string]interface{} {
 }
 
 func (m *MiniMap) setColor() {
-	// c := editor.colors.selectedBg
-	c := m.highAttrDef[m.highlightGroup["Comment"]].fg()
-	m.curRegion.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 0.17);}", c.R, c.G, c.B))
+	c := editor.colors.fg
+	m.curRegion.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 0.1);}", c.R, c.G, c.B))
 }
 
 func (m *MiniMap) toggle() {
@@ -202,6 +199,7 @@ func (m *MiniMap) toggle() {
 	} else {
 		m.visible = true
 	}
+	m.curRegion.SetParent(m.windows[1].widget)
 	m.bufUpdate()
 }
 
