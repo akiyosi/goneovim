@@ -2,7 +2,7 @@
 
 ---
 
-[![Join the chat at https://gitter.im/gonvim/gonvim](https://badges.gitter.im/gonvim/gonvim.svg)](https://gitter.im/gonvim/gonvim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/gonvim/gonvim.svg)](https://gitter.im/gonvim/gonvim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/gonvim)](https://goreportcard.com/report/github.com/akiyosi/gonvim)
 
 *GoNeovim* is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
@@ -17,16 +17,22 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 
 ## Features
 
-* Modern UI
-* External File Explorer
-* Fuzzy Finder
-* Markdown Preview
-* Minimap
-* Remote attachment
+- [x] Modern UI
+- [x] Workspace feature which manages multiple nvim
+- [x] Fuzzy Finder
+- [x] Markdown Preview
+- [x] External File Explorer
+- [x] Minimap
+- [x] Remote attachment
+- [x] Transparent window
+- [x] Indent guide
+- [x] Support display ligatures
+- [ ] Independent font settings per window (alpha stage)
+
 
 
 ## Requirements
-* Neovim
+* Neovim (v0.4.2 or later)
 
 See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
@@ -52,19 +58,9 @@ For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/g
 * [Development](https://github.com/akiyosi/gonvim/wiki/Development)
 
 
-
-## Contributing
-Gonvim welcomes contribution. If you want to add your changes to the Gonvim, Please following steps
-
-1. Fork this repository
-1. Create a branch for your contribution
-1. Add contributions to the branch
-1. Create a pull request
-
-
 ## Similar projects
 
-* [Gnvim](https://github.com/onivim/oni)
+* [Gnvim](https://github.com/vhakulinen/gnvim)
 * [Veonim](https://github.com/veonim/veonim)
 
 
