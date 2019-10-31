@@ -421,7 +421,7 @@ func (w *Workspace) initGonvim() {
 	if editor.config.Statusline.Visible {
 		gonvimAutoCmds = gonvimAutoCmds + `
 	aug GonvimAuStatusline | au! | aug END
-	au GonvimAuStatusline BufEnter,OptionSet,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat, &ro)
+	au GonvimAuStatusline BufEnter,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat, &ro)
 	`
 	}
 
