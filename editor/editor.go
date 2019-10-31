@@ -568,9 +568,6 @@ func (e *Editor) workspaceUpdate() {
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event.Text(), event.Key(), event.Modifiers())
-	if input == "<C-¥>" {
-		input = `<C-\>`
-	}
 	if input != "" {
 		e.workspaces[e.active].nvim.Input(input)
 	}
@@ -648,6 +645,64 @@ func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 		c = text
 	}
 
+	if mod&e.altModifier > 0 {
+		switch core.Qt__Key(key) {
+		case core.Qt__Key_A :
+			c = "a"
+		case core.Qt__Key_B :
+			c = "b"
+		case core.Qt__Key_C :
+			c = "c"
+		case core.Qt__Key_D :
+			c = "d"
+		case core.Qt__Key_E :
+			c = "e"
+		case core.Qt__Key_F :
+			c = "f"
+		case core.Qt__Key_G :
+			c = "g"
+		case core.Qt__Key_H :
+			c = "h"
+		case core.Qt__Key_I :
+			c = "i"
+		case core.Qt__Key_J :
+			c = "j"
+		case core.Qt__Key_K :
+			c = "k"
+		case core.Qt__Key_L :
+			c = "l"
+		case core.Qt__Key_M :
+			c = "m"
+		case core.Qt__Key_N :
+			c = "n"
+		case core.Qt__Key_O :
+			c = "o"
+		case core.Qt__Key_P :
+			c = "p"
+		case core.Qt__Key_Q :
+			c = "q"
+		case core.Qt__Key_R :
+			c = "r"
+		case core.Qt__Key_S :
+			c = "s"
+		case core.Qt__Key_T :
+			c = "t"
+		case core.Qt__Key_U :
+			c = "u"
+		case core.Qt__Key_V :
+			c = "v"
+		case core.Qt__Key_W :
+			c = "w"
+		case core.Qt__Key_X :
+			c = "x"
+		case core.Qt__Key_Y :
+			c = "y"
+		case core.Qt__Key_Z :
+			c = "z"
+		default:
+		}
+	}
+
 	if c == "" {
 		return ""
 	}
@@ -682,7 +737,7 @@ func (e *Editor) modPrefix(mod core.Qt__KeyboardModifier) string {
 	}
 
 	if mod&e.altModifier > 0 {
-		prefix += "A-"
+		prefix += "M-"
 	}
 
 	return prefix
