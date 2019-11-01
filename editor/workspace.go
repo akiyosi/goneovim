@@ -1474,6 +1474,21 @@ func (i *WorkspaceSideItem) toggleContent(event *gui.QMouseEvent) {
 }
 
 func (i *WorkspaceSideItem) openContent() {
+	if i.content.StyleSheet() == "" {
+		i.content.SetStyleSheet(
+			fmt.Sprintf(`
+				QListWidget::item {
+				   color: %s;
+				   background-color: rgba(0, 0, 0, 0.0);
+				}
+				QListWidget::item:selected {
+				   background-color: %s;
+				}`,
+				editor.colors.sideBarFg.String(),
+				editor.colors.selectedBg.String(),
+			),
+		)
+	}
 	i.openIcon.Show()
 	i.closeIcon.Hide()
 	i.isContentHide = false
@@ -1546,19 +1561,6 @@ func (s *WorkspaceSide) setColor() {
 	}
 	s.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
 
-	// for _, item := range s.items {
-	// 	item.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; }", editor.colors.inactiveFg.String()))
-	// 	item.content.SetStyleSheet(
-	// 		fmt.Sprintf(`
-	// 	QListWidget::item {
-	// 	   color: %s;
-	// 	   background-color: rgba(0, 0, 0, 0.0);
-	// 	}
-	// 	QListWidget::item:selected {
-	// 	   background-color: %s;
-	// 	}`, fg, editor.colors.selectedBg.String()))
-	// }
-
 	if len(editor.workspaces) == 1 {
 		s.items[0].active = true
 		s.items[0].labelWidget.SetStyleSheet(
@@ -1572,9 +1574,6 @@ func (s *WorkspaceSide) setColor() {
 }
 
 func (i *WorkspaceSideItem) setActive() {
-	// if !i.active {
-	// 	return
-	// }
 	if editor.colors.fg == nil {
 		return
 	}
@@ -1593,21 +1592,6 @@ func (i *WorkspaceSideItem) setActive() {
 			fg.String(),
 		),
 	)
-	if i.content.StyleSheet() == "" {
-		i.content.SetStyleSheet(
-			fmt.Sprintf(`
-				QListWidget::item {
-				   color: %s;
-				   background-color: rgba(0, 0, 0, 0.0);
-				}
-				QListWidget::item:selected {
-				   background-color: %s;
-				}`,
-				editor.colors.sideBarFg.String(),
-				editor.colors.selectedBg.String(),
-			),
-		)
-	}
 	svgOpenContent := editor.getSvg("chevron-down", fg)
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
 	svgCloseContent := editor.getSvg("chevron-right", fg)
@@ -1615,9 +1599,6 @@ func (i *WorkspaceSideItem) setActive() {
 }
 
 func (i *WorkspaceSideItem) setInactive() {
-	// if !i.active {
-	// 	return
-	// }
 	if editor.colors.fg == nil {
 		return
 	}
@@ -1632,21 +1613,6 @@ func (i *WorkspaceSideItem) setInactive() {
 			fg.String(),
 		),
 	)
-	if i.content.StyleSheet() == "" {
-		i.content.SetStyleSheet(
-			fmt.Sprintf(`
-				QListWidget::item {
-				   color: %s;
-				   background-color: rgba(0, 0, 0, 0.0);
-				}
-				QListWidget::item:selected {
-				   background-color: %s;
-				}`,
-				editor.colors.sideBarFg.String(),
-				editor.colors.selectedBg.String(),
-			),
-		)
-	}
 	svgOpenContent := editor.getSvg("chevron-down", fg)
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
 	svgCloseContent := editor.getSvg("chevron-right", fg)
