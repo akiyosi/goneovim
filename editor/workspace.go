@@ -64,6 +64,8 @@ type Workspace struct {
 	cols               int
 	uiAttached         bool
 	uiRemoteAttached   bool
+	screenbg           string
+	colorscheme        string
 	foreground         *RGBA
 	background         *RGBA
 	special            *RGBA
@@ -494,6 +496,18 @@ func (w *Workspace) loadGinitVim() {
 	ts := 8
 	w.nvim.Option("ts", &ts)
 	w.ts = ts
+	colorscheme := ""
+	w.nvim.Var("colors_name", &colorscheme)
+	w.colorscheme = colorscheme
+	screenbg := ""
+	w.nvim.Eval(":echo &background", &screenbg)
+	w.screenbg = screenbg
+	if w.screenbg == "light" {
+		fg := newRGBA(editor.colors.fg.R, editor.colors.fg.G, editor.colors.fg.B, 1)
+		bg := newRGBA(editor.colors.bg.R, editor.colors.bg.G, editor.colors.bg.B, 1)
+		editor.colors.fg = bg
+		editor.colors.bg = fg
+	}
 }
 
 func (w *Workspace) nvimCommandOutput(s string) (string, error) {
@@ -917,7 +931,9 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	editor.colors.bg = newRGBA(w.background.R, w.background.G, w.background.B, 1)
 	//w.setGuiColor(editor.colors.fg, editor.colors.bg)
 	editor.colors.update()
-	editor.updateGUIColor()
+	if !(w.colorscheme == "" && fg == -1 && bg == -1 && w.screenbg == "dark") {
+		editor.updateGUIColor()
+	}
 	editor.isSetGuiColor = true
 }
 
@@ -1530,25 +1546,36 @@ func (s *WorkspaceSide) setColor() {
 	}
 	s.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
 
-	for _, item := range s.items {
-		item.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; }", editor.colors.inactiveFg.String()))
-		item.content.SetStyleSheet(fmt.Sprintf(`
-  QListWidget::item {
-     color: %s;
-     background-color: rgba(0, 0, 0, 0.0);
-  }
-  QListWidget::item:selected {
-     background-color: %s;
-  }
-	`, fg, editor.colors.selectedBg.String()))
+	// for _, item := range s.items {
+	// 	item.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; }", editor.colors.inactiveFg.String()))
+	// 	item.content.SetStyleSheet(
+	// 		fmt.Sprintf(`
+	// 	QListWidget::item {
+	// 	   color: %s;
+	// 	   background-color: rgba(0, 0, 0, 0.0);
+	// 	}
+	// 	QListWidget::item:selected {
+	// 	   background-color: %s;
+	// 	}`, fg, editor.colors.selectedBg.String()))
+	// }
+
+	if len(editor.workspaces) == 1 {
+		s.items[0].active = true
+		s.items[0].labelWidget.SetStyleSheet(
+			fmt.Sprintf(
+				" * { background-color: %s; color: %s; }",
+				editor.colors.sideBarSelectedItemBg, fg,
+			),
+		)
 	}
 
-	s.items[0].active = true
-	s.items[0].labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; color: %s; }", editor.colors.sideBarSelectedItemBg, fg))
 }
 
 func (i *WorkspaceSideItem) setActive() {
-	if editor.colors.fg == nil || editor.colors.bg == nil {
+	// if !i.active {
+	// 	return
+	// }
+	if editor.colors.fg == nil {
 		return
 	}
 	if editor.wsSide.scrollarea == nil {
@@ -1558,7 +1585,29 @@ func (i *WorkspaceSideItem) setActive() {
 	bg := editor.colors.sideBarSelectedItemBg
 	fg := editor.colors.fg
 	transparent := transparent()
-	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); color: %s; }", bg.R, bg.G, bg.B, transparent, fg.String()))
+	i.labelWidget.SetStyleSheet(
+		fmt.Sprintf(
+			" * { background-color: rgba(%d, %d, %d, %f); color: %s; }",
+			bg.R, bg.G, bg.B,
+			transparent,
+			fg.String(),
+		),
+	)
+	if i.content.StyleSheet() == "" {
+		i.content.SetStyleSheet(
+			fmt.Sprintf(`
+				QListWidget::item {
+				   color: %s;
+				   background-color: rgba(0, 0, 0, 0.0);
+				}
+				QListWidget::item:selected {
+				   background-color: %s;
+				}`,
+				editor.colors.sideBarFg.String(),
+				editor.colors.selectedBg.String(),
+			),
+		)
+	}
 	svgOpenContent := editor.getSvg("chevron-down", fg)
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
 	svgCloseContent := editor.getSvg("chevron-right", fg)
@@ -1566,15 +1615,38 @@ func (i *WorkspaceSideItem) setActive() {
 }
 
 func (i *WorkspaceSideItem) setInactive() {
-	if !i.active {
+	// if !i.active {
+	// 	return
+	// }
+	if editor.colors.fg == nil {
 		return
 	}
-	if editor.colors.fg == nil || editor.colors.bg == nil {
+	if editor.wsSide.scrollarea == nil {
 		return
 	}
 	i.active = false
 	fg := editor.colors.inactiveFg
-	i.labelWidget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(0, 0, 0, 0); color: %s; }", fg.String()))
+	i.labelWidget.SetStyleSheet(
+		fmt.Sprintf(
+			" * { background-color: rgba(0, 0, 0, 0); color: %s; }",
+			fg.String(),
+		),
+	)
+	if i.content.StyleSheet() == "" {
+		i.content.SetStyleSheet(
+			fmt.Sprintf(`
+				QListWidget::item {
+				   color: %s;
+				   background-color: rgba(0, 0, 0, 0.0);
+				}
+				QListWidget::item:selected {
+				   background-color: %s;
+				}`,
+				editor.colors.sideBarFg.String(),
+				editor.colors.selectedBg.String(),
+			),
+		)
+	}
 	svgOpenContent := editor.getSvg("chevron-down", fg)
 	i.openIcon.Load2(core.NewQByteArray2(svgOpenContent, len(svgOpenContent)))
 	svgCloseContent := editor.getSvg("chevron-right", fg)
