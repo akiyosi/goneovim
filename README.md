@@ -25,19 +25,19 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 ## Screenshots
 
 * Workspaces, external file explorer
-![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/workspaces-fileexplorer.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/workspaces-fileexplorer.png)
 * Fuzzy Finder
-![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/fuzzyfinder.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/fuzzyfinder.png)
 * Markdown preview
-![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/markdown-preview.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/markdown-preview.png)
 * Minimap
-![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/minimap.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/minimap.png)
 * Indentguid, display lifatures(Fira Code)
-![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/indentguide.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/indentguide.png)
 * Transparent window
-![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/transparent.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/transparent.png)
 * Independent font settings per window
-![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/font-setting-per-window.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/font-setting-per-window.png)
 
 ## Requirements
 * Neovim (v0.4.2 or later)
