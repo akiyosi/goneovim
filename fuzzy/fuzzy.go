@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	gonvimUtil "github.com/akiyosi/gonvim/util"
+	gonvimUtil "github.com/akiyosi/goneovim/util"
 	"github.com/denormal/go-gitignore"
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/util"
@@ -339,8 +339,6 @@ func (s *Fuzzy) processSource() {
 			}
 
 			if !s.isRemoteAttachment {
-				// -- Explore file with local gonvim
-				// --
 				files, _ := ioutil.ReadDir(pwd)
 				folders := []string{}
 				ignore, _ := gitignore.NewRepository(pwd)

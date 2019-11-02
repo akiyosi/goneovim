@@ -10,7 +10,7 @@ import (
 )
 
 // gonvimConfig is the following toml file
-// # Gonvim config toml
+// # Goneovim config toml
 // [editor]
 // ui = "trans"
 // width = 1000  # >= 400
@@ -49,12 +49,6 @@ import (
 // diffchangepattern = 12
 // diffaddpattern = 1
 // SkipGlobalId = true
-// ginitvim = '''
-//   set guifont=FuraCode\ Nerd\ Font\ Mono:h14
-//   if g:gonvim_running == 1
-//     set laststatus=0
-//   endif
-// '''
 //
 // [palette]
 // AreaRatio = 0.8
@@ -218,7 +212,7 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.init()
 
 	// Read toml
-	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
+	if _, err := toml.DecodeFile(filepath.Join(home, ".goneovim", "setting.toml"), &config); err != nil {
 		config.Editor.Transparent = 1.0
 		config.Statusline.Visible = true
 		config.Statusline.ModeIndicatorType = "textLabel"
@@ -363,7 +357,7 @@ func outputGonvimConfig() {
 	if err != nil {
 		home = "~"
 	}
-	filepath := filepath.Join(home, ".gonvim", "setting.toml")
+	filepath := filepath.Join(home, ".goneovim", "setting.toml")
 	if isFileExist(filepath) {
 		return
 	}
@@ -371,6 +365,6 @@ func outputGonvimConfig() {
 	toml.NewEncoder(buf).Encode(editor.config)
 	err = ioutil.WriteFile(filepath, buf.Bytes(), 664)
 	if err != nil {
-		editor.pushNotification(NotifyWarn, -1, "[Gonvim] I can't write to setting.toml file at ~/.gonvim/setting.toml")
+		editor.pushNotification(NotifyWarn, -1, "[Goneovim] " + err.Error())
 	}
 }

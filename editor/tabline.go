@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/akiyosi/gonvim/util"
+	"github.com/akiyosi/goneovim/util"
 	shortpath "github.com/akiyosi/short_path"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"

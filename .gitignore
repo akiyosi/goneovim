@@ -1,9 +1,9 @@
 .go-version
 tags*
 moc*
-cmd/gonvim/gonvim
-cmd/gonvim/debug
-cmd/gonvim/deploy/*
-cmd/gonvim/deploy*
-cmd/gonvim/windows/*
-cmd/gonvim/rcc*
+cmd/goneovim/goneovim
+cmd/goneovim/debug
+cmd/goneovim/deploy/*
+cmd/goneovim/deploy*
+cmd/goneovim/windows/*
+cmd/goneovim/rcc*

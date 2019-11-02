@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/akiyosi/gonvim/util"
+	"github.com/akiyosi/goneovim/util"
 )
 
 // CmdContent is the content of the cmdline

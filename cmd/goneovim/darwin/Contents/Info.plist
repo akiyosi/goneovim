@@ -12,13 +12,13 @@
 	<key>CFBundleIconFile</key>
 	<string>goneovim.icns</string>
 	<key>CFBundleName</key>
-	<string>gonvim</string>
+	<string>goneovim</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleExecutable</key>
-	<string>gonvim</string>
+	<string>goneovim</string>
   <key>CFBundleDocumentTypes</key>
   <array>
     <dict>
@@ -31,11 +31,11 @@
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>CFBundleTypeIconFile</key>
-      <string>gonvim.icns</string>
+      <string>goneovim.icns</string>
     </dict>
   </array>
 	<key>CFBundleIdentifier</key>
-	<string>com.ident.gonvim</string>
+	<string>com.ident.goneovim</string>
 	<key>CFBundleGetInfoString</key>
 	<string>Created by Qt/QMake</string>
 	<key>NOTE</key>

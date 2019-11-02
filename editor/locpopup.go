@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/akiyosi/gonvim/util"
+	"github.com/akiyosi/goneovim/util"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/svg"

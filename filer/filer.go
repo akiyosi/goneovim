@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/akiyosi/gonvim/util"
+	"github.com/akiyosi/goneovim/util"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/widgets"
 )
