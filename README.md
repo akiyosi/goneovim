@@ -32,7 +32,7 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/markdown-preview.png)
 * Minimap
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/minimap.png)
-* Indentguid, display lifatures(Fira Code)
+* Indentguide, display ligatures(Fira Code)
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/indentguide.png)
 * Transparent window
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/transparent.png)
