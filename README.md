@@ -1,16 +1,16 @@
-<img src="https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/GoNeovim.png" width="250" align="top" >
+<img src="https://raw.githubusercontent.com/wiki/akiyosi/goneovim/images/GoNeovim.png" width="250" align="top" >
 
 ---
 
-[![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/gonvim/gonvim.svg)](https://gitter.im/gonvim/gonvim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/gonvim)](https://goreportcard.com/report/github.com/akiyosi/gonvim)
+[![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
+[![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/goneovim)](https://goreportcard.com/report/github.com/akiyosi/goneovim)
 
 *GoNeovim* is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
 This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
 
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/Screenshot.png" width="100%" align="top" >
+<img src="https://raw.githubusercontent.com/wiki/akiyosi/goneovim/images/Screenshot.png" width="100%" align="top" >
 </p>
 
 
@@ -38,25 +38,25 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
 ## Getting Started
-Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](https://github.com/akiyosi/gonvim/releases) page.
+Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](https://github.com/akiyosi/goneovim/releases) page.
 
 
 
 ## Configurations
 
-* neovim configuration example for gonvim
+* neovim configuration example for goneovim
 
-The sample configuration is [gonvim-init.vim](https://github.com/akiyosi/gonvim-init.vim)
+The sample configuration is [goneovim-init.vim](https://github.com/akiyosi/goneovim-init.vim)
 
-* gonvim configuration
+* goneovim configuration
 
-For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/gonvim/wiki/Configurations)
+For details of `~/.goneovim/setting.toml`, See [wiki](https://github.com/akiyosi/goneovim/wiki/Configurations)
 
 
 
 ## Development
 
-* [Development](https://github.com/akiyosi/gonvim/wiki/Development)
+* [Development](https://github.com/akiyosi/goneovim/wiki/Development)
 
 
 ## Similar projects

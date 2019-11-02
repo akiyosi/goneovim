@@ -3,7 +3,7 @@ package editor
 import (
 	"fmt"
 
-	"github.com/akiyosi/gonvim/util"
+	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )

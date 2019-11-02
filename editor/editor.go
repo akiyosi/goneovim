@@ -227,7 +227,7 @@ func (e *Editor) initWorkspaces() {
 	sessionExists := false
 	if e.config.Workspace.RestoreSession == true {
 		for i := 0; i <= WorkspaceLen; i++ {
-			path := filepath.Join(e.homeDir, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
+			path := filepath.Join(e.homeDir, ".goneovim", "sessions", strconv.Itoa(i)+".vim")
 			_, err := os.Stat(path)
 			if err != nil {
 				break
@@ -263,19 +263,19 @@ func (e *Editor) loadFileInDarwin() {
 	e.app.ConnectEvent(func(event *core.QEvent) bool {
 		switch event.Type() {
 		case core.QEvent__FileOpen:
-			// If gonvim not launched on finder (it is started in terminal)
+			// If goneovim not launched on finder (it is started in terminal)
 			if os.Getppid() != 1 {
 				return false
 			}
 			fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
 			macosArg = fileOpenEvent.File()
-			gonvim := e.workspaces[e.active].nvim
+			goneovim := e.workspaces[e.active].nvim
 			isModified := ""
-			isModified, _ = gonvim.CommandOutput("echo &modified")
+			isModified, _ = goneovim.CommandOutput("echo &modified")
 			if isModified == "1" {
-				gonvim.Command(fmt.Sprintf(":tabe %s", macosArg))
+				goneovim.Command(fmt.Sprintf(":tabe %s", macosArg))
 			} else {
-				gonvim.Command(fmt.Sprintf(":e %s", macosArg))
+				goneovim.Command(fmt.Sprintf(":e %s", macosArg))
 			}
 		}
 		return true
@@ -319,7 +319,7 @@ func (e *Editor) initSysTray() {
 	svg := fmt.Sprintf(`<svg viewBox="0 0 128 128"><g transform="translate(2,3) scale(%f)"><path fill="%s" d="M72.6 80.5c.2.2.6.5.9.5h5.3c.3 0 .7-.3.9-.5l1.4-1.5c.2-.2.3-.4.3-.6l1.5-5.1c.1-.5 0-1-.3-1.3l-1.1-.9c-.2-.2-.6-.1-.9-.1h-4.8l-.2-.2-.1-.1c-.2 0-.4-.1-.6.1l-1.9 1.2c-.2 0-.3.5-.4.7l-1.6 4.9c-.2.5-.1 1.1.3 1.5l1.3 1.4zM73.4 106.9l-.4.1h-1.2l7.2-21.1c.2-.7-.1-1.5-.8-1.7l-.4-.1h-12.1c-.5.1-.9.5-1 1l-.7 2.5c-.2.7.3 1.3 1 1.5l.3-.1h1.8l-7.3 20.9c-.2.7.1 1.6.8 1.9l.4.3h11.2c.6 0 1.1-.5 1.3-1.1l.7-2.4c.3-.7-.1-1.5-.8-1.7zM126.5 87.2l-1.9-2.5v-.1c-.3-.3-.6-.6-1-.6h-7.2c-.4 0-.7.4-1 .6l-2 2.4h-3.1l-2.1-2.4v-.1c-.2-.3-.6-.5-1-.5h-4l20.2-20.2-22.6-22.4 20.2-20.8v-9l-2.8-3.6h-40.9l-3.3 3.5v2.9l-11.3-11.4-7.7 7.5-2.4-2.5h-40.4l-3.2 3.7v9.4l3 2.9h3v26.1l-14 14 14 14v32l5.2 2.9h11.6l9.1-9.5 21.6 21.6 14.5-14.5c.1.4.4.5.9.7l.4-.2h9.4c.6 0 1.1-.1 1.2-.6l.7-2c.2-.7-.1-1.3-.8-1.5l-.4.1h-.4l3.4-10.7 2.3-2.3h5l-5 15.9c-.2.7.2 1.1.9 1.4l.4-.2h9.1c.5 0 1-.1 1.2-.6l.8-1.8c.3-.7-.1-1.3-.7-1.6-.1-.1-.3 0-.5 0h-.4l4.2-13h6.1l-5.1 15.9c-.2.7.2 1.1.9 1.3l.4-.3h10c.5 0 1-.1 1.2-.6l.8-2c.3-.7-.1-1.3-.8-1.5-.1-.1-.3.1-.5.1h-.7l5.6-18.5c.2-.5.1-1.1-.1-1.4zm-63.8-82.3l11.3 11.3v4.7l3.4 4.1h1.6l-29 28v-28h3.3l2.7-4.2v-8.9l-.2-.3 6.9-6.7zm-59.8 59.2l12.1-12.1v24.2l-12.1-12.1zm38.9 38.3l58.4-60 21.4 21.5-20.2 20.2h-.1c-.3.1-.5.3-.7.5l-2.1 2.4h-2.9l-2.2-2.4c-.2-.3-.6-.6-1-.6h-8.8c-.6 0-1.1.4-1.3 1l-.8 2.5c-.2.7.1 1.3.8 1.6h1.5l-6.4 18.9-15.1 15.2-20.5-20.8z"></path></g></svg>`, size, color)
 	pixmap.LoadFromData2(core.NewQByteArray2(svg, len(svg)), "SVG", core.Qt__ColorOnly)
 	trayIcon := gui.NewQIcon2(pixmap)
-	image := filepath.Join(e.homeDir, ".gonvim", "trayicon.png")
+	image := filepath.Join(e.homeDir, ".goneovim", "trayicon.png")
 	if isFileExist(image) {
 		trayIcon = gui.NewQIcon5(image)
 	}
@@ -476,7 +476,7 @@ func shiftHex(hex string, v int) string {
 }
 
 func (e *Editor) setWindowOptions() {
-	e.window.SetupTitle("Gonvim")
+	e.window.SetupTitle("goneovim")
 	e.window.SetupWidgetColor(0, 0, 0)
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
@@ -822,7 +822,7 @@ func (e *Editor) cleanup() {
 	if err != nil {
 		return
 	}
-	sessions := filepath.Join(home, ".gonvim", "sessions")
+	sessions := filepath.Join(home, ".goneovim", "sessions")
 	os.RemoveAll(sessions)
 	os.MkdirAll(sessions, 0755)
 

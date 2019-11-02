@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Gonvim
-Comment=Gonvim - Neovim GUI
-# You should deploy nvim under the $PATH such as /usr/bin
-Exec=/path/to/gonvim/gonvim.sh
-Icon=/path/to/gonvim.ico

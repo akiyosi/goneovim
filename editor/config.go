@@ -10,7 +10,7 @@ import (
 )
 
 // gonvimConfig is the following toml file
-// # Gonvim config toml
+// # Goneovim config toml
 // [editor]
 // ui = "trans"
 // width = 1000  # >= 400
@@ -49,12 +49,6 @@ import (
 // diffchangepattern = 12
 // diffaddpattern = 1
 // SkipGlobalId = true
-// ginitvim = '''
-//   set guifont=FuraCode\ Nerd\ Font\ Mono:h14
-//   if g:gonvim_running == 1
-//     set laststatus=0
-//   endif
-// '''
 //
 // [palette]
 // AreaRatio = 0.8
@@ -136,13 +130,13 @@ type editorConfig struct {
 	FontSize             int
 	Linespace            int
 	ExtCmdline           bool
-	ExtWildmenu          bool
+	// ExtWildmenu          bool
 	ExtPopupmenu         bool
 	ExtTabline           bool
-	ExtMultigrid         bool
+	// ExtMultigrid         bool
 	ExtMessages          bool
 	Clipboard            bool
-	CursorBlink          bool
+	// CursorBlink          bool
 	CachedDrawing        bool
 	DisableImeInNormal   bool
 	GinitVim             string
@@ -218,41 +212,8 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.init()
 
 	// Read toml
-	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
-		config.Editor.Transparent = 1.0
-		config.Statusline.Visible = true
-		config.Statusline.ModeIndicatorType = "textLabel"
-		config.Tabline.Visible = true
-		config.Lint.Visible = true
-		config.ActivityBar.Visible = true
-		config.ScrollBar.Visible = true
-		config.SideBar.Width = 300
-		config.SideBar.AccentColor = "#5596ea"
-		config.Workspace.PathStyle = "minimum"
-	}
+	_, _ = toml.DecodeFile(filepath.Join(home, ".goneovim", "setting.toml"), &config)
 
-	// // Decide UI mode
-	// if config.Editor.Ui == "extended" {
-	// 	// extended UI
-	// 	config.Editor.ExtMultigrid = false
-	// 	config.Editor.ExtCmdline = true
-	// 	config.Editor.ExtWildmenu = true
-	// 	config.Editor.ExtPopupmenu = true
-	// 	config.Editor.ExtTabline = true
-	// } else if config.Editor.Ui == "multigrid" {
-	// 	// trans UI
-	// 	config.Editor.ExtMultigrid = true
-	// 	config.Editor.ExtCmdline = true
-	// 	config.Editor.ExtWildmenu = true
-	// 	config.Editor.ExtPopupmenu = true
-	// 	config.Editor.ExtTabline = true
-	// 	config.Editor.DrawBorder = true
-	// }
-
-	// if config.Editor.Ui != "multigrid" {
-	// 	config.Editor.DrawBorder = false
-	// 	config.Editor.IndentGuide = false
-	// }
 
 	if config.Editor.Transparent < 1.0 {
 		config.Editor.DrawBorder = true
@@ -305,14 +266,10 @@ func newGonvimConfig(home string) gonvimConfig {
 	}
 
 	if config.SideBar.Width == 0 {
-		config.SideBar.Width = 300
+		config.SideBar.Width = 200
 	}
 	if config.SideBar.AccentColor == "" {
 		config.SideBar.AccentColor = "#5596ea"
-	}
-
-	if config.FileExplorer.MaxItems < 0 {
-		config.FileExplorer.MaxItems = 50
 	}
 
 	if config.Workspace.PathStyle == "" {
@@ -326,36 +283,49 @@ func (c *gonvimConfig) init() {
 	// Set default value
 	c.Editor.Width = 800
 	c.Editor.Height = 600
-	c.FileExplorer.MaxItems = 50
-	c.Statusline.Left = []string{"mode", "filename"}
-	c.Statusline.Right = []string{"git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
+	c.Editor.Transparent = 1.0
 
 	// UI options:
 	c.Editor.SkipGlobalId = false
-	c.Editor.CachedDrawing = false
-	c.Editor.Transparent = 1.0
-	// There is so meny combinations of UI's.
-	// So, We provides an interface to set a certain combination of UI's pattern
+	c.Editor.CachedDrawing = true
 
 	// basic UI
-	c.Editor.ExtMultigrid = false
-	c.Editor.ExtCmdline = false
-	c.Editor.ExtWildmenu = false
+	c.Editor.ExtCmdline = true
+	// c.Editor.ExtWildmenu = false
 	c.Editor.ExtPopupmenu = false
-	c.Editor.ExtTabline = false
+	c.Editor.ExtTabline = true
 	c.Editor.ExtMessages = false
 	c.Editor.DrawBorder = false
 
 	// Indent guide
-	c.Editor.IndentGuide = false
+	c.Editor.IndentGuide = true
 
 	// replace diff color drawing pattern
-	c.Editor.DiffAddPattern = 1
+	c.Editor.DiffAddPattern = 12
 	c.Editor.DiffDeletePattern = 12
 
 	// palette size
 	c.Palette.AreaRatio = 0.5
 	c.Palette.MaxNumberOfResultItems = 30
+
+
+	c.Statusline.Visible = false
+	c.Statusline.ModeIndicatorType = "textLabel"
+	c.Statusline.Left = []string{"mode", "filename"}
+	c.Statusline.Right = []string{"git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
+
+	c.Tabline.Visible = true
+
+	c.Lint.Visible = true
+
+	// c.ActivityBar.Visible = true
+
+	c.ScrollBar.Visible = true
+
+	c.SideBar.Width = 200
+	c.SideBar.AccentColor = "#5596ea"
+
+	c.Workspace.PathStyle = "minimum"
 }
 
 func outputGonvimConfig() {
@@ -363,7 +333,7 @@ func outputGonvimConfig() {
 	if err != nil {
 		home = "~"
 	}
-	filepath := filepath.Join(home, ".gonvim", "setting.toml")
+	filepath := filepath.Join(home, ".goneovim", "setting.toml")
 	if isFileExist(filepath) {
 		return
 	}
@@ -371,6 +341,6 @@ func outputGonvimConfig() {
 	toml.NewEncoder(buf).Encode(editor.config)
 	err = ioutil.WriteFile(filepath, buf.Bytes(), 664)
 	if err != nil {
-		editor.pushNotification(NotifyWarn, -1, "[Gonvim] I can't write to setting.toml file at ~/.gonvim/setting.toml")
+		editor.pushNotification(NotifyWarn, -1, "[Goneovim] " + err.Error())
 	}
 }

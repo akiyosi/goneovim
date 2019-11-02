@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/akiyosi/gonvim/filer"
-	"github.com/akiyosi/gonvim/fuzzy"
-	"github.com/akiyosi/gonvim/util"
+	"github.com/akiyosi/goneovim/filer"
+	"github.com/akiyosi/goneovim/fuzzy"
+	"github.com/akiyosi/goneovim/util"
 	shortpath "github.com/akiyosi/short_path"
 	"github.com/jessevdk/go-flags"
 	"github.com/neovim/go-client/nvim"
@@ -590,7 +590,8 @@ func (w *Workspace) setCwd(cwd string) {
 func (w *Workspace) attachUIOption() map[string]interface{} {
 	o := make(map[string]interface{})
 	o["rgb"] = true
-	o["ext_multigrid"] = editor.config.Editor.ExtMultigrid
+	// o["ext_multigrid"] = editor.config.Editor.ExtMultigrid
+	o["ext_multigrid"] = true
 	o["ext_hlstate"] = true
 
 	apiInfo, err := w.nvim.APIInfo()
