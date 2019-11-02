@@ -8,29 +8,36 @@
 *GoNeovim* is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
 This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
 
-
-<p align="center">
-<img src="https://raw.githubusercontent.com/wiki/akiyosi/goneovim/images/Screenshot.png" width="100%" align="top" >
-</p>
-
-
-
 ## Features
 
-- [x] Modern UI
-- [x] Workspace feature which manages multiple nvim
-- [x] Fuzzy Finder
-- [x] Markdown Preview
-- [x] External File Explorer
-- [x] Minimap
-- [x] Remote attachment
-- [x] Transparent window
-- [x] Indent guide
-- [x] Support display ligatures
-- [x] Desktop Notification of the messages
-- [ ] Independent font settings per window (alpha stage)
+* Workspace feature which manages multiple nvim
+* Fuzzy Finder
+* Markdown Preview
+* External File Explorer
+* Minimap
+* Transparent window
+* Indent guide
+* Independent font settings per window (alpha stage)
+* Support display ligatures
+* Desktop Notification of the messages
+* Remote attachment
 
+## Screenshots
 
+* Workspaces, external file explorer
+![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/workspaces-fileexplorer.png)
+* Fuzzy Finder
+![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/fuzzyfinder.png)
+* Markdown preview
+![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/markdown-preview.png)
+* Minimap
+![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/minimap.png)
+* Indentguid, display lifatures(Fira Code)
+![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/indentguide.png)
+* Transparent window
+![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/transparent.png)
+* Independent font settings per window
+![](https://raw.githubusercontent.com/wiki/akiyosi/gonvim/screenshots/font-setting-per-window.png)
 
 ## Requirements
 * Neovim (v0.4.2 or later)
