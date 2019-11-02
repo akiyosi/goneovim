@@ -334,9 +334,7 @@ func putEnv() {
 		_ = os.Setenv("LD_LIBRARY_PATH", dir+"lib")
 		_ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
 	}
-	if runtime.GOOS == "windows" {
-		_ = os.Setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
-	}
+	_ = os.Setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
 }
 
 func (e *Editor) initFont() {
