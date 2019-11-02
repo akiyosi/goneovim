@@ -624,7 +624,7 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 					case "cmdline_show":
 						o["ext_cmdline"] = editor.config.Editor.ExtCmdline
 					case "msg_show":
-						o["ext_messages"] = editor.config.Editor.ExtMessage
+						o["ext_messages"] = editor.config.Editor.ExtMessages
 					case "popupmenu_show":
 						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
 					case "tabline_update":

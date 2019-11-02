@@ -27,6 +27,7 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 - [x] Transparent window
 - [x] Indent guide
 - [x] Support display ligatures
+- [x] Desktop Notification of the messages
 - [ ] Independent font settings per window (alpha stage)
 
 

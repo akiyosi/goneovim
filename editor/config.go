@@ -140,7 +140,7 @@ type editorConfig struct {
 	ExtPopupmenu         bool
 	ExtTabline           bool
 	ExtMultigrid         bool
-	ExtMessage           bool
+	ExtMessages          bool
 	Clipboard            bool
 	CursorBlink          bool
 	CachedDrawing        bool
@@ -343,7 +343,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.ExtWildmenu = false
 	c.Editor.ExtPopupmenu = false
 	c.Editor.ExtTabline = false
-	c.Editor.ExtMessage = false
+	c.Editor.ExtMessages = false
 	c.Editor.DrawBorder = false
 
 	// Indent guide

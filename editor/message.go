@@ -198,6 +198,7 @@ func (m *Message) resize() {
 	if m.ws.screen == nil {
 		return
 	}
+	leftPadding := editor.wsSide.scrollarea.Width()
 
 	var x, y int
 	var ok bool
@@ -212,10 +213,10 @@ func (m *Message) resize() {
 	}
 	m.widget.Resize2(m.width+editor.iconSize, 0)
 	if !ok {
-		x = 10
+		x = 10 + leftPadding
 		y = m.ws.widget.Height() - m.ws.statusline.widget.Height() - m.widget.Height()
 	} else {
-		x = m.ws.width - m.width - editor.iconSize - m.ws.scrollBar.widget.Width() - 12
+		x = m.ws.width + leftPadding - m.width - editor.iconSize - m.ws.scrollBar.widget.Width() - 12
 		y = 6 + m.ws.tabline.widget.Height()
 	}
 	m.widget.Move2(x, y)
@@ -246,7 +247,7 @@ func (m *Message) resizeMessages() bool {
 
 func (m *Message) msgShow(args []interface{}) {
 	prevKind := ""
-	winState := editor.window.WindowState()
+	isActiveState := editor.window.IsActiveWindow()
 	notifyText := ""
 
 	for _, arg := range args {
@@ -287,7 +288,7 @@ func (m *Message) msgShow(args []interface{}) {
 			}
 
 			// If window is minimize, then message notified as a desktop notifications
-			if winState == core.Qt__WindowMinimized {
+			if !isActiveState {
 				notifyText += msg
 			}
 
@@ -315,9 +316,8 @@ func (m *Message) msgShow(args []interface{}) {
 		}
 
 		// If window is minimize, then message notified as a desktop notifications
-		if winState == core.Qt__WindowMinimized && notifyText != "" {
-			fmt.Println("notify!")
-			editor.sysTray.ShowMessage("Gonvim", notifyText, widgets.QSystemTrayIcon__NoIcon, 2000)
+		if !isActiveState && notifyText != "" {
+			editor.sysTray.ShowMessage("GoNeovim", notifyText, widgets.QSystemTrayIcon__NoIcon, 2000)
 			return
 		}
 
