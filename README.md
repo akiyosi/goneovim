@@ -49,15 +49,9 @@ Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](htt
 
 
 
-## Configurations
+## Usage
 
-* neovim configuration example for goneovim
-
-The sample configuration is [goneovim-init.vim](https://github.com/akiyosi/goneovim-init.vim)
-
-* goneovim configuration
-
-For details of `~/.goneovim/setting.toml`, See [wiki](https://github.com/akiyosi/goneovim/wiki/Configurations)
+See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
 
 ## ToDo
