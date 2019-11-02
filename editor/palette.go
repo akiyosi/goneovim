@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/akiyosi/gonvim/fuzzy"
-	"github.com/akiyosi/gonvim/util"
+	"github.com/akiyosi/goneovim/fuzzy"
+	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
@@ -19,7 +19,9 @@ type Palette struct {
 	ws               *Workspace
 	hidden           bool
 	widget           *widgets.QWidget
+	padding          int
 	patternText      string
+	isHTMLText       bool
 	resultItems      []*PaletteResultItem
 	resultWidget     *widgets.QWidget
 	resultMainWidget *widgets.QWidget
@@ -54,6 +56,8 @@ type PaletteResultItem struct {
 
 func initPalette() *Palette {
 	width := 600
+	padding := 8
+
 	mainLayout := widgets.NewQVBoxLayout()
 	mainLayout.SetContentsMargins(0, 0, 0, 0)
 	mainLayout.SetSpacing(0)
@@ -63,24 +67,21 @@ func initPalette() *Palette {
 	widget.SetContentsMargins(1, 1, 1, 1)
 	// widget.SetFixedWidth(width)
 	widget.SetObjectName("palette")
-	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	shadow.SetBlurRadius(35)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
-	shadow.SetOffset3(-2, 8)
-	widget.SetGraphicsEffect(shadow)
+
+	widget.SetGraphicsEffect(util.DropShadow(0, 15, 130, 120))
 
 	resultMainLayout := widgets.NewQHBoxLayout()
 	resultMainLayout.SetContentsMargins(0, 0, 0, 0)
 	resultMainLayout.SetSpacing(0)
 	resultMainLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 
-	padding := 8
 	resultLayout := widgets.NewQVBoxLayout()
 	resultLayout.SetContentsMargins(0, 0, 0, 0)
 	resultLayout.SetSpacing(0)
 	resultLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 	resultWidget := widgets.NewQWidget(nil, 0)
 	resultWidget.SetLayout(resultLayout)
+	resultWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0); white-space: pre-wrap;")
 	resultWidget.SetContentsMargins(0, 0, 0, 0)
 
 	scrollCol := widgets.NewQWidget(nil, 0)
@@ -90,6 +91,7 @@ func initPalette() *Palette {
 	scrollBar.SetFixedWidth(5)
 
 	resultMainWidget := widgets.NewQWidget(nil, 0)
+	resultMainWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0); }")
 	resultMainWidget.SetContentsMargins(0, 0, 0, 0)
 	resultMainLayout.AddWidget(resultWidget, 0, 0)
 	resultMainLayout.AddWidget(scrollCol, 0, 0)
@@ -108,10 +110,10 @@ func initPalette() *Palette {
 	patternWidget.SetLayout(patternLayout)
 	patternWidget.SetContentsMargins(padding, padding, padding, padding)
 
-	cursor := widgets.NewQWidget(nil, 0)
-	cursor.SetParent(pattern)
-	cursor.SetFixedSize2(1, pattern.SizeHint().Height()-padding*2)
-	cursor.Move2(padding, padding)
+	// cursor := widgets.NewQWidget(nil, 0)
+	// cursor.SetParent(pattern)
+	// cursor.SetFixedSize2(1, pattern.SizeHint().Height()-padding*2)
+	// cursor.Move2(padding, padding)
 
 	mainLayout.AddWidget(patternWidget, 0, 0)
 	mainLayout.AddWidget(resultMainWidget, 0, 0)
@@ -119,6 +121,7 @@ func initPalette() *Palette {
 	palette := &Palette{
 		width:            width,
 		widget:           widget,
+		padding:          padding,
 		resultWidget:     resultWidget,
 		resultMainWidget: resultMainWidget,
 		pattern:          pattern,
@@ -126,7 +129,7 @@ func initPalette() *Palette {
 		patternWidget:    patternWidget,
 		scrollCol:        scrollCol,
 		scrollBar:        scrollBar,
-		cursor:           cursor,
+		// cursor:           cursor,
 	}
 
 	resultItems := []*PaletteResultItem{}
@@ -137,16 +140,18 @@ func initPalette() *Palette {
 		itemLayout := util.NewVFlowLayout(padding, padding*2, 0, 0, 9999)
 		itemLayout.SetSizeConstraint(widgets.QLayout__SetMinAndMaxSize)
 		itemWidget.SetLayout(itemLayout)
+		// itemWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 		resultLayout.AddWidget(itemWidget, 0, 0)
 		icon := svg.NewQSvgWidget(nil)
 		icon.SetFixedWidth(editor.iconSize - 1)
 		icon.SetFixedHeight(editor.iconSize - 1)
 		icon.SetContentsMargins(0, 0, 0, 0)
+		// icon.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 		base := widgets.NewQLabel(nil, 0)
 		base.SetText("base")
 		base.SetContentsMargins(0, padding, 0, padding)
-		base.SetStyleSheet("background-color: none; white-space: pre-wrap;")
-		// base.SetSizePolicy2(widgets.QSizePolicy__Preferred, widgets.QSizePolicy__Maximum)
+		// base.SetStyleSheet("background-color: rgba(0, 0, 0, 0); white-space: pre-wrap;")
+		base.SetSizePolicy2(widgets.QSizePolicy__Preferred, widgets.QSizePolicy__Maximum)
 		itemLayout.AddWidget(icon)
 		itemLayout.AddWidget(base)
 		resultItem := &PaletteResultItem{
@@ -164,28 +169,25 @@ func initPalette() *Palette {
 
 func (p *Palette) setColor() {
 	fg := editor.colors.widgetFg.String()
-	bg := editor.colors.widgetBg.String()
-	inputArea := editor.colors.widgetInputArea.String()
-	inactiveFg := editor.colors.inactiveFg.String()
-	p.cursor.SetStyleSheet(fmt.Sprintf("background-color: %s;", fg))
-	p.widget.SetStyleSheet(fmt.Sprintf(" QWidget#palette { border: 1px solid %s; } .QWidget { background-color: %s; } * { color: %s; } ", bg, bg, fg))
-	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
-	p.pattern.SetStyleSheet(fmt.Sprintf("background-color: %s;", inputArea))
+	bg := editor.colors.widgetBg
+	inactiveFg := editor.colors.inactiveFg
+	transparent := transparent() * transparent()
+	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg.R, bg.G, bg.B, transparent, fg))
+	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inactiveFg.R, inactiveFg.G, inactiveFg.B, transparent))
+	for _, item := range p.resultItems {
+		item.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(0, 0, 0, 0.0); } * { color: %s; } ", fg))
+	}
+	if transparent < 1.0 {
+		p.patternWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+		p.pattern.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+	} else {
+		p.pattern.SetStyleSheet(fmt.Sprintf("background-color: %s;", bg.String()))
+	}
 }
 
 func (p *Palette) resize() {
-	// if p.procCount > 0 {
-	// 	return
-	// }
-	// go func() {
-	// p.mu.Lock()
-	// defer p.mu.Unlock()
-	// p.procCount = 1
-	// defer func() { p.procCount = 0 }()
-
-	padding := 8
 	p.width = int(math.Trunc(float64(editor.width) * 0.7))
-	cursorBoundary := p.cursor.Pos().X() + 35
+	cursorBoundary := p.padding*4 + p.textLength() + p.patternPadding
 
 	if cursorBoundary > p.width {
 		p.width = cursorBoundary
@@ -201,7 +203,7 @@ func (p *Palette) resize() {
 		}
 	}
 
-	p.pattern.SetFixedWidth(p.width - padding*2)
+	p.pattern.SetFixedWidth(p.width - p.padding*2)
 	p.widget.SetMaximumWidth(p.width)
 	p.widget.SetMinimumWidth(p.width)
 
@@ -220,7 +222,6 @@ func (p *Palette) resize() {
 	for i := p.showTotal; i < len(p.resultItems); i++ {
 		p.resultItems[i].hide()
 	}
-	// }()
 }
 
 func (p *Palette) show() {
@@ -248,10 +249,72 @@ func (p *Palette) setPattern(text string) {
 }
 
 func (p *Palette) cursorMove(x int) {
-	//p.cursorX = int(p.ws.font.defaultFontMetrics.Width(string(p.patternText[:x])))
-	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false))
-	p.cursorX = int(font.HorizontalAdvance(string(p.patternText[:x]), -1))
-	p.cursor.Move2(p.cursorX+p.patternPadding, p.patternPadding)
+	X := p.textLength()
+	boundary := p.pattern.Width() - (p.padding * 2)
+	if X >= boundary {
+		X = boundary
+	}
+
+	p.cursorX = p.cursorPos(x)
+	p.ws.cursor.x = p.cursorX + p.patternPadding
+	p.ws.cursor.y = p.patternPadding + p.ws.cursor.shift
+	p.ws.cursor.widget.Move2(p.ws.cursor.x, p.ws.cursor.y)
+	p.ws.cursor.widget.SetText("")
+	p.ws.cursor.widget.SetParent(p.pattern)
+}
+
+func (p *Palette) updateFont() {
+	font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
+	p.widget.SetFont(font)
+	p.pattern.SetFont(font)
+}
+
+func (p *Palette) textLength() int {
+	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+	l := 0
+	if p.isHTMLText {
+		t := gui.NewQTextDocument(nil)
+		t.SetHtml(p.patternText)
+		l = int(
+			font.HorizontalAdvance(
+				t.ToPlainText(),
+				-1,
+			),
+		)
+	} else {
+		l = int(
+			font.HorizontalAdvance(
+				p.patternText,
+				-1,
+			),
+		)
+	}
+
+	return l
+}
+
+func (p *Palette) cursorPos(x int) int {
+	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+	l := 0
+	if p.isHTMLText {
+		t := gui.NewQTextDocument(nil)
+		t.SetHtml(p.patternText)
+		l = int(
+			font.HorizontalAdvance(
+				t.ToPlainText()[:x],
+				-1,
+			),
+		)
+	} else {
+		l = int(
+			font.HorizontalAdvance(
+				p.patternText[:x],
+				-1,
+			),
+		)
+	}
+
+	return l
 }
 
 func (p *Palette) showSelected(selected int) {
@@ -269,11 +332,17 @@ func (p *Palette) showSelected(selected int) {
 }
 
 func (f *PaletteResultItem) update() {
+	c := editor.colors.selectedBg
+	// transparent := editor.config.Editor.Transparent
+	transparent := transparent()
 	if f.selected {
-		f.widget.SetStyleSheet(fmt.Sprintf(".QWidget {background-color: %s;}", editor.colors.selectedBg))
+		f.widget.SetStyleSheet(fmt.Sprintf(".QWidget {background-color: rgba(%d, %d, %d, %f);}", c.R, c.G, c.B, transparent))
 	} else {
 		f.widget.SetStyleSheet("")
 	}
+	// f.p.widget.Hide()
+	// f.p.widget.Show()
+
 }
 
 func (f *PaletteResultItem) setSelected(selected bool) {

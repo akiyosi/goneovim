@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	frameless "github.com/akiyosi/goqtframelesswindow"
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
@@ -19,29 +20,14 @@ import (
 
 var editor *Editor
 
-// Highlight is
-type Highlight struct {
-	foreground *RGBA
-	background *RGBA
-	bold       bool
-	italic     bool
-}
-
-// Char is
-type Char struct {
-	normalWidth bool
-	char        string
-	highlight   Highlight
-}
-
-// NotifyButton is
-type NotifyButton struct {
-	action func()
-	text   string
-}
+const (
+	WorkspaceLen int = 20
+)
 
 // ColorPalette is
 type ColorPalette struct {
+	e *Editor
+
 	fg                    *RGBA
 	bg                    *RGBA
 	inactiveFg            *RGBA
@@ -49,8 +35,6 @@ type ColorPalette struct {
 	abyss                 *RGBA
 	matchFg               *RGBA
 	selectedBg            *RGBA
-	activityBarFg         *RGBA
-	activityBarBg         *RGBA
 	sideBarFg             *RGBA
 	sideBarBg             *RGBA
 	sideBarSelectedItemBg *RGBA
@@ -60,6 +44,14 @@ type ColorPalette struct {
 	widgetBg              *RGBA
 	widgetInputArea       *RGBA
 	minimapCurrentRegion  *RGBA
+	windowSeparator       *RGBA
+	indentGuide           *RGBA
+}
+
+// NotifyButton is
+type NotifyButton struct {
+	action func()
+	text   string
 }
 
 // Notify is
@@ -76,8 +68,8 @@ type Editor struct {
 	version string
 	app     *widgets.QApplication
 
-	activity          *Activity
-	splitter          *widgets.QSplitter
+	homeDir string
+
 	notifyStartPos    *core.QPoint
 	notificationWidth int
 	notify            chan *Notify
@@ -87,10 +79,11 @@ type Editor struct {
 	workspaces []*Workspace
 	active     int
 	nvim       *nvim.Nvim
-	window     *widgets.QMainWindow
+	window     *frameless.QFramelessWindow
+	split      *widgets.QSplitter
 	wsWidget   *widgets.QWidget
 	wsSide     *WorkspaceSide
-	deinSide   *DeinSide
+	sysTray    *widgets.QSystemTrayIcon
 
 	statuslineHeight int
 	width            int
@@ -119,6 +112,9 @@ type Editor struct {
 	isSetGuiColor bool
 	colors        *ColorPalette
 	svgs          map[string]*SvgXML
+
+	extFontFamily string
+	extFontSize   int
 }
 
 type editorSignal struct {
@@ -142,160 +138,64 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
-	runtime.GOMAXPROCS(16)
+	putEnv()
 
 	home, err := homedir.Dir()
 	if err != nil {
 		home = "~"
 	}
+
 	editor = &Editor{
-		version: "v0.3.5",
+		version: "v0.4.0",
 		signal:  NewEditorSignal(nil),
 		notify:  make(chan *Notify, 10),
 		stop:    make(chan struct{}),
 		guiInit: make(chan bool, 1),
 		config:  newGonvimConfig(home),
+		homeDir: home,
 	}
 	e := editor
+
 	e.app = widgets.NewQApplication(0, nil)
 	e.app.ConnectAboutToQuit(func() {
-		editor.cleanup()
+		e.cleanup()
 	})
-	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QWidget")
-	e.app.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize, 1, false), "QLabel")
+	e.app.SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 
+	e.initFont()
 	e.initSVGS()
-	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.config.Editor.FontFamily, int(editor.config.Editor.FontSize*23/25), 1, false))
-	e.iconSize = int(font.Height())
-	e.colors = initColorPalette()
-	e.colors.update()
+	e.initColorPalette()
 	e.initNotifications()
+	e.initSysTray()
 
-	//create a window
-	e.window = widgets.NewQMainWindow(nil, 0)
+	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent)
 	e.setWindowOptions()
 
-	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 0, 0, 0)
+	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
+	l.SetContentsMargins(0, 0, 0, 0)
+	l.SetSpacing(0)
 
-	layout := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, widget)
-	layout.SetContentsMargins(0, 0, 0, 0)
-	layout.SetSpacing(0)
+	e.window.SetupContent(l)
 
 	e.wsWidget = widgets.NewQWidget(nil, 0)
-
 	e.wsSide = newWorkspaceSide()
-	sideArea := widgets.NewQScrollArea(nil)
-	sideArea.SetWidgetResizable(true)
-	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-	sideArea.ConnectEnterEvent(func(event *core.QEvent) {
-		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAsNeeded)
-	})
-	sideArea.ConnectLeaveEvent(func(event *core.QEvent) {
-		sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-	})
-	sideArea.SetFocusPolicy(core.Qt__ClickFocus)
-	sideArea.SetWidget(e.wsSide.widget)
-	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
-	e.wsSide.scrollarea = sideArea
+	e.wsSide.newScrollArea()
+	e.wsSide.scrollarea.Hide()
+	e.newSplitter()
+	l.AddWidget(e.split, 1, 0)
 
-	activityWidget := widgets.NewQWidget(nil, 0)
-	activityWidget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
-	activity := newActivity()
-	activity.widget = activityWidget
-	activityWidget.SetLayout(activity.layout)
-	e.activity = activity
-	e.activity.sideArea.AddWidget(e.wsSide.scrollarea)
-	e.activity.sideArea.SetCurrentWidget(e.wsSide.scrollarea)
-
-	go e.dropShadow()
-
-	if e.config.ActivityBar.Visible == false {
-		e.activity.widget.Hide()
-	}
-	if e.config.SideBar.Visible == false {
-		e.activity.sideArea.Hide()
-	}
-
-	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
-	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
-	splitter.AddWidget(e.activity.sideArea)
-	splitter.AddWidget(e.wsWidget)
-	splitter.SetSizes([]int{editor.config.SideBar.Width, editor.width - editor.config.SideBar.Width})
-	splitter.SetStretchFactor(1, 100)
-	splitter.SetObjectName("splitter")
-	e.splitter = splitter
-
-	go func() {
-		layout.AddWidget(splitter, 1, 0)
-		layout.AddWidget(e.activity.widget, 0, 0)
-	}()
-
-	e.workspaces = []*Workspace{}
-	sessionExists := false
-	if err == nil {
-		if e.config.Workspace.RestoreSession == true {
-			for i := 0; i < 20; i++ {
-				path := filepath.Join(home, ".gonvim", "sessions", strconv.Itoa(i)+".vim")
-				_, err := os.Stat(path)
-				if err != nil {
-					break
-				}
-				sessionExists = true
-				ws, err := newWorkspace(path)
-				if err != nil {
-					break
-				}
-				e.workspaces = append(e.workspaces, ws)
-			}
-		}
-	}
-	if !sessionExists {
-		ws, err := newWorkspace("")
-		if err != nil {
-			return
-		}
-		e.workspaces = append(e.workspaces, ws)
-	}
-	e.workspaceUpdate()
-	e.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	e.wsWidget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
-	e.wsWidget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
+	e.initWorkspaces()
 
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
 			ws.updateSize()
 		}
 	})
-	// for macos, open file via Finder
-	macosArg := ""
-	if runtime.GOOS == "darwin" {
-		e.app.ConnectEvent(func(event *core.QEvent) bool {
-			switch event.Type() {
-			case core.QEvent__FileOpen:
-				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
-				macosArg = fileOpenEvent.File()
-				gonvim := e.workspaces[e.active].nvim
-				isModified := ""
-				isModified, _ = gonvim.CommandOutput("echo &modified")
-				if isModified == "1" {
-					gonvim.Command(fmt.Sprintf(":tabe %s", macosArg))
-				} else {
-					gonvim.Command(fmt.Sprintf(":e %s", macosArg))
-				}
-			}
-			return true
-		})
-		e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
-			e.app.DisconnectEvent()
-			event.Accept()
-		})
-	}
 
-	e.window.SetCentralWidget(widget)
+	e.loadFileInDarwin()
 
 	go func() {
-		<-editor.stop
+		<-e.stop
 		if runtime.GOOS == "darwin" {
 			e.app.DisconnectEvent()
 		}
@@ -307,9 +207,88 @@ func InitEditor() {
 	widgets.QApplication_Exec()
 }
 
+func (e *Editor) newSplitter() {
+	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
+	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
+	splitter.AddWidget(e.wsSide.scrollarea)
+	splitter.AddWidget(e.wsWidget)
+	splitter.SetSizes([]int{e.config.SideBar.Width, e.width - e.config.SideBar.Width})
+	splitter.SetStretchFactor(1, 100)
+	splitter.SetObjectName("splitter")
+	e.split = splitter
+
+	if editor.config.SideBar.Visible {
+		e.wsSide.show()
+	}
+}
+
+func (e *Editor) initWorkspaces() {
+	e.workspaces = []*Workspace{}
+	sessionExists := false
+	if e.config.Workspace.RestoreSession == true {
+		for i := 0; i <= WorkspaceLen; i++ {
+			path := filepath.Join(e.homeDir, ".goneovim", "sessions", strconv.Itoa(i)+".vim")
+			_, err := os.Stat(path)
+			if err != nil {
+				break
+			}
+			sessionExists = true
+			ws, err := newWorkspace(path)
+			if err != nil {
+				break
+			}
+			e.workspaces = append(e.workspaces, ws)
+		}
+	}
+	if !sessionExists {
+		ws, err := newWorkspace("")
+		if err != nil {
+			return
+		}
+		e.workspaces = append(e.workspaces, ws)
+	}
+
+	e.workspaceUpdate()
+
+	e.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	e.wsWidget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
+	e.wsWidget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
+}
+
+func (e *Editor) loadFileInDarwin() {
+	if runtime.GOOS != "darwin" {
+		return
+	}
+	macosArg := ""
+	e.app.ConnectEvent(func(event *core.QEvent) bool {
+		switch event.Type() {
+		case core.QEvent__FileOpen:
+			// If goneovim not launched on finder (it is started in terminal)
+			if os.Getppid() != 1 {
+				return false
+			}
+			fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
+			macosArg = fileOpenEvent.File()
+			goneovim := e.workspaces[e.active].nvim
+			isModified := ""
+			isModified, _ = goneovim.CommandOutput("echo &modified")
+			if isModified == "1" {
+				goneovim.Command(fmt.Sprintf(":tabe %s", macosArg))
+			} else {
+				goneovim.Command(fmt.Sprintf(":e %s", macosArg))
+			}
+		}
+		return true
+	})
+	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
+		e.app.DisconnectEvent()
+		event.Accept()
+	})
+}
+
 func (e *Editor) initNotifications() {
 	e.notifications = []*Notification{}
-	e.notificationWidth = editor.config.Editor.Width * 2 / 3
+	e.notificationWidth = e.config.Editor.Width * 2 / 3
 	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
 	e.signal.ConnectNotifySignal(func() {
 		notify := <-e.notify
@@ -322,6 +301,60 @@ func (e *Editor) initNotifications() {
 			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
+}
+
+func (e *Editor) initSysTray() {
+	if !e.config.Editor.DesktopNotifications {
+		return
+	}
+	pixmap := gui.NewQPixmap()
+	color := ""
+	size := 0.95
+	if runtime.GOOS == "darwin" {
+		color = "#434343"
+		size = 0.9
+	} else {
+		color = "#179A33"
+	}
+	svg := fmt.Sprintf(`<svg viewBox="0 0 128 128"><g transform="translate(2,3) scale(%f)"><path fill="%s" d="M72.6 80.5c.2.2.6.5.9.5h5.3c.3 0 .7-.3.9-.5l1.4-1.5c.2-.2.3-.4.3-.6l1.5-5.1c.1-.5 0-1-.3-1.3l-1.1-.9c-.2-.2-.6-.1-.9-.1h-4.8l-.2-.2-.1-.1c-.2 0-.4-.1-.6.1l-1.9 1.2c-.2 0-.3.5-.4.7l-1.6 4.9c-.2.5-.1 1.1.3 1.5l1.3 1.4zM73.4 106.9l-.4.1h-1.2l7.2-21.1c.2-.7-.1-1.5-.8-1.7l-.4-.1h-12.1c-.5.1-.9.5-1 1l-.7 2.5c-.2.7.3 1.3 1 1.5l.3-.1h1.8l-7.3 20.9c-.2.7.1 1.6.8 1.9l.4.3h11.2c.6 0 1.1-.5 1.3-1.1l.7-2.4c.3-.7-.1-1.5-.8-1.7zM126.5 87.2l-1.9-2.5v-.1c-.3-.3-.6-.6-1-.6h-7.2c-.4 0-.7.4-1 .6l-2 2.4h-3.1l-2.1-2.4v-.1c-.2-.3-.6-.5-1-.5h-4l20.2-20.2-22.6-22.4 20.2-20.8v-9l-2.8-3.6h-40.9l-3.3 3.5v2.9l-11.3-11.4-7.7 7.5-2.4-2.5h-40.4l-3.2 3.7v9.4l3 2.9h3v26.1l-14 14 14 14v32l5.2 2.9h11.6l9.1-9.5 21.6 21.6 14.5-14.5c.1.4.4.5.9.7l.4-.2h9.4c.6 0 1.1-.1 1.2-.6l.7-2c.2-.7-.1-1.3-.8-1.5l-.4.1h-.4l3.4-10.7 2.3-2.3h5l-5 15.9c-.2.7.2 1.1.9 1.4l.4-.2h9.1c.5 0 1-.1 1.2-.6l.8-1.8c.3-.7-.1-1.3-.7-1.6-.1-.1-.3 0-.5 0h-.4l4.2-13h6.1l-5.1 15.9c-.2.7.2 1.1.9 1.3l.4-.3h10c.5 0 1-.1 1.2-.6l.8-2c.3-.7-.1-1.3-.8-1.5-.1-.1-.3.1-.5.1h-.7l5.6-18.5c.2-.5.1-1.1-.1-1.4zm-63.8-82.3l11.3 11.3v4.7l3.4 4.1h1.6l-29 28v-28h3.3l2.7-4.2v-8.9l-.2-.3 6.9-6.7zm-59.8 59.2l12.1-12.1v24.2l-12.1-12.1zm38.9 38.3l58.4-60 21.4 21.5-20.2 20.2h-.1c-.3.1-.5.3-.7.5l-2.1 2.4h-2.9l-2.2-2.4c-.2-.3-.6-.6-1-.6h-8.8c-.6 0-1.1.4-1.3 1l-.8 2.5c-.2.7.1 1.3.8 1.6h1.5l-6.4 18.9-15.1 15.2-20.5-20.8z"></path></g></svg>`, size, color)
+	pixmap.LoadFromData2(core.NewQByteArray2(svg, len(svg)), "SVG", core.Qt__ColorOnly)
+	trayIcon := gui.NewQIcon2(pixmap)
+	image := filepath.Join(e.homeDir, ".goneovim", "trayicon.png")
+	if isFileExist(image) {
+		trayIcon = gui.NewQIcon5(image)
+	}
+	e.sysTray = widgets.NewQSystemTrayIcon2(trayIcon, e.app)
+	e.sysTray.Show()
+}
+
+func putEnv() {
+	if runtime.GOOS == "linux" {
+		exe, _ := os.Executable()
+		dir, _ := filepath.Split(exe)
+		_ = os.Setenv("LD_LIBRARY_PATH", dir+"lib")
+		_ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
+	}
+	_ = os.Setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
+}
+
+func (e *Editor) initFont() {
+	e.extFontFamily = e.config.Editor.FontFamily
+	e.extFontSize = e.config.Editor.FontSize
+	if e.extFontFamily == "" {
+		switch runtime.GOOS {
+		case "windows":
+			e.extFontFamily = "Consolas"
+		case "darwin":
+			e.extFontFamily = "Monaco"
+		default:
+			e.extFontFamily = "Monospace"
+		}
+	}
+	if e.extFontSize <= 5 {
+		e.extFontSize = 13
+	}
+	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QWidget")
+	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QLabel")
 }
 
 func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
@@ -351,48 +384,30 @@ func (e *Editor) popupNotification(level NotifyLevel, p int, message string, opt
 	notification.show()
 }
 
-func (e *Editor) dropShadow() {
-	// Drop shadow to Side Bar
-	if e.config.SideBar.DropShadow == true {
-		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		shadow.SetBlurRadius(60)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-		shadow.SetOffset3(6, 2)
-		e.activity.sideArea.SetGraphicsEffect(shadow)
-	}
-
-	// Drop shadow for Activity Bar
-	if e.config.ActivityBar.DropShadow == true {
-		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		shadow.SetBlurRadius(60)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 35))
-		shadow.SetOffset3(6, 2)
-		e.activity.widget.SetGraphicsEffect(shadow)
-	}
-}
-
-func initColorPalette() *ColorPalette {
-	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+func (e *Editor) initColorPalette() {
+	rgbAccent := hexToRGBA(e.config.SideBar.AccentColor)
 	fg := newRGBA(180, 185, 190, 1)
 	bg := newRGBA(9, 13, 17, 1)
-	return &ColorPalette{
+	c := &ColorPalette{
+		e:          e,
 		bg:         bg,
 		fg:         fg,
 		selectedBg: bg.brend(rgbAccent, 0.3),
 		matchFg:    rgbAccent,
 	}
+
+	e.colors = c
+	e.colors.update()
 }
 
 func (c *ColorPalette) update() {
 	fg := c.fg
 	bg := c.bg
-	rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+	rgbAccent := hexToRGBA(c.e.config.SideBar.AccentColor)
 	c.selectedBg = bg.brend(rgbAccent, 0.3)
 	c.inactiveFg = warpColor(bg, -80)
 	c.comment = warpColor(fg, -80)
 	c.abyss = warpColor(bg, 5)
-	c.activityBarFg = fg
-	c.activityBarBg = warpColor(bg, -10)
 	c.sideBarFg = warpColor(fg, -5)
 	c.sideBarBg = warpColor(bg, -5)
 	c.sideBarSelectedItemBg = warpColor(bg, -15)
@@ -402,38 +417,25 @@ func (c *ColorPalette) update() {
 	c.widgetBg = warpColor(bg, -10)
 	c.widgetInputArea = warpColor(bg, -30)
 	c.minimapCurrentRegion = warpColor(bg, 20)
+	c.windowSeparator = warpColor(bg, -40)
+	c.indentGuide = warpColor(bg, -30)
 }
 
 func (e *Editor) updateGUIColor() {
-	// if activity & sidebar is enabled
-	if e.activity != nil && e.wsSide != nil {
-		// for splitter
-		e.splitter.SetStyleSheet(fmt.Sprintf(" QSplitter::handle:horizontal { background-color: %s; }", e.colors.sideBarBg.String()))
-
-		// for Activity Bar
-		e.activity.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: %s; } ", e.colors.activityBarBg))
-
-		var svgEditContent string
-		if e.activity.editItem.active == true {
-			svgEditContent = e.getSvg("activityedit", e.colors.fg)
-		} else {
-			svgEditContent = e.getSvg("activityedit", e.colors.inactiveFg)
-		}
-		e.activity.editItem.icon.Load2(core.NewQByteArray2(svgEditContent, len(svgEditContent)))
-
-		var svgDeinContent string
-		if e.activity.deinItem.active == true {
-			svgDeinContent = e.getSvg("activitydein", e.colors.fg)
-
-		} else {
-			svgDeinContent = e.getSvg("activitydein", e.colors.inactiveFg)
-
-		}
-		e.activity.deinItem.icon.Load2(core.NewQByteArray2(svgDeinContent, len(svgDeinContent)))
-		e.wsSide.setColor()
-	}
-
 	e.workspaces[e.active].updateWorkspaceColor()
+
+	// Do not use frameless drawing on linux
+	if runtime.GOOS == "linux" {
+		// e.window.Widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); }", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
+		e.window.TitleBar.Hide()
+		e.window.WindowWidget.SetStyleSheet(fmt.Sprintf(" #QFramelessWidget { background-color: rgba(%d, %d, %d, %f); border-radius: 0px;}", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
+		e.window.SetWindowFlag(core.Qt__FramelessWindowHint, false)
+		e.window.SetWindowFlag(core.Qt__NoDropShadowWindowHint, false)
+		e.window.Show()
+	} else {
+		e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B))
+		e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
+	}
 
 	e.window.SetWindowOpacity(1.0)
 }
@@ -474,13 +476,11 @@ func shiftHex(hex string, v int) string {
 }
 
 func (e *Editor) setWindowOptions() {
-	e.window.SetWindowTitle("Gonvim")
+	e.window.SetupTitle("goneovim")
+	e.window.SetupWidgetColor(0, 0, 0)
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
 	e.window.SetMinimumSize2(e.width, e.height)
-	e.window.SetContentsMargins(0, 0, 0, 0)
-	e.window.SetAttribute(core.Qt__WA_TranslucentBackground, true)
-	e.window.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
 	e.window.SetWindowOpacity(0.0)
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
@@ -509,10 +509,6 @@ func (e *Editor) workspaceNew() {
 	if err != nil {
 		return
 	}
-
-	//e.active++
-	//e.workspaces = append(e.workspaces, nil)
-	//copy(e.workspaces[e.active+1:], e.workspaces[e.active:])
 
 	e.workspaces = append(e.workspaces, nil)
 	e.active = len(e.workspaces) - 1
@@ -570,31 +566,8 @@ func (e *Editor) workspaceUpdate() {
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event.Text(), event.Key(), event.Modifiers())
-	if input == "<C-¥>" {
-		input = `<C-\>`
-	}
 	if input != "" {
-		if input == "<Esc>" {
-			e.unfocusGonvimUI()
-		}
 		e.workspaces[e.active].nvim.Input(input)
-		e.workspaces[e.active].detectTerminalMode()
-	}
-}
-
-func (e *Editor) unfocusGonvimUI() {
-	if e.activity == nil || e.wsSide == nil {
-		return
-	}
-	if e.activity.deinItem.active {
-		e.deinSide.searchbox.editBox.ClearFocus()
-		e.deinSide.widget.ClearFocus()
-		e.deinSide.scrollarea.ClearFocus()
-	}
-	if e.activity.editItem.active {
-		e.wsSide.widget.ClearFocus()
-		e.wsSide.widget.ClearFocus()
-		e.wsSide.scrollarea.ClearFocus()
 	}
 }
 
@@ -670,6 +643,64 @@ func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 		c = text
 	}
 
+	if mod&e.altModifier > 0 {
+		switch core.Qt__Key(key) {
+		case core.Qt__Key_A :
+			c = "a"
+		case core.Qt__Key_B :
+			c = "b"
+		case core.Qt__Key_C :
+			c = "c"
+		case core.Qt__Key_D :
+			c = "d"
+		case core.Qt__Key_E :
+			c = "e"
+		case core.Qt__Key_F :
+			c = "f"
+		case core.Qt__Key_G :
+			c = "g"
+		case core.Qt__Key_H :
+			c = "h"
+		case core.Qt__Key_I :
+			c = "i"
+		case core.Qt__Key_J :
+			c = "j"
+		case core.Qt__Key_K :
+			c = "k"
+		case core.Qt__Key_L :
+			c = "l"
+		case core.Qt__Key_M :
+			c = "m"
+		case core.Qt__Key_N :
+			c = "n"
+		case core.Qt__Key_O :
+			c = "o"
+		case core.Qt__Key_P :
+			c = "p"
+		case core.Qt__Key_Q :
+			c = "q"
+		case core.Qt__Key_R :
+			c = "r"
+		case core.Qt__Key_S :
+			c = "s"
+		case core.Qt__Key_T :
+			c = "t"
+		case core.Qt__Key_U :
+			c = "u"
+		case core.Qt__Key_V :
+			c = "v"
+		case core.Qt__Key_W :
+			c = "w"
+		case core.Qt__Key_X :
+			c = "x"
+		case core.Qt__Key_Y :
+			c = "y"
+		case core.Qt__Key_Z :
+			c = "z"
+		default:
+		}
+	}
+
 	if c == "" {
 		return ""
 	}
@@ -704,7 +735,7 @@ func (e *Editor) modPrefix(mod core.Qt__KeyboardModifier) string {
 	}
 
 	if mod&e.altModifier > 0 {
-		prefix += "A-"
+		prefix += "M-"
 	}
 
 	return prefix
@@ -791,7 +822,7 @@ func (e *Editor) cleanup() {
 	if err != nil {
 		return
 	}
-	sessions := filepath.Join(home, ".gonvim", "sessions")
+	sessions := filepath.Join(home, ".goneovim", "sessions")
 	os.RemoveAll(sessions)
 	os.MkdirAll(sessions, 0755)
 

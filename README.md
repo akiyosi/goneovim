@@ -1,134 +1,85 @@
-
-# Gonvim
-
-[![Join the chat at https://gitter.im/gonvim/gonvim](https://badges.gitter.im/gonvim/gonvim.svg)](https://gitter.im/gonvim/gonvim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/gonvim)](https://goreportcard.com/report/github.com/akiyosi/gonvim)
-
-Gonvim is a Neovim GUI written in Golang, using a [Golang qt backend](https://github.com/therecipe/qt).
- 
-This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
-
-
-<p align="center">
-<img src="https://raw.githubusercontent.com/wiki/akiyosi/gonvim/images/gopher-with-neovim.png" width="250" align="top" >
-</p>
-
-
-<br />
-
-## Table of contents
-
-- [Features](#features)
-- [Getting started](#getting-started)
-- [Configurations](#configurations)
-- [Development](#development)
-- [Contributing](#contributing)
-- [Similar Projects](#similar-projects)
-- [License](#license)
-- [Credits](#credits)
+<img src="https://raw.githubusercontent.com/wiki/akiyosi/goneovim/images/GoNeovim.png" width="250" align="top" >
 
 ---
-<br />
 
+[![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
+[![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/goneovim)](https://goreportcard.com/report/github.com/akiyosi/goneovim)
+
+*GoNeovim* is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
+This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
 
 ## Features
 
-* [Fuzzy Finder](https://github.com/akiyosi/gonvim/wiki/Features#fuzzy-finder-in-gui)
-* [Markdown Preview](https://github.com/akiyosi/gonvim/wiki/Features#markdown-preview)
-* [MiniMap](https://github.com/akiyosi/gonvim/wiki/Features#minimap)
-* [Dein.vim GUI](https://github.com/akiyosi/gonvim/wiki/Features#deinvim-gui)
-* [Remote attachment](https://github.com/akiyosi/gonvim/wiki/Configurations#remote-attachment)
+* Workspace feature which manages multiple nvim
+* Fuzzy Finder
+* Markdown Preview
+* External File Explorer
+* Minimap
+* Transparent window
+* Indent guide
+* Independent font settings per window (alpha stage)
+* Support display ligatures
+* Desktop Notification of the messages
+* Remote attachment
 
+## Screenshots
+
+* Workspaces, external file explorer
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/workspaces-fileexplorer.png)
+* Fuzzy Finder
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/fuzzyfinder.png)
+* Markdown preview
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/markdown-preview.png)
+* Minimap
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/minimap.png)
+* Indentguid, display lifatures(Fira Code)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/indentguide.png)
+* Transparent window
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/transparent.png)
+* Independent font settings per window
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/font-setting-per-window.png)
+
+## Requirements
+* Neovim (v0.4.2 or later)
+
+See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
 ## Getting Started
-Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](https://github.com/akiyosi/gonvim/releases) page.
-
-
-> Note: MacOS or Linux users need to install neovim and deploy `nvim` under the `$PATH`.
-<br />[Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
-
-* MacOS 🍏
-
-*gonvim.app* looks for the nvim process from the following.
-
-```
-/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/local/bin:/opt/local/sbin
-```
-
-Deployment example:
-
-```
-cd /path/to
-curl -LO https://github.com/neovim/neovim/releases/download/nightly/nvim-macos.tar.gz
-tar xf nvim-macos.tar.gz
-ln -s /path/to/bin/nvim /usr/local/bin/nvim
-```
-
-* Linux 🐧
-
-Execute `/path/to/Gonvim-0.X.X-linux/gonvim.sh`
-
-* Windows 🏞
-
-Execute `/path/to/Gonvim-0.X.X-windows/gonvim.exe`
+Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](https://github.com/akiyosi/goneovim/releases) page.
 
 
 
-## Configurations
+## Usage
 
-| application | config file |
-|:------------|:------------|
-| Gonvim (GUI frontend of neovim) | `~/.gonvim/setting.toml` |
-| Neovim      | `$XDG_CONFIG_HOME/nvim/init.vim` |
+See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
-where the default value of `$XDG_CONFIG_HOME` is the below.
 
-| OS      |  `$XDG_CONFIG_HOME`  |
-|:--------|:---------------------|
-| Unix    |  `~/.config`         |
-| Windows |  `~/AppData/Local`   |
+## ToDo
+* Improved startup speed (especially on the Windows platform)
+* Improve IME feature
+In the current implementation, it is not possible to highlight the keyword being converted in the input method input. At the moment I have no idea about how to improve this
 
----
+* Support GUI rendering
 
-* neovim configuration for gonvim
+* Support neovim ui `ext_statusline`
 
-The sample configuration is [gonvim-init.vim](https://github.com/akiyosi/gonvim-init.vim)
-
-* gonvim configuration
-
-For details of `~/.gonvim/setting.toml`, See [wiki](https://github.com/akiyosi/gonvim/wiki/Configurations)
-
+* Keyword filtering feature in external file explorer
 
 
 ## Development
 
-* [Development](https://github.com/akiyosi/gonvim/wiki/Development)
-
-
-
-## Contributing
-Gonvim welcomes contribution. If you want to add your changes to the Gonvim, Please following steps
-
-1. **Fork this repository**
-1. **Create a branch** for your contribution
-1. **Add contributions** to the branch
-1. **Create a pull request** against the `master` branch of the Gonvim repository.
+* [Development](https://github.com/akiyosi/goneovim/wiki/Development)
 
 
 ## Similar projects
 
-* [Oni](https://github.com/onivim/oni)
+* [Gnvim](https://github.com/vhakulinen/gnvim)
 * [Veonim](https://github.com/veonim/veonim)
 
-
-
-## License
-Gonvim is released under MIT license
 
 
 ## Credits
 
 * Gonvim was created by dzhou121 ([https://github.com/dzhou121/gonvim](https://github.com/dzhou121/gonvim))
-* Gonvim application icon was made using [gopher-vector](https://github.com/golang-samples/gopher-vector) made by Takuya Ueda ([https://twitter.com/tenntenn](https://twitter.com/tenntenn)). The original gopher was designed by Renee French [http://reneefrench.blogspot.com/](http://reneefrench.blogspot.com/).
 
 

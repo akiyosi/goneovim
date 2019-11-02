@@ -5,6 +5,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
@@ -57,11 +58,13 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	messageLayout := widgets.NewQHBoxLayout()
 	messageLayout.SetContentsMargins(0, 0, 0, 0)
 	messageWidget.SetLayout(messageLayout)
+	messageWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0)}")
 
 	levelIcon := svg.NewQSvgWidget(nil)
 	levelIcon.SetFixedWidth(editor.iconSize)
 	levelIcon.SetFixedHeight(editor.iconSize)
 	levelIcon.SetContentsMargins(0, 0, 0, 0)
+	levelIcon.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0)}")
 	var level string
 	switch l {
 	case NotifyInfo:
@@ -74,8 +77,9 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 	levelIcon.Load2(core.NewQByteArray2(level, len(level)))
 
 	label := widgets.NewQLabel(nil, 0)
+	label.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0)}")
 	size := int(float64(editor.workspaces[editor.active].font.width) * 1.33)
-	label.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, size, 1, false))
+	label.SetFont(gui.NewQFont2(editor.extFontFamily, size, 1, false))
 	if utf8.RuneCountInString(message) > 50 {
 		label.SetWordWrap(true)
 	}
@@ -98,15 +102,14 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 		cursor := gui.NewQCursor()
 		cursor.SetShape(core.Qt__PointingHandCursor)
-		gui.QGuiApplication_SetOverrideCursor(cursor)
+		widget.SetCursor(cursor)
 	})
 	closeIcon.ConnectLeaveEvent(func(event *core.QEvent) {
 		svgContent := e.getSvg("cross", nil)
 		closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
-		// gui.QGuiApplication_RestoreOverrideCursor() // Sometimes can't restoreing
 		cursor := gui.NewQCursor()
 		cursor.SetShape(core.Qt__ArrowCursor)
-		gui.QGuiApplication_SetOverrideCursor(cursor)
+		widget.SetCursor(cursor)
 	})
 
 	messageLayout.AddWidget(levelIcon, 0, 0)
@@ -133,7 +136,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		if opt.text != "" {
 			// * plugin install button
 			buttonLabel := widgets.NewQLabel(nil, 0)
-			buttonLabel.SetFont(gui.NewQFont2(editor.config.Editor.FontFamily, editor.config.Editor.FontSize-1, 1, false))
+			buttonLabel.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
 			buttonLabel.SetFixedHeight(28)
 			buttonLabel.SetContentsMargins(10, 5, 10, 5)
 			buttonLabel.SetAlignment(core.Qt__AlignCenter)
@@ -218,11 +221,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 
 	// Drop shadow to widget
 	go func() {
-		shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-		shadow.SetBlurRadius(40)
-		shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
-		shadow.SetOffset3(-2, -1)
-		widget.SetGraphicsEffect(shadow)
+		widget.SetGraphicsEffect(util.DropShadow(-2, -1, 40, 200))
 	}()
 
 	// Notification hiding
@@ -351,7 +350,9 @@ func (n *Notification) show() {
 		}
 	}
 	fg := editor.colors.widgetFg.String()
-	bg := editor.colors.widgetBg.String()
-	n.widget.SetStyleSheet(fmt.Sprintf(" * {color: %s; background: %s;}", fg, bg))
+	bg := editor.colors.widgetBg
+	// transparent := editor.config.Editor.Transparent / 2.0
+	transparent := transparent()
+	n.widget.SetStyleSheet(fmt.Sprintf(" * {color: %s; background: rgba(%d, %d, %d, %f);}", fg, bg.R, bg.G, bg.B, transparent))
 	n.widget.Show()
 }

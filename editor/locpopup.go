@@ -6,10 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/akiyosi/goneovim/util"
 	"github.com/neovim/go-client/nvim"
-	"github.com/akiyosi/gonvim/util"
 	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
@@ -35,16 +34,13 @@ func initLocpopup() *Locpopup {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(4)
 	widget.SetLayout(layout)
-	//typeLabel := widgets.NewQLabel(nil, 0)
-	//typeLabel.SetContentsMargins(4, 1, 4, 1)
 	typeLabel := svg.NewQSvgWidget(nil)
 	typeLabel.SetFixedSize2(editor.iconSize-1, editor.iconSize-1)
+	// typeLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 	contentLabel := widgets.NewQLabel(nil, 0)
 	contentLabel.SetContentsMargins(0, 0, 0, 0)
-
-	layout.AddWidget(typeLabel, 0, 0)
-	layout.AddWidget(contentLabel, 0, 0)
+	// contentLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 	loc := &Locpopup{
 		widget:       widget,
@@ -53,19 +49,19 @@ func initLocpopup() *Locpopup {
 		updates:      make(chan []interface{}, 1000),
 	}
 
-	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	shadow.SetBlurRadius(28)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 80))
-	shadow.SetOffset3(0, 6)
-	loc.widget.SetGraphicsEffect(shadow)
+	layout.AddWidget(loc.typeLabel, 0, 0)
+	layout.AddWidget(loc.contentLabel, 0, 0)
+	loc.widget.SetGraphicsEffect(util.DropShadow(0, 6, 30, 80))
 
 	return loc
 }
 
 func (l *Locpopup) setColor() {
 	fg := editor.colors.widgetFg.String()
-	bg := editor.colors.widgetBg.String()
-	l.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 1px solid %s; } * { background-color: %s;  color: %s; }", bg, bg, fg))
+	bg := editor.colors.widgetBg
+	// transparent := editor.config.Editor.Transparent / 2.0
+	transparent := transparent()
+	l.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }", bg.R, bg.G, bg.B, transparent, fg))
 }
 
 func (l *Locpopup) subscribe() {
@@ -95,11 +91,12 @@ func (l *Locpopup) updateLocpopup() {
 	} else if l.typeText == "W" {
 		//l.typeLabel.SetText("Warning")
 		//l.typeLabel.SetStyleSheet("background-color: rgba(203, 203, 65, 1);")
-		svgContent := editor.getSvg("lintwrn", newRGBA(204, 203, 65, 1))
+		svgContent := editor.getSvg("lintwrn", newRGBA(253, 190, 65, 1))
 		l.typeLabel.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
 	l.widget.Hide()
 	l.widget.Show()
+	l.widget.Raise()
 }
 
 func (l *Locpopup) handle(args []interface{}) {
@@ -130,13 +127,13 @@ func (l *Locpopup) update(args []interface{}) {
 	doneChannel := make(chan nvim.Buffer, 5)
 	var buf, buftmp nvim.Buffer
 	go func() {
-	        buftmp, _ = l.ws.nvim.CurrentBuffer()
-	        doneChannel <- buftmp
+		buftmp, _ = l.ws.nvim.CurrentBuffer()
+		doneChannel <- buftmp
 	}()
 	select {
 	case buf = <-doneChannel:
 	case <-time.After(20 * time.Millisecond):
-	        return
+		return
 	}
 
 	buftype := new(string)

@@ -2,19 +2,17 @@ package editor
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"runtime"
-	"time"
 
 	"github.com/BurntSushi/toml"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
 // gonvimConfig is the following toml file
-// # Gonvim config toml
+// # Goneovim config toml
 // [editor]
+// ui = "trans"
 // width = 1000  # >= 400
 // height = 800  # >= 300
 // fontFamily = "FuraCode Nerd Font Mono"
@@ -22,14 +20,35 @@ import (
 // linespace = 10
 // clipboard = true
 // cursorBlink = true
+// indentGuide = true
+// cachedDrawing = false
 // disableIMEinNormal = true
 // startFullScreen = true
-// ginitvim = '''
-//   set guifont=FuraCode\ Nerd\ Font\ Mono:h14
-//   if g:gonvim_running == 1
-//     set laststatus=0
-//   endif
-// '''
+// transparent = 0.5
+// desktopNotifications = true
+// // -- diffpattern enum --
+// // SolidPattern             1
+// // Dense1Pattern            2
+// // Dense2Pattern            3
+// // Dense3Pattern            4
+// // Dense4Pattern            5
+// // Dense5Pattern            6
+// // Dense6Pattern            7
+// // Dense7Pattern            8
+// // HorPattern               9
+// // VerPattern               10
+// // CrossPattern             11
+// // BDiagPattern             12
+// // FDiagPattern             13
+// // DiagCrossPattern         14
+// // LinearGradientPattern    15
+// // RadialGradientPattern    16
+// // ConicalGradientPattern   17
+// // TexturePattern           24
+// diffdeletepattern = 12
+// diffchangepattern = 12
+// diffaddpattern = 1
+// SkipGlobalId = true
 //
 // [palette]
 // AreaRatio = 0.8
@@ -104,21 +123,32 @@ type paletteConfig struct {
 	MaxNumberOfResultItems int
 }
 type editorConfig struct {
-	Width              int
-	Height             int
-	FontFamily         string
-	FontSize           int
-	Linespace          int
-	ExtCmdline         bool
-	ExtMessage         bool
-	ExtWildmenu        bool
-	ExtPopupmenu       bool
-	ExtTabline         bool
-	Clipboard          bool
-	CursorBlink        bool
-	DisableImeInNormal bool
-	GinitVim           string
-	StartFullscreen    bool
+	Ui                   string
+	Width                int
+	Height               int
+	FontFamily           string
+	FontSize             int
+	Linespace            int
+	ExtCmdline           bool
+	// ExtWildmenu          bool
+	ExtPopupmenu         bool
+	ExtTabline           bool
+	// ExtMultigrid         bool
+	ExtMessages          bool
+	Clipboard            bool
+	// CursorBlink          bool
+	CachedDrawing        bool
+	DisableImeInNormal   bool
+	GinitVim             string
+	StartFullscreen      bool
+	Transparent          float64
+	DrawBorder           bool
+	SkipGlobalId         bool
+	IndentGuide          bool
+	DesktopNotifications bool
+	DiffAddPattern       int
+	DiffDeletePattern    int
+	DiffChangePattern    int
 }
 
 type statusLineConfig struct {
@@ -179,37 +209,24 @@ type deinConfig struct {
 func newGonvimConfig(home string) gonvimConfig {
 	var config gonvimConfig
 
-	// Set default value
-	config.Editor.Width = 800
-	config.Editor.Height = 600
-	config.FileExplorer.MaxItems = 50
-	config.Statusline.Left = []string{"mode", "filepath", "filename"}
-	config.Statusline.Right = []string{"message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
-	config.Editor.ExtCmdline = true
-	config.Editor.ExtMessage = true
-	config.Editor.ExtWildmenu = true
-	config.Editor.ExtPopupmenu = true
-	config.Editor.ExtTabline = true
-
-	config.Palette.AreaRatio = 0.6
-	config.Palette.MaxNumberOfResultItems = 30
+	config.init()
 
 	// Read toml
-	if _, err := toml.DecodeFile(filepath.Join(home, ".gonvim", "setting.toml"), &config); err != nil {
-		config.Editor.FontSize = 14
-		config.Statusline.Visible = true
-		config.Statusline.ModeIndicatorType = "textLabel"
-		config.Tabline.Visible = true
-		config.Lint.Visible = true
-		config.ActivityBar.Visible = true
-		config.ScrollBar.Visible = true
-		config.SideBar.Width = 300
-		config.SideBar.AccentColor = "#5596ea"
-		config.Workspace.PathStyle = "minimum"
-		go func() {
-			time.Sleep(2000 * time.Millisecond)
-			editor.pushNotification(NotifyWarn, -1, "[Gonvim] Error detected while parsing setting.toml: "+fmt.Sprintf("%s", err))
-		}()
+	_, _ = toml.DecodeFile(filepath.Join(home, ".goneovim", "setting.toml"), &config)
+
+
+	if config.Editor.Transparent < 1.0 {
+		config.Editor.DrawBorder = true
+	}
+
+	if config.Editor.DiffAddPattern < 1 || config.Editor.DiffAddPattern > 24 {
+		config.Editor.DiffAddPattern = 1
+	}
+	if config.Editor.DiffDeletePattern < 1 || config.Editor.DiffDeletePattern > 24 {
+		config.Editor.DiffDeletePattern = 1
+	}
+	if config.Editor.DiffChangePattern < 1 || config.Editor.DiffChangePattern > 24 {
+		config.Editor.DiffChangePattern = 1
 	}
 
 	if config.Editor.Width <= 400 {
@@ -218,23 +235,13 @@ func newGonvimConfig(home string) gonvimConfig {
 	if config.Editor.Height <= 300 {
 		config.Editor.Height = 300
 	}
+	if config.Editor.Transparent <= 0.1 {
+		config.Editor.Transparent = 1.0
+	}
 	if config.Statusline.ModeIndicatorType == "" {
 		config.Statusline.ModeIndicatorType = "textLabel"
 	}
 
-	if config.Editor.FontFamily == "" {
-		switch runtime.GOOS {
-		case "windows":
-			config.Editor.FontFamily = "Consolas"
-		case "darwin":
-			config.Editor.FontFamily = "Monaco"
-		default:
-			config.Editor.FontFamily = "Monospace"
-		}
-	}
-	if config.Editor.FontSize <= 5 {
-		config.Editor.FontSize = 13
-	}
 	if config.Editor.Linespace < 0 {
 		config.Editor.Linespace = 6
 	}
@@ -259,14 +266,10 @@ func newGonvimConfig(home string) gonvimConfig {
 	}
 
 	if config.SideBar.Width == 0 {
-		config.SideBar.Width = 300
+		config.SideBar.Width = 200
 	}
 	if config.SideBar.AccentColor == "" {
 		config.SideBar.AccentColor = "#5596ea"
-	}
-
-	if config.FileExplorer.MaxItems < 0 {
-		config.FileExplorer.MaxItems = 50
 	}
 
 	if config.Workspace.PathStyle == "" {
@@ -276,12 +279,61 @@ func newGonvimConfig(home string) gonvimConfig {
 	return config
 }
 
+func (c *gonvimConfig) init() {
+	// Set default value
+	c.Editor.Width = 800
+	c.Editor.Height = 600
+	c.Editor.Transparent = 1.0
+
+	// UI options:
+	c.Editor.SkipGlobalId = false
+	c.Editor.CachedDrawing = true
+
+	// basic UI
+	c.Editor.ExtCmdline = true
+	// c.Editor.ExtWildmenu = false
+	c.Editor.ExtPopupmenu = false
+	c.Editor.ExtTabline = true
+	c.Editor.ExtMessages = false
+	c.Editor.DrawBorder = false
+
+	// Indent guide
+	c.Editor.IndentGuide = true
+
+	// replace diff color drawing pattern
+	c.Editor.DiffAddPattern = 12
+	c.Editor.DiffDeletePattern = 12
+
+	// palette size
+	c.Palette.AreaRatio = 0.5
+	c.Palette.MaxNumberOfResultItems = 30
+
+
+	c.Statusline.Visible = false
+	c.Statusline.ModeIndicatorType = "textLabel"
+	c.Statusline.Left = []string{"mode", "filename"}
+	c.Statusline.Right = []string{"git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
+
+	c.Tabline.Visible = true
+
+	c.Lint.Visible = true
+
+	// c.ActivityBar.Visible = true
+
+	c.ScrollBar.Visible = true
+
+	c.SideBar.Width = 200
+	c.SideBar.AccentColor = "#5596ea"
+
+	c.Workspace.PathStyle = "minimum"
+}
+
 func outputGonvimConfig() {
 	home, err := homedir.Dir()
 	if err != nil {
 		home = "~"
 	}
-	filepath := filepath.Join(home, ".gonvim", "setting.toml")
+	filepath := filepath.Join(home, ".goneovim", "setting.toml")
 	if isFileExist(filepath) {
 		return
 	}
@@ -289,6 +341,6 @@ func outputGonvimConfig() {
 	toml.NewEncoder(buf).Encode(editor.config)
 	err = ioutil.WriteFile(filepath, buf.Bytes(), 664)
 	if err != nil {
-		editor.pushNotification(NotifyWarn, -1, "[Gonvim] I can't write to setting.toml file at ~/.gonvim/setting.toml")
+		editor.pushNotification(NotifyWarn, -1, "[Goneovim] " + err.Error())
 	}
 }

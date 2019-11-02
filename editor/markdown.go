@@ -5,7 +5,6 @@ import (
 	"math"
 	"path/filepath"
 	"runtime"
-	"time"
 
 	"github.com/shurcooL/github_flavored_markdown"
 	"github.com/therecipe/qt/core"
@@ -17,12 +16,18 @@ import (
 
 //
 const (
-	GonvimMarkdownBufName         = "__GonvimMarkdownPreview__"
-	GonvimMarkdownToggleEvent     = "gonvim_markdown_toggle"
-	GonvimMarkdownNewBufferEvent  = "gonvim_markdown_new_buffer"
-	GonvimMarkdownUpdateEvent     = "gonvim_markdown_update"
-	GonvimMarkdownScrollDownEvent = "gonvim_markdown_scroll_down"
-	GonvimMarkdownScrollUpEvent   = "gonvim_markdown_scroll_up"
+	GonvimMarkdownBufName                 = "__GonvimMarkdownPreview__"
+	GonvimMarkdownToggleEvent             = "gonvim_markdown_toggle"
+	GonvimMarkdownNewBufferEvent          = "gonvim_markdown_new_buffer"
+	GonvimMarkdownUpdateEvent             = "gonvim_markdown_update"
+	GonvimMarkdownScrollDownEvent         = "gonvim_markdown_scroll_down"
+	GonvimMarkdownScrollUpEvent           = "gonvim_markdown_scroll_up"
+	GonvimMarkdownScrollTopEvent          = "gonvim_markdown_scroll_top"
+	GonvimMarkdownScrollBottomEvent       = "gonvim_markdown_scroll_bottom"
+	GonvimMarkdownScrollPageDownEvent     = "gonvim_markdown_scroll_pagedown"
+	GonvimMarkdownScrollPageUpEvent       = "gonvim_markdown_scroll_pageup"
+	GonvimMarkdownScrollHalfPageDownEvent = "gonvim_markdown_scroll_halfpagedown"
+	GonvimMarkdownScrollHalfPageUpEvent   = "gonvim_markdown_scroll_halfpageup"
 )
 
 // Markdown is the markdown preview window
@@ -116,30 +121,25 @@ func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
 }
 
 func (m *Markdown) updatePos() {
-	for _, win := range m.ws.screen.curWins {
-		if win.bufName == "" {
-			time.Sleep(500 * time.Microsecond)
+	for _, win := range m.ws.screen.windows {
+		if win == nil {
+			continue
 		}
-
-		// * FIXME *
-		// * > path/filepath.Base() /Users/akiyoshi/.goenv/versions/1.10.4/src/path/filepath/path.go:436 (PC: 0x4204b38)
-		// * Command failed: bad access
-		// * (dlv) bt
-		// *  0  0x0000000004204b38 in path/filepath.Base
-		// *     at /Users/akiyoshi/.goenv/versions/1.10.4/src/path/filepath/path.go:436
-		// *  1  0x0000000005c0bd2c in github.com/akiyosi/gonvim/editor.(*Markdown).updatePos
-		// *     at /Users/akiyoshi/go/src/github.com/akiyosi/gonvim/editor/markdown.go:123
-		// *  2  0x0000000005c23ae5 in github.com/akiyosi/gonvim/editor.(*Screen).paint
-		// *     at /Users/akiyoshi/go/src/github.com/akiyosi/gonvim/editor/screen.go:261
+		if win.isMsgGrid || win.isFloatWin {
+			continue
+		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
 			m.webview.Resize2(
-				int(float64(win.width)*m.ws.font.truewidth),
-				win.height*m.ws.font.lineHeight,
+				int(float64(win.cols)*m.ws.font.truewidth),
+				win.rows*m.ws.font.lineHeight,
 			)
-			m.webview.Move2(
-				int(float64(win.pos[1])*m.ws.font.truewidth),
-				win.pos[0]*m.ws.font.lineHeight,
-			)
+			if m.webview.ParentWidget() != win.widget {
+				m.webview.SetParent(win.widget)
+			}
+			// m.webview.Move2(
+			// 	int(float64(win.pos[0])*m.ws.font.truewidth),
+			// 	win.pos[1]*m.ws.font.lineHeight,
+			// )
 			m.show()
 			return
 		}
@@ -153,6 +153,7 @@ func (m *Markdown) show() {
 	}
 	m.hidden = false
 	m.webview.Show()
+	m.webview.Raise()
 }
 
 func (m *Markdown) hide() {
@@ -163,6 +164,10 @@ func (m *Markdown) hide() {
 	m.webview.Hide()
 }
 
+func (m *Markdown) scrollTop() {
+	m.webpage.RunJavaScript("window.scrollTo(0, 0)")
+}
+
 func (m *Markdown) scrollUp() {
 	m.webpage.RunJavaScript("window.scrollBy(0, -20)")
 }
@@ -171,47 +176,36 @@ func (m *Markdown) scrollDown() {
 	m.webpage.RunJavaScript("window.scrollBy(0, 20)")
 }
 
-func (m *Markdown) openReadme(reponame string, readme string) {
-	for _, win := range m.ws.screen.curWins {
-		if win.bufName == "" {
-			time.Sleep(500 * time.Microsecond)
-		}
-		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
-			m.ws.nvim.SetCurrentWindow(win.win)
-			m.ws.nvim.Command("close")
-			m.htmlSet = false
-			if editor.deinSide.preDisplayedReadme == reponame {
-				return
-			}
-		}
-	}
-	m.ws.nvim.Command(`silent vertical split https://raw.githubusercontent.com/` + reponame + "/master/" + readme)
-	m.ws.nvim.Command(`e ` + GonvimMarkdownBufName)
-	m.ws.nvim.Command("setlocal filetype=" + GonvimMarkdownBufName)
-	m.ws.nvim.Command("setlocal buftype=nofile")
-	m.ws.nvim.Command("setlocal bufhidden=hide")
-	m.ws.nvim.Command("setlocal noswapfile")
-	m.ws.nvim.Command("setlocal nobuflisted")
-	m.ws.nvim.Command("setlocal nomodifiable")
-	m.ws.nvim.Command("setlocal nolist")
-	m.ws.nvim.Command("setlocal nowrap")
-	m.ws.nvim.Command(fmt.Sprintf(
-		"nnoremap <silent> <buffer> j :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollDownEvent,
-	))
-	m.ws.nvim.Command(fmt.Sprintf(
-		"nnoremap <silent> <buffer> k :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollUpEvent,
-	))
-	m.ws.nvim.Command("wincmd p")
+func (m *Markdown) scrollBottom() {
+	m.webpage.RunJavaScript("window.scrollTo(0,document.body.scrollHeight)")
+}
 
-	editor.deinSide.preDisplayedReadme = reponame
+func (m *Markdown) scrollPageUp() {
+	m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, -%d)", m.webview.Height()))
+}
+
+func (m *Markdown) scrollPageDown() {
+	m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %d)", m.webview.Height()))
+}
+
+func (m *Markdown) scrollHalfPageUp() {
+	m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, -%d)", m.webview.Height()/2))
+}
+
+func (m *Markdown) scrollHalfPageDown() {
+	m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %d)", m.webview.Height()/2))
 }
 
 func (m *Markdown) toggle() {
-	for _, win := range m.ws.screen.curWins {
+	for _, win := range m.ws.screen.windows {
+		if win == nil {
+			continue
+		}
+		if win.isMsgGrid || win.isFloatWin {
+			continue
+		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
-			m.ws.nvim.SetCurrentWindow(win.win)
+			m.ws.nvim.SetCurrentWindow(win.id)
 			m.ws.nvim.Command("close")
 			m.htmlSet = false
 			return
@@ -234,6 +228,30 @@ func (m *Markdown) toggle() {
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> k :call rpcnotify(0, 'Gui', '%s')<CR>",
 		GonvimMarkdownScrollUpEvent,
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> gg :call rpcnotify(0, 'Gui', '%s')<CR>",
+		GonvimMarkdownScrollTopEvent,
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> G :call rpcnotify(0, 'Gui', '%s')<CR>",
+		GonvimMarkdownScrollBottomEvent,
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> <C-b> :call rpcnotify(0, 'Gui', '%s')<CR>",
+		GonvimMarkdownScrollPageUpEvent,
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> <C-f> :call rpcnotify(0, 'Gui', '%s')<CR>",
+		GonvimMarkdownScrollPageDownEvent,
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> <C-u> :call rpcnotify(0, 'Gui', '%s')<CR>",
+		GonvimMarkdownScrollHalfPageUpEvent,
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> <C-d> :call rpcnotify(0, 'Gui', '%s')<CR>",
+		GonvimMarkdownScrollHalfPageDownEvent,
 	))
 
 	m.ws.nvim.Command("wincmd p")

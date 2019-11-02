@@ -1,6 +1,9 @@
 package util
 
 import (
+	"strings"
+
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 )
@@ -13,6 +16,18 @@ func ReflectToInt(iface interface{}) int {
 	u, ok := iface.(uint64)
 	if ok {
 		return int(u)
+	}
+	return 0
+}
+
+func ReflectToFloat(iface interface{}) float64 {
+	i, ok := iface.(float64)
+	if ok {
+		return float64(i)
+	}
+	u, ok := iface.(float32)
+	if ok {
+		return float64(u)
 	}
 	return 0
 }
@@ -49,6 +64,33 @@ func IsTrue(d interface{}) bool {
 		}
 	}
 	return false
+}
+
+func SplitVimscript(s string) string {
+	if string(s[0]) == "\n" {
+		s = strings.TrimPrefix(s, string("\n"))
+	}
+	listLines := "["
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		listLines = listLines + `'` + line + `'`
+		if i == len(lines)-1 {
+			listLines = listLines + "]"
+		} else {
+			listLines = listLines + ","
+		}
+	}
+
+	return listLines
+}
+
+func DropShadow(x, y, radius float64, alpha int) *widgets.QGraphicsDropShadowEffect{
+	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
+	shadow.SetBlurRadius(radius)
+	shadow.SetColor(gui.NewQColor3(0, 0, 0, alpha))
+	shadow.SetOffset2(x, y)
+
+	return shadow
 }
 
 func NewHFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {

@@ -2,15 +2,14 @@ package editor
 
 import (
 	"errors"
-	"strconv"
 	"fmt"
+	"strconv"
 
 	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 
-	"github.com/akiyosi/gonvim/util"
+	"github.com/akiyosi/goneovim/util"
 )
 
 // PopupMenu is the popupmenu
@@ -57,7 +56,7 @@ type PopupItem struct {
 	hidden    bool
 }
 
-func initPopupmenuNew(font *Font) *PopupMenu {
+func initPopupmenuNew() *PopupMenu {
 	layout := widgets.NewQGridLayout2()
 	layout.SetSpacing(0)
 	layout.SetContentsMargins(0, editor.iconSize/5, 0, 0)
@@ -75,7 +74,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetLayout(mainLayout)
 	widget.SetContentsMargins(1, 1, 1, 1)
-	//widget.SetStyleSheet("* {background-color: rgba(24, 29, 34, 1); color: rgba(205, 211, 222, 1);}")
+	// widget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0);}")
 	max := 15
 	var popupItems []*PopupItem
 
@@ -85,25 +84,27 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		kindlayout := widgets.NewQHBoxLayout()
 		kindlayout.SetContentsMargins(editor.iconSize/2, 0, editor.iconSize/2, 0)
 		kindWidget.SetLayout(kindlayout)
-		kindWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+		// kindWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 		kindIcon := svg.NewQSvgWidget(nil)
 		kindIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		kindlayout.AddWidget(kindIcon, 0, 0)
 
 		menu := widgets.NewQLabel(nil, 0)
 		menu.SetContentsMargins(1, margin, margin, margin)
-		menu.SetFont(font.fontNew)
-		menu.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+		// menu.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
 		detail := widgets.NewQLabel(nil, 0)
 		detail.SetContentsMargins(margin, margin, margin, margin)
-		detail.SetFont(font.fontNew)
 		detail.SetObjectName("detailpopup")
-		detail.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+		// detail.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
 
-		layout.AddWidget(kindWidget, i, 0, 0)
-		layout.AddWidget(menu, i, 1, 0)
-		layout.AddWidget(detail, i, 2, 0)
+		// kindWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+		// menu.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+		// detail.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
+
+		layout.AddWidget2(kindWidget, i, 0, 0)
+		layout.AddWidget2(menu, i, 1, 0)
+		layout.AddWidget2(detail, i, 2, 0)
 
 		popupItem := &PopupItem{
 			// kindLabel:   kind,
@@ -124,11 +125,7 @@ func initPopupmenuNew(font *Font) *PopupMenu {
 		scrollCol: scrollCol,
 	}
 
-	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
-	shadow.SetBlurRadius(38)
-	shadow.SetColor(gui.NewQColor3(0, 0, 0, 200))
-	shadow.SetOffset3(-2, 6)
-	popup.widget.SetGraphicsEffect(shadow)
+	popup.widget.SetGraphicsEffect(util.DropShadow(-2, 6, 40, 200))
 
 	return popup
 }
@@ -146,9 +143,9 @@ func (p *PopupMenu) setColor() {
 	fg := editor.colors.widgetFg.String()
 	inactiveFg := editor.colors.inactiveFg.String()
 	bg := editor.colors.widgetBg
+	transparent := transparent()
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
-	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: %s; color: %s;} #detailpopup { color: %s; }", bg, fg, inactiveFg))
-	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, 1.0); color: %s;} #detailpopup { color: %s; }", bg.R, bg.G, bg.B, fg, inactiveFg))
+	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #detailpopup { color: %s; }", bg.R, bg.G, bg.B, transparent, fg, inactiveFg))
 }
 
 func (p *PopupMenu) setPumblend(arg interface{}) {
@@ -167,7 +164,7 @@ func (p *PopupMenu) setPumblend(arg interface{}) {
 	default:
 		return
 	}
-	alpha := float64(100 - pumblend) / float64(100)
+	alpha := float64(100-pumblend) / float64(100)
 	if alpha < 0 {
 		alpha = 0
 	}
@@ -185,6 +182,8 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	selected := util.ReflectToInt(arg[1])
 	row := util.ReflectToInt(arg[2])
 	col := util.ReflectToInt(arg[3])
+	gridid := util.ReflectToInt(arg[4])
+
 	p.rawItems = items
 	p.selected = selected
 	p.top = 0
@@ -221,22 +220,26 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.scrollCol.Hide()
 	}
 
-	xpos := int(float64(col) * p.ws.font.truewidth)
 	popupWidth := editor.iconSize + popupItems[0].menuLabel.Width() // + popupItems[0].detailLabel.Width()
-	if xpos+popupWidth >= p.ws.screen.widget.Width() {
-		xpos = p.ws.screen.widget.Width() - popupWidth - 5
+
+	x := int(float64(col) * p.ws.font.truewidth)
+	y := row*p.ws.font.lineHeight + p.ws.font.lineHeight + p.ws.tabline.widget.Height()
+	if x+popupWidth >= p.ws.screen.widget.Width() {
+		x = p.ws.screen.widget.Width() - popupWidth - 5
+	}
+	win := p.ws.screen.windows[gridid]
+	if win != nil {
+		x += int(float64(win.pos[0]) * p.ws.font.truewidth)
+		y += win.pos[1] * p.ws.font.lineHeight
 	}
 
-	p.widget.Move2(
-		//int(float64(col)*p.ws.font.truewidth)-popupItems[0].kindLabel.Width()-8,
-		xpos,
-		(row+1)*p.ws.font.lineHeight,
-	)
+	p.widget.Move2(x, y)
 	p.hide()
 	p.show()
 }
 
 func (p *PopupMenu) show() {
+	p.widget.Raise()
 	p.widget.Show()
 }
 
@@ -287,20 +290,13 @@ func (p *PopupItem) updateMenu() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		if p.selected {
-			go func() {
-				p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
-				p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
-				p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.String()))
-			}()
+			p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 		} else {
-			go func() {
-				p.kindWidget.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
-				p.menuLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
-				p.detailLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
-			}()
-			// p.kindWidget.SetStyleSheet("")
-			// p.menuLabel.SetStyleSheet("")
-			// p.detailLabel.SetStyleSheet("")
+			p.kindWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			p.detailLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 		}
 	}
 	if p.menuTextRequest != p.menuText {

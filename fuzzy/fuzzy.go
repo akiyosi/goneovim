@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	gonvimUtil "github.com/akiyosi/gonvim/util"
+	gonvimUtil "github.com/akiyosi/goneovim/util"
 	"github.com/denormal/go-gitignore"
 	"github.com/junegunn/fzf/src/algo"
 	"github.com/junegunn/fzf/src/util"
@@ -105,6 +105,8 @@ func (s *Fuzzy) handle(args ...interface{}) {
 		s.cancel()
 	case "confirm":
 		s.confirm()
+	case "resume":
+		s.resume()
 	case "update_max":
 		s.max = gonvimUtil.ReflectToInt(args[1])
 	default:
@@ -221,12 +223,47 @@ func (s *Fuzzy) scoreSource(source string) {
 	n := &[]int{}
 
 	if s.pattern != "" {
-		chars := util.ToChars([]byte(source))
+
+		var chars util.Chars
+		var parts []string
+
+		// if fuzzy type is "file_line", 
+		// then exclude file name string from source string
+		indexOffset := 0
+		switch s.options["type"] {
+		case "file_line" :
+			parts = strings.SplitN(source, ":", 4)
+			filecontents := parts[len(parts)-1]
+			chars = util.ToChars([]byte(filecontents))
+			indexOffset = len(parts[0])+1+len(parts[1])+1+len(parts[2])+1
+		case "line" :
+			parts = strings.SplitN(source, "\t", 2)
+			filecontents := parts[len(parts)-1]
+			chars = util.ToChars([]byte(filecontents))
+			indexOffset = len(parts[0])+1
+		default :
+			chars = util.ToChars([]byte(source))
+		}
+
 		// fuzzy match like smart case
 		if strings.ContainsAny(s.pattern, "ABCDEFZHIJKLMNOPQRSTUVWXYZ") {
 			r, n = algo.FuzzyMatchV1(true, true, true, &chars, []rune(s.pattern), true, s.slab)
 		} else {
 			r, n = algo.FuzzyMatchV1(false, true, true, &chars, []rune(s.pattern), true, s.slab)
+		}
+
+		// Since the file name is excluded from the source string,
+		// the number of characters of the file name is added to the index.
+		if n != nil && indexOffset != 0 {
+			var newN []int
+			for _, idx := range *n {
+				newN = append(
+					newN,
+					idx+indexOffset,
+				)
+
+			}
+			n = &newN
 		}
 	}
 	if r.Score == -1 || r.Score > 0 {
@@ -248,7 +285,9 @@ func (s *Fuzzy) scoreSource(source string) {
 					output: source,
 					match:  n,
 				}},
-				s.result[i:]...)...)
+				s.result[i:]...,
+			)...,
+		)
 
 		// if s.start <= i && i <= s.start+s.max-1 {
 		// 	s.outputResult()
@@ -300,8 +339,6 @@ func (s *Fuzzy) processSource() {
 			}
 
 			if !s.isRemoteAttachment {
-				// -- Explore file with local gonvim
-				// --
 				files, _ := ioutil.ReadDir(pwd)
 				folders := []string{}
 				ignore, _ := gitignore.NewRepository(pwd)
@@ -531,6 +568,10 @@ func (s *Fuzzy) outputHide() {
 	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_hide")
 }
 
+func (s *Fuzzy) outputShow() {
+	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_show")
+}
+
 func (s *Fuzzy) outputCursor() {
 	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_pattern_pos", s.cursor)
 }
@@ -583,7 +624,7 @@ func (s *Fuzzy) outputResult() {
 
 	s.resultRWMtext.RLock()
 	total := len(result)
-	if start >= total {
+	if start >= total || selected >= total {
 		s.start = 0
 		start = 0
 		s.selected = 0
@@ -657,6 +698,7 @@ func (s *Fuzzy) processSelected() {
 
 func (s *Fuzzy) confirm() {
 	if s.selected >= len(s.result) {
+		s.cancel()
 		return
 	}
 	arg := s.result[s.selected].output
@@ -680,9 +722,16 @@ func (s *Fuzzy) confirm() {
 func (s *Fuzzy) cancel() {
 	s.running = false
 	s.outputHide()
-	s.cancelled = true
-	s.cancelChan <- true
-	s.reset()
+	// s.cancelled = true
+	// s.cancelChan <- true
+	// s.reset()
+}
+
+func (s *Fuzzy) resume() {
+	s.running = true
+	s.outputShow()
+	// s.cancelled = false
+	// s.cancelChan <- false
 }
 
 func removeAtIndex(in string, i int) string {
