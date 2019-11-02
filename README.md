@@ -60,6 +60,17 @@ The sample configuration is [goneovim-init.vim](https://github.com/akiyosi/goneo
 For details of `~/.goneovim/setting.toml`, See [wiki](https://github.com/akiyosi/goneovim/wiki/Configurations)
 
 
+## ToDo
+* Improved startup speed (especially on the Windows platform)
+* Improve IME feature
+In the current implementation, it is not possible to highlight the keyword being converted in the input method input. At the moment I have no idea about how to improve this
+
+* Support GUI rendering
+
+* Support neovim ui `ext_statusline`
+
+* Keyword filtering feature in external file explorer
+
 
 ## Development
 
