@@ -128,9 +128,9 @@ type Screen struct {
 	tooltip *widgets.QLabel
 
 	queueRedrawArea [4]int
-	textCache        gcache.Cache
+	textCache       gcache.Cache
 
-	resizeCount     uint
+	resizeCount uint
 }
 
 func newScreen() *Screen {
@@ -2724,13 +2724,12 @@ func (s *Screen) setColor() {
 	)
 }
 
-
 func (w *Window) getCache() gcache.Cache {
-       if w.font != nil {
-               return w.textCache
-       }
+	if w.font != nil {
+		return w.textCache
+	}
 
-       return w.s.textCache
+	return w.s.textCache
 }
 
 func newWindow() *Window {
@@ -2740,8 +2739,8 @@ func newWindow() *Window {
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
 	w := &Window{
-		widget:           widget,
-		scrollRegion:     []int{0, 0, 0, 0},
+		widget:       widget,
+		scrollRegion: []int{0, 0, 0, 0},
 	}
 
 	widget.ConnectPaintEvent(w.paint)
