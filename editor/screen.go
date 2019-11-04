@@ -480,6 +480,13 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
 
 	p := gui.NewQPainter2(w.widget)
+
+	// Set devicePixelRatio if it is not set
+	if w.devicePixelRatio == 0 {
+		w.devicePixelRatio = float64(p.PaintEngine().PaintDevice().DevicePixelRatio())
+	}
+
+	// Draw text with DrawText if screen name is "minimap" or CachedDrawing is false
 	if w.s.name == "minimap" || !editor.config.Editor.CachedDrawing {
 		p.SetFont(font.fontNew)
 	}
@@ -2732,17 +2739,9 @@ func newWindow() *Window {
 	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
-	var devicePixelRatio float64
-	if runtime.GOOS == "darwin" {
-		devicePixelRatio = 2.0
-	} else {
-		devicePixelRatio = 1.0
-	}
-
 	w := &Window{
 		widget:           widget,
 		scrollRegion:     []int{0, 0, 0, 0},
-		devicePixelRatio: devicePixelRatio,
 	}
 
 	widget.ConnectPaintEvent(w.paint)
