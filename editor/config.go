@@ -123,19 +123,19 @@ type paletteConfig struct {
 	MaxNumberOfResultItems int
 }
 type editorConfig struct {
-	Ui                   string
-	Width                int
-	Height               int
-	FontFamily           string
-	FontSize             int
-	Linespace            int
-	ExtCmdline           bool
+	Ui         string
+	Width      int
+	Height     int
+	FontFamily string
+	FontSize   int
+	Linespace  int
+	ExtCmdline bool
 	// ExtWildmenu          bool
-	ExtPopupmenu         bool
-	ExtTabline           bool
+	ExtPopupmenu bool
+	ExtTabline   bool
 	// ExtMultigrid         bool
-	ExtMessages          bool
-	Clipboard            bool
+	ExtMessages bool
+	Clipboard   bool
 	// CursorBlink          bool
 	CachedDrawing        bool
 	DisableImeInNormal   bool
@@ -213,7 +213,6 @@ func newGonvimConfig(home string) gonvimConfig {
 
 	// Read toml
 	_, _ = toml.DecodeFile(filepath.Join(home, ".goneovim", "setting.toml"), &config)
-
 
 	if config.Editor.Transparent < 1.0 {
 		config.Editor.DrawBorder = true
@@ -308,7 +307,6 @@ func (c *gonvimConfig) init() {
 	c.Palette.AreaRatio = 0.5
 	c.Palette.MaxNumberOfResultItems = 30
 
-
 	c.Statusline.Visible = false
 	c.Statusline.ModeIndicatorType = "textLabel"
 	c.Statusline.Left = []string{"mode", "filename"}
@@ -341,6 +339,6 @@ func outputGonvimConfig() {
 	toml.NewEncoder(buf).Encode(editor.config)
 	err = ioutil.WriteFile(filepath, buf.Bytes(), 664)
 	if err != nil {
-		editor.pushNotification(NotifyWarn, -1, "[Goneovim] " + err.Error())
+		editor.pushNotification(NotifyWarn, -1, "[Goneovim] "+err.Error())
 	}
 }

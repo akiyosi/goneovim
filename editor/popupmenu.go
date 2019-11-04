@@ -235,8 +235,12 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	popupWidth := editor.iconSize + popupItems[0].menuLabel.Width()
 
 	x := int(float64(col) * p.ws.font.truewidth)
-	y := row*p.ws.font.lineHeight + p.ws.font.lineHeight + p.ws.tabline.widget.Height()
-	if x + popupWidth >= p.ws.screen.widget.Width() {
+	y := row*p.ws.font.lineHeight + p.ws.font.lineHeight
+	if p.ws.drawTabline {
+		y += p.ws.tabline.widget.Height()
+	}
+  
+	if x+popupWidth >= p.ws.screen.widget.Width() {
 		x = p.ws.screen.widget.Width() - popupWidth - 5
 	}
 	win := p.ws.screen.windows[gridid]
@@ -417,12 +421,6 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 		}
 	}
-	// if kindText != p.kindText {
-	// 	p.kindText = kindText
-	// 	p.kindColor = color
-	// 	p.kindBg = bg
-	// 	p.updateKind()
-	// }
 }
 
 func (p *PopupItem) hide() {

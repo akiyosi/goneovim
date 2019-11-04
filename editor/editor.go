@@ -645,57 +645,57 @@ func (e *Editor) convertKey(text string, key int, mod core.Qt__KeyboardModifier)
 
 	if mod&e.altModifier > 0 {
 		switch core.Qt__Key(key) {
-		case core.Qt__Key_A :
+		case core.Qt__Key_A:
 			c = "a"
-		case core.Qt__Key_B :
+		case core.Qt__Key_B:
 			c = "b"
-		case core.Qt__Key_C :
+		case core.Qt__Key_C:
 			c = "c"
-		case core.Qt__Key_D :
+		case core.Qt__Key_D:
 			c = "d"
-		case core.Qt__Key_E :
+		case core.Qt__Key_E:
 			c = "e"
-		case core.Qt__Key_F :
+		case core.Qt__Key_F:
 			c = "f"
-		case core.Qt__Key_G :
+		case core.Qt__Key_G:
 			c = "g"
-		case core.Qt__Key_H :
+		case core.Qt__Key_H:
 			c = "h"
-		case core.Qt__Key_I :
+		case core.Qt__Key_I:
 			c = "i"
-		case core.Qt__Key_J :
+		case core.Qt__Key_J:
 			c = "j"
-		case core.Qt__Key_K :
+		case core.Qt__Key_K:
 			c = "k"
-		case core.Qt__Key_L :
+		case core.Qt__Key_L:
 			c = "l"
-		case core.Qt__Key_M :
+		case core.Qt__Key_M:
 			c = "m"
-		case core.Qt__Key_N :
+		case core.Qt__Key_N:
 			c = "n"
-		case core.Qt__Key_O :
+		case core.Qt__Key_O:
 			c = "o"
-		case core.Qt__Key_P :
+		case core.Qt__Key_P:
 			c = "p"
-		case core.Qt__Key_Q :
+		case core.Qt__Key_Q:
 			c = "q"
-		case core.Qt__Key_R :
+		case core.Qt__Key_R:
 			c = "r"
-		case core.Qt__Key_S :
+		case core.Qt__Key_S:
 			c = "s"
-		case core.Qt__Key_T :
+		case core.Qt__Key_T:
 			c = "t"
-		case core.Qt__Key_U :
+		case core.Qt__Key_U:
 			c = "u"
-		case core.Qt__Key_V :
+		case core.Qt__Key_V:
 			c = "v"
-		case core.Qt__Key_W :
+		case core.Qt__Key_W:
 			c = "w"
-		case core.Qt__Key_X :
+		case core.Qt__Key_X:
 			c = "x"
-		case core.Qt__Key_Y :
+		case core.Qt__Key_Y:
 			c = "y"
-		case core.Qt__Key_Z :
+		case core.Qt__Key_Z:
 			c = "z"
 		default:
 		}
