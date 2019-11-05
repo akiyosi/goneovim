@@ -274,7 +274,6 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 		p.scroll(-1)
 	}
 
-	isSelected := false
 	for i := 0; i < p.showTotal; i++ {
 		popupItem := p.items[i]
 		isSelected := selected == i+p.top
@@ -283,15 +282,6 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 			popupItem.p.detailLabel.SetText(popupItem.detailText)
 			popupItem.p.detailLabel.Show()
 		}
-	}
-
-	if isSelected {
-		return
-	}
-
-	for i := 0; i < p.showTotal; i++ {
-		popupItem := p.items[i]
-		popupItem.kindLabel.Hide()
 	}
 }
 
