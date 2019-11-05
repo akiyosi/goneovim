@@ -31,10 +31,13 @@ type PopupMenu struct {
 	scrollCol       *widgets.QWidget
 	x               int
 	y               int
+    detailLabel     *widgets.QLabel
 }
 
 // PopupItem is
 type PopupItem struct {
+    p          *PopupMenu
+
 	kindLabel  *widgets.QLabel
 	kindText   string
 	kind       string
@@ -69,9 +72,12 @@ func initPopupmenuNew() *PopupMenu {
 	scrollBar := widgets.NewQWidget(scrollCol, 0)
 	scrollBar.SetFixedWidth(5)
 
+    detailLabel := widgets.NewQLabel(nil, 0)
+
 	mainLayout := widgets.NewQHBoxLayout()
 	mainLayout.AddLayout(layout, 0)
 	mainLayout.AddWidget(scrollCol, 0, 0)
+    mainLayout.AddWidget(detailLabel, 0, 0)
 	mainLayout.SetContentsMargins(0, 0, 0, 0)
 	mainLayout.SetSpacing(0)
 
@@ -81,6 +87,15 @@ func initPopupmenuNew() *PopupMenu {
 
 	max := 15
 	var popupItems []*PopupItem
+
+    popup := &PopupMenu{
+        widget: widget,
+        layout: layout,
+        detailLabel: detailLabel,
+        total: max,
+        scrollBar: scrollBar,
+        scrollCol: scrollCol,
+    }
 
 	margin := editor.config.Editor.Linespace/2 + 2
 	for i := 0; i < max; i++ {
@@ -102,40 +117,20 @@ func initPopupmenuNew() *PopupMenu {
 		kindLabel.SetContentsMargins(margin, margin, margin, margin)
 		kindLabel.SetObjectName("kindlabelpopup")
 
-		detailWidget := widgets.NewQWidget(nil, 0)
-		detailLayout := widgets.NewQHBoxLayout()
-		detailLayout.SetContentsMargins(margin, 0, margin, 0)
-
-		detailWidget.SetLayout(detailLayout)
-		detailWidget.SetObjectName("detailpopup")
-
-		detailLabel := widgets.NewQLabel(nil, 0)
-        detailLayout.AddWidget(detailLabel, 0, 0)
-
 		layout.AddWidget2(kindWidget, i, 0, 0)
 		layout.AddWidget2(menu, i, 1, 0)
 		layout.AddWidget2(kindLabel, i, 2, 0)
-		layout.AddWidget2(detailWidget, i, 3, 0)
 
 		popupItem := &PopupItem{
+            p:            popup,
 			kindLabel:    kindLabel,
 			kindWidget:   kindWidget,
 			kindIcon:     kindIcon,
 			menuLabel:    menu,
-			detailWidget: detailWidget,
-			detailLabel:  detailLabel,
 		}
 		popupItems = append(popupItems, popupItem)
 	}
-
-	popup := &PopupMenu{
-		widget:    widget,
-		layout:    layout,
-		items:     popupItems,
-		total:     max,
-		scrollBar: scrollBar,
-		scrollCol: scrollCol,
-	}
+    popup.items = popupItems
 
 	popup.widget.SetGraphicsEffect(util.DropShadow(-2, 6, 40, 200))
 
@@ -143,11 +138,11 @@ func initPopupmenuNew() *PopupMenu {
 }
 
 func (p *PopupMenu) updateFont(font *Font) {
+    p.detailLabel.SetFont(font.fontNew)
 	for i := 0; i < p.total; i++ {
 		popupItem := p.items[i]
 		popupItem.kindLabel.SetFont(font.fontNew)
 		popupItem.menuLabel.SetFont(font.fontNew)
-		popupItem.detailLabel.SetFont(font.fontNew)
 	}
 }
 
@@ -239,7 +234,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	if p.ws.drawTabline {
 		y += p.ws.tabline.widget.Height()
 	}
-  
+
 	if x+popupWidth >= p.ws.screen.widget.Width() {
 		x = p.ws.screen.widget.Width() - popupWidth - 5
 	}
@@ -276,7 +271,12 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 	}
 	for i := 0; i < p.showTotal; i++ {
 		popupItem := p.items[i]
-		popupItem.setSelected(selected == i+p.top)
+        isSelected := selected == i+p.top
+        popupItem.setSelected(isSelected)
+        if isSelected {
+            popupItem.p.detailLabel.SetText(popupItem.detailText)
+            popupItem.p.detailLabel.Show()
+        }
 	}
 }
 
@@ -308,17 +308,15 @@ func (p *PopupItem) updateMenu() {
 		if p.selected {
 			p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			p.detailLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 			p.kindLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 
-			p.detailLabel.Show()
+			p.p.detailLabel.Show()
 		} else {
 			p.kindWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 			p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-			p.detailLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 			p.kindLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 
-			p.detailLabel.Hide()
+			p.p.detailLabel.Hide()
 		}
 	}
 	if p.menuTextRequest != p.menuText {
@@ -329,10 +327,8 @@ func (p *PopupItem) updateMenu() {
 		p.kindLabel.SetText(strings.Split(p.detailTextRequest, "\n")[0])
 
 		p.detailText = p.detailTextRequest
-		p.detailLabel.SetText(p.detailText)
 	}
 	p.menuLabel.AdjustSize()
-	p.detailLabel.AdjustSize()
 	p.menuLabel.AdjustSize()
 }
 
@@ -431,7 +427,7 @@ func (p *PopupItem) hide() {
 	p.kindLabel.Hide()
 	p.kindIcon.Hide()
 	p.menuLabel.Hide()
-	p.detailLabel.Hide()
+	p.p.detailLabel.Hide()
 }
 
 func (p *PopupItem) show() {
