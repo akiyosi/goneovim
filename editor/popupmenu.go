@@ -31,12 +31,12 @@ type PopupMenu struct {
 	scrollCol       *widgets.QWidget
 	x               int
 	y               int
-    detailLabel     *widgets.QLabel
+	detailLabel     *widgets.QLabel
 }
 
 // PopupItem is
 type PopupItem struct {
-    p          *PopupMenu
+	p *PopupMenu
 
 	kindLabel  *widgets.QLabel
 	kindText   string
@@ -72,30 +72,32 @@ func initPopupmenuNew() *PopupMenu {
 	scrollBar := widgets.NewQWidget(scrollCol, 0)
 	scrollBar.SetFixedWidth(5)
 
-    detailLabel := widgets.NewQLabel(nil, 0)
+	detailLabel := widgets.NewQLabel(nil, 0)
+	detailLabel.SetWordWrap(true)
 
 	mainLayout := widgets.NewQHBoxLayout()
 	mainLayout.AddLayout(layout, 0)
 	mainLayout.AddWidget(scrollCol, 0, 0)
-    mainLayout.AddWidget(detailLabel, 0, 0)
+	mainLayout.AddWidget(detailLabel, 0, 0)
 	mainLayout.SetContentsMargins(0, 0, 0, 0)
 	mainLayout.SetSpacing(0)
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetLayout(mainLayout)
 	widget.SetContentsMargins(1, 1, 1, 1)
+	widget.SetMaximumSize2(editor.width, editor.height)
 
 	max := 15
 	var popupItems []*PopupItem
 
-    popup := &PopupMenu{
-        widget: widget,
-        layout: layout,
-        detailLabel: detailLabel,
-        total: max,
-        scrollBar: scrollBar,
-        scrollCol: scrollCol,
-    }
+	popup := &PopupMenu{
+		widget:      widget,
+		layout:      layout,
+		detailLabel: detailLabel,
+		total:       max,
+		scrollBar:   scrollBar,
+		scrollCol:   scrollCol,
+	}
 
 	margin := editor.config.Editor.Linespace/2 + 2
 	for i := 0; i < max; i++ {
@@ -122,15 +124,15 @@ func initPopupmenuNew() *PopupMenu {
 		layout.AddWidget2(kindLabel, i, 2, 0)
 
 		popupItem := &PopupItem{
-            p:            popup,
-			kindLabel:    kindLabel,
-			kindWidget:   kindWidget,
-			kindIcon:     kindIcon,
-			menuLabel:    menu,
+			p:          popup,
+			kindLabel:  kindLabel,
+			kindWidget: kindWidget,
+			kindIcon:   kindIcon,
+			menuLabel:  menu,
 		}
 		popupItems = append(popupItems, popupItem)
 	}
-    popup.items = popupItems
+	popup.items = popupItems
 
 	popup.widget.SetGraphicsEffect(util.DropShadow(-2, 6, 40, 200))
 
@@ -138,7 +140,7 @@ func initPopupmenuNew() *PopupMenu {
 }
 
 func (p *PopupMenu) updateFont(font *Font) {
-    p.detailLabel.SetFont(font.fontNew)
+	p.detailLabel.SetFont(font.fontNew)
 	for i := 0; i < p.total; i++ {
 		popupItem := p.items[i]
 		popupItem.kindLabel.SetFont(font.fontNew)
@@ -263,25 +265,37 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 	if selected == -1 && p.top > 0 {
 		p.scroll(-p.top)
 	}
+
 	if selected-p.top >= p.showTotal {
 		p.scroll(selected - p.top - p.showTotal + 1)
 	}
+
 	if selected >= 0 && selected-p.top < 0 {
 		p.scroll(-1)
 	}
+
+	isSelected := false
 	for i := 0; i < p.showTotal; i++ {
 		popupItem := p.items[i]
-        isSelected := selected == i+p.top
-        popupItem.setSelected(isSelected)
-        if isSelected {
-            popupItem.p.detailLabel.SetText(popupItem.detailText)
-            popupItem.p.detailLabel.Show()
-        }
+		isSelected := selected == i+p.top
+		popupItem.setSelected(isSelected)
+		if isSelected {
+			popupItem.p.detailLabel.SetText(popupItem.detailText)
+			popupItem.p.detailLabel.Show()
+		}
+	}
+
+	if isSelected {
+		return
+	}
+
+	for i := 0; i < p.showTotal; i++ {
+		popupItem := p.items[i]
+		popupItem.kindLabel.Hide()
 	}
 }
 
 func (p *PopupMenu) scroll(n int) {
-	// fmt.Println(len(p.rawItems), p.top, n)
 	p.top += n
 	items := p.rawItems
 	popupItems := p.items
