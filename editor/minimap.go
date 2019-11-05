@@ -313,8 +313,15 @@ func (m *MiniMap) mapScroll() {
 	var absMapTop int
 	m.nvim.Eval("line('w0')", &absMapTop)
 
+	win, ok := m.ws.screen.windows[m.ws.cursor.gridid]
+	if !ok {
+		return
+	}
+	if win == nil {
+		return
+	}
 	var regionHeight int
-	regionHeight = m.ws.screen.windows[m.ws.cursor.gridid].rows
+	regionHeight = win.rows
 
 	m.curRegion.SetFixedHeight(int(float64(regionHeight) * float64(m.font.lineHeight)))
 	pos := int(float64(m.font.lineHeight) * float64(absScreenTop-absMapTop))
