@@ -17,7 +17,7 @@ import (
 type PopupMenu struct {
 	ws              *Workspace
 	widget          *widgets.QWidget
-	layout          *widgets.QGridLayout
+	itemLayout          *widgets.QGridLayout
 	items           []*PopupItem
 	rawItems        []interface{}
 	total           int
@@ -29,29 +29,32 @@ type PopupMenu struct {
 	scrollBarPos    int
 	scrollBarHeight int
 	scrollCol       *widgets.QWidget
+	detailLabel     *widgets.QLabel
 	x               int
 	y               int
-	detailLabel     *widgets.QLabel
 }
 
 // PopupItem is
 type PopupItem struct {
 	p *PopupMenu
 
-	kindLabel  *widgets.QLabel
-	kindText   string
-	kind       string
-	kindWidget *widgets.QWidget
+	completeMode string
+
+	wordLabel   *widgets.QLabel
+	word        string
+	wordRequest string
+
+	kind           string
+	kindIconWidget *widgets.QWidget
 	kindIcon   *svg.QSvgWidget
-	detailText string
 
-	menuLabel       *widgets.QLabel
-	menuText        string
-	menuTextRequest string
+	menuLabel   *widgets.QLabel
+	menu        string
+	menuRequest string
 
-	detailWidget      *widgets.QWidget
-	detailLabel       *widgets.QLabel
-	detailTextRequest string
+	infoLabel   *widgets.QLabel
+	info        string
+	infoRequest string
 
 	selected        bool
 	selectedRequest bool
@@ -59,12 +62,23 @@ type PopupItem struct {
 	kindColor *RGBA
 	kindBg    *RGBA
 	hidden    bool
+
+	detailText string
 }
 
 func initPopupmenuNew() *PopupMenu {
-	layout := widgets.NewQGridLayout2()
-	layout.SetSpacing(0)
-	layout.SetContentsMargins(0, editor.iconSize/5, 0, 0)
+	layout := widgets.NewQHBoxLayout()
+	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(10)
+
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetLayout(layout)
+	widget.SetContentsMargins(1, 1, 1, 1)
+	widget.SetMaximumSize2(editor.width, editor.height)
+
+	itemLayout := widgets.NewQGridLayout2()
+	itemLayout.SetSpacing(0)
+	itemLayout.SetContentsMargins(0, editor.iconSize/5, 0, 0)
 
 	scrollCol := widgets.NewQWidget(nil, 0)
 	scrollCol.SetContentsMargins(0, 0, 0, 0)
@@ -75,24 +89,15 @@ func initPopupmenuNew() *PopupMenu {
 	detailLabel := widgets.NewQLabel(nil, 0)
 	detailLabel.SetWordWrap(true)
 
-	mainLayout := widgets.NewQHBoxLayout()
-	mainLayout.AddLayout(layout, 0)
-	mainLayout.AddWidget(scrollCol, 0, 0)
-	mainLayout.AddWidget(detailLabel, 0, 0)
-	mainLayout.SetContentsMargins(0, 0, 0, 0)
-	mainLayout.SetSpacing(0)
+	layout.AddLayout(itemLayout, 0)
+	layout.AddWidget(scrollCol, 0, 0)
+	layout.AddWidget(detailLabel, 0, core.Qt__AlignmentFlag(core.Qt__AlignTop | core.Qt__AlignLeft))
 
-	widget := widgets.NewQWidget(nil, 0)
-	widget.SetLayout(mainLayout)
-	widget.SetContentsMargins(1, 1, 1, 1)
-	widget.SetMaximumSize2(editor.width, editor.height)
-
-	max := 15
-	var popupItems []*PopupItem
+	max := editor.config.Popupmenu.Total
 
 	popup := &PopupMenu{
 		widget:      widget,
-		layout:      layout,
+		itemLayout:      itemLayout,
 		detailLabel: detailLabel,
 		total:       max,
 		scrollBar:   scrollBar,
@@ -100,35 +105,39 @@ func initPopupmenuNew() *PopupMenu {
 	}
 
 	margin := editor.config.Editor.Linespace/2 + 2
+	var popupItems []*PopupItem
 	for i := 0; i < max; i++ {
-		kindWidget := widgets.NewQWidget(nil, 0)
-
+		kindIconWidget := widgets.NewQWidget(nil, 0)
 		kindlayout := widgets.NewQHBoxLayout()
 		kindlayout.SetContentsMargins(editor.iconSize/2, 0, editor.iconSize/2, 0)
-
-		kindWidget.SetLayout(kindlayout)
-
+		kindIconWidget.SetLayout(kindlayout)
 		kindIcon := svg.NewQSvgWidget(nil)
 		kindIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		kindlayout.AddWidget(kindIcon, 0, 0)
 
-		menu := widgets.NewQLabel(nil, 0)
-		menu.SetContentsMargins(1, margin, margin, margin)
+		word := widgets.NewQLabel(widget, 0)
+		word.SetContentsMargins(1, margin, margin, margin)
 
-		kindLabel := widgets.NewQLabel(nil, 0)
-		kindLabel.SetContentsMargins(margin, margin, margin, margin)
-		kindLabel.SetObjectName("kindlabelpopup")
+		menu := widgets.NewQLabel(widget, 0)
+		menu.SetContentsMargins(margin, margin, margin, margin)
+		menu.SetObjectName("menulabelpopup")
 
-		layout.AddWidget2(kindWidget, i, 0, 0)
-		layout.AddWidget2(menu, i, 1, 0)
-		layout.AddWidget2(kindLabel, i, 2, 0)
+		info := widgets.NewQLabel(widget, 0)
+		info.SetContentsMargins(margin, margin, margin, margin)
+		info.SetObjectName("menulabelpopup")
+
+		itemLayout.AddWidget2(kindIconWidget, i, 0, 0)
+		itemLayout.AddWidget2(word, i, 1, 0)
+		itemLayout.AddWidget2(menu, i, 2, 0)
+		itemLayout.AddWidget2(info, i, 3, 0)
 
 		popupItem := &PopupItem{
 			p:          popup,
-			kindLabel:  kindLabel,
-			kindWidget: kindWidget,
+			kindIconWidget: kindIconWidget,
 			kindIcon:   kindIcon,
+			wordLabel:  word,
 			menuLabel:  menu,
+			infoLabel:  info,
 		}
 		popupItems = append(popupItems, popupItem)
 	}
@@ -143,8 +152,9 @@ func (p *PopupMenu) updateFont(font *Font) {
 	p.detailLabel.SetFont(font.fontNew)
 	for i := 0; i < p.total; i++ {
 		popupItem := p.items[i]
-		popupItem.kindLabel.SetFont(font.fontNew)
+		popupItem.wordLabel.SetFont(font.fontNew)
 		popupItem.menuLabel.SetFont(font.fontNew)
+		popupItem.infoLabel.SetFont(font.fontNew)
 	}
 }
 
@@ -154,7 +164,7 @@ func (p *PopupMenu) setColor() {
 	bg := editor.colors.widgetBg
 	transparent := transparent()
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
-	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #kindlabelpopup { color: %s; }", bg.R, bg.G, bg.B, transparent, fg, inactiveFg))
+	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #menulabelpopup { color: %s; }", bg.R, bg.G, bg.B, transparent, fg, inactiveFg))
 }
 
 func (p *PopupMenu) setPumblend(arg interface{}) {
@@ -182,7 +192,7 @@ func (p *PopupMenu) setPumblend(arg interface{}) {
 	inactiveFg := editor.colors.inactiveFg.String()
 	bg := editor.colors.widgetBg
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
-	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #kindlabelpopup { color: %s; }", bg.R, bg.G, bg.B, alpha, fg, inactiveFg))
+	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #menulabelpopup { color: %s; }", bg.R, bg.G, bg.B, alpha, fg, inactiveFg))
 }
 
 func (p *PopupMenu) showItems(args []interface{}) {
@@ -197,8 +207,15 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.selected = selected
 	p.top = 0
 
+	p.detailLabel.SetText("")
+
 	popupItems := p.items
-	itemHeight := p.ws.font.height + 20
+	itemHeight := p.ws.font.lineHeight
+
+	// Calc the maximum completion items 
+	//   where,
+	//     `row` is the anchor position, where the first character of the completed word will be
+	//     `p.ws.screen.height` is the entire screen height
 	heightLeft := p.ws.screen.height - (row+1)*p.ws.font.lineHeight
 	total := heightLeft / itemHeight
 	if total < p.total {
@@ -229,7 +246,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.scrollCol.Hide()
 	}
 
-	popupWidth := editor.iconSize + popupItems[0].menuLabel.Width()
+	popupWidth := editor.iconSize + popupItems[0].wordLabel.Width()
 
 	x := int(float64(col) * p.ws.font.truewidth)
 	y := row*p.ws.font.lineHeight + p.ws.font.lineHeight
@@ -279,8 +296,12 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 		isSelected := selected == i+p.top
 		popupItem.setSelected(isSelected)
 		if isSelected {
-			popupItem.p.detailLabel.SetText(popupItem.detailText)
-			popupItem.p.detailLabel.Show()
+			if editor.config.Popupmenu.ShowDetail {
+				popupItem.p.detailLabel.SetText(popupItem.detailText)
+				popupItem.p.detailLabel.Show()
+			} else {
+				popupItem.p.detailLabel.Hide()
+			}
 		}
 	}
 }
@@ -300,55 +321,61 @@ func (p *PopupMenu) scroll(n int) {
 	p.show()
 }
 
-func (p *PopupItem) updateKind() {
-	p.kindLabel.SetStyleSheet(fmt.Sprintf("background-color: %s; color: %s;", p.kindBg.String(), p.kindColor.String()))
-	p.kindLabel.SetText(p.kindText)
-	p.kindLabel.AdjustSize()
-}
-
-func (p *PopupItem) updateMenu() {
+func (p *PopupItem) updateContent() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		if p.selected {
-			p.kindWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			p.kindIconWidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			p.wordLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			p.kindLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-
-			p.p.detailLabel.Show()
+			p.infoLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 		} else {
-			p.kindWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			p.kindIconWidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			p.wordLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 			p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-			p.kindLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-
-			p.p.detailLabel.Hide()
+			p.infoLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 		}
 	}
-	if p.menuTextRequest != p.menuText {
-		p.menuText = p.menuTextRequest
-		p.menuLabel.SetText(p.menuText)
+	if p.wordRequest != p.word {
+		p.word = p.wordRequest
+		p.menu = p.menuRequest
+		p.info = p.infoRequest
+		p.wordLabel.SetText(p.word)
+		p.menuLabel.SetText(p.menu)
+		p.infoLabel.SetText(strings.Split(p.infoRequest, "\n")[0])
 
-		// Use first line of `p.detailTextRequest` as `kindLabel`'s text.
-		p.kindLabel.SetText(strings.Split(p.detailTextRequest, "\n")[0])
-
-		p.detailText = p.detailTextRequest
+		p.detailText = p.infoRequest
 	}
-	p.menuLabel.AdjustSize()
-	p.menuLabel.AdjustSize()
+	// p.wordLabel.AdjustSize()
+	// p.menuLabel.AdjustSize()
+	// p.infoLabel.AdjustSize()
+	p.menuLabel.SetFixedWidth(editor.config.Popupmenu.MenuWidth)
+	p.infoLabel.SetFixedWidth(editor.config.Popupmenu.InfoWidth)
+
+	detailWidth := 0
+	if editor.config.Popupmenu.ShowDetail {
+		 detailWidth = editor.config.Popupmenu.DetailWidth
+	}
+	p.p.widget.SetFixedWidth(
+		editor.iconSize + p.wordLabel.Width() + p.menuLabel.Width() + p.infoLabel.Width() + detailWidth,
+	)
 }
 
 func (p *PopupItem) setSelected(selected bool) {
 	p.selectedRequest = selected
-	p.updateMenu()
+	p.updateContent()
 }
 
 func (p *PopupItem) setItem(item []interface{}, selected bool) {
-	text := item[0].(string)
-	kindText := item[1].(string)
-	detail := fmt.Sprintf("%s", item[2:])
+	word := item[0].(string)
+	kind := item[1].(string)
+	menu := item[2].(string)
+	info := item[3].(string)
 
-	p.setKind(kindText, selected)
-	p.menuTextRequest = text
-	p.detailTextRequest = detail[1 : len(detail)-1] // cut "[" and "]"
+	p.wordRequest = word
+	p.menuRequest = menu
+	p.infoRequest = info
+	p.setKind(kind, selected)
 	p.setSelected(selected)
 }
 
@@ -381,26 +408,43 @@ func detectVimCompleteMode() (string, error) {
 
 }
 
-func (p *PopupItem) setKind(kindText string, selected bool) {
-	switch kindText {
+func (p *PopupItem) setKind(kind string, selected bool) {
+	lowerKindText := strings.ToLower(kind)
+	hiAttrDef := editor.workspaces[editor.active].screen.highAttrDef
+	var colorOfFunc, colorOfStatement, colorOfType, colorOfKeyword *RGBA
+	for _, hi := range hiAttrDef {
+		switch hi.hlName {
+		case "Function":
+			colorOfFunc = hi.fg()
+		case "Statement":
+			colorOfStatement = hi.fg()
+		case "Type":
+			colorOfType = hi.fg()
+		case "String":
+			colorOfKeyword = hi.fg()
+		default:
+			continue
+		}
+	}
+	switch lowerKindText {
 	case "function", "func":
-		icon := editor.getSvg("lsp_function", nil)
+		icon := editor.getSvg("lsp_function", colorOfFunc)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	case "var", "statement", "instance", "param", "import":
-		icon := editor.getSvg("lsp_variable", nil)
+		icon := editor.getSvg("lsp_variable", colorOfStatement)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	case "class", "type", "struct":
-		icon := editor.getSvg("lsp_class", nil)
+		icon := editor.getSvg("lsp_class", colorOfType)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	case "const", "module", "keyword", "package":
-		icon := editor.getSvg("lsp_"+kindText, nil)
+		icon := editor.getSvg("lsp_"+lowerKindText, colorOfKeyword)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	default:
-		kind, err := detectVimCompleteMode()
+		completeMode, err := detectVimCompleteMode()
 		if err == nil {
-			p.kind = kind
+			p.completeMode = completeMode
 		}
-		switch p.kind {
+		switch p.completeMode {
 		case "keyword",
 			"whole_line",
 			"files",
@@ -414,7 +458,7 @@ func (p *PopupItem) setKind(kindText string, selected bool) {
 			"path_omni",
 			"path_spell",
 			"path_eval":
-			icon := editor.getSvg("vim_"+p.kind, nil)
+			icon := editor.getSvg("vim_"+p.completeMode, nil)
 			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 		default:
 			icon := editor.getSvg("vim_unknown", nil)
@@ -428,10 +472,10 @@ func (p *PopupItem) hide() {
 		return
 	}
 	p.hidden = true
-	p.kindLabel.Hide()
 	p.kindIcon.Hide()
+	p.wordLabel.Hide()
 	p.menuLabel.Hide()
-	p.p.detailLabel.Hide()
+	p.infoLabel.Hide()
 }
 
 func (p *PopupItem) show() {
@@ -439,7 +483,8 @@ func (p *PopupItem) show() {
 		return
 	}
 	p.hidden = false
-	p.kindLabel.Show()
 	p.kindIcon.Show()
+	p.wordLabel.Show()
 	p.menuLabel.Show()
+	p.infoLabel.Show()
 }

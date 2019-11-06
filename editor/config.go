@@ -70,7 +70,10 @@ import (
 // [tabline]
 // visible = true
 //
-//
+// [Popupmenu]
+// showSetail = false
+// total = 20
+// 
 // [lint]
 // visible = true
 //
@@ -109,6 +112,7 @@ type gonvimConfig struct {
 	Statusline   statusLineConfig
 	Tabline      tabLineConfig
 	Lint         lintConfig
+	Popupmenu    popupMenuConfig
 	ScrollBar    scrollBarConfig
 	ActivityBar  activityBarConfig
 	MiniMap      miniMapConfig
@@ -166,6 +170,14 @@ type statusLineConfig struct {
 
 type tabLineConfig struct {
 	Visible bool
+}
+
+type popupMenuConfig struct {
+	ShowDetail bool
+	Total  int
+	MenuWidth   int
+	InfoWidth   int
+	DetailWidth   int
 }
 
 type lintConfig struct {
@@ -315,6 +327,12 @@ func (c *gonvimConfig) init() {
 	c.Tabline.Visible = true
 
 	c.Lint.Visible = true
+
+	c.Popupmenu.ShowDetail = false
+	c.Popupmenu.Total = 20
+	c.Popupmenu.MenuWidth = 100
+	c.Popupmenu.InfoWidth = 200
+	c.Popupmenu.DetailWidth = 400
 
 	// c.ActivityBar.Visible = true
 
