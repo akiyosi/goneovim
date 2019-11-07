@@ -74,14 +74,14 @@ func initPopupmenuNew() *PopupMenu {
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetLayout(layout)
-	widget.SetContentsMargins(1, 1, 1, 1)
+	widget.SetContentsMargins(editor.iconSize/5, 0, 0, editor.iconSize/5)
 	widget.SetMaximumSize2(editor.width, editor.height)
 
 	margin := editor.config.Editor.Linespace/2 + 2
 
 	itemLayout := widgets.NewQGridLayout2()
 	itemLayout.SetSpacing(0)
-	itemLayout.SetContentsMargins(0, editor.iconSize/5, 0, 0)
+	itemLayout.SetContentsMargins(0, editor.iconSize/5, 0, editor.iconSize/5)
 
 	scrollCol := widgets.NewQWidget(nil, 0)
 	scrollCol.SetContentsMargins(0, 0, 0, 0)
@@ -89,13 +89,14 @@ func initPopupmenuNew() *PopupMenu {
 	scrollBar := widgets.NewQWidget(scrollCol, 0)
 	scrollBar.SetFixedWidth(5)
 
-	detailLabel := widgets.NewQLabel(nil, 0)
+	detailLabel := widgets.NewQLabel(widget, 0)
 	detailLabel.SetContentsMargins(margin, margin, margin, margin)
+	detailLabel.SetObjectName("detailText")
 	detailLabel.SetWordWrap(true)
 
 	layout.AddLayout(itemLayout, 0)
-	layout.AddWidget(scrollCol, 0, 0)
 	layout.AddWidget(detailLabel, 0, core.Qt__AlignmentFlag(core.Qt__AlignTop|core.Qt__AlignLeft))
+	layout.AddWidget(scrollCol, 0, 0)
 
 	max := editor.config.Popupmenu.Total
 
@@ -120,15 +121,15 @@ func initPopupmenuNew() *PopupMenu {
 
 		word := widgets.NewQLabel(widget, 0)
 		word.SetContentsMargins(1, margin, margin, margin)
+		word.SetObjectName("wordlabel")
 
 		menu := widgets.NewQLabel(widget, 0)
 		menu.SetContentsMargins(margin, margin, margin, margin)
-		menu.SetObjectName("menulabelpopup")
 
 		info := widgets.NewQLabel(widget, 0)
 		info.SetContentsMargins(margin, margin, margin, margin)
 
-		itemLayout.AddWidget2(kindIconWidget, i, 0, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
+		itemLayout.AddWidget2(kindIconWidget, i, 0, 0)
 		itemLayout.AddWidget2(word, i, 1, 0)
 		itemLayout.AddWidget2(menu, i, 2, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
 		itemLayout.AddWidget2(info, i, 3, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
@@ -162,11 +163,26 @@ func (p *PopupMenu) updateFont(font *Font) {
 
 func (p *PopupMenu) setColor() {
 	fg := editor.colors.widgetFg.String()
+	detail := warpColor(editor.colors.widgetFg, 10).String()
 	inactiveFg := editor.colors.inactiveFg.String()
 	bg := editor.colors.widgetBg
 	transparent := transparent()
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
-	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #menulabelpopup { color: %s; }", bg.R, bg.G, bg.B, transparent, fg, inactiveFg))
+	p.widget.SetStyleSheet(
+			fmt.Sprintf(`
+			* { background-color: rgba(%d, %d, %d, %f); color: %s; } 
+			.QLabel { background-color: rgba(0, 0, 0, 0.0); color: %s; }
+			#wordlabel { color: %s; }
+			`,
+			bg.R, bg.G, bg.B, transparent, fg, inactiveFg, fg,
+		),
+	)
+	p.detailLabel.SetStyleSheet(
+		fmt.Sprintf(
+			"* { background-color: rgba(0, 0, 0, 0.0); color: %s; }",
+			detail,
+		),
+	)
 }
 
 func (p *PopupMenu) setPumblend(arg interface{}) {
@@ -191,10 +207,25 @@ func (p *PopupMenu) setPumblend(arg interface{}) {
 	}
 
 	fg := editor.colors.widgetFg.String()
+	detail := warpColor(editor.colors.widgetFg, 10).String()
 	inactiveFg := editor.colors.inactiveFg.String()
 	bg := editor.colors.widgetBg
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
-	p.widget.SetStyleSheet(fmt.Sprintf("* {background-color: rgba(%d, %d, %d, %f); color: %s;} #menulabelpopup { color: %s; }", bg.R, bg.G, bg.B, alpha, fg, inactiveFg))
+	p.widget.SetStyleSheet(
+			fmt.Sprintf(`
+			* { background-color: rgba(%d, %d, %d, %f); color: %s; } 
+			.QLabel { background-color: rgba(0, 0, 0, 0.0); color: %s; }
+			#wordlabel { color: %s; }
+			`,
+			bg.R, bg.G, bg.B, alpha, fg, inactiveFg, fg,
+		),
+	)
+	p.detailLabel.SetStyleSheet(
+		fmt.Sprintf(
+			"* { background-color: rgba(0, 0, 0, 0.0); color: %s; }",
+			detail,
+		),
+	)
 }
 
 func (p *PopupMenu) showItems(args []interface{}) {
@@ -270,7 +301,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		y += win.pos[1] * p.ws.font.lineHeight
 	}
 
-	p.widget.SetFixedHeight(itemnum * p.ws.font.lineHeight)
+	p.widget.SetFixedHeight(itemnum * (p.ws.font.lineHeight + editor.config.Editor.Linespace + 2) + 2 + editor.iconSize*2/5)
 	p.widget.Move2(x, y)
 	p.hide()
 	p.show()
@@ -363,6 +394,7 @@ func (p *PopupItem) updateContent() {
 			p.detailText = ""
 		}
 	}
+	p.kindIconWidget.AdjustSize()
 	p.wordLabel.AdjustSize()
 	// p.menuLabel.AdjustSize()
 	// p.infoLabel.AdjustSize()
