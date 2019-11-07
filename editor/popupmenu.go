@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"math"
 	"errors"
 	"fmt"
 	"strconv"
@@ -76,6 +77,8 @@ func initPopupmenuNew() *PopupMenu {
 	widget.SetContentsMargins(1, 1, 1, 1)
 	widget.SetMaximumSize2(editor.width, editor.height)
 
+	margin := editor.config.Editor.Linespace/2 + 2
+
 	itemLayout := widgets.NewQGridLayout2()
 	itemLayout.SetSpacing(0)
 	itemLayout.SetContentsMargins(0, editor.iconSize/5, 0, 0)
@@ -87,6 +90,7 @@ func initPopupmenuNew() *PopupMenu {
 	scrollBar.SetFixedWidth(5)
 
 	detailLabel := widgets.NewQLabel(nil, 0)
+	detailLabel.SetContentsMargins(margin, margin, margin, margin)
 	detailLabel.SetWordWrap(true)
 
 	layout.AddLayout(itemLayout, 0)
@@ -104,7 +108,6 @@ func initPopupmenuNew() *PopupMenu {
 		scrollCol:   scrollCol,
 	}
 
-	margin := editor.config.Editor.Linespace/2 + 2
 	var popupItems []*PopupItem
 	for i := 0; i < max; i++ {
 		kindIconWidget := widgets.NewQWidget(nil, 0)
@@ -124,12 +127,11 @@ func initPopupmenuNew() *PopupMenu {
 
 		info := widgets.NewQLabel(widget, 0)
 		info.SetContentsMargins(margin, margin, margin, margin)
-		info.SetObjectName("menulabelpopup")
 
-		itemLayout.AddWidget2(kindIconWidget, i, 0, 0)
-		itemLayout.AddWidget2(word, i, 1, 0)
-		itemLayout.AddWidget2(menu, i, 2, 0)
-		itemLayout.AddWidget2(info, i, 3, 0)
+		itemLayout.AddWidget2(kindIconWidget, i, 0, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
+		itemLayout.AddWidget2(word, i, 1, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
+		itemLayout.AddWidget2(menu, i, 2, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
+		itemLayout.AddWidget2(info, i, 3, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
 
 		popupItem := &PopupItem{
 			p:          popup,
@@ -341,10 +343,19 @@ func (p *PopupItem) updateContent() {
 		p.menu = p.menuRequest
 		p.info = p.infoRequest
 		p.wordLabel.SetText(p.word)
-		p.menuLabel.SetText(p.menu)
-		p.infoLabel.SetText(strings.Split(p.infoRequest, "\n")[0])
 
-		p.detailText = p.infoRequest
+		menuLines := strings.Split(p.menuRequest, "\n")
+		infoLines := strings.Split(p.infoRequest, "\n")
+		p.menuLabel.SetText(menuLines[0])
+		p.infoLabel.SetText(infoLines[0])
+
+		menuLabelTextLen := math.Ceil(p.p.ws.font.fontMetrics.HorizontalAdvance(menuLines[0], -1))
+
+		if len(menuLines) > 1 || len(infoLines) > 1 || menuLabelTextLen > float64(editor.config.Popupmenu.MenuWidth) {
+			p.detailText = p.menuRequest + "\n" + p.infoRequest
+		} else {
+			p.detailText = ""
+		}
 	}
 	// p.wordLabel.AdjustSize()
 	// p.menuLabel.AdjustSize()
