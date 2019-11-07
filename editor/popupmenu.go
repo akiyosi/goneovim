@@ -1,9 +1,9 @@
 package editor
 
 import (
-	"math"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -18,7 +18,7 @@ import (
 type PopupMenu struct {
 	ws              *Workspace
 	widget          *widgets.QWidget
-	itemLayout          *widgets.QGridLayout
+	itemLayout      *widgets.QGridLayout
 	items           []*PopupItem
 	rawItems        []interface{}
 	total           int
@@ -47,7 +47,7 @@ type PopupItem struct {
 
 	kind           string
 	kindIconWidget *widgets.QWidget
-	kindIcon   *svg.QSvgWidget
+	kindIcon       *svg.QSvgWidget
 
 	menuLabel   *widgets.QLabel
 	menu        string
@@ -95,13 +95,13 @@ func initPopupmenuNew() *PopupMenu {
 
 	layout.AddLayout(itemLayout, 0)
 	layout.AddWidget(scrollCol, 0, 0)
-	layout.AddWidget(detailLabel, 0, core.Qt__AlignmentFlag(core.Qt__AlignTop | core.Qt__AlignLeft))
+	layout.AddWidget(detailLabel, 0, core.Qt__AlignmentFlag(core.Qt__AlignTop|core.Qt__AlignLeft))
 
 	max := editor.config.Popupmenu.Total
 
 	popup := &PopupMenu{
 		widget:      widget,
-		itemLayout:      itemLayout,
+		itemLayout:  itemLayout,
 		detailLabel: detailLabel,
 		total:       max,
 		scrollBar:   scrollBar,
@@ -129,17 +129,17 @@ func initPopupmenuNew() *PopupMenu {
 		info.SetContentsMargins(margin, margin, margin, margin)
 
 		itemLayout.AddWidget2(kindIconWidget, i, 0, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
-		itemLayout.AddWidget2(word, i, 1, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
+		itemLayout.AddWidget2(word, i, 1, 0)
 		itemLayout.AddWidget2(menu, i, 2, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
 		itemLayout.AddWidget2(info, i, 3, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
 
 		popupItem := &PopupItem{
-			p:          popup,
+			p:              popup,
 			kindIconWidget: kindIconWidget,
-			kindIcon:   kindIcon,
-			wordLabel:  word,
-			menuLabel:  menu,
-			infoLabel:  info,
+			kindIcon:       kindIcon,
+			wordLabel:      word,
+			menuLabel:      menu,
+			infoLabel:      info,
 		}
 		popupItems = append(popupItems, popupItem)
 	}
@@ -214,7 +214,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	popupItems := p.items
 	itemHeight := p.ws.font.lineHeight
 
-	// Calc the maximum completion items 
+	// Calc the maximum completion items
 	//   where,
 	//     `row` is the anchor position, where the first character of the completed word will be
 	//     `p.ws.screen.height` is the entire screen height
@@ -226,6 +226,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.showTotal = p.total
 	}
 
+	itemnum := 0
 	for i := 0; i < p.total; i++ {
 		popupItem := popupItems[i]
 		if i >= len(items) || i >= total {
@@ -236,6 +237,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		item := items[i].([]interface{})
 		popupItem.setItem(item, selected == i)
 		popupItem.show()
+		itemnum++
 	}
 
 	if len(items) > p.showTotal {
@@ -259,12 +261,16 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	if x+popupWidth >= p.ws.screen.widget.Width() {
 		x = p.ws.screen.widget.Width() - popupWidth - 5
 	}
-	win := p.ws.screen.windows[gridid]
+	win, ok := p.ws.screen.windows[gridid]
+	if !ok {
+		return
+	}
 	if win != nil {
 		x += int(float64(win.pos[0]) * p.ws.font.truewidth)
 		y += win.pos[1] * p.ws.font.lineHeight
 	}
 
+	p.widget.SetFixedHeight(itemnum * p.ws.font.lineHeight)
 	p.widget.Move2(x, y)
 	p.hide()
 	p.show()
@@ -357,7 +363,7 @@ func (p *PopupItem) updateContent() {
 			p.detailText = ""
 		}
 	}
-	// p.wordLabel.AdjustSize()
+	p.wordLabel.AdjustSize()
 	// p.menuLabel.AdjustSize()
 	// p.infoLabel.AdjustSize()
 	p.menuLabel.SetFixedWidth(editor.config.Popupmenu.MenuWidth)
@@ -365,7 +371,7 @@ func (p *PopupItem) updateContent() {
 
 	detailWidth := 0
 	if editor.config.Popupmenu.ShowDetail {
-		 detailWidth = editor.config.Popupmenu.DetailWidth
+		detailWidth = editor.config.Popupmenu.DetailWidth
 	}
 	p.p.widget.SetFixedWidth(
 		editor.iconSize + p.wordLabel.Width() + p.menuLabel.Width() + p.infoLabel.Width() + detailWidth,
