@@ -33,6 +33,7 @@ type PopupMenu struct {
 	detailLabel     *widgets.QLabel
 	x               int
 	y               int
+	hideItemIdx     [2]bool
 }
 
 // PopupItem is
@@ -257,7 +258,8 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.showTotal = p.total
 	}
 
-	itemnum := 0
+	itemNum := 0
+	maxItemLen := 0
 	for i := 0; i < p.total; i++ {
 		popupItem := popupItems[i]
 		if i >= len(items) || i >= total {
@@ -266,9 +268,22 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		}
 
 		item := items[i].([]interface{})
+		itemLen := p.detectItemLen(item)
+		if itemLen > maxItemLen {
+			maxItemLen = itemLen
+		}
 		popupItem.setItem(item, selected == i)
 		popupItem.show()
-		itemnum++
+		itemNum++
+	}
+
+	switch maxItemLen {
+	case 3:
+		p.hideItemIdx = [2]bool{false, true}
+	case 4:
+		p.hideItemIdx = [2]bool{false, false}
+	default:
+		p.hideItemIdx = [2]bool{true, true}
 	}
 
 	if len(items) > p.showTotal {
@@ -301,15 +316,76 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		y += win.pos[1] * p.ws.font.lineHeight
 	}
 
-	p.widget.SetFixedHeight(itemnum * (p.ws.font.lineHeight + editor.config.Editor.Linespace + 2) + 2 + editor.iconSize*2/5)
+	p.widget.SetFixedHeight(itemNum * (p.ws.font.lineHeight + editor.config.Editor.Linespace + 2) + 2 + editor.iconSize*2/5)
 	p.widget.Move2(x, y)
 	p.hide()
 	p.show()
 }
 
+func (p *PopupMenu) detectItemLen(item []interface{}) int {
+	itemlen := 0
+	for _, i := range item {
+		if i.(string) == "" {
+			continue
+		}
+		itemlen++
+	}
+	return itemlen
+}
+
 func (p *PopupMenu) show() {
 	p.widget.Raise()
 	p.widget.Show()
+
+	maxWordLabelLen := 0
+	isMenuHidden := p.hideItemIdx[0]
+	isInfoHidden := p.hideItemIdx[1]
+	for _, item := range p.items {
+		if item.hidden {
+			continue
+		}
+		if isMenuHidden {
+			item.menuLabel.Hide()
+		} else {
+			item.menuLabel.Show()
+		}
+		if isInfoHidden {
+			item.infoLabel.Hide()
+		} else {
+			item.infoLabel.Show()
+		}
+
+		wordLabelLen := int(math.Ceil(p.ws.font.fontMetrics.HorizontalAdvance(item.wordLabel.Text(), -1)))
+		if wordLabelLen > maxWordLabelLen {
+			maxWordLabelLen = wordLabelLen
+		}
+	}
+	if isMenuHidden && isInfoHidden {
+		p.detailLabel.Hide()
+	} else {
+		p.detailLabel.Show()
+	}
+
+	menuWidth := 0
+	if !isMenuHidden {
+		menuWidth = editor.config.Popupmenu.MenuWidth
+	}
+
+	infoWidth := 0
+	if !isInfoHidden {
+		infoWidth = editor.config.Popupmenu.InfoWidth
+	}
+
+	detailWidth := 0
+	if editor.config.Popupmenu.ShowDetail && !isMenuHidden && !isInfoHidden {
+		detailWidth = editor.config.Popupmenu.DetailWidth
+	}
+
+	margin := editor.config.Editor.Linespace/2 + 2
+
+	p.widget.SetFixedWidth(
+		editor.iconSize*2 + maxWordLabelLen + menuWidth + infoWidth + detailWidth + 5 + margin*4 + editor.iconSize/5*4,
+	)
 }
 
 func (p *PopupMenu) hide() {
@@ -330,14 +406,18 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 		p.scroll(-1)
 	}
 
+	isMenuHidden := p.hideItemIdx[0]
+	isInfoHidden := p.hideItemIdx[1]
 	for i := 0; i < p.showTotal; i++ {
 		popupItem := p.items[i]
 		isSelected := selected == i+p.top
 		popupItem.setSelected(isSelected)
 		if isSelected {
 			if editor.config.Popupmenu.ShowDetail {
-				popupItem.p.detailLabel.SetText(popupItem.detailText)
-				popupItem.p.detailLabel.Show()
+				if !(isMenuHidden && isInfoHidden) {
+					popupItem.p.detailLabel.SetText(popupItem.detailText)
+					popupItem.p.detailLabel.Show()
+				}
 			} else {
 				popupItem.p.detailLabel.Hide()
 			}
@@ -349,11 +429,26 @@ func (p *PopupMenu) scroll(n int) {
 	p.top += n
 	items := p.rawItems
 	popupItems := p.items
+	maxItemLen := 0
 	for i := 0; i < p.showTotal; i++ {
 		popupItem := popupItems[i]
 		item := items[i+p.top].([]interface{})
+		itemLen := p.detectItemLen(item)
+		if itemLen > maxItemLen {
+			maxItemLen = itemLen
+		}
 		popupItem.setItem(item, false)
 	}
+
+	switch maxItemLen {
+	case 3:
+		p.hideItemIdx = [2]bool{false, true}
+	case 4:
+		p.hideItemIdx = [2]bool{false, false}
+	default:
+		p.hideItemIdx = [2]bool{true, true}
+	}
+
 	p.scrollBarPos = int((float64(p.top) / float64(len(items))) * float64(p.widget.Height()))
 	p.scrollBar.Move2(0, p.scrollBarPos)
 	p.hide()
@@ -400,14 +495,6 @@ func (p *PopupItem) updateContent() {
 	// p.infoLabel.AdjustSize()
 	p.menuLabel.SetFixedWidth(editor.config.Popupmenu.MenuWidth)
 	p.infoLabel.SetFixedWidth(editor.config.Popupmenu.InfoWidth)
-
-	detailWidth := 0
-	if editor.config.Popupmenu.ShowDetail {
-		detailWidth = editor.config.Popupmenu.DetailWidth
-	}
-	p.p.widget.SetFixedWidth(
-		editor.iconSize + p.wordLabel.Width() + p.menuLabel.Width() + p.infoLabel.Width() + detailWidth,
-	)
 }
 
 func (p *PopupItem) setSelected(selected bool) {
