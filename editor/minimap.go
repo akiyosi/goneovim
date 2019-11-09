@@ -194,12 +194,16 @@ func (m *MiniMap) setColor() {
 }
 
 func (m *MiniMap) toggle() {
+	win, ok := m.windows[1]
+	if !ok {
+		return
+	}
 	if m.visible {
 		m.visible = false
 	} else {
 		m.visible = true
 	}
-	m.curRegion.SetParent(m.windows[1].widget)
+	m.curRegion.SetParent(win.widget)
 	m.bufUpdate()
 }
 

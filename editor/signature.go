@@ -113,11 +113,12 @@ func (s *Signature) move() {
 	i := strings.Index(text, "(")
 	x := int(float64(col) * s.ws.font.truewidth)
 	y := row*s.ws.font.lineHeight - s.height + s.ws.tabline.widget.Height()
-	win := s.ws.screen.windows[s.ws.cursor.gridid]
-	if win != nil {
-		x += int(float64(win.pos[0]) * s.ws.font.truewidth)
-		y += win.pos[1] * s.ws.font.lineHeight
+	win, ok := s.ws.screen.windows[s.ws.cursor.gridid]
+	if !ok {
+		return
 	}
+	x += int(float64(win.pos[0]) * s.ws.font.truewidth)
+	y += win.pos[1] * s.ws.font.lineHeight
 	if i > -1 {
 		x -= int(s.ws.font.defaultFontMetrics.HorizontalAdvance(string(text[:i]), -1))
 	}

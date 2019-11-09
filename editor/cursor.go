@@ -83,8 +83,8 @@ func (c *Cursor) setBlink(wait, on, off int) {
 }
 
 func (c *Cursor) move() {
-	win := c.ws.screen.windows[c.gridid]
-	if win == nil {
+	win, ok := c.ws.screen.windows[c.gridid]
+	if !ok {
 		return
 	}
 	font := win.getFont()
@@ -139,8 +139,8 @@ func (c *Cursor) updateCursorShape() {
 		cellPercentage = util.ReflectToInt(cellPercentageITF)
 	}
 
-	win := c.ws.screen.windows[c.gridid]
-	if win == nil {
+	win, ok := c.ws.screen.windows[c.gridid]
+	if !ok {
 		return
 	}
 	var font *Font
@@ -234,8 +234,8 @@ func (c *Cursor) update() {
 	if c.ws.palette.widget.IsVisible() {
 		return
 	}
-	win := c.ws.screen.windows[c.gridid]
-	if win == nil {
+	win, ok := c.ws.screen.windows[c.gridid]
+	if !ok {
 		return
 	}
 	font := win.getFont()
@@ -257,9 +257,11 @@ func (c *Cursor) paint() {
 		return
 	}
 
-	win := c.ws.screen.windows[c.gridid]
-	if win == nil ||
-		win.content == nil {
+	win, ok := c.ws.screen.windows[c.gridid]
+	if !ok {
+		return
+	}
+	if win.content == nil {
 		return
 	}
 
