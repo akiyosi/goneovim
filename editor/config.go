@@ -332,7 +332,7 @@ func (c *gonvimConfig) init() {
 	c.Popupmenu.Total = 20
 	c.Popupmenu.MenuWidth = 400
 	c.Popupmenu.InfoWidth = 1
-	c.Popupmenu.DetailWidth = 400
+	c.Popupmenu.DetailWidth = 250
 
 	// c.ActivityBar.Visible = true
 
