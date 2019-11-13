@@ -745,8 +745,9 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "grid_resize":
 			s.gridResize(args)
 		case "default_colors_set":
-			args := update[1].([]interface{})
-			w.setColorsSet(args)
+			for _, u := range update[1:] {
+				w.setColorsSet(u.([]interface{}))
+			}
 		case "hl_attr_define":
 			s.setHighAttrDef(args)
 		case "hl_group_set":
@@ -904,10 +905,6 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 		w.special.B = calcColor(sp).B
 	}
 
-	// w.minimap.foreground = w.foreground
-	// w.minimap.background = w.background
-	// w.minimap.special = w.special
-
 	var isChangeFg, isChangeBg bool
 	if editor.colors.fg != nil {
 		isChangeFg = editor.colors.fg.equals(w.foreground)
@@ -915,6 +912,7 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	if editor.colors.bg != nil {
 		isChangeBg = editor.colors.bg.equals(w.background)
 	}
+
 	if !isChangeFg || !isChangeBg {
 		editor.isSetGuiColor = false
 	}
@@ -925,12 +923,22 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 			editor.isSetGuiColor = true
 		}
 	}
+
+	// Exit if there si no change in foreground / background
 	if editor.isSetGuiColor == true {
 		return
 	}
-	editor.colors.fg = newRGBA(w.foreground.R, w.foreground.G, w.foreground.B, 1)
-	editor.colors.bg = newRGBA(w.background.R, w.background.G, w.background.B, 1)
-	//w.setGuiColor(editor.colors.fg, editor.colors.bg)
+
+	editor.colors.fg = w.foreground.copy()
+	editor.colors.bg = w.background.copy()
+	// Reset highAttrDef map 0 index:
+	if w.screen.highAttrDef != nil {
+		w.screen.highAttrDef[0] = &Highlight{
+			foreground: editor.colors.fg,
+			background: editor.colors.bg,
+		}
+	}
+
 	editor.colors.update()
 	if !(w.colorscheme == "" && fg == -1 && bg == -1 && w.screenbg == "dark") {
 		editor.updateGUIColor()

@@ -35,7 +35,7 @@ func (rgba *RGBA) equals(other *RGBA) bool {
 	if other == nil {
 		return false
 	}
-	return rgba.R == other.R && rgba.G == other.G && rgba.B == other.B && rgba.A == other.A
+	return rgba.R == other.R && rgba.G == other.G && rgba.B == other.B
 }
 
 func (rgba *RGBA) String() string {
