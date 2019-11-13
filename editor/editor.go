@@ -12,6 +12,7 @@ import (
 	frameless "github.com/akiyosi/goqtframelesswindow"
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/jessevdk/go-flags"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -62,6 +63,11 @@ type Notify struct {
 	buttons []*NotifyButton
 }
 
+type Option struct {
+	Server string `long:"server" description:"Remote session address"`
+	Nvim   string `long:"nvim" description:"excutable nvim path to run"`
+}
+
 // Editor is the editor
 type Editor struct {
 	signal  *editorSignal
@@ -69,6 +75,8 @@ type Editor struct {
 	app     *widgets.QApplication
 
 	homeDir string
+	args    []string
+	opts    Option
 
 	notifyStartPos    *core.QPoint
 	notificationWidth int
@@ -138,6 +146,11 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
+	opts, args, err := parseOption() ; if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	putEnv()
 
 	home, err := homedir.Dir()
@@ -153,6 +166,8 @@ func InitEditor() {
 		guiInit: make(chan bool, 1),
 		config:  newGonvimConfig(home),
 		homeDir: home,
+		args:    args,
+		opts:    opts,
 	}
 	e := editor
 
@@ -220,6 +235,18 @@ func (e *Editor) newSplitter() {
 	if editor.config.SideBar.Visible {
 		e.wsSide.show()
 	}
+}
+
+func parseOption() (Option, []string, error) {
+	var opts Option
+	parser := flags.NewParser(&opts, flags.HelpFlag | flags.PassDoubleDash)
+	parser.Usage = "[OPTIONS] [-- arguments which passes to nvim]"
+	args, err := parser.ParseArgs(os.Args[1:])
+	if err != nil {
+		return opts, []string{""}, err
+	}
+
+	return opts, args, nil
 }
 
 func (e *Editor) initWorkspaces() {

@@ -3,7 +3,6 @@ package editor
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -15,7 +14,6 @@ import (
 	"github.com/akiyosi/goneovim/fuzzy"
 	"github.com/akiyosi/goneovim/util"
 	shortpath "github.com/akiyosi/short_path"
-	"github.com/jessevdk/go-flags"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -277,14 +275,10 @@ func (w *Workspace) show() {
 }
 
 func (w *Workspace) startNvim(path string) error {
-	var opts struct {
-		ServerPtr string `long:"server" description:"Remote session address"`
-	}
-	args, _ := flags.ParseArgs(&opts, os.Args[1:])
 	var neovim *nvim.Nvim
 	var err error
-	if opts.ServerPtr != "" {
-		neovim, err = nvim.Dial(opts.ServerPtr)
+	if editor.opts.Server != "" {
+		neovim, err = nvim.Dial(editor.opts.Server)
 		w.uiRemoteAttached = true
 	} else {
 		neovim, err = nvim.NewChildProcess(
@@ -293,7 +287,7 @@ func (w *Workspace) startNvim(path string) error {
 					"--cmd",
 					"let g:gonvim_running=1",
 					"--embed",
-				}, args...)...,
+				}, editor.args...)...,
 			))
 	}
 	if err != nil {
