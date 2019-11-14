@@ -354,10 +354,6 @@ func (w *Workspace) configure() {
 	} else {
 		w.drawLint = false
 	}
-
-	if editor.config.Editor.StartFullscreen {
-		editor.window.ShowFullScreen()
-	}
 }
 
 func (w *Workspace) attachUI(path string) error {

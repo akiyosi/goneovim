@@ -485,6 +485,11 @@ func (e *Editor) setWindowOptions() {
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.SetAcceptDrops(true)
+	if e.config.Editor.StartFullscreen {
+		e.window.ShowFullScreen()
+	} else if e.config.Editor.StartMaximizedWindow {
+		e.window.WindowMaximize()
+	}
 }
 
 func isFileExist(filename string) bool {

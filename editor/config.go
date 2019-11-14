@@ -145,6 +145,7 @@ type editorConfig struct {
 	DisableImeInNormal   bool
 	GinitVim             string
 	StartFullscreen      bool
+	StartMaximizedWindow bool
 	Transparent          float64
 	DrawBorder           bool
 	SkipGlobalId         bool
