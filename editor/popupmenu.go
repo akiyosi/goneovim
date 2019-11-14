@@ -46,8 +46,8 @@ type PopupItem struct {
 	word        string
 	wordRequest string
 
-	kind           string
-	kindIcon       *svg.QSvgWidget
+	kind     string
+	kindIcon *svg.QSvgWidget
 
 	menuLabel   *widgets.QLabel
 	menu        string
@@ -131,11 +131,11 @@ func initPopupmenuNew() *PopupMenu {
 		itemLayout.AddWidget2(info, i, 3, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
 
 		popupItem := &PopupItem{
-			p:              popup,
-			kindIcon:       kindIcon,
-			wordLabel:      word,
-			menuLabel:      menu,
-			infoLabel:      info,
+			p:         popup,
+			kindIcon:  kindIcon,
+			wordLabel: word,
+			menuLabel: menu,
+			infoLabel: info,
 		}
 		popupItems = append(popupItems, popupItem)
 	}
@@ -164,7 +164,7 @@ func (p *PopupMenu) setColor() {
 	transparent := transparent()
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
 	p.widget.SetStyleSheet(
-			fmt.Sprintf(`
+		fmt.Sprintf(`
 			* { background-color: rgba(%d, %d, %d, %f); color: %s; } 
 			.QLabel { background-color: rgba(0, 0, 0, 0.0); color: %s; }
 			#wordlabel { color: %s; }
@@ -207,7 +207,7 @@ func (p *PopupMenu) setPumblend(arg interface{}) {
 	bg := editor.colors.widgetBg
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: %s;", inactiveFg))
 	p.widget.SetStyleSheet(
-			fmt.Sprintf(`
+		fmt.Sprintf(`
 			* { background-color: rgba(%d, %d, %d, %f); color: %s; } 
 			.QLabel { background-color: rgba(0, 0, 0, 0.0); color: %s; }
 			#wordlabel { color: %s; }
@@ -310,7 +310,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		y += win.pos[1] * p.ws.font.lineHeight
 	}
 
-	p.widget.SetFixedHeight(itemNum * (p.ws.font.lineHeight + editor.config.Editor.Linespace + 2) + 2 + editor.iconSize*2/5)
+	p.widget.SetFixedHeight(itemNum*(p.ws.font.lineHeight+editor.config.Editor.Linespace+2) + 2 + editor.iconSize*2/5)
 	p.widget.Move2(x, y)
 	p.hide()
 	p.show()

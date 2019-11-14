@@ -94,6 +94,7 @@ type Window struct {
 	// glyphMap         map[HlChar]gui.QImage
 
 	font         *Font
+	background   *RGBA
 	width        float64
 	height       int
 	localWindows *[4]localWindow
@@ -1776,6 +1777,11 @@ func (w *Window) update() {
 func (s *Screen) update() {
 	for _, win := range s.windows {
 		if win != nil {
+			// Fill entire background if background color changed
+			if !win.background.equals(s.ws.background) {
+				win.background = s.ws.background.copy()
+				win.fill()
+			}
 			win.update()
 		}
 	}
@@ -1962,7 +1968,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			if width < 0 {
 				width = 0
 			}
-			if !idDrawDefaultBg && lastBg.equals(w.s.ws.background) {
+			if !idDrawDefaultBg && lastBg.equals(w.background) {
 				width = 0
 			}
 			if width > 0 {
@@ -2183,9 +2189,7 @@ func (w *Window) newTextCache(p *gui.QPainter, text string, highlight Highlight,
 			0,
 			width,
 			float64(w.s.ws.font.lineHeight),
-		),
-		text,
-		gui.NewQTextOption2(core.Qt__AlignVCenter),
+		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
 
 	if w.font != nil {
@@ -2785,6 +2789,7 @@ func newWindow() *Window {
 	w := &Window{
 		widget:       widget,
 		scrollRegion: []int{0, 0, 0, 0},
+		background:   editor.colors.bg,
 	}
 
 	widget.ConnectPaintEvent(w.paint)
@@ -2871,10 +2876,10 @@ func (w *Window) fill() {
 	if editor.config.Editor.DrawBorder {
 		return
 	}
-	if w.s.ws.background != nil {
+	if w.background != nil {
 		w.widget.SetAutoFillBackground(true)
 		p := gui.NewQPalette()
-		p.SetColor2(gui.QPalette__Background, w.s.ws.background.QColor())
+		p.SetColor2(gui.QPalette__Background, w.background.QColor())
 		w.widget.SetPalette(p)
 	}
 }

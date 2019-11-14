@@ -73,7 +73,7 @@ import (
 // [Popupmenu]
 // showSetail = false
 // total = 20
-// 
+//
 // [lint]
 // visible = true
 //
@@ -173,11 +173,11 @@ type tabLineConfig struct {
 }
 
 type popupMenuConfig struct {
-	ShowDetail bool
-	Total  int
+	ShowDetail  bool
+	Total       int
 	MenuWidth   int
 	InfoWidth   int
-	DetailWidth   int
+	DetailWidth int
 }
 
 type lintConfig struct {
