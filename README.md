@@ -55,19 +55,22 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
 
 ## ToDo
+* Add test
+
 * Improved startup speed (especially on the Windows platform)
 
 * Improve IME feature
 
 In the current implementation, it is not possible to highlight the keyword being converted in the input method input. At the moment I have no idea about how to improve this
 
-* Support GPU rendering
+* Keyword filtering feature in external file explorer
 
-* Smooth scrolling
+* Support GPU rendering
 
 * Support neovim ui `ext_statusline`
 
-* Keyword filtering feature in external file explorer
+* Smooth scrolling
+
 
 
 ## Development
