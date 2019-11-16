@@ -149,10 +149,15 @@ func (f *Filer) redraw() {
 	// files := ""
 	// f.nvim.Eval(command, &files)
 	files, _ := f.nvim.CommandOutput(`lua require'lfs' path = lfs.currentdir() for file in lfs.dir(path) do if lfs.attributes(file,"mode") == "directory" then print(file .. "/") else print(file) end end`)
+	if files == "" {
+		return
+	}
 
 	var items []map[string]string
 	for _, file := range strings.Split(files, "\n") {
-		// file = file[pwdlen:]
+		if file == "" {
+			continue
+		}
 		// Skip './' and '../'
 		if file == "./" || file == "../" {
 			continue
@@ -166,17 +171,6 @@ func (f *Filer) redraw() {
 		}
 
 		// If it is directory
-		// if runtime.GOOS == "windows" {
-		// 	for _, dir := range directories {
-		// 		if file == dir {
-		// 			filetype = string("/")
-		// 		}
-		// 	}
-		// } else {
-		// 	if file[len(file)-1] == '/' {
-		// 		filetype = string("/")
-		// 	}
-		// }
 		if file[len(file)-1] == '/' {
 			filetype = string("/")
 		}
