@@ -32,7 +32,7 @@ func RegisterPlugin(nvim *nvim.Nvim) {
 	})
 	finderFunction := `
 	aug GonvimAuFiler | au! | aug END
-        au GonvimAuFiler BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "filer_update")
+        au GonvimAuFiler DirChanged * call rpcnotify(0, "Gui", "filer_update")
 	command! GonvimFilerOpen call Gonvim_filer_run()
 	function! Gonvim_filer_run()
 	    call rpcnotify(0, "GonvimFiler", "open")
@@ -107,30 +107,31 @@ func (f *Filer) open() {
 func (f *Filer) redraw() {
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_clear")
 	files, err := f.nvim.CommandOutput(`lua 
-local uv = vim and vim.loop or require 'luv'
--- Ref: https://gitter.im/neovim/neovim?at=5dcf9e5b5eb2e813db330dc8
--- TODO: There may be an architecture that can handle go implementation and lua processing more efficiently.
--- TODO: replace a way to get cwd path at the neovim v0.5.0
---       local path = vim.fn.expand(vim.fn.getcwd())
-local path = vim.api.nvim_eval('expand(getcwd())')
-local h = uv.fs_scandir(path)
-while true do
-    local name, type = uv.fs_scandir_next(h)
-    if not name then
-        break
-    end
-    if type == "directory" then
-        print(name .. "/")
-    else
-        print(name)
-    end
-end
+		local uv = vim and vim.loop or require 'luv'
+		-- Ref: https://gitter.im/neovim/neovim?at=5dcf9e5b5eb2e813db330dc8
+		-- TODO: There may be an architecture that can handle go implementation and lua processing more efficiently.
+		-- TODO: replace a way to get cwd path at the neovim v0.5.0
+		--       local path = vim.fn.expand(vim.fn.getcwd())
+		local path = vim.api.nvim_eval('expand(getcwd())')
+		local h = uv.fs_scandir(path)
+		while true do
+		    local name, type = uv.fs_scandir_next(h)
+		    if not name then
+		        break
+		    end
+		    if type == "directory" then
+		        print(name .. "/")
+		    else
+		        print(name)
+		    end
+		end
 	`)
 	if err != nil {
 		return
 	}
 
 	var items []map[string]string
+	var isSelected bool
 	for _, file := range strings.Split(files, "\n") {
 		if file == "" {
 			continue
@@ -157,9 +158,13 @@ end
 		item["filename"] = file
 		item["filetype"] = filetype
 		items = append(items, item)
+
+		if !isSelected {
+			f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_select", f.selectnum)
+			isSelected = true
+		}
 	}
 	f.items = items
-	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_select", f.selectnum)
 }
 
 func (f *Filer) up() {

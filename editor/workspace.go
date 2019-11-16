@@ -1062,6 +1062,9 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "side_toggle":
 		editor.wsSide.toggle()
 	case "filer_update":
+		if !editor.wsSide.scrollarea.IsVisible() {
+			return
+		}
 		if !editor.wsSide.items[editor.active].isContentHide {
 			go w.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
 		}
@@ -1316,12 +1319,6 @@ func (side *WorkspaceSide) toggle() {
 	} else {
 		side.scrollarea.Show()
 		side.isShown = true
-		// for _, item := range side.items {
-		// 	if item.active {
-		// 		fileitems := item.Filelist.Fileitems
-		// 		fileitems[0].selectItem()
-		// 	}
-		// }
 	}
 }
 
@@ -1545,10 +1542,9 @@ func (i *WorkspaceSideItem) addItem(args []interface{}) {
 	pixmap.LoadFromData2(core.NewQByteArray2(svg, len(svg)), "SVG", core.Qt__ColorOnly)
 	icon := gui.NewQIcon2(pixmap)
 
-	i.content.AddItem2(l)
-	// i.content.SetItemWidget(l, w)
 	l.SetIcon(icon)
 	l.SetText(filename)
+	i.content.AddItem2(l)
 }
 
 func (i *WorkspaceSideItem) selectItem(args []interface{}) {
