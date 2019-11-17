@@ -131,7 +131,6 @@ func (f *Filer) redraw() {
 	}
 
 	var items []map[string]string
-	var isSelected bool
 	for _, file := range strings.Split(files, "\n") {
 		if file == "" {
 			continue
@@ -159,12 +158,10 @@ func (f *Filer) redraw() {
 		item["filetype"] = filetype
 		items = append(items, item)
 
-		if !isSelected {
-			f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_select", f.selectnum)
-			isSelected = true
-		}
 	}
 	f.items = items
+	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_resize")
+	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_select", f.selectnum)
 }
 
 func (f *Filer) up() {

@@ -1073,6 +1073,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.wsSide.items[w.getNum()].openContent()
 	case "filer_clear":
 		editor.wsSide.items[w.getNum()].clear()
+	case "filer_resize":
+		editor.wsSide.items[w.getNum()].resizeContent()
 	case "filer_item_add":
 		editor.wsSide.items[w.getNum()].addItem(updates[1:])
 	case "filer_item_select":
@@ -1412,6 +1414,8 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	content.SetFocusPolicy(core.Qt__NoFocus)
 	content.SetFrameShape(widgets.QFrame__NoFrame)
 	content.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+	content.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+	content.SetIconSize(core.NewQSize2(editor.iconSize*3/4, editor.iconSize*3/4))
 
 	labelLayout.AddWidget(openIcon, 0, 0)
 	labelLayout.AddWidget(closeIcon, 0, 0)
@@ -1569,6 +1573,15 @@ func (i *WorkspaceSideItem) addItem(args []interface{}) {
 	l.SetIcon(icon)
 	l.SetText(filename)
 	i.content.AddItem2(l)
+}
+
+func (i *WorkspaceSideItem) resizeContent() {
+	rowNum := i.content.Count()
+	if rowNum > editor.config.FileExplore.MaxDisplayItems {
+		rowNum = editor.config.FileExplore.MaxDisplayItems
+	}
+	itemHeight := i.content.RectForIndex(i.content.IndexFromItem(i.content.Item(0))).Height()
+	i.content.SetFixedHeight(itemHeight * rowNum)
 }
 
 func (i *WorkspaceSideItem) selectItem(args []interface{}) {
