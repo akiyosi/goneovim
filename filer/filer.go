@@ -161,6 +161,9 @@ func (f *Filer) redraw() {
 	}
 	f.items = items
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_resize")
+	if f.selectnum >= len(f.items) {
+		f.selectnum = len(f.items) - 1
+	}
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_select", f.selectnum)
 }
 
