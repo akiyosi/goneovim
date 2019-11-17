@@ -1062,18 +1062,23 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "side_toggle":
 		editor.wsSide.toggle()
 	case "filer_update":
+		if !editor.wsSide.scrollarea.IsVisible() {
+			return
+		}
 		if !editor.wsSide.items[editor.active].isContentHide {
 			go w.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
 		}
 	case "filer_open":
-		editor.wsSide.items[editor.active].isContentHide = false
-		editor.wsSide.items[editor.active].openContent()
+		editor.wsSide.items[w.getNum()].isContentHide = false
+		editor.wsSide.items[w.getNum()].openContent()
 	case "filer_clear":
-		editor.wsSide.items[editor.active].clear()
+		editor.wsSide.items[w.getNum()].clear()
+	case "filer_resize":
+		editor.wsSide.items[w.getNum()].resizeContent()
 	case "filer_item_add":
-		editor.wsSide.items[editor.active].addItem(updates[1:])
+		editor.wsSide.items[w.getNum()].addItem(updates[1:])
 	case "filer_item_select":
-		editor.wsSide.items[editor.active].selectItem(updates[1:])
+		editor.wsSide.items[w.getNum()].selectItem(updates[1:])
 	case "gonvim_cursormoved":
 		pos := updates[1].([]interface{})
 		ln := util.ReflectToInt(pos[1])
@@ -1316,12 +1321,6 @@ func (side *WorkspaceSide) toggle() {
 	} else {
 		side.scrollarea.Show()
 		side.isShown = true
-		// for _, item := range side.items {
-		// 	if item.active {
-		// 		fileitems := item.Filelist.Fileitems
-		// 		fileitems[0].selectItem()
-		// 	}
-		// }
 	}
 }
 
@@ -1350,6 +1349,15 @@ func (side *WorkspaceSide) hide() {
 	side.isShown = false
 }
 
+func (w *Workspace) getNum() int {
+	for i, ws := range editor.workspaces {
+		if ws == w {
+			return i
+		}
+	}
+	return 0
+}
+
 // WorkspaceSideItem is
 type WorkspaceSideItem struct {
 	mu sync.Mutex
@@ -1362,7 +1370,6 @@ type WorkspaceSideItem struct {
 
 	widget *widgets.QWidget
 	layout *widgets.QBoxLayout
-	//layout    *widgets.QLayout
 
 	text    string
 	cwdpath string
@@ -1407,6 +1414,8 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	content.SetFocusPolicy(core.Qt__NoFocus)
 	content.SetFrameShape(widgets.QFrame__NoFrame)
 	content.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+	content.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+	content.SetIconSize(core.NewQSize2(editor.iconSize*3/4, editor.iconSize*3/4))
 
 	labelLayout.AddWidget(openIcon, 0, 0)
 	labelLayout.AddWidget(closeIcon, 0, 0)
@@ -1464,7 +1473,15 @@ func (i *WorkspaceSideItem) fileDoubleClicked(item *widgets.QListWidgetItem) {
 	}
 
 	execCommand := exec + filepath
-	go editor.workspaces[editor.active].nvim.Command(execCommand)
+	for j, ws := range editor.workspaces {
+		if editor.wsSide.items[j] == nil {
+			continue
+		}
+		sideItem := editor.wsSide.items[j]
+		if i == sideItem {
+			go ws.nvim.Command(execCommand)
+		}
+	}
 }
 
 func (i *WorkspaceSideItem) toggleContent(event *gui.QMouseEvent) {
@@ -1472,7 +1489,17 @@ func (i *WorkspaceSideItem) toggleContent(event *gui.QMouseEvent) {
 		return
 	}
 	if i.isContentHide {
-		i.openContent()
+		for j, ws := range editor.workspaces {
+			if editor.wsSide.items[j] == nil {
+				continue
+			}
+			sideItem := editor.wsSide.items[j]
+			if i == sideItem {
+				i.isContentHide = false
+				i.openContent()
+				go ws.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
+			}
+		}
 	} else {
 		i.closeContent()
 	}
@@ -1533,8 +1560,6 @@ func (i *WorkspaceSideItem) addItem(args []interface{}) {
 	filename := args[0].(string)
 	filetype := args[1].(string)
 	l := widgets.NewQListWidgetItem(i.content, 1)
-	// l.SetSizeHint(core.NewQSize2(200, 25))
-	// w := widgets.NewQWidget(i.content, 0)
 	var svg string
 	if filetype == `/` {
 		svg = editor.getSvg("directory", nil)
@@ -1545,10 +1570,18 @@ func (i *WorkspaceSideItem) addItem(args []interface{}) {
 	pixmap.LoadFromData2(core.NewQByteArray2(svg, len(svg)), "SVG", core.Qt__ColorOnly)
 	icon := gui.NewQIcon2(pixmap)
 
-	i.content.AddItem2(l)
-	// i.content.SetItemWidget(l, w)
 	l.SetIcon(icon)
 	l.SetText(filename)
+	i.content.AddItem2(l)
+}
+
+func (i *WorkspaceSideItem) resizeContent() {
+	rowNum := i.content.Count()
+	if rowNum > editor.config.FileExplore.MaxDisplayItems {
+		rowNum = editor.config.FileExplore.MaxDisplayItems
+	}
+	itemHeight := i.content.RectForIndex(i.content.IndexFromItem(i.content.Item(0))).Height()
+	i.content.SetFixedHeight(itemHeight * rowNum)
 }
 
 func (i *WorkspaceSideItem) selectItem(args []interface{}) {

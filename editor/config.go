@@ -118,7 +118,7 @@ type gonvimConfig struct {
 	MiniMap      miniMapConfig
 	SideBar      sideBarConfig
 	Workspace    workspaceConfig
-	FileExplorer fileExplorerConfig
+	FileExplore  fileExploreConfig
 	Dein         deinConfig
 }
 
@@ -210,9 +210,9 @@ type workspaceConfig struct {
 	PathStyle      string
 }
 
-type fileExplorerConfig struct {
-	OpenCmd  string
-	MaxItems int
+type fileExploreConfig struct {
+	OpenCmd         string
+	MaxDisplayItems int
 }
 
 type deinConfig struct {
@@ -284,6 +284,10 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.SideBar.AccentColor = "#5596ea"
 	}
 
+	if config.FileExplore.MaxDisplayItems < 1 {
+		config.FileExplore.MaxDisplayItems = 1
+	}
+
 	if config.Workspace.PathStyle == "" {
 		config.Workspace.PathStyle = "minimum"
 	}
@@ -341,6 +345,8 @@ func (c *gonvimConfig) init() {
 
 	c.SideBar.Width = 200
 	c.SideBar.AccentColor = "#5596ea"
+
+	c.FileExplore.MaxDisplayItems = 30
 
 	c.Workspace.PathStyle = "minimum"
 }

@@ -2,7 +2,6 @@ package filer
 
 import (
 	"fmt"
-	"runtime"
 	"strings"
 
 	"github.com/akiyosi/goneovim/util"
@@ -33,9 +32,9 @@ func RegisterPlugin(nvim *nvim.Nvim) {
 	})
 	finderFunction := `
 	aug GonvimAuFiler | au! | aug END
-        au GonvimAuFiler BufEnter,TabEnter,DirChanged,TermOpen,TermClose * call rpcnotify(0, "Gui", "filer_update")
+        au GonvimAuFiler DirChanged * call rpcnotify(0, "Gui", "filer_update")
 	command! GonvimFilerOpen call Gonvim_filer_run()
-	function! Gonvim_filer_run()
+	function! Gonvim_filer_run() abort
 	    call rpcnotify(0, "GonvimFiler", "open")
 	    let l:keymaps = { "\<Esc>": "cancel", "\<C-c>": "cancel", "\<Enter>": "right", "h": "left", "j": "down", "k": "up", "l": "right", "/": "search", }
 	
@@ -107,48 +106,35 @@ func (f *Filer) open() {
 
 func (f *Filer) redraw() {
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_clear")
-	pwd := ""
-	f.nvim.Eval(`expand(getcwd())`, &pwd)
-
-	if f.cwd != pwd {
-		f.selectnum = 0
-	}
-	f.cwd = pwd
-	pwdlen := len(pwd)
-	if runtime.GOOS != "windows" {
-		if pwd != string(`/`) {
-			pwdlen++
-		}
-	} else {
-		if len(pwd) != 3 { // it means that Windows root is 'C:\', 'D:\', etc
-			pwdlen++
-		}
-	}
-
-	command := "globpath(expand(getcwd()), '{,.}*', 1, 0)"
-	files := ""
-	f.nvim.Eval(command, &files)
-	if len(files) <= pwdlen {
+	files, err := f.nvim.CommandOutput(`lua 
+		local uv = vim and vim.loop or require 'luv'
+		-- Ref: https://gitter.im/neovim/neovim?at=5dcf9e5b5eb2e813db330dc8
+		-- TODO: There may be an architecture that can handle go implementation and lua processing more efficiently.
+		-- TODO: replace a way to get cwd path at the neovim v0.5.0
+		--       local path = vim.fn.expand(vim.fn.getcwd())
+		local path = vim.api.nvim_eval('expand(getcwd())')
+		local h = uv.fs_scandir(path)
+		while true do
+		    local name, type = uv.fs_scandir_next(h)
+		    if not name then
+		        break
+		    end
+		    if type == "directory" then
+		        print(name .. "/")
+		    else
+		        print(name)
+		    end
+		end
+	`)
+	if err != nil {
 		return
-	}
-
-	// In windows, we need to detect file or directory
-	var directories []string
-	if runtime.GOOS == "windows" {
-		command := "let dir = globpath(expand(getcwd()), '*', 0, 1) | echo filter(dir, 'isdirectory(v:val)')"
-		dirstring, err := f.nvim.CommandOutput(command)
-		if err == nil && len(dirstring) > 2 {
-			dirstring = dirstring[2 : len(dirstring)-2]
-			for _, dir := range strings.Split(dirstring, `', '`) {
-				dir = dir[pwdlen:]
-				directories = append(directories, dir)
-			}
-		}
 	}
 
 	var items []map[string]string
 	for _, file := range strings.Split(files, "\n") {
-		file = file[pwdlen:]
+		if file == "" {
+			continue
+		}
 		// Skip './' and '../'
 		if file == "./" || file == "../" {
 			continue
@@ -162,16 +148,8 @@ func (f *Filer) redraw() {
 		}
 
 		// If it is directory
-		if runtime.GOOS == "windows" {
-			for _, dir := range directories {
-				if file == dir {
-					filetype = string("/")
-				}
-			}
-		} else {
-			if file[len(file)-1] == '/' {
-				filetype = string("/")
-			}
+		if file[len(file)-1] == '/' {
+			filetype = string("/")
 		}
 
 		f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_add", file, filetype)
@@ -179,8 +157,13 @@ func (f *Filer) redraw() {
 		item["filename"] = file
 		item["filetype"] = filetype
 		items = append(items, item)
+
 	}
 	f.items = items
+	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_resize")
+	if f.selectnum >= len(f.items) {
+		f.selectnum = len(f.items) - 1
+	}
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_item_select", f.selectnum)
 }
 
@@ -207,8 +190,19 @@ func (f *Filer) left() {
 }
 
 func (f *Filer) right() {
-	filename := f.items[f.selectnum]["filename"]
-	filetype := f.items[f.selectnum]["filetype"]
+	if f.selectnum >= len(f.items) {
+		return
+	}
+	item := f.items[f.selectnum]
+	filename, ok := item["filename"]
+	if !ok {
+		return
+	}
+	filetype, ok := item["filetype"]
+	if !ok {
+		return
+	}
+
 	command := ""
 	cdCommand := ":tchdir"
 	editCommand := ":e"
