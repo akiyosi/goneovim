@@ -34,7 +34,7 @@ func RegisterPlugin(nvim *nvim.Nvim) {
 	aug GonvimAuFiler | au! | aug END
         au GonvimAuFiler DirChanged * call rpcnotify(0, "Gui", "filer_update")
 	command! GonvimFilerOpen call Gonvim_filer_run()
-	function! Gonvim_filer_run()
+	function! Gonvim_filer_run() abort
 	    call rpcnotify(0, "GonvimFiler", "open")
 	    let l:keymaps = { "\<Esc>": "cancel", "\<C-c>": "cancel", "\<Enter>": "right", "h": "left", "j": "down", "k": "up", "l": "right", "/": "search", }
 	
