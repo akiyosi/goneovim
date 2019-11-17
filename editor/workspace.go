@@ -277,18 +277,25 @@ func (w *Workspace) show() {
 func (w *Workspace) startNvim(path string) error {
 	var neovim *nvim.Nvim
 	var err error
+
+	childProcessArgs := nvim.ChildProcessArgs(
+		append([]string{
+			"--cmd",
+			"let g:gonvim_running=1",
+			"--embed",
+		}, editor.args...)...,
+	)
 	if editor.opts.Server != "" {
+		// Attaching to remote nvim session
 		neovim, err = nvim.Dial(editor.opts.Server)
 		w.uiRemoteAttached = true
+	} else if editor.opts.Nvim != "" {
+		// Attaching to /path/to/nvim
+		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
+		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd)
 	} else {
-		neovim, err = nvim.NewChildProcess(
-			nvim.ChildProcessArgs(
-				append([]string{
-					"--cmd",
-					"let g:gonvim_running=1",
-					"--embed",
-				}, editor.args...)...,
-			))
+		// Attaching to nvim normaly
+		neovim, err = nvim.NewChildProcess(childProcessArgs)
 	}
 	if err != nil {
 		return err

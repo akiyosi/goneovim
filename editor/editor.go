@@ -64,8 +64,8 @@ type Notify struct {
 }
 
 type Option struct {
-	Server string `long:"server" description:"Remote session address"`
-	Nvim   string `long:"nvim" description:"excutable nvim path to run"`
+	Server  string `long:"server" description:"Remote session address"`
+	Nvim    string `long:"nvim" description:"excutable nvim path to run"`
 }
 
 // Editor is the editor
@@ -146,9 +146,17 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
-	opts, args, err := parseOption() ; if err != nil {
-		fmt.Println(err)
-		return
+	// parse option
+	var opts Option
+	parser := flags.NewParser(&opts, flags.HelpFlag | flags.PassDoubleDash)
+	args, err := parser.ParseArgs(os.Args[1:])
+	if flagsErr, ok := err.(*flags.Error); ok {
+		switch flagsErr.Type {
+		case flags.ErrDuplicatedFlag:
+		case flags.ErrHelp:
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	}
 
 	putEnv()
@@ -235,18 +243,6 @@ func (e *Editor) newSplitter() {
 	if editor.config.SideBar.Visible {
 		e.wsSide.show()
 	}
-}
-
-func parseOption() (Option, []string, error) {
-	var opts Option
-	parser := flags.NewParser(&opts, flags.HelpFlag | flags.PassDoubleDash)
-	parser.Usage = "[OPTIONS] [-- arguments which passes to nvim]"
-	args, err := parser.ParseArgs(os.Args[1:])
-	if err != nil {
-		return opts, []string{""}, err
-	}
-
-	return opts, args, nil
 }
 
 func (e *Editor) initWorkspaces() {
