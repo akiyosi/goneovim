@@ -64,8 +64,12 @@ type Notify struct {
 }
 
 type Option struct {
-	Server  string `long:"server" description:"Remote session address"`
-	Nvim    string `long:"nvim" description:"excutable nvim path to run"`
+	Fullscreen bool   `long:"fullscreen" description:"Open the window in fullscreen on startup"`
+	Maximized  bool   `long:"maximized" description:"Maximize the window on startup"`
+	Geometry   string `long:"geometry" description:"Initial window geomtry [e.g. 800x600]"`
+
+	Server     string `long:"server" description:"Remote session address"`
+	Nvim       string `long:"nvim" description:"Excutable nvim path to attach"`
 }
 
 // Editor is the editor
@@ -192,6 +196,7 @@ func InitEditor() {
 	e.initSysTray()
 
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent)
+	e.setWindowSize()
 	e.setWindowOptions()
 
 	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
@@ -498,6 +503,27 @@ func shiftHex(hex string, v int) string {
 	return fmt.Sprintf("#%02x%02x%02x", (int)(d.R*255.0), (int)(d.G*255.0), (int)(d.B*255.0))
 }
 
+func (e *Editor) setWindowSize() {
+	if e.opts.Geometry == "" {
+		return
+	}
+
+	var width, height int
+	if e.opts.Geometry != "" {
+		var err error
+		width, err = strconv.Atoi(strings.SplitN(editor.opts.Geometry, "x", 2)[0])
+		if err != nil || width < 400 {
+			width = 400
+		}
+		height, err = strconv.Atoi(strings.SplitN(editor.opts.Geometry, "x", 2)[1])
+		if err != nil || height < 300 {
+			height = 300
+		}
+	}
+	e.config.Editor.Width = width
+	e.config.Editor.Height = height
+}
+
 func (e *Editor) setWindowOptions() {
 	e.window.SetupTitle("goneovim")
 	e.window.SetupWidgetColor(0, 0, 0)
@@ -508,9 +534,9 @@ func (e *Editor) setWindowOptions() {
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.SetAcceptDrops(true)
-	if e.config.Editor.StartFullscreen {
+	if e.config.Editor.StartFullscreen || e.opts.Fullscreen {
 		e.window.ShowFullScreen()
-	} else if e.config.Editor.StartMaximizedWindow {
+	} else if e.config.Editor.StartMaximizedWindow || e.opts.Maximized {
 		e.window.WindowMaximize()
 	}
 }
