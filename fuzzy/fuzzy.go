@@ -227,21 +227,21 @@ func (s *Fuzzy) scoreSource(source string) {
 		var chars util.Chars
 		var parts []string
 
-		// if fuzzy type is "file_line", 
+		// if fuzzy type is "file_line",
 		// then exclude file name string from source string
 		indexOffset := 0
 		switch s.options["type"] {
-		case "file_line" :
+		case "file_line":
 			parts = strings.SplitN(source, ":", 4)
 			filecontents := parts[len(parts)-1]
 			chars = util.ToChars([]byte(filecontents))
-			indexOffset = len(parts[0])+1+len(parts[1])+1+len(parts[2])+1
-		case "line" :
+			indexOffset = len(parts[0]) + 1 + len(parts[1]) + 1 + len(parts[2]) + 1
+		case "line":
 			parts = strings.SplitN(source, "\t", 2)
 			filecontents := parts[len(parts)-1]
 			chars = util.ToChars([]byte(filecontents))
-			indexOffset = len(parts[0])+1
-		default :
+			indexOffset = len(parts[0]) + 1
+		default:
 			chars = util.ToChars([]byte(source))
 		}
 

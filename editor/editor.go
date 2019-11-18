@@ -11,8 +11,8 @@ import (
 
 	frameless "github.com/akiyosi/goqtframelesswindow"
 	clipb "github.com/atotto/clipboard"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/jessevdk/go-flags"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -68,8 +68,8 @@ type Option struct {
 	Maximized  bool   `long:"maximized" description:"Maximize the window on startup"`
 	Geometry   string `long:"geometry" description:"Initial window geomtry [e.g. 800x600]"`
 
-	Server     string `long:"server" description:"Remote session address"`
-	Nvim       string `long:"nvim" description:"Excutable nvim path to attach"`
+	Server string `long:"server" description:"Remote session address"`
+	Nvim   string `long:"nvim" description:"Excutable nvim path to attach"`
 }
 
 // Editor is the editor
@@ -152,7 +152,7 @@ func (hl *Highlight) copy() Highlight {
 func InitEditor() {
 	// parse option
 	var opts Option
-	parser := flags.NewParser(&opts, flags.HelpFlag | flags.PassDoubleDash)
+	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
 	args, err := parser.ParseArgs(os.Args[1:])
 	if flagsErr, ok := err.(*flags.Error); ok {
 		switch flagsErr.Type {

@@ -107,19 +107,19 @@ import (
 // [dein]
 // tomlFile
 type gonvimConfig struct {
-	Editor       editorConfig
-	Palette      paletteConfig
-	Statusline   statusLineConfig
-	Tabline      tabLineConfig
-	Lint         lintConfig
-	Popupmenu    popupMenuConfig
-	ScrollBar    scrollBarConfig
-	ActivityBar  activityBarConfig
-	MiniMap      miniMapConfig
-	SideBar      sideBarConfig
-	Workspace    workspaceConfig
-	FileExplore  fileExploreConfig
-	Dein         deinConfig
+	Editor      editorConfig
+	Palette     paletteConfig
+	Statusline  statusLineConfig
+	Tabline     tabLineConfig
+	Lint        lintConfig
+	Popupmenu   popupMenuConfig
+	ScrollBar   scrollBarConfig
+	ActivityBar activityBarConfig
+	MiniMap     miniMapConfig
+	SideBar     sideBarConfig
+	Workspace   workspaceConfig
+	FileExplore fileExploreConfig
+	Dein        deinConfig
 }
 
 type paletteConfig struct {
