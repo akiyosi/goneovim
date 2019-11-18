@@ -3,7 +3,6 @@ package editor
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -15,7 +14,6 @@ import (
 	"github.com/akiyosi/goneovim/fuzzy"
 	"github.com/akiyosi/goneovim/util"
 	shortpath "github.com/akiyosi/short_path"
-	"github.com/jessevdk/go-flags"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -277,24 +275,27 @@ func (w *Workspace) show() {
 }
 
 func (w *Workspace) startNvim(path string) error {
-	var opts struct {
-		ServerPtr string `long:"server" description:"Remote session address"`
-	}
-	args, _ := flags.ParseArgs(&opts, os.Args[1:])
 	var neovim *nvim.Nvim
 	var err error
-	if opts.ServerPtr != "" {
-		neovim, err = nvim.Dial(opts.ServerPtr)
+
+	childProcessArgs := nvim.ChildProcessArgs(
+		append([]string{
+			"--cmd",
+			"let g:gonvim_running=1",
+			"--embed",
+		}, editor.args...)...,
+	)
+	if editor.opts.Server != "" {
+		// Attaching to remote nvim session
+		neovim, err = nvim.Dial(editor.opts.Server)
 		w.uiRemoteAttached = true
+	} else if editor.opts.Nvim != "" {
+		// Attaching to /path/to/nvim
+		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
+		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd)
 	} else {
-		neovim, err = nvim.NewChildProcess(
-			nvim.ChildProcessArgs(
-				append([]string{
-					"--cmd",
-					"let g:gonvim_running=1",
-					"--embed",
-				}, args...)...,
-			))
+		// Attaching to nvim normaly
+		neovim, err = nvim.NewChildProcess(childProcessArgs)
 	}
 	if err != nil {
 		return err

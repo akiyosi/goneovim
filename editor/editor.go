@@ -12,6 +12,7 @@ import (
 	frameless "github.com/akiyosi/goqtframelesswindow"
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/jessevdk/go-flags"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -62,6 +63,15 @@ type Notify struct {
 	buttons []*NotifyButton
 }
 
+type Option struct {
+	Fullscreen bool   `long:"fullscreen" description:"Open the window in fullscreen on startup"`
+	Maximized  bool   `long:"maximized" description:"Maximize the window on startup"`
+	Geometry   string `long:"geometry" description:"Initial window geomtry [e.g. 800x600]"`
+
+	Server     string `long:"server" description:"Remote session address"`
+	Nvim       string `long:"nvim" description:"Excutable nvim path to attach"`
+}
+
 // Editor is the editor
 type Editor struct {
 	signal  *editorSignal
@@ -69,6 +79,8 @@ type Editor struct {
 	app     *widgets.QApplication
 
 	homeDir string
+	args    []string
+	opts    Option
 
 	notifyStartPos    *core.QPoint
 	notificationWidth int
@@ -138,6 +150,19 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
+	// parse option
+	var opts Option
+	parser := flags.NewParser(&opts, flags.HelpFlag | flags.PassDoubleDash)
+	args, err := parser.ParseArgs(os.Args[1:])
+	if flagsErr, ok := err.(*flags.Error); ok {
+		switch flagsErr.Type {
+		case flags.ErrDuplicatedFlag:
+		case flags.ErrHelp:
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+
 	putEnv()
 
 	home, err := homedir.Dir()
@@ -153,6 +178,8 @@ func InitEditor() {
 		guiInit: make(chan bool, 1),
 		config:  newGonvimConfig(home),
 		homeDir: home,
+		args:    args,
+		opts:    opts,
 	}
 	e := editor
 
@@ -169,6 +196,7 @@ func InitEditor() {
 	e.initSysTray()
 
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent)
+	e.setWindowSize()
 	e.setWindowOptions()
 
 	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
@@ -475,6 +503,27 @@ func shiftHex(hex string, v int) string {
 	return fmt.Sprintf("#%02x%02x%02x", (int)(d.R*255.0), (int)(d.G*255.0), (int)(d.B*255.0))
 }
 
+func (e *Editor) setWindowSize() {
+	if e.opts.Geometry == "" {
+		return
+	}
+
+	var width, height int
+	if e.opts.Geometry != "" {
+		var err error
+		width, err = strconv.Atoi(strings.SplitN(editor.opts.Geometry, "x", 2)[0])
+		if err != nil || width < 400 {
+			width = 400
+		}
+		height, err = strconv.Atoi(strings.SplitN(editor.opts.Geometry, "x", 2)[1])
+		if err != nil || height < 300 {
+			height = 300
+		}
+	}
+	e.config.Editor.Width = width
+	e.config.Editor.Height = height
+}
+
 func (e *Editor) setWindowOptions() {
 	e.window.SetupTitle("goneovim")
 	e.window.SetupWidgetColor(0, 0, 0)
@@ -485,9 +534,9 @@ func (e *Editor) setWindowOptions() {
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.SetAcceptDrops(true)
-	if e.config.Editor.StartFullscreen {
+	if e.config.Editor.StartFullscreen || e.opts.Fullscreen {
 		e.window.ShowFullScreen()
-	} else if e.config.Editor.StartMaximizedWindow {
+	} else if e.config.Editor.StartMaximizedWindow || e.opts.Maximized {
 		e.window.WindowMaximize()
 	}
 }
