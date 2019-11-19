@@ -292,22 +292,11 @@ func (p *PopupMenu) showItems(args []interface{}) {
 
 	popupWidth := editor.iconSize + popupItems[0].wordLabel.Width()
 
-	x := int(float64(col) * p.ws.font.truewidth)
-	y := row*p.ws.font.lineHeight + p.ws.font.lineHeight
-	if p.ws.drawTabline {
-		y += p.ws.tabline.widget.Height()
-	}
+	x, y := p.ws.getPointInWidget(col, row, gridid)
+	y += p.ws.font.lineHeight
 
 	if x+popupWidth >= p.ws.screen.widget.Width() {
 		x = p.ws.screen.widget.Width() - popupWidth - 5
-	}
-	win, ok := p.ws.screen.windows[gridid]
-	if !ok {
-		return
-	}
-	if win != nil {
-		x += int(float64(win.pos[0]) * p.ws.font.truewidth)
-		y += win.pos[1] * p.ws.font.lineHeight
 	}
 
 	p.widget.SetFixedHeight(itemNum*(p.ws.font.lineHeight+editor.config.Editor.Linespace+2) + 2 + editor.iconSize*2/5)

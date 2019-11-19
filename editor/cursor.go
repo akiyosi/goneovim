@@ -103,20 +103,14 @@ func (c *Cursor) move() {
 
 	col := c.ws.screen.cursor[1]
 	row := c.ws.screen.cursor[0]
-	x := int(float64(col) * font.truewidth)
-	y := row*font.lineHeight + shift
+	x, y := c.ws.getPointInWidget(col, row, c.gridid)
+
 	if row < 3 {
 		y += c.ws.loc.widget.Height()
 	} else {
 		y -= c.ws.loc.widget.Height()
 	}
 
-	tabheight := 0
-	if c.ws.drawTabline {
-		tabheight = c.ws.tabline.widget.Height()
-	}
-	x += int(float64(win.pos[0]) * font.truewidth)
-	y += win.pos[1]*font.lineHeight + tabheight
 	c.ws.loc.widget.Move2(x, y)
 }
 
