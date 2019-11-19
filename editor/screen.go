@@ -1576,7 +1576,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			r++
 		}
 
-		win.queueRedraw(0, row, win.cols, 1)
+		win.queueRedraw(colStart, row, col - colStart + 1, 1)
 	}
 
 	// If the array of cell changes doesn't reach to the end of the line,
@@ -2048,7 +2048,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 	textCache := w.getCache()
 	var image *gui.QImage
 
-	for x := col; x < col+cols; x++ {
+	for x := col; x <= col+cols; x++ {
 		if x > w.lenLine[y] {
 			continue
 		}
@@ -2087,7 +2087,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 	for highlight, colorSlice := range chars {
 		var buffer bytes.Buffer
 		slice := colorSlice[:]
-		for x := col; x < col+cols; x++ {
+		for x := col; x <= col+cols; x++ {
 			if len(slice) == 0 {
 				break
 			}
@@ -2391,7 +2391,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
 
-	for x := col; x < col+cols; x++ {
+	for x := col; x <= col+cols; x++ {
 		if x >= len(line) {
 			continue
 		}
@@ -2426,7 +2426,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	for highlight, colorSlice := range chars {
 		var buffer bytes.Buffer
 		slice := colorSlice[:]
-		for x := col; x < col+cols; x++ {
+		for x := col; x <= col+cols; x++ {
 			if len(slice) == 0 {
 				break
 			}
