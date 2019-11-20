@@ -287,8 +287,7 @@ func (m *MiniMap) mapScroll() {
 	if win == nil {
 		return
 	}
-	var regionHeight int
-	regionHeight = win.rows
+	regionHeight := win.rows
 
 	m.curRegion.SetFixedHeight(int(float64(regionHeight) * float64(m.font.lineHeight)))
 	pos := int(float64(m.font.lineHeight) * float64(absScreenTop-absMapTop))

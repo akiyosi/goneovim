@@ -1630,8 +1630,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	}
 	// Set content length of line
 	win.lenLine[row] = lenLine
-
-	return
 }
 
 func (w *Window) countHeadSpaceOfLine(y int) (int, error) {

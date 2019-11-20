@@ -209,7 +209,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		if !notification.isMoved {
 			notification.dropNotifications()
 		}
-		if notification.isDrag == true {
+		if notification.isDrag {
 			x := event.Pos().X() - notification.pos.X()
 			y := event.Pos().Y() - notification.pos.Y()
 			newPos := core.NewQPoint2(x, y)
@@ -301,7 +301,7 @@ func (n *Notification) hideNotification() {
 	})
 	editor.isDisplayNotifications = false
 	for _, item := range editor.notifications {
-		if item.isHide == false {
+		if !item.isHide {
 			editor.isDisplayNotifications = true
 		}
 	}

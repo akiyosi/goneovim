@@ -922,7 +922,7 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	}
 
 	// Exit if there si no change in foreground / background
-	if editor.isSetGuiColor == true {
+	if editor.isSetGuiColor {
 		return
 	}
 

@@ -253,7 +253,7 @@ func (e *Editor) newSplitter() {
 func (e *Editor) initWorkspaces() {
 	e.workspaces = []*Workspace{}
 	sessionExists := false
-	if e.config.Workspace.RestoreSession == true {
+	if e.config.Workspace.RestoreSession {
 		for i := 0; i <= WorkspaceLen; i++ {
 			path := filepath.Join(e.homeDir, ".goneovim", "sessions", strconv.Itoa(i)+".vim")
 			_, err := os.Stat(path)

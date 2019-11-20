@@ -104,7 +104,7 @@ func initMessage() *Message {
 		m.isDrag = false
 	})
 	m.widget.ConnectMouseMoveEvent(func(event *gui.QMouseEvent) {
-		if m.isDrag == true {
+		if m.isDrag {
 			x := event.Pos().X() - m.pos.X()
 			y := event.Pos().Y() - m.pos.Y()
 			newPos := core.NewQPoint2(x, y)

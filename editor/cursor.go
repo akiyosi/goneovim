@@ -285,5 +285,4 @@ func (c *Cursor) paint() {
 	}
 
 	c.widget.SetText(text)
-	return
 }
