@@ -461,6 +461,9 @@ func (s *Statusline) setColor() {
 	if !ok {
 		return
 	}
+	if hl == nil {
+		return
+	}
 	s.hl = hl
 	fg := s.hl.fg()
 	bg := s.hl.bg()

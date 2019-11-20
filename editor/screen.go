@@ -708,6 +708,9 @@ func (w *Window) drawMsgSeparator(p *gui.QPainter) {
 	if !ok {
 		return
 	}
+	if color == nil {
+		color = w.s.highAttrDef[0]
+	}
 	fg := color.fg()
 	p.FillRect4(
 		core.NewQRectF4(
