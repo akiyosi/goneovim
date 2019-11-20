@@ -145,46 +145,6 @@ func (m *MiniMap) attachUIOption() map[string]interface{} {
 	o := make(map[string]interface{})
 	o["rgb"] = true
 	o["ext_linegrid"] = true
-
-	apiInfo, err := m.nvim.APIInfo()
-	if err == nil {
-		for _, item := range apiInfo {
-			i, ok := item.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			for k, v := range i {
-				if k != "ui_events" {
-					continue
-				}
-				events, ok := v.([]interface{})
-				if !ok {
-					continue
-				}
-				for _, event := range events {
-					function, ok := event.(map[string]interface{})
-					if !ok {
-						continue
-					}
-					_, ok = function["name"]
-					if !ok {
-						continue
-					}
-					//if name == "wildmenu_show" {
-					//	o["ext_wildmenu"] = true
-					//} else if name == "cmdline_show" {
-					//	o["ext_cmdline"] = true
-					//} else if name == "msg_chunk" {
-					//	o["ext_messages"] = true
-					//} else if name == "popupmenu_show" {
-					//	o["ext_popupmenu"] = true
-					//} else if name == "tabline_update" {
-					//	o["ext_tabline"] = m.drawTabline
-					//}
-				}
-			}
-		}
-	}
 	return o
 }
 

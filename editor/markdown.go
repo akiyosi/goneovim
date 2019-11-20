@@ -2,7 +2,6 @@ package editor
 
 import (
 	"fmt"
-	"math"
 	"path/filepath"
 	"runtime"
 
@@ -109,7 +108,7 @@ func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
 	case "darwin":
 		pixels := event.PixelDelta()
 		if pixels != nil {
-			horiz = int(math.Trunc(float64(pixels.Y())))
+			horiz = pixels.Y()
 		}
 		m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %v)", horiz*(-1)))
 	default:
@@ -269,6 +268,7 @@ func (m *Markdown) update() {
 	}
 	lines, err := m.ws.nvim.BufferLines(buf, 0, -1, false)
 	if err != nil {
+		return
 	}
 	content := []byte{}
 	for _, line := range lines {

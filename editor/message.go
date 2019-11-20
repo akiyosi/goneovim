@@ -323,7 +323,7 @@ func (m *Message) msgShow(args []interface{}) {
 
 		replaceLast := false
 		if len(arg.([]interface{})) > 2 {
-			replaceLast, ok = arg.([]interface{})[2].(bool)
+			replaceLast, _ = arg.([]interface{})[2].(bool)
 		}
 		if kind == prevKind {
 			// Do not show message icon if the same kind as the previous kind
