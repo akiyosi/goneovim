@@ -39,7 +39,6 @@ type Statusline struct {
 	mode       *StatuslineMode
 	path       *StatuslineFilepath
 	file       *StatuslineFile
-	notify     *StatuslineNotify
 	filetype   *StatuslineFiletype
 	git        *StatuslineGit
 	encoding   *StatuslineEncoding
@@ -65,13 +64,6 @@ type StatuslineComponent struct {
 	label     *widgets.QLabel
 	fg        *RGBA
 	bg        *RGBA
-}
-
-// StatuslineNotify is
-type StatuslineNotify struct {
-	s   *Statusline
-	c   *StatuslineComponent
-	num int
 }
 
 // StatuslineLint is
@@ -301,25 +293,6 @@ func initStatusline() *Statusline {
 	s.filetype = filetype
 	s.filetype.c.hide()
 
-	notifyLayout := widgets.NewQHBoxLayout()
-	notifyWidget := widgets.NewQWidget(nil, 0)
-	notifyWidget.SetLayout(notifyLayout)
-	notifyLabel := widgets.NewQLabel(nil, 0)
-	notifyLabel.Hide()
-	notifyicon := svg.NewQSvgWidget(nil)
-	notifyicon.SetFixedSize2(editor.iconSize, editor.iconSize)
-	notifyLayout.SetContentsMargins(2, 0, 2, 0)
-	notifyLayout.SetSpacing(2)
-	notify := &StatuslineNotify{
-		c: &StatuslineComponent{
-			widget: notifyWidget,
-			label:  notifyLabel,
-			icon:   notifyicon,
-		},
-	}
-	s.notify = notify
-	s.notify.c.hide()
-
 	okIcon := svg.NewQSvgWidget(nil)
 	okIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 	okLabel := widgets.NewQLabel(nil, 0)
@@ -362,8 +335,6 @@ func initStatusline() *Statusline {
 		gitLayout.AddWidget(gitLabel, 0, 0)
 		fileLayout.AddWidget(fileLabel, 0, 0)
 		fileLayout.AddWidget(roIcon, 0, 0)
-		notifyLayout.AddWidget(notifyicon, 0, 0)
-		notifyLayout.AddWidget(notifyLabel, 0, 0)
 		lintLayout.AddWidget(okIcon, 0, 0)
 		lintLayout.AddWidget(errorIcon, 0, 0)
 		lintLayout.AddWidget(errorLabel, 0, 0)
@@ -395,11 +366,6 @@ func (s *Statusline) setWidget() {
 			s.widget.Layout().AddWidget(s.file.c.icon)
 			s.file.c.isInclude = true
 			s.file.c.show()
-		case "message":
-			s.widget.Layout().AddWidget(s.notify.c.widget)
-			s.notify.c.isInclude = true
-			s.notify.c.icon.Show()
-			s.notify.c.widget.Show()
 		case "git":
 			s.widget.Layout().AddWidget(s.git.c.widget)
 			s.git.c.isInclude = true
@@ -446,11 +412,6 @@ func (left *LeftStatusItem) setWidget() {
 			left.widget.Layout().AddWidget(left.s.file.c.icon)
 			left.s.file.c.isInclude = true
 			left.s.file.c.show()
-		case "message":
-			left.widget.Layout().AddWidget(left.s.notify.c.widget)
-			left.s.notify.c.isInclude = true
-			left.s.notify.c.icon.Show()
-			left.s.notify.c.widget.Show()
 		case "git":
 			left.widget.Layout().AddWidget(left.s.git.c.widget)
 			left.s.git.c.isInclude = true
@@ -483,7 +444,6 @@ func (left *LeftStatusItem) setWidget() {
 func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 	s.left.widget.SetContentsMargins(l, u, r, d)
 	s.pos.c.label.SetContentsMargins(l, u, r, d)
-	s.notify.c.widget.SetContentsMargins(l, u, r, d)
 	s.filetype.c.label.SetContentsMargins(l, u, r, d)
 	s.git.c.widget.SetContentsMargins(l, u, r, d)
 	s.fileFormat.c.label.SetContentsMargins(l, u, r, d)
@@ -579,7 +539,6 @@ func (s *Statusline) updateFont() {
 	s.mode.c.label.SetFont(font)
 	s.path.c.label.SetFont(font)
 	s.file.c.label.SetFont(font)
-	s.notify.c.label.SetFont(font)
 	s.filetype.c.label.SetFont(font)
 	s.git.c.label.SetFont(font)
 	s.encoding.c.label.SetFont(font)
@@ -604,9 +563,6 @@ func (s *Statusline) subscribe() {
 	s.ws.nvim.RegisterHandler("statusline", func(updates ...interface{}) {
 		s.updates <- updates
 		s.ws.signal.StatuslineSignal()
-	})
-	editor.signal.ConnectNotifySignal(func() {
-		s.notify.update()
 	})
 	s.ws.nvim.Subscribe("statusline")
 }
@@ -944,16 +900,6 @@ func (s *StatuslineFiletype) redraw(filetype string) {
 	}
 	s.c.label.SetText(typetext)
 	s.c.show()
-}
-
-func (s *StatuslineNotify) update() {
-	s.num = len(editor.notifications)
-	if s.num == 0 {
-		s.c.hide()
-		return
-	}
-	s.c.show()
-	s.c.label.SetText(fmt.Sprintf("%v", s.num))
 }
 
 func (s *StatuslineLint) update() {

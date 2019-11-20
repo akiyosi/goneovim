@@ -1,12 +1,9 @@
 package editor
 
 import (
-	"bytes"
-	"io/ioutil"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 // gonvimConfig is the following toml file
@@ -127,7 +124,6 @@ type paletteConfig struct {
 	MaxNumberOfResultItems int
 }
 type editorConfig struct {
-	Ui         string
 	Width      int
 	Height     int
 	FontFamily string
@@ -301,13 +297,10 @@ func (c *gonvimConfig) init() {
 	c.Editor.Height = 600
 	c.Editor.Transparent = 1.0
 
-	// UI options:
 	c.Editor.SkipGlobalId = false
 	c.Editor.CachedDrawing = true
 
-	// basic UI
 	c.Editor.ExtCmdline = true
-	// c.Editor.ExtWildmenu = false
 	c.Editor.ExtPopupmenu = false
 	c.Editor.ExtTabline = true
 	c.Editor.ExtMessages = false
@@ -349,21 +342,4 @@ func (c *gonvimConfig) init() {
 	c.FileExplore.MaxDisplayItems = 30
 
 	c.Workspace.PathStyle = "minimum"
-}
-
-func outputGonvimConfig() {
-	home, err := homedir.Dir()
-	if err != nil {
-		home = "~"
-	}
-	filepath := filepath.Join(home, ".goneovim", "setting.toml")
-	if isFileExist(filepath) {
-		return
-	}
-	buf := new(bytes.Buffer)
-	toml.NewEncoder(buf).Encode(editor.config)
-	err = ioutil.WriteFile(filepath, buf.Bytes(), 664)
-	if err != nil {
-		editor.pushNotification(NotifyWarn, -1, "[Goneovim] "+err.Error())
-	}
 }

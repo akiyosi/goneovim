@@ -491,18 +491,6 @@ func hexToRGBA(hex string) *RGBA {
 	return rgba
 }
 
-func darkenHex(hex string) string {
-	c := hexToRGBA(hex)
-	d := shiftColor(c, 20)
-	return fmt.Sprintf("#%02x%02x%02x", (int)(d.R*255.0), (int)(d.G*255.0), (int)(d.B*255.0))
-}
-
-func shiftHex(hex string, v int) string {
-	c := hexToRGBA(hex)
-	d := shiftColor(c, v)
-	return fmt.Sprintf("#%02x%02x%02x", (int)(d.R*255.0), (int)(d.G*255.0), (int)(d.B*255.0))
-}
-
 func (e *Editor) setWindowSize() {
 	if e.opts.Geometry == "" {
 		return
