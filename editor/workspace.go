@@ -1247,7 +1247,7 @@ func (w *Workspace) getPointInWidget(col, row, grid int) (int, int) {
 		y += w.tabline.widget.Height()
 	}
 	win, ok := w.screen.windows[grid]
-	if ok {
+	if ok && win != nil {
 		x += int(float64(win.pos[0]) * w.font.truewidth)
 		y += win.pos[1] * w.font.lineHeight
 	}

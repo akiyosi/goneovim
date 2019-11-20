@@ -198,6 +198,9 @@ func (m *MiniMap) toggle() {
 	if !ok {
 		return
 	}
+	if win == nil {
+		return
+	}
 	if m.visible {
 		m.visible = false
 	} else {

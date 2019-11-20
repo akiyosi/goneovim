@@ -350,6 +350,9 @@ func (s *Screen) gridFont(update interface{}) {
 	if !ok {
 		return
 	}
+	if win == nil {
+		return
+	}
 
 	args := update.(string)
 	if args == "" {
@@ -430,6 +433,9 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		if !ok {
 			return 0, 0, 0, 0
 		}
+		if win == nil {
+			return 0, 0, 0, 0
+		}
 		candX = int(float64(col+win.pos[0]) * s.font.truewidth)
 		candY = (row+win.pos[1])*s.font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
 	}
@@ -452,7 +458,7 @@ func (s *Screen) toolTipFont(font *Font) {
 func (s *Screen) toolTipShow() {
 	if !s.ws.palette.widget.IsVisible() {
 		win, ok := s.windows[s.ws.cursor.gridid]
-		if ok {
+		if ok && win != nil {
 			s.tooltip.SetParent(win.widget)
 		}
 	}
@@ -1027,6 +1033,9 @@ func (s *Screen) gridResize(args []interface{}) {
 func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win, ok := s.windows[gridid]
 	if ok {
+		if win == nil {
+			return
+		}
 		if win.cols == cols && win.rows == rows {
 			return
 		}
@@ -1261,6 +1270,9 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		if !ok {
 			continue
 		}
+		if win == nil {
+			continue
+		}
 
 		if s.ws.cursor.gridid != gridid {
 			s.ws.cursor.gridid = gridid
@@ -1450,6 +1462,9 @@ func (s *Screen) gridClear(args []interface{}) {
 		if !ok {
 			continue
 		}
+		if win == nil {
+			continue
+		}
 		win.content = make([][]*Cell, win.rows)
 		win.lenLine = make([]int, win.rows)
 
@@ -1470,6 +1485,9 @@ func (s *Screen) gridLine(args []interface{}) {
 		s.updateGridContent(arg.([]interface{}))
 		win, ok := s.windows[gridid]
 		if !ok {
+			continue
+		}
+		if win == nil {
 			continue
 		}
 		if !win.isShown() {
@@ -1495,6 +1513,9 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 
 	win, ok := s.windows[gridid]
 	if !ok {
+		return
+	}
+	if win == nil {
 		return
 	}
 	content := win.content
@@ -1680,6 +1701,9 @@ func (s *Screen) gridScroll(args []interface{}) {
 		}
 		win, ok := s.windows[gridid]
 		if !ok {
+			continue
+		}
+		if win == nil {
 			continue
 		}
 		win.scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])     // top
@@ -2596,6 +2620,9 @@ func (s *Screen) windowPosition(args []interface{}) {
 		if !ok {
 			continue
 		}
+		if win == nil {
+			continue
+		}
 
 		win.id = id
 		win.pos[0] = col
@@ -2636,6 +2663,9 @@ func (s *Screen) gridDestroy(args []interface{}) {
 		if !ok {
 			continue
 		}
+		if win == nil {
+			continue
+		}
 		win.hide()
 		win = nil
 	}
@@ -2650,6 +2680,9 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		win, ok := s.windows[gridid]
 		if !ok {
+			continue
+		}
+		if win == nil {
 			continue
 		}
 		win.id = arg.([]interface{})[1].(nvim.Window)
@@ -2669,6 +2702,9 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		if !ok {
 			continue
 		}
+		if anchorwin == nil {
+			continue
+		}
 		x := anchorwin.pos[0] + win.pos[0]
 		y := anchorwin.pos[1] + win.pos[1]
 		win.move(x, y)
@@ -2686,6 +2722,9 @@ func (s *Screen) windowHide(args []interface{}) {
 		}
 		win, ok := s.windows[gridid]
 		if !ok {
+			continue
+		}
+		if win == nil {
 			continue
 		}
 		win.hide()
@@ -2750,6 +2789,9 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		msgCount := util.ReflectToInt(arg.([]interface{})[1])
 		win, ok := s.windows[gridid]
 		if !ok {
+			continue
+		}
+		if win == nil {
 			continue
 		}
 		win.isMsgGrid = true

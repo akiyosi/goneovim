@@ -87,6 +87,9 @@ func (c *Cursor) move() {
 	if !ok {
 		return
 	}
+	if win == nil {
+		return
+	}
 	font := win.getFont()
 
 	shift := 0
@@ -135,6 +138,9 @@ func (c *Cursor) updateCursorShape() {
 
 	win, ok := c.ws.screen.windows[c.gridid]
 	if !ok {
+		return
+	}
+	if win == nil {
 		return
 	}
 	var font *Font
@@ -232,6 +238,9 @@ func (c *Cursor) update() {
 	if !ok {
 		return
 	}
+	if win == nil {
+		return
+	}
 	font := win.getFont()
 
 	row := c.ws.screen.cursor[0]
@@ -253,6 +262,9 @@ func (c *Cursor) paint() {
 
 	win, ok := c.ws.screen.windows[c.gridid]
 	if !ok {
+		return
+	}
+	if win == nil {
 		return
 	}
 	if win.content == nil {
