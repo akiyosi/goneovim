@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -26,6 +27,7 @@ type PopupMenu struct {
 	selected        int
 	hidden          bool
 	top             int
+	completeMode    string
 	scrollBar       *widgets.QWidget
 	scrollBarPos    int
 	scrollBarHeight int
@@ -39,8 +41,6 @@ type PopupMenu struct {
 // PopupItem is
 type PopupItem struct {
 	p *PopupMenu
-
-	completeMode string
 
 	wordLabel   *widgets.QLabel
 	word        string
@@ -234,6 +234,12 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.rawItems = items
 	p.selected = selected
 	p.top = 0
+
+	// Detect vim complete mode
+	completeMode, err := detectVimCompleteMode()
+	if err == nil {
+		p.completeMode = completeMode
+	}
 
 	p.detailLabel.SetText("")
 
@@ -498,37 +504,39 @@ func (p *PopupItem) setItem(item []interface{}, selected bool) {
 }
 
 func detectVimCompleteMode() (string, error) {
-	w := editor.workspaces[editor.active]
+	ws := editor.workspaces[editor.active]
 
-	var isEnableCompleteMode int
-	var enableCompleteMode interface{}
-	var kind interface{}
-	w.nvim.Eval("exists('*complete_mode')", &enableCompleteMode)
-	switch enableCompleteMode := enableCompleteMode.(type) {
-	case int64:
-	case uint64:
-	case uint:
-		isEnableCompleteMode = int(enableCompleteMode)
-	case int:
-		isEnableCompleteMode = enableCompleteMode
+	var enableCompleteMode int
+	err := ws.nvim.Eval("exists('*complete_info')", &enableCompleteMode)
+	if err != nil {
+		return "vim_unknown", errors.New("complete_info does not exists")
 	}
-	if isEnableCompleteMode == 1 {
-		w.nvim.Eval("complete_mode()", &kind)
-		if kind != nil {
-			return kind.(string), nil
-		} else {
+
+	if enableCompleteMode == 1 {
+		var info map[string]interface{}
+		ws.nvim.Eval("complete_info()", &info)
+		kind, ok := info["mode"]
+		if !ok {
 			return "", nil
 		}
+		return kind.(string), nil
 	}
+
 	return "", errors.New("Does not exits complete_mode()")
 
 }
 
 func (p *PopupItem) setKind(kind string, selected bool) {
-	lowerKindText := strings.ToLower(kind)
-	hiAttrDef := editor.workspaces[editor.active].screen.highAttrDef
 	var colorOfFunc, colorOfStatement, colorOfType, colorOfKeyword *RGBA
-	for _, hi := range hiAttrDef {
+
+	hiAttrDef := editor.workspaces[editor.active].screen.highAttrDef
+	var keys []int
+	for k := range hiAttrDef {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+	for _, k := range keys {
+		hi := hiAttrDef[k]
 		switch hi.hlName {
 		case "Function":
 			colorOfFunc = hi.fg()
@@ -542,6 +550,8 @@ func (p *PopupItem) setKind(kind string, selected bool) {
 			continue
 		}
 	}
+
+	lowerKindText := strings.ToLower(kind)
 	switch lowerKindText {
 	case "function", "func":
 		icon := editor.getSvg("lsp_function", colorOfFunc)
@@ -556,28 +566,24 @@ func (p *PopupItem) setKind(kind string, selected bool) {
 		icon := editor.getSvg("lsp_"+lowerKindText, colorOfKeyword)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	default:
-		completeMode, err := detectVimCompleteMode()
-		if err == nil {
-			p.completeMode = completeMode
-		}
-		switch p.completeMode {
+		switch p.p.completeMode {
 		case "keyword",
 			"whole_line",
 			"files",
 			"tags",
 			"path_defines",
 			"path_patterns",
-			"path_dictionary",
-			"path_thesaurus",
-			"path_cmdline",
-			"path_function",
-			"path_omni",
-			"path_spell",
-			"path_eval":
-			icon := editor.getSvg("vim_"+p.completeMode, nil)
+			"dictionary",
+			"thesaurus",
+			"cmdline",
+			"function",
+			"omni",
+			"spell",
+			"eval":
+			icon := editor.getSvg("vim_"+p.p.completeMode, colorOfType)
 			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 		default:
-			icon := editor.getSvg("vim_unknown", nil)
+			icon := editor.getSvg("vim_unknown", colorOfType)
 			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 		}
 	}
