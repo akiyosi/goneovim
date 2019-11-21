@@ -386,7 +386,7 @@ func (s *Screen) gridFont(update interface{}) {
 	win.font = initFontNew(fontfamily, height, 1, false)
 
 	// Calculate new cols, rows of current grid
-	newCols := int(float64(oldWidth) / win.font.truewidth)
+	newCols := int(oldWidth / win.font.truewidth)
 	newRows := oldHeight / win.font.lineHeight
 
 	// Cache
@@ -766,7 +766,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 
 	// window position is based on cols, rows of global font setting
 	x := int(float64(w.pos[0]) * w.s.font.truewidth)
-	y := w.pos[1] * int(w.s.font.lineHeight)
+	y := w.pos[1] * w.s.font.lineHeight
 	width := int(float64(w.cols) * font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(font.lineHeight))
 	color := editor.colors.windowSeparator.QColor()
@@ -776,7 +776,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 
 		p.FillRect5(
 			int(float64(x+width)+font.truewidth/2),
-			y-int(font.lineHeight/2),
+			y-(font.lineHeight/2),
 			2,
 			winHeight,
 			color,
@@ -790,7 +790,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	}
 
 	// Horizontal
-	height := w.rows * int(font.lineHeight)
+	height := w.rows * font.lineHeight
 	y2 := y + height - 1 + font.lineHeight/2
 
 	p.FillRect5(
@@ -852,7 +852,7 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		dy := math.Abs(float64(s.scrollDust[1]))
 
 		fontheight := float64(font.lineHeight)
-		fontwidth := float64(font.truewidth)
+		fontwidth := font.truewidth
 
 		s.scrollDust[0] += h
 		s.scrollDust[1] += v
@@ -1093,7 +1093,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 	font := win.getFont()
 	width := int(float64(cols) * font.truewidth)
-	height := rows * int(font.lineHeight)
+	height := rows * font.lineHeight
 	rect := core.NewQRect4(0, 0, width, height)
 	win.setGeometryAndPalette(rect)
 
@@ -1218,7 +1218,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 					w.localWindows[1].localHeight = w.height + oldRows*win.getFont().lineHeight
 				}
 				newHeight := w.localWindows[1].localHeight - (win.rows * win.getFont().lineHeight)
-				newRows := int(newHeight / w.font.lineHeight)
+				newRows := newHeight / w.font.lineHeight
 				if newRows != w.rows {
 					_ = s.ws.nvim.TryResizeUIGrid(w.grid, w.cols, newRows)
 					w.height = newRows * w.getFont().lineHeight
@@ -1232,7 +1232,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			winPosY := win.pos[1] * win.s.font.lineHeight
 			bottomWindowPos1 := w.rows*w.getFont().lineHeight + (w.pos[1]+1-deltaRows+1)*win.s.font.lineHeight
 			bottomWindowPos2 := (w.rows-1)*w.getFont().lineHeight + (w.pos[1]+1-deltaRows+1)*win.s.font.lineHeight
-			bottomWindowPos := int(w.rows*w.getFont().lineHeight/win.s.font.lineHeight) + w.pos[1] + 1 - deltaRows + 1
+			bottomWindowPos := (w.rows * w.getFont().lineHeight / win.s.font.lineHeight) + w.pos[1] + 1 - deltaRows + 1
 			if win.s.font.lineHeight < w.getFont().lineHeight {
 				resizeflag = winPosY <= bottomWindowPos1 && winPosY >= bottomWindowPos2
 			} else {
@@ -1247,7 +1247,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 					w.localWindows[3].localHeight = w.height + oldRows*win.getFont().lineHeight
 				}
 				newHeight := w.localWindows[3].localHeight - (win.rows * win.getFont().lineHeight)
-				newRows := int(newHeight / w.font.lineHeight)
+				newRows := newHeight / w.font.lineHeight
 				if newRows != w.rows {
 					_ = s.ws.nvim.TryResizeUIGrid(w.grid, w.cols, newRows)
 					w.height = newRows * w.getFont().lineHeight
@@ -1600,7 +1600,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			r++
 		}
 
-		win.queueRedraw(colStart, row, col - colStart + 1, 1)
+		win.queueRedraw(colStart, row, col-colStart+1, 1)
 	}
 
 	// If the array of cell changes doesn't reach to the end of the line,
@@ -2538,7 +2538,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		start := float64(x) * font.truewidth
 		end := float64(x+1) * font.truewidth
 		Y := float64((y)*font.lineHeight) + font.ascent + float64(font.lineSpace)
-		halfY := float64(y-1)*float64(font.lineHeight) + float64(font.lineHeight)/2.0 + font.ascent + float64(font.ascent)/2.0 + float64(font.lineSpace)
+		halfY := float64(y-1)*float64(font.lineHeight) + float64(font.lineHeight)/2.0 + font.ascent + font.ascent/2.0 + float64(font.lineSpace)
 		if line[x].highlight.strikethrough {
 			strikeLinef := core.NewQLineF3(start, halfY, end, halfY)
 			p.DrawLine(strikeLinef)
@@ -2943,7 +2943,7 @@ func (w *Window) move(col int, row int) {
 		res = 0
 	}
 	x := int(float64(col) * font.truewidth)
-	y := row*int(font.lineHeight) + res
+	y := (row * font.lineHeight) + res
 	if w.isFloatWin {
 		if w.s.ws.drawTabline {
 			y += 6 + w.s.ws.tabline.widget.Height()

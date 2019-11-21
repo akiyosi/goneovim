@@ -95,7 +95,7 @@ func initPopupmenuNew() *PopupMenu {
 	detailLabel.SetWordWrap(true)
 
 	layout.AddLayout(itemLayout, 0)
-	layout.AddWidget(detailLabel, 0, core.Qt__AlignmentFlag(core.Qt__AlignTop|core.Qt__AlignLeft))
+	layout.AddWidget(detailLabel, 0, core.Qt__AlignTop|core.Qt__AlignLeft)
 	layout.AddWidget(scrollCol, 0, 0)
 
 	max := editor.config.Popupmenu.Total
@@ -127,8 +127,8 @@ func initPopupmenuNew() *PopupMenu {
 
 		itemLayout.AddWidget2(kindIcon, i, 0, 0)
 		itemLayout.AddWidget2(word, i, 1, 0)
-		itemLayout.AddWidget2(menu, i, 2, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
-		itemLayout.AddWidget2(info, i, 3, core.Qt__AlignmentFlag(core.Qt__AlignLeft))
+		itemLayout.AddWidget2(menu, i, 2, core.Qt__AlignLeft)
+		itemLayout.AddWidget2(info, i, 3, core.Qt__AlignLeft)
 
 		popupItem := &PopupItem{
 			p:         popup,

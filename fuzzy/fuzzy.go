@@ -638,7 +638,7 @@ func (s *Fuzzy) outputResult() {
 	for _, o := range result[start:end] {
 		text := o.output
 		if len(text) > 200 {
-			text = string(text[:200])
+			text = text[:200]
 		}
 		output = append(output, text)
 	}

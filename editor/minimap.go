@@ -366,8 +366,8 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 		dx := math.Abs(float64(m.scrollDust[0]))
 		dy := math.Abs(float64(m.scrollDust[1]))
 
-		fontheight := float64(float64(font.lineHeight))
-		fontwidth := float64(font.truewidth)
+		fontheight := float64(font.lineHeight)
+		fontwidth := font.truewidth
 
 		m.scrollDust[0] += h
 		m.scrollDust[1] += v

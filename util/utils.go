@@ -3,8 +3,8 @@ package util
 import (
 	"strings"
 
-	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -23,7 +23,7 @@ func ReflectToInt(iface interface{}) int {
 func ReflectToFloat(iface interface{}) float64 {
 	i, ok := iface.(float64)
 	if ok {
-		return float64(i)
+		return i
 	}
 	u, ok := iface.(float32)
 	if ok {
@@ -84,7 +84,7 @@ func SplitVimscript(s string) string {
 	return listLines
 }
 
-func DropShadow(x, y, radius float64, alpha int) *widgets.QGraphicsDropShadowEffect{
+func DropShadow(x, y, radius float64, alpha int) *widgets.QGraphicsDropShadowEffect {
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(radius)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, alpha))
