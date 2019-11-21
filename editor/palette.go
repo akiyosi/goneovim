@@ -186,23 +186,24 @@ func (p *Palette) setColor() {
 }
 
 func (p *Palette) resize() {
-	p.width = int(math.Trunc(float64(editor.width) * 0.7))
+	width := int(math.Trunc(float64(editor.width) * 0.7))
 	cursorBoundary := p.padding*4 + p.textLength() + p.patternPadding
-
-	if cursorBoundary > p.width {
-		p.width = cursorBoundary
+	if cursorBoundary > width {
+		width = cursorBoundary
 	}
-	if p.width > editor.width {
-		p.width = editor.width
+	if width > editor.width {
+		width = editor.width
 		p.pattern.SetAlignment(core.Qt__AlignRight | core.Qt__AlignCenter)
-		return
-	} else if p.width <= editor.width {
+	} else if width <= editor.width {
 		if p.pattern.Alignment() != core.Qt__AlignLeft {
 			p.pattern.SetAlignment(core.Qt__AlignLeft)
-			return
 		}
 	}
 
+	if p.width == width {
+		return
+	}
+	p.width = width
 	p.pattern.SetFixedWidth(p.width - p.padding*2)
 	p.widget.SetMaximumWidth(p.width)
 	p.widget.SetMinimumWidth(p.width)
@@ -232,7 +233,6 @@ func (p *Palette) show() {
 	p.widget.Raise()
 	p.widget.SetWindowOpacity(1.0)
 	p.widget.Show()
-	p.resize()
 }
 
 func (p *Palette) hide() {
@@ -250,12 +250,17 @@ func (p *Palette) setPattern(text string) {
 
 func (p *Palette) cursorMove(x int) {
 	X := p.textLength()
+	var stickOutLen int
 	boundary := p.pattern.Width() - (p.padding * 2)
 	if X >= boundary {
-		X = boundary
+		stickOutLen = X - boundary
+	}
+	pos := p.cursorPos(x) - stickOutLen
+	if pos < 0 {
+		pos = 0
 	}
 
-	p.cursorX = p.cursorPos(x)
+	p.cursorX = pos
 	p.ws.cursor.x = p.cursorX + p.patternPadding
 	p.ws.cursor.y = p.patternPadding + p.ws.cursor.shift
 	p.ws.cursor.widget.Move2(p.ws.cursor.x, p.ws.cursor.y)

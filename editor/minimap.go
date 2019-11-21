@@ -329,9 +329,9 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 }
 
 func (m *MiniMap) transparent(bg *RGBA) int {
-	t := 255
 	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
 
+	var t int
 	if m.ws.background.equals(bg) {
 		t = 0
 	} else {
