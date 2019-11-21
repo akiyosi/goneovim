@@ -504,15 +504,13 @@ func detectVimCompleteMode() (string, error) {
 	var enableCompleteMode interface{}
 	var kind interface{}
 	w.nvim.Eval("exists('*complete_mode')", &enableCompleteMode)
-	switch enableCompleteMode.(type) {
+	switch enableCompleteMode := enableCompleteMode.(type) {
 	case int64:
-		isEnableCompleteMode = int(enableCompleteMode.(int64))
 	case uint64:
-		isEnableCompleteMode = int(enableCompleteMode.(uint64))
 	case uint:
-		isEnableCompleteMode = int(enableCompleteMode.(uint))
+		isEnableCompleteMode = int(enableCompleteMode)
 	case int:
-		isEnableCompleteMode = enableCompleteMode.(int)
+		isEnableCompleteMode = enableCompleteMode
 	}
 	if isEnableCompleteMode == 1 {
 		w.nvim.Eval("complete_mode()", &kind)

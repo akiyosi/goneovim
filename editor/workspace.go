@@ -209,9 +209,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	}()
 
 	if runtime.GOOS == "windows" {
-		select {
-		case <-w.doneNvimStart:
-		}
+		<-w.doneNvimStart
 	}
 
 	return w, nil

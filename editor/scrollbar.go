@@ -53,15 +53,13 @@ func (s *ScrollBar) update() {
 		if err != nil {
 			s.ws.maxLine = 0
 		} else {
-			switch lnITF.(type) {
+			switch lnITF := lnITF.(type) {
 			case uint64:
-				s.ws.maxLine = int(lnITF.(uint64))
 			case uint:
-				s.ws.maxLine = int(lnITF.(uint))
 			case int64:
-				s.ws.maxLine = int(lnITF.(int64))
+				s.ws.maxLine = int(lnITF)
 			case int:
-				s.ws.maxLine = lnITF.(int)
+				s.ws.maxLine = lnITF
 			}
 		}
 

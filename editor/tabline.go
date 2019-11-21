@@ -344,7 +344,7 @@ func getFileType(text string) string {
 		return "terminal"
 	}
 	base := filepath.Base(text)
-	if strings.Index(base, ".") >= 0 {
+	if strings.Contains(base, ".") {
 		parts := strings.Split(base, ".")
 		filetype := parts[len(parts)-1]
 		if filetype == "md" {
