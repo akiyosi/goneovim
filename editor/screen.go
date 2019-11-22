@@ -1831,140 +1831,6 @@ func (w *Window) queueRedraw(x, y, width, height int) {
 	}
 }
 
-func (w *Window) transparent(bg *RGBA) int {
-	transparent := int(math.Trunc(editor.config.Editor.Transparent * float64(255)))
-
-	var t int
-	if w.s.ws.background.equals(bg) {
-		t = 0
-	} else {
-		t = transparent
-	}
-	return t
-}
-
-func (w *Window) fillHightlight(p *gui.QPainter, y int, col int, cols int) {
-	if y >= len(w.content) {
-		return
-	}
-	font := w.getFont()
-	line := w.content[y]
-	start := -1
-	end := -1
-	var lastBg *RGBA
-	var bg *RGBA
-	var lastCell *Cell
-	for x := col; x < col+cols; x++ {
-		if x >= len(line) {
-			continue
-		}
-		if line[x] == nil {
-			continue
-		}
-		if line[x].char != " " {
-			continue
-		}
-		if line[x] != nil {
-			bg = line[x].highlight.background
-		} else {
-			bg = nil
-		}
-		if lastCell != nil && !lastCell.normalWidth {
-			bg = lastCell.highlight.background
-		}
-		if bg != nil {
-			if lastBg == nil {
-				start = x
-				end = x
-				lastBg = bg
-			} else {
-				if lastBg.equals(bg) {
-					end = x
-				} else {
-					// Draw a background only when it's color differs from the entire background
-					if !lastBg.equals(editor.colors.bg) {
-						// last bg is different; draw the previous and start a new one
-						rectF := core.NewQRectF4(
-							float64(start)*font.truewidth,
-							float64((y)*font.lineHeight),
-							float64(end-start+1)*font.truewidth,
-							float64(font.lineHeight),
-						)
-						p.FillRect(
-							rectF,
-							gui.NewQBrush3(
-								gui.NewQColor3(
-									lastBg.R,
-									lastBg.G,
-									lastBg.B,
-									w.transparent(lastBg),
-								),
-								core.Qt__SolidPattern,
-							),
-						)
-					}
-
-					// start a new one
-					start = x
-					end = x
-					lastBg = bg
-				}
-			}
-		} else {
-			if lastBg != nil {
-				if !lastBg.equals(editor.colors.bg) {
-					rectF := core.NewQRectF4(
-						float64(start)*font.truewidth,
-						float64((y)*font.lineHeight),
-						float64(end-start+1)*font.truewidth,
-						float64(font.lineHeight),
-					)
-					p.FillRect(
-						rectF,
-						gui.NewQBrush3(
-							gui.NewQColor3(
-								lastBg.R,
-								lastBg.G,
-								lastBg.B,
-								w.transparent(lastBg),
-							),
-							core.Qt__SolidPattern,
-						),
-					)
-				}
-
-				// start a new one
-				start = x
-				end = x
-				lastBg = nil
-			}
-		}
-		lastCell = line[x]
-	}
-	if lastBg != nil {
-		if !lastBg.equals(editor.colors.bg) {
-			rectF := core.NewQRectF4(
-				float64(start)*font.truewidth,
-				float64((y)*font.lineHeight),
-				float64(end-start+1)*font.truewidth,
-				float64(font.lineHeight),
-			)
-			p.FillRect(
-				rectF,
-				gui.NewQBrush3(
-					gui.NewQColor3(
-						lastBg.R,
-						lastBg.G,
-						lastBg.B,
-						w.transparent(lastBg),
-					),
-					core.Qt__SolidPattern,
-				),
-			)
-		}
-	}
-}
-
 func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
@@ -1998,7 +1864,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			}
 			if width > 0 {
 				// Set diff pattern
-				pattern, color, transparent := getFillpatternAndTransparent(lastHighlight)
+				pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
 
 				// Fill background with pattern
 				rectF := core.NewQRectF4(
@@ -2564,10 +2430,13 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyle, *RGBA, int) {
+func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyle, *RGBA, int) {
 	color := hl.bg()
 	pattern := core.Qt__BrushStyle(1)
 	transparent := int(transparent() * 255.0)
+	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
+		transparent = int(editor.config.Message.Transparent * 255.0)
+	}
 
 	if editor.config.Editor.DiffChangePattern != 1 && hl.hlName == "DiffChange" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffChangePattern)

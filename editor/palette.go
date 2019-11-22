@@ -172,6 +172,9 @@ func (p *Palette) setColor() {
 	bg := editor.colors.widgetBg
 	inactiveFg := editor.colors.inactiveFg
 	transparent := transparent() * transparent()
+	if editor.config.Palette.Transparent < 1.0 {
+		transparent = editor.config.Palette.Transparent * editor.config.Palette.Transparent
+	}
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg.R, bg.G, bg.B, transparent, fg))
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inactiveFg.R, inactiveFg.G, inactiveFg.B, transparent))
 	for _, item := range p.resultItems {

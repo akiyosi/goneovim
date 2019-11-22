@@ -106,6 +106,7 @@ import (
 type gonvimConfig struct {
 	Editor      editorConfig
 	Palette     paletteConfig
+	Message     messageConfig
 	Statusline  statusLineConfig
 	Tabline     tabLineConfig
 	Lint        lintConfig
@@ -119,10 +120,6 @@ type gonvimConfig struct {
 	Dein        deinConfig
 }
 
-type paletteConfig struct {
-	AreaRatio              float64
-	MaxNumberOfResultItems int
-}
 type editorConfig struct {
 	Width      int
 	Height     int
@@ -150,6 +147,16 @@ type editorConfig struct {
 	DiffAddPattern       int
 	DiffDeletePattern    int
 	DiffChangePattern    int
+}
+
+type paletteConfig struct {
+	AreaRatio              float64
+	MaxNumberOfResultItems int
+	Transparent            float64
+}
+
+type messageConfig struct {
+	Transparent            float64
 }
 
 type statusLineConfig struct {
@@ -223,7 +230,7 @@ func newGonvimConfig(home string) gonvimConfig {
 	// Read toml
 	_, _ = toml.DecodeFile(filepath.Join(home, ".goneovim", "setting.toml"), &config)
 
-	if config.Editor.Transparent < 1.0 {
+	if config.Editor.Transparent < 1.0 || config.Message.Transparent < 1.0 {
 		config.Editor.DrawBorder = true
 	}
 
@@ -316,6 +323,9 @@ func (c *gonvimConfig) init() {
 	// palette size
 	c.Palette.AreaRatio = 0.5
 	c.Palette.MaxNumberOfResultItems = 30
+	c.Palette.Transparent = 1.0
+
+	c.Message.Transparent = 1.0
 
 	c.Statusline.Visible = false
 	c.Statusline.ModeIndicatorType = "textLabel"

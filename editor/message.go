@@ -134,6 +134,9 @@ func (m *Message) setColor() {
 	fg := editor.colors.fg.String()
 	bg := warpColor(editor.colors.bg, -15)
 	transparent := transparent() * transparent()
+	if editor.config.Message.Transparent < 1.0 {
+		transparent = editor.config.Message.Transparent
+	}
 	m.widget.SetStyleSheet(fmt.Sprintf(
 		" #message { background-color: rgba(%d, %d, %d, %f);  color: %s; }",
 		bg.R,
