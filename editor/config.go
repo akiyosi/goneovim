@@ -230,7 +230,7 @@ func newGonvimConfig(home string) gonvimConfig {
 	// Read toml
 	_, _ = toml.DecodeFile(filepath.Join(home, ".goneovim", "setting.toml"), &config)
 
-	if config.Editor.Transparent < 1.0 || config.Message.Transparent < 1.0 {
+	if config.Editor.Transparent < 1.0 {
 		config.Editor.DrawBorder = true
 	}
 

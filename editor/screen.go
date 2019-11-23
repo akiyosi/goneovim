@@ -2788,6 +2788,9 @@ func (w *Window) fill() {
 	if editor.config.Editor.DrawBorder {
 		return
 	}
+	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
+		return
+	}
 	if w.background != nil {
 		w.widget.SetAutoFillBackground(true)
 		p := gui.NewQPalette()
