@@ -19,6 +19,7 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 * Indent guide
 * Independent font settings per window (alpha stage)
 * Support display ligatures
+* Support IME
 * Desktop Notification of the messages
 * Remote attachment
 
@@ -34,8 +35,9 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/minimap.png)
 * Indentguide, display ligatures(Fira Code)
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/indentguide.png)
-* Transparent window
+* Transparent app window, Transparent message window
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/transparent.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/transparent-message.png)
 * Independent font settings per window
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/font-setting-per-window.png)
 
@@ -56,6 +58,8 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
 ## ToDo
 * Add test
+
+* Real-time synchronization between editing buffer and minimap
 
 * Improved startup speed (especially on the Windows platform)
 
