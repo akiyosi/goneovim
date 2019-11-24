@@ -1845,12 +1845,48 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		idDrawDefaultBg = true
 	}
 
+	// // Simply paint the color into a rectangle
+	// for x := col; x <= col+cols; x++ {
+	// 	if x >= len(line) {
+	// 		continue
+	// 	}
+
+	// 	var highlight *Highlight
+	// 	if line[x] == nil {
+	// 		highlight = w.s.highAttrDef[0]
+	// 	} else {
+	// 		highlight = &line[x].highlight
+	// 	}
+	// 	if !bg.equals(w.s.ws.background) || idDrawDefaultBg {
+	// 	     // Set diff pattern
+	// 	     pattern, color, transparent := w.getFillpatternAndTransparent(highlight)
+	// 	     // Fill background with pattern
+	// 	     rectF := core.NewQRectF4(
+	// 	             float64(x)*font.truewidth,
+	// 	             float64((y)*font.lineHeight),
+	// 	             font.truewidth,
+	// 	             float64(font.lineHeight),
+	// 	     )
+	// 	     p.FillRect(
+	// 	             rectF,
+	// 	             gui.NewQBrush3(
+	// 	                     gui.NewQColor3(
+	// 	                             color.R,
+	// 	                             color.G,
+	// 	                             color.B,
+	// 	                             transparent,
+	// 	                     ),
+	// 	                     pattern,
+	// 	             ),
+	// 	     )
+	// 	}
+
+	// The same color combines the rectangular areas and paints at once
 	var start, end, width int
 	var lastBg *RGBA
 	var lastHighlight, highlight *Highlight
 
-	for x := col; x < col+cols; x++ {
-
+	for x := col; x <= col+cols; x++ {
 		fillCellRect := func() {
 			if lastHighlight == nil {
 				return
@@ -1889,14 +1925,18 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			}
 		}
 
-		if x >= len(line) {
+		if x >= len(line)+1 {
 			continue
 		}
 
-		if line[x] == nil {
-			highlight = w.s.highAttrDef[0]
+		if x < len(line) {
+			if line[x] == nil {
+				highlight = w.s.highAttrDef[0]
+			} else {
+				highlight = &line[x].highlight
+			}
 		} else {
-			highlight = &line[x].highlight
+			highlight = w.s.highAttrDef[0]
 		}
 
 		bg = highlight.bg()
@@ -1911,7 +1951,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			if lastBg.equals(bg) {
 				end = x
 			}
-			if !lastBg.equals(bg) || x+1 == col+cols {
+			if !lastBg.equals(bg) || x == col+cols {
 				fillCellRect()
 
 				start = x
@@ -1919,11 +1959,13 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 				lastBg = bg
 				lastHighlight = highlight
 
-				if x+1 == col+cols {
+				if !lastBg.equals(bg) && x == col+cols {
 					fillCellRect()
 				}
 			}
 		}
+
+
 	}
 }
 
