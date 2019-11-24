@@ -183,7 +183,7 @@ func InitEditor() {
 	}
 	e := editor
 
-	e.app = widgets.NewQApplication(0, nil)
+	e.app = widgets.NewQApplication(len(os.Args), os.Args)
 	e.app.ConnectAboutToQuit(func() {
 		e.cleanup()
 	})
