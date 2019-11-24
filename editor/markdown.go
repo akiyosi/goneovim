@@ -128,18 +128,14 @@ func (m *Markdown) updatePos() {
 			continue
 		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
-			m.webview.Resize2(
-				int(float64(win.cols)*m.ws.font.truewidth),
-				win.rows*m.ws.font.lineHeight,
-			)
-			if m.webview.ParentWidget() != win.widget {
+			if !m.webview.IsVisible() {
+				m.webview.Resize2(
+					int(float64(win.cols)*m.ws.font.truewidth),
+					win.rows*m.ws.font.lineHeight,
+				)
 				m.webview.SetParent(win.widget)
+				m.show()
 			}
-			// m.webview.Move2(
-			// 	int(float64(win.pos[0])*m.ws.font.truewidth),
-			// 	win.pos[1]*m.ws.font.lineHeight,
-			// )
-			m.show()
 			return
 		}
 	}
@@ -204,9 +200,12 @@ func (m *Markdown) toggle() {
 			continue
 		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
-			m.ws.nvim.SetCurrentWindow(win.id)
-			m.ws.nvim.Command("close")
 			m.htmlSet = false
+			m.hide()
+			go func() {
+				m.ws.nvim.SetCurrentWindow(win.id)
+				m.ws.nvim.Command("close")
+			}()
 			return
 		}
 	}
@@ -219,7 +218,6 @@ func (m *Markdown) toggle() {
 	m.ws.nvim.Command("setlocal nomodifiable")
 	m.ws.nvim.Command("setlocal nolist")
 	m.ws.nvim.Command("setlocal nowrap")
-
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> j :call rpcnotify(0, 'Gui', '%s')<CR>",
 		GonvimMarkdownScrollDownEvent,
@@ -252,7 +250,6 @@ func (m *Markdown) toggle() {
 		"nnoremap <silent> <buffer> <C-d> :call rpcnotify(0, 'Gui', '%s')<CR>",
 		GonvimMarkdownScrollHalfPageDownEvent,
 	))
-
 	m.ws.nvim.Command("wincmd p")
 }
 

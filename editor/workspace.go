@@ -1118,7 +1118,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case GonvimMarkdownUpdateEvent:
 		go w.markdown.update()
 	case GonvimMarkdownToggleEvent:
-		go w.markdown.toggle()
+		w.markdown.toggle()
 	case GonvimMarkdownScrollDownEvent:
 		w.markdown.scrollDown()
 	case GonvimMarkdownScrollUpEvent:
