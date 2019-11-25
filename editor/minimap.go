@@ -168,6 +168,7 @@ func (m *MiniMap) toggle() {
 	}
 	m.curRegion.SetParent(win.widget)
 	m.bufUpdate()
+	m.bufSync()
 }
 
 func (m *MiniMap) updateRows() bool {
@@ -306,29 +307,23 @@ func (m *MiniMap) bufSync() {
 		return
 	}
 
-	fmt.Println("debug 1")
-
 	// Get current buffer
 	buf, err := m.ws.nvim.CurrentBuffer()
 	if err != nil {
 		return
 	}
 
-	fmt.Println("debug 2")
-
-	// Get current window
-	win, ok := m.ws.screen.windows[m.ws.cursor.gridid]
+	// Get minimap window
+	mmWin, ok := m.windows[1]
 	if !ok {
 		return
 	}
-	if win == nil {
+	if mmWin == nil {
 		return
 	}
 
-	fmt.Println("debug 3")
-
 	start := m.ws.curLine - m.ws.screen.cursor[0]
-	end := m.ws.curLine - m.ws.screen.cursor[0] + win.rows
+	end := m.ws.curLine - m.ws.screen.cursor[0] + mmWin.rows
 
 	// Get buffer contents
 	replacement, err := m.ws.nvim.BufferLines(
@@ -341,28 +336,20 @@ func (m *MiniMap) bufSync() {
 		return
 	}
 
-	fmt.Println("debug 4", replacement)
-
 	// Get current buffer of minimap
 	minimapBuf, err := m.nvim.CurrentBuffer()
 	if err != nil {
 		return
 	}
 
-	fmt.Println("debug 5")
-
 	// Set buffer contents
-	err = m.nvim.SetBufferLines(
+	m.nvim.SetBufferLines(
 		minimapBuf,
 		start,
 		end,
 		false,
 		replacement,
 	)
-	if err != nil {
-	fmt.Println("debug 6", err)
-		return
-	}
 }
 
 func (m *MiniMap) handleRedraw(updates [][]interface{}) {

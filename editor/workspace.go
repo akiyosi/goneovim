@@ -1094,9 +1094,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			w.minimap.bufUpdate()
 		}
 	case "gonvim_minimap_sync":
-		fmt.Println("minimap debug 1")
 		if w.minimap.visible {
-		fmt.Println("minimap debug 2")
 			w.minimap.bufSync()
 		}
 	case "gonvim_minimap_toggle":
