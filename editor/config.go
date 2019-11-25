@@ -135,6 +135,7 @@ type editorConfig struct {
 	Clipboard   bool
 	// CursorBlink          bool
 	CachedDrawing        bool
+	CacheSize            int
 	DisableImeInNormal   bool
 	GinitVim             string
 	StartFullscreen      bool
@@ -306,6 +307,7 @@ func (c *gonvimConfig) init() {
 
 	c.Editor.SkipGlobalId = false
 	c.Editor.CachedDrawing = true
+	c.Editor.CacheSize = 320
 
 	c.Editor.ExtCmdline = true
 	c.Editor.ExtPopupmenu = false

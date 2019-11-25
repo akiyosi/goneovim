@@ -19,10 +19,6 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
-const (
-	CACHESIZE int = 256
-)
-
 type gridId = int
 
 // Highlight is
@@ -143,7 +139,7 @@ func newScreen() *Screen {
 		image := value.(*gui.QImage)
 		image.DestroyQImage()
 	}
-	cache := gcache.New(CACHESIZE).LRU().
+	cache := gcache.New(editor.config.Editor.CacheSize).LRU().
 		EvictedFunc(purgeQimage).
 		PurgeVisitorFunc(purgeQimage).
 		Build()
@@ -395,7 +391,7 @@ func (s *Screen) gridFont(update interface{}) {
 			image := value.(*gui.QImage)
 			image.DestroyQImage()
 		}
-		cache := gcache.New(CACHESIZE).LRU().
+		cache := gcache.New(editor.config.Editor.CacheSize).LRU().
 			EvictedFunc(purgeQimage).
 			PurgeVisitorFunc(purgeQimage).
 			Build()
