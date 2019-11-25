@@ -1507,7 +1507,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	if isSkipGlobalId(gridid) {
 		return
 	}
-	if editor.config.Editor.DrawBorder && gridid == 1 {
+	if editor.config.Editor.DrawBorder && gridid == 1 && s.name != "minimap" {
 		return
 	}
 	if colStart < 0 {
@@ -1964,7 +1964,6 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 				}
 			}
 		}
-
 
 	}
 }
