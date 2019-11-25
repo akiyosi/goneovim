@@ -945,7 +945,7 @@ func (s *Screen) focusWindow(event *gui.QWheelEvent) {
 		X := event.X()
 		Y := event.Y()
 		rect := win.widget.Geometry()
-		if rect.Contains3(X, Y) {
+		if rect.Contains3(X, Y) && win.grid != s.ws.cursor.gridid {
 			s.ws.nvim.InputMouse("left", "press", editor.modPrefix(mod), win.grid, row, col)
 			s.ws.nvim.InputMouse("left", "release", editor.modPrefix(mod), win.grid, row, col)
 			go s.ws.nvim.Input("<Esc>")
