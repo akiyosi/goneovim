@@ -294,6 +294,77 @@ func (m *MiniMap) mapScroll() {
 	m.curRegion.Move2(0, pos)
 }
 
+func (m *MiniMap) bufSync() {
+	if strings.Contains(m.ws.filepath, "[denite]") {
+		return
+	}
+	if !m.visible {
+		m.widget.Hide()
+		return
+	}
+	if m.ws.nvim == nil || m.nvim == nil {
+		return
+	}
+
+	fmt.Println("debug 1")
+
+	// Get current buffer
+	buf, err := m.ws.nvim.CurrentBuffer()
+	if err != nil {
+		return
+	}
+
+	fmt.Println("debug 2")
+
+	// Get current window
+	win, ok := m.ws.screen.windows[m.ws.cursor.gridid]
+	if !ok {
+		return
+	}
+	if win == nil {
+		return
+	}
+
+	fmt.Println("debug 3")
+
+	start := m.ws.curLine - m.ws.screen.cursor[0]
+	end := m.ws.curLine - m.ws.screen.cursor[0] + win.rows
+
+	// Get buffer contents
+	replacement, err := m.ws.nvim.BufferLines(
+		buf,
+		start,
+		end,
+		false,
+	)
+	if err != nil {
+		return
+	}
+
+	fmt.Println("debug 4", replacement)
+
+	// Get current buffer of minimap
+	minimapBuf, err := m.nvim.CurrentBuffer()
+	if err != nil {
+		return
+	}
+
+	fmt.Println("debug 5")
+
+	// Set buffer contents
+	err = m.nvim.SetBufferLines(
+		minimapBuf,
+		start,
+		end,
+		false,
+		replacement,
+	)
+	if err != nil {
+	fmt.Println("debug 6", err)
+		return
+	}
+}
+
 func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 	for _, update := range updates {
 		event := update[0].(string)
