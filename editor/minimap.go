@@ -305,7 +305,7 @@ func (m *MiniMap) bufSync() {
 		m.isProcessSync = false
 	}()
 	m.isProcessSync = true
-	time.Sleep(400 * time.Millisecond)
+	time.Sleep(800 * time.Millisecond)
 	if strings.Contains(m.ws.filepath, "[denite]") {
 		return
 	}
@@ -332,11 +332,16 @@ func (m *MiniMap) bufSync() {
 		return
 	}
 
-	start := m.ws.curLine - m.ws.screen.cursor[0] - 1
-	end := m.ws.curLine - m.ws.screen.cursor[0] - 1 + 1 + mmWin.rows
-
-	if start < 0 || end < 2 || end-start < 2 {
-		return
+	start := 0
+	end := 0
+	var pos [4]int
+	m.ws.nvim.Eval("getpos('$')", &pos)
+	var minimapPos [4]int
+	m.nvim.Eval("getpos('$')", &minimapPos)
+	if pos[1] > minimapPos[1] {
+		end = pos[1] + 1
+	} else {
+		end = minimapPos[1] + 1
 	}
 
 	// Get buffer contents
@@ -353,11 +358,6 @@ func (m *MiniMap) bufSync() {
 		return
 	}
 
-	// get current buffer max col number
-
-	// var pos [4]int
-	// m.nvim.Eval("getpos('$')", &pos)
-	// maxCol := pos[1]
 
 	// Get current buffer of minimap
 	minimapBuf, err := m.nvim.CurrentBuffer()
