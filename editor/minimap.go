@@ -134,7 +134,7 @@ func (m *MiniMap) startMinimapProc() {
 
 	m.nvim.Subscribe("Gui")
 	m.nvim.Command(":syntax on")
-	m.nvim.Command(":set laststatus=0 noruler nowrap noshowmode virtualedit+=all")
+	m.nvim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all")
 }
 
 func (m *MiniMap) exit() {
@@ -425,7 +425,7 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	var v, h, vert, horiz int
+	var v, h, vert, horiz, accel int
 	font := m.font
 
 	switch runtime.GOOS {
@@ -465,39 +465,48 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 			m.scrollDustDeltaY = 0
 		}
 
+		if m.scrollDustDeltaY <= 2 {
+		        accel = 1
+		} else if m.scrollDustDeltaY > 2 {
+		        accel = int(float64(m.scrollDustDeltaY) / float64(4))
+		}
+
 	default:
 		vert = event.AngleDelta().Y()
+		accel = 16
 	}
-
-	var vertKey string
-	var horizKey string
-	if vert > 0 {
-		vertKey = "Up"
-	} else {
-		vertKey = "Down"
-	}
-	if horiz > 0 {
-		horizKey = "Left"
-	} else {
-		horizKey = "Right"
-	}
-
 	if vert == 0 && horiz == 0 {
 		return
 	}
 
-	x := int(float64(event.X()) / font.truewidth)
-	y := int(float64(event.Y()) / float64(font.lineHeight))
-	pos := []int{x, y}
-	mod := event.Modifiers()
-
-	if vert != 0 {
-		m.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
+	if vert > 0 {
+	        m.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
+	} else if vert < 0 {
+	        m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
 	}
+	// var vertKey string
+	// if vert > 0 {
+	// 	vertKey = "Up"
+	// } else {
+	// 	vertKey = "Down"
+	// }
+	// mod := event.Modifiers()
+	// if vert != 0 {
+	// 	m.nvim.Input(fmt.Sprintf("%d<%sScrollWheel%s>", accel, editor.modPrefix(mod), vertKey))
+	// }
 
-	if horiz != 0 {
-		m.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
-	}
+	// var horizKey string
+	// if horiz > 0 {
+	// 	horizKey = "Left"
+	// } else {
+	// 	horizKey = "Right"
+	// }
+	// x := int(float64(event.X()) / font.truewidth)
+	// y := int(float64(event.Y()) / float64(font.lineHeight))
+	// pos := []int{x, y}
+	// if horiz != 0 {
+	// 	m.nvim.Input(fmt.Sprintf("%d<%sScrollWheel%s><%d,%d>", accel, editor.modPrefix(mod), horizKey, pos[0], pos[1]))
+	// }
 
 	event.Accept()
 }
