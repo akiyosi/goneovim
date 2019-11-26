@@ -881,8 +881,6 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		accel = 2
 	}
 
-	mod := event.Modifiers()
-
 	if vert > 0 {
 		vertKey = "Up"
 	} else {
@@ -911,13 +909,8 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	y := int(float64(event.Y()) / float64(font.lineHeight))
 	pos := []int{x, y}
 
-	// if vert > 0 {
-	// 	s.ws.nvim.Input(fmt.Sprintf("%v<C-Y>", accel))
-	// } else if vert < 0 {
-	// 	s.ws.nvim.Input(fmt.Sprintf("%v<C-E>", accel))
-	// }
+	mod := event.Modifiers()
 	if vert != 0 {
-		// s.ws.nvim.Input(fmt.Sprintf("%v<%sScrollWheel%s><%d,%d>", accel, editor.modPrefix(mod), vertKey, pos[0], pos[1]))
 		s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
 	}
 

@@ -133,10 +133,8 @@ func (m *MiniMap) startMinimapProc() {
 	m.visible = editor.config.MiniMap.Visible
 
 	m.nvim.Subscribe("Gui")
-	m.nvim.Command(":set laststatus=0 | set noruler")
 	m.nvim.Command(":syntax on")
-	m.nvim.Command(":set nowrap")
-	m.nvim.Command(":set virtualedit+=all")
+	m.nvim.Command(":set laststatus=0 noruler nowrap noshowmode virtualedit+=all")
 }
 
 func (m *MiniMap) exit() {
@@ -355,6 +353,12 @@ func (m *MiniMap) bufSync() {
 		return
 	}
 
+	// get current buffer max col number
+
+	// var pos [4]int
+	// m.nvim.Eval("getpos('$')", &pos)
+	// maxCol := pos[1]
+
 	// Get current buffer of minimap
 	minimapBuf, err := m.nvim.CurrentBuffer()
 	if err != nil {
@@ -422,7 +426,6 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 	defer m.mu.Unlock()
 
 	var v, h, vert, horiz int
-	var accel int
 	font := m.font
 
 	switch runtime.GOOS {
@@ -461,25 +464,39 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 		if m.scrollDustDeltaY < 1 {
 			m.scrollDustDeltaY = 0
 		}
-		if m.scrollDustDeltaY <= 2 {
-			accel = 1
-		} else if m.scrollDustDeltaY > 2 {
-			accel = int(float64(m.scrollDustDeltaY) / float64(4))
-		}
 
 	default:
 		vert = event.AngleDelta().Y()
-		accel = 16
+	}
+
+	var vertKey string
+	var horizKey string
+	if vert > 0 {
+		vertKey = "Up"
+	} else {
+		vertKey = "Down"
+	}
+	if horiz > 0 {
+		horizKey = "Left"
+	} else {
+		horizKey = "Right"
 	}
 
 	if vert == 0 && horiz == 0 {
 		return
 	}
 
-	if vert > 0 {
-		m.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
-	} else if vert < 0 {
-		m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
+	x := int(float64(event.X()) / font.truewidth)
+	y := int(float64(event.Y()) / float64(font.lineHeight))
+	pos := []int{x, y}
+	mod := event.Modifiers()
+
+	if vert != 0 {
+		m.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
+	}
+
+	if horiz != 0 {
+		m.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
 	}
 
 	event.Accept()
