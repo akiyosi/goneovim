@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -32,8 +33,9 @@ type MiniMap struct {
 	visible bool
 
 	isSetColorscheme bool
+	isProcessSync    bool
 
-	sync          sync.Mutex
+	mu            sync.Mutex
 	signal        *miniMapSignal
 	redrawUpdates chan [][]interface{}
 	stopOnce      sync.Once
@@ -296,6 +298,16 @@ func (m *MiniMap) mapScroll() {
 }
 
 func (m *MiniMap) bufSync() {
+	if m.isProcessSync {
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	defer func() {
+		m.isProcessSync = false
+	}()
+	m.isProcessSync = true
+	time.Sleep(400 * time.Millisecond)
 	if strings.Contains(m.ws.filepath, "[denite]") {
 		return
 	}
@@ -322,8 +334,12 @@ func (m *MiniMap) bufSync() {
 		return
 	}
 
-	start := m.ws.curLine - m.ws.screen.cursor[0]
-	end := m.ws.curLine - m.ws.screen.cursor[0] + mmWin.rows
+	start := m.ws.curLine - m.ws.screen.cursor[0] - 1
+	end := m.ws.curLine - m.ws.screen.cursor[0] - 1 + 1 + mmWin.rows
+
+	if start < 0 || end < 2 || end-start < 2 {
+		return
+	}
 
 	// Get buffer contents
 	replacement, err := m.ws.nvim.BufferLines(
@@ -333,6 +349,9 @@ func (m *MiniMap) bufSync() {
 		false,
 	)
 	if err != nil {
+		return
+	}
+	if len(replacement) < 1 {
 		return
 	}
 
@@ -399,9 +418,8 @@ func (m *MiniMap) transparent(bg *RGBA) int {
 }
 
 func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
-	var mu sync.Mutex
-	mu.Lock()
-	defer mu.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	var v, h, vert, horiz int
 	var accel int
