@@ -518,6 +518,20 @@ func (m *MiniMap) mouseEvent(event *gui.QMouseEvent) {
 	m.nvim.Eval("line('w0')", &absMapTop)
 	targetPos := absMapTop + y
 	m.ws.nvim.Command(fmt.Sprintf("%d", targetPos))
+
+	mappings, err := m.ws.nvim.KeyMap("normal")
+	if err != nil {
+		return
+	}
+	var isThereZzMap bool
+	for _, mapping := range mappings {
+		if mapping.LHS == "zz" {
+			isThereZzMap = true
+		}
+	}
+	if !isThereZzMap {
+		m.ws.nvim.Input("zz")
+	}
 }
 
 func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
