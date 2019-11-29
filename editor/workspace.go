@@ -400,6 +400,8 @@ func (w *Workspace) initGonvim() {
 		gonvimAutoCmds = gonvimAutoCmds + `
 		aug GonvimAuMinimap | au! | aug END
 		au GonvimAuMinimap BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
+		aug GonvimAuMinimapSync | au! | aug END
+		au GonvimAuMinimapSync TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_minimap_sync")
 		`
 	}
 
@@ -1090,6 +1092,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_minimap_update":
 		if w.minimap.visible {
 			w.minimap.bufUpdate()
+		}
+	case "gonvim_minimap_sync":
+		if w.minimap.visible {
+			go w.minimap.bufSync()
 		}
 	case "gonvim_minimap_toggle":
 		go w.minimap.toggle()

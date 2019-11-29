@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -32,8 +33,9 @@ type MiniMap struct {
 	visible bool
 
 	isSetColorscheme bool
+	isProcessSync    bool
 
-	sync          sync.Mutex
+	mu            sync.Mutex
 	signal        *miniMapSignal
 	redrawUpdates chan [][]interface{}
 	stopOnce      sync.Once
@@ -131,10 +133,8 @@ func (m *MiniMap) startMinimapProc() {
 	m.visible = editor.config.MiniMap.Visible
 
 	m.nvim.Subscribe("Gui")
-	m.nvim.Command(":set laststatus=0 | set noruler")
 	m.nvim.Command(":syntax on")
-	m.nvim.Command(":set nowrap")
-	m.nvim.Command(":set virtualedit+=all")
+	m.nvim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all")
 }
 
 func (m *MiniMap) exit() {
@@ -168,6 +168,7 @@ func (m *MiniMap) toggle() {
 	}
 	m.curRegion.SetParent(win.widget)
 	m.bufUpdate()
+	m.bufSync()
 }
 
 func (m *MiniMap) updateRows() bool {
@@ -294,6 +295,86 @@ func (m *MiniMap) mapScroll() {
 	m.curRegion.Move2(0, pos)
 }
 
+func (m *MiniMap) bufSync() {
+	if m.isProcessSync {
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	defer func() {
+		m.isProcessSync = false
+	}()
+	m.isProcessSync = true
+	time.Sleep(800 * time.Millisecond)
+	if strings.Contains(m.ws.filepath, "[denite]") {
+		return
+	}
+	if !m.visible {
+		m.widget.Hide()
+		return
+	}
+	if m.ws.nvim == nil || m.nvim == nil {
+		return
+	}
+
+	// Get current buffer
+	buf, err := m.ws.nvim.CurrentBuffer()
+	if err != nil {
+		return
+	}
+
+	// Get minimap window
+	mmWin, ok := m.windows[1]
+	if !ok {
+		return
+	}
+	if mmWin == nil {
+		return
+	}
+
+	start := 0
+	end := 0
+	var pos [4]int
+	m.ws.nvim.Eval("getpos('$')", &pos)
+	var minimapPos [4]int
+	m.nvim.Eval("getpos('$')", &minimapPos)
+	if pos[1] > minimapPos[1] {
+		end = pos[1] + 1
+	} else {
+		end = minimapPos[1] + 1
+	}
+
+	// Get buffer contents
+	replacement, err := m.ws.nvim.BufferLines(
+		buf,
+		start,
+		end,
+		false,
+	)
+	if err != nil {
+		return
+	}
+	if len(replacement) < 1 {
+		return
+	}
+
+
+	// Get current buffer of minimap
+	minimapBuf, err := m.nvim.CurrentBuffer()
+	if err != nil {
+		return
+	}
+
+	// Set buffer contents
+	m.nvim.SetBufferLines(
+		minimapBuf,
+		start,
+		end,
+		false,
+		replacement,
+	)
+}
+
 func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 	for _, update := range updates {
 		event := update[0].(string)
@@ -341,12 +422,10 @@ func (m *MiniMap) transparent(bg *RGBA) int {
 }
 
 func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
-	var mu sync.Mutex
-	mu.Lock()
-	defer mu.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
-	var v, h, vert, horiz int
-	var accel int
+	var v, h, vert, horiz, accel int
 	font := m.font
 
 	switch runtime.GOOS {
@@ -385,26 +464,49 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 		if m.scrollDustDeltaY < 1 {
 			m.scrollDustDeltaY = 0
 		}
+
 		if m.scrollDustDeltaY <= 2 {
-			accel = 1
+		        accel = 1
 		} else if m.scrollDustDeltaY > 2 {
-			accel = int(float64(m.scrollDustDeltaY) / float64(4))
+		        accel = int(float64(m.scrollDustDeltaY) / float64(4))
 		}
 
 	default:
 		vert = event.AngleDelta().Y()
 		accel = 16
 	}
-
 	if vert == 0 && horiz == 0 {
 		return
 	}
 
 	if vert > 0 {
-		m.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
+	        m.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
 	} else if vert < 0 {
-		m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
+	        m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
 	}
+	// var vertKey string
+	// if vert > 0 {
+	// 	vertKey = "Up"
+	// } else {
+	// 	vertKey = "Down"
+	// }
+	// mod := event.Modifiers()
+	// if vert != 0 {
+	// 	m.nvim.Input(fmt.Sprintf("%d<%sScrollWheel%s>", accel, editor.modPrefix(mod), vertKey))
+	// }
+
+	// var horizKey string
+	// if horiz > 0 {
+	// 	horizKey = "Left"
+	// } else {
+	// 	horizKey = "Right"
+	// }
+	// x := int(float64(event.X()) / font.truewidth)
+	// y := int(float64(event.Y()) / float64(font.lineHeight))
+	// pos := []int{x, y}
+	// if horiz != 0 {
+	// 	m.nvim.Input(fmt.Sprintf("%d<%sScrollWheel%s><%d,%d>", accel, editor.modPrefix(mod), horizKey, pos[0], pos[1]))
+	// }
 
 	event.Accept()
 }
@@ -416,6 +518,20 @@ func (m *MiniMap) mouseEvent(event *gui.QMouseEvent) {
 	m.nvim.Eval("line('w0')", &absMapTop)
 	targetPos := absMapTop + y
 	m.ws.nvim.Command(fmt.Sprintf("%d", targetPos))
+
+	mappings, err := m.ws.nvim.KeyMap("normal")
+	if err != nil {
+		return
+	}
+	var isThereZzMap bool
+	for _, mapping := range mappings {
+		if mapping.LHS == "zz" {
+			isThereZzMap = true
+		}
+	}
+	if !isThereZzMap {
+		m.ws.nvim.Input("zz")
+	}
 }
 
 func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
