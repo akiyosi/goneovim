@@ -2593,9 +2593,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		// focusable := arg.([]interface{})[6]
 
 		win.widget.SetParent(editor.wsWidget)
-
-		win.pos[0] = anchorCol
-		win.pos[1] = anchorRow
 		win.isFloatWin = true
 
 		anchorwin, ok := s.windows[anchorGrid]
@@ -2605,11 +2602,27 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		if anchorwin == nil {
 			continue
 		}
-		x := anchorwin.pos[0] + win.pos[0]
-		y := anchorwin.pos[1] + win.pos[1]
+
+		var x, y int
+		switch win.anchor {
+		case "NW":
+			x = anchorwin.pos[0] + anchorCol
+			y = anchorwin.pos[1] + anchorRow
+		case "NE":
+			x = anchorwin.pos[0] + anchorCol + win.cols
+			y = anchorwin.pos[1] + anchorRow
+		case "SW":
+			x = anchorwin.pos[0] + anchorCol
+			y = anchorwin.pos[1] + anchorRow + win.rows
+		case "SE":
+			x = anchorwin.pos[0] + anchorCol + win.cols
+			y = anchorwin.pos[1] + anchorRow + win.rows
+		}
+		win.pos[0] = x
+		win.pos[1] = y
+
 		win.move(x, y)
 		win.setShadow()
-
 		win.show()
 	}
 }
