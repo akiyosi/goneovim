@@ -49,6 +49,9 @@ func initSignature() *Signature {
 		label:  label,
 		height: widget.SizeHint().Height(),
 	}
+
+	widget.SetGraphicsEffect(util.DropShadow(-2, 6, 40, 200))
+
 	return signature
 }
 
@@ -114,7 +117,7 @@ func (s *Signature) move() {
 
 	x, y := s.ws.getPointInWidget(col, row, s.ws.cursor.gridid)
 	if i > -1 {
-		x -= s.widget.Height()
+		y -= s.widget.Height()
 	}
 	s.x = x
 	s.y = y

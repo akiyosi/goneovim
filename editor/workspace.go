@@ -1245,16 +1245,22 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 }
 
 func (w *Workspace) getPointInWidget(col, row, grid int) (int, int) {
-	x := int(float64(col) * w.font.truewidth)
-	y := row * w.font.lineHeight
+	win, ok := w.screen.windows[grid]
+	if !ok {
+		return 0, 0
+	}
+	if win == nil {
+		return 0, 0
+	}
+	font := win.getFont()
+
+	x := int(float64(col) * font.truewidth)
+	y := row * font.lineHeight
 	if w.drawTabline {
 		y += w.tabline.widget.Height()
 	}
-	win, ok := w.screen.windows[grid]
-	if ok && win != nil {
-		x += int(float64(win.pos[0]) * w.font.truewidth)
-		y += win.pos[1] * w.font.lineHeight
-	}
+	x += int(float64(win.pos[0]) * font.truewidth)
+	y += win.pos[1] * font.lineHeight
 
 	return x, y
 }
