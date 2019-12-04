@@ -100,7 +100,17 @@ func newMiniMap() *MiniMap {
 }
 
 func (m *MiniMap) startMinimapProc() {
-	neovim, err := nvim.NewChildProcess(nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--headless"))
+	var neovim *nvim.Nvim
+	var err error
+	minimapProcessArgs := nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--headless")
+	if editor.opts.Nvim != "" {
+		// Attaching to /path/to/nvim
+		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
+		neovim, err = nvim.NewChildProcess(minimapProcessArgs, childProcessCmd)
+	} else {
+		// Attaching to nvim normaly
+		neovim, err = nvim.NewChildProcess(minimapProcessArgs)
+	}
 	if err != nil {
 		fmt.Println(err)
 	}
