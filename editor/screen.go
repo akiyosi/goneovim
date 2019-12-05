@@ -698,14 +698,14 @@ func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
 func (w *Window) drawMsgSeparator(p *gui.QPainter) {
 	highNo, ok := w.s.highlightGroup["MsgSeparator"]
 	if !ok {
-		highNo = 0
+		return
 	}
 	color, ok := w.s.highAttrDef[highNo]
 	if !ok {
 		return
 	}
 	if color == nil {
-		color = w.s.highAttrDef[0]
+		return
 	}
 	fg := color.fg()
 	p.FillRect4(
