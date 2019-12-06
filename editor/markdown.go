@@ -120,12 +120,33 @@ func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
 }
 
 func (m *Markdown) updatePos() {
-	for _, win := range m.ws.screen.windows {
+	// for _, win := range m.ws.screen.windows {
+	// 	if win == nil {
+	// 		continue
+	// 	}
+	// 	if win.isMsgGrid || win.isFloatWin {
+	// 		continue
+	// 	}
+	// 	if filepath.Base(win.bufName) == GonvimMarkdownBufName {
+	// 		if !m.webview.IsVisible() {
+	// 			m.webview.Resize2(
+	// 				int(float64(win.cols)*m.ws.font.truewidth),
+	// 				win.rows*m.ws.font.lineHeight,
+	// 			)
+	// 			m.webview.SetParent(win.widget)
+	// 			m.show()
+	// 		}
+	// 		return
+	// 	}
+	// }
+	m.ws.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
 		if win == nil {
-			continue
+			return true
 		}
 		if win.isMsgGrid || win.isFloatWin {
-			continue
+			return true
 		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
 			if !m.webview.IsVisible() {
@@ -136,9 +157,10 @@ func (m *Markdown) updatePos() {
 				m.webview.SetParent(win.widget)
 				m.show()
 			}
-			return
+			return false
 		}
-	}
+		return true
+	})
 	m.hide()
 }
 
@@ -192,12 +214,30 @@ func (m *Markdown) scrollHalfPageDown() {
 }
 
 func (m *Markdown) toggle() {
-	for _, win := range m.ws.screen.windows {
+	// for _, win := range m.ws.screen.windows {
+	// 	if win == nil {
+	// 		continue
+	// 	}
+	// 	if win.isMsgGrid || win.isFloatWin {
+	// 		continue
+	// 	}
+	// 	if filepath.Base(win.bufName) == GonvimMarkdownBufName {
+	// 		m.htmlSet = false
+	// 		m.hide()
+	// 		go func() {
+	// 			m.ws.nvim.SetCurrentWindow(win.id)
+	// 			m.ws.nvim.Command("close")
+	// 		}()
+	// 		return
+	// 	}
+	// }
+	m.ws.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
 		if win == nil {
-			continue
+			return true
 		}
 		if win.isMsgGrid || win.isFloatWin {
-			continue
+			return true
 		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
 			m.htmlSet = false
@@ -206,9 +246,10 @@ func (m *Markdown) toggle() {
 				m.ws.nvim.SetCurrentWindow(win.id)
 				m.ws.nvim.Command("close")
 			}()
-			return
+			return false
 		}
-	}
+		return true
+	})
 	m.ws.nvim.Command(`keepalt vertical botright split ` + GonvimMarkdownBufName)
 	m.ws.nvim.Command("setlocal filetype=" + GonvimMarkdownBufName)
 	m.ws.nvim.Command("setlocal buftype=nofile")

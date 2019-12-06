@@ -767,6 +767,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		// Multigrid Events
 		case "win_pos":
 			s.windowPosition(args)
+			s.setBufferNames()
 		case "win_float_pos":
 			s.windowFloatPosition(args)
 		case "win_external_pos":
@@ -1245,11 +1246,15 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 }
 
 func (w *Workspace) getPointInWidget(col, row, grid int) (int, int) {
-	win, ok := w.screen.windows[grid]
+	// win, ok := w.screen.windows[grid]
+	// if !ok {
+	// 	return 0, 0
+	// }
+	// if win == nil {
+	// 	return 0, 0
+	// }
+	win, ok := w.screen.getWindow(grid)
 	if !ok {
-		return 0, 0
-	}
-	if win == nil {
 		return 0, 0
 	}
 	font := win.getFont()

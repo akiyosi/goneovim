@@ -78,6 +78,9 @@ func (l *Locpopup) subscribe() {
 }
 
 func (l *Locpopup) updateLocpopup() {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
 	if !l.shown {
 		l.widget.Hide()
 		return

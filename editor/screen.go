@@ -63,6 +63,7 @@ type Cell struct {
 
 // Window is
 type Window struct {
+	rwMutex     sync.RWMutex
 	paintMutex  sync.Mutex
 	redrawMutex sync.Mutex
 
@@ -108,9 +109,10 @@ type Screen struct {
 	ws   *Workspace
 	font *Font
 
-	name    string
-	widget  *widgets.QWidget
-	windows map[gridId]*Window
+	name   string
+	widget *widgets.QWidget
+	// windows map[gridId]*Window
+	windows sync.Map
 	width   int
 	height  int
 
@@ -145,8 +147,9 @@ func newScreen() *Screen {
 		Build()
 
 	screen := &Screen{
-		widget:         widget,
-		windows:        make(map[gridId]*Window),
+		widget: widget,
+		// windows:        make(map[gridId]*Window),
+		windows:        sync.Map{},
 		cursor:         [2]int{0, 0},
 		scrollRegion:   []int{0, 0, 0, 0},
 		highlightGroup: make(map[string]int),
@@ -310,15 +313,27 @@ func (s *Screen) updateSize() {
 		return
 	}
 
-	for _, win := range s.windows {
+	// for _, win := range s.windows {
+	// 	if win == nil {
+	// 		continue
+	// 	}
+	// 	if win.font != nil {
+	// 		win.width = 0
+	// 		win.height = 0
+	// 	}
+	// }
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
 		if win == nil {
-			continue
+			return true
 		}
 		if win.font != nil {
 			win.width = 0
 			win.height = 0
 		}
-	}
+
+		return true
+	})
 
 	s.uiTryResize(currentCols, currentRows)
 }
@@ -341,12 +356,43 @@ func (s *Screen) uiTryResize(width, height int) {
 	}
 }
 
-func (s *Screen) gridFont(update interface{}) {
-	win, ok := s.windows[s.ws.cursor.gridid]
+func (s *Screen) getWindow(grid int) (*Window, bool) {
+	winITF, ok := s.windows.Load(grid)
 	if !ok {
-		return
+		return nil, false
 	}
+	win := winITF.(*Window)
 	if win == nil {
+		return nil, false
+	}
+
+	return win, true
+}
+
+func (s *Screen) storeWindow(grid int, win *Window) {
+	s.windows.Store(grid, win)
+}
+
+func (s *Screen) lenWindows() int {
+	length := 0
+	s.windows.Range(func(_, _ interface{}) bool {
+		length++
+		return true
+	})
+
+	return length
+}
+
+func (s *Screen) gridFont(update interface{}) {
+	// win, ok := s.windows[s.ws.cursor.gridid]
+	// if !ok {
+	// 	return
+	// }
+	// if win == nil {
+	// 	return
+	// }
+	win, ok := s.getWindow(s.ws.cursor.gridid)
+	if !ok {
 		return
 	}
 
@@ -408,7 +454,10 @@ func (s *Screen) gridFont(update interface{}) {
 func (s *Screen) toolTipPos() (int, int, int, int) {
 	var x, y, candX, candY int
 	ws := s.ws
-	if len(s.windows) == 0 {
+	// if len(s.windows) == 0 {
+	// 	return 0, 0, 0, 0
+	// }
+	if s.lenWindows() == 0 {
 		return 0, 0, 0, 0
 	}
 	if ws.palette.widget.IsVisible() {
@@ -425,13 +474,18 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		col := s.cursor[1]
 		x = int(float64(col) * s.font.truewidth)
 		y = row * s.font.lineHeight
-		win, ok := s.windows[s.ws.cursor.gridid]
+		// win, ok := s.windows[s.ws.cursor.gridid]
+		// if !ok {
+		// 	return 0, 0, 0, 0
+		// }
+		// if win == nil {
+		// 	return 0, 0, 0, 0
+		// }
+		win, ok := s.getWindow(s.ws.cursor.gridid)
 		if !ok {
 			return 0, 0, 0, 0
 		}
-		if win == nil {
-			return 0, 0, 0, 0
-		}
+
 		candX = int(float64(col+win.pos[0]) * s.font.truewidth)
 		candY = (row+win.pos[1])*s.font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
 	}
@@ -453,8 +507,12 @@ func (s *Screen) toolTipFont(font *Font) {
 
 func (s *Screen) toolTipShow() {
 	if !s.ws.palette.widget.IsVisible() {
-		win, ok := s.windows[s.ws.cursor.gridid]
-		if ok && win != nil {
+		// win, ok := s.windows[s.ws.cursor.gridid]
+		// if ok && win != nil {
+		// 	s.tooltip.SetParent(win.widget)
+		// }
+		win, ok := s.getWindow(s.ws.cursor.gridid)
+		if ok {
 			s.tooltip.SetParent(win.widget)
 		}
 	}
@@ -733,27 +791,52 @@ func (w *Window) drawBorders(p *gui.QPainter, row, col, rows, cols int) {
 	if !editor.config.Editor.DrawBorder {
 		return
 	}
-	for _, win := range w.s.windows {
+	// for _, win := range w.s.windows {
+	// 	if win == nil {
+	// 		continue
+	// 	}
+	// 	if !win.isShown() {
+	// 		continue
+	// 	}
+	// 	if win.isFloatWin {
+	// 		continue
+	// 	}
+	// 	if win.isMsgGrid {
+	// 		continue
+	// 	}
+	// 	if win.pos[0]+win.cols < row && (win.pos[1]+win.rows+1) < col {
+	// 		continue
+	// 	}
+	// 	if win.pos[0] > (row+rows) && (win.pos[1]+win.rows) > (col+cols) {
+	// 		continue
+	// 	}
+	// 	win.drawBorder(p)
+	// }
+	w.s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
 		if win == nil {
-			continue
+			return true
 		}
 		if !win.isShown() {
-			continue
+			return true
 		}
 		if win.isFloatWin {
-			continue
+			return true
 		}
 		if win.isMsgGrid {
-			continue
+			return true
 		}
 		if win.pos[0]+win.cols < row && (win.pos[1]+win.rows+1) < col {
-			continue
+			return true
 		}
 		if win.pos[0] > (row+rows) && (win.pos[1]+win.rows) > (col+cols) {
-			continue
+			return true
 		}
 		win.drawBorder(p)
-	}
+
+		return true
+	})
 
 }
 
@@ -800,30 +883,45 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 
 func (s *Screen) bottomWindowPos() int {
 	pos := 0
-	for _, win := range s.windows {
+	// for _, win := range s.windows {
+	// 	if win == nil {
+	// 		continue
+	// 	}
+	// 	if win.grid == 1 {
+	// 		continue
+	// 	}
+	// 	if win.isMsgGrid {
+	// 		continue
+	// 	}
+	// 	position := win.pos[1]*win.s.font.lineHeight + win.widget.Rect().Bottom()
+	// 	if pos < position {
+	// 		pos = position
+	// 	}
+	// }
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
 		if win == nil {
-			continue
+			return true
 		}
 		if win.grid == 1 {
-			continue
+			return true
 		}
 		if win.isMsgGrid {
-			continue
+			return true
 		}
 		position := win.pos[1]*win.s.font.lineHeight + win.widget.Rect().Bottom()
 		if pos < position {
 			pos = position
 		}
-	}
+
+		return true
+	})
 
 	return pos
 }
 
 func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
-	var m sync.Mutex
-	m.Lock()
-	defer m.Unlock()
-
 	var v, h, vert, horiz int
 	var vertKey string
 	var horizKey string
@@ -929,15 +1027,38 @@ func (s *Screen) focusWindow(event *gui.QWheelEvent) {
 	mod := event.Modifiers()
 	col := int(float64(event.X()) / s.font.truewidth)
 	row := int(float64(event.Y()) / float64(s.font.lineHeight))
-	for _, win := range s.windows {
+	// for _, win := range s.windows {
+	// 	if win == nil {
+	// 		continue
+	// 	}
+	// 	if win.grid == 1 {
+	// 		continue
+	// 	}
+	// 	if win.isMsgGrid {
+	// 		continue
+	// 	}
+	// 	X := event.X()
+	// 	Y := event.Y()
+	// 	rect := win.widget.Geometry()
+	// 	if rect.Contains3(X, Y) && win.grid != s.ws.cursor.gridid {
+	// 		s.ws.nvim.InputMouse("left", "press", editor.modPrefix(mod), win.grid, row, col)
+	// 		s.ws.nvim.InputMouse("left", "release", editor.modPrefix(mod), win.grid, row, col)
+	// 		go s.ws.nvim.Input("<Esc>")
+
+	// 		return
+	// 	}
+	// }
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
 		if win == nil {
-			continue
+			return true
 		}
 		if win.grid == 1 {
-			continue
+			return true
 		}
 		if win.isMsgGrid {
-			continue
+			return true
 		}
 		X := event.X()
 		Y := event.Y()
@@ -947,9 +1068,11 @@ func (s *Screen) focusWindow(event *gui.QWheelEvent) {
 			s.ws.nvim.InputMouse("left", "release", editor.modPrefix(mod), win.grid, row, col)
 			go s.ws.nvim.Input("<Esc>")
 
-			return
+			return false
 		}
-	}
+
+		return true
+	})
 }
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
@@ -1027,7 +1150,16 @@ func (s *Screen) gridResize(args []interface{}) {
 }
 
 func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
-	win, ok := s.windows[gridid]
+	// win, ok := s.windows[gridid]
+	// if ok {
+	// 	if win == nil {
+	// 		return
+	// 	}
+	// 	if win.cols == cols && win.rows == rows {
+	// 		return
+	// 	}
+	// }
+	win, ok := s.getWindow(gridid)
 	if ok {
 		if win == nil {
 			return
@@ -1061,13 +1193,19 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	}
 
 	if win == nil {
-		s.windows[gridid] = newWindow()
-		s.windows[gridid].s = s
-		s.windows[gridid].setParent(s.widget)
-		s.windows[gridid].grid = gridid
-		s.windows[gridid].widget.SetAttribute(core.Qt__WA_KeyCompression, true)
-		// reassign win
-		win = s.windows[gridid]
+		// s.windows[gridid] = newWindow() // hosi
+		// s.windows[gridid].s = s
+		// s.windows[gridid].setParent(s.widget)
+		// s.windows[gridid].grid = gridid
+		// s.windows[gridid].widget.SetAttribute(core.Qt__WA_KeyCompression, true)
+		// // reassign win
+		// win = s.windows[gridid]
+		win = newWindow()
+		win.s = s
+		s.storeWindow(gridid, win)
+		win.setParent(s.widget)
+		win.grid = gridid
+		win.widget.SetAttribute(core.Qt__WA_KeyCompression, true)
 
 		// first cursor pos at startup app
 		if gridid == 1 && s.name != "minimap" {
@@ -1098,18 +1236,36 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 	var isExistMsgGrid bool
-	for _, w := range s.windows {
-		if w == nil {
-			continue
+	// for _, w := range s.windows {
+	// 	if w == nil {
+	// 		continue
+	// 	}
+	// 	if w.isMsgGrid {
+	// 		isExistMsgGrid = true
+	// 	}
+	// }
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
+		if win == nil {
+			return true
 		}
-		if w.isMsgGrid {
+		if win.isMsgGrid {
 			isExistMsgGrid = true
 		}
-	}
-	if !isExistMsgGrid && len(s.windows) < 3 {
+		return true
+	})
+
+	// if !isExistMsgGrid && len(s.windows) < 3 {
+	// 	return
+	// }
+	// if isExistMsgGrid && len(s.windows) < 4 {
+	// 	return
+	// }
+	if !isExistMsgGrid && s.lenWindows() < 3 {
 		return
 	}
-	if isExistMsgGrid && len(s.windows) < 4 {
+	if isExistMsgGrid && s.lenWindows() < 4 {
 		return
 	}
 	if oldCols == 0 && oldRows == 0 {
@@ -1133,21 +1289,22 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 	leftWindowPos := win.pos[0] + oldCols + 1 + deltaCols
 	topWindowPos := win.pos[1] + oldRows + 1 + deltaRows
 
-	for _, w := range s.windows {
+	s.windows.Range(func(_, winITF interface{}) bool {
+		w := winITF.(*Window)
 		if w == nil {
-			continue
+			return true
 		}
 		if w.grid == 1 {
-			continue
+			return true
 		}
 		if w.isMsgGrid {
-			continue
+			return true
 		}
 		if w.grid == win.grid {
-			continue
+			return true
 		}
 		if w.font == nil {
-			continue
+			return true
 		}
 
 		if isResizeWidth && w.width > 0 {
@@ -1250,7 +1407,8 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 
 		}
 
-	}
+		return true
+	})
 }
 
 func (s *Screen) gridCursorGoto(args []interface{}) {
@@ -1262,11 +1420,15 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			continue
 		}
 
-		win, ok := s.windows[gridid]
+		// win, ok := s.windows[gridid]
+		// if !ok {
+		// 	continue
+		// }
+		// if win == nil {
+		// 	continue
+		// }
+		win, ok := s.getWindow(gridid)
 		if !ok {
-			continue
-		}
-		if win == nil {
 			continue
 		}
 
@@ -1454,11 +1616,15 @@ func (s *Screen) gridClear(args []interface{}) {
 			continue
 		}
 
-		win, ok := s.windows[gridid]
+		// win, ok := s.windows[gridid]
+		// if !ok {
+		// 	continue
+		// }
+		// if win == nil {
+		// 	continue
+		// }
+		win, ok := s.getWindow(gridid)
 		if !ok {
-			continue
-		}
-		if win == nil {
 			continue
 		}
 		win.content = make([][]*Cell, win.rows)
@@ -1479,11 +1645,15 @@ func (s *Screen) gridLine(args []interface{}) {
 		}
 
 		s.updateGridContent(arg.([]interface{}))
-		win, ok := s.windows[gridid]
+		// win, ok := s.windows[gridid]
+		// if !ok {
+		// 	continue
+		// }
+		// if win == nil {
+		// 	continue
+		// }
+		win, ok := s.getWindow(gridid)
 		if !ok {
-			continue
-		}
-		if win == nil {
 			continue
 		}
 		if !win.isShown() {
@@ -1507,13 +1677,18 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		return
 	}
 
-	win, ok := s.windows[gridid]
+	// win, ok := s.windows[gridid]
+	// if !ok {
+	// 	return
+	// }
+	// if win == nil {
+	// 	return
+	// }
+	win, ok := s.getWindow(gridid)
 	if !ok {
 		return
 	}
-	if win == nil {
-		return
-	}
+
 	content := win.content
 	if row >= win.rows {
 		return
@@ -1693,11 +1868,15 @@ func (s *Screen) gridScroll(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		win, ok := s.windows[gridid]
+		// win, ok := s.windows[gridid]
+		// if !ok {
+		// 	continue
+		// }
+		// if win == nil {
+		// 	continue
+		// }
+		win, ok := s.getWindow(gridid)
 		if !ok {
-			continue
-		}
-		if win == nil {
 			continue
 		}
 		win.scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])     // top
@@ -1793,7 +1972,18 @@ func (w *Window) update() {
 }
 
 func (s *Screen) update() {
-	for _, win := range s.windows {
+	// for _, win := range s.windows {
+	// 	if win != nil {
+	// 		// Fill entire background if background color changed
+	// 		if !win.background.equals(s.ws.background) {
+	// 			win.background = s.ws.background.copy()
+	// 			win.fill()
+	// 		}
+	// 		win.update()
+	// 	}
+	// }
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
 		if win != nil {
 			// Fill entire background if background color changed
 			if !win.background.equals(s.ws.background) {
@@ -1802,7 +1992,9 @@ func (s *Screen) update() {
 			}
 			win.update()
 		}
-	}
+
+		return true
+	})
 }
 
 func (w *Window) queueRedrawAll() {
@@ -2520,11 +2712,15 @@ func (s *Screen) windowPosition(args []interface{}) {
 			continue
 		}
 
-		win, ok := s.windows[gridid]
+		// win, ok := s.windows[gridid]
+		// if !ok {
+		// 	continue
+		// }
+		// if win == nil {
+		// 	continue
+		// }
+		win, ok := s.getWindow(gridid)
 		if !ok {
-			continue
-		}
-		if win == nil {
 			continue
 		}
 
@@ -2535,25 +2731,42 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.hideOverlappingWindows()
 		win.show()
 	}
-
-	go s.setBufferNames()
 }
 
 func (s *Screen) setBufferNames() {
-	for _, win := range s.ws.screen.windows {
+	// for _, win := range s.ws.screen.windows {
+	// 	if win == nil {
+	// 		continue
+	// 	}
+	// 	if win.grid == 1 {
+	// 		continue
+	// 	}
+	// 	if win.isMsgGrid {
+	// 		continue
+	// 	}
+
+	// 	buf, _ := s.ws.nvim.WindowBuffer(win.id)
+	// 	bufName, _ := s.ws.nvim.BufferName(buf)
+	// 	win.bufName = bufName
+	// }
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
 		if win == nil {
-			continue
+			return true
 		}
 		if win.grid == 1 {
-			continue
+			return true
 		}
 		if win.isMsgGrid {
-			continue
+			return true
 		}
+
 		buf, _ := s.ws.nvim.WindowBuffer(win.id)
 		bufName, _ := s.ws.nvim.BufferName(buf)
 		win.bufName = bufName
-	}
+
+		return true
+	})
 }
 
 func (s *Screen) gridDestroy(args []interface{}) {
@@ -2563,13 +2776,18 @@ func (s *Screen) gridDestroy(args []interface{}) {
 			continue
 		}
 
-		win, ok := s.windows[gridid]
+		// win, ok := s.windows[gridid]
+		// if !ok {
+		// 	continue
+		// }
+		// if win == nil {
+		// 	continue
+		// }
+		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
 		}
-		if win == nil {
-			continue
-		}
+
 		win.hide()
 		win = nil
 	}
@@ -2582,13 +2800,18 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			continue
 		}
 
-		win, ok := s.windows[gridid]
+		// win, ok := s.windows[gridid]
+		// if !ok {
+		// 	continue
+		// }
+		// if win == nil {
+		// 	continue
+		// }
+		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
 		}
-		if win == nil {
-			continue
-		}
+
 		win.id = arg.([]interface{})[1].(nvim.Window)
 		win.anchor = arg.([]interface{})[2].(string)
 		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
@@ -2599,11 +2822,15 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.widget.SetParent(editor.wsWidget)
 		win.isFloatWin = true
 
-		anchorwin, ok := s.windows[anchorGrid]
+		// anchorwin, ok := s.windows[anchorGrid]
+		// if !ok {
+		// 	continue
+		// }
+		// if anchorwin == nil {
+		// 	continue
+		// }
+		anchorwin, ok := s.getWindow(anchorGrid)
 		if !ok {
-			continue
-		}
-		if anchorwin == nil {
 			continue
 		}
 
@@ -2637,11 +2864,15 @@ func (s *Screen) windowHide(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		win, ok := s.windows[gridid]
+		// win, ok := s.windows[gridid]
+		// if !ok {
+		// 	continue
+		// }
+		// if win == nil {
+		// 	continue
+		// }
+		win, ok := s.getWindow(gridid)
 		if !ok {
-			continue
-		}
-		if win == nil {
 			continue
 		}
 		win.hide()
@@ -2704,11 +2935,15 @@ func (s *Screen) msgSetPos(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		msgCount := util.ReflectToInt(arg.([]interface{})[1])
-		win, ok := s.windows[gridid]
+		// win, ok := s.windows[gridid]
+		// if !ok {
+		// 	continue
+		// }
+		// if win == nil {
+		// 	continue
+		// }
+		win, ok := s.getWindow(gridid)
 		if !ok {
-			continue
-		}
-		if win == nil {
 			continue
 		}
 		win.isMsgGrid = true
@@ -2785,29 +3020,56 @@ func (w *Window) hideOverlappingWindows() {
 	if w.isMsgGrid {
 		return
 	}
-	for _, win := range w.s.windows {
+	// for _, win := range w.s.windows {
+	// 	if win == nil {
+	// 		continue
+	// 	}
+	// 	if win.grid == 1 {
+	// 		continue
+	// 	}
+	// 	if w == win {
+	// 		continue
+	// 	}
+	// 	if win.isMsgGrid {
+	// 		continue
+	// 	}
+	// 	if win.isFloatWin {
+	// 		continue
+	// 	}
+	// 	if !win.shown {
+	// 		continue
+	// 	}
+	// 	if w.widget.Geometry().Contains2(win.widget.Geometry(), false) {
+	// 		win.hide()
+	// 	}
+	// }
+	w.s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
 		if win == nil {
-			continue
+			return true
 		}
 		if win.grid == 1 {
-			continue
+			return true
 		}
 		if w == win {
-			continue
+			return true
 		}
 		if win.isMsgGrid {
-			continue
+			return true
 		}
 		if win.isFloatWin {
-			continue
+			return true
 		}
 		if !win.shown {
-			continue
+			return true
 		}
 		if w.widget.Geometry().Contains2(win.widget.Geometry(), false) {
 			win.hide()
 		}
-	}
+
+		return true
+	})
 }
 
 func (w *Window) show() {

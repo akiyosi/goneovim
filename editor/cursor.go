@@ -83,11 +83,15 @@ func (c *Cursor) setBlink(wait, on, off int) {
 }
 
 func (c *Cursor) move() {
-	win, ok := c.ws.screen.windows[c.gridid]
+	// win, ok := c.ws.screen.windows[c.gridid]
+	// if !ok {
+	// 	return
+	// }
+	// if win == nil {
+	// 	return
+	// }
+	win, ok := c.ws.screen.getWindow(c.gridid)
 	if !ok {
-		return
-	}
-	if win == nil {
 		return
 	}
 	font := win.getFont()
@@ -136,11 +140,15 @@ func (c *Cursor) updateCursorShape() {
 		cellPercentage = util.ReflectToInt(cellPercentageITF)
 	}
 
-	win, ok := c.ws.screen.windows[c.gridid]
+	// win, ok := c.ws.screen.windows[c.gridid]
+	// if !ok {
+	// 	return
+	// }
+	// if win == nil {
+	// 	return
+	// }
+	win, ok := c.ws.screen.getWindow(c.gridid)
 	if !ok {
-		return
-	}
-	if win == nil {
 		return
 	}
 	var font *Font
@@ -234,11 +242,15 @@ func (c *Cursor) update() {
 	if c.ws.palette.widget.IsVisible() {
 		return
 	}
-	win, ok := c.ws.screen.windows[c.gridid]
+	// win, ok := c.ws.screen.windows[c.gridid]
+	// if !ok {
+	// 	return
+	// }
+	// if win == nil {
+	// 	return
+	// }
+	win, ok := c.ws.screen.getWindow(c.gridid)
 	if !ok {
-		return
-	}
-	if win == nil {
 		return
 	}
 	font := win.getFont()
@@ -260,11 +272,15 @@ func (c *Cursor) paint() {
 		return
 	}
 
-	win, ok := c.ws.screen.windows[c.gridid]
+	// win, ok := c.ws.screen.windows[c.gridid]
+	// if !ok {
+	// 	return
+	// }
+	// if win == nil {
+	// 	return
+	// }
+	win, ok := c.ws.screen.getWindow(c.gridid)
 	if !ok {
-		return
-	}
-	if win == nil {
 		return
 	}
 	if win.content == nil {
