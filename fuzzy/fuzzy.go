@@ -38,6 +38,7 @@ type Fuzzy struct {
 	start              int
 	result             []*Output
 	scoreMutext        *sync.Mutex
+	handleMutex        sync.Mutex
 	scoreNew           bool
 	cancelled          bool
 	cancelChan         chan bool
@@ -67,7 +68,11 @@ func RegisterPlugin(nvim *nvim.Nvim, isRemoteAttachment bool) {
 		isRemoteAttachment: isRemoteAttachment,
 	}
 	nvim.RegisterHandler("GonvimFuzzy", func(args ...interface{}) {
-		go shim.handle(args...)
+		shim.handleMutex.Lock()
+		go func() {
+			shim.handle(args...)
+			defer shim.handleMutex.Unlock()
+		}()
 	})
 }
 

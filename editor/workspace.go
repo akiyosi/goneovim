@@ -53,6 +53,7 @@ type Workspace struct {
 	signature  *Signature
 	message    *Message
 	minimap    *MiniMap
+
 	width      int
 	height     int
 	hidden     bool
@@ -86,6 +87,7 @@ type Workspace struct {
 	doneNvimStart chan bool
 	stopOnce      sync.Once
 	stop          chan struct{}
+	fontMutex     sync.Mutex
 
 	drawStatusline bool
 	drawTabline    bool
@@ -105,6 +107,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 	w.font = initFontNew(editor.extFontFamily, editor.extFontSize, editor.config.Editor.Linespace, true)
 	go func() {
+		w.fontMutex.Lock()
+		defer w.fontMutex.Unlock()
 		width, height, truewidth, ascent, italicWidth := fontSizeNew(w.font.fontNew)
 		w.font.width = width
 		w.font.height = height
@@ -767,6 +771,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		// Multigrid Events
 		case "win_pos":
 			s.windowPosition(args)
+			s.setBufferNames()
 		case "win_float_pos":
 			s.windowFloatPosition(args)
 		case "win_external_pos":
@@ -1245,11 +1250,15 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 }
 
 func (w *Workspace) getPointInWidget(col, row, grid int) (int, int) {
-	win, ok := w.screen.windows[grid]
+	// win, ok := w.screen.windows[grid]
+	// if !ok {
+	// 	return 0, 0
+	// }
+	// if win == nil {
+	// 	return 0, 0
+	// }
+	win, ok := w.screen.getWindow(grid)
 	if !ok {
-		return 0, 0
-	}
-	if win == nil {
 		return 0, 0
 	}
 	font := win.getFont()

@@ -157,7 +157,7 @@ type paletteConfig struct {
 }
 
 type messageConfig struct {
-	Transparent            float64
+	Transparent float64
 }
 
 type statusLineConfig struct {

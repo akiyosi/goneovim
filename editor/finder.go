@@ -21,8 +21,14 @@ func initFinder() *Finder {
 func (f *Finder) hide() {
 	f.ws.fpalette.hide()
 
-	win, ok := f.ws.screen.windows[f.ws.cursor.gridid]
-	if ok && win != nil {
+	// win, ok := f.ws.screen.windows[f.ws.cursor.gridid]
+	// if ok && win != nil {
+	// 	f.ws.cursor.widget.SetParent(win.widget)
+	// 	f.ws.cursor.widget.Hide()
+	// 	f.ws.cursor.widget.Show()
+	// }
+	win, ok := f.ws.screen.getWindow(f.ws.cursor.gridid)
+	if ok {
 		f.ws.cursor.widget.SetParent(win.widget)
 		f.ws.cursor.widget.Hide()
 		f.ws.cursor.widget.Show()

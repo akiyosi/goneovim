@@ -61,9 +61,10 @@ func newMiniMap() *MiniMap {
 
 	m := &MiniMap{
 		Screen: Screen{
-			name:           "minimap",
-			widget:         widget,
-			windows:        make(map[gridId]*Window),
+			name:   "minimap",
+			widget: widget,
+			// windows:        make(map[gridId]*Window),
+			windows:        sync.Map{},
 			cursor:         [2]int{0, 0},
 			scrollRegion:   []int{0, 0, 0, 0},
 			highlightGroup: make(map[string]int),
@@ -100,6 +101,9 @@ func newMiniMap() *MiniMap {
 }
 
 func (m *MiniMap) startMinimapProc() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	var neovim *nvim.Nvim
 	var err error
 	minimapProcessArgs := nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--headless")
@@ -164,11 +168,15 @@ func (m *MiniMap) setColor() {
 }
 
 func (m *MiniMap) toggle() {
-	win, ok := m.windows[1]
+	// win, ok := m.windows[1]
+	// if !ok {
+	// 	return
+	// }
+	// if win == nil {
+	// 	return
+	// }
+	win, ok := m.getWindow(1)
 	if !ok {
-		return
-	}
-	if win == nil {
 		return
 	}
 	if m.visible {
@@ -291,11 +299,15 @@ func (m *MiniMap) mapScroll() {
 	var absMapTop int
 	m.nvim.Eval("line('w0')", &absMapTop)
 
-	win, ok := m.ws.screen.windows[m.ws.cursor.gridid]
+	// win, ok := m.ws.screen.windows[m.ws.cursor.gridid]
+	// if !ok {
+	// 	return
+	// }
+	// if win == nil {
+	// 	return
+	// }
+	win, ok := m.ws.screen.getWindow(m.ws.cursor.gridid)
 	if !ok {
-		return
-	}
-	if win == nil {
 		return
 	}
 	regionHeight := win.rows
@@ -333,14 +345,10 @@ func (m *MiniMap) bufSync() {
 		return
 	}
 
-	// Get minimap window
-	mmWin, ok := m.windows[1]
-	if !ok {
-		return
-	}
-	if mmWin == nil {
-		return
-	}
+	// mmWin, ok := m.getWindow(1)
+	// if !ok {
+	// 	return
+	// }
 
 	start := 0
 	end := 0
@@ -367,7 +375,6 @@ func (m *MiniMap) bufSync() {
 	if len(replacement) < 1 {
 		return
 	}
-
 
 	// Get current buffer of minimap
 	minimapBuf, err := m.nvim.CurrentBuffer()
@@ -476,9 +483,9 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 		}
 
 		if m.scrollDustDeltaY <= 2 {
-		        accel = 1
+			accel = 1
 		} else if m.scrollDustDeltaY > 2 {
-		        accel = int(float64(m.scrollDustDeltaY) / float64(4))
+			accel = int(float64(m.scrollDustDeltaY) / float64(4))
 		}
 
 	default:
@@ -490,9 +497,9 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	if vert > 0 {
-	        m.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
+		m.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
 	} else if vert < 0 {
-	        m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
+		m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
 	}
 	// var vertKey string
 	// if vert > 0 {
