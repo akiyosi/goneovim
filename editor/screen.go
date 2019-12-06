@@ -296,6 +296,8 @@ func (s *Screen) waitTime() time.Duration {
 }
 
 func (s *Screen) updateSize() {
+	s.ws.fontMutex.Lock()
+	defer s.ws.fontMutex.Unlock()
 	ws := s.ws
 	s.width = s.widget.Width()
 	currentCols := int(float64(s.width) / s.font.truewidth)

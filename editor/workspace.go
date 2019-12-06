@@ -53,6 +53,7 @@ type Workspace struct {
 	signature  *Signature
 	message    *Message
 	minimap    *MiniMap
+
 	width      int
 	height     int
 	hidden     bool
@@ -86,6 +87,7 @@ type Workspace struct {
 	doneNvimStart chan bool
 	stopOnce      sync.Once
 	stop          chan struct{}
+	fontMutex     sync.Mutex
 
 	drawStatusline bool
 	drawTabline    bool
@@ -105,6 +107,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 	w.font = initFontNew(editor.extFontFamily, editor.extFontSize, editor.config.Editor.Linespace, true)
 	go func() {
+		w.fontMutex.Lock()
+		defer w.fontMutex.Unlock()
 		width, height, truewidth, ascent, italicWidth := fontSizeNew(w.font.fontNew)
 		w.font.width = width
 		w.font.height = height
