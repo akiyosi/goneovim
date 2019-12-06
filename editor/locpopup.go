@@ -116,6 +116,26 @@ func (l *Locpopup) handle(args []interface{}) {
 	}
 }
 
+func (l *Locpopup) updatePos() {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	if !l.shown {
+		return
+	}
+
+	col := l.ws.screen.cursor[1]
+	row := l.ws.screen.cursor[0]
+	x, y := l.ws.getPointInWidget(col, row, l.ws.cursor.gridid)
+
+	if row < 3 {
+		y += l.widget.Height()
+	} else {
+		y -= l.widget.Height()
+	}
+
+	l.widget.Move2(x, y)
+}
+
 func (l *Locpopup) update(args []interface{}) {
 	l.mutex.Lock()
 	shown := false

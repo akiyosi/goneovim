@@ -104,21 +104,7 @@ func (c *Cursor) move() {
 		c.widget.Move2(c.x, c.y+shift)
 	}
 
-	if !c.ws.loc.shown {
-		return
-	}
-
-	col := c.ws.screen.cursor[1]
-	row := c.ws.screen.cursor[0]
-	x, y := c.ws.getPointInWidget(col, row, c.gridid)
-
-	if row < 3 {
-		y += c.ws.loc.widget.Height()
-	} else {
-		y -= c.ws.loc.widget.Height()
-	}
-
-	c.ws.loc.widget.Move2(x, y)
+	c.ws.loc.updatePos()
 }
 
 func (c *Cursor) updateFont(font *Font) {
