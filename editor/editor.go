@@ -1,6 +1,8 @@
 package editor
 
 import (
+	"os/exec"
+	"io/ioutil"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -362,6 +364,31 @@ func putEnv() {
 		_ = os.Setenv("LD_LIBRARY_PATH", dir+"lib")
 		_ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
 		_ = os.Setenv("RESOURCE_NAME", "goneovim")
+	}
+	if runtime.GOOS == "darwin" {
+		shell := os.Getenv("SHELL")
+		if shell == "" {
+			shell = os.Getenv("/bin/bash")
+		}
+		cmd := exec.Command(shell, "-l", "-c", "env", "-i")
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return
+		}
+		if err := cmd.Start(); err!= nil {
+			return
+		}
+		output, err := ioutil.ReadAll(stdout)
+		if err != nil {
+			stdout.Close()
+			return
+		}
+		for _, b := range strings.Split(string(output), "\n") {
+			splits := strings.Split(b, "=")
+			if len(splits) > 1 {
+				_ = os.Setenv(splits[0], splits[1])
+			}
+		}
 	}
 	_ = os.Setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
 }
