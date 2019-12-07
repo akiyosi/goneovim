@@ -1172,6 +1172,8 @@ func (w *Workspace) guiFont(args string) {
 	}
 
 	w.font.change(parts[0], height)
+	w.screen.font = w.font
+
 	w.updateSize()
 	w.popup.updateFont(w.font)
 	w.message.updateFont(w.font)

@@ -71,13 +71,14 @@ type Window struct {
 	content [][]*Cell
 	lenLine []int
 
-	grid    gridId
-	id      nvim.Window
-	bufName string
-	pos     [2]int
-	anchor  string
-	cols    int
-	rows    int
+	grid        gridId
+	isGridDirty bool
+	id          nvim.Window
+	bufName     string
+	pos         [2]int
+	anchor      string
+	cols        int
+	rows        int
 
 	isMsgGrid  bool
 	isFloatWin bool
@@ -298,6 +299,7 @@ func (s *Screen) waitTime() time.Duration {
 func (s *Screen) updateSize() {
 	s.ws.fontMutex.Lock()
 	defer s.ws.fontMutex.Unlock()
+
 	ws := s.ws
 	s.width = s.widget.Width()
 	currentCols := int(float64(s.width) / s.font.truewidth)
@@ -315,15 +317,6 @@ func (s *Screen) updateSize() {
 		return
 	}
 
-	// for _, win := range s.windows {
-	// 	if win == nil {
-	// 		continue
-	// 	}
-	// 	if win.font != nil {
-	// 		win.width = 0
-	// 		win.height = 0
-	// 	}
-	// }
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 		if win == nil {
@@ -1163,9 +1156,6 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	// }
 	win, ok := s.getWindow(gridid)
 	if ok {
-		if win == nil {
-			return
-		}
 		if win.cols == cols && win.rows == rows {
 			return
 		}
@@ -1974,18 +1964,20 @@ func (w *Window) update() {
 }
 
 func (s *Screen) update() {
-	// for _, win := range s.windows {
-	// 	if win != nil {
-	// 		// Fill entire background if background color changed
-	// 		if !win.background.equals(s.ws.background) {
-	// 			win.background = s.ws.background.copy()
-	// 			win.fill()
-	// 		}
-	// 		win.update()
-	// 	}
-	// }
-	s.windows.Range(func(_, winITF interface{}) bool {
+	s.windows.Range(func(grid, winITF interface{}) bool {
 		win := winITF.(*Window)
+		// if grid is dirty, we remove this grid
+		if win.isGridDirty {
+			if win.queueRedrawArea[2] > 0 || win.queueRedrawArea[3] > 0 {
+				// If grid has an update area even though it has a dirty flag,
+				// it will still not be removed as a valid grid
+				win.isGridDirty = false
+			} else {
+				// Remove dirty grid
+				win.hide()
+				s.windows.Delete(grid)
+			}
+		}
 		if win != nil {
 			// Fill entire background if background color changed
 			if !win.background.equals(s.ws.background) {
@@ -2730,7 +2722,7 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.pos[0] = col
 		win.pos[1] = row
 		win.move(col, row)
-		win.hideOverlappingWindows()
+		// win.hideOverlappingWindows()
 		win.show()
 	}
 }
@@ -2778,20 +2770,12 @@ func (s *Screen) gridDestroy(args []interface{}) {
 			continue
 		}
 
-		// win, ok := s.windows[gridid]
-		// if !ok {
-		// 	continue
-		// }
-		// if win == nil {
-		// 	continue
-		// }
+		// NOTE: what should we actualy do in the event ??
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
 		}
-
-		win.hide()
-		win = nil
+		win.isGridDirty = true
 	}
 }
 
@@ -3075,7 +3059,6 @@ func (w *Window) hideOverlappingWindows() {
 }
 
 func (w *Window) show() {
-	// w.hideOverlappingWindows()
 	w.fill()
 	w.widget.Show()
 	w.shown = true
