@@ -68,11 +68,7 @@ func RegisterPlugin(nvim *nvim.Nvim, isRemoteAttachment bool) {
 		isRemoteAttachment: isRemoteAttachment,
 	}
 	nvim.RegisterHandler("GonvimFuzzy", func(args ...interface{}) {
-		shim.handleMutex.Lock()
-		go func() {
-			shim.handle(args...)
-			defer shim.handleMutex.Unlock()
-		}()
+		shim.handle(args...)
 	})
 }
 
