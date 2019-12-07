@@ -2,11 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>LSEnvironment</key>
-	<dict>
-		<key>PATH</key>
-		<string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/local/bin:/opt/local/sbin</string>
-	</dict>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>CFBundleIconFile</key>
@@ -19,21 +14,21 @@
 	<string>????</string>
 	<key>CFBundleExecutable</key>
 	<string>goneovim</string>
-  <key>CFBundleDocumentTypes</key>
-  <array>
-    <dict>
-      <key>CFBundleTypeExtensions</key>
-      <array>
-        <string>go</string>
-      </array>
-      <key>CFBundleTypeName</key>
-      <string>Go source</string>
-      <key>CFBundleTypeRole</key>
-      <string>Editor</string>
-      <key>CFBundleTypeIconFile</key>
-      <string>goneovim.icns</string>
-    </dict>
-  </array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>go</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>Go source</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>goneovim.icns</string>
+		</dict>
+	</array>
 	<key>CFBundleIdentifier</key>
 	<string>com.ident.goneovim</string>
 	<key>CFBundleGetInfoString</key>
