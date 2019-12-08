@@ -1,10 +1,10 @@
 package editor
 
 import (
-	"os/exec"
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -375,7 +375,7 @@ func putEnv() {
 		if err != nil {
 			return
 		}
-		if err := cmd.Start(); err!= nil {
+		if err := cmd.Start(); err != nil {
 			return
 		}
 		output, err := ioutil.ReadAll(stdout)

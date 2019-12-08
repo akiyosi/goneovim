@@ -54,9 +54,9 @@ type Workspace struct {
 	message    *Message
 	minimap    *MiniMap
 
-	width      int
-	height     int
-	hidden     bool
+	width  int
+	height int
+	hidden bool
 
 	nvim               *nvim.Nvim
 	rows               int
@@ -77,6 +77,7 @@ type Workspace struct {
 	maxLine            int
 	curLine            int
 	curColm            int
+	curPosMutex        sync.RWMutex
 	cursorStyleEnabled bool
 	modeInfo           []map[string]interface{}
 	ts                 int
@@ -497,9 +498,7 @@ func (w *Workspace) loadGinitVim() {
 	ts := 8
 	w.nvim.Option("ts", &ts)
 	w.ts = ts
-	colorscheme := ""
-	w.nvim.Var("colors_name", &colorscheme)
-	w.colorscheme = colorscheme
+	w.getColorscheme()
 	screenbg := ""
 	w.nvim.Eval(":echo &background", &screenbg)
 	w.screenbg = screenbg
@@ -509,6 +508,12 @@ func (w *Workspace) loadGinitVim() {
 		editor.colors.fg = bg
 		editor.colors.bg = fg
 	}
+}
+
+func (w *Workspace) getColorscheme() {
+	colorscheme := ""
+	w.nvim.Var("colors_name", &colorscheme)
+	w.colorscheme = colorscheme
 }
 
 func (w *Workspace) nvimCommandOutput(s string) (string, error) {
@@ -917,6 +922,12 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 
 	if !isChangeFg || !isChangeBg {
 		editor.isSetGuiColor = false
+		aw := editor.workspaces[editor.active]
+		// change minimap colorscheme
+		aw.minimap.isSetColorscheme = false
+		if aw.minimap.visible && aw.minimap.nvim != nil && aw.nvim != nil {
+			editor.workspaces[editor.active].minimap.setColorscheme()
+		}
 	}
 	if len(editor.workspaces) > 1 {
 		w.updateWorkspaceColor()
@@ -1024,6 +1035,8 @@ func (w *Workspace) updateMinimap() {
 	w.minimap.nvim.Eval("line('w0')", &absMapTop)
 	w.minimap.nvim.Eval("line('w$')", &absMapBottom)
 	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
+	w.curPosMutex.RLock()
+	defer w.curPosMutex.RUnlock()
 	switch {
 	case w.curLine >= absMapBottom:
 		w.minimap.nvim.Input("<C-d>")
@@ -1090,8 +1103,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		ln := util.ReflectToInt(pos[1])
 		col := util.ReflectToInt(pos[2]) + util.ReflectToInt(pos[3])
 		w.statusline.pos.redraw(ln, col)
+		w.curPosMutex.Lock()
 		w.curLine = ln
 		w.curColm = col
+		w.curPosMutex.Unlock()
 	case "gonvim_grid_font":
 		w.screen.gridFont(updates[1])
 	case "gonvim_minimap_update":

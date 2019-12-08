@@ -27,11 +27,13 @@ type miniMapSignal struct {
 type MiniMap struct {
 	Screen
 
-	curRegion *widgets.QWidget
-	currBuf   string
-
 	visible bool
 
+	curRegion   *widgets.QWidget
+	currBuf     string
+	colorscheme string
+
+	isSetRuntimepath bool
 	isSetColorscheme bool
 	isProcessSync    bool
 
@@ -168,13 +170,6 @@ func (m *MiniMap) setColor() {
 }
 
 func (m *MiniMap) toggle() {
-	// win, ok := m.windows[1]
-	// if !ok {
-	// 	return
-	// }
-	// if win == nil {
-	// 	return
-	// }
 	win, ok := m.getWindow(1)
 	if !ok {
 		return
@@ -233,9 +228,7 @@ func (m *MiniMap) bufUpdate() {
 	if m.ws.nvim == nil || m.nvim == nil {
 		return
 	}
-	if !m.isSetColorscheme {
-		m.setColorscheme()
-	}
+	m.setColorscheme()
 	m.widget.Show()
 
 	if m.currBuf == m.ws.filepath {
@@ -252,45 +245,58 @@ func (m *MiniMap) bufUpdate() {
 }
 
 func (m *MiniMap) setColorscheme() {
+	if m.isSetColorscheme {
+		return
+	}
 	colo, _ := m.ws.nvim.CommandOutput("colo")
 
-	sep := "/"
-	switch runtime.GOOS {
-	case "windows":
-		sep = `\`
-	default:
-	}
+	if !m.isSetRuntimepath {
+		sep := "/"
+		switch runtime.GOOS {
+		case "windows":
+			sep = `\`
+		default:
+		}
 
-	runtimePaths, _ := m.ws.nvim.RuntimePaths()
-	runtimeDir := ""
-	colorschemePath := ""
-	for _, path := range runtimePaths {
-		lsDirs, _ := ioutil.ReadDir(path)
-		for _, d := range lsDirs {
-			dirname := d.Name()
-			finfo, err := os.Stat(path + sep + dirname)
-			if err != nil {
-				continue
-			}
-			if finfo.IsDir() {
-				packDirs, _ := ioutil.ReadDir(path + sep + dirname)
-				for _, p := range packDirs {
-					plugname := p.Name()
-					if strings.Contains(plugname, colo) {
-						runtimeDir = path
-						colorschemePath = path + sep + dirname + sep + plugname
+		runtimePaths, _ := m.ws.nvim.RuntimePaths()
+		runtimeDir := ""
+		colorschemePath := ""
+		for _, path := range runtimePaths {
+			lsDirs, _ := ioutil.ReadDir(path)
+			for _, d := range lsDirs {
+				dirname := d.Name()
+				finfo, err := os.Stat(path + sep + dirname)
+				if err != nil {
+					continue
+				}
+				if finfo.IsDir() {
+					packDirs, _ := ioutil.ReadDir(path + sep + dirname)
+					for _, p := range packDirs {
+						plugname := p.Name()
+						if strings.Contains(plugname, colo) {
+							runtimeDir = path
+							colorschemePath = path + sep + dirname + sep + plugname
+							break
+						}
+					}
+					if colorschemePath != "" {
 						break
 					}
 				}
-				if colorschemePath != "" {
-					break
-				}
 			}
 		}
-	}
-	m.nvim.Command("set runtimepath^=" + runtimeDir)
-	m.nvim.Command(":colorscheme " + colo)
 
+		// set runtimepath
+		m.nvim.Command("set runtimepath^=" + runtimeDir)
+		m.isSetRuntimepath = true
+	}
+
+	if m.colorscheme == colo {
+		return
+	}
+	// set colorscheme
+	m.nvim.Command(":colorscheme " + colo)
+	m.colorscheme = colo
 	m.isSetColorscheme = true
 }
 
