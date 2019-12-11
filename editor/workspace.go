@@ -106,7 +106,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		background:    newRGBA(9, 13, 17, 1),
 		special:       newRGBA(255, 255, 255, 1),
 	}
-	w.font = initFontNew(editor.extFontFamily, editor.extFontSize, editor.config.Editor.Linespace, true)
+	w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), editor.config.Editor.Linespace, true)
 	go func() {
 		w.fontMutex.Lock()
 		defer w.fontMutex.Unlock()
@@ -1175,15 +1175,27 @@ func (w *Workspace) guiFont(args string) {
 		return
 	}
 
-	height := 14
+	var height float64
 	for _, p := range parts[1:] {
 		if strings.HasPrefix(p, "h") {
 			var err error
-			height, err = strconv.Atoi(p[1:])
+			// height, err = strconv.Atoi(p[1:])
+			height, err = strconv.ParseFloat(p[1:], 64)
 			if err != nil {
 				return
 			}
+		} else if strings.HasPrefix(p, "w") {
+			var err error
+			// width, err := strconv.Atoi(p[1:])
+			width, err := strconv.ParseFloat(p[1:], 64)
+			if err != nil {
+				return
+			}
+			height = 2.0 * width
 		}
+	}
+	if height == 0 {
+		height = 14.0
 	}
 
 	w.font.change(parts[0], height)
@@ -1200,7 +1212,7 @@ func (w *Workspace) guiFont(args string) {
 		editor.extFontFamily = parts[0]
 	}
 	if editor.config.Editor.FontSize == 0 {
-		editor.extFontSize = height
+		editor.extFontSize = int(height)
 	}
 
 	w.palette.updateFont()

@@ -26,20 +26,33 @@ type Font struct {
 func fontSizeNew(font *gui.QFont) (int, int, float64, float64, float64) {
 	fontMetrics := gui.NewQFontMetricsF(font)
 	h := fontMetrics.Height()
-	w := fontMetrics.HorizontalAdvance("W", -1)
+	// We use f instead of W. Because drawing based on the width taken in W causes character misalignment.
+	// w := fontMetrics.HorizontalAdvance("W", -1)
+	w := fontMetrics.HorizontalAdvance("f", -1)
 	ascent := fontMetrics.Ascent()
 	width := int(math.Ceil(w))
 	height := int(math.Ceil(h))
 	font.SetStyle(gui.QFont__StyleItalic)
 	italicFontMetrics := gui.NewQFontMetricsF(font)
 	italicWidth := italicFontMetrics.BoundingRect("f").Width()
+	if italicWidth < w {
+		italicWidth = w
+	}
 	font.SetStyle(gui.QFont__StyleNormal)
 
 	return width, height, w, ascent, italicWidth
 }
 
-func initFontNew(family string, size int, lineSpace int, fast bool) *Font {
-	font := gui.NewQFont2(family, size, int(gui.QFont__Normal), false)
+func initFontNew(family string, size float64, lineSpace int, fast bool) *Font {
+	// font := gui.NewQFont2(family, size, int(gui.QFont__Normal), false)
+	font := gui.NewQFont()
+	font.SetFamily(family)
+	font.SetPointSizeF(size)
+	font.SetWeight(int(gui.QFont__Normal))
+
+	// font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault | gui.QFont__ForceIntegerMetrics)
+	font.SetFixedPitch(true)
+	font.SetKerning(false)
 
 	var width, height int
 	var truewidth, ascent, italicWidth float64
@@ -71,9 +84,9 @@ func initFontNew(family string, size int, lineSpace int, fast bool) *Font {
 	}
 }
 
-func (f *Font) change(family string, size int) {
+func (f *Font) change(family string, size float64) {
 	f.fontNew.SetFamily(family)
-	f.fontNew.SetPointSize(size)
+	f.fontNew.SetPointSizeF(size)
 	f.fontMetrics = gui.NewQFontMetricsF(f.fontNew)
 	width, height, truewidth, ascent, italicWidth := fontSizeNew(f.fontNew)
 	f.width = width

@@ -410,6 +410,13 @@ func (s *Screen) gridFont(update interface{}) {
 			if err != nil {
 				return
 			}
+		} else if strings.HasPrefix(p, "w") {
+			var err error
+			width, err := strconv.Atoi(p[1:])
+			if err != nil {
+				return
+			}
+			height = 2 * width
 		}
 	}
 
@@ -420,7 +427,7 @@ func (s *Screen) gridFont(update interface{}) {
 	win.localWindows = &[4]localWindow{}
 
 	// fontMetrics := gui.NewQFontMetricsF(gui.NewQFont2(fontfamily, height, 1, false))
-	win.font = initFontNew(fontfamily, height, 1, false)
+	win.font = initFontNew(fontfamily, float64(height), 1, false)
 
 	// Calculate new cols, rows of current grid
 	newCols := int(oldWidth / win.font.truewidth)
