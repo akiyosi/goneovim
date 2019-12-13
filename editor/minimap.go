@@ -92,11 +92,11 @@ func newMiniMap() *MiniMap {
 
 	switch runtime.GOOS {
 	case "windows":
-		m.font = initFontNew("Consolas", 1, 0, false)
+		m.font = initFontNew("Consolas", 1.0, 0, false)
 	case "darwin":
-		m.font = initFontNew("Courier New", 2, 0, false)
+		m.font = initFontNew("Courier New", 2.0, 0, false)
 	default:
-		m.font = initFontNew("Monospace", 1, 0, false)
+		m.font = initFontNew("Monospace", 1.0, 0, false)
 	}
 
 	return m
