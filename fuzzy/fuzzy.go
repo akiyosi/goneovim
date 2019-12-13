@@ -475,7 +475,7 @@ func (s *Fuzzy) processSource() {
 		stdout, _ := cmd.StdoutPipe()
 		output := ""
 		go func() {
-			buf := make([]byte, 2)
+			buf := make([]byte, 200)
 			for {
 				n, err := stdout.Read(buf)
 				if err != nil || s.cancelled {
