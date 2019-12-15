@@ -139,6 +139,7 @@ func (m *Markdown) updatePos() {
 	// 		return
 	// 	}
 	// }
+	needHide := true
 	m.ws.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -157,11 +158,15 @@ func (m *Markdown) updatePos() {
 				m.webview.SetParent(win.widget)
 				m.show()
 			}
+			needHide = false
 			return false
 		}
 		return true
 	})
-	m.hide()
+
+	if needHide {
+		m.hide()
+	}
 }
 
 func (m *Markdown) show() {
