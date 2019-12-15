@@ -2604,7 +2604,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	line := w.content[y]
 	lenLine := w.lenLine[y]
 	font := w.getFont()
-	for x := col; x < col+cols; x++ {
+	for x := col; x <= col+cols; x++ {
 		if x > lenLine {
 			break
 		}
@@ -2618,30 +2618,50 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 		pen := gui.NewQPen()
+		var color *gui.QColor
 		sp := line[x].highlight.special
 		if sp != nil {
-			color := sp.QColor()
+			color = sp.QColor()
 			pen.SetColor(color)
 		} else {
 			fg := editor.colors.fg
-			color := fg.QColor()
+			color = fg.QColor()
 			pen.SetColor(color)
 		}
 		p.SetPen(pen)
 		start := float64(x) * font.truewidth
 		end := float64(x+1) * font.truewidth
-		Y := float64((y)*font.lineHeight) + font.ascent + float64(font.lineSpace)
-		halfY := float64(y-1)*float64(font.lineHeight) + float64(font.lineHeight)/2.0 + font.ascent + font.ascent/2.0 + float64(font.lineSpace)
+
+		Y := float64(y*font.lineHeight) + float64(font.height) * 1.04 + float64(font.lineSpace/2)
+		halfY := float64(y*font.lineHeight) + float64(font.height)/2.0 + float64(font.lineSpace/2)
+		weight := font.lineHeight/12
+		if weight < 1 {
+			weight = 1
+		}
 		if line[x].highlight.strikethrough {
-			strikeLinef := core.NewQLineF3(start, halfY, end, halfY)
-			p.DrawLine(strikeLinef)
+			// strikeLinef := core.NewQLineF3(start, halfY, end, halfY)
+			// p.DrawLine(strikeLinef)
+			p.FillRect5(
+				int(start),
+				int(halfY),
+				int(math.Ceil(font.truewidth)),
+				weight,
+				color,
+			)
 		}
 		if line[x].highlight.underline {
-			linef := core.NewQLineF3(start, Y, end, Y)
-			p.DrawLine(linef)
+			// linef := core.NewQLineF3(start, Y, end, Y)
+			// p.DrawLine(linef)
+			p.FillRect5(
+				int(start),
+				int(Y),
+				int(math.Ceil(font.truewidth)),
+				weight,
+				color,
+			)
 		}
 		if line[x].highlight.undercurl {
-			height := font.ascent / 3.0
+			height := 0.0
 			amplitude := font.ascent / 8.0
 			freq := 1.0
 			phase := 0.0
