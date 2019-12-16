@@ -97,34 +97,13 @@ func (f *Font) change(family string, size float64) {
 	f.shift = int(float64(f.lineSpace)/2 + ascent)
 	f.italicWidth = italicWidth
 
-	// Purge cache
-	if editor.config.Editor.CachedDrawing {
-		f.ws.screen.textCache.Purge()
-		// for _, win := range f.ws.screen.windows {
-		// 	if win == nil {
-		// 		continue
-		// 	}
-		// 	if win.font == nil {
-		// 		continue
-		// 	}
-		// 	win.textCache.Purge()
-		// }
-		f.ws.screen.windows.Range(func(_, winITF interface{}) bool {
-			win := winITF.(*Window)
-			if win == nil {
-				return true
-			}
-			if win.font == nil {
-				return true
-			}
-			win.textCache.Purge()
-			return true
-		})
-	}
+	f.ws.screen.purgeTextCacheForWins()
 }
 
 func (f *Font) changeLineSpace(lineSpace int) {
 	f.lineSpace = lineSpace
 	f.lineHeight = f.height + lineSpace
 	f.shift = int(float64(lineSpace)/2 + f.ascent)
+
+	f.ws.screen.purgeTextCacheForWins()
 }

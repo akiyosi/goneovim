@@ -453,6 +453,24 @@ func (s *Screen) gridFont(update interface{}) {
 	s.ws.cursor.updateFont(font)
 }
 
+func (s *Screen) purgeTextCacheForWins() {
+	if !editor.config.Editor.CachedDrawing {
+		return
+	}
+	s.textCache.Purge()
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
+		}
+		if win.font == nil {
+			return true
+		}
+		win.textCache.Purge()
+		return true
+	})
+}
+
 func (s *Screen) toolTipPos() (int, int, int, int) {
 	var x, y, candX, candY int
 	ws := s.ws
@@ -2634,7 +2652,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 
 		Y := float64(y*font.lineHeight) + float64(font.height) * 1.04 + float64(font.lineSpace/2)
 		halfY := float64(y*font.lineHeight) + float64(font.height)/2.0 + float64(font.lineSpace/2)
-		weight := font.lineHeight/12
+		weight := font.lineHeight/14
 		if weight < 1 {
 			weight = 1
 		}
