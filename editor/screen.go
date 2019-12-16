@@ -2654,7 +2654,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			// p.DrawLine(linef)
 			p.FillRect5(
 				int(start),
-				int(Y),
+				int(Y)-weight,
 				int(math.Ceil(font.truewidth)),
 				weight,
 				color,
