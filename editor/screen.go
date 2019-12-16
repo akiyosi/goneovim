@@ -2045,7 +2045,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 
 	// draw default background color if window is float window or msg grid
 	idDrawDefaultBg := false
-	if w.isFloatWin || w.isMsgGrid {
+	if w.isFloatWin || (w.isMsgGrid && editor.config.Message.Transparent < 1.0)  {
 		idDrawDefaultBg = true
 	}
 
