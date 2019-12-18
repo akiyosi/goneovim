@@ -1437,13 +1437,6 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			continue
 		}
 
-		// win, ok := s.windows[gridid]
-		// if !ok {
-		// 	continue
-		// }
-		// if win == nil {
-		// 	continue
-		// }
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
@@ -1451,6 +1444,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 
 		if s.ws.cursor.gridid != gridid {
 			s.ws.cursor.gridid = gridid
+			s.ws.cursor.font = win.getFont()
 			win.raise()
 		}
 	}

@@ -26,6 +26,7 @@ type Cursor struct {
 	isTextDraw bool
 	fg         *RGBA
 	bg         *RGBA
+	font       *Font
 }
 
 func initCursorNew() *Cursor {
@@ -122,32 +123,14 @@ func (c *Cursor) updateCursorShape() {
 		cellPercentage = util.ReflectToInt(cellPercentageITF)
 	}
 
-	// win, ok := c.ws.screen.windows[c.gridid]
-	// if !ok {
-	// 	return
-	// }
-	// if win == nil {
-	// 	return
-	// }
-	win, ok := c.ws.screen.getWindow(c.gridid)
-	if !ok {
-		return
-	}
-	var font *Font
-	if c.ws.palette.widget.IsVisible() {
-		font = c.ws.font
-	} else {
-		font = win.getFont()
-	}
-
-	height := font.height + 2
-	width := font.width
+	height := c.font.height + 2
+	width := c.font.width
 	p := float64(cellPercentage) / float64(100)
 
 	switch cursorShape {
 	case "horizontal":
 		height = int(float64(height) * p)
-		c.shift = int(float64(font.lineHeight) * (1.0 - p))
+		c.shift = int(float64(c.font.lineHeight) * (1.0 - p))
 		if cellPercentage < 99 {
 			c.isTextDraw = false
 		} else {
@@ -166,20 +149,19 @@ func (c *Cursor) updateCursorShape() {
 	attrIdITF, ok := c.ws.modeInfo[c.modeIdx]["attr_id"]
 	if ok {
 		attrId = util.ReflectToInt(attrIdITF)
-		c.currAttrId = attrId
 	}
 
+	var isUpdateStyle bool
 	var bg, fg *RGBA
-	if attrId != 0 {
-		bg = c.ws.screen.highAttrDef[attrId].background
-		fg = c.ws.screen.highAttrDef[attrId].foreground
-	} else {
-		fg = c.ws.background
-		bg = c.ws.foreground
+	if c.currAttrId != attrId {
+		c.currAttrId = attrId
+		fg = c.ws.screen.highAttrDef[attrId].fg()
+		bg = c.ws.screen.highAttrDef[attrId].bg()
+		isUpdateStyle = c.fg != fg || c.bg != bg
+		c.fg = fg
+		c.bg = bg
 	}
-	c.fg = fg
-	c.bg = bg
-	if bg == nil {
+	if c.bg == nil {
 		return
 	}
 
@@ -199,14 +181,21 @@ func (c *Cursor) updateCursorShape() {
 	c.setBlink(blinkWait, blinkOn, blinkOff)
 
 	c.widget.Resize2(width, height)
-	c.widget.SetStyleSheet(fmt.Sprintf(
-		"background-color: rgba(%d, %d, %d, 0.8); color: rgba(%d, %d, %d, 1.0)",
-		bg.R,
-		bg.G,
-		bg.B,
-		fg.R,
-		fg.G,
-		fg.B,
+	c.timer.StartDefault(0)
+	if !isUpdateStyle {
+		return
+	}
+	c.widget.SetStyleSheet(
+		fmt.Sprintf(` QLabel {
+		background-color: rgba(%d, %d, %d, 0.8);
+		color: rgba(%d, %d, %d, 1.0)
+		}`,
+		c.bg.R,
+		c.bg.G,
+		c.bg.B,
+		c.fg.R,
+		c.fg.G,
+		c.fg.B,
 	))
 }
 
