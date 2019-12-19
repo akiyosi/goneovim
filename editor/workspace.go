@@ -988,6 +988,7 @@ func (w *Workspace) modeInfoSet(args []interface{}) {
 		w.cursorStyleEnabled = arg.([]interface{})[0].(bool)
 		modePropList := arg.([]interface{})[1].([]interface{})
 		w.modeInfo = make([]map[string]interface{}, len(modePropList))
+		w.cursor.isNeedUpdateModeInfo = true
 		for i, modeProp := range modePropList {
 			// Note: i is the index which given by the `mode_idx` of the `mode_change` event
 			w.modeInfo[i] = modeProp.(map[string]interface{})

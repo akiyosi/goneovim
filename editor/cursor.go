@@ -17,7 +17,6 @@ type Cursor struct {
 	modeIdx    int
 	x          int
 	y          int
-	currAttrId int
 	gridid     int
 	shift      int
 	isShut     bool
@@ -27,6 +26,15 @@ type Cursor struct {
 	fg         *RGBA
 	bg         *RGBA
 	font       *Font
+
+	isNeedUpdateModeInfo bool
+	modeInfoModeIdx      int
+	cursorShape          string
+	cellPercentage       int
+	currAttrId           int
+	blinkWait            int
+	blinkOn              int
+	blinkOff             int
 }
 
 func initCursorNew() *Cursor {
@@ -34,8 +42,9 @@ func initCursorNew() *Cursor {
 	widget := widgets.NewQLabel(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
 	cursor := &Cursor{
-		widget: widget,
-		timer:  core.NewQTimer(nil),
+		widget:               widget,
+		timer:                core.NewQTimer(nil),
+		isNeedUpdateModeInfo: true,
 	}
 
 	return cursor
@@ -62,7 +71,7 @@ func (c *Cursor) setBlink(wait, on, off int) {
 		if !c.isShut {
 			c.timer.SetInterval(off)
 			c.isShut = true
-			alpha = 0.1
+			alpha = 0.4
 		} else {
 			c.timer.SetInterval(on)
 			c.isShut = false
@@ -112,26 +121,64 @@ func (c *Cursor) updateCursorShape() {
 	if !c.ws.cursorStyleEnabled {
 		return
 	}
-	cursorShape := "block"
-	cursorShapeITF, ok := c.ws.modeInfo[c.modeIdx]["cursor_shape"]
-	if ok {
-		cursorShape = cursorShapeITF.(string)
+
+	var isUpdateStyle bool
+	if c.modeInfoModeIdx != c.modeIdx || c.isNeedUpdateModeInfo {
+		c.modeInfoModeIdx = c.modeIdx
+		modeInfo := c.ws.modeInfo[c.modeIdx]
+
+		c.currAttrId = 0
+		attrIdITF, ok := modeInfo["attr_id"]
+		if ok {
+			c.currAttrId = util.ReflectToInt(attrIdITF)
+		}
+		fg := c.ws.screen.highAttrDef[c.currAttrId].fg()
+		bg := c.ws.screen.highAttrDef[c.currAttrId].bg()
+		isUpdateStyle = c.fg != fg || c.bg != bg
+		c.fg = fg
+		c.bg = bg
+		if c.bg == nil {
+			return
+		}
+
+		c.cursorShape = "block"
+		cursorShapeITF, ok := modeInfo["cursor_shape"]
+		if ok {
+			c.cursorShape = cursorShapeITF.(string)
+		}
+		c.cellPercentage = 100
+		cellPercentageITF, ok := modeInfo["cell_percentage"]
+		if ok {
+			c.cellPercentage = util.ReflectToInt(cellPercentageITF)
+		}
+
+		blinkWaitITF, ok := modeInfo["blinkwait"]
+		if ok {
+			c.blinkWait = util.ReflectToInt(blinkWaitITF)
+		}
+		blinkOnITF, ok := modeInfo["blinkon"]
+		if ok {
+			c.blinkOn = util.ReflectToInt(blinkOnITF)
+		}
+		blinkOffITF, ok := modeInfo["blinkoff"]
+		if ok {
+			c.blinkOff = util.ReflectToInt(blinkOffITF)
+		}
+		c.setBlink(c.blinkWait, c.blinkOn, c.blinkOff)
+
+		c.isNeedUpdateModeInfo = false
 	}
-	cellPercentage := 100
-	cellPercentageITF, ok := c.ws.modeInfo[c.modeIdx]["cell_percentage"]
-	if ok {
-		cellPercentage = util.ReflectToInt(cellPercentageITF)
-	}
+
 
 	height := c.font.height + 2
 	width := c.font.width
-	p := float64(cellPercentage) / float64(100)
+	p := float64(c.cellPercentage) / float64(100)
 
-	switch cursorShape {
+	switch c.cursorShape {
 	case "horizontal":
 		height = int(float64(height) * p)
 		c.shift = int(float64(c.font.lineHeight) * (1.0 - p))
-		if cellPercentage < 99 {
+		if c.cellPercentage < 99 {
 			c.isTextDraw = false
 		} else {
 			c.isTextDraw = true
@@ -145,40 +192,12 @@ func (c *Cursor) updateCursorShape() {
 		c.shift = 0
 	}
 
-	attrId := 0
-	attrIdITF, ok := c.ws.modeInfo[c.modeIdx]["attr_id"]
-	if ok {
-		attrId = util.ReflectToInt(attrIdITF)
+	if width == 0 {
+		width = 1
 	}
-
-	var isUpdateStyle bool
-	var bg, fg *RGBA
-	if c.currAttrId != attrId {
-		c.currAttrId = attrId
-		fg = c.ws.screen.highAttrDef[attrId].fg()
-		bg = c.ws.screen.highAttrDef[attrId].bg()
-		isUpdateStyle = c.fg != fg || c.bg != bg
-		c.fg = fg
-		c.bg = bg
+	if height == 0 {
+		height = 1
 	}
-	if c.bg == nil {
-		return
-	}
-
-	var blinkWait, blinkOn, blinkOff int
-	blinkWaitITF, ok := c.ws.modeInfo[c.modeIdx]["blinkwait"]
-	if ok {
-		blinkWait = util.ReflectToInt(blinkWaitITF)
-	}
-	blinkOnITF, ok := c.ws.modeInfo[c.modeIdx]["blinkon"]
-	if ok {
-		blinkOn = util.ReflectToInt(blinkOnITF)
-	}
-	blinkOffITF, ok := c.ws.modeInfo[c.modeIdx]["blinkoff"]
-	if ok {
-		blinkOff = util.ReflectToInt(blinkOffITF)
-	}
-	c.setBlink(blinkWait, blinkOn, blinkOff)
 
 	c.widget.Resize2(width, height)
 	c.timer.StartDefault(0)
