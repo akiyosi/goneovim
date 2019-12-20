@@ -127,13 +127,18 @@ func (c *Cursor) updateCursorShape() {
 		c.modeInfoModeIdx = c.modeIdx
 		modeInfo := c.ws.modeInfo[c.modeIdx]
 
-		c.currAttrId = 0
 		attrIdITF, ok := modeInfo["attr_id"]
 		if ok {
 			c.currAttrId = util.ReflectToInt(attrIdITF)
 		}
-		fg := c.ws.screen.highAttrDef[c.currAttrId].fg()
-		bg := c.ws.screen.highAttrDef[c.currAttrId].bg()
+		var bg, fg *RGBA
+		if c.currAttrId == 0 {
+			fg = c.ws.screen.highAttrDef[0].background
+			bg = c.ws.screen.highAttrDef[0].foreground
+		} else {
+			fg = c.ws.screen.highAttrDef[c.currAttrId].fg()
+			bg = c.ws.screen.highAttrDef[c.currAttrId].bg()
+		}
 		isUpdateStyle = c.fg != fg || c.bg != bg
 		c.fg = fg
 		c.bg = bg
@@ -168,6 +173,7 @@ func (c *Cursor) updateCursorShape() {
 
 		c.isNeedUpdateModeInfo = false
 	}
+
 
 
 	height := c.font.height + 2
