@@ -1014,7 +1014,7 @@ func (w *Workspace) setOption(update []interface{}) {
 }
 
 func (w *Workspace) getCurLine() {
-	curLineStr, _ := w.nvim.CommandOutput(`lua 
+	curLineStr, _ := w.nvimCommandOutput(`lua 
 		local uv = vim and vim.loop or require 'luv'
 		-- TODO: replace a way to get the line number at the neovim v0.5.0
 		--       local path = vim.fn.expand(vim.fn.line())
@@ -1025,7 +1025,7 @@ func (w *Workspace) getCurLine() {
 }
 
 func (w *Workspace) getCurColm() {
-	curColmStr, _ := w.nvim.CommandOutput(`lua 
+	curColmStr, _ := w.nvimCommandOutput(`lua 
 		local uv = vim and vim.loop or require 'luv'
 		-- TODO: replace a way to get the line number at the neovim v0.5.0
 		--       local path = vim.fn.expand(vim.fn.line())
