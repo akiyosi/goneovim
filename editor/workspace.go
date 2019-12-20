@@ -365,7 +365,7 @@ func (w *Workspace) attachUI(path string) error {
 	go w.initGonvim()
 	w.tabline.subscribe()
 	w.statusline.subscribe()
-	w.loc.subscribe()
+	// w.loc.subscribe()
 	w.message.subscribe()
 
 	// Add editor feature
@@ -390,7 +390,6 @@ func (w *Workspace) initGonvim() {
 	gonvimAutoCmds := `
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
-	au GonvimAu CursorMoved,CursorMovedI * call rpcnotify(0, "Gui", "gonvim_cursormoved", getpos("."))
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
 	aug GonvimAuWorkspace | au! | aug END
@@ -429,28 +428,6 @@ func (w *Workspace) initGonvim() {
 	`
 	}
 
-	isLintEnable := false
-	for _, rightItem := range editor.config.Statusline.Right {
-		if rightItem == "lint" {
-			isLintEnable = true
-			break
-		}
-	}
-	for _, leftItem := range editor.config.Statusline.Left {
-		if leftItem == "lint" {
-			isLintEnable = true
-			break
-		}
-	}
-	isLintEnable = isLintEnable || editor.config.Lint.Visible
-
-	if isLintEnable {
-		gonvimAutoCmds = gonvimAutoCmds + `
-	aug GonvimAuLint | au! | aug END
-	au GonvimAuLint CursorMoved,CursorHold,InsertEnter,InsertLeave * call rpcnotify(0, "LocPopup", "update")
-	`
-	}
-
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
 	w.nvim.Command(registerScripts)
 
@@ -477,7 +454,6 @@ func (w *Workspace) initGonvim() {
 
 	gonvimInitNotify := `
 	call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat, &ro)
-	call rpcnotify(0, "Gui", "gonvim_cursormoved",  getpos("."))
 	`
 	if !w.uiRemoteAttached {
 		gonvimInitNotify = gonvimInitNotify + `
@@ -764,6 +740,13 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.gridDestroy(args)
 		case "grid_cursor_goto":
 			s.gridCursorGoto(args)
+			if w.minimap.visible || w.drawStatusline || editor.config.ScrollBar.Visible {
+				w.getCurLine()
+			}
+			if w.drawStatusline {
+				w.getCurColm()
+				w.statusline.pos.redraw(w.curLine, w.curColm)
+			}
 			if w.minimap.visible {
 				go w.updateMinimap()
 				w.minimap.mapScroll()
@@ -1030,6 +1013,28 @@ func (w *Workspace) setOption(update []interface{}) {
 	}
 }
 
+func (w *Workspace) getCurLine() {
+	curLineStr, _ := w.nvim.CommandOutput(`lua 
+		local uv = vim and vim.loop or require 'luv'
+		-- TODO: replace a way to get the line number at the neovim v0.5.0
+		--       local path = vim.fn.expand(vim.fn.line())
+		print(vim.api.nvim_command('echo line(".")'))
+		`)
+	curLine, _ := strconv.Atoi(curLineStr)
+	w.curLine = curLine
+}
+
+func (w *Workspace) getCurColm() {
+	curColmStr, _ := w.nvim.CommandOutput(`lua 
+		local uv = vim and vim.loop or require 'luv'
+		-- TODO: replace a way to get the line number at the neovim v0.5.0
+		--       local path = vim.fn.expand(vim.fn.line())
+		print(vim.api.nvim_command('echo col(".")'))
+		`)
+	curColm, _ := strconv.Atoi(curColmStr)
+	w.curColm = curColm
+}
+
 func (w *Workspace) updateMinimap() {
 	var absMapTop int
 	var absMapBottom int
@@ -1099,15 +1104,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.wsSide.items[w.getNum()].addItem(updates[1:])
 	case "filer_item_select":
 		editor.wsSide.items[w.getNum()].selectItem(updates[1:])
-	case "gonvim_cursormoved":
-		pos := updates[1].([]interface{})
-		ln := util.ReflectToInt(pos[1])
-		col := util.ReflectToInt(pos[2]) + util.ReflectToInt(pos[3])
-		w.statusline.pos.redraw(ln, col)
-		w.curPosMutex.Lock()
-		w.curLine = ln
-		w.curColm = col
-		w.curPosMutex.Unlock()
 	case "gonvim_grid_font":
 		w.screen.gridFont(updates[1])
 	case "gonvim_minimap_update":

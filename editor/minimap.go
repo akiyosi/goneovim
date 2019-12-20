@@ -305,21 +305,23 @@ func (m *MiniMap) mapScroll() {
 	var absMapTop int
 	m.nvim.Eval("line('w0')", &absMapTop)
 
-	// win, ok := m.ws.screen.windows[m.ws.cursor.gridid]
-	// if !ok {
-	// 	return
-	// }
-	// if win == nil {
-	// 	return
-	// }
+	linePos := absScreenTop-absMapTop
+
 	win, ok := m.ws.screen.getWindow(m.ws.cursor.gridid)
 	if !ok {
 		return
 	}
 	regionHeight := win.rows
 
+	if linePos < 0 {
+		regionHeight = regionHeight + linePos
+		linePos = 0
+	}
+	if regionHeight < 0 {
+		regionHeight = 0
+	}
 	m.curRegion.SetFixedHeight(int(float64(regionHeight) * float64(m.font.lineHeight)))
-	pos := int(float64(m.font.lineHeight) * float64(absScreenTop-absMapTop))
+	pos := int(float64(m.font.lineHeight) * float64(linePos))
 	m.curRegion.Move2(0, pos)
 }
 
@@ -530,6 +532,7 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 	// if horiz != 0 {
 	// 	m.nvim.Input(fmt.Sprintf("%d<%sScrollWheel%s><%d,%d>", accel, editor.modPrefix(mod), horizKey, pos[0], pos[1]))
 	// }
+	m.mapScroll()
 
 	event.Accept()
 }
