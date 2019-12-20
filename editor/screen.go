@@ -1574,9 +1574,10 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	if ok {
 		rgba := calcColor(util.ReflectToInt(sp))
 		highlight.special = rgba
-	} else {
-		highlight.special = highlight.foreground
 	}
+
+	// TODO: brend, ok := hl["blend"]
+
 
 	return &highlight
 }
