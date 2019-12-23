@@ -1578,7 +1578,6 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 
 	// TODO: brend, ok := hl["blend"]
 
-
 	return &highlight
 }
 
@@ -2040,7 +2039,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 
 	// draw default background color if window is float window or msg grid
 	idDrawDefaultBg := false
-	if w.isFloatWin || (w.isMsgGrid && editor.config.Message.Transparent < 1.0)  {
+	if w.isFloatWin || (w.isMsgGrid && editor.config.Message.Transparent < 1.0) {
 		idDrawDefaultBg = true
 	}
 
@@ -2645,9 +2644,9 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		start := float64(x) * font.truewidth
 		end := float64(x+1) * font.truewidth
 
-		Y := float64(y*font.lineHeight) + float64(font.height) * 1.04 + float64(font.lineSpace/2)
+		Y := float64(y*font.lineHeight) + float64(font.height)*1.04 + float64(font.lineSpace/2)
 		halfY := float64(y*font.lineHeight) + float64(font.height)/2.0 + float64(font.lineSpace/2)
-		weight := font.lineHeight/14
+		weight := font.lineHeight / 14
 		if weight < 1 {
 			weight = 1
 		}
@@ -2795,10 +2794,31 @@ func (s *Screen) setBufferNames() {
 			return true
 		}
 
-		buf, _ := s.ws.nvim.WindowBuffer(win.id)
-		bufName, _ := s.ws.nvim.BufferName(buf)
-		win.bufName = bufName
+		bufChan := make(chan nvim.Buffer, 2)
+		var buf nvim.Buffer
+		go func() {
+			resultBuffer, _ := s.ws.nvim.WindowBuffer(win.id)
+			bufChan <- resultBuffer
+		}()
+		select {
+		case buf = <-bufChan:
+		case <-time.After(40 * time.Millisecond):
+			return true
+		}
 
+		strChan := make(chan string, 2)
+		var bufName string
+		go func() {
+			resultStr, _ := s.ws.nvim.BufferName(buf)
+			strChan <- resultStr
+		}()
+		select {
+		case bufName = <-strChan:
+		case <-time.After(40 * time.Millisecond):
+			return true
+		}
+
+		win.bufName = bufName
 		return true
 	})
 }
