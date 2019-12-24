@@ -1167,12 +1167,26 @@ func (w *Workspace) guiFont(args string) {
 	if args == "" {
 		return
 	}
+	var height float64
+	var fontFamily string
+
+	if args == "*" {
+		fDialog := widgets.NewQFontDialog(nil)
+		fDialog.SetOption(widgets.QFontDialog__MonospacedFonts, true)
+		fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
+		fDialog.ConnectFontSelected(func(font *gui.QFont){
+			fontFamily = font.Family()
+			height = font.PointSizeF()
+			w.guiFont(fmt.Sprintf("%s:%d", fontFamily, height))
+		})
+		fDialog.Show()
+		return
+	}
 	parts := strings.Split(args, ":")
 	if len(parts) < 1 {
 		return
 	}
 
-	var height float64
 	for _, p := range parts[1:] {
 		if strings.HasPrefix(p, "h") {
 			var err error
@@ -1191,11 +1205,12 @@ func (w *Workspace) guiFont(args string) {
 			height = 2.0 * width
 		}
 	}
+	fontFamily = parts[0]
 	if height == 0 {
 		height = 14.0
 	}
 
-	w.font.change(parts[0], height)
+	w.font.change(fontFamily, height)
 	w.screen.font = w.font
 
 	w.updateSize()
@@ -1206,7 +1221,7 @@ func (w *Workspace) guiFont(args string) {
 
 	// Change external font if font setting of setting.yml is nothing
 	if editor.config.Editor.FontFamily == "" {
-		editor.extFontFamily = parts[0]
+		editor.extFontFamily = fontFamily
 	}
 	if editor.config.Editor.FontSize == 0 {
 		editor.extFontSize = int(height)
