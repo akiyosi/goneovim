@@ -1,31 +1,34 @@
 package editor
 
 import (
-	"fmt"
+	"math"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
+	"github.com/therecipe/qt/gui"
 )
 
 // Cursor is
 type Cursor struct {
 	ws *Workspace
-	//widget         *widgets.QWidget
-	widget     *widgets.QLabel
-	mode       string
-	modeIdx    int
-	x          int
-	y          int
-	gridid     int
-	shift      int
-	isShut     bool
-	timer      *core.QTimer
-	color      *RGBA
-	isTextDraw bool
-	fg         *RGBA
-	bg         *RGBA
-	font       *Font
+	widget         *widgets.QWidget
+	// widget     *widgets.QLabel
+	mode        string
+	modeIdx     int
+	x           int
+	y           int
+	text        string
+	normalWidth bool
+	gridid      int
+	shift       int
+	isShut      bool
+	timer       *core.QTimer
+	isTextDraw  bool
+	fg          *RGBA
+	bg          *RGBA
+	brend       float64
+	font        *Font
 
 	isNeedUpdateModeInfo bool
 	modeInfoModeIdx      int
@@ -38,83 +41,91 @@ type Cursor struct {
 }
 
 func initCursorNew() *Cursor {
-	// widget := widgets.NewQWidget(nil, 0)
-	widget := widgets.NewQLabel(nil, 0)
+	widget := widgets.NewQWidget(nil, 0)
+	// widget := widgets.NewQLabel(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
-	cursor := &Cursor{
+	c := &Cursor{
 		widget:               widget,
 		timer:                core.NewQTimer(nil),
 		isNeedUpdateModeInfo: true,
 	}
+	widget.ConnectPaintEvent(c.paint)
 
-	return cursor
+	return c
+}
+
+func (c *Cursor) paint(event *gui.QPaintEvent) {
+	p := gui.NewQPainter2(c.widget)
+	defer p.DestroyQPainter()
+
+	font := c.font
+	p.SetFont(font.fontNew)
+	p.SetPen2(c.fg.QColor())
+
+	width := font.truewidth
+	if !c.normalWidth {
+		width = width * 2
+	}
+
+	rectF := core.NewQRectF4(
+		0,
+		0,
+		width,
+		float64(font.lineHeight),
+	)
+	p.FillRect4(
+		rectF,
+		c.bg.brend(c.ws.background, c.brend).QColor(),
+	)
+	p.DrawText(
+		core.NewQPointF3(
+			0,
+			float64(font.shift),
+		),
+		c.text,
+	)
 }
 
 func (c *Cursor) setBlink(wait, on, off int) {
-	bg := c.bg
-	fg := c.fg
 	c.timer.DisconnectTimeout()
 	if wait == 0 || on == 0 || off == 0 {
-		c.widget.SetStyleSheet(fmt.Sprintf(
-			"background-color: rgba(%d, %d, %d, 0.8); color: rgba(%d, %d, %d, 1);",
-			bg.R,
-			bg.G,
-			bg.B,
-			fg.R,
-			fg.G,
-			fg.B,
-		))
+		c.brend = 0.0
+		c.widget.Update()
 		return
 	}
 	c.timer.ConnectTimeout(func() {
-		alpha := 0.8
+		c.brend = 0.0
 		if !c.isShut {
 			c.timer.SetInterval(off)
 			c.isShut = true
-			alpha = 0.4
+			c.brend = 0.6
 		} else {
 			c.timer.SetInterval(on)
 			c.isShut = false
 		}
-		c.widget.SetStyleSheet(fmt.Sprintf(
-			"background-color: rgba(%d, %d, %d, %f); color: rgba(%d, %d, %d, %f);",
-			bg.R,
-			bg.G,
-			bg.B,
-			alpha,
-			fg.R,
-			fg.G,
-			fg.B,
-			alpha,
-		))
+		c.widget.Update()
 	})
 	c.timer.Start(wait)
 	c.timer.SetInterval(off)
 }
 
 func (c *Cursor) move() {
-	// win, ok := c.ws.screen.windows[c.gridid]
-	// if !ok {
-	// 	return
-	// }
-	// if win == nil {
-	// 	return
-	// }
-	win, ok := c.ws.screen.getWindow(c.gridid)
-	if !ok {
-		return
-	}
-	font := win.getFont()
-
-	shift := 0
-	shift = int(float64(font.lineSpace) / 2)
-	c.widget.Move2(c.x, c.y+shift)
+	c.widget.Move(
+		core.NewQPoint2(
+			c.x,
+			c.y,
+		),
+	)
 
 	c.ws.loc.updatePos()
 }
 
 func (c *Cursor) updateFont(font *Font) {
-	c.widget.SetFont(font.fontNew)
+	win, ok := c.ws.screen.getWindow(c.gridid)
+	if !ok {
+		return
+	}
+	c.font = win.getFont()
 }
 
 func (c *Cursor) updateCursorShape() {
@@ -176,8 +187,11 @@ func (c *Cursor) updateCursorShape() {
 
 
 
-	height := c.font.height + 2
-	width := c.font.width
+	height := c.font.height
+	width := int(math.Trunc(c.font.truewidth))
+	if !c.normalWidth {
+		width = width * 2
+	}
 	p := float64(c.cellPercentage) / float64(100)
 
 	switch c.cursorShape {
@@ -205,23 +219,14 @@ func (c *Cursor) updateCursorShape() {
 		height = 1
 	}
 
+	// rect := core.NewQRect4(0, 0, width, height)
+	// c.widget.SetGeometry(rect)
 	c.widget.Resize2(width, height)
 	c.timer.StartDefault(0)
 	if !isUpdateStyle {
 		return
 	}
-	c.widget.SetStyleSheet(
-		fmt.Sprintf(` QLabel {
-		background-color: rgba(%d, %d, %d, 0.8);
-		color: rgba(%d, %d, %d, 1.0)
-		}`,
-		c.bg.R,
-		c.bg.G,
-		c.bg.B,
-		c.fg.R,
-		c.fg.G,
-		c.fg.B,
-	))
+	c.widget.Update()
 }
 
 func (c *Cursor) update() {
@@ -234,67 +239,40 @@ func (c *Cursor) update() {
 			c.widget.Show()
 		}
 	}
-	c.updateCursorShape()
-	if c.ws.palette.widget.IsVisible() {
-		return
-	}
-	// win, ok := c.ws.screen.windows[c.gridid]
-	// if !ok {
-	// 	return
-	// }
-	// if win == nil {
-	// 	return
-	// }
+
 	win, ok := c.ws.screen.getWindow(c.gridid)
 	if !ok {
 		return
 	}
-	font := win.getFont()
 
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
+
+	if row >= len(win.content) ||
+		col >= len(win.content[0]) ||
+		win.content[row][col] == nil ||
+		win.content[row][col].char == "" ||
+		c.ws.palette.widget.IsVisible() {
+			c.text = ""
+			c.normalWidth = true
+	} else {
+		c.text = win.content[row][col].char
+		c.normalWidth = win.content[row][col].normalWidth
+
+	}
+
+	c.updateCursorShape()
+	if c.ws.palette.widget.IsVisible() {
+		return
+	}
+	font := c.font
+
 	x := int(float64(col) * font.truewidth)
 	y := row*font.lineHeight + c.shift
 	c.x = x
 	c.y = y
 	c.move()
-	c.paint()
+	c.widget.Update()
 
 }
 
-func (c *Cursor) paint() {
-	if !c.isTextDraw {
-		c.widget.SetText("")
-		return
-	}
-
-	// win, ok := c.ws.screen.windows[c.gridid]
-	// if !ok {
-	// 	return
-	// }
-	// if win == nil {
-	// 	return
-	// }
-	win, ok := c.ws.screen.getWindow(c.gridid)
-	if !ok {
-		return
-	}
-	if win.content == nil {
-		return
-	}
-
-	text := ""
-	y := c.ws.screen.cursor[1]
-	x := c.ws.screen.cursor[0]
-
-	if x >= len(win.content) ||
-		y >= len(win.content[0]) ||
-		win.content[x][y] == nil ||
-		win.content[x][y].char == "" ||
-		c.ws.palette.widget.IsVisible() {
-	} else {
-		text = win.content[x][y].char
-	}
-
-	c.widget.SetText(text)
-}

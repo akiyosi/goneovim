@@ -61,8 +61,8 @@ func (rgba *RGBA) Hex() string {
 func (rgba *RGBA) brend(color *RGBA, alpha float64) *RGBA {
 	return &RGBA{
 		R: int((float64(rgba.R) * (1.0 - alpha)) + (float64(color.R) * alpha)),
-		G: int((float64(rgba.R) * (1.0 - alpha)) + (float64(color.G) * alpha)),
-		B: int((float64(rgba.R) * (1.0 - alpha)) + (float64(color.B) * alpha)),
+		G: int((float64(rgba.G) * (1.0 - alpha)) + (float64(color.G) * alpha)),
+		B: int((float64(rgba.B) * (1.0 - alpha)) + (float64(color.B) * alpha)),
 		A: 1,
 	}
 }

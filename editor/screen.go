@@ -379,13 +379,6 @@ func (s *Screen) lenWindows() int {
 }
 
 func (s *Screen) gridFont(update interface{}) {
-	// win, ok := s.windows[s.ws.cursor.gridid]
-	// if !ok {
-	// 	return
-	// }
-	// if win == nil {
-	// 	return
-	// }
 	win, ok := s.getWindow(s.ws.cursor.gridid)
 	if !ok {
 		return
@@ -2295,7 +2288,7 @@ func (w *Window) newTextCache(text string, highlight Highlight, isNormalWidth bo
 			0,
 			0,
 			w.devicePixelRatio*width,
-			w.devicePixelRatio*float64(w.s.ws.font.lineHeight),
+			w.devicePixelRatio*float64(font.lineHeight),
 		).Size().ToSize(),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
@@ -2318,7 +2311,7 @@ func (w *Window) newTextCache(text string, highlight Highlight, isNormalWidth bo
 			0,
 			0,
 			width,
-			float64(w.s.ws.font.lineHeight),
+			float64(font.lineHeight),
 		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
 
