@@ -59,6 +59,9 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	defer p.DestroyQPainter()
 
 	font := c.font
+	if font == nil {
+		return
+	}
 	p.SetFont(font.fontNew)
 	p.SetPen2(c.fg.QColor())
 

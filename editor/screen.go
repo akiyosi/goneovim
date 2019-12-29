@@ -334,6 +334,9 @@ func (s *Screen) updateSize() {
 }
 
 func (s *Screen) uiTryResize(width, height int) {
+	if width <= 0 || height <= 0 {
+		return
+	}
 	ws := s.ws
 	done := make(chan error, 5)
 	var result error
