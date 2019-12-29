@@ -128,7 +128,7 @@ func initTabline() *Tabline {
 	}
 
 	tabs := []*Tab{}
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 24; i++ {
 		tab := newTab()
 		tab.t = tabline
 		tabs = append(tabs, tab)
@@ -185,7 +185,7 @@ func newTab() *Tab {
 	return tab
 }
 
-func (t *Tab) updateActive() {
+func (t *Tab) updateStyle() {
 	if editor.colors.fg == nil || editor.colors.bg == nil {
 		return
 	}
@@ -236,6 +236,7 @@ func (t *Tab) show() {
 	}
 	t.hidden = false
 	t.widget.Show()
+	t.updateStyle()
 }
 
 func (t *Tab) hide() {
@@ -251,7 +252,7 @@ func (t *Tab) setActive(active bool) {
 		return
 	}
 	t.active = active
-	t.updateActive()
+	t.updateStyle()
 }
 
 func (t *Tab) updateFileText() {
@@ -301,7 +302,7 @@ func (t *Tabline) update(args []interface{}) {
 	tabs := arg[1].([]interface{})
 	if len(tabs) == 1 {
 		t.Tabs[0].setActive(false)
-		t.Tabs[0].updateActive()
+		t.Tabs[0].updateStyle()
 	}
 	for i, tabInterface := range tabs {
 		tabMap, ok := tabInterface.(map[string]interface{})
@@ -311,6 +312,7 @@ func (t *Tabline) update(args []interface{}) {
 		if i > len(t.Tabs)-1 {
 			return
 		}
+
 		tab := t.Tabs[i]
 		tab.ID = int(tabMap["tab"].(nvim.Tabpage))
 		text := tabMap["name"].(string)
