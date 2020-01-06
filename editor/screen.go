@@ -1020,8 +1020,17 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	mod := event.Modifiers()
-	if vert != 0 {
-		s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
+
+	if s.ws.isMappingScrollKey {
+		if vert != 0 {
+			s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
+		}
+	} else {
+		if vert > 0 {
+			s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
+		} else if vert < 0 {
+			s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
+		}
 	}
 
 	if math.Abs(float64(vert)) > math.Abs(float64(horiz)) {

@@ -81,6 +81,7 @@ type Workspace struct {
 	cursorStyleEnabled bool
 	modeInfo           []map[string]interface{}
 	ts                 int
+	isMappingScrollKey bool
 
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
@@ -431,10 +432,6 @@ func (w *Workspace) initGonvim() {
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
 	w.nvim.Command(registerScripts)
 
-	gonvimScripts := `
-	noremap <ScrollWheelUp> <C-Y>
-	noremap <ScrollWheelDown> <C-E>
-	`
 	gonvimCommands := fmt.Sprintf(`
 	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
 	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
@@ -449,7 +446,7 @@ func (w *Workspace) initGonvim() {
 	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
 	`
 	}
-	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimScripts+gonvimCommands))
+	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	w.nvim.Command(registerScripts)
 
 	gonvimInitNotify := `
@@ -483,6 +480,16 @@ func (w *Workspace) loadGinitVim() {
 		bg := newRGBA(editor.colors.bg.R, editor.colors.bg.G, editor.colors.bg.B, 1)
 		editor.colors.fg = bg
 		editor.colors.bg = fg
+	}
+
+	mappings, err := w.nvim.KeyMap("normal")
+	if err != nil {
+		return
+	}
+	for _, mapping := range mappings {
+		if mapping.LHS == "<C-Y>" || mapping.LHS == "<C-y>" || mapping.LHS == "<C-e>" || mapping.LHS == "<C-E>"{
+			w.isMappingScrollKey = true
+		}
 	}
 }
 
