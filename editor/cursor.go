@@ -5,14 +5,14 @@ import (
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/widgets"
 	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/widgets"
 )
 
 // Cursor is
 type Cursor struct {
-	ws *Workspace
-	widget         *widgets.QWidget
+	ws     *Workspace
+	widget *widgets.QWidget
 	// widget     *widgets.QLabel
 	mode        string
 	modeIdx     int
@@ -89,8 +89,12 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	)
 }
 
-func (c *Cursor) setBlink(wait, on, off int) {
+func (c *Cursor) setBlink() {
 	c.timer.DisconnectTimeout()
+
+	wait := c.blinkWait
+	on := c.blinkOn
+	off := c.blinkOff
 	if wait == 0 || on == 0 || off == 0 {
 		c.brend = 0.0
 		c.widget.Update()
@@ -136,7 +140,6 @@ func (c *Cursor) updateCursorShape() {
 		return
 	}
 
-	var isUpdateStyle bool
 	if c.modeInfoModeIdx != c.modeIdx || c.isNeedUpdateModeInfo {
 		c.modeInfoModeIdx = c.modeIdx
 		modeInfo := c.ws.modeInfo[c.modeIdx]
@@ -153,7 +156,6 @@ func (c *Cursor) updateCursorShape() {
 			fg = c.ws.screen.highAttrDef[c.currAttrId].fg()
 			bg = c.ws.screen.highAttrDef[c.currAttrId].bg()
 		}
-		isUpdateStyle = c.fg != fg || c.bg != bg
 		c.fg = fg
 		c.bg = bg
 		if c.bg == nil {
@@ -183,12 +185,10 @@ func (c *Cursor) updateCursorShape() {
 		if ok {
 			c.blinkOff = util.ReflectToInt(blinkOffITF)
 		}
-		c.setBlink(c.blinkWait, c.blinkOn, c.blinkOff)
+		c.setBlink()
 
 		c.isNeedUpdateModeInfo = false
 	}
-
-
 
 	height := c.font.height
 	width := int(math.Trunc(c.font.truewidth))
@@ -222,13 +222,11 @@ func (c *Cursor) updateCursorShape() {
 		height = 1
 	}
 
-	// rect := core.NewQRect4(0, 0, width, height)
-	// c.widget.SetGeometry(rect)
-	c.widget.Resize2(width, height)
-	c.timer.StartDefault(0)
-	if !isUpdateStyle {
-		return
+	if c.blinkWait != 0 {
+		c.brend = 0.0
+		c.timer.Start(c.blinkWait)
 	}
+	c.widget.Resize2(width, height)
 	c.widget.Update()
 }
 
@@ -256,8 +254,8 @@ func (c *Cursor) update() {
 		win.content[row][col] == nil ||
 		win.content[row][col].char == "" ||
 		c.ws.palette.widget.IsVisible() {
-			c.text = ""
-			c.normalWidth = true
+		c.text = ""
+		c.normalWidth = true
 	} else {
 		c.text = win.content[row][col].char
 		c.normalWidth = win.content[row][col].normalWidth
@@ -265,6 +263,7 @@ func (c *Cursor) update() {
 	}
 
 	c.updateCursorShape()
+
 	if c.ws.palette.widget.IsVisible() {
 		return
 	}
@@ -275,7 +274,4 @@ func (c *Cursor) update() {
 	c.x = x
 	c.y = y
 	c.move()
-	c.widget.Update()
-
 }
-

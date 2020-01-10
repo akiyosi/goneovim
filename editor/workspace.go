@@ -487,7 +487,7 @@ func (w *Workspace) loadGinitVim() {
 		return
 	}
 	for _, mapping := range mappings {
-		if mapping.LHS == "<C-Y>" || mapping.LHS == "<C-y>" || mapping.LHS == "<C-e>" || mapping.LHS == "<C-E>"{
+		if mapping.LHS == "<C-Y>" || mapping.LHS == "<C-y>" || mapping.LHS == "<C-e>" || mapping.LHS == "<C-E>" {
 			w.isMappingScrollKey = true
 		}
 	}
@@ -727,6 +727,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "visual_bell":
 		case "flush":
 			s.update()
+			w.cursor.update()
 
 		// Grid Events
 		case "grid_resize":
@@ -845,7 +846,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		default:
 		}
 	}
-	w.cursor.update()
 	w.drawOtherUI()
 }
 
@@ -1181,7 +1181,7 @@ func (w *Workspace) guiFont(args string) {
 		fDialog := widgets.NewQFontDialog(nil)
 		fDialog.SetOption(widgets.QFontDialog__MonospacedFonts, true)
 		fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
-		fDialog.ConnectFontSelected(func(font *gui.QFont){
+		fDialog.ConnectFontSelected(func(font *gui.QFont) {
 			fontFamily = font.Family()
 			height = font.PointSizeF()
 			w.guiFont(fmt.Sprintf("%s:%d", fontFamily, height))
