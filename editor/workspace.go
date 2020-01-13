@@ -1594,6 +1594,7 @@ func (i *WorkspaceSideItem) openContent() {
 			fmt.Sprintf(`
 				QListWidget::item {
 				   color: %s;
+				   padding-left: 20px;
 				   background-color: rgba(0, 0, 0, 0.0);
 				}
 				QListWidget::item:selected {
