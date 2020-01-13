@@ -24,7 +24,8 @@ import (
 var editor *Editor
 
 const (
-	WorkspaceLen int = 20
+	GONEOVIMVERSION = "v0.4.3"
+	WorkspaceLen = 20
 )
 
 // ColorPalette is
@@ -173,7 +174,7 @@ func InitEditor() {
 	}
 
 	editor = &Editor{
-		version: "v0.4.2",
+		version: GONEOVIMVERSION,
 		signal:  NewEditorSignal(nil),
 		notify:  make(chan *Notify, 10),
 		stop:    make(chan struct{}),
