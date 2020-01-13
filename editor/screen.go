@@ -347,10 +347,6 @@ func (s *Screen) uiTryResize(width, height int) {
 	select {
 	case <-done:
 	case <-time.After(s.waitTime() * time.Millisecond):
-		// In this case, assuming that nvim is returning an error
-		//  at startup and the TryResizeUI() function hangs up.
-		ws.nvim.Input("<Enter>")
-		s.uiTryResize(width, height)
 	}
 }
 
