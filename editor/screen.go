@@ -1010,7 +1010,7 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 
 	mode := s.ws.mode
 	if mode == "insert" {
-		s.ws.nvim.Input("<Esc>")
+		s.ws.nvim.Input(s.ws.escKeyInInsert)
 	} else if mode == "terminal-input" {
 		s.ws.nvim.Input(`<C-\><C-n>`)
 	}
@@ -1087,7 +1087,7 @@ func (s *Screen) focusWindow(event *gui.QWheelEvent) {
 		if rect.Contains3(X, Y) && win.grid != s.ws.cursor.gridid {
 			s.ws.nvim.InputMouse("left", "press", editor.modPrefix(mod), win.grid, row, col)
 			s.ws.nvim.InputMouse("left", "release", editor.modPrefix(mod), win.grid, row, col)
-			go s.ws.nvim.Input("<Esc>")
+			go s.ws.nvim.Input(s.ws.escKeyInNormal)
 
 			return false
 		}

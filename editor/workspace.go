@@ -80,7 +80,12 @@ type Workspace struct {
 	curPosMutex        sync.RWMutex
 	cursorStyleEnabled bool
 	modeInfo           []map[string]interface{}
+	normalMappings     []*nvim.Mapping
+	insertMappings     []*nvim.Mapping
 	ts                 int
+
+	escKeyInNormal     string
+	escKeyInInsert     string
 	isMappingScrollKey bool
 
 	signal        *workspaceSignal
@@ -482,12 +487,32 @@ func (w *Workspace) loadGinitVim() {
 		editor.colors.bg = fg
 	}
 
-	mappings, err := w.nvim.KeyMap("normal")
+	w.escKeyInInsert = "<Esc>"
+	w.escKeyInNormal = "<Esc>"
+	nmappings, err := w.nvim.KeyMap("normal")
 	if err != nil {
 		return
 	}
-	for _, mapping := range mappings {
-		if mapping.LHS == "<C-Y>" || mapping.LHS == "<C-y>" || mapping.LHS == "<C-e>" || mapping.LHS == "<C-E>" {
+	w.normalMappings = nmappings
+	imappings, err := w.nvim.KeyMap("insert")
+	if err != nil {
+		return
+	}
+	w.insertMappings = imappings
+	for _, mapping := range w.insertMappings {
+		if strings.EqualFold(mapping.RHS, "<Esc>") || strings.EqualFold(mapping.RHS, "<C-[>") {
+			if mapping.NoRemap == 1 {
+				w.escKeyInInsert = mapping.LHS
+			}
+		}
+	}
+	for _, mapping := range w.normalMappings {
+		if strings.EqualFold(mapping.RHS, "<Esc>") || strings.EqualFold(mapping.RHS, "<C-[>") {
+			if mapping.NoRemap == 1 {
+				w.escKeyInNormal = mapping.LHS
+			}
+		}
+		if strings.EqualFold(mapping.LHS, "<C-y>") || strings.EqualFold(mapping.LHS, "<C-e>"){
 			w.isMappingScrollKey = true
 		}
 	}
