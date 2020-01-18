@@ -506,21 +506,21 @@ func (s *Statusline) setColor() {
 	s.lint.redraw(s.lint.errors, s.lint.warnings)
 }
 
-func (c *StatuslineComponent) setColor(fg, bg *RGBA) {
-	c.fg = fg
-	c.bg = bg
+func (s *StatuslineComponent) setColor(fg, bg *RGBA) {
+	s.fg = fg
+	s.bg = bg
 	if editor.config.Statusline.ModeIndicatorType == "background" {
-		c.widget.SetStyleSheet(fmt.Sprintf("color: %s; background-color: rgba(0, 0, 0, 0.0);", c.fg.String()))
-		c.label.SetStyleSheet(fmt.Sprintf("color: %s; background-color: rgba(0, 0, 0, 0.0);", c.fg.String()))
+		s.widget.SetStyleSheet(fmt.Sprintf("color: %s; background-color: rgba(0, 0, 0, 0.0);", s.fg.String()))
+		s.label.SetStyleSheet(fmt.Sprintf("color: %s; background-color: rgba(0, 0, 0, 0.0);", s.fg.String()))
 	} else {
-		c.widget.SetStyleSheet(fmt.Sprintf("color: %s; background-color: %s;", c.fg.String(), c.bg.String()))
-		c.label.SetStyleSheet(fmt.Sprintf("color: %s; background-color: %s;", c.fg.String(), c.bg.String()))
+		s.widget.SetStyleSheet(fmt.Sprintf("color: %s; background-color: %s;", s.fg.String(), s.bg.String()))
+		s.label.SetStyleSheet(fmt.Sprintf("color: %s; background-color: %s;", s.fg.String(), s.bg.String()))
 	}
-	if c.iconStr != "" {
-		c.icon.Load2(
+	if s.iconStr != "" {
+		s.icon.Load2(
 			core.NewQByteArray2(
-				editor.getSvg(c.iconStr, fg),
-				len(editor.getSvg(c.iconStr, fg)),
+				editor.getSvg(s.iconStr, fg),
+				len(editor.getSvg(s.iconStr, fg)),
 			),
 		)
 	}

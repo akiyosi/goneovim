@@ -1582,16 +1582,16 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	return &highlight
 }
 
-func (h *Highlight) fg() *RGBA {
+func (hl *Highlight) fg() *RGBA {
 	var color *RGBA
-	if h.reverse {
-		color = h.background
+	if hl.reverse {
+		color = hl.background
 		if color == nil {
 			// color = w.s.ws.background
 			color = editor.colors.bg
 		}
 	} else {
-		color = h.foreground
+		color = hl.foreground
 		if color == nil {
 			// color = w.s.ws.foreground
 			color = editor.colors.fg
@@ -1601,16 +1601,16 @@ func (h *Highlight) fg() *RGBA {
 	return color
 }
 
-func (h *Highlight) bg() *RGBA {
+func (hl *Highlight) bg() *RGBA {
 	var color *RGBA
-	if h.reverse {
-		color = h.foreground
+	if hl.reverse {
+		color = hl.foreground
 		if color == nil {
 			// color = w.s.ws.foreground
 			color = editor.colors.fg
 		}
 	} else {
-		color = h.background
+		color = hl.background
 		if color == nil {
 			// color = w.s.ws.background
 			color = editor.colors.bg

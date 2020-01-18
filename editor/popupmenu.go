@@ -522,7 +522,7 @@ func detectVimCompleteMode() (string, error) {
 		return kind.(string), nil
 	}
 
-	return "", errors.New("Does not exits complete_mode()")
+	return "", errors.New("does not exits complete_mode()")
 
 }
 

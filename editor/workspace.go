@@ -342,8 +342,8 @@ func (w *Workspace) startNvim(path string) error {
 func (w *Workspace) init(path string) {
 	w.configure()
 	w.attachUI(path)
-	// w.initCwd()
 	w.loadGinitVim()
+	w.getNvimOptions()
 }
 
 func (w *Workspace) configure() {
@@ -472,7 +472,9 @@ func (w *Workspace) loadGinitVim() {
 		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, scripts)
 		w.nvim.Command(execGinitVim)
 	}
+}
 
+func (w *Workspace) getNvimOptions() {
 	ts := 8
 	w.nvim.Option("ts", &ts)
 	w.ts = ts
@@ -554,13 +556,6 @@ func (w *Workspace) nvimEval(s string) (interface{}, error) {
 		err := errors.New("neovim busy")
 		return nil, err
 	}
-}
-
-func (w *Workspace) initCwd() {
-	if w.cwd == "" {
-		return
-	}
-	w.nvim.Command("cd " + w.cwd)
 }
 
 func (w *Workspace) setCwd(cwd string) {
@@ -1390,7 +1385,7 @@ func newWorkspaceSide() *WorkspaceSide {
 	return side
 }
 
-func (s *WorkspaceSide) newScrollArea() {
+func (side *WorkspaceSide) newScrollArea() {
 	sideArea := widgets.NewQScrollArea(nil)
 	sideArea.SetWidgetResizable(true)
 	sideArea.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
@@ -1404,12 +1399,12 @@ func (s *WorkspaceSide) newScrollArea() {
 	sideArea.SetFrameShape(widgets.QFrame__NoFrame)
 	// sideArea.SetFixedWidth(editor.config.SideBar.Width)
 
-	s.scrollarea = sideArea
-	s.scrollarea.SetWidget(s.widget)
+	side.scrollarea = sideArea
+	side.scrollarea.SetWidget(side.widget)
 
-	s.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
-		width := s.scrollarea.Width()
-		for _, item := range s.items {
+	side.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
+		width := side.scrollarea.Width()
+		for _, item := range side.items {
 			item.label.SetMaximumWidth(width)
 			item.label.SetMinimumWidth(width)
 			item.content.SetMinimumWidth(width)
@@ -1697,20 +1692,20 @@ func (i *WorkspaceSideItem) selectItem(args []interface{}) {
 	i.content.SetCurrentRow(util.ReflectToInt(args[0]))
 }
 
-func (s *WorkspaceSide) setColor() {
+func (side *WorkspaceSide) setColor() {
 	fg := editor.colors.sideBarFg.String()
 	sfg := editor.colors.scrollBarFg.String()
 	sbg := editor.colors.scrollBarBg.StringTransparent()
-	s.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg))
-	s.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 0px solid #000; padding-top: 5px; background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; border-right: 0px solid; }", fg))
-	if s.scrollarea == nil {
+	side.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg))
+	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 0px solid #000; padding-top: 5px; background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; border-right: 0px solid; }", fg))
+	if side.scrollarea == nil {
 		return
 	}
-	s.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
+	side.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
 
 	if len(editor.workspaces) == 1 {
-		s.items[0].active = true
-		s.items[0].labelWidget.SetStyleSheet(
+		side.items[0].active = true
+		side.items[0].labelWidget.SetStyleSheet(
 			fmt.Sprintf(
 				" * { background-color: %s; color: %s; }",
 				editor.colors.sideBarSelectedItemBg, fg,
