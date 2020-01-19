@@ -302,6 +302,7 @@ func (m *MiniMap) setColorscheme() {
 
 func (m *MiniMap) mapScroll() {
 	absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
+
 	var absMapTop int
 	m.nvim.Eval("line('w0')", &absMapTop)
 

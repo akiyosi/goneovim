@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
@@ -229,7 +230,10 @@ func newGonvimConfig(home string) gonvimConfig {
 	config.init()
 
 	// Read toml
-	_, _ = toml.DecodeFile(filepath.Join(home, ".goneovim", "setting.toml"), &config)
+	_, err := toml.DecodeFile(filepath.Join(home, ".goneovim", "setting.toml"), &config)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	if config.Editor.Transparent < 1.0 {
 		config.Editor.DrawBorder = true

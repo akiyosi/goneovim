@@ -347,11 +347,7 @@ func (w *Workspace) init(path string) {
 }
 
 func (w *Workspace) configure() {
-	if editor.config.Statusline.Visible {
-		w.drawStatusline = true
-	} else {
-		w.drawStatusline = false
-	}
+	w.drawStatusline = editor.config.Statusline.Visible
 
 	if editor.config.Tabline.Visible && editor.config.Editor.ExtTabline {
 		w.drawTabline = true
@@ -1041,24 +1037,36 @@ func (w *Workspace) setOption(update []interface{}) {
 }
 
 func (w *Workspace) getCurLine() {
-	curLineStr, _ := w.nvimCommandOutput(`lua 
-		local uv = vim and vim.loop or require 'luv'
-		-- TODO: replace a way to get the line number at the neovim v0.5.0
-		--       local path = vim.fn.expand(vim.fn.line())
-		print(vim.api.nvim_command('echo line(".")'))
-		`)
-	curLine, _ := strconv.Atoi(curLineStr)
+	var curLine int
+	err := w.nvim.ExecuteLua(`
+		-- if vim.fn.has('nvim-0.5') == 1 then
+		if vim.fn == nil then
+		  return vim.api.nvim_eval('line(".")')
+		else
+		  return vim.fn.line('.')
+		end
+		`, &curLine)
+	if err != nil {
+		return
+	}
+
 	w.curLine = curLine
 }
 
 func (w *Workspace) getCurColm() {
-	curColmStr, _ := w.nvimCommandOutput(`lua 
-		local uv = vim and vim.loop or require 'luv'
-		-- TODO: replace a way to get the line number at the neovim v0.5.0
-		--       local path = vim.fn.expand(vim.fn.line())
-		print(vim.api.nvim_command('echo col(".")'))
-		`)
-	curColm, _ := strconv.Atoi(curColmStr)
+	var curColm int
+	err := w.nvim.ExecuteLua(`
+		-- if vim.fn.has('nvim-0.5') == 1 then
+		if vim.fn == nil then
+		  return vim.api.nvim_eval('col(".")')
+		else
+		  return vim.fn.col('.')
+		end
+		`, &curColm)
+	if err != nil {
+		return
+	}
+
 	w.curColm = curColm
 }
 
