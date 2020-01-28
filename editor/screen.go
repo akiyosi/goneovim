@@ -1643,9 +1643,11 @@ func (s *Screen) gridClear(args []interface{}) {
 		}
 		win.content = make([][]*Cell, win.rows)
 		win.lenLine = make([]int, win.rows)
+		win.lenContent = make([]int, win.rows)
 
 		for i := 0; i < win.rows; i++ {
 			win.content[i] = make([]*Cell, win.cols)
+			win.lenContent[i] = win.cols - 1
 		}
 		win.queueRedrawAll()
 	}
