@@ -1764,35 +1764,35 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	}
 
 	lenLine := win.cols-1
+	width := win.cols-1
+	var breakFlag [2]bool
 	for j := win.cols-1; j >= 0; j-- {
 		cell := line[j]
+
 		if cell == nil {
 			lenLine--
 		} else if cell.char == " " {
 			lenLine--
 		} else {
-			break
+			breakFlag[0] = true
 		}
-	}
-	lenLine++
 
-	// Set content length of line
-	win.lenLine[row] = lenLine
-
-
-	width := win.cols-1
-	for j := win.cols-1; j >= 0; j-- {
-		cell := line[j]
 		if cell == nil {
 			width--
 		} else if !(cell.char != " " || !cell.highlight.bg().equals(win.background)) {
 			width--
 		} else {
+			breakFlag[1] = true
+		}
+
+		if breakFlag[0] && breakFlag[1] {
 			break
 		}
 	}
+	lenLine++
 	width++
 
+	win.lenLine[row] = lenLine
 	win.lenContent[row] = width
 }
 
