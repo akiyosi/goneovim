@@ -1192,7 +1192,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 	for i := 0; i < rows; i++ {
 		content[i] = make([]*Cell, cols)
-		lenOldContent[i] = cols - 1
+		lenContent[i] = cols - 1
 	}
 
 	if win != nil && gridid != 1 {
@@ -1968,7 +1968,6 @@ func (w *Window) update() {
 			width++
 
 			w.widget.Update2(
-			// w.widget.Repaint2(
 				0,
 				i * font.lineHeight,
 				int(float64(width) * font.truewidth),
