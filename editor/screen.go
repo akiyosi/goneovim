@@ -68,8 +68,11 @@ type Window struct {
 	redrawMutex sync.Mutex
 
 	s       *Screen
-	content [][]*Cell
-	lenLine []int
+	content    [][]*Cell
+	oldContent [][]*Cell
+	lenLine    []int
+	lenContent    []int
+	lenOldContent []int
 
 	grid        gridId
 	isGridDirty bool
@@ -1189,10 +1192,14 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 	// make new size content
 	content := make([][]*Cell, rows)
+	oldContent := make([][]*Cell, rows)
 	lenLine := make([]int, rows)
+	lenContent := make([]int, rows)
+	lenOldcontent := make([]int, rows)
 
 	for i := 0; i < rows; i++ {
 		content[i] = make([]*Cell, cols)
+		oldContent[i] = make([]*Cell, cols)
 	}
 
 	if win != nil && gridid != 1 {
@@ -1234,7 +1241,10 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	winOldRows := win.rows
 
 	win.lenLine = lenLine
+	win.lenContent = lenContent
+	win.lenOldContent = lenOldcontent
 	win.content = content
+	win.oldContent = oldContent
 	win.cols = cols
 	win.rows = rows
 
@@ -1689,13 +1699,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		return
 	}
 
-	// win, ok := s.windows[gridid]
-	// if !ok {
-	// 	return
-	// }
-	// if win == nil {
-	// 	return
-	// }
 	win, ok := s.getWindow(gridid)
 	if !ok {
 		return
@@ -1709,10 +1712,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	line := content[row]
 	cells := arg[3].([]interface{})
 
-	buffLenLine := colStart
-	lenLine := 0
-
-	countLenLine := false
 	for _, arg := range cells {
 		if col >= len(line) {
 			continue
@@ -1763,19 +1762,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 				}
 			}
 
-			// Count Line content length
-			buffLenLine++
-			if line[col].char != " " {
-				countLenLine = true
-			} else if line[col].char == " " {
-				countLenLine = false
-			}
-			if countLenLine {
-				lenLine += buffLenLine
-				buffLenLine = 0
-				countLenLine = false
-			}
-
 			col++
 			r++
 		}
@@ -1783,33 +1769,37 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		win.queueRedraw(colStart, row, col-colStart+1, 1)
 	}
 
-	// If the array of cell changes doesn't reach to the end of the line,
-	// the rest should remain unchanged.
-	buffLenLine = 0
-	if lenLine < win.lenLine[row] {
-		for x := lenLine; x < win.lenLine[row]; x++ {
-			if x >= len(line) {
-				break
-			}
-			if line[x] == nil {
-				break
-			}
-			// Count Line content length
-			buffLenLine++
-			if line[x].char != " " {
-				countLenLine = true
-			} else if line[x].char == " " {
-				countLenLine = false
-			}
-			if countLenLine {
-				lenLine += buffLenLine
-				buffLenLine = 0
-				countLenLine = false
-			}
+	lenLine := win.cols-1
+	for j := win.cols-1; j >= 0; j-- {
+		cell := line[j]
+		if cell == nil {
+			lenLine--
+		} else if cell.char == " " {
+			lenLine--
+		} else {
+			break
 		}
 	}
+	lenLine++
+
 	// Set content length of line
 	win.lenLine[row] = lenLine
+
+
+	width := win.cols-1
+	for j := win.cols-1; j >= 0; j-- {
+		cell := line[j]
+		if cell == nil {
+			width--
+		} else if !(cell.char != " " || !cell.highlight.bg().equals(win.background)) {
+			width--
+		} else {
+			break
+		}
+	}
+	width++
+
+	win.lenContent[row] = width
 }
 
 func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
@@ -1907,6 +1897,7 @@ func (w *Window) scroll(count int) {
 	right := w.scrollRegion[3]
 	content := w.content
 	lenLine := w.lenLine
+	lenContent := w.lenContent
 
 	if top == 0 && bot == 0 && left == 0 && right == 0 {
 		top = 0
@@ -1926,6 +1917,7 @@ func (w *Window) scroll(count int) {
 				content[row][col] = content[row+count][col]
 			}
 			lenLine[row] = lenLine[row+count]
+			lenContent[row] = lenContent[row+count]
 		}
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
@@ -1943,6 +1935,7 @@ func (w *Window) scroll(count int) {
 				content[row][col] = content[row+count][col]
 			}
 			lenLine[row] = lenLine[row+count]
+			lenContent[row] = lenContent[row+count]
 		}
 		for row := top; row < top-count; row++ {
 			for col := left; col <= right; col++ {
@@ -1963,18 +1956,56 @@ func (w *Window) update() {
 	}
 
 	font := w.getFont()
-	x := int(float64(w.queueRedrawArea[0]) * font.truewidth)
-	y := w.queueRedrawArea[1] * font.lineHeight
-	width := int(float64(w.queueRedrawArea[2]-w.queueRedrawArea[0]) * font.truewidth)
-	height := (w.queueRedrawArea[3] - w.queueRedrawArea[1]) * font.lineHeight
+	// x := int(float64(w.queueRedrawArea[0]) * font.truewidth)
+	// y := w.queueRedrawArea[1] * font.lineHeight
+	// width := int(float64(w.queueRedrawArea[2]-w.queueRedrawArea[0]) * font.truewidth)
+	// height := (w.queueRedrawArea[3] - w.queueRedrawArea[1]) * font.lineHeight
 
-	if width > 0 && height > 0 {
-		w.widget.Update2(
-			x,
-			y,
-			width,
-			height,
-		)
+	if w.queueRedrawArea[3] - w.queueRedrawArea[1] > 0 {
+		for i := w.queueRedrawArea[1]; i <= w.queueRedrawArea[3]; i++ {
+			if len(w.content) <= i {
+				continue
+			}
+
+			width := w.lenContent[i]
+			// width := w.cols-1
+			// for j := w.cols-1; j >= 0; j-- {
+			// 	cell := w.content[i][j]
+			// 	if cell == nil {
+			// 		width--
+			// 	} else if !(cell.char != " " || !cell.highlight.bg().equals(w.background)) {
+			// 		width--
+			// 	} else {
+			// 		break
+			// 	}
+			// }
+
+			if w.lenOldContent[i] == 0 {
+				width = w.cols - 1
+			}
+			if width < w.lenOldContent[i] {
+				width = w.lenOldContent[i]
+			}
+
+			// w.oldContent = w.content
+			// for j, cell := range w.content[i] {
+			// 	if cell == nil {
+			// 		continue
+			// 	}
+			// 	w.oldContent[i][j] = &Cell{}
+			// 	w.oldContent[i][j].char = cell.char
+			// 	w.oldContent[i][j].highlight = cell.highlight
+			// }
+			w.lenOldContent[i] = w.lenContent[i]
+
+			width++
+			w.widget.Update2(
+				0,
+				i * font.lineHeight,
+				int(float64(width) * font.truewidth),
+				font.lineHeight,
+			)
+		}
 	}
 
 	w.queueRedrawArea[0] = w.cols
@@ -2180,9 +2211,6 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 	var image *gui.QImage
 
 	for x := col; x <= col+cols; x++ {
-		if x > w.lenLine[y] {
-			continue
-		}
 		if x >= len(line) {
 			continue
 		}
@@ -2615,12 +2643,8 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		return
 	}
 	line := w.content[y]
-	lenLine := w.lenLine[y]
 	font := w.getFont()
 	for x := col; x <= col+cols; x++ {
-		if x > lenLine {
-			break
-		}
 		if x >= len(line) {
 			continue
 		}
