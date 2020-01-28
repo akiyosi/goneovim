@@ -69,7 +69,6 @@ type Window struct {
 
 	s       *Screen
 	content    [][]*Cell
-	oldContent [][]*Cell
 	lenLine    []int
 	lenContent    []int
 	lenOldContent []int
@@ -551,15 +550,8 @@ func (s *Screen) toolTip(text string) {
 func (w *Window) paint(event *gui.QPaintEvent) {
 	w.paintMutex.Lock()
 
-	rect := event.Rect()
-
-	font := w.getFont()
-	row := int(float64(rect.Top()) / float64(font.lineHeight))
-	col := int(float64(rect.Left()) / font.truewidth)
-	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
-	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
-
 	p := gui.NewQPainter2(w.widget)
+	font := w.getFont()
 
 	// Set devicePixelRatio if it is not set
 	if w.devicePixelRatio == 0 {
@@ -572,6 +564,11 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	// Draw contents
+	rect := event.Rect()
+	col := int(float64(rect.Left()) / font.truewidth)
+	row := int(float64(rect.Top()) / float64(font.lineHeight))
+	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
+	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
 	for y := row; y < row+rows; y++ {
 		if y >= w.rows {
 			continue
@@ -592,9 +589,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	// Draw indent guide
 	if editor.config.Editor.IndentGuide {
 		w.drawIndentguide(p, row, rows)
-		// for _, win := range w.s.windows {
-		// 	win.drawIndentguide(p)
-		// }
 	}
 
 	// Update markdown preview
@@ -1192,14 +1186,13 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 	// make new size content
 	content := make([][]*Cell, rows)
-	oldContent := make([][]*Cell, rows)
 	lenLine := make([]int, rows)
 	lenContent := make([]int, rows)
-	lenOldcontent := make([]int, rows)
+	lenOldContent := make([]int, rows)
 
 	for i := 0; i < rows; i++ {
 		content[i] = make([]*Cell, cols)
-		oldContent[i] = make([]*Cell, cols)
+		lenOldContent[i] = cols - 1
 	}
 
 	if win != nil && gridid != 1 {
@@ -1242,9 +1235,8 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 	win.lenLine = lenLine
 	win.lenContent = lenContent
-	win.lenOldContent = lenOldcontent
+	win.lenOldContent = lenOldContent
 	win.content = content
-	win.oldContent = oldContent
 	win.cols = cols
 	win.rows = rows
 
@@ -1956,10 +1948,6 @@ func (w *Window) update() {
 	}
 
 	font := w.getFont()
-	// x := int(float64(w.queueRedrawArea[0]) * font.truewidth)
-	// y := w.queueRedrawArea[1] * font.lineHeight
-	// width := int(float64(w.queueRedrawArea[2]-w.queueRedrawArea[0]) * font.truewidth)
-	// height := (w.queueRedrawArea[3] - w.queueRedrawArea[1]) * font.lineHeight
 
 	if w.queueRedrawArea[3] - w.queueRedrawArea[1] > 0 {
 		for i := w.queueRedrawArea[1]; i <= w.queueRedrawArea[3]; i++ {
@@ -1968,38 +1956,17 @@ func (w *Window) update() {
 			}
 
 			width := w.lenContent[i]
-			// width := w.cols-1
-			// for j := w.cols-1; j >= 0; j-- {
-			// 	cell := w.content[i][j]
-			// 	if cell == nil {
-			// 		width--
-			// 	} else if !(cell.char != " " || !cell.highlight.bg().equals(w.background)) {
-			// 		width--
-			// 	} else {
-			// 		break
-			// 	}
-			// }
 
-			if w.lenOldContent[i] == 0 {
-				width = w.cols - 1
-			}
 			if width < w.lenOldContent[i] {
 				width = w.lenOldContent[i]
 			}
 
-			// w.oldContent = w.content
-			// for j, cell := range w.content[i] {
-			// 	if cell == nil {
-			// 		continue
-			// 	}
-			// 	w.oldContent[i][j] = &Cell{}
-			// 	w.oldContent[i][j].char = cell.char
-			// 	w.oldContent[i][j].highlight = cell.highlight
-			// }
 			w.lenOldContent[i] = w.lenContent[i]
 
 			width++
+
 			w.widget.Update2(
+			// w.widget.Repaint2(
 				0,
 				i * font.lineHeight,
 				int(float64(width) * font.truewidth),
