@@ -1965,6 +1965,10 @@ func (w *Window) update() {
 
 			w.lenOldContent[i] = w.lenContent[i]
 
+			if w.s.name == "minimap" {
+				width = w.cols
+			}
+
 			width++
 
 			w.widget.Update2(
