@@ -1201,6 +1201,8 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 				continue
 			}
 			lenLine[i] = win.lenLine[i]
+			lenContent[i] = win.lenContent[i]
+			lenOldContent[i] = win.lenOldContent[i]
 			for j := 0; j < cols; j++ {
 				if j >= len(win.content[i]) {
 					continue
@@ -1769,20 +1771,24 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	for j := win.cols-1; j >= 0; j-- {
 		cell := line[j]
 
-		if cell == nil {
-			lenLine--
-		} else if cell.char == " " {
-			lenLine--
-		} else {
-			breakFlag[0] = true
+		if breakFlag[0] {
+			if cell == nil {
+				lenLine--
+			} else if cell.char == " " {
+				lenLine--
+			} else {
+				breakFlag[0] = true
+			}
 		}
 
-		if cell == nil {
-			width--
-		} else if !(cell.char != " " || !cell.highlight.bg().equals(win.background)) {
-			width--
-		} else {
-			breakFlag[1] = true
+		if breakFlag[1] {
+			if cell == nil {
+				width--
+			} else if cell.char == " " && cell.highlight.bg().equals(win.background) {
+				width--
+			} else {
+				breakFlag[1] = true
+			}
 		}
 
 		if breakFlag[0] && breakFlag[1] {
@@ -1945,10 +1951,6 @@ func (w *Window) update() {
 	if w == nil {
 		return
 	}
-	if w.queueRedrawArea[2] == 0 && w.queueRedrawArea[3] == 0 {
-		return
-	}
-
 	font := w.getFont()
 
 	if w.queueRedrawArea[3] - w.queueRedrawArea[1] > 0 {
