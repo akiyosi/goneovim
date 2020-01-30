@@ -350,7 +350,7 @@ func (c *gonvimConfig) init() {
 
 	// c.ActivityBar.Visible = true
 
-	c.ScrollBar.Visible = true
+	c.ScrollBar.Visible = false
 
 	c.SideBar.Width = 200
 	c.SideBar.AccentColor = "#5596ea"

@@ -1041,13 +1041,20 @@ func (w *Workspace) getPos() {
 	done := make(chan error, 2000)
 	var curPos [4]int
 	go func() {
-		err := w.nvim.Eval(`getpos('.')`, &curPos)
+		err := w.nvim.ExecuteLua(`
+			-- if vim.fn.has('nvim-0.5') == 1 then
+			if vim.fn == nil then
+			  return vim.api.nvim_eval('getpos(".")')
+			else
+			  return vim.fn.getpos('.')
+			end
+			`, &curPos)
 		done <- err
 	}()
 
 	select {
 	case <-done:
-	case <-time.After(30 * time.Millisecond):
+	case <-time.After(10 * time.Millisecond):
 		return
 	}
 
