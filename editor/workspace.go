@@ -764,17 +764,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.gridDestroy(args)
 		case "grid_cursor_goto":
 			s.gridCursorGoto(args)
-			if w.minimap.visible || w.drawStatusline || editor.config.ScrollBar.Visible {
-				w.getCurLine()
-			}
-			if w.drawStatusline {
-				w.getCurColm()
-				w.statusline.pos.redraw(w.curLine, w.curColm)
-			}
-			if w.minimap.visible {
-				go w.updateMinimap()
-				w.minimap.mapScroll()
-			}
 		case "grid_scroll":
 			s.gridScroll(args)
 
@@ -868,15 +857,27 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 func (w *Workspace) drawOtherUI() {
 	s := w.screen
 
-	if w.statusline.widget.IsVisible() {
+	if w.minimap.visible || w.drawStatusline || editor.config.ScrollBar.Visible {
+		w.getPos()
+	}
+
+	if w.drawStatusline {
+		w.statusline.pos.redraw(w.curLine, w.curColm)
 		w.statusline.mode.redraw()
 	}
+
+	if editor.config.ScrollBar.Visible {
+		w.scrollBar.update()
+	}
+
 	if s.tooltip.IsVisible() {
 		x, y, _, _ := w.screen.toolTipPos()
 		w.screen.toolTipMove(x, y)
 	}
-	if editor.config.ScrollBar.Visible {
-		w.scrollBar.update()
+
+	if w.minimap.visible {
+		go w.updateMinimap()
+		w.minimap.mapScroll()
 	}
 }
 
@@ -1036,38 +1037,22 @@ func (w *Workspace) setOption(update []interface{}) {
 	}
 }
 
-func (w *Workspace) getCurLine() {
-	var curLine int
-	err := w.nvim.ExecuteLua(`
-		-- if vim.fn.has('nvim-0.5') == 1 then
-		if vim.fn == nil then
-		  return vim.api.nvim_eval('line(".")')
-		else
-		  return vim.fn.line('.')
-		end
-		`, &curLine)
-	if err != nil {
+func (w *Workspace) getPos() {
+	done := make(chan error, 2000)
+	var curPos [4]int
+	go func() {
+		err := w.nvim.Eval(`getpos('.')`, &curPos)
+		done <- err
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(30 * time.Millisecond):
 		return
 	}
 
-	w.curLine = curLine
-}
-
-func (w *Workspace) getCurColm() {
-	var curColm int
-	err := w.nvim.ExecuteLua(`
-		-- if vim.fn.has('nvim-0.5') == 1 then
-		if vim.fn == nil then
-		  return vim.api.nvim_eval('col(".")')
-		else
-		  return vim.fn.col('.')
-		end
-		`, &curColm)
-	if err != nil {
-		return
-	}
-
-	w.curColm = curColm
+	w.curLine = curPos[1]
+	w.curColm = curPos[2]
 }
 
 func (w *Workspace) updateMinimap() {
