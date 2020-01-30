@@ -1771,7 +1771,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	for j := win.cols-1; j >= 0; j-- {
 		cell := line[j]
 
-		if breakFlag[0] {
+		if !breakFlag[0] {
 			if cell == nil {
 				lenLine--
 			} else if cell.char == " " {
@@ -1781,7 +1781,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			}
 		}
 
-		if breakFlag[1] {
+		if !breakFlag[1] {
 			if cell == nil {
 				width--
 			} else if cell.char == " " && cell.highlight.bg().equals(win.background) {
