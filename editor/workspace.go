@@ -212,12 +212,14 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.Move2(0, 0)
 	w.updateSize()
 
-	go func() {
-		if !editor.config.MiniMap.Visible {
-			time.Sleep(1500 * time.Millisecond)
-		}
-		w.minimap.startMinimapProc()
-	}()
+	if !w.uiRemoteAttached {
+		go func() {
+			if !editor.config.MiniMap.Visible {
+				time.Sleep(1500 * time.Millisecond)
+			}
+			w.minimap.startMinimapProc()
+		}()
+	}
 
 	if runtime.GOOS == "windows" {
 		<-w.doneNvimStart
@@ -236,7 +238,9 @@ func (w *Workspace) registerSignal() {
 		w.handleRPCGui(updates)
 	})
 	w.signal.ConnectStopSignal(func() {
-		editor.workspaces[editor.active].minimap.exit()
+		if !w.uiRemoteAttached {
+			editor.workspaces[editor.active].minimap.exit()
+		}
 		workspaces := []*Workspace{}
 		index := 0
 		for i, ws := range editor.workspaces {
@@ -927,13 +931,15 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 		isChangeBg = editor.colors.bg.equals(w.background)
 	}
 
-	if !isChangeFg || !isChangeBg {
-		editor.isSetGuiColor = false
-		aw := editor.workspaces[editor.active]
-		// change minimap colorscheme
-		aw.minimap.isSetColorscheme = false
-		if aw.minimap.visible && aw.minimap.nvim != nil && aw.nvim != nil {
-			editor.workspaces[editor.active].minimap.setColorscheme()
+	if !w.uiRemoteAttached {
+		if !isChangeFg || !isChangeBg {
+			editor.isSetGuiColor = false
+			aw := editor.workspaces[editor.active]
+			// change minimap colorscheme
+			aw.minimap.isSetColorscheme = false
+			if aw.minimap.visible && aw.minimap.nvim != nil && aw.nvim != nil {
+				editor.workspaces[editor.active].minimap.setColorscheme()
+			}
 		}
 	}
 	if len(editor.workspaces) > 1 {
@@ -1063,6 +1069,7 @@ func (w *Workspace) getPos() {
 }
 
 func (w *Workspace) updateMinimap() {
+	fmt.Println("server")
 	var absMapTop int
 	var absMapBottom int
 	w.minimap.nvim.Eval("line('w0')", &absMapTop)
