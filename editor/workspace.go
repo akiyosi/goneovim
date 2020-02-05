@@ -1069,7 +1069,6 @@ func (w *Workspace) getPos() {
 }
 
 func (w *Workspace) updateMinimap() {
-	fmt.Println("server")
 	var absMapTop int
 	var absMapBottom int
 	w.minimap.nvim.Eval("line('w0')", &absMapTop)
