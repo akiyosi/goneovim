@@ -1045,27 +1045,6 @@ func (s *Screen) focusWindow(event *gui.QWheelEvent) {
 	mod := event.Modifiers()
 	col := int(float64(event.X()) / s.font.truewidth)
 	row := int(float64(event.Y()) / float64(s.font.lineHeight))
-	// for _, win := range s.windows {
-	// 	if win == nil {
-	// 		continue
-	// 	}
-	// 	if win.grid == 1 {
-	// 		continue
-	// 	}
-	// 	if win.isMsgGrid {
-	// 		continue
-	// 	}
-	// 	X := event.X()
-	// 	Y := event.Y()
-	// 	rect := win.widget.Geometry()
-	// 	if rect.Contains3(X, Y) && win.grid != s.ws.cursor.gridid {
-	// 		s.ws.nvim.InputMouse("left", "press", editor.modPrefix(mod), win.grid, row, col)
-	// 		s.ws.nvim.InputMouse("left", "release", editor.modPrefix(mod), win.grid, row, col)
-	// 		go s.ws.nvim.Input("<Esc>")
-
-	// 		return
-	// 	}
-	// }
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1082,9 +1061,11 @@ func (s *Screen) focusWindow(event *gui.QWheelEvent) {
 		Y := event.Y()
 		rect := win.widget.Geometry()
 		if rect.Contains3(X, Y) && win.grid != s.ws.cursor.gridid {
-			s.ws.nvim.InputMouse("left", "press", editor.modPrefix(mod), win.grid, row, col)
-			s.ws.nvim.InputMouse("left", "release", editor.modPrefix(mod), win.grid, row, col)
-			go s.ws.nvim.Input(s.ws.escKeyInNormal)
+			go func() {
+				s.ws.nvim.InputMouse("left", "press", editor.modPrefix(mod), win.grid, row, col)
+				s.ws.nvim.InputMouse("left", "release", editor.modPrefix(mod), win.grid, row, col)
+				s.ws.nvim.Input(s.ws.escKeyInNormal)
+			}()
 
 			return false
 		}
