@@ -1239,14 +1239,6 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 	var isExistMsgGrid bool
-	// for _, w := range s.windows {
-	// 	if w == nil {
-	// 		continue
-	// 	}
-	// 	if w.isMsgGrid {
-	// 		isExistMsgGrid = true
-	// 	}
-	// }
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1259,12 +1251,6 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 		return true
 	})
 
-	// if !isExistMsgGrid && len(s.windows) < 3 {
-	// 	return
-	// }
-	// if isExistMsgGrid && len(s.windows) < 4 {
-	// 	return
-	// }
 	if !isExistMsgGrid && s.lenWindows() < 3 {
 		return
 	}
@@ -1974,15 +1960,17 @@ func (s *Screen) update() {
 		win := winITF.(*Window)
 		// if grid is dirty, we remove this grid
 		if win.isGridDirty {
-			if win.queueRedrawArea[2] > 0 || win.queueRedrawArea[3] > 0 {
-				// If grid has an update area even though it has a dirty flag,
-				// it will still not be removed as a valid grid
-				win.isGridDirty = false
-			} else {
-				// Remove dirty grid
-				win.hide()
-				s.windows.Delete(grid)
-			}
+			// if win.queueRedrawArea[2] > 0 || win.queueRedrawArea[3] > 0 {
+			// 	// If grid has an update area even though it has a dirty flag,
+			// 	// it will still not be removed as a valid grid
+			// 	win.isGridDirty = false
+			// } else {
+			// 	// Remove dirty grid
+			// 	win.hide()
+			// 	s.windows.Delete(grid)
+			// }
+			win.hide()
+			s.windows.Delete(grid)
 		}
 		if win != nil {
 			// Fill entire background if background color changed
@@ -2747,21 +2735,6 @@ func (s *Screen) windowPosition(args []interface{}) {
 }
 
 func (s *Screen) setBufferNames() {
-	// for _, win := range s.ws.screen.windows {
-	// 	if win == nil {
-	// 		continue
-	// 	}
-	// 	if win.grid == 1 {
-	// 		continue
-	// 	}
-	// 	if win.isMsgGrid {
-	// 		continue
-	// 	}
-
-	// 	buf, _ := s.ws.nvim.WindowBuffer(win.id)
-	// 	bufName, _ := s.ws.nvim.BufferName(buf)
-	// 	win.bufName = bufName
-	// }
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 		if win == nil {
@@ -2817,6 +2790,28 @@ func (s *Screen) gridDestroy(args []interface{}) {
 		}
 		win.isGridDirty = true
 	}
+
+	// Redraw each displayed window.Because shadows leave dust before and after float window drawing.
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+		if win.isMsgGrid {
+			return true
+		}
+		if win.isGridDirty {
+			return true
+		}
+		if win.isShown() {
+			win.queueRedrawAll()
+		}
+
+		return true
+	})
 }
 
 func (s *Screen) windowFloatPosition(args []interface{}) {
@@ -2826,13 +2821,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			continue
 		}
 
-		// win, ok := s.windows[gridid]
-		// if !ok {
-		// 	continue
-		// }
-		// if win == nil {
-		// 	continue
-		// }
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
@@ -2848,13 +2836,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.widget.SetParent(editor.wsWidget)
 		win.isFloatWin = true
 
-		// anchorwin, ok := s.windows[anchorGrid]
-		// if !ok {
-		// 	continue
-		// }
-		// if anchorwin == nil {
-		// 	continue
-		// }
 		anchorwin, ok := s.getWindow(anchorGrid)
 		if !ok {
 			continue
@@ -2881,6 +2862,9 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.move(x, y)
 		win.setShadow()
 		win.show()
+
+		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
+		anchorwin.queueRedrawAll()
 	}
 }
 
@@ -2890,13 +2874,6 @@ func (s *Screen) windowHide(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		// win, ok := s.windows[gridid]
-		// if !ok {
-		// 	continue
-		// }
-		// if win == nil {
-		// 	continue
-		// }
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
