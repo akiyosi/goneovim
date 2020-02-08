@@ -47,6 +47,7 @@ type PopupItem struct {
 	wordRequest string
 
 	kind     string
+	kindwidget *widgets.QWidget
 	kindIcon *svg.QSvgWidget
 
 	menuLabel   *widgets.QLabel
@@ -93,30 +94,36 @@ func initPopupmenuNew() *PopupMenu {
 	detailLabel.SetContentsMargins(margin, margin, margin, margin)
 	detailLabel.SetObjectName("detailText")
 	detailLabel.SetWordWrap(true)
+	detailLabel.SetAlignment(core.Qt__AlignTop)
 
 	layout.AddLayout(itemLayout, 0)
 	layout.AddWidget(detailLabel, 0, core.Qt__AlignTop|core.Qt__AlignLeft)
 	layout.AddWidget(scrollCol, 0, 0)
 
-	max := editor.config.Popupmenu.Total
+	total := editor.config.Popupmenu.Total
 
 	popup := &PopupMenu{
 		widget:      widget,
 		itemLayout:  itemLayout,
 		detailLabel: detailLabel,
-		total:       max,
+		total:       total,
 		scrollBar:   scrollBar,
 		scrollCol:   scrollCol,
 	}
 
 	var popupItems []*PopupItem
-	for i := 0; i < max; i++ {
+	for i := 0; i < total; i++ {
+		iconwidget := widgets.NewQWidget(nil, 0)
+		iconlayout := widgets.NewQHBoxLayout()
+		iconlayout.SetContentsMargins(0, 0, 0, 0)
+		iconwidget.SetLayout(iconlayout)
 		kindIcon := svg.NewQSvgWidget(nil)
 		kindIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
-		kindIcon.SetContentsMargins(margin, margin, margin*2, margin)
+		iconlayout.AddWidget(kindIcon, 0, 0)
+		iconwidget.SetContentsMargins(margin, margin, margin, margin)
 
 		word := widgets.NewQLabel(widget, 0)
-		word.SetContentsMargins(margin*2, margin, margin*2, margin)
+		word.SetContentsMargins(margin, margin, margin*2, margin)
 		word.SetObjectName("wordlabel")
 
 		menu := widgets.NewQLabel(widget, 0)
@@ -125,7 +132,7 @@ func initPopupmenuNew() *PopupMenu {
 		info := widgets.NewQLabel(widget, 0)
 		info.SetContentsMargins(margin, margin, margin, margin)
 
-		itemLayout.AddWidget2(kindIcon, i, 0, 0)
+		itemLayout.AddWidget2(iconwidget, i, 0, 0)
 		itemLayout.AddWidget2(word, i, 1, 0)
 		itemLayout.AddWidget2(menu, i, 2, core.Qt__AlignLeft)
 		itemLayout.AddWidget2(info, i, 3, core.Qt__AlignLeft)
@@ -133,6 +140,7 @@ func initPopupmenuNew() *PopupMenu {
 		popupItem := &PopupItem{
 			p:         popup,
 			kindIcon:  kindIcon,
+			kindwidget:  iconwidget,
 			wordLabel: word,
 			menuLabel: menu,
 			infoLabel: info,
@@ -153,6 +161,8 @@ func (p *PopupMenu) updateFont(font *Font) {
 		popupItem.wordLabel.SetFont(font.fontNew)
 		popupItem.menuLabel.SetFont(font.fontNew)
 		popupItem.infoLabel.SetFont(font.fontNew)
+		popupItem.kindIcon.SetFixedSize2(font.lineHeight, font.lineHeight)
+		popupItem.kindwidget.SetFixedWidth(font.lineHeight+editor.config.Editor.Linespace*2)
 	}
 }
 
@@ -244,7 +254,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.detailLabel.SetText("")
 
 	popupItems := p.items
-	itemHeight := p.ws.font.lineHeight
+	itemHeight := (p.ws.font.lineHeight)+(editor.config.Editor.Linespace+4)
 
 	// Calc the maximum completion items
 	//   where,
@@ -258,11 +268,17 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.showTotal = p.total
 	}
 
+	startNum := 0
+	if selected >= len(items) - p.showTotal && len(items) > p.total {
+		startNum = len(items) - p.showTotal
+	}
+
 	itemNum := 0
 	maxItemLen := 0
-	for i := 0; i < p.total; i++ {
-		popupItem := popupItems[i]
-		if i >= len(items) || i >= total {
+	for i := startNum; i < p.total+startNum; i++ {
+		j := i - startNum
+		popupItem := popupItems[j]
+		if i >= len(items) || j >= total {
 			popupItem.hide()
 			continue
 		}
@@ -272,7 +288,9 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		if itemLen > maxItemLen {
 			maxItemLen = itemLen
 		}
+
 		popupItem.setItem(item, selected == i)
+		popupItem.hide()
 		popupItem.show()
 		itemNum++
 	}
@@ -296,19 +314,10 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.scrollCol.Hide()
 	}
 
-	popupWidth := editor.iconSize + popupItems[0].wordLabel.Width()
-
-	x, y := p.ws.getPointInWidget(col, row, gridid)
-	y += p.ws.font.lineHeight
-
-	if x+popupWidth >= p.ws.screen.widget.Width() {
-		x = p.ws.screen.widget.Width() - popupWidth - 5
-	}
-
-	p.widget.SetFixedHeight(itemNum*(p.ws.font.lineHeight+editor.config.Editor.Linespace+2) + 2 + editor.iconSize*2/5)
-	p.widget.Move2(x, y)
 	p.hide()
 	p.show()
+	p.setWidgetWidth()
+	p.moveWidget(gridid, col, row, itemNum)
 }
 
 func (p *PopupMenu) detectItemLen(item []interface{}) int {
@@ -325,7 +334,9 @@ func (p *PopupMenu) detectItemLen(item []interface{}) int {
 func (p *PopupMenu) show() {
 	p.widget.Raise()
 	p.widget.Show()
+}
 
+func (p *PopupMenu) setWidgetWidth() {
 	maxWordLabelLen := 0
 	isMenuHidden := p.hideItemIdx[0]
 	isInfoHidden := p.hideItemIdx[1]
@@ -377,6 +388,20 @@ func (p *PopupMenu) show() {
 	)
 }
 
+func (p *PopupMenu) moveWidget(gridid, col, row, itemNum int) {
+	popupWidth := p.widget.Width()
+
+	x, y := p.ws.getPointInWidget(col, row, gridid)
+	y += p.ws.font.lineHeight
+
+	if x+popupWidth >= p.ws.screen.widget.Width() {
+		x = p.ws.screen.widget.Width() - popupWidth - 5
+	}
+
+	p.widget.SetFixedHeight(itemNum*(p.ws.font.lineHeight+editor.config.Editor.Linespace+2) + 2 + editor.iconSize*2/5)
+	p.widget.Move2(x, y)
+}
+
 func (p *PopupMenu) hide() {
 	p.widget.Hide()
 }
@@ -400,6 +425,7 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 	for i := 0; i < p.showTotal; i++ {
 		popupItem := p.items[i]
 		isSelected := selected == i+p.top
+
 		popupItem.setSelected(isSelected)
 		if isSelected {
 			if editor.config.Popupmenu.ShowDetail {
@@ -442,18 +468,19 @@ func (p *PopupMenu) scroll(n int) {
 	p.scrollBar.Move2(0, p.scrollBarPos)
 	p.hide()
 	p.show()
+	p.setWidgetWidth()
 }
 
 func (p *PopupItem) updateContent() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		if p.selected {
-			p.kindIcon.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			p.kindwidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 			p.wordLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 			p.infoLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 		} else {
-			p.kindIcon.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			p.kindwidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 			p.wordLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 			p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 			p.infoLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
@@ -566,6 +593,7 @@ func (p *PopupItem) setKind(kind string, selected bool) {
 		icon := editor.getSvg("lsp_"+lowerKindText, colorOfKeyword)
 		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 	default:
+		iconColor := warpColor(editor.colors.fg, -45)
 		switch p.p.completeMode {
 		case "keyword",
 			"whole_line",
@@ -580,10 +608,10 @@ func (p *PopupItem) setKind(kind string, selected bool) {
 			"omni",
 			"spell",
 			"eval":
-			icon := editor.getSvg("vim_"+p.p.completeMode, colorOfType)
+			icon := editor.getSvg("vim_"+p.p.completeMode, iconColor)
 			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 		default:
-			icon := editor.getSvg("vim_unknown", colorOfType)
+			icon := editor.getSvg("vim_unknown", iconColor)
 			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 		}
 	}
@@ -594,7 +622,7 @@ func (p *PopupItem) hide() {
 		return
 	}
 	p.hidden = true
-	p.kindIcon.Hide()
+	p.kindwidget.Hide()
 	p.wordLabel.Hide()
 	p.menuLabel.Hide()
 	p.infoLabel.Hide()
@@ -605,7 +633,7 @@ func (p *PopupItem) show() {
 		return
 	}
 	p.hidden = false
-	p.kindIcon.Show()
+	p.kindwidget.Show()
 	p.wordLabel.Show()
 	p.menuLabel.Show()
 	p.infoLabel.Show()
