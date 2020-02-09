@@ -746,7 +746,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "bell":
 		case "visual_bell":
 		case "flush":
-			s.update()
 			w.cursor.update()
 
 		// Grid Events
@@ -855,6 +854,8 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		default:
 		}
 	}
+
+	s.update()
 	w.drawOtherUI()
 }
 
