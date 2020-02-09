@@ -1963,6 +1963,9 @@ func (s *Screen) update() {
 			if !win.background.equals(s.ws.background) {
 				win.background = s.ws.background.copy()
 				win.fill()
+				for i := 0; i < len(win.lenContent); i++ {
+					win.lenContent[i] = win.cols
+				}
 			}
 			win.update()
 		}
