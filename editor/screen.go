@@ -1963,9 +1963,6 @@ func (s *Screen) update() {
 			if !win.background.equals(s.ws.background) {
 				win.background = s.ws.background.copy()
 				win.fill()
-				for i := 0; i < len(win.lenContent); i++ {
-					win.lenContent[i] = win.cols
-				}
 			}
 			win.update()
 		}
@@ -3062,6 +3059,9 @@ func (w *Window) setGeometryAndPalette(rect core.QRect_ITF) {
 }
 
 func (w *Window) fill() {
+	for i := 0; i < len(w.lenContent); i++ {
+		w.lenContent[i] = w.cols
+	}
 	if editor.config.Editor.DrawBorder {
 		return
 	}
