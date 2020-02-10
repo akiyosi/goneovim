@@ -759,6 +759,10 @@ func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
 		),
 		editor.colors.indentGuide.QColor(),
 	)
+
+	if w.lenContent[y] < x {
+		w.lenContent[y] = x
+	}
 }
 
 func (w *Window) drawMsgSeparator(p *gui.QPainter) {
@@ -1926,6 +1930,14 @@ func (w *Window) update() {
 
 		w.lenOldContent[i] = w.lenContent[i]
 
+		// If DrawIndentGuide is enabled
+		if editor.config.Editor.IndentGuide && i > 1 {
+			if width < w.lenContent[i-1] {
+				width = w.lenContent[i-1]
+			}
+		}
+
+		// If screen is minimap
 		if w.s.name == "minimap" {
 			width = w.cols
 		}
