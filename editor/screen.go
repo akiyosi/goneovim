@@ -1045,9 +1045,21 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 }
 
 func (s *Screen) focusWindow(event *gui.QWheelEvent) {
-	mod := event.Modifiers()
-	col := int(float64(event.X()) / s.font.truewidth)
-	row := int(float64(event.Y()) / float64(s.font.lineHeight))
+	// Get window list in current tab
+	done := make(chan []nvim.Window, 1000)
+	var wins []nvim.Window
+	go func() {
+		curtab, _ := s.ws.nvim.CurrentTabpage()
+		curwins, _ := s.ws.nvim.TabpageWindows(curtab)
+		done <-curwins
+	}()
+	select {
+	case wins = <-done:
+	case <-time.After(40 * time.Millisecond):
+		return
+	}
+
+	// Focuses window including mouse pointer
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1060,15 +1072,20 @@ func (s *Screen) focusWindow(event *gui.QWheelEvent) {
 		if win.isMsgGrid {
 			return true
 		}
+		isWindowInCurrentTab := false
+		for _, nvimWin := range wins {
+			if win.id == nvimWin {
+				isWindowInCurrentTab = true
+			}
+		}
+		if !isWindowInCurrentTab {
+			return true
+		}
 		X := event.X()
 		Y := event.Y()
 		rect := win.widget.Geometry()
 		if rect.Contains3(X, Y) && win.grid != s.ws.cursor.gridid {
-			go func() {
-				s.ws.nvim.InputMouse("left", "press", editor.modPrefix(mod), win.grid, row, col)
-				s.ws.nvim.InputMouse("left", "release", editor.modPrefix(mod), win.grid, row, col)
-				s.ws.nvim.Input(s.ws.escKeyInNormal)
-			}()
+			go s.ws.nvim.SetCurrentWindow(win.id)
 
 			return false
 		}
