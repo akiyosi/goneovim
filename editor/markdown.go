@@ -43,7 +43,9 @@ type Markdown struct {
 func newMarkdown(workspace *Workspace) *Markdown {
 	webview := webengine.NewQWebEngineView(nil)
 	// Try to fix issue (#91)
-	webview.SetAttribute(core.Qt__WA_NativeWindow, true)
+	if runtime.GOOS == "windows" {
+		webview.SetAttribute(core.Qt__WA_NativeWindow, true)
+	}
 	m := &Markdown{
 		webview:         webview,
 		webpage:         webengine.NewQWebEnginePage(nil),
