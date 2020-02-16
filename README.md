@@ -11,11 +11,12 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 
 ## Features
 
-* Workspace feature which manages multiple nvim
-* Fuzzy Finder
+* Fast
 * Markdown Preview
-* External File Explorer
 * Minimap
+* Fuzzy Finder
+* Workspace feature which manages multiple nvim
+* External File Explorer
 * Transparent window
 * Indent guide
 * Independent font settings per window (alpha stage)
@@ -58,11 +59,14 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
 
 ## ToDo
+
 * Add test
+
+* Improve startup time
 
 * Add tree view for external file explorer
 
-* Improve IME feature
+* Improve Imput Method Editor(IME) feature
 
 In the current implementation, it is not possible to highlight the keyword being converted in the input method input. At the moment I have no idea about how to improve this
 
