@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"math"
+	"runtime"
 
 	"github.com/akiyosi/goneovim/fuzzy"
 	"github.com/akiyosi/goneovim/util"
@@ -236,6 +237,7 @@ func (p *Palette) show() {
 	p.widget.Raise()
 	p.widget.SetWindowOpacity(1.0)
 	p.widget.Show()
+	p.resize()
 }
 
 func (p *Palette) hide() {
@@ -268,6 +270,24 @@ func (p *Palette) cursorMove(x int) {
 	p.ws.cursor.y = p.patternPadding + p.ws.cursor.shift
 	p.ws.cursor.widget.Move2(p.ws.cursor.x, p.ws.cursor.y+p.ws.cursor.shift+1)
 	p.ws.cursor.widget.SetParent(p.pattern)
+
+	p.redrawAllContentInWindows()
+}
+
+func (p *Palette) redrawAllContentInWindows() {
+	if runtime.GOOS != "windows" {
+		return
+	}
+	if !p.ws.markdown.hidden {
+		return
+	}
+
+	p.hide()
+	p.resultWidget.Hide()
+	p.resultMainWidget.Hide()
+	p.show()
+	p.resultWidget.Show()
+	p.resultMainWidget.Show()
 }
 
 func (p *Palette) updateFont() {
