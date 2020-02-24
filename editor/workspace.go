@@ -1211,7 +1211,7 @@ func (w *Workspace) guiFont(args string) {
 		fDialog.ConnectFontSelected(func(font *gui.QFont) {
 			fontFamily = font.Family()
 			height = font.PointSizeF()
-			w.guiFont(fmt.Sprintf("%s:%d", fontFamily, height))
+			w.guiFont(fmt.Sprintf("%s:%f", fontFamily, height))
 		})
 		fDialog.Show()
 		return
@@ -1325,13 +1325,6 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 }
 
 func (w *Workspace) getPointInWidget(col, row, grid int) (int, int) {
-	// win, ok := w.screen.windows[grid]
-	// if !ok {
-	// 	return 0, 0
-	// }
-	// if win == nil {
-	// 	return 0, 0
-	// }
 	win, ok := w.screen.getWindow(grid)
 	if !ok {
 		return 0, 0

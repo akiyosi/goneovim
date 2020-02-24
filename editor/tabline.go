@@ -63,7 +63,6 @@ func (t *Tabline) subscribe() {
 
 func (t *Tabline) setColor() {
 	inactiveFg := editor.colors.inactiveFg.String()
-	// bg := editor.colors.bg.StringTransparent()
 	t.widget.SetStyleSheet(fmt.Sprintf(`
 	.QWidget { 
 		border-bottom: 0px solid;
