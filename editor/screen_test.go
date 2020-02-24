@@ -2,11 +2,7 @@ package editor
 
 import (
 	"reflect"
-	"sync"
 	"testing"
-
-	"github.com/bluele/gcache"
-	"github.com/therecipe/qt/widgets"
 )
 
 func TestHighlight_fg(t *testing.T) {
