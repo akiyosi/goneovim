@@ -1576,13 +1576,6 @@ func (s *Screen) gridLine(args []interface{}) {
 		}
 
 		s.updateGridContent(arg.([]interface{}))
-		win, ok := s.getWindow(gridid)
-		if !ok {
-			continue
-		}
-		if !win.isShown() {
-			win.show()
-		}
 	}
 }
 
@@ -1605,15 +1598,17 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	if !ok {
 		return
 	}
-
-	content := win.content
 	if row >= win.rows {
 		return
 	}
-	col := colStart
-	line := content[row]
-	cells := arg[3].([]interface{})
 
+	cells := arg[3].([]interface{})
+	win.updateLine(colStart, row, cells)
+	win.countContent(row)
+}
+
+func (w *Window) updateLine(col, row int, cells []interface{}) {
+	line := w.content[row]
 	for _, arg := range cells {
 		if col >= len(line) {
 			continue
@@ -1648,19 +1643,19 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			}
 
 			line[col].char = text.(string)
-			line[col].normalWidth = win.isNormalWidth(line[col].char)
+			line[col].normalWidth = w.isNormalWidth(line[col].char)
 
 			// If `hl_id` is not present the most recently seen `hl_id` in
 			//	the same call should be used (it is always sent for the first
 			//	cell in the event).
 			switch col {
 			case 0:
-				line[col].highlight = *s.highAttrDef[hi]
+				line[col].highlight = *w.s.highAttrDef[hi]
 			default:
 				if hi == -1 {
 					line[col].highlight = line[col-1].highlight
 				} else {
-					line[col].highlight = *s.highAttrDef[hi]
+					line[col].highlight = *w.s.highAttrDef[hi]
 				}
 			}
 
@@ -1669,10 +1664,17 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		}
 	}
 
-	lenLine := win.cols-1
-	width := win.cols-1
+	if !w.isShown() {
+		w.show()
+	}
+}
+
+func (w *Window) countContent(row int) {
+	line := w.content[row]
+	lenLine := w.cols-1
+	width := w.cols-1
 	var breakFlag [2]bool
-	for j := win.cols-1; j >= 0; j-- {
+	for j := w.cols-1; j >= 0; j-- {
 		cell := line[j]
 
 		if !breakFlag[0] {
@@ -1688,7 +1690,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		if !breakFlag[1] {
 			if cell == nil {
 				width--
-			} else if cell.char == " " && cell.highlight.bg().equals(win.background) {
+			} else if cell.char == " " && cell.highlight.bg().equals(w.background) {
 				width--
 			} else {
 				breakFlag[1] = true
@@ -1702,8 +1704,8 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	lenLine++
 	width++
 
-	win.lenLine[row] = lenLine
-	win.lenContent[row] = width
+	w.lenLine[row] = lenLine
+	w.lenContent[row] = width
 }
 
 func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
@@ -1774,13 +1776,7 @@ func (s *Screen) gridScroll(args []interface{}) {
 		if isSkipGlobalId(gridid) {
 			continue
 		}
-		// win, ok := s.windows[gridid]
-		// if !ok {
-		// 	continue
-		// }
-		// if win == nil {
-		// 	continue
-		// }
+
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
@@ -2651,13 +2647,6 @@ func (s *Screen) windowPosition(args []interface{}) {
 			continue
 		}
 
-		// win, ok := s.windows[gridid]
-		// if !ok {
-		// 	continue
-		// }
-		// if win == nil {
-		// 	continue
-		// }
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
@@ -2851,13 +2840,7 @@ func (s *Screen) msgSetPos(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		msgCount := util.ReflectToInt(arg.([]interface{})[1])
-		// win, ok := s.windows[gridid]
-		// if !ok {
-		// 	continue
-		// }
-		// if win == nil {
-		// 	continue
-		// }
+
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
