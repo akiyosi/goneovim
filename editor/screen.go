@@ -1605,6 +1605,9 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	cells := arg[3].([]interface{})
 	win.updateLine(colStart, row, cells)
 	win.countContent(row)
+	if !win.isShown() {
+		win.show()
+	}
 }
 
 func (w *Window) updateLine(col, row int, cells []interface{}) {
@@ -1664,9 +1667,6 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 		}
 	}
 
-	if !w.isShown() {
-		w.show()
-	}
 }
 
 func (w *Window) countContent(row int) {

@@ -13,9 +13,17 @@ func ReflectToInt(iface interface{}) int {
 	if ok {
 		return int(i)
 	}
-	u, ok := iface.(uint64)
+	j, ok := iface.(uint64)
 	if ok {
-		return int(u)
+		return int(j)
+	}
+	k, ok := iface.(int)
+	if ok {
+		return int(k)
+	}
+	l, ok := iface.(uint)
+	if ok {
+		return int(l)
 	}
 	return 0
 }
