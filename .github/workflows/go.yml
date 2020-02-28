@@ -8,6 +8,9 @@ jobs:
         go-version: [1.12.x, 1.13.x]
     runs-on: ubuntu-latest
     steps:
+    - name: Linux prerequisites 
+      # if: matrix.platform == 'ubuntu-latest'
+      run: sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev
     - name: Install Go
       uses: actions/setup-go@v1
       with:
@@ -16,6 +19,11 @@ jobs:
       env: 
         GO111MODULE: off
       uses: actions/checkout@v2
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2.0.0
+      with:
+        version: 5.13.2
+        target: desktop
     - name: Get Qt binding for Go
       env: 
         GO111MODULE: off
@@ -23,7 +31,7 @@ jobs:
     - name: Generate Qt bindings
       env: 
         GO111MODULE: off
-      run: $(go env GOPATH)/bin/qtmoc
+      run: $(go env GOPATH)/bin/qtsetup && $(go env GOPATH)/bin/qtmoc
     - name: Get dependencies
       env: 
         GO111MODULE: off
