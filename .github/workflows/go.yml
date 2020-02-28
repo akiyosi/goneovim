@@ -11,38 +11,31 @@ jobs:
     - name: Linux prerequisites 
       # if: matrix.platform == 'ubuntu-latest'
       run: sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev
-
     - name: Install Go
       uses: actions/setup-go@v1
       with:
         go-version: ${{ matrix.go-version }}
-
     - name: Checkout code
       env: 
         GO111MODULE: off
       uses: actions/checkout@v2
-
     - name: Install Qt
       uses: jurplel/install-qt-action@v2.0.0
       with:
         version: 5.13.2
         target: desktop
-
     - name: Get Qt binding for Go
       env: 
         GO111MODULE: off
       run: go get -v github.com/therecipe/qt/cmd/...
-
     - name: Get dependencies
       env: 
         GO111MODULE: off
       run: go get -v -d ./...
-
     - name: Generate Qt bindings
       env: 
         GO111MODULE: off
       run: $(go env GOPATH)/bin/qtsetup
-
     - name: Test
         GO111MODULE: off
       run: $(go env GOPATH)/bin/qtmoc && go test ./editor
