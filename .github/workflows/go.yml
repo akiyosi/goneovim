@@ -17,8 +17,10 @@ jobs:
       env: 
         GO111MODULE: off
       uses: actions/checkout@v2
-    - name: Generate Qt bindings
-      run: go get -v github.com/therecipe/qt/cmd/... && $(go env GOPATH)/bin/qtsetup test
+    - name: Get Qt binding for Go
+      run: go get -v github.com/therecipe/qt/cmd/...
+    - name Generate Qt bindings
+      run: $(go env GOPATH)/bin/qtsetup test
     - name: Get dependencies
       env: 
         GO111MODULE: off
