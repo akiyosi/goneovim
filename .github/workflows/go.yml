@@ -28,14 +28,14 @@ jobs:
       env: 
         GO111MODULE: off
       run: go get -v github.com/therecipe/qt/cmd/...
-    - name: Generate Qt bindings
-      env: 
-        GO111MODULE: off
-      run: $(go env GOPATH)/bin/qtsetup && $(go env GOPATH)/bin/qtmoc
     - name: Get dependencies
       env: 
         GO111MODULE: off
       run: go get -v -d ./...
+    - name: Generate Qt bindings
+      env: 
+        GO111MODULE: off
+      run: $(go env GOPATH)/bin/qtsetup && $(go env GOPATH)/bin/qtmoc
     - name: Test
       run: go test ./editor
       
