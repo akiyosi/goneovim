@@ -24,7 +24,7 @@ jobs:
     - name: Generate Qt bindings
       env: 
         GO111MODULE: off
-      run: $(go env GOPATH)/bin/qtsetup test
+      run: $(go env GOPATH)/bin/qtmoc
     - name: Get dependencies
       env: 
         GO111MODULE: off
