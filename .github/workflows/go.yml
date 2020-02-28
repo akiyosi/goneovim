@@ -19,7 +19,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Get Qt binding for Go
       run: go get -v github.com/therecipe/qt/cmd/...
-    - name Generate Qt bindings
+    - name: Generate Qt bindings
       run: $(go env GOPATH)/bin/qtsetup test
     - name: Get dependencies
       env: 
