@@ -14,8 +14,12 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
+      env: 
+        GO111MODULE: on
       uses: actions/checkout@v2
     - name: Get dependencies
+      env: 
+        GO111MODULE: on
       run: go get -v -d ./editor
     - name: Test
       run: go test ./editor
