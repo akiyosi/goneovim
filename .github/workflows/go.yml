@@ -16,6 +16,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Get dependencies
+      env: 
+        GO111MODULE: on
       run: go get -v -t -d ./...
     - name: Test
       run: go test ./editor
