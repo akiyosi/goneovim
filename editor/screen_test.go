@@ -285,6 +285,32 @@ func TestWindow_updateLine(t *testing.T) {
 			},
 
 		},
+		{
+			"test_updateline() 4",
+			fields{
+				s: &Screen{highAttrDef: hldef},
+				content: content,
+				grid: 6,
+				cols: cols,
+				rows: rows,
+			},
+			args{
+				col: 0,
+				row: row,
+				cells: []interface{}{
+						[]interface{}{" ", 7, 2},
+						[]interface{}{"J"},
+					},
+			},
+			[]Cell{
+				Cell{ true, " ", *hldef[7] },
+				Cell{ true, " ", *hldef[7] },
+				Cell{ true, "J", *hldef[7] },
+				Cell{ true, "i", *hldef[6] },
+				Cell{ true, "m", *hldef[6] },
+			},
+
+		},
 	}
 
 	// Do tests
