@@ -17,10 +17,6 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
-    - name: Checkout code
-      env: 
-        GO111MODULE: off
-      uses: actions/checkout@v2
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v2.0.0
@@ -33,24 +29,26 @@ jobs:
         GO111MODULE: off
       run: go get -v github.com/therecipe/qt/cmd/...
 
-    - name: Get dependencies
-      env: 
-        GO111MODULE: off
-      run: go get -v -d ./...
-
     - name: Generate Qt bindings
       env: 
         GO111MODULE: off
       run: $(go env GOPATH)/bin/qtsetup
 
+    - name: Checkout code
+      env: 
+        GO111MODULE: off
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      env: 
+        GO111MODULE: off
+      run: go get -v -d ./...
+
     - name: Generate moc
       env:
         GO111MODULE: off
-      run: |
-        $(go env GOPATH)/bin/qtmoc
-        cd $(GOPATH)/src/github.com/akiyosi/goqtframelesswindow
-        $(go env GOPATH)/bin/qtmoc
-        ls -l $(GOPATH)/src/github.com/akiyosi/goqtframelesswindow
+      run: $(go env GOPATH)/bin/qtmoc
+
     - name: Test
       env:
         GO111MODULE: off
