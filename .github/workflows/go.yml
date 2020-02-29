@@ -52,6 +52,7 @@ jobs:
         $(go env GOPATH)/bin/qtmoc
         ls -l $(GOPATH)/src/github.com/akiyosi/goqtframelesswindow
     - name: Test
+      env:
         GO111MODULE: off
       run: go test ./editor
       
