@@ -43,10 +43,17 @@ jobs:
         GO111MODULE: off
       run: $(go env GOPATH)/bin/qtsetup
 
-    - name: Test
+    - name: Generate moc
       env:
         GO111MODULE: off
-      run: $(go env GOPATH)/bin/qtmoc && go test ./editor
+      run: |
+        $(go env GOPATH)/bin/qtmoc
+        cd $(GOPATH)/src/github.com/akiyosi/goqtframelesswindow
+        $(go env GOPATH)/bin/qtmoc
+        ls -l $(GOPATH)/src/github.com/akiyosi/goqtframelesswindow
+    - name: Test
+        GO111MODULE: off
+      run: go test ./editor
       
 #  build:
 #    name: Build
