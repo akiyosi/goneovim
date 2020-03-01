@@ -378,11 +378,14 @@ func (s *Screen) gridFont(update interface{}) {
 		return
 	}
 
-	args := update.(string)
-	if args == "" {
+	updateStr, ok := update.(string)
+	if !ok {
 		return
 	}
-	parts := strings.Split(args, ":")
+	if updateStr == "" {
+		return
+	}
+	parts := strings.Split(updateStr, ":")
 	if len(parts) < 1 {
 		return
 	}
