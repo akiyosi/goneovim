@@ -413,7 +413,7 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 		// 	args := update[1].([]interface{})
 		// 	w.setColorsSet(args)
 		case "hl_attr_define":
-			m.setHighAttrDef(args)
+			m.setHlAttrDef(args)
 		case "hl_group_set":
 			m.setHighlightGroup(args)
 			m.setColor()

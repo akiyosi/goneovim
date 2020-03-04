@@ -81,9 +81,9 @@ func (c *Cmdline) show(args []interface{}) {
 			content += strings.Replace(a[0].(string), "\t", " ", -1)
 		} else {
 			color := c.ws.foreground
-			_, ok := c.ws.screen.highAttrDef[util.ReflectToInt(a[0])]
+			_, ok := c.ws.screen.hlAttrDef[util.ReflectToInt(a[0])]
 			if ok {
-				color = c.ws.screen.highAttrDef[util.ReflectToInt(a[0])].foreground
+				color = c.ws.screen.hlAttrDef[util.ReflectToInt(a[0])].foreground
 			}
 
 			// I don't know how to set sticking out direction of

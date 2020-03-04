@@ -281,8 +281,8 @@ func (m *Message) msgShow(args []interface{}) {
 				continue
 			}
 			var color *RGBA
-			if m.ws.screen.highAttrDef[attrId] != nil {
-				color = (m.ws.screen.highAttrDef[attrId]).foreground
+			if m.ws.screen.hlAttrDef[attrId] != nil {
+				color = (m.ws.screen.hlAttrDef[attrId]).foreground
 			} else {
 				color = m.ws.foreground
 			}
@@ -436,10 +436,10 @@ func (i *MessageItem) setKind(kind string) {
 	if i.m.ws == nil {
 		return
 	}
-	if i.m.ws.screen.highAttrDef[i.attrId] == nil {
+	if i.m.ws.screen.hlAttrDef[i.attrId] == nil {
 		return
 	}
-	color = warpColor((i.m.ws.screen.highAttrDef[i.attrId]).foreground, -15)
+	color = warpColor((i.m.ws.screen.hlAttrDef[i.attrId]).foreground, -15)
 	switch i.kind {
 	case "emsg", "echo", "echomsg", "echoerr", "return_prompt", "quickfix":
 		svgContent := editor.getSvg(i.kind, color)

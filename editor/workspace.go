@@ -756,7 +756,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.setColorsSet(u.([]interface{}))
 			}
 		case "hl_attr_define":
-			s.setHighAttrDef(args)
+			s.setHlAttrDef(args)
 		case "hl_group_set":
 			s.setHighlightGroup(args)
 		case "grid_line":
@@ -958,9 +958,9 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 
 	editor.colors.fg = w.foreground.copy()
 	editor.colors.bg = w.background.copy()
-	// Reset highAttrDef map 0 index:
-	if w.screen.highAttrDef != nil {
-		w.screen.highAttrDef[0] = &Highlight{
+	// Reset hlAttrDef map 0 index:
+	if w.screen.hlAttrDef != nil {
+		w.screen.hlAttrDef[0] = &Highlight{
 			foreground: editor.colors.fg,
 			background: editor.colors.bg,
 		}

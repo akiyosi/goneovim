@@ -556,7 +556,7 @@ func detectVimCompleteMode() (string, error) {
 func (p *PopupItem) setKind(kind string, selected bool) {
 	var colorOfFunc, colorOfStatement, colorOfType, colorOfKeyword *RGBA
 
-	hiAttrDef := editor.workspaces[editor.active].screen.highAttrDef
+	hiAttrDef := editor.workspaces[editor.active].screen.hlAttrDef
 	var keys []int
 	for k := range hiAttrDef {
 		keys = append(keys, k)

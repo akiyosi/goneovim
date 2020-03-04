@@ -144,7 +144,7 @@ func TestWindow_updateLine(t *testing.T) {
 	rows := 2
 	cols := 5
 
-	// Def highAttrDef for test
+	// Def hlAttrDef for test
 	hldef := make(map[int]*Highlight)
 	hldef[0] = &Highlight{
 		id: 0,
@@ -209,7 +209,7 @@ func TestWindow_updateLine(t *testing.T) {
 		{
 			"test_updateline() 1",
 			fields{
-				s: &Screen{highAttrDef: hldef},
+				s: &Screen{hlAttrDef: hldef},
 				content: content,
 				grid: gridid,
 				cols: cols,
@@ -235,7 +235,7 @@ func TestWindow_updateLine(t *testing.T) {
 		{
 			"test_updateline() 2",
 			fields{
-				s: &Screen{highAttrDef: hldef},
+				s: &Screen{hlAttrDef: hldef},
 				content: content,
 				grid: 6,
 				cols: cols,
@@ -260,7 +260,7 @@ func TestWindow_updateLine(t *testing.T) {
 		{
 			"test_updateline() 3",
 			fields{
-				s: &Screen{highAttrDef: hldef},
+				s: &Screen{hlAttrDef: hldef},
 				content: content,
 				grid: 6,
 				cols: cols,
@@ -288,7 +288,7 @@ func TestWindow_updateLine(t *testing.T) {
 		{
 			"test_updateline() 4",
 			fields{
-				s: &Screen{highAttrDef: hldef},
+				s: &Screen{hlAttrDef: hldef},
 				content: content,
 				grid: 6,
 				cols: cols,

@@ -190,7 +190,7 @@ func (t *Tab) updateStyle() {
 	}
 	fg := editor.colors.fg
 	inactiveFg := editor.colors.inactiveFg
-	accent := t.t.ws.screen.highAttrDef[t.t.ws.screen.highlightGroup["TabLineFill"]].foreground.Hex()
+	accent := t.t.ws.screen.hlAttrDef[t.t.ws.screen.highlightGroup["TabLineFill"]].foreground.Hex()
 
 	if t.active {
 		activeStyle := fmt.Sprintf(`

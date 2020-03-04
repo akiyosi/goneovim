@@ -118,7 +118,7 @@ type Screen struct {
 	scrollDust       [2]int
 	scrollDustDeltaY int
 
-	highAttrDef    map[int]*Highlight
+	hlAttrDef    map[int]*Highlight
 	highlightGroup map[string]int
 
 	tooltip *widgets.QLabel
@@ -753,7 +753,7 @@ func (w *Window) drawMsgSeparator(p *gui.QPainter) {
 	if !ok {
 		return
 	}
-	color, ok := w.s.highAttrDef[highNo]
+	color, ok := w.s.hlAttrDef[highNo]
 	if !ok {
 		return
 	}
@@ -1372,12 +1372,12 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 	}
 }
 
-func (s *Screen) setHighAttrDef(args []interface{}) {
+func (s *Screen) setHlAttrDef(args []interface{}) {
 	var h map[int]*Highlight
-	if s.highAttrDef == nil {
+	if s.hlAttrDef == nil {
 		h = make(map[int]*Highlight)
 	} else {
-		h = s.highAttrDef
+		h = s.hlAttrDef
 	}
 	h[0] = &Highlight{
 		foreground: editor.colors.fg,
@@ -1389,7 +1389,30 @@ func (s *Screen) setHighAttrDef(args []interface{}) {
 		h[id] = s.getHighlight(arg)
 	}
 
-	s.highAttrDef = h
+	s.hlAttrDef = h
+
+	// Update all cell's highlight
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
+		}
+		if !win.isShown() {
+			return true
+		}
+		if win.content == nil {
+			return true
+		}
+		for _, line := range win.content {
+			for _, cell := range line {
+				if cell != nil {
+					cell.highlight = *s.hlAttrDef[cell.highlight.id]
+				}
+			}
+		}
+
+		return true
+	})
 }
 
 func (s *Screen) setHighlightGroup(args []interface{}) {
@@ -1621,11 +1644,11 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 		}
 		cell := arg.([]interface{})
 
-		var hi, repeat int
-		hi = -1
+		var hl, repeat int
+		hl = -1
 		text := cell[0]
 		if len(cell) >= 2 {
-			hi = util.ReflectToInt(cell[1])
+			hl = util.ReflectToInt(cell[1])
 		}
 
 		if len(cell) == 3 {
@@ -1656,12 +1679,12 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 			//	cell in the event).
 			switch col {
 			case 0:
-				line[col].highlight = *w.s.highAttrDef[hi]
+				line[col].highlight = *w.s.hlAttrDef[hl]
 			default:
-				if hi == -1 {
+				if hl == -1 {
 					line[col].highlight = line[col-1].highlight
 				} else {
-					line[col].highlight = *w.s.highAttrDef[hi]
+					line[col].highlight = *w.s.hlAttrDef[hl]
 				}
 			}
 
@@ -1963,7 +1986,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 
 	// 	var highlight *Highlight
 	// 	if line[x] == nil {
-	// 		highlight = w.s.highAttrDef[0]
+	// 		highlight = w.s.hlAttrDef[0]
 	// 	} else {
 	// 		highlight = &line[x].highlight
 	// 	}
@@ -2041,12 +2064,12 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 
 		if x < len(line) {
 			if line[x] == nil {
-				highlight = w.s.highAttrDef[0]
+				highlight = w.s.hlAttrDef[0]
 			} else {
 				highlight = &line[x].highlight
 			}
 		} else {
-			highlight = w.s.highAttrDef[0]
+			highlight = w.s.hlAttrDef[0]
 		}
 
 		bg = highlight.bg()

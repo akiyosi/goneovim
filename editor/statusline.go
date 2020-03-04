@@ -454,10 +454,10 @@ func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 func (s *Statusline) setColor() {
 	// fg := s.ws.background
 	// bg := s.ws.foreground
-	if s.ws.screen.highlightGroup == nil || s.ws.screen.highAttrDef == nil {
+	if s.ws.screen.highlightGroup == nil || s.ws.screen.hlAttrDef == nil {
 		return
 	}
-	hl, ok := s.ws.screen.highAttrDef[s.ws.screen.highlightGroup["StatusLine"]]
+	hl, ok := s.ws.screen.hlAttrDef[s.ws.screen.highlightGroup["StatusLine"]]
 	if !ok {
 		return
 	}

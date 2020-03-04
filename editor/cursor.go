@@ -150,11 +150,11 @@ func (c *Cursor) updateCursorShape() {
 		}
 		var bg, fg *RGBA
 		if c.currAttrId == 0 {
-			fg = c.ws.screen.highAttrDef[0].background
-			bg = c.ws.screen.highAttrDef[0].foreground
+			fg = c.ws.screen.hlAttrDef[0].background
+			bg = c.ws.screen.hlAttrDef[0].foreground
 		} else {
-			fg = c.ws.screen.highAttrDef[c.currAttrId].fg()
-			bg = c.ws.screen.highAttrDef[c.currAttrId].bg()
+			fg = c.ws.screen.hlAttrDef[c.currAttrId].fg()
+			bg = c.ws.screen.hlAttrDef[c.currAttrId].bg()
 		}
 		c.fg = fg
 		c.bg = bg
