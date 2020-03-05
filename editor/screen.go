@@ -926,7 +926,7 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		if s.scrollDustDeltaY <= 2 {
 			accel = 1
 		} else if s.scrollDustDeltaY > 2 {
-			accel = int(float64(s.scrollDustDeltaY) / float64(4))
+			accel = int(float64(s.scrollDustDeltaY) / float64(2))
 		}
 		if accel == 0 {
 			accel = 1
