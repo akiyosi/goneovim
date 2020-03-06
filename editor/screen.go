@@ -2778,14 +2778,14 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			x = anchorwin.pos[0] + anchorCol
 			y = anchorwin.pos[1] + anchorRow
 		case "NE":
-			x = anchorwin.pos[0] + anchorCol + win.cols
+			x = anchorwin.pos[0] + anchorCol - win.cols
 			y = anchorwin.pos[1] + anchorRow
 		case "SW":
 			x = anchorwin.pos[0] + anchorCol
-			y = anchorwin.pos[1] + anchorRow + win.rows
+			y = anchorwin.pos[1] + anchorRow - win.rows
 		case "SE":
-			x = anchorwin.pos[0] + anchorCol + win.cols
-			y = anchorwin.pos[1] + anchorRow + win.rows
+			x = anchorwin.pos[0] + anchorCol - win.cols
+			y = anchorwin.pos[1] + anchorRow - win.rows
 		}
 		win.pos[0] = x
 		win.pos[1] = y
