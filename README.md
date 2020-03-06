@@ -12,6 +12,7 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 ## Features
 
 * Fast
+* Cross-platform
 * Markdown Preview
 * Minimap
 * Fuzzy Finder
@@ -21,7 +22,7 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 * Indent guide
 * Independent font settings per window (alpha stage)
 * Support display ligatures
-* Support IME
+* Support InputMethod Editor
 * Desktop Notification of the messages
 * Remote attachment
 
