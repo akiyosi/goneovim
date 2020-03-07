@@ -575,6 +575,19 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	p.DestroyQPainter()
 	w.paintMutex.Unlock()
+
+	// Reset to 0 after drawing is complete.
+	// This is to suppress flickering in smooth scroll
+	dx := math.Abs(float64(w.scrollDust[0]))
+	dy := math.Abs(float64(w.scrollDust[1]))
+	fontheight := float64(font.lineHeight)
+	fontwidth := font.truewidth
+	if dx >= fontwidth {
+		w.scrollDust[0] = 0
+	}
+	if dy >= fontheight {
+		w.scrollDust[1] = 0
+	}
 }
 
 func (w *Window) getFont() *Font {
@@ -879,71 +892,71 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 	var v, h, vert, horiz int
 	var vertKey string
 	var horizKey string
-	// var accel int
 	font := win.getFont()
+
+	var dx, dy float64
+	var fontwidth, fontheight float64
+
+	pixels := event.PixelDelta()
+	if pixels != nil {
+		v = pixels.Y()
+		h = pixels.X()
+	}
 
 	switch runtime.GOOS {
 	case "darwin":
-		pixels := event.PixelDelta()
-		if pixels != nil {
-			v = pixels.Y()
-			h = pixels.X()
+		for i := 1; i <= int(math.Abs(float64(v))); i++ {
+			if h < 0 && win.scrollDust[0] > 0 {
+				win.scrollDust[0] = 0
+			}
+			// if v < 0 && win.scrollDust[1] > 0 {
+			// 	win.scrollDust[1] = 0
+			// }
+
+			dx = math.Abs(float64(win.scrollDust[0]))
+			dy = math.Abs(float64(win.scrollDust[1]))
+
+			fontheight = float64(font.lineHeight)
+			fontwidth = font.truewidth
+
+
+			if dx < fontwidth {
+				win.scrollDust[0] += h
+			}
+			if dy < fontheight {
+				if v > 0 {
+					win.scrollDust[1] += 1
+				} else if v < 0 {
+					win.scrollDust[1] += -1
+				}
+			}
+
+			dx = math.Abs(float64(win.scrollDust[0]))
+			dy = math.Abs(float64(win.scrollDust[1]))
+
+			if dx >= fontwidth {
+				horiz = int(math.Ceil(float64(win.scrollDust[0]) / fontwidth))
+				// NOTE: Reset to 0 after paint event is complete.
+				//       This is to suppress flickering.
+				// win.scrollDust[0] = 0
+			}
+			if dy >= fontheight {
+				vert = int(math.Ceil(float64(win.scrollDust[1]) / fontheight))
+				// NOTE: Reset to 0 after paint event is complete.
+				//       This is to suppress flickering.
+				// win.scrollDust[1] = 0
+			}
+
+			win.update()
 		}
-		if pixels.X() < 0 && win.scrollDust[0] > 0 {
-			win.scrollDust[0] = 0
-		}
-		// if pixels.Y() < 0 && win.scrollDust[1] > 0 {
-		// 	win.scrollDust[1] = 0
-		// }
-
-		dx := math.Abs(float64(win.scrollDust[0]))
-		dy := math.Abs(float64(win.scrollDust[1]))
-
-
-		fontheight := float64(font.lineHeight)
-		fontwidth := font.truewidth
-
-		win.scrollDust[0] += h
-		win.scrollDust[1] += v
-
-		if dx >= fontwidth {
-			horiz = int(math.Ceil(float64(win.scrollDust[0]) / fontwidth))
-			// win.scrollDust[0] = 0
-		}
-		if dy >= fontheight {
-			vert = int(math.Ceil(float64(win.scrollDust[1]) / fontheight))
-			// win.scrollDust[1] = 0
-		}
-
-		win.update()
-
-		if event.Phase() == core.Qt__ScrollEnd {
-			win.scrollDust[0] = 0
-			win.scrollDust[1] = 0
-		} else {
-			return
-		}
-
-		// // Speed up scrolling
-		// win.scrollDustDeltaY = int(math.Abs(float64(vert)) - float64(win.scrollDustDeltaY))
-		// if win.scrollDustDeltaY < 1 {
-		// 	win.scrollDustDeltaY = 0
-		// }
-		// if win.scrollDustDeltaY <= 2 {
-		// 	accel = 1
-		// } else if win.scrollDustDeltaY > 2 {
-		// 	accel = int(float64(win.scrollDustDeltaY) / float64(2))
-		// }
-		// if accel == 0 {
-		// 	accel = 1
-		// }
-
 
 	default:
 		vert = event.AngleDelta().Y()
 		horiz = event.AngleDelta().X()
 		// accel = 2
 	}
+
+
 
 	if vert > 0 {
 		vertKey = "Up"
