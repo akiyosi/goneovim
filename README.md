@@ -15,6 +15,7 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 * Cross-platform
 * Markdown Preview
 * Minimap
+* Smooth scroll
 * Fuzzy Finder
 * Workspace feature which manages multiple nvim
 * External File Explorer
@@ -76,8 +77,6 @@ In the current implementation, it is not possible to highlight the keyword being
 * Support GPU rendering
 
 * Support neovim ui `ext_statusline`
-
-* Smooth scrolling
 
 
 
