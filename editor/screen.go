@@ -903,6 +903,18 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 		h = pixels.X()
 	}
 
+	// If Scrolling has ended, reset the displacement of the line
+	if event.Phase() == core.Qt__ScrollEnd {
+		win.scrollDust[0] = 0
+		win.scrollDust[1] = 0
+		for i := 0; i < win.rows; i++ {
+			win.lenContent[i] = win.cols
+		}
+
+		win.update()
+		return
+	}
+
 	switch runtime.GOOS {
 	case "darwin":
 		for i := 1; i <= int(math.Abs(float64(v))); i++ {
