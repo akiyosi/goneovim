@@ -83,9 +83,10 @@ type Window struct {
 	shown            bool
 	queueRedrawArea  [4]int
 	scrollRegion     []int
+	scrollDust       [2]int
+	scrollDustDeltaY int
 	devicePixelRatio float64
 	textCache        gcache.Cache
-	// glyphMap         map[HlChar]gui.QImage
 
 	font         *Font
 	background   *RGBA
@@ -108,15 +109,11 @@ type Screen struct {
 
 	name   string
 	widget *widgets.QWidget
-	// windows map[gridId]*Window
 	windows sync.Map
 	width   int
 	height  int
 
 	cursor           [2]int
-	scrollRegion     []int
-	scrollDust       [2]int
-	scrollDustDeltaY int
 
 	hlAttrDef    map[int]*Highlight
 	highlightGroup map[string]int
@@ -144,16 +141,13 @@ func newScreen() *Screen {
 
 	screen := &Screen{
 		widget: widget,
-		// windows:        make(map[gridId]*Window),
 		windows:        sync.Map{},
 		cursor:         [2]int{0, 0},
-		scrollRegion:   []int{0, 0, 0, 0},
 		highlightGroup: make(map[string]int),
 		textCache:      cache,
 	}
 
 	widget.SetAcceptDrops(true)
-	widget.ConnectWheelEvent(screen.wheelEvent)
 	widget.ConnectDragEnterEvent(screen.dragEnterEvent)
 	widget.ConnectDragMoveEvent(screen.dragMoveEvent)
 	widget.ConnectDropEvent(screen.dropEvent)
@@ -551,6 +545,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	row := int(float64(rect.Top()) / float64(font.lineHeight))
 	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
 	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
+
 	for y := row; y < row+rows; y++ {
 		if y >= w.rows {
 			continue
@@ -732,7 +727,7 @@ func getCket(bra string) string {
 func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
 	font := w.getFont()
 	X := float64(x) * font.truewidth
-	Y := float64(y * font.lineHeight)
+	Y := float64(y * font.lineHeight)+float64(w.scrollDust[1])
 	p.FillRect4(
 		core.NewQRectF4(
 			X,
@@ -880,12 +875,12 @@ func (s *Screen) bottomWindowPos() int {
 	return pos
 }
 
-func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
+func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 	var v, h, vert, horiz int
 	var vertKey string
 	var horizKey string
-	var accel int
-	font := s.font
+	// var accel int
+	font := win.getFont()
 
 	switch runtime.GOOS {
 	case "darwin":
@@ -894,48 +889,60 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 			v = pixels.Y()
 			h = pixels.X()
 		}
-		if pixels.X() < 0 && s.scrollDust[0] > 0 {
-			s.scrollDust[0] = 0
+		if pixels.X() < 0 && win.scrollDust[0] > 0 {
+			win.scrollDust[0] = 0
 		}
-		if pixels.Y() < 0 && s.scrollDust[1] > 0 {
-			s.scrollDust[1] = 0
-		}
+		// if pixels.Y() < 0 && win.scrollDust[1] > 0 {
+		// 	win.scrollDust[1] = 0
+		// }
 
-		dx := math.Abs(float64(s.scrollDust[0]))
-		dy := math.Abs(float64(s.scrollDust[1]))
+		dx := math.Abs(float64(win.scrollDust[0]))
+		dy := math.Abs(float64(win.scrollDust[1]))
+
 
 		fontheight := float64(font.lineHeight)
 		fontwidth := font.truewidth
 
-		s.scrollDust[0] += h
-		s.scrollDust[1] += v
+		win.scrollDust[0] += h
+		win.scrollDust[1] += v
 
 		if dx >= fontwidth {
-			horiz = int(math.Trunc(float64(s.scrollDust[0]) / fontwidth))
-			s.scrollDust[0] = 0
+			horiz = int(math.Ceil(float64(win.scrollDust[0]) / fontwidth))
+			// win.scrollDust[0] = 0
 		}
 		if dy >= fontheight {
-			vert = int(math.Trunc(float64(s.scrollDust[1]) / fontheight))
-			s.scrollDust[1] = 0
+			vert = int(math.Ceil(float64(win.scrollDust[1]) / fontheight))
+			// win.scrollDust[1] = 0
 		}
 
-		s.scrollDustDeltaY = int(math.Abs(float64(vert)) - float64(s.scrollDustDeltaY))
-		if s.scrollDustDeltaY < 1 {
-			s.scrollDustDeltaY = 0
+		win.update()
+
+		if event.Phase() == core.Qt__ScrollEnd {
+			win.scrollDust[0] = 0
+			win.scrollDust[1] = 0
+		} else {
+			return
 		}
-		if s.scrollDustDeltaY <= 2 {
-			accel = 1
-		} else if s.scrollDustDeltaY > 2 {
-			accel = int(float64(s.scrollDustDeltaY) / float64(2))
-		}
-		if accel == 0 {
-			accel = 1
-		}
+
+		// // Speed up scrolling
+		// win.scrollDustDeltaY = int(math.Abs(float64(vert)) - float64(win.scrollDustDeltaY))
+		// if win.scrollDustDeltaY < 1 {
+		// 	win.scrollDustDeltaY = 0
+		// }
+		// if win.scrollDustDeltaY <= 2 {
+		// 	accel = 1
+		// } else if win.scrollDustDeltaY > 2 {
+		// 	accel = int(float64(win.scrollDustDeltaY) / float64(2))
+		// }
+		// if accel == 0 {
+		// 	accel = 1
+		// }
+
 
 	default:
 		vert = event.AngleDelta().Y()
 		horiz = event.AngleDelta().X()
-		accel = 2
+		// accel = 2
 	}
 
 	if vert > 0 {
@@ -953,26 +960,39 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 		return
 	}
 
-	s.focusWindow(event)
+	if win.grid != win.s.ws.cursor.gridid {
+		errCh := make(chan error, 60)
+		var err error
+		go func() {
+			err = win.s.ws.nvim.SetCurrentWindow(win.id)
+			errCh <-err
+		}()
 
-	mode := s.ws.mode
+		select {
+		case <-errCh:
+		case <-time.After(40 * time.Millisecond):
+		}
+	}
+
+
+	mode := win.s.ws.mode
 	if mode == "insert" {
-		s.ws.nvim.Input(s.ws.escKeyInInsert)
+		win.s.ws.nvim.Input(win.s.ws.escKeyInInsert)
 	} else if mode == "terminal-input" {
-		s.ws.nvim.Input(`<C-\><C-n>`)
+		win.s.ws.nvim.Input(`<C-\><C-n>`)
 	}
 
 	mod := event.Modifiers()
 
-	if s.ws.isMappingScrollKey {
+	if win.s.ws.isMappingScrollKey {
 		if vert != 0 {
-			s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
+			win.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
 		}
 	} else {
 		if vert > 0 {
-			s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
+			win.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", int(math.Abs(float64(vert)))))
 		} else if vert < 0 {
-			s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
+			win.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", int(math.Abs(float64(vert)))))
 		}
 	}
 
@@ -985,60 +1005,10 @@ func (s *Screen) wheelEvent(event *gui.QWheelEvent) {
 	pos := []int{x, y}
 
 	if horiz != 0 {
-		s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
+		win.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
 	}
 
 	event.Accept()
-}
-
-func (s *Screen) focusWindow(event *gui.QWheelEvent) {
-	// Get window list in current tab
-	done := make(chan []nvim.Window, 1000)
-	var wins []nvim.Window
-	go func() {
-		curtab, _ := s.ws.nvim.CurrentTabpage()
-		curwins, _ := s.ws.nvim.TabpageWindows(curtab)
-		done <-curwins
-	}()
-	select {
-	case wins = <-done:
-	case <-time.After(40 * time.Millisecond):
-		return
-	}
-
-	// Focuses window including mouse pointer
-	s.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-
-		if win == nil {
-			return true
-		}
-		if win.grid == 1 {
-			return true
-		}
-		if win.isMsgGrid {
-			return true
-		}
-		isWindowInCurrentTab := false
-		for _, nvimWin := range wins {
-			if win.id == nvimWin {
-				isWindowInCurrentTab = true
-			}
-		}
-		if !isWindowInCurrentTab {
-			return true
-		}
-		X := event.X()
-		Y := event.Y()
-		rect := win.widget.Geometry()
-		if rect.Contains3(X, Y) && win.grid != s.ws.cursor.gridid {
-			go s.ws.nvim.SetCurrentWindow(win.id)
-
-			return false
-		}
-
-		return true
-	})
 }
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
@@ -1158,6 +1128,11 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win.setParent(s.widget)
 		win.grid = gridid
 		win.widget.SetAttribute(core.Qt__WA_KeyCompression, true)
+
+		// set scroll
+		if s.name != "minimap" {
+			win.widget.ConnectWheelEvent(win.wheelEvent)
+		}
 
 		// first cursor pos at startup app
 		if gridid == 1 && s.name != "minimap" {
@@ -1902,6 +1877,11 @@ func (w *Window) update() {
 			width = w.cols
 		}
 
+		// If scroll is smooth
+		if w.scrollDust[1] != 0 {
+			width = w.cols
+		}
+
 		width++
 
 		w.widget.Update2(
@@ -2038,7 +2018,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 				// Fill background with pattern
 				rectF := core.NewQRectF4(
 					float64(start)*font.truewidth,
-					float64((y)*font.lineHeight),
+					float64((y)*font.lineHeight+w.scrollDust[1]),
 					float64(width)*font.truewidth,
 					float64(font.lineHeight),
 				)
@@ -2143,7 +2123,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 
 	pointF := core.NewQPointF3(
 		float64(col)*wsfont.truewidth,
-		float64(y*wsfont.lineHeight),
+		float64(y*wsfont.lineHeight+w.scrollDust[1]),
 	)
 
 	for highlight, colorSlice := range chars {
@@ -2482,7 +2462,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 	pointF := core.NewQPointF3(
 		float64(col)*wsfont.truewidth,
-		float64((y)*wsfont.lineHeight+wsfont.shift),
+		float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollDust[1]),
 	)
 
 	for highlight, colorSlice := range chars {

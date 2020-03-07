@@ -40,8 +40,12 @@ func (s *ScrollBar) setColor() {
 }
 
 func (s *ScrollBar) update() {
-	top := s.ws.screen.scrollRegion[0]
-	bot := s.ws.screen.scrollRegion[1]
+	win, ok := s.ws.screen.getWindow(s.ws.cursor.gridid)
+	if !ok {
+		return
+	}
+	top := win.scrollRegion[0]
+	bot := win.scrollRegion[1]
 	if top == 0 && bot == 0 {
 		top = 0
 		bot = s.ws.rows - 1
