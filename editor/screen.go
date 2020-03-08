@@ -1572,13 +1572,6 @@ func (s *Screen) gridClear(args []interface{}) {
 			continue
 		}
 
-		// win, ok := s.windows[gridid]
-		// if !ok {
-		// 	continue
-		// }
-		// if win == nil {
-		// 	continue
-		// }
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
@@ -2287,167 +2280,6 @@ func (w *Window) newTextCache(text string, highlight Highlight, isNormalWidth bo
 	return image
 }
 
-// func (w *Window) drawChars(p *gui.QPainter, y int, col int, cols int) {
-// 	if y >= len(w.content) {
-// 		return
-// 	}
-// 	wsfont := w.getFont()
-// 	specialChars := []int{}
-// 	glyphMap := w.getGlyphMap()
-//
-// 	for x := col; x < col+cols; x++ {
-// 		if x >= len(w.content[y]) {
-// 			continue
-// 		}
-//
-// 		cell := w.content[y][x]
-// 		if cell == nil {
-// 			continue
-// 		}
-// 		if cell.char == "" {
-// 			continue
-// 		}
-// 		if !cell.normalWidth {
-// 			specialChars = append(specialChars, x)
-// 			continue
-// 		}
-// 		if cell.char == " " {
-// 			continue
-// 		}
-//
-// 		glyph, ok := glyphMap[HlChar{
-// 			char:   cell.char,
-// 			fg:     cell.highlight.fg(),
-// 			bg:     cell.highlight.bg(),
-// 			italic: cell.highlight.italic,
-// 			bold:   cell.highlight.bold,
-// 		}]
-// 		if !ok {
-// 			glyph = w.newGlyph(p, cell)
-// 		} else {
-// 		}
-// 		p.DrawImage7(
-// 			core.NewQPointF3(
-// 				float64(x)*wsfont.truewidth,
-// 				float64(y*wsfont.lineHeight),
-// 			),
-// 			&glyph,
-// 		)
-// 	}
-//
-// 	for _, x := range specialChars {
-// 		cell := w.content[y][x]
-// 		if cell == nil || cell.char == " " {
-// 			continue
-// 		}
-// 		glyph, ok := glyphMap[HlChar{
-// 			char:   cell.char,
-// 			fg:     cell.highlight.fg(),
-// 			bg:     cell.highlight.bg(),
-// 			italic: cell.highlight.italic,
-// 			bold:   cell.highlight.bold,
-// 		}]
-// 		if !ok {
-// 			glyph = w.newGlyph(p, cell)
-// 		}
-// 		p.DrawImage7(
-// 			core.NewQPointF3(
-// 				float64(x)*wsfont.truewidth,
-// 				float64(y*wsfont.lineHeight),
-// 			),
-// 			&glyph,
-// 		)
-// 	}
-// }
-
-// func (w *Window) newGlyph(p *gui.QPainter, cell *Cell) gui.QImage {
-// 	// * TODO: Further optimization, whether it is possible
-// 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
-//
-// 	font := w.getFont()
-// 	width := font.italicWidth
-// 	if !cell.normalWidth {
-// 		width = math.Ceil(font.fontMetrics.HorizontalAdvance(cell.char, -1))
-// 	}
-//
-// 	char := cell.char
-//
-// 	// // If drawing background
-// 	// if cell.highlight.background == nil {
-// 	// 	cell.highlight.background = w.s.ws.background
-// 	// }
-// 	fg := cell.highlight.fg()
-//
-// 	// QImage default device pixel ratio is 1.0,
-// 	// So we set the correct device pixel ratio
-// 	glyph := gui.NewQImage2(
-// 		// core.NewQRectF4(
-// 		// 	0,
-// 		// 	0,
-// 		// 	w.devicePixelRatio*width,
-// 		// 	w.devicePixelRatio*float64(font.lineHeight),
-// 		// ).Size().ToSize(),
-// 		core.NewQSize2(
-// 			int(w.devicePixelRatio*width),
-// 			int(w.devicePixelRatio*float64(font.lineHeight)),
-// 		),
-// 		gui.QImage__Format_ARGB32_Premultiplied,
-// 	)
-// 	glyph.SetDevicePixelRatio(w.devicePixelRatio)
-//
-// 	// // If drawing background
-// 	// glyph.Fill2(gui.NewQColor3(
-// 	// 	cell.highlight.background.R,
-// 	// 	cell.highlight.background.G,
-// 	// 	cell.highlight.background.B,
-// 	// 	int(editor.config.Editor.Transparent * 255),
-// 	// ))
-// 	glyph.Fill3(core.Qt__transparent)
-//
-// 	p = gui.NewQPainter2(glyph)
-// 	p.SetPen2(fg.QColor())
-//
-// 	p.SetFont(font.fontNew)
-// 	if cell.highlight.bold {
-// 		p.Font().SetBold(true)
-// 	}
-// 	if cell.highlight.italic {
-// 		p.Font().SetItalic(true)
-// 	}
-//
-// 	p.DrawText6(
-// 		core.NewQRectF4(
-// 			0,
-// 			0,
-// 			width,
-// 			float64(font.lineHeight),
-// 		),
-// 		char,
-// 		gui.NewQTextOption2(core.Qt__AlignVCenter),
-// 	)
-//
-// 	if w.font != nil {
-// 		w.glyphMap[HlChar{
-// 			char:   cell.char,
-// 			fg:     fg,
-// 			bg:     cell.highlight.bg(),
-// 			italic: cell.highlight.italic,
-// 			bold:   cell.highlight.bold,
-// 		}] = *glyph
-//
-// 	} else {
-// 		w.s.glyphMap[HlChar{
-// 			char:   cell.char,
-// 			fg:     fg,
-// 			bg:     cell.highlight.bg(),
-// 			italic: cell.highlight.italic,
-// 			bold:   cell.highlight.bold,
-// 		}] = *glyph
-// 	}
-//
-// 	return *glyph
-// }
-
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
@@ -2815,58 +2647,6 @@ func (s *Screen) windowHide(args []interface{}) {
 	}
 }
 
-// func (s *Screen) windowScrollOverStart() {
-// 	// main purposs is to scroll over the windows in the `grid_line` event
-// 	// when messages is shown
-// 	s.isScrollOver = true
-// }
-//
-// func (s *Screen) windowScrollOverReset() {
-// 	s.isScrollOver = false
-// 	s.scrollOverCount = 0
-// 	for _, win := range s.windows {
-// 		if win == nil {
-// 			continue
-// 		}
-// 		if win.grid != 1 {
-// 			win.move(win.pos[0], win.pos[1])
-// 		}
-// 	}
-//
-// 	// reset message contents in global grid
-// 	gwin := s.windows[1]
-// 	content := make([][]*Cell, gwin.rows)
-// 	lenLine := make([]int, gwin.rows)
-//
-// 	for i := 0; i < gwin.rows; i++ {
-// 		content[i] = make([]*Cell, gwin.cols)
-// 	}
-//
-// 	for i := 0; i < gwin.rows; i++ {
-// 		if i >= len(gwin.content) {
-// 			continue
-// 		}
-// 		lenLine[i] = gwin.cols
-// 		for j := 0; j < gwin.cols; j++ {
-// 			if j >= len(gwin.content[i]) {
-// 				continue
-// 			}
-// 			if gwin.content[i][j] == nil {
-// 				continue
-// 			}
-// 			if gwin.content[i][j].highlight.hlName == "StatusLine" ||
-// 				gwin.content[i][j].highlight.hlName == "StatusLineNC" ||
-// 				gwin.content[i][j].highlight.hlName == "VertSplit" {
-// 				content[i][j] = gwin.content[i][j]
-// 			}
-// 		}
-// 	}
-// 	s.windows[1].content = content
-// 	s.windows[1].lenLine = lenLine
-//
-// 	gwin.queueRedrawAll()
-// }
-
 func (s *Screen) msgSetPos(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
@@ -2950,29 +2730,6 @@ func (w *Window) hideOverlappingWindows() {
 	if w.isMsgGrid {
 		return
 	}
-	// for _, win := range w.s.windows {
-	// 	if win == nil {
-	// 		continue
-	// 	}
-	// 	if win.grid == 1 {
-	// 		continue
-	// 	}
-	// 	if w == win {
-	// 		continue
-	// 	}
-	// 	if win.isMsgGrid {
-	// 		continue
-	// 	}
-	// 	if win.isFloatWin {
-	// 		continue
-	// 	}
-	// 	if !win.shown {
-	// 		continue
-	// 	}
-	// 	if w.widget.Geometry().Contains2(win.widget.Geometry(), false) {
-	// 		win.hide()
-	// 	}
-	// }
 	w.s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
