@@ -66,6 +66,7 @@ type Window struct {
 	lenLine    []int
 	lenContent    []int
 	lenOldContent []int
+	maxLenContent int
 
 	grid        gridId
 	isGridDirty bool
@@ -986,7 +987,7 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 		w.scrollDust[0] = 0
 		w.scrollDust[1] = 0
 		for i := 0; i < w.rows; i++ {
-			w.lenContent[i] = w.cols
+			w.lenContent[i] = w.maxLenContent
 		}
 
 		w.update()
@@ -1629,6 +1630,16 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	if !win.isShown() {
 		win.show()
 	}
+
+	if win.isMsgGrid {
+		return
+	}
+	if win.grid == 1 {
+		return
+	}
+	if win.maxLenContent < win.lenContent[row] {
+		win.maxLenContent = win.lenContent[row]
+	}
 }
 
 func (w *Window) updateLine(col, row int, cells []interface{}) {
@@ -1899,7 +1910,7 @@ func (w *Window) update() {
 
 		// If scroll is smooth
 		if w.scrollDust[1] != 0 {
-			width = w.cols
+			width = w.maxLenContent
 		}
 
 		width++
