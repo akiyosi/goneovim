@@ -943,7 +943,7 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 
 	// Detect current mode
 	mode := win.s.ws.mode
-	if mode == "insert" {
+	if mode != "normal" {
 		win.s.ws.nvim.Input(win.s.ws.escKeyInInsert)
 	} else if mode == "terminal-input" {
 		win.s.ws.nvim.Input(`<C-\><C-n>`)
