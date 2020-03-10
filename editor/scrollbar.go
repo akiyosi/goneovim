@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"math"
+	"sync"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/widgets"
@@ -12,6 +13,8 @@ import (
 
 // ScrollBar is
 type ScrollBar struct {
+	mu        sync.Mutex
+
 	ws        *Workspace
 	widget    *widgets.QWidget
 	thumb     *widgets.QWidget
@@ -59,20 +62,23 @@ func (s *ScrollBar) mousePress(e *gui.QMouseEvent) {
 }
 
 func (s *ScrollBar) mouseScroll(e *gui.QMouseEvent) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	win, ok := s.ws.screen.getWindow(s.ws.cursor.gridid)
 	if !ok {
 		return
 	}
 	font := win.getFont()
 
-	ratio := float64(s.ws.maxLine * font.lineHeight) / float64(s.widget.Height())
+	ratio := float64((s.ws.maxLine * font.lineHeight) + s.widget.Height()) / float64(s.widget.Height())
 	v := s.beginPosY - e.GlobalPos().Y()
 	if v == 0 {
 		return
 	}
 	v2 := int(math.Ceil(float64(v) * ratio))
-	s.scroll(v2, 0)
 	s.beginPosY = e.GlobalPos().Y()
+	s.scroll(v2, 0)
 
 	s.update()
 
@@ -149,7 +155,9 @@ func (s *ScrollBar) update() {
 		top = 0
 		bot = s.ws.rows - 1
 	}
-	relativeCursorY := int(float64(s.ws.cursor.y) / float64(s.ws.font.lineHeight))
+	font := win.getFont()
+
+	relativeCursorY := int(float64(s.ws.cursor.y) / float64(font.lineHeight))
 	if s.ws.maxLine == 0 {
 		//s.ws.nvim.Eval("line('$')", &s.ws.maxLine)
 		lnITF, err := s.ws.nvimEval("line('$')")
@@ -162,7 +170,8 @@ func (s *ScrollBar) update() {
 	}
 
 	if s.ws.maxLine > bot-top {
-		s.height = int(float64(bot-top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+		// s.height = int(float64(bot-top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+		s.height = int(math.Trunc(float64(bot-top) * float64(s.ws.screen.widget.Height()) / (float64(s.ws.maxLine) - float64(bot-top))))
 		height := s.height
 		if s.height < 20 {
 			height = 20
