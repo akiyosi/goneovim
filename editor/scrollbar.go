@@ -29,7 +29,7 @@ func newScrollBar() *ScrollBar {
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetFixedWidth(10)
 	thumb := widgets.NewQWidget(widget, 0)
-	thumb.SetFixedWidth(6)
+	thumb.SetFixedWidth(8)
 
 	scrollBar := &ScrollBar{
 		widget: widget,
@@ -47,7 +47,7 @@ func newScrollBar() *ScrollBar {
 }
 
 func (s *ScrollBar) mouseEnter(e *core.QEvent) {
-	color := editor.colors.selectedBg.String()
+	color := editor.config.SideBar.AccentColor
 	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", color))
 }
 
@@ -71,7 +71,11 @@ func (s *ScrollBar) mouseScroll(e *gui.QMouseEvent) {
 	}
 	font := win.getFont()
 
-	ratio := float64((s.ws.maxLine * font.lineHeight) + s.widget.Height()) / float64(s.widget.Height())
+	thumbHeight := s.height
+	if s.height < 20 {
+		thumbHeight = 20
+	}
+	ratio := float64((s.ws.maxLine * font.lineHeight) + thumbHeight) / float64(s.widget.Height())
 	v := s.beginPosY - e.GlobalPos().Y()
 	if v == 0 {
 		return
@@ -156,7 +160,6 @@ func (s *ScrollBar) update() {
 		bot = s.ws.rows - 1
 	}
 	font := win.getFont()
-
 	relativeCursorY := int(float64(s.ws.cursor.y) / float64(font.lineHeight))
 	if s.ws.maxLine == 0 {
 		//s.ws.nvim.Eval("line('$')", &s.ws.maxLine)
@@ -170,13 +173,12 @@ func (s *ScrollBar) update() {
 	}
 
 	if s.ws.maxLine > bot-top {
-		// s.height = int(float64(bot-top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
-		s.height = int(math.Trunc(float64(bot-top) * float64(s.ws.screen.widget.Height()) / (float64(s.ws.maxLine) - float64(bot-top))))
-		height := s.height
+		s.height = int(float64(bot-top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+		thumbHeight := s.height
 		if s.height < 20 {
-			height = 20
+			thumbHeight = 20
 		}
-		s.thumb.SetFixedHeight(height)
+		s.thumb.SetFixedHeight(thumbHeight)
 		s.pos = int(float64(s.ws.curLine-relativeCursorY) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		s.thumb.Move2(0, s.pos)
 		s.widget.Show()
