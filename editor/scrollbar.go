@@ -57,8 +57,12 @@ func (s *ScrollBar) mouseLeave(e *core.QEvent) {
 }
 
 func (s *ScrollBar) mousePress(e *gui.QMouseEvent) {
-	s.beginPosY = e.GlobalPos().Y()
-	s.isPressed = true
+	switch e.Button() {
+	case core.Qt__LeftButton:
+		s.beginPosY = e.GlobalPos().Y()
+		s.isPressed = true
+	default:
+	}
 }
 
 func (s *ScrollBar) mouseScroll(e *gui.QMouseEvent) {
