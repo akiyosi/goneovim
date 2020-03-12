@@ -899,17 +899,23 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 		v = pixels.Y()
 		h = pixels.X()
 	}
+	angles := event.AngleDelta()
 
-	switch runtime.GOOS {
-	case "darwin":
+	if (v != 0 || h != 0) {
 		// If Scrolling has ended, reset the displacement of the line
 		isStopScroll := event.Phase() == core.Qt__ScrollEnd
 		vert, horiz = win.smoothUpdate(v, h, isStopScroll)
+	} else {
 
-	default:
-		vert = event.AngleDelta().Y()
-		horiz = event.AngleDelta().X()
-		// accel = 2
+		vert =  angles.Y()
+		horiz = angles.X()
+		// Scroll per 1 line
+		if math.Abs(float64(vert)) > 1 {
+			vert = vert / int(math.Abs(float64(vert)))
+		}
+		if math.Abs(float64(horiz)) > 1 {
+			horiz = horiz / int(math.Abs(float64(horiz)))
+		}
 	}
 
 	if vert == 0 && horiz == 0 {
