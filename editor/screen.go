@@ -2220,7 +2220,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 		p.DrawImage7(
 			core.NewQPointF3(
 				float64(x)*wsfont.truewidth,
-				float64(y*wsfont.lineHeight),
+				float64(y*wsfont.lineHeight+w.scrollDust[1]),
 			),
 			image,
 		)
@@ -2379,7 +2379,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		fg := line[x].highlight.fg()
 		p.SetPen2(fg.QColor())
 		pointF.SetX(float64(x) * wsfont.truewidth)
-		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift))
+		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift + w.scrollDust[1]))
 		font.SetBold(line[x].highlight.bold)
 		font.SetItalic(line[x].highlight.italic)
 		p.DrawText(pointF, line[x].char)
