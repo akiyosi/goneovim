@@ -35,28 +35,28 @@ func newScrollBar() *ScrollBar {
 		widget: widget,
 		thumb:  thumb,
 	}
+
+	scrollBar.thumb.ConnectMousePressEvent(scrollBar.  thumbPress)
+	scrollBar.thumb.ConnectMouseMoveEvent(scrollBar.thumbScroll)
+	scrollBar.thumb.ConnectMouseReleaseEvent(scrollBar.thumbRelease)
+	scrollBar.thumb.ConnectEnterEvent(scrollBar.thumbEnter)
+	scrollBar.thumb.ConnectLeaveEvent(scrollBar.thumbLeave)
+
 	scrollBar.widget.Hide()
-
-	scrollBar.thumb.ConnectMousePressEvent(scrollBar.mousePress)
-	scrollBar.thumb.ConnectMouseMoveEvent(scrollBar.mouseScroll)
-	scrollBar.thumb.ConnectMouseReleaseEvent(scrollBar.mouseRelease)
-	scrollBar.thumb.ConnectEnterEvent(scrollBar.mouseEnter)
-	scrollBar.thumb.ConnectLeaveEvent(scrollBar.mouseLeave)
-
 	return scrollBar
 }
 
-func (s *ScrollBar) mouseEnter(e *core.QEvent) {
+func (s *ScrollBar) thumbEnter(e *core.QEvent) {
 	color := editor.config.SideBar.AccentColor
 	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", color))
 }
 
-func (s *ScrollBar) mouseLeave(e *core.QEvent) {
+func (s *ScrollBar) thumbLeave(e *core.QEvent) {
 	color := editor.colors.scrollBarFg.String()
 	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", color))
 }
 
-func (s *ScrollBar) mousePress(e *gui.QMouseEvent) {
+func (s *ScrollBar) thumbPress(e *gui.QMouseEvent) {
 	switch e.Button() {
 	case core.Qt__LeftButton:
 		s.beginPosY = e.GlobalPos().Y()
@@ -65,7 +65,7 @@ func (s *ScrollBar) mousePress(e *gui.QMouseEvent) {
 	}
 }
 
-func (s *ScrollBar) mouseScroll(e *gui.QMouseEvent) {
+func (s *ScrollBar) thumbScroll(e *gui.QMouseEvent) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -92,7 +92,7 @@ func (s *ScrollBar) mouseScroll(e *gui.QMouseEvent) {
 
 }
 
-func (s *ScrollBar) mouseRelease(e *gui.QMouseEvent) {
+func (s *ScrollBar) thumbRelease(e *gui.QMouseEvent) {
 	s.isPressed = false
 	s.scroll(0, 0)
 }
