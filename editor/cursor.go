@@ -270,7 +270,7 @@ func (c *Cursor) update() {
 	font := c.font
 
 	x := int(float64(col) * font.truewidth)
-	y := row*font.lineHeight + c.shift
+	y := row*font.lineHeight + c.shift + win.scrollDust[1]
 	c.x = x
 	c.y = y
 	c.move()

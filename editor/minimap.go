@@ -68,7 +68,6 @@ func newMiniMap() *MiniMap {
 			// windows:        make(map[gridId]*Window),
 			windows:        sync.Map{},
 			cursor:         [2]int{0, 0},
-			scrollRegion:   []int{0, 0, 0, 0},
 			highlightGroup: make(map[string]int),
 		},
 		curRegion:     curRegion,
@@ -453,6 +452,10 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 
 	var v, h, vert, horiz, accel int
 	font := m.font
+	win, ok := m.getWindow(1)
+	if !ok {
+		return
+	}
 
 	switch runtime.GOOS {
 	case "darwin":
@@ -461,40 +464,40 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 			v = pixels.Y()
 			h = pixels.X()
 		}
-		if pixels.X() < 0 && m.scrollDust[0] > 0 {
-			m.scrollDust[0] = 0
+		if pixels.X() < 0 && win.scrollDust[0] > 0 {
+			win.scrollDust[0] = 0
 		}
-		if pixels.Y() < 0 && m.scrollDust[1] > 0 {
-			m.scrollDust[1] = 0
+		if pixels.Y() < 0 && win.scrollDust[1] > 0 {
+			win.scrollDust[1] = 0
 		}
 
-		dx := math.Abs(float64(m.scrollDust[0]))
-		dy := math.Abs(float64(m.scrollDust[1]))
+		dx := math.Abs(float64(win.scrollDust[0]))
+		dy := math.Abs(float64(win.scrollDust[1]))
 
 		fontheight := float64(font.lineHeight)
 		fontwidth := font.truewidth
 
-		m.scrollDust[0] += h
-		m.scrollDust[1] += v
+		win.scrollDust[0] += h
+		win.scrollDust[1] += v
 
 		if dx >= fontwidth {
-			horiz = int(math.Trunc(float64(m.scrollDust[0]) / fontheight))
-			m.scrollDust[0] = 0
+			horiz = int(math.Trunc(float64(win.scrollDust[0]) / fontheight))
+			win.scrollDust[0] = 0
 		}
 		if dy >= fontwidth {
-			vert = int(math.Trunc(float64(m.scrollDust[1]) / fontwidth))
-			m.scrollDust[1] = 0
+			vert = int(math.Trunc(float64(win.scrollDust[1]) / fontwidth))
+			win.scrollDust[1] = 0
 		}
 
-		m.scrollDustDeltaY = int(math.Abs(float64(vert)) - float64(m.scrollDustDeltaY))
-		if m.scrollDustDeltaY < 1 {
-			m.scrollDustDeltaY = 0
+		win.scrollDustDeltaY = int(math.Abs(float64(vert)) - float64(win.scrollDustDeltaY))
+		if win.scrollDustDeltaY < 1 {
+			win.scrollDustDeltaY = 0
 		}
 
-		if m.scrollDustDeltaY <= 2 {
+		if win.scrollDustDeltaY <= 2 {
 			accel = 1
-		} else if m.scrollDustDeltaY > 2 {
-			accel = int(float64(m.scrollDustDeltaY) / float64(4))
+		} else if win.scrollDustDeltaY > 2 {
+			accel = int(float64(win.scrollDustDeltaY) / float64(4))
 		}
 
 	default:
@@ -510,29 +513,6 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 	} else if vert < 0 {
 		m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
 	}
-	// var vertKey string
-	// if vert > 0 {
-	// 	vertKey = "Up"
-	// } else {
-	// 	vertKey = "Down"
-	// }
-	// mod := event.Modifiers()
-	// if vert != 0 {
-	// 	m.nvim.Input(fmt.Sprintf("%d<%sScrollWheel%s>", accel, editor.modPrefix(mod), vertKey))
-	// }
-
-	// var horizKey string
-	// if horiz > 0 {
-	// 	horizKey = "Left"
-	// } else {
-	// 	horizKey = "Right"
-	// }
-	// x := int(float64(event.X()) / font.truewidth)
-	// y := int(float64(event.Y()) / float64(font.lineHeight))
-	// pos := []int{x, y}
-	// if horiz != 0 {
-	// 	m.nvim.Input(fmt.Sprintf("%d<%sScrollWheel%s><%d,%d>", accel, editor.modPrefix(mod), horizKey, pos[0], pos[1]))
-	// }
 	m.mapScroll()
 
 	event.Accept()

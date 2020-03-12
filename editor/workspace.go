@@ -789,6 +789,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.windowClose()
 		case "msg_set_pos":
 			s.msgSetPos(args)
+		// case "win_viewport":
 
 		// Popupmenu Events
 		case "popupmenu_show":
