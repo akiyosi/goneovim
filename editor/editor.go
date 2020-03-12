@@ -186,11 +186,11 @@ func InitEditor() {
 	}
 	e := editor
 
+	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
 	e.app.ConnectAboutToQuit(func() {
 		e.cleanup()
 	})
-	e.app.SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 
 	e.initFont()
 	e.initSVGS()
