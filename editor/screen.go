@@ -561,6 +561,11 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawMsgSeparator(p)
 	}
 
+	// Draw float window border
+	if w.isFloatWin {
+		w.drawFloatWindowBorder(p)
+	}
+
 	// Draw vim window separator
 	w.drawBorders(p, row, col, rows, cols)
 
@@ -761,14 +766,14 @@ func (w *Window) drawMsgSeparator(p *gui.QPainter) {
 	if !ok {
 		return
 	}
-	color, ok := w.s.hlAttrDef[highNo]
+	hl, ok := w.s.hlAttrDef[highNo]
 	if !ok {
 		return
 	}
-	if color == nil {
+	if hl == nil {
 		return
 	}
-	fg := color.fg()
+	color := hl.fg()
 	p.FillRect4(
 		core.NewQRectF4(
 			0,
@@ -777,10 +782,69 @@ func (w *Window) drawMsgSeparator(p *gui.QPainter) {
 			1,
 		),
 		gui.NewQColor3(
-			fg.R,
-			fg.G,
-			fg.B,
+			color.R,
+			color.G,
+			color.B,
 			200),
+	)
+}
+
+func (w *Window) drawFloatWindowBorder(p *gui.QPainter) {
+	if !editor.config.Editor.DrawBorderForFloatWindow {
+		return
+	}
+	var color *RGBA
+	highNo, ok := w.s.highlightGroup["GoneovimFloatWindowBorder"]
+	if !ok {
+		color = editor.colors.fg
+	} else {
+		hl, ok := w.s.hlAttrDef[highNo]
+		if !ok || hl == nil {
+			color = editor.colors.fg
+		} else {
+			color = hl.fg()
+		}
+	}
+
+	width  := float64(w.widget.Width())
+	height := float64(w.widget.Height())
+
+	left :=   core.NewQRectF4(      0,        0,      1, height)
+	top :=    core.NewQRectF4(      0,        0,  width,      1)
+	right :=  core.NewQRectF4(width-1,        0,      1, height)
+	bottom := core.NewQRectF4(      0, height-1,  width,      1)
+
+	p.FillRect4(
+		left,
+		gui.NewQColor3(
+			color.R,
+			color.G,
+			color.B,
+			128),
+	)
+	p.FillRect4(
+		top,
+		gui.NewQColor3(
+			color.R,
+			color.G,
+			color.B,
+			128),
+	)
+	p.FillRect4(
+		right,
+		gui.NewQColor3(
+			color.R,
+			color.G,
+			color.B,
+			128),
+	)
+	p.FillRect4(
+		bottom,
+		gui.NewQColor3(
+			color.R,
+			color.G,
+			color.B,
+			128),
 	)
 }
 
@@ -2817,6 +2881,9 @@ func (w *Window) fill() {
 }
 
 func (w *Window) setShadow() {
+	if !editor.config.Editor.DrawShadowForFloatWindow {
+		return
+	}
 	w.widget.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))
 }
 

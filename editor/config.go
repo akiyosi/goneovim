@@ -122,33 +122,34 @@ type gonvimConfig struct {
 }
 
 type editorConfig struct {
-	Width      int
-	Height     int
-	FontFamily string
-	FontSize   int
-	Linespace  int
-	ExtCmdline bool
-	// ExtWildmenu          bool
-	ExtPopupmenu bool
-	ExtTabline   bool
-	// ExtMultigrid         bool
-	ExtMessages bool
-	Clipboard   bool
-	// CursorBlink          bool
-	CachedDrawing        bool
-	CacheSize            int
-	DisableImeInNormal   bool
-	GinitVim             string
-	StartFullscreen      bool
-	StartMaximizedWindow bool
-	Transparent          float64
-	DrawBorder           bool
-	SkipGlobalId         bool
-	IndentGuide          bool
-	DesktopNotifications bool
-	DiffAddPattern       int
-	DiffDeletePattern    int
-	DiffChangePattern    int
+	Width                    int
+	Height                   int
+	FontFamily               string
+	FontSize                 int
+	Linespace                int
+	ExtCmdline               bool
+	ExtPopupmenu             bool
+	ExtTabline               bool
+	ExtMessages              bool
+	Clipboard                bool
+	CachedDrawing            bool
+	CacheSize                int
+	DisableImeInNormal       bool
+	GinitVim                 string
+	StartFullscreen          bool
+	StartMaximizedWindow     bool
+	Transparent              float64
+	DrawBorder               bool
+	SkipGlobalId             bool
+	IndentGuide              bool
+	DrawBorderForFloatWindow bool
+	DrawShadowForFloatWindow bool
+	DesktopNotifications     bool
+	DiffAddPattern           int
+	DiffDeletePattern        int
+	DiffChangePattern        int
+	// ExtWildmenu            bool
+	// ExtMultigrid           bool
 }
 
 type paletteConfig struct {
