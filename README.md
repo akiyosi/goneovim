@@ -29,10 +29,12 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Features as neovim GUI
   - [x] Externalizable tabline, popupmenu, wildmenu, cmdline, messsages
   - [x] Support gui option: `guifont`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
+  - [x] Support mouse selections
   - [x] Supports border drawing and shadow drawing of float window
   - [x] Independent font settings per window (currently experimental)
   - [x] Attach feature to a remote nvim
 - Basic feature as a Text Editor
+  - [x] Support multi byte character
   - [x] Drag and Drop files
   - [x] Support InputMethod Editor (for east asian people)
 - Miscellaneous
@@ -84,8 +86,6 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 * Improve Imput Method Editor(IME) feature
 
 In the current implementation, it is not possible to highlight the keyword being converted in the input method input. At the moment I have no idea about how to improve this
-
-* Keyword filtering feature in external file explorer
 
 * Support GPU rendering
 
