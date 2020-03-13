@@ -83,6 +83,8 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
 * Add tree view for external file explorer
 
+* Add Git integration for external file explorer
+
 * Improve Imput Method Editor(IME) feature
 
 In the current implementation, it is not possible to highlight the keyword being converted in the input method input. At the moment I have no idea about how to improve this
