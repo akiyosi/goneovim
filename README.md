@@ -11,21 +11,34 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 
 ## Features
 
-* Fast
-* Cross-platform
-* Markdown Preview
-* Minimap
-* Smooth scroll
-* Fuzzy Finder
-* Workspace feature which manages multiple nvim
-* External File Explorer
-* Transparent window
-* Indent guide
-* Independent font settings per window (alpha stage)
-* Support display ligatures
-* Support InputMethod Editor
-* Desktop Notification of the messages
-* Remote attachment
+All of the features are optional. You can use it like a plain nvim or as a nvim with a rich UI.
+
+- Fast (faster than neovim-qt, many other neovim GUI's)
+- Cross-platform
+- Modern Text Editor Features
+  - [x] Markdown Preview
+  - [x] Minimap
+  - [x] Smooth scroll
+  - [x] Fuzzy Finder
+  - [x] Workspace feature which manages multiple nvim
+  - [x] External File Explorer
+  - [x] Scrollbar
+  - [x] Support Ligature
+  - [x] Built-in Indent guide
+  - [x] Support High DPI scaling
+- Features as neovim GUI
+  - [x] Externalizable tabline, popupmenu, wildmenu, cmdline, messsages
+  - [x] Support gui option: `guifont`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
+  - [x] Supports border drawing and shadow drawing of float window
+  - [x] Independent font settings per window (currently experimental)
+  - [x] Attach feature to a remote nvim
+- Basic feature as a Text Editor
+  - [x] Drag and Drop files
+  - [x] Support InputMethod Editor (for east asian people)
+- Miscellaneous
+  - [x] Supports application window transparency
+  - [x] Desktop Notification of the messages emitted nvim
+
 
 ## Screenshots
 
