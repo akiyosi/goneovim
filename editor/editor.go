@@ -199,7 +199,7 @@ func InitEditor() {
 	e.initSysTray()
 
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent)
-	e.setWindowSize()
+	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 
 	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
@@ -520,25 +520,28 @@ func hexToRGBA(hex string) *RGBA {
 	return rgba
 }
 
-func (e *Editor) setWindowSize() {
+func (e *Editor) setWindowSizeFromOpts() {
 	if e.opts.Geometry == "" {
 		return
 	}
-
-	var width, height int
-	if e.opts.Geometry != "" {
-		var err error
-		width, err = strconv.Atoi(strings.SplitN(editor.opts.Geometry, "x", 2)[0])
-		if err != nil || width < 400 {
-			width = 400
-		}
-		height, err = strconv.Atoi(strings.SplitN(editor.opts.Geometry, "x", 2)[1])
-		if err != nil || height < 300 {
-			height = 300
-		}
-	}
+	width, height := e.setWindowSize(e.opts.Geometry)
 	e.config.Editor.Width = width
 	e.config.Editor.Height = height
+}
+
+func (e *Editor) setWindowSize(s string) (int, int) {
+	var width, height int
+	var err error
+	width, err = strconv.Atoi(strings.SplitN(s, "x", 2)[0])
+	if err != nil || width < 400 {
+		width = 400
+	}
+	height, err = strconv.Atoi(strings.SplitN(s, "x", 2)[1])
+	if err != nil || height < 300 {
+		height = 300
+	}
+
+	return width, height
 }
 
 func (e *Editor) setWindowOptions() {

@@ -438,6 +438,8 @@ func (w *Workspace) initGonvim() {
 	w.nvim.Command(registerScripts)
 
 	gonvimCommands := fmt.Sprintf(`
+	command! -nargs=1 GonvimResize call rpcnotify(0, "Gui", "gonvim_resize", <args>)
+	command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
 	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
 	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
 	command! GonvimVersion echo "%s"`, editor.version)
@@ -1093,6 +1095,11 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_enter":
 		editor.window.SetWindowOpacity(1.0)
 		w.setCwd(updates[1].(string))
+	case "gonvim_resize":
+		width, height := editor.setWindowSize(updates[1].(string))
+		editor.window.Resize2(width, height)
+	case "gonvim_maximize":
+		editor.window.WindowMaximize()
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
