@@ -964,10 +964,12 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 		h = pixels.X()
 	}
 	angles := event.AngleDelta()
+	isStopScroll := event.Phase() == core.Qt__ScrollEnd
 
-	if (v != 0 || h != 0) {
+	if (v == 0 || h == 0) && isStopScroll {
+		vert, horiz = win.smoothUpdate(v, h, isStopScroll)
+	} else if (v != 0 || h != 0) {
 		// If Scrolling has ended, reset the displacement of the line
-		isStopScroll := event.Phase() == core.Qt__ScrollEnd
 		vert, horiz = win.smoothUpdate(v, h, isStopScroll)
 	} else {
 
