@@ -4,7 +4,7 @@
 
 [![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
 [![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/goneovim)](https://goreportcard.com/report/github.com/akiyosi/goneovim)
-![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.4.4/total)
+![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.4.5/total)
 
 *GoNeovim* is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
 This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
@@ -61,7 +61,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/font-setting-per-window.png)
 
 ## Requirements
-* Neovim (v0.4.2 or later)
+* Neovim (v0.4.3 or later)
 
 See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
