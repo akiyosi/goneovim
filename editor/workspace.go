@@ -439,7 +439,6 @@ func (w *Workspace) initGonvim() {
 
 	gonvimCommands := fmt.Sprintf(`
 	command! -nargs=1 GonvimResize call rpcnotify(0, "Gui", "gonvim_resize", <args>)
-	command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
 	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
 	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
 	command! GonvimVersion echo "%s"`, editor.version)
@@ -451,6 +450,11 @@ func (w *Workspace) initGonvim() {
 	command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
 	command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
 	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
+	`
+	}
+	if runtime.GOOS == "darwin" {
+		gonvimCommands = gonvimCommands + `
+		command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
 	`
 	}
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
