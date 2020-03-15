@@ -549,7 +549,8 @@ func (e *Editor) setWindowOptions() {
 	e.window.SetupWidgetColor(0, 0, 0)
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
-	e.window.SetMinimumSize2(e.width, e.height)
+	e.window.SetMinimumSize2(400, 300)
+	e.window.Resize2(e.width, e.height)
 	e.window.SetWindowOpacity(0.0)
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
