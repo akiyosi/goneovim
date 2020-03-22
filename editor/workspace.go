@@ -507,11 +507,21 @@ func (w *Workspace) getNvimOptions() {
 		return
 	}
 	w.insertMappings = imappings
+	altkeyCount := 0
+	metakeyCount := 0
 	for _, mapping := range w.insertMappings {
+		// Check Esc mapping
 		if strings.EqualFold(mapping.RHS, "<Esc>") || strings.EqualFold(mapping.RHS, "<C-[>") {
 			if mapping.NoRemap == 1 {
 				w.escKeyInInsert = mapping.LHS
 			}
+		}
+		// Count user def alt/meta key mappings
+		if strings.HasPrefix(mapping.LHS, "<A-") {
+			altkeyCount++
+		}
+		if strings.HasPrefix(mapping.LHS, "<M-") {
+			metakeyCount++
 		}
 	}
 	for _, mapping := range w.normalMappings {
@@ -523,6 +533,19 @@ func (w *Workspace) getNvimOptions() {
 		if strings.EqualFold(mapping.LHS, "<C-y>") || strings.EqualFold(mapping.LHS, "<C-e>"){
 			w.isMappingScrollKey = true
 		}
+		// Count user def alt/meta key mappings
+		if strings.HasPrefix(mapping.LHS, "<A-") {
+			altkeyCount++
+		}
+		if strings.HasPrefix(mapping.LHS, "<M-") {
+			metakeyCount++
+		}
+	}
+	fmt.Println(altkeyCount, metakeyCount)
+	if altkeyCount >= metakeyCount {
+		editor.prefixToMapMetaKey = "A-"
+	} else {
+		editor.prefixToMapMetaKey = "M-"
 	}
 }
 

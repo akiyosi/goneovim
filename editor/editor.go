@@ -109,16 +109,17 @@ type Editor struct {
 	stop     chan struct{}
 	stopOnce sync.Once
 
-	specialKeys     map[core.Qt__Key]string
-	controlModifier core.Qt__KeyboardModifier
-	cmdModifier     core.Qt__KeyboardModifier
-	shiftModifier   core.Qt__KeyboardModifier
-	altModifier     core.Qt__KeyboardModifier
-	metaModifier    core.Qt__KeyboardModifier
-	keyControl      core.Qt__Key
-	keyCmd          core.Qt__Key
-	keyAlt          core.Qt__Key
-	keyShift        core.Qt__Key
+	specialKeys        map[core.Qt__Key]string
+	controlModifier    core.Qt__KeyboardModifier
+	cmdModifier        core.Qt__KeyboardModifier
+	shiftModifier      core.Qt__KeyboardModifier
+	altModifier        core.Qt__KeyboardModifier
+	metaModifier       core.Qt__KeyboardModifier
+	keyControl         core.Qt__Key
+	keyCmd             core.Qt__Key
+	keyAlt             core.Qt__Key
+	keyShift           core.Qt__Key
+	prefixToMapMetaKey string
 
 	config                 gonvimConfig
 	notifications          []*Notification
@@ -642,7 +643,6 @@ func (e *Editor) workspaceUpdate() {
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event.Text(), event.Key(), event.Modifiers())
-	fmt.Println("debug:", input)
 	if input != "" {
 		e.workspaces[e.active].nvim.Input(input)
 	}
@@ -784,7 +784,7 @@ func (e *Editor) modPrefix(mod core.Qt__KeyboardModifier) string {
 				prefix += "A-"
 			}
 		} else {
-			prefix += "A-"
+			prefix += e.prefixToMapMetaKey
 		}
 	}
 
