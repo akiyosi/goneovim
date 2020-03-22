@@ -1227,7 +1227,6 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		s.storeWindow(gridid, win)
 		win.setParent(s.widget)
 		win.grid = gridid
-		win.widget.SetAttribute(core.Qt__WA_KeyCompression, true)
 
 		// set scroll
 		if s.name != "minimap" {
