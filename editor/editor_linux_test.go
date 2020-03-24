@@ -10,7 +10,7 @@ import (
 	"github.com/therecipe/qt/gui"
 )
 
-func TestUnixEditor_convertKey(t *testing.T) {
+func TestLinuxEditor_convertKey(t *testing.T) {
 	tests := []struct {
 		name   string
 		args   *gui.QKeyEvent
@@ -19,7 +19,7 @@ func TestUnixEditor_convertKey(t *testing.T) {
 		{
 			`convertKey() Linux LessThan modifier keys 1`,
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier | core.Qt__ControlModifier, "<", false, 1),
-			"<D-lt>",
+			"<C-lt>",
 		},
 		{
 			`convertKey() Linux LessThan modifier keys 2`,
@@ -29,7 +29,7 @@ func TestUnixEditor_convertKey(t *testing.T) {
 		{
 			`convertKey() Linux LessThan modifier keys 3`,
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier | core.Qt__MetaModifier, "<", false, 1),
-			"<C-lt>",
+			"<D-lt>",
 		},
 
 	}
@@ -51,7 +51,7 @@ func TestUnixEditor_convertKey(t *testing.T) {
 				{
 					`convertKey() Linux special keys with Ctrl`,
 					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__ControlModifier, value, false, 1),
-					fmt.Sprintf("<D-%s>", value),
+					fmt.Sprintf("<C-%s>", value),
 				},
 				{
 					`convertKey() Linux special keys with Alt`,
@@ -61,7 +61,7 @@ func TestUnixEditor_convertKey(t *testing.T) {
 				{
 					`convertKey() Linux special keys with Meta`,
 					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__MetaModifier, value, false, 1),
-					fmt.Sprintf("<C-%s>", value),
+					fmt.Sprintf("<D-%s>", value),
 				},
 			}...,
 		)
