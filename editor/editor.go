@@ -694,7 +694,9 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	}
 
 	if text == "<" {
-		return "<lt>"
+		// return "<lt>"
+		modNoShift := mod & ^core.Qt__ShiftModifier
+		return fmt.Sprintf("<%s%s>", e.modPrefix(modNoShift), "lt")
 	}
 
 	specialKey, ok := e.specialKeys[core.Qt__Key(key)]
@@ -718,8 +720,9 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		   key == int(core.Qt__Key_Super_R ) {
 			return ""
 		}
+		text = string(key)
 		if !(mod&core.Qt__ShiftModifier > 0) {
-			text = strings.ToLower(string(key))
+			text = strings.ToLower(text)
 		}
 	}
 	c = string(text)
@@ -739,7 +742,7 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		mod &= ^e.controlModifier
 	}
 
-	if runtime.GOOS == "darwin" && text != "" {
+	if runtime.GOOS == "darwin" {
 		// Remove ALT/OPTION
 		if (char.Unicode() >= 0x80 && char.IsPrint()) {
 			mod &= ^core.Qt__AltModifier
@@ -757,13 +760,13 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 func (e *Editor) modPrefix(mod core.Qt__KeyboardModifier) string {
 	prefix := ""
 	if runtime.GOOS == "windows" {
-		if mod&e.controlModifier > 0 && !(mod&core.Qt__AltModifier > 0){
+		if mod&e.controlModifier > 0 && !(mod&core.Qt__AltModifier > 0) {
 			prefix += "C-"
 		}
 		if mod&core.Qt__ShiftModifier > 0 {
 			prefix += "S-"
 		}
-		if mod&core.Qt__AltModifier > 0 && !(mod&e.controlModifier > 0){
+		if mod&core.Qt__AltModifier > 0 && !(mod&e.controlModifier > 0) {
 			prefix += e.prefixToMapMetaKey
 		}
 	} else {
@@ -848,6 +851,8 @@ func (e *Editor) initSpecialKeys() {
 		e.keyControl = core.Qt__Key_Control
 		e.keyCmd = core.Qt__Key_Meta
 	}
+
+	e.prefixToMapMetaKey = "A-"
 }
 
 func (e *Editor) close() {

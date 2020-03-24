@@ -13,7 +13,6 @@ func TestEditor_convertKey(t *testing.T) {
 		args   *gui.QKeyEvent
 		want   string
 	}{
-		// TODO: Add test cases.
 		{
 			`convertKey() Shift is implied with "<", send "<lt>" instead`,
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier, "<", false, 1),
