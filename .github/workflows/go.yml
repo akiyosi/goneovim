@@ -44,15 +44,10 @@ jobs:
         GO111MODULE: off
       run: go get -v -d ./...
 
-    - name: Generate moc
-      env:
-        GO111MODULE: off
-      run: $(go env GOPATH)/bin/qtmoc
-
     - name: Test
       env:
         GO111MODULE: off
-      run: go test ./editor
+      run: $(go env GOPATH)/bin/qtmoc && go test ./editor
       
 #  build:
 #    name: Build
