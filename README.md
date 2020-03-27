@@ -2,7 +2,7 @@
 
 ---
 
-![Go](https://github.com/akiyosi/goneovim/workflows/Go/badge.svg)
+![test](https://github.com/akiyosi/goneovim/workflows/test/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/goneovim)](https://goreportcard.com/report/github.com/akiyosi/goneovim)
 ![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.4.5/total)
 [![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
