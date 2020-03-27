@@ -50,7 +50,7 @@ jobs:
     - name: Get dependencies
       env: 
         GO111MODULE: off
-      run: go get -v -t -d github.com/${GITHUB_REPOSITORY}
+      run: go get -v -t -d github.com/${GITHUB_REPOSITORY}/editor
 
     - name: Test
       env:
