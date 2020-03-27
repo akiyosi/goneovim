@@ -35,11 +35,9 @@ jobs:
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Get Qt binding for Go
-      env: 
       run: go get -v github.com/therecipe/qt/cmd/...
 
     - name: Generate Qt bindings
-      env: 
       run: $(go env GOPATH)/bin/qtsetup
 
     - name: Checkout code
@@ -48,13 +46,11 @@ jobs:
         path: ./src/github.com/${{ github.repository }}
 
     - name: Get dependencies
-      env: 
       run: |
         go get -v -t -d github.com/${{ github.repository }}/editor && \
         $(go env GOPATH)/bin/qtmoc
 
     - name: Test
-      env:
       run: go test github.com/${{ github.repository }}/editor
       
 #  build:
