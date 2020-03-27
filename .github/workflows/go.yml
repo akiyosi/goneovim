@@ -1,12 +1,14 @@
 name: Go
 on: [push, pull_request]
 jobs:
-
   test:
     strategy:
       matrix:
         go-version: [1.12.x, 1.13.x]
     runs-on: ubuntu-latest
+    env:
+      GOPATH: ${{ github.workspace }}
+      GO111MODULE: off
     steps:
     - name: Linux prerequisites 
       # if: matrix.platform == 'ubuntu-latest'
@@ -34,28 +36,26 @@ jobs:
 
     - name: Get Qt binding for Go
       env: 
-        GO111MODULE: off
       run: go get -v github.com/therecipe/qt/cmd/...
 
     - name: Generate Qt bindings
       env: 
-        GO111MODULE: off
       run: $(go env GOPATH)/bin/qtsetup
 
     - name: Checkout code
-      env: 
-        GO111MODULE: off
       uses: actions/checkout@v2
+      with:
+        path: ./src/github.com/${{ github.repository }}
 
     - name: Get dependencies
       env: 
-        GO111MODULE: off
-      run: go get -v -t -d github.com/${GITHUB_REPOSITORY}/editor
+      run: |
+        go get -v -t -d github.com/${{ github.repository }}/editor && \
+        $(go env GOPATH)/bin/qtmoc
 
     - name: Test
       env:
-        GO111MODULE: off
-      run: pwd && ls -l . && ls -l ../ && ls -l ../../ && ls -l ../goqtframelesswindow/ && $(go env GOPATH)/bin/qtmoc && go test ./editor
+      run: go test github.com/${{ github.repository }}/editor
       
 #  build:
 #    name: Build
