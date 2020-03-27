@@ -17,12 +17,20 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v1
+      with:
+        path: ../Qt
+        key: QtCache
 
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2.0.0
+      uses: jurplel/install-qt-action@v2
       with:
         version: 5.13.2
+        host: linux
         target: desktop
+        cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Get Qt binding for Go
       env: 
