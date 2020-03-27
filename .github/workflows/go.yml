@@ -55,7 +55,7 @@ jobs:
     - name: Test
       env:
         GO111MODULE: off
-      run: $(go env GOPATH)/bin/qtmoc && go test ./editor
+      run: ls -l ../ && ls -l ../../ && ls -l ../goqtframelesswindow/ && $(go env GOPATH)/bin/qtmoc && go test ./editor
       
 #  build:
 #    name: Build
