@@ -55,7 +55,7 @@ jobs:
     - name: Test
       env:
         GO111MODULE: off
-      run: $(go env GOPATH)/bin/qtmoc && go test ./editor
+      run: $(go env GOPATH)/bin/qtmoc && go test github.com/${GITHUB_REPOSITORY}/editor
       
 #  build:
 #    name: Build
