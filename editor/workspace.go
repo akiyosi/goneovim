@@ -212,7 +212,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.Move2(0, 0)
 	w.updateSize()
 
-	if !w.uiRemoteAttached {
+	if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
 		go func() {
 			if !editor.config.MiniMap.Visible {
 				time.Sleep(1500 * time.Millisecond)
@@ -443,12 +443,16 @@ func (w *Workspace) initGonvim() {
 	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
 	command! GonvimVersion echo "%s"`, editor.version)
 	if !w.uiRemoteAttached {
+		if !editor.config.MiniMap.Disable {
+		gonvimCommands = gonvimCommands + `
+		command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
+		`
+		}
 		gonvimCommands = gonvimCommands + `
 	command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
 	command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
 	command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
 	command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
-	command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
 	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
 	`
 	}
