@@ -152,7 +152,7 @@ func newScreen() *Screen {
 	widget.ConnectDragEnterEvent(screen.dragEnterEvent)
 	widget.ConnectDragMoveEvent(screen.dragMoveEvent)
 	widget.ConnectDropEvent(screen.dropEvent)
-	widget.ConnectMousePressEvent(screen.mouseEvent)
+	widget.ConnectMousePressEvent(screen.mousePressEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
@@ -1109,6 +1109,55 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 	}
 
 	return vert, horiz
+}
+
+func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
+	win, ok := s.getWindow(s.ws.cursor.gridid)
+	if !ok {
+		return
+	}
+	font := win.getFont()
+
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
+	widget.SetParent(win.widget)
+	widget.SetFixedSize2(font.lineHeight * 4 / 3, font.lineHeight * 4 / 3)
+	widget.Show()
+	widget.ConnectPaintEvent(func(e *gui.QPaintEvent) {
+		p := gui.NewQPainter2(widget)
+		rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+		p.SetPen2(rgbAccent.QColor())
+		for i := 0; i < font.lineHeight * 2 / 3; i++ {
+			p.DrawEllipse4(
+				core.NewQPointF3(
+					float64(font.lineHeight * 2 / 3),
+					float64(font.lineHeight * 2 / 3),
+				),
+				float64(font.lineHeight) * 1.98 / 3.00 - float64(i),
+				float64(font.lineHeight) * 1.98 / 3.00 - float64(i),
+			)
+		}
+		p.DestroyQPainter()
+	})
+	widget.Move2(
+		event.Pos().X() - font.lineHeight * 2 / 3 - 1,
+		event.Pos().Y() - font.lineHeight * 2 / 3 - 1,
+	)
+	s.mouseEvent(event)
+
+	eff := widgets.NewQGraphicsOpacityEffect(widget)
+	widget.SetGraphicsEffect(eff)
+	a := core.NewQPropertyAnimation2(eff, core.NewQByteArray2("opacity", len("opacity")), widget)
+	a.SetDuration(500)
+	a.SetStartValue(core.NewQVariant5(1))
+	a.SetEndValue(core.NewQVariant5(0))
+	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutBack))
+	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		widget.Hide()
+		s.update()
+	}()
 }
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
