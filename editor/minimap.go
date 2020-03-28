@@ -54,11 +54,11 @@ func newMiniMap() *MiniMap {
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
-	widget.SetFixedWidth(140)
+	widget.SetFixedWidth(editor.config.MiniMap.Width)
 
 	curRegion := widgets.NewQWidget(nil, 0)
 	curRegion.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
-	curRegion.SetFixedWidth(140)
+	curRegion.SetFixedWidth(editor.config.MiniMap.Width)
 	curRegion.SetFixedHeight(1)
 
 	m := &MiniMap{

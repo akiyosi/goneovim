@@ -84,6 +84,8 @@ import (
 //
 // [miniMap]
 // visible = true
+// disable = false
+// width = 120
 //
 // [sideBar]
 // visible = false
@@ -193,6 +195,8 @@ type lintConfig struct {
 
 type miniMapConfig struct {
 	Visible bool
+	Disable bool
+	Width   int
 }
 
 type scrollBarConfig struct {
@@ -301,6 +305,10 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Workspace.PathStyle = "minimum"
 	}
 
+	if config.MiniMap.Width == 0 || config.MiniMap.Width >= 250 {
+		config.MiniMap.Width = 120
+	}
+
 	return config
 }
 
@@ -352,6 +360,8 @@ func (c *gonvimConfig) init() {
 	// c.ActivityBar.Visible = true
 
 	c.ScrollBar.Visible = false
+
+	c.MiniMap.Width = 120
 
 	c.SideBar.Width = 200
 	c.SideBar.AccentColor = "#5596ea"
