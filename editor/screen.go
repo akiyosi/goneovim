@@ -152,7 +152,7 @@ func newScreen() *Screen {
 	widget.ConnectDragEnterEvent(screen.dragEnterEvent)
 	widget.ConnectDragMoveEvent(screen.dragMoveEvent)
 	widget.ConnectDropEvent(screen.dropEvent)
-	widget.ConnectMousePressEvent(screen.mouseEvent)
+	widget.ConnectMousePressEvent(screen.mousePressEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
@@ -1109,6 +1109,96 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 	}
 
 	return vert, horiz
+}
+
+func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
+	win, ok := s.getWindow(s.ws.cursor.gridid)
+	if !ok {
+		return
+	}
+	font := win.getFont()
+
+	widget := widgets.NewQWidget(nil, 0)
+	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
+	widget.SetParent(win.widget)
+	widget.SetFixedSize2(font.lineHeight * 4 / 3, font.lineHeight * 4 / 3)
+	widget.Show()
+	widget.ConnectPaintEvent(func(e *gui.QPaintEvent) {
+		p := gui.NewQPainter2(widget)
+		p.SetRenderHint(gui.QPainter__Antialiasing, true)
+		p.SetRenderHint(gui.QPainter__HighQualityAntialiasing, true)
+		rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
+
+		x := float64(font.lineHeight * 2 / 3)
+		y := float64(font.lineHeight * 2 / 3)
+		r := float64(font.lineHeight * 2 / 3)
+		point := core.NewQPointF3(x,y)
+
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.1)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r,
+			r,
+		)
+
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.2)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r*0.9,
+			r*0.9,
+		)
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.3)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r*0.85,
+			r*0.85,
+		)
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.4)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r*0.8,
+			r*0.8,
+		)
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.7)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r*0.7,
+			r*0.7,
+		)
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.9)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r*0.65,
+			r*0.65,
+		)
+
+		p.DestroyQPainter()
+	})
+	widget.Move2(
+		event.Pos().X() - font.lineHeight * 2 / 3 - 1,
+		event.Pos().Y() - font.lineHeight * 2 / 3 - 1,
+	)
+	s.mouseEvent(event)
+
+	eff := widgets.NewQGraphicsOpacityEffect(widget)
+	widget.SetGraphicsEffect(eff)
+	a := core.NewQPropertyAnimation2(eff, core.NewQByteArray2("opacity", len("opacity")), widget)
+	a.SetDuration(500)
+	a.SetStartValue(core.NewQVariant5(1))
+	a.SetEndValue(core.NewQVariant5(0))
+	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuart))
+	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		widget.Hide()
+		s.update()
+	}()
 }
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {

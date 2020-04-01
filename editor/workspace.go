@@ -545,7 +545,6 @@ func (w *Workspace) getNvimOptions() {
 			metakeyCount++
 		}
 	}
-	fmt.Println(altkeyCount, metakeyCount)
 	if altkeyCount >= metakeyCount {
 		editor.prefixToMapMetaKey = "A-"
 	} else {
