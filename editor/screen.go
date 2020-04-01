@@ -1125,18 +1125,59 @@ func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
 	widget.Show()
 	widget.ConnectPaintEvent(func(e *gui.QPaintEvent) {
 		p := gui.NewQPainter2(widget)
+		p.SetRenderHint(gui.QPainter__Antialiasing, true)
+		p.SetRenderHint(gui.QPainter__HighQualityAntialiasing, true)
 		rgbAccent := hexToRGBA(editor.config.SideBar.AccentColor)
-		p.SetPen2(rgbAccent.QColor())
-		for i := 0; i < font.lineHeight * 2 / 3; i++ {
-			p.DrawEllipse4(
-				core.NewQPointF3(
-					float64(font.lineHeight * 2 / 3),
-					float64(font.lineHeight * 2 / 3),
-				),
-				float64(font.lineHeight) * 1.98 / 3.00 - float64(i),
-				float64(font.lineHeight) * 1.98 / 3.00 - float64(i),
-			)
-		}
+
+		x := float64(font.lineHeight * 2 / 3)
+		y := float64(font.lineHeight * 2 / 3)
+		r := float64(font.lineHeight * 2 / 3)
+		point := core.NewQPointF3(x,y)
+
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.1)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r,
+			r,
+		)
+
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.2)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r*0.9,
+			r*0.9,
+		)
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.3)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r*0.85,
+			r*0.85,
+		)
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.4)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r*0.8,
+			r*0.8,
+		)
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.7)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r*0.7,
+			r*0.7,
+		)
+		rgbAccent = newRGBA(rgbAccent.R, rgbAccent.G, rgbAccent.B, 0.9)
+		p.SetBrush(gui.NewQBrush3(rgbAccent.QColor(), core.Qt__SolidPattern))
+		p.DrawEllipse4(
+			point,
+			r*0.65,
+			r*0.65,
+		)
+
 		p.DestroyQPainter()
 	})
 	widget.Move2(
@@ -1151,7 +1192,7 @@ func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
 	a.SetDuration(500)
 	a.SetStartValue(core.NewQVariant5(1))
 	a.SetEndValue(core.NewQVariant5(0))
-	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutBack))
+	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuart))
 	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 	go func() {
 		time.Sleep(500 * time.Millisecond)
