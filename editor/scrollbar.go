@@ -106,6 +106,15 @@ func (s *ScrollBar) scroll(v, h int) {
 	if !ok {
 		return
 	}
+
+	// Detect current mode
+	mode := win.s.ws.mode
+	if mode == "terminal-input" {
+		win.s.ws.nvim.Input(`<C-\><C-n>`)
+	} else if mode != "normal" {
+		win.s.ws.nvim.Input(win.s.ws.escKeyInInsert)
+	}
+
 	font := win.getFont()
 
 	isStopScroll := !s.isPressed
@@ -123,14 +132,6 @@ func (s *ScrollBar) scroll(v, h int) {
 		vertKey = "Up"
 	} else {
 		vertKey = "Down"
-	}
-
-	// Detect current mode
-	mode := win.s.ws.mode
-	if mode != "normal" {
-		win.s.ws.nvim.Input(win.s.ws.escKeyInInsert)
-	} else if mode == "terminal-input" {
-		win.s.ws.nvim.Input(`<C-\><C-n>`)
 	}
 
 	if win.s.ws.isMappingScrollKey {

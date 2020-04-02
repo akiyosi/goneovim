@@ -958,6 +958,14 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 	var horizKey string
 	font := win.getFont()
 
+	// Detect current mode
+	mode := win.s.ws.mode
+	if mode == "terminal-input" {
+		win.s.ws.nvim.Input(`<C-\><C-n>`)
+	} else if mode != "normal" {
+		win.s.ws.nvim.Input(win.s.ws.escKeyInInsert)
+	}
+
 	pixels := event.PixelDelta()
 	if pixels != nil {
 		v = pixels.Y()
@@ -1013,13 +1021,6 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 		}
 	}
 
-	// Detect current mode
-	mode := win.s.ws.mode
-	if mode != "normal" {
-		win.s.ws.nvim.Input(win.s.ws.escKeyInInsert)
-	} else if mode == "terminal-input" {
-		win.s.ws.nvim.Input(`<C-\><C-n>`)
-	}
 
 	mod := event.Modifiers()
 
@@ -1036,7 +1037,7 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	// Do not scroll horizontal if vertical scroll amount is greater than horizontal that
-	if math.Abs(float64(vert)) > math.Abs(float64(horiz)) {
+	if math.Abs(float64(vert)) * 6 > math.Abs(float64(horiz)) {
 		return
 	}
 
