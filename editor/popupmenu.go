@@ -578,20 +578,52 @@ func (p *PopupItem) setKind(kind string, selected bool) {
 		}
 	}
 
-	lowerKindText := strings.ToLower(kind)
-	switch lowerKindText {
-	case "function", "func":
-		icon := editor.getSvg("lsp_function", colorOfFunc)
-		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "var", "statement", "instance", "param", "import":
-		icon := editor.getSvg("lsp_variable", colorOfStatement)
-		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "class", "type", "struct":
-		icon := editor.getSvg("lsp_class", colorOfType)
-		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
-	case "const", "module", "keyword", "package":
-		icon := editor.getSvg("lsp_"+lowerKindText, colorOfKeyword)
-		p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+	formattedKind := normalizeKind(kind)
+
+	icon := ""
+	switch formattedKind {
+	case "text" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
+	case "method", "function", "constructor" :
+		icon = editor.getSvg("lsp_function", colorOfFunc)
+	case "field", "variable", "property" :
+		icon = editor.getSvg("lsp_variable", colorOfFunc)
+	case "class" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfFunc)
+	case "interface" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfFunc)
+	case "module" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
+	case "unit" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfStatement)
+	case "value" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
+	case "enum" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfType)
+	case "keyword" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
+	case "snippet" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
+	case "color" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
+	case "file" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfType)
+	case "reference" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfType)
+	case "folder" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfType)
+	case "enummember" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
+	case "constant" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
+	case "struct" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfStatement)
+	case "event" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfStatement)
+	case "operato" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfStatement)
+	case "typeparameter" :
+		icon = editor.getSvg("lsp_"+formattedKind, colorOfType)
 	default:
 		iconColor := warpColor(editor.colors.fg, -45)
 		switch p.p.completeMode {
@@ -608,13 +640,86 @@ func (p *PopupItem) setKind(kind string, selected bool) {
 			"omni",
 			"spell",
 			"eval":
-			icon := editor.getSvg("vim_"+p.p.completeMode, iconColor)
+			icon = editor.getSvg("vim_"+p.p.completeMode, iconColor)
 			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 		default:
-			icon := editor.getSvg("vim_unknown", iconColor)
+			icon = editor.getSvg("vim_unknown", iconColor)
 			p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
 		}
 	}
+	p.kindIcon.Load2(core.NewQByteArray2(icon, len(icon)))
+
+}
+
+func normalizeKind(kind string) string {
+// Completion kinds is
+//   Text
+//   Method
+//   Function
+//   Constructor
+//   Field
+//   Variable
+//   Class
+//   Interface
+//   Module
+//   Property
+//   Unit
+//   Value
+//   Enum
+//   Keyword
+//   Snippet
+//   Color
+//   File
+//   Reference
+//   Folder
+//   EnumMember
+//   Constant
+//   Struct
+//   Event
+//   Operator
+//   TypeParameter
+	if len(kind) == 1 {
+		switch kind {
+		case "v":
+			return "variable" // equate with "text", "value", "color", "constant"
+		case "f":
+			return "function" // equate with "method", "constructor"
+		case "m":
+			return "field"    // equate with "property", "enumMember"
+		case "C":
+			return "class"
+		case "I":
+			return "interface"
+		case "M":
+			return "module"
+		case "U":
+			return "unit"
+		case "E":
+			return "enum"     // equate with "event"??
+		case "k":
+			return "keyword"
+		case "S":
+			return "snippet"  // equate with "struct"??
+		case "F":
+			return "file"     // equate with "folder"
+		case "r":
+			return "reference"
+		case "O":
+			return "operator"
+		case "T":
+			return "typeparameter"
+		}
+	}
+
+	lowerKindText := strings.ToLower(kind)
+	switch lowerKindText {
+	case "func", "instance" :
+		return "function"
+	case "var", "statement", "param", "const":
+		return "variable"
+	}
+
+	return lowerKindText
 }
 
 func (p *PopupItem) hide() {

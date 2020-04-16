@@ -328,6 +328,8 @@ func (c *gonvimConfig) init() {
 	c.Editor.ExtMessages = false
 	c.Editor.DrawBorder = false
 
+	c.Editor.Linespace = 6
+
 	// Indent guide
 	c.Editor.IndentGuide = true
 
