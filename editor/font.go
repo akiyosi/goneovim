@@ -100,6 +100,7 @@ func (f *Font) change(family string, size float64) {
 	f.ws.screen.purgeTextCacheForWins()
 }
 
+
 func (f *Font) changeLineSpace(lineSpace int) {
 	f.lineSpace = lineSpace
 	f.lineHeight = f.height + lineSpace

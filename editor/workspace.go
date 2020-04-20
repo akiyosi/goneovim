@@ -1239,7 +1239,7 @@ func (w *Workspace) guiFont(args string) {
 	if args == "" {
 		return
 	}
-	var height float64
+	var fontHeight float64
 	var fontFamily string
 
 	if args == "*" {
@@ -1248,41 +1248,26 @@ func (w *Workspace) guiFont(args string) {
 		fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
 		fDialog.ConnectFontSelected(func(font *gui.QFont) {
 			fontFamily = font.Family()
-			height = font.PointSizeF()
-			w.guiFont(fmt.Sprintf("%s:%f", fontFamily, height))
+			fontHeight = font.PointSizeF()
+			w.guiFont(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
 		})
 		fDialog.Show()
 		return
 	}
-	parts := strings.Split(args, ":")
-	if len(parts) < 1 {
-		return
-	}
 
-	for _, p := range parts[1:] {
-		if strings.HasPrefix(p, "h") {
-			var err error
-			// height, err = strconv.Atoi(p[1:])
-			height, err = strconv.ParseFloat(p[1:], 64)
-			if err != nil {
-				return
-			}
-		} else if strings.HasPrefix(p, "w") {
-			var err error
-			// width, err := strconv.Atoi(p[1:])
-			width, err := strconv.ParseFloat(p[1:], 64)
-			if err != nil {
-				return
-			}
-			height = 2.0 * width
+	for _, gfn := range strings.Split(args, ",") {
+		fontFamily, fontHeight = getFontFamilyAndHeight(gfn)
+		ok := checkValidFont(fontFamily)
+		if ok {
+			break
 		}
 	}
-	fontFamily = parts[0]
-	if height == 0 {
-		height = 14.0
+
+	if fontHeight == 0 {
+		fontHeight = 10.0
 	}
 
-	w.font.change(fontFamily, height)
+	w.font.change(fontFamily, fontHeight)
 	w.screen.font = w.font
 
 	w.updateSize()
@@ -1296,13 +1281,48 @@ func (w *Workspace) guiFont(args string) {
 		editor.extFontFamily = fontFamily
 	}
 	if editor.config.Editor.FontSize == 0 {
-		editor.extFontSize = int(height)
+		editor.extFontSize = int(fontHeight)
 	}
 
 	w.palette.updateFont()
 	w.fpalette.updateFont()
 	w.tabline.updateFont()
 	w.statusline.updateFont()
+}
+
+func getFontFamilyAndHeight(s string) (string, float64) {
+	parts := strings.Split(s, ":")
+	height := 10.0
+	if len(parts) > 1 {
+		for _, p := range parts[1:] {
+			if strings.HasPrefix(p, "h") {
+				var err error
+				// height, err = strconv.Atoi(p[1:])
+				height, err = strconv.ParseFloat(p[1:], 64)
+				if err != nil {
+					height = 10.0
+				}
+			} else if strings.HasPrefix(p, "w") {
+				var err error
+				// width, err := strconv.Atoi(p[1:])
+				width, err := strconv.ParseFloat(p[1:], 64)
+				if err != nil {
+					height = 10.0
+				}
+				height = 2.0 * width
+			}
+		}
+	}
+	family := parts[0]
+
+	return family, height
+}
+
+func checkValidFont(family string) bool {
+	f := gui.NewQFont2(family, 10.0, 1, false)
+	fi := gui.NewQFontInfo(f)
+
+	return strings.EqualFold(fi.Family(), f.Family())
 }
 
 func (w *Workspace) guiLinespace(args interface{}) {
