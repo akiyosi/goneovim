@@ -38,6 +38,7 @@ type workspaceSignal struct {
 type Workspace struct {
 	widget     *widgets.QWidget
 	font       *Font
+	fontwide   *Font
 	cursor     *Cursor
 	tabline    *Tabline
 	statusline *Statusline
@@ -1058,6 +1059,7 @@ func (w *Workspace) setOption(update []interface{}) {
 			w.guiFont(val.(string))
 		case "guifontset":
 		case "guifontwide":
+			w.guiFontWide(val.(string))
 		case "linespace":
 			w.guiLinespace(val)
 		case "pumblend":
@@ -1288,6 +1290,52 @@ func (w *Workspace) guiFont(args string) {
 	w.fpalette.updateFont()
 	w.tabline.updateFont()
 	w.statusline.updateFont()
+}
+
+func (w *Workspace) guiFontWide(args string) {
+	if args == "" {
+		return
+	}
+
+	if w.fontwide == nil {
+		w.fontwide = initFontNew(editor.extFontFamily, float64(editor.extFontSize), editor.config.Editor.Linespace, false)
+		w.fontwide.ws = w
+		w.cursor.fontwide = w.fontwide
+	}
+
+	var fontHeight float64
+	var fontFamily string
+
+	if args == "*" {
+		fDialog := widgets.NewQFontDialog(nil)
+		fDialog.SetOption(widgets.QFontDialog__MonospacedFonts, true)
+		fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
+		fDialog.ConnectFontSelected(func(font *gui.QFont) {
+			fontFamily = font.Family()
+			fontHeight = font.PointSizeF()
+			w.guiFontWide(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
+		})
+		fDialog.Show()
+		return
+	}
+
+	for _, gfn := range strings.Split(args, ",") {
+		fontFamily, fontHeight = getFontFamilyAndHeight(gfn)
+		ok := checkValidFont(fontFamily)
+		if ok {
+			break
+		}
+	}
+
+	if fontHeight == 0 {
+		fontHeight = 10.0
+	}
+
+	w.fontwide.change(fontFamily, fontHeight)
+
+	w.updateSize()
+	// w.cursor.updateFont(w.font)
+	// w.screen.toolTipFont(w.font)
 }
 
 func getFontFamilyAndHeight(s string) (string, float64) {

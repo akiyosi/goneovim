@@ -29,6 +29,7 @@ type Cursor struct {
 	bg          *RGBA
 	brend       float64
 	font        *Font
+	fontwide    *Font
 
 	isNeedUpdateModeInfo bool
 	modeInfoModeIdx      int
@@ -62,7 +63,18 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	if font == nil {
 		return
 	}
-	p.SetFont(font.fontNew)
+
+	// if guifontwide is set
+	shift := float64(font.lineSpace)/2 + font.ascent
+	if !c.normalWidth && c.fontwide != nil {
+		p.SetFont(c.fontwide.fontNew)
+		if c.fontwide.lineHeight > font.lineHeight {
+			shift = shift + c.fontwide.ascent - font.ascent
+		}
+	} else {
+		p.SetFont(font.fontNew)
+	}
+
 	p.SetPen2(c.fg.QColor())
 
 	width := font.truewidth
@@ -83,7 +95,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	p.DrawText(
 		core.NewQPointF3(
 			0,
-			float64(font.shift),
+			shift,
 		),
 		c.text,
 	)
