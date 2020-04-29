@@ -150,6 +150,7 @@ type editorConfig struct {
 	DiffAddPattern           int
 	DiffDeletePattern        int
 	DiffChangePattern        int
+	ClickEffect              bool
 	// ExtWildmenu            bool
 	// ExtMultigrid           bool
 }

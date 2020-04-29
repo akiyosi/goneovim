@@ -152,7 +152,9 @@ func newScreen() *Screen {
 	widget.ConnectDragEnterEvent(screen.dragEnterEvent)
 	widget.ConnectDragMoveEvent(screen.dragMoveEvent)
 	widget.ConnectDropEvent(screen.dropEvent)
-	widget.ConnectMousePressEvent(screen.mousePressEvent)
+	if editor.config.Editor.ClickEffect {
+		widget.ConnectMousePressEvent(screen.mousePressEvent)
+	}
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
