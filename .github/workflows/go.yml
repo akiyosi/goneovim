@@ -13,7 +13,9 @@ jobs:
     steps:
     - name: Linux prerequisites 
       if: matrix.platform == 'ubuntu-latest'
-      run: sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev
+      run: |
+        sudo apt update && \
+        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev
 
     - name: Install Go
       uses: actions/setup-go@v1
