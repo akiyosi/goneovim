@@ -2387,6 +2387,7 @@ func (w *Window) newTextCache(text string, highlight Highlight, isNormalWidth bo
 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
 
 	font := w.getFont()
+
 	width := float64(len(text)) * font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
@@ -2410,7 +2411,12 @@ func (w *Window) newTextCache(text string, highlight Highlight, isNormalWidth bo
 	pi := gui.NewQPainter2(image)
 	pi.SetPen2(fg.QColor())
 
-	pi.SetFont(font.fontNew)
+	if !isNormalWidth && w.font == nil && w.s.ws.fontwide != nil {
+		pi.SetFont(w.s.ws.fontwide.fontNew)
+	} else {
+		pi.SetFont(font.fontNew)
+	}
+
 	if highlight.bold {
 		pi.Font().SetBold(true)
 	}
@@ -2528,17 +2534,26 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 	}
 
-	for _, x := range specialChars {
-		if line[x] == nil || line[x].char == " " {
-			continue
+	if len(specialChars) >= 1 {
+		if w.s.ws.fontwide != nil && w.font == nil && w.s.ws.fontwide != nil {
+			p.SetFont(w.s.ws.fontwide.fontNew)
+			font = p.Font()
 		}
-		fg := line[x].highlight.fg()
-		p.SetPen2(fg.QColor())
-		pointF.SetX(float64(x) * wsfont.truewidth)
-		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift + w.scrollDust[1]))
-		font.SetBold(line[x].highlight.bold)
-		font.SetItalic(line[x].highlight.italic)
-		p.DrawText(pointF, line[x].char)
+		for _, x := range specialChars {
+			if line[x] == nil || line[x].char == " " {
+				continue
+			}
+			fg := line[x].highlight.fg()
+			p.SetPen2(fg.QColor())
+			pointF.SetX(float64(x) * wsfont.truewidth)
+			pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift + w.scrollDust[1]))
+			font.SetBold(line[x].highlight.bold)
+			font.SetItalic(line[x].highlight.italic)
+			p.DrawText(pointF, line[x].char)
+		}
+		if w.s.ws.fontwide != nil && w.font == nil && w.s.ws.fontwide != nil {
+			p.SetFont(w.getFont().fontNew)
+		}
 	}
 }
 
