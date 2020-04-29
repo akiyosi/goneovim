@@ -1,7 +1,10 @@
 [Desktop Entry]
-Type=Application
 Name=Goneovim
 Comment=Goneovim - Neovim GUI
+MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
+Type=Application
 # You should deploy nvim under the $PATH such as /usr/bin
-Exec=/path/to/goneovim/goneovim
+Exec=/path/to/goneovim/goneovim %F
 Icon=/path/to/goneovim.ico
+Terminal=false
+Categories=Utility;TextEditor;
