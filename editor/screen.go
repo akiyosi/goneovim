@@ -2852,6 +2852,7 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		win.pos[1] = msgCount
 		win.move(win.pos[0], win.pos[1])
 		win.show()
+		win.raise()  // Fix #111
 	}
 }
 
