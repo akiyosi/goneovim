@@ -152,9 +152,7 @@ func newScreen() *Screen {
 	widget.ConnectDragEnterEvent(screen.dragEnterEvent)
 	widget.ConnectDragMoveEvent(screen.dragMoveEvent)
 	widget.ConnectDropEvent(screen.dropEvent)
-	if editor.config.Editor.ClickEffect {
-		widget.ConnectMousePressEvent(screen.mousePressEvent)
-	}
+	widget.ConnectMousePressEvent(screen.mousePressEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
 	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
@@ -1115,6 +1113,11 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 }
 
 func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
+	s.mouseEvent(event)
+	if !editor.config.Editor.ClickEffect {
+		return
+	}
+
 	win, ok := s.getWindow(s.ws.cursor.gridid)
 	if !ok {
 		return
@@ -1187,7 +1190,6 @@ func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
 		event.Pos().X() - font.lineHeight * 2 / 3 - 1,
 		event.Pos().Y() - font.lineHeight * 2 / 3 - 1,
 	)
-	s.mouseEvent(event)
 
 	eff := widgets.NewQGraphicsOpacityEffect(widget)
 	widget.SetGraphicsEffect(eff)
@@ -2852,7 +2854,8 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		win.pos[1] = msgCount
 		win.move(win.pos[0], win.pos[1])
 		win.show()
-		win.raise()  // Fix #111
+		win.widget.Raise()  // Fix #111
+
 	}
 }
 
