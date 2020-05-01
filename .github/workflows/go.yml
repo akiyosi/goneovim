@@ -14,7 +14,7 @@ jobs:
     - name: Linux prerequisites 
       if: matrix.platform == 'ubuntu-latest'
       run: |
-        sudo apt update && \
+        sudo apt update
         sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev
 
     - name: Install Go
@@ -39,6 +39,12 @@ jobs:
 
     - name: Get Qt binding for Go
       run: go get -v github.com/therecipe/qt/cmd/...
+
+    - name: Free disk space
+      run: |
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt clean
 
     - name: Generate Qt bindings
       run: $(go env GOPATH)/bin/qtsetup
