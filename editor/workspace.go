@@ -1432,12 +1432,17 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 	return core.NewQVariant()
 }
 
-func (w *Workspace) getPointInWidget(col, row, grid int) (int, int) {
+func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {
 	win, ok := w.screen.getWindow(grid)
 	if !ok {
-		return 0, 0
+		return 0, 0, w.font.lineHeight, false
 	}
 	font := win.getFont()
+
+	isCursorBelowTheCenter := false
+	if row*font.lineHeight > w.screen.height/2 {
+		isCursorBelowTheCenter = true
+	}
 
 	x := int(float64(col) * font.truewidth)
 	y := row * font.lineHeight
@@ -1447,7 +1452,7 @@ func (w *Workspace) getPointInWidget(col, row, grid int) (int, int) {
 	x += int(float64(win.pos[0]) * font.truewidth)
 	y += win.pos[1] * font.lineHeight
 
-	return x, y
+	return x, y, font.lineHeight, isCursorBelowTheCenter
 }
 
 // WorkspaceSide is

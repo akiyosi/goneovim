@@ -115,7 +115,7 @@ func (s *Signature) move() {
 	col := s.ws.screen.cursor[1] + s.cusor[1]
 	i := strings.Index(text, "(")
 
-	x, y := s.ws.getPointInWidget(col, row, s.ws.cursor.gridid)
+	x, y, _, _ := s.ws.getPointInWidget(col, row, s.ws.cursor.gridid)
 	if i > -1 {
 		y -= s.widget.Height()
 	}

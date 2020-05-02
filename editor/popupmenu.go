@@ -245,6 +245,8 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.selected = selected
 	p.top = 0
 
+	x, y, lineHeight, isCursorBelowTheCenter := p.ws.getPointInWidget(col, row, gridid)
+
 	// Detect vim complete mode
 	completeMode, err := detectVimCompleteMode()
 	if err == nil {
@@ -254,13 +256,18 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.detailLabel.SetText("")
 
 	popupItems := p.items
-	itemHeight := (p.ws.font.lineHeight)+(editor.config.Editor.Linespace+4)
+	itemHeight := (lineHeight)+(editor.config.Editor.Linespace+4)
 
 	// Calc the maximum completion items
 	//   where,
 	//     `row` is the anchor position, where the first character of the completed word will be
 	//     `p.ws.screen.height` is the entire screen height
-	heightLeft := p.ws.screen.height - (row+1)*p.ws.font.lineHeight
+	heightLeft := 0
+	if isCursorBelowTheCenter {
+		heightLeft = row*lineHeight
+	} else {
+		heightLeft = p.ws.screen.height - (row+1)*lineHeight
+	}
 	total := heightLeft / itemHeight
 	if total < p.total {
 		p.showTotal = total
@@ -317,7 +324,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.hide()
 	p.show()
 	p.setWidgetWidth()
-	p.moveWidget(gridid, col, row, itemNum)
+	p.moveWidget(x, y, lineHeight, isCursorBelowTheCenter, itemNum)
 }
 
 func (p *PopupMenu) detectItemLen(item []interface{}) int {
@@ -388,17 +395,24 @@ func (p *PopupMenu) setWidgetWidth() {
 	)
 }
 
-func (p *PopupMenu) moveWidget(gridid, col, row, itemNum int) {
+func (p *PopupMenu) moveWidget(x int, y int, lineHeight int, isCursorBelowTheCenter bool, itemNum int) {
 	popupWidth := p.widget.Width()
 
-	x, y := p.ws.getPointInWidget(col, row, gridid)
-	y += p.ws.font.lineHeight
+	// x, y, lineHeight, isCursorBelowTheCenter := p.ws.getPointInWidget(col, row, gridid)
+	y += lineHeight
 
 	if x+popupWidth >= p.ws.screen.widget.Width() {
 		x = p.ws.screen.widget.Width() - popupWidth - 5
 	}
 
-	p.widget.SetFixedHeight(itemNum*(p.ws.font.lineHeight+editor.config.Editor.Linespace+2) + 2 + editor.iconSize*2/5)
+	popupHeight := itemNum*(lineHeight+editor.config.Editor.Linespace+2) + 2 + editor.iconSize*2/5
+	p.widget.SetFixedHeight(popupHeight)
+
+	if isCursorBelowTheCenter {
+		y = y - (lineHeight + popupHeight)
+		p.widget.SetGraphicsEffect(util.DropShadow(-2, -6, 40, 200))
+	}
+
 	p.widget.Move2(x, y)
 }
 

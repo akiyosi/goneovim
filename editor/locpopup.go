@@ -125,7 +125,7 @@ func (l *Locpopup) updatePos() {
 
 	col := l.ws.screen.cursor[1]
 	row := l.ws.screen.cursor[0]
-	x, y := l.ws.getPointInWidget(col, row, l.ws.cursor.gridid)
+	x, y, _, _ := l.ws.getPointInWidget(col, row, l.ws.cursor.gridid)
 
 	if row < 3 {
 		y += l.widget.Height()
