@@ -7,105 +7,6 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// gonvimConfig is the following toml file
-// # Goneovim config toml
-// [editor]
-// ui = "trans"
-// width = 1000  # >= 400
-// height = 800  # >= 300
-// fontFamily = "FuraCode Nerd Font Mono"
-// fontsize = 18
-// linespace = 10
-// clipboard = true
-// cursorBlink = true
-// indentGuide = true
-// cachedDrawing = false
-// disableIMEinNormal = true
-// startFullScreen = true
-// transparent = 0.5
-// desktopNotifications = true
-// // -- diffpattern enum --
-// // SolidPattern             1
-// // Dense1Pattern            2
-// // Dense2Pattern            3
-// // Dense3Pattern            4
-// // Dense4Pattern            5
-// // Dense5Pattern            6
-// // Dense6Pattern            7
-// // Dense7Pattern            8
-// // HorPattern               9
-// // VerPattern               10
-// // CrossPattern             11
-// // BDiagPattern             12
-// // FDiagPattern             13
-// // DiagCrossPattern         14
-// // LinearGradientPattern    15
-// // RadialGradientPattern    16
-// // ConicalGradientPattern   17
-// // TexturePattern           24
-// diffdeletepattern = 12
-// diffchangepattern = 12
-// diffaddpattern = 1
-// SkipGlobalId = true
-//
-// [palette]
-// AreaRatio = 0.8
-// MaxNumberOfResultItems = 40
-//
-// [statusLine]
-// visible = true
-// # textLabel / icon / background / none
-// modeIndicatorType = "icon"
-// normalModeColor = "#123456"
-// commandModeColor = "#123456"
-// insertModeColor = "#123456"
-// replaceModeColor = "#123456"
-// visualModeColor = "#123456"
-// termnalModeColor = "#123456"
-// left = [ "mode", "filepath", "filename" ]
-// right = [ "message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint" ]
-//
-// [tabline]
-// visible = true
-//
-// [Popupmenu]
-// showSetail = false
-// total = 20
-//
-// [lint]
-// visible = true
-//
-// [scrollBar]
-// visible = true
-//
-// [activityBar]
-// visible = true
-// dropshadow = true
-//
-// [miniMap]
-// visible = true
-// disable = false
-// width = 120
-//
-// [sideBar]
-// visible = false
-// dropshadow = true
-// width = 360
-// accentColor = "#5596ea"
-//
-// [workspace]
-// # Path style
-// #   full: fullpath,
-// #   name: directory name only,
-// #   minimum: only the last directory is full name, middle directory is short form
-// pathStyle = minimum
-// FileExplorerOpenCmd = ":tabew"
-//
-// # restore the previous sessions if there are exists.
-// restoreSession = false
-//
-// [dein]
-// tomlFile
 type gonvimConfig struct {
 	Editor      editorConfig
 	Palette     paletteConfig
@@ -115,12 +16,10 @@ type gonvimConfig struct {
 	Lint        lintConfig
 	Popupmenu   popupMenuConfig
 	ScrollBar   scrollBarConfig
-	ActivityBar activityBarConfig
 	MiniMap     miniMapConfig
 	SideBar     sideBarConfig
 	Workspace   workspaceConfig
 	FileExplore fileExploreConfig
-	Dein        deinConfig
 }
 
 type editorConfig struct {
@@ -204,11 +103,6 @@ type scrollBarConfig struct {
 	Visible bool
 }
 
-type activityBarConfig struct {
-	Visible    bool
-	DropShadow bool
-}
-
 type sideBarConfig struct {
 	Visible     bool
 	DropShadow  bool
@@ -224,10 +118,6 @@ type workspaceConfig struct {
 type fileExploreConfig struct {
 	OpenCmd         string
 	MaxDisplayItems int
-}
-
-type deinConfig struct {
-	TomlFile string
 }
 
 func newGonvimConfig(home string) gonvimConfig {
@@ -352,7 +242,7 @@ func (c *gonvimConfig) init() {
 
 	c.Tabline.Visible = true
 
-	c.Lint.Visible = true
+	c.Lint.Visible = false
 
 	c.Popupmenu.ShowDetail = true
 	c.Popupmenu.Total = 20
