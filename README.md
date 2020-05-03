@@ -4,7 +4,7 @@
 
 ![test](https://github.com/akiyosi/goneovim/workflows/test/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/goneovim)](https://goreportcard.com/report/github.com/akiyosi/goneovim)
-![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.4.5/total)
+![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.4.6/total)
 [![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
 
 *GoNeovim* is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
@@ -29,7 +29,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
   - [x] Support High DPI scaling
 - Features as neovim GUI
   - [x] Externalizable tabline, popupmenu, wildmenu, cmdline, messsages
-  - [x] Support gui option: `guifont`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
+  - [x] Support gui option: `guifont`, `guifontwide`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
   - [x] Support mouse selections
   - [x] Supports border drawing and shadow drawing of float window
   - [x] Independent font settings per window (currently experimental)
