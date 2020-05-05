@@ -240,7 +240,9 @@ func (w *Workspace) registerSignal() {
 	})
 	w.signal.ConnectStopSignal(func() {
 		if !w.uiRemoteAttached {
-			editor.workspaces[editor.active].minimap.exit()
+			if !editor.config.MiniMap.Disable {
+				editor.workspaces[editor.active].minimap.exit()
+			}
 		}
 		workspaces := []*Workspace{}
 		index := 0
