@@ -19,7 +19,6 @@ const DummyText = "dummy text"
 // Message is
 type Message struct {
 	ws       *Workspace
-	kind     string
 	width    int
 	widget   *widgets.QWidget
 	layout   *widgets.QGridLayout

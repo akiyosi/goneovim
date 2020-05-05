@@ -2121,9 +2121,9 @@ func (s *Screen) update() {
 }
 
 // deprecated method
-func (w *Window) queueRedrawAll() {
-	w.queueRedrawArea = [4]int{0, 0, w.cols, w.rows}
-}
+// func (w *Window) queueRedrawAll() {
+// 	w.queueRedrawArea = [4]int{0, 0, w.cols, w.rows}
+// }
 
 // deprecated method
 func (w *Window) queueRedraw(x, y, width, height int) {

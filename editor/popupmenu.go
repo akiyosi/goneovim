@@ -25,7 +25,6 @@ type PopupMenu struct {
 	total           int
 	showTotal       int
 	selected        int
-	hidden          bool
 	top             int
 	completeMode    string
 	scrollBar       *widgets.QWidget

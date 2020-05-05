@@ -69,4 +69,12 @@ jobs:
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
-      
+
+
+    - name: Upload for linux
+      if: matrix.platform == 'ubuntu-latest'
+      uses: actions/upload-artifact@v2
+      with:
+        name: Goneovim-latest-linux
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
+

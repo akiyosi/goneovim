@@ -563,22 +563,6 @@ func (w *Workspace) getColorscheme() {
 	w.colorscheme = colorscheme
 }
 
-func (w *Workspace) nvimCommandOutput(s string) (string, error) {
-	doneChannel := make(chan string, 5)
-	var result string
-	go func() {
-		result, _ = w.nvim.CommandOutput(s)
-		doneChannel <- result
-	}()
-	select {
-	case done := <-doneChannel:
-		return done, nil
-	case <-time.After(40 * time.Millisecond):
-		err := errors.New("neovim busy")
-		return "", err
-	}
-}
-
 func (w *Workspace) nvimEval(s string) (interface{}, error) {
 	doneChannel := make(chan interface{}, 5)
 	var result interface{}

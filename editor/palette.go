@@ -28,7 +28,6 @@ type Palette struct {
 	resultMainWidget *widgets.QWidget
 	itemHeight       int
 	width            int
-	cursor           *widgets.QWidget
 	cursorX          int
 	resultType       string
 	itemTypes        []string
@@ -111,11 +110,6 @@ func initPalette() *Palette {
 	patternWidget.SetLayout(patternLayout)
 	patternWidget.SetContentsMargins(padding, padding, padding, padding)
 
-	// cursor := widgets.NewQWidget(nil, 0)
-	// cursor.SetParent(pattern)
-	// cursor.SetFixedSize2(1, pattern.SizeHint().Height()-padding*2)
-	// cursor.Move2(padding, padding)
-
 	mainLayout.AddWidget(patternWidget, 0, 0)
 	mainLayout.AddWidget(resultMainWidget, 0, 0)
 
@@ -130,7 +124,6 @@ func initPalette() *Palette {
 		patternWidget:    patternWidget,
 		scrollCol:        scrollCol,
 		scrollBar:        scrollBar,
-		// cursor:           cursor,
 	}
 
 	resultItems := []*PaletteResultItem{}
