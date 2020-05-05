@@ -2539,7 +2539,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 
 	if len(specialChars) >= 1 {
-		if w.s.ws.fontwide != nil && w.font == nil && w.s.ws.fontwide != nil {
+		if w.s.ws.fontwide != nil && w.font == nil && w.s.ws.fontwide.fontNew != nil {
 			p.SetFont(w.s.ws.fontwide.fontNew)
 			font = p.Font()
 		}
@@ -2555,7 +2555,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			font.SetItalic(line[x].highlight.italic)
 			p.DrawText(pointF, line[x].char)
 		}
-		if w.s.ws.fontwide != nil && w.font == nil && w.s.ws.fontwide != nil {
+		if w.s.ws.fontwide != nil && w.font == nil {
 			p.SetFont(w.getFont().fontNew)
 		}
 	}
