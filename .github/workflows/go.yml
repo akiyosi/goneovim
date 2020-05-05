@@ -41,6 +41,11 @@ jobs:
     - name: Get Qt binding for Go
       run: go get -v github.com/therecipe/qt/cmd/...
 
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        path: ./src/github.com/${{ github.repository }}
+
     - name: Free disk space
       run: |
         sudo swapoff -a
@@ -49,11 +54,6 @@ jobs:
 
     - name: Generate Qt bindings
       run: $(go env GOPATH)/bin/qtsetup
-
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        path: ./src/github.com/${{ github.repository }}
 
     - name: Get dependencies
       run: |
