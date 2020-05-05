@@ -75,12 +75,12 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Goneovim-latest-linux
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux/
 
     - name: Upload for macos
       if: matrix.platform == 'macos-latest'
       uses: actions/upload-artifact@v2
       with:
-        name: Goneovim-latest-macos
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin
+        name: goneovim.app
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app
 
