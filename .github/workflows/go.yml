@@ -67,5 +67,6 @@ jobs:
 
     - name: Build
       run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
       
