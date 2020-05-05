@@ -6,7 +6,7 @@ jobs:
       matrix:
         # go-version: [1.12.x, 1.13.x]
         go-version: [1.13.x]
-        platform: [ubuntu-latest] # , macos-latest] #, windows-latest]
+        platform: [ubuntu-latest, macos-latest] #, windows-latest]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -70,11 +70,17 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
 
-
     - name: Upload for linux
       if: matrix.platform == 'ubuntu-latest'
       uses: actions/upload-artifact@v2
       with:
         name: Goneovim-latest-linux
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
+
+    - name: Upload for macos
+      if: matrix.platform == 'macos-latest'
+      uses: actions/upload-artifact@v2
+      with:
+        name: Goneovim-latest-macos
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin
 
