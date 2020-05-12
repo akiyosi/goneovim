@@ -2803,6 +2803,17 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			continue
 		}
 
+		// In multigrid ui, the completion float window on the message window appears to be misaligned.
+		// Therefore, a hack to workaround this problem is implemented on the GUI front-end side.
+		cursorgridwin, ok := s.getWindow(s.ws.cursor.gridid)
+		if !ok {
+			continue
+		}
+		if cursorgridwin.isMsgGrid {
+			anchorwin = cursorgridwin
+			anchorRow = cursorgridwin.pos[0]
+		}
+
 		var x, y int
 		switch win.anchor {
 		case "NW":
