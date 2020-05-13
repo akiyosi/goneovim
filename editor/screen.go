@@ -2791,8 +2791,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.id = arg.([]interface{})[1].(nvim.Window)
 		win.anchor = arg.([]interface{})[2].(string)
 		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
-		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
-		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
+		anchorRow := int(math.Abs(util.ReflectToFloat(arg.([]interface{})[4])))
+		anchorCol := int(math.Abs(util.ReflectToFloat(arg.([]interface{})[5])))
 		// focusable := arg.([]interface{})[6]
 
 		win.widget.SetParent(editor.wsWidget)
