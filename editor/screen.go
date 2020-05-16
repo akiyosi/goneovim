@@ -471,18 +471,20 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		y = ws.palette.patternPadding + ws.palette.padding
 		candY = y + ws.palette.widget.Pos().Y()
 	} else {
-		s.toolTipFont(s.font)
-		row := s.cursor[0]
-		col := s.cursor[1]
-		x = int(float64(col) * s.font.truewidth)
-		y = row * s.font.lineHeight
+
 		win, ok := s.getWindow(s.ws.cursor.gridid)
 		if !ok {
 			return 0, 0, 0, 0
 		}
+		font := win.getFont()
+		s.toolTipFont(font)
+		row := s.cursor[0]
+		col := s.cursor[1]
+		x = int(float64(col) * font.truewidth)
+		y = row * font.lineHeight
 
-		candX = int(float64(col+win.pos[0]) * s.font.truewidth)
-		candY = (row+win.pos[1])*s.font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
+		candX = int(float64(col+win.pos[0]) * font.truewidth)
+		candY = (row+win.pos[1])*font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
 	}
 	return x, y, candX, candY
 }

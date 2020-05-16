@@ -1401,7 +1401,7 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 
 // InputMethodQuery is
 func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
-	if query == core.Qt__ImCursorRectangle {
+	if query == core.Qt__ImMicroFocus || query == core.Qt__ImCursorRectangle {
 		x, y, candX, candY := w.screen.toolTipPos()
 		w.screen.toolTipMove(x, y)
 		imrect := core.NewQRect()
