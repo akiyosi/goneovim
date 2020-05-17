@@ -40,7 +40,7 @@ jobs:
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Install Qt for macOS
-      if: matrix.platform == 'ubuntu-latest'
+      if: matrix.platform == 'macos-latest'
       uses: jurplel/install-qt-action@v2
       with:
         version: 5.13.2
