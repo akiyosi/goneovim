@@ -87,22 +87,21 @@ jobs:
         chmod u+x goneovim QtWebEngineProcess
 
     - name: Copy dylib
-      if: matrix.platform == 'ubuntu-latest'
+      if: matrix.platform == 'macos-latest'
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents
-        cp -pR Frameworks/QtCore.framework             Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtDBus.framework             Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtGui.framework              Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtNetwork.framework          Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtPositioning.framework      Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtPrintSupport.framework     Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtQml.framework              Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtQuick.framework            Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtQuickWidgets.framework     Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtSerialPort.framework       Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtSvg.framework              Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtVirtualKeyboard.framework  Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
-        cp -pR Frameworks/QtWidgets.framework          Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/
+        mkdir Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
+        cp -pR Frameworks/QtCore.framework             Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
+        cp -pR Frameworks/QtGui.framework              Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
+        cp -pR Frameworks/QtNetwork.framework          Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
+        cp -pR Frameworks/QtPositioning.framework      Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
+        cp -pR Frameworks/QtQml.framework              Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
+        cp -pR Frameworks/QtQuick.framework            Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
+        cp -pR Frameworks/QtWidgets.framework          Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
+        mkdir Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework
+        cd Frameworks/QtWebEngineCore.framework
+        cp -pR Resources Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/
+        cp -pR Versions  Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/
 
     - name: Upload for linux
       if: matrix.platform == 'ubuntu-latest'
