@@ -2,6 +2,7 @@ package editor
 
 import (
 	"math"
+	"runtime"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
@@ -137,6 +138,12 @@ func (c *Cursor) move() {
 	)
 
 	c.ws.loc.updatePos()
+
+	// Fix #119: Wrong candidate window position when using ibus
+	if runtime.GOOS == "linux" {
+		gui.QGuiApplication_InputMethod().Update(core.Qt__ImCursorRectangle)
+	}
+
 }
 
 func (c *Cursor) updateFont(font *Font) {
