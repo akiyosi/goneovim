@@ -101,7 +101,6 @@ jobs:
         mkdir Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework
         cd Frameworks/QtWebEngineCore.framework
         cp -pR Resources Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/
-        cp -pR Versions  Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/
 
     - name: Upload for linux
       if: matrix.platform == 'ubuntu-latest'
