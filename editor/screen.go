@@ -1550,6 +1550,13 @@ func (s *Screen) setHlAttrDef(args []interface{}) {
 	} else {
 		h = s.hlAttrDef
 	}
+
+	isUpdateBg := true
+	curwin, ok := s.getWindow(s.ws.cursor.gridid)
+	if ok {
+		isUpdateBg = !curwin.background.equals(editor.colors.bg)
+	}
+
 	h[0] = &Highlight{
 		foreground: editor.colors.fg,
 		background: editor.colors.bg,
@@ -1563,27 +1570,29 @@ func (s *Screen) setHlAttrDef(args []interface{}) {
 	s.hlAttrDef = h
 
 	// Update all cell's highlight
-	s.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-		if win == nil {
-			return true
-		}
-		if !win.isShown() {
-			return true
-		}
-		if win.content == nil {
-			return true
-		}
-		for _, line := range win.content {
-			for _, cell := range line {
-				if cell != nil {
-					cell.highlight = *s.hlAttrDef[cell.highlight.id]
+	if isUpdateBg {
+		s.windows.Range(func(_, winITF interface{}) bool {
+			win := winITF.(*Window)
+			if win == nil {
+				return true
+			}
+			if !win.isShown() {
+				return true
+			}
+			if win.content == nil {
+				return true
+			}
+			for _, line := range win.content {
+				for _, cell := range line {
+					if cell != nil {
+						cell.highlight = *s.hlAttrDef[cell.highlight.id]
+					}
 				}
 			}
-		}
 
-		return true
-	})
+			return true
+		})
+	}
 }
 
 func (s *Screen) setHighlightGroup(args []interface{}) {
