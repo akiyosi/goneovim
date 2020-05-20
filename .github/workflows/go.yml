@@ -98,10 +98,18 @@ jobs:
         cp -pR Frameworks/QtQml.framework              Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
         cp -pR Frameworks/QtQuick.framework            Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
         cp -pR Frameworks/QtWidgets.framework          Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
+        cp -pR Frameworks/QtWebChannel.framework       Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
         mkdir Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework
         cd Frameworks/QtWebEngineCore.framework
-        cp -pR Resources Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/
-
+        cp -fpR Resources Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/
+        mkdir Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions
+        mkdir Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/5
+        mkdir Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/Current
+        cp -pR Versions/5/QtWebEngineCore       Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/5/
+        cp -pR Versions/5/Resources             Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/5/
+        cp -pR Versions/Current/QtWebEngineCore Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/Current/
+        cp -pR Versions/Current/Resources       Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/Current/
+        
     - name: Upload for linux
       if: matrix.platform == 'ubuntu-latest'
       uses: actions/upload-artifact@v1
