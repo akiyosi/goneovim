@@ -1356,6 +1356,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win.move(win.pos[0], win.pos[1])
 
 	win.show()
+	win.queueRedrawAll()
 }
 
 func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
@@ -1764,6 +1765,7 @@ func (s *Screen) gridClear(args []interface{}) {
 			win.content[i] = make([]*Cell, win.cols)
 			win.lenContent[i] = win.cols - 1
 		}
+		win.queueRedrawAll()
 	}
 }
 
@@ -1821,6 +1823,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 
 func (w *Window) updateLine(col, row int, cells []interface{}) {
 	line := w.content[row]
+	colStart := col
 	for _, arg := range cells {
 		if col >= len(line) {
 			continue
@@ -1875,7 +1878,8 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 			r++
 		}
 	}
-
+	
+	w.queueRedraw(colStart, row, col-colStart+1, 1)
 }
 
 func (w *Window) countContent(row int) {
@@ -2052,6 +2056,8 @@ func (w *Window) scroll(count int) {
 			}
 		}
 	}
+
+	w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
 }
 
 func (w *Window) update() {
@@ -2059,6 +2065,12 @@ func (w *Window) update() {
 		return
 	}
 	font := w.getFont()
+
+	if w.grid != w.s.ws.cursor.gridid {
+		if w.queueRedrawArea[3] - w.queueRedrawArea[1] <= 0 {
+			return
+		}
+	}
 
 	for i := 0; i <= w.rows; i++ {
 		if len(w.content) <= i {
@@ -2099,6 +2111,11 @@ func (w *Window) update() {
 			font.lineHeight,
 		)
 	}
+
+	w.queueRedrawArea[0] = w.cols
+	w.queueRedrawArea[1] = w.rows
+	w.queueRedrawArea[2] = 0
+	w.queueRedrawArea[3] = 0
 }
 
 func (s *Screen) update() {
@@ -2131,12 +2148,10 @@ func (s *Screen) update() {
 	})
 }
 
-// deprecated method
-// func (w *Window) queueRedrawAll() {
-// 	w.queueRedrawArea = [4]int{0, 0, w.cols, w.rows}
-// }
+func (w *Window) queueRedrawAll() {
+	w.queueRedrawArea = [4]int{0, 0, w.cols, w.rows}
+}
 
-// deprecated method
 func (w *Window) queueRedraw(x, y, width, height int) {
 	if x < w.queueRedrawArea[0] {
 		w.queueRedrawArea[0] = x
@@ -2785,6 +2800,28 @@ func (s *Screen) gridDestroy(args []interface{}) {
 		}
 		win.isGridDirty = true
 	}
+
+	// Redraw each displayed window.Because shadows leave dust before and after float window drawing.
+	s.windows.Range(func(_, winITF interface{}) bool {
+	        win := winITF.(*Window)
+	        if win == nil {
+	                return true
+	        }
+	        if win.grid == 1 {
+	                return true
+	        }
+	        if win.isMsgGrid {
+	                return true
+	        }
+	        if win.isGridDirty {
+	                return true
+	        }
+	        if win.isShown() {
+	                win.queueRedrawAll()
+	        }
+
+	        return true
+	})
 }
 
 func (s *Screen) windowFloatPosition(args []interface{}) {
@@ -2846,6 +2883,9 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.move(x, y)
 		win.setShadow()
 		win.show()
+
+		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
+		anchorwin.queueRedrawAll()
 	}
 }
 
