@@ -328,8 +328,7 @@ func (m *Markdown) update() {
 	m.markdownUpdates <- fmt.Sprintf(`
 			<div id="placeholder" class="markdown-body">
 			%s
-			</div>
-			`, string(output))
+			</div>`, string(output))
 	m.ws.signal.MarkdownSignal()
 }
 
@@ -339,7 +338,7 @@ func (m *Markdown) getHTML(content string) string {
   var dd = new diffDOM();
 
   var updateText = function(text) {
-	morphdom(placeholder, text);
+    morphdom(placeholder, text);
   }
 
 function getMethods(obj) {
@@ -361,16 +360,16 @@ function getMethods(obj) {
     function(channel) {
       var content = channel.objects.content;
       content.textChanged.connect(function() {
-		  var frag = document.createElement('div');
-		  frag.innerHTML = content.plainText;
-		  dd.apply(placeholder, dd.diff(placeholder, frag.firstElementChild));
-			//placeholder.innerHTML = content.plainText;
-			//morphdom(placeholder, content.plainText);
-			//console.warn(document.body.innerHTML);
-	  });
+        var frag = document.createElement('div');
+        frag.innerHTML = content.plainText;
+        dd.apply(placeholder, dd.diff(placeholder, frag.firstElementChild));
+        //placeholder.innerHTML = content.plainText;
+        //morphdom(placeholder, content.plainText);
+        //console.warn(document.body.innerHTML);
+      });
     }
   );
-	`
+`
 	style := `
 .markdown-body {
   -ms-text-size-adjust: 100%;
@@ -1062,7 +1061,7 @@ function getMethods(obj) {
 .markdown-body hr {
   border-bottom-color: #eee;
 }
-	`
+`
 	morphdomjs := `
 (function(root, factory) {
     if (typeof exports !== 'undefined') {
@@ -2383,7 +2382,7 @@ function getMethods(obj) {
                     }
                     break;
                 case this._const.removeElement:
-					this.scrollToMiddle(node);
+                    this.scrollToMiddle(node);
                     node.parentNode.removeChild(node);
                     break;
                 case this._const.addElement:
@@ -2418,26 +2417,26 @@ function getMethods(obj) {
             info.newNode = newNode;
             this.postDiffApply(info);
 
-			// console.warn(diff[this._const.action]);
-			if (diff[this._const.action] != this._const.removeElement) {
-				if (newNode && newNode.scrollIntoView) {
-					this.scrollToMiddle(newNode);
-				} else if (node && node.scrollIntoView) {
-					this.scrollToMiddle(node);
-				} else if (node.parentNode && node.parentNode.scrollIntoView) {
-					this.scrollToMiddle(node.parentNode);
-				}
-			}
+            // console.warn(diff[this._const.action]);
+            if (diff[this._const.action] != this._const.removeElement) {
+                if (newNode && newNode.scrollIntoView) {
+                    this.scrollToMiddle(newNode);
+                } else if (node && node.scrollIntoView) {
+                    this.scrollToMiddle(node);
+                } else if (node.parentNode && node.parentNode.scrollIntoView) {
+                    this.scrollToMiddle(node.parentNode);
+                }
+            }
 
             return true;
         },
 
-		scrollToMiddle: function(element) {
-			var elementRect = element.getBoundingClientRect();
-			var absoluteElementTop = elementRect.top + window.pageYOffset;
-			var middle = absoluteElementTop - (window.innerHeight / 2);
-			window.scrollTo(0, middle);
-		},
+        scrollToMiddle: function(element) {
+            var elementRect = element.getBoundingClientRect();
+            var absoluteElementTop = elementRect.top + window.pageYOffset;
+            var middle = absoluteElementTop - (window.innerHeight / 2);
+            window.scrollTo(0, middle);
+        },
 
         // ===== Undo a diff =====
 
@@ -2521,7 +2520,7 @@ function getMethods(obj) {
 
     return diffDOM;
 });
-	`
+`
 	html := fmt.Sprintf(`
 <!DOCTYPE html>
 <html lang="en">
@@ -2530,7 +2529,7 @@ function getMethods(obj) {
 <script>%s</script>
     <style>
      %s
-	</style>
+    </style>
   </head>
   <body>
   %s
@@ -2539,7 +2538,7 @@ function getMethods(obj) {
   </script>
   </body>
 </html>
-	`, morphdomjs, style, content, js)
+`, morphdomjs, style, content, js)
 
 	return html
 }
