@@ -39,6 +39,7 @@ type editorConfig struct {
 	GinitVim                 string
 	StartFullscreen          bool
 	StartMaximizedWindow     bool
+	Macmeta                  bool
 	Transparent              float64
 	DrawBorder               bool
 	SkipGlobalId             bool
