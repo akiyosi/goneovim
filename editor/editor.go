@@ -650,10 +650,10 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 
 	// this is macmeta alternatively
 	if runtime.GOOS == "darwin" {
-		if editor.config.Editor.Macmeta {
+		if e.config.Editor.Macmeta {
 			if mod&core.Qt__AltModifier > 0 && mod&core.Qt__ShiftModifier > 0 {
 				text = string(key)
-			} else if mod&core.Qt__AltModifier > 0 && !(mod&core.Qt__ShiftModifier > 0) {
+			} else {
 				text = strings.ToLower(string(key))
 			}
 		}

@@ -70,6 +70,9 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()
+	e.config = gonvimConfig{}
+	e.config.Editor.Macmeta = false
+
 	for key, value := range e.specialKeys {
 		tests = append(
 			tests,
