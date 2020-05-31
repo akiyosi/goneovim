@@ -653,7 +653,7 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		if e.config.Editor.Macmeta {
 			if mod&core.Qt__AltModifier > 0 && mod&core.Qt__ShiftModifier > 0 {
 				text = string(key)
-			} else {
+			} else if mod&core.Qt__AltModifier > 0 && !(mod&core.Qt__ShiftModifier > 0) {
 				text = strings.ToLower(string(key))
 			}
 		}
