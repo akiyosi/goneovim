@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/akiyosi/goneovim/util"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -45,8 +46,13 @@ type MiniMap struct {
 
 	nvim       *nvim.Nvim
 	uiAttached bool
+	api5       bool
 	rows       int
 	cols       int
+	topLine    int
+	botLine    int
+	curLine    int
+	curColm    int
 }
 
 func newMiniMap() *MiniMap {
@@ -160,6 +166,41 @@ func (m *MiniMap) attachUIOption() map[string]interface{} {
 	o := make(map[string]interface{})
 	o["rgb"] = true
 	o["ext_linegrid"] = true
+
+	apiInfo, err := m.nvim.APIInfo()
+	if err == nil {
+		for _, item := range apiInfo {
+			i, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			for k, v := range i {
+				if k != "ui_events" {
+					continue
+				}
+				events, ok := v.([]interface{})
+				if !ok {
+					continue
+				}
+				for _, event := range events {
+					function, ok := event.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					name, ok := function["name"]
+					if !ok {
+						continue
+					}
+
+					switch name {
+					case "win_viewport":
+						m.api5 = true
+					}
+				}
+			}
+		}
+	}
+
 	return o
 }
 
@@ -300,18 +341,27 @@ func (m *MiniMap) setColorscheme() {
 }
 
 func (m *MiniMap) mapScroll() {
-	absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
+	linePos := 0
+	regionHeight := 0
 
-	var absMapTop int
-	m.nvim.Eval("line('w0')", &absMapTop)
-
-	linePos := absScreenTop-absMapTop
+	if m.api5 {
+		linePos = m.ws.topLine - m.topLine
+		regionHeight = m.ws.botLine - m.ws.topLine
+	} else {
+		absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
+		var absMapTop int
+		m.nvim.Eval("line('w0')", &absMapTop)
+		linePos = absScreenTop-absMapTop
+	}
 
 	win, ok := m.ws.screen.getWindow(m.ws.cursor.gridid)
 	if !ok {
 		return
 	}
-	regionHeight := win.rows
+
+	if regionHeight <= 0 {
+		regionHeight = win.rows
+	}
 
 	if linePos < 0 {
 		regionHeight = regionHeight + linePos
@@ -428,6 +478,13 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 			m.gridScroll(args)
 			m.mapScroll()
 
+		case "win_viewport":
+			vp := args[0].([]interface{})
+			m.topLine = util.ReflectToInt(vp[2]) + 1
+			m.botLine = util.ReflectToInt(vp[3]) + 1
+			m.curLine = util.ReflectToInt(vp[4]) + 1
+			m.curColm = util.ReflectToInt(vp[5]) + 1
+
 		default:
 		}
 	}
@@ -521,9 +578,14 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 func (m *MiniMap) mouseEvent(event *gui.QMouseEvent) {
 	font := m.font
 	y := int(float64(event.Y()) / float64(font.lineHeight))
-	var absMapTop int
-	m.nvim.Eval("line('w0')", &absMapTop)
-	targetPos := absMapTop + y
+	targetPos := 0
+	if m.api5 {
+		targetPos = m.topLine + y
+	} else {
+		var absMapTop int
+		m.nvim.Eval("line('w0')", &absMapTop)
+		targetPos = absMapTop + y
+	}
 	m.ws.nvim.Command(fmt.Sprintf("%d", targetPos))
 
 	mappings, err := m.ws.nvim.KeyMap("normal")

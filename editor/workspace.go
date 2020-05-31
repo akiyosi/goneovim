@@ -76,6 +76,8 @@ type Workspace struct {
 	cwdBase            string
 	cwdlabel           string
 	maxLine            int
+	topLine            int
+	botLine            int
 	curLine            int
 	curColm            int
 	curPosMutex        sync.RWMutex
@@ -84,6 +86,7 @@ type Workspace struct {
 	normalMappings     []*nvim.Mapping
 	insertMappings     []*nvim.Mapping
 	ts                 int
+	api5               bool
 
 	escKeyInNormal     string
 	escKeyInInsert     string
@@ -660,6 +663,8 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
 					case "tabline_update":
 						o["ext_tabline"] = editor.config.Editor.ExtTabline
+					case "win_viewport":
+						w.api5 = true
 					}
 				}
 			}
@@ -811,7 +816,12 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.windowClose()
 		case "msg_set_pos":
 			s.msgSetPos(args)
-		// case "win_viewport":
+		case "win_viewport":
+			vp := args[0].([]interface{})
+			w.topLine = util.ReflectToInt(vp[2]) + 1
+			w.botLine = util.ReflectToInt(vp[3]) + 1
+			w.curLine = util.ReflectToInt(vp[4]) + 1
+			w.curColm = util.ReflectToInt(vp[5]) + 1
 
 		// Popupmenu Events
 		case "popupmenu_show":
@@ -1068,6 +1078,9 @@ func (w *Workspace) setOption(update []interface{}) {
 }
 
 func (w *Workspace) getPos() {
+	if w.api5 {
+		return
+	}
 	done := make(chan error, 2000)
 	var curPos [4]int
 	go func() {
