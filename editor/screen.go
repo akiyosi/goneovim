@@ -632,9 +632,10 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		for x := 0; x < w.lenLine[y]; x++ {
 			skipDraw = false
 
-			if x+1 >= len(nextline) {
-				break
-			}
+			// if x+1 >= len(nextline) {
+			// 	break
+			// }
+
 			nlnc := nextline[x+1]
 			if nlnc == nil {
 				continue
@@ -657,19 +658,36 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 			if c.char != " " && !c.isSignColumn() {
 				break
 			}
+			ylen, _ := w.countHeadSpaceOfLine(y)
 			if x > res &&
 				(x+1-res)%w.s.ws.ts == 0 &&
-				c.char == " " && nc.char != " " &&
-				nlc.char == " " && nlnc.char == " " {
+				// c.char == " " && nc.char != " " &&
+				// nlc.char == " " && nlnc.char == " " {
+				c.char == " " && nc.char != " " {
+
+				isNeedGuide := false
+
+				for nn := y+1; nn < len(w.content); nn++ {
+					nnlen, _ := w.countHeadSpaceOfLine(nn)
+
+					if nnlen == ylen {
+						break
+					}
+					if nnlen > ylen {
+						isNeedGuide = true
+					}
+				}
+
+				if !isNeedGuide {
+					break
+				}
 
 				if w.lenLine[y] >= len(line) {
 					break
 				}
-				bra := line[w.lenLine[y]-1].char
-				cket := getCket(bra)
 
-				for row := y; row < len(w.content); row++ {
-					if row+1 == len(w.content) {
+				for mm := y; mm < len(w.content); mm++ {
+					if mm+1 == len(w.content) {
 						break
 					}
 
@@ -678,9 +696,6 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 							break
 						}
 						if w.content[z][x+1].char != " " {
-							if w.content[z][x+1].char != cket {
-								break
-							}
 
 							for v := x; v >= res; v-- {
 								if w.content[z][v] == nil {
@@ -702,46 +717,18 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 						break
 					}
 
-					ylen, _ := w.countHeadSpaceOfLine(y)
-					ynlen, _ := w.countHeadSpaceOfLine(y + 1)
-					if ynlen <= ylen {
+					if w.content[mm+1][x+1] == nil {
 						break
 					}
-					if w.content[row+1][x+1] == nil {
+					if w.content[mm+1][x+1].char != " " {
 						break
 					}
-					if w.content[row+1][x+1].char != " " {
-						break
-					}
-					w.drawIndentline(p, x+1, row+1)
+					w.drawIndentline(p, x+1, mm+1)
 				}
 				break
 			}
 		}
 	}
-}
-
-func getCket(bra string) string {
-	cket := " "
-
-	switch bra {
-	case "{":
-		cket = "}"
-	case "[":
-		cket = "]"
-	case "(":
-		cket = ")"
-	case "<":
-		cket = ">"
-	case `"`:
-		cket = `"`
-	case `'`:
-		cket = `'`
-	case "`":
-		cket = "`"
-	}
-
-	return cket
 }
 
 func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
@@ -2086,10 +2073,11 @@ func (w *Window) update() {
 		w.lenOldContent[i] = w.lenContent[i]
 
 		// If DrawIndentGuide is enabled
-		if editor.config.Editor.IndentGuide && i > 1 {
-			if width < w.lenContent[i-1] {
-				width = w.lenContent[i-1]
+		if editor.config.Editor.IndentGuide && i < w.rows-1 {
+			if width < w.lenContent[i+1] {
+				width = w.lenContent[i+1]
 			}
+			// width = w.maxLenContent
 		}
 
 		// If screen is minimap
