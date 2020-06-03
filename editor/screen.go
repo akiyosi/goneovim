@@ -625,25 +625,24 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		if y+1 >= len(w.content) {
 			return
 		}
-		nextline := w.content[y+1]
+		// nextline := w.content[y+1]
 		line := w.content[y]
 		res := 0
-		skipDraw := false
 		for x := 0; x < w.lenLine[y]; x++ {
-			skipDraw = false
 
 			// if x+1 >= len(nextline) {
 			// 	break
 			// }
 
-			nlnc := nextline[x+1]
-			if nlnc == nil {
-				continue
-			}
-			nlc := nextline[x]
-			if nlc == nil {
-				continue
-			}
+			// nlnc := nextline[x+1]
+			// if nlnc == nil {
+			// 	continue
+			// }
+			// nlc := nextline[x]
+			// if nlc == nil {
+			// 	continue
+			// }
+
 			nc := line[x+1]
 			if nc == nil {
 				continue
@@ -673,7 +672,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 					if nnlen == ylen {
 						break
 					}
-					if nnlen > ylen {
+					if nnlen > ylen && w.lenLine[nn] > res {
 						isNeedGuide = true
 					}
 				}
@@ -682,48 +681,20 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 					break
 				}
 
-				if w.lenLine[y] >= len(line) {
-					break
-				}
+				for mm := y+1; mm < len(w.content); mm++ {
+					mmlen, _ := w.countHeadSpaceOfLine(mm)
 
-				for mm := y; mm < len(w.content); mm++ {
-					if mm+1 == len(w.content) {
+					if mmlen < ylen {
+						// TODO: Continue drawing when a folded line exists.
 						break
 					}
-
-					for z := y + 1; z < len(w.content); z++ {
-						if w.content[z][x+1] == nil {
-							break
-						}
-						if w.content[z][x+1].char != " " {
-
-							for v := x; v >= res; v-- {
-								if w.content[z][v] == nil {
-									break
-								}
-								if w.content[z][v].char == " " {
-									skipDraw = true
-								} else {
-									skipDraw = false
-									break
-								}
-							}
-							if skipDraw {
-								break
-							}
-						}
-					}
-					if !skipDraw {
+					if w.content[mm][x+1] == nil {
 						break
 					}
-
-					if w.content[mm+1][x+1] == nil {
+					if w.content[mm][x+1].char != " " {
 						break
 					}
-					if w.content[mm+1][x+1].char != " " {
-						break
-					}
-					w.drawIndentline(p, x+1, mm+1)
+					w.drawIndentline(p, x+1, mm)
 				}
 				break
 			}
@@ -1927,9 +1898,6 @@ func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 		} else {
 			count++
 		}
-	}
-	if count == len(line) {
-		count = 0
 	}
 	return count, nil
 }
