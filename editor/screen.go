@@ -609,6 +609,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if w == nil {
 		return
 	}
+	if w.s.name == "minimap" {
+		return
+	}
 	if w.isMsgGrid {
 		return
 	}
@@ -625,23 +628,12 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		if y+1 >= len(w.content) {
 			return
 		}
-		nextline := w.content[y+1]
+		// nextline := w.content[y+1]
 		line := w.content[y]
 		res := 0
-		skipDraw := false
 		for x := 0; x < w.lenLine[y]; x++ {
-			skipDraw = false
-
-			if x+1 >= len(nextline) {
+			if x+1 >= len(line) {
 				break
-			}
-			nlnc := nextline[x+1]
-			if nlnc == nil {
-				continue
-			}
-			nlc := nextline[x]
-			if nlc == nil {
-				continue
 			}
 			nc := line[x+1]
 			if nc == nil {
@@ -657,91 +649,79 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 			if c.char != " " && !c.isSignColumn() {
 				break
 			}
+			ylen, _ := w.countHeadSpaceOfLine(y)
 			if x > res &&
 				(x+1-res)%w.s.ws.ts == 0 &&
-				c.char == " " && nc.char != " " &&
-				nlc.char == " " && nlnc.char == " " {
+				c.char == " " && nc.char != " " {
 
-				if w.lenLine[y] >= len(line) {
+				isNeedGuide := 0
+
+				// Count the number of lines to draw the indentation guide
+				for nn := y+1; nn < len(w.content); nn++ {
+					nnlen, _ := w.countHeadSpaceOfLine(nn)
+
+					if nnlen == ylen {
+						break
+					}
+					if nnlen > ylen && w.lenLine[nn] > res {
+						isNeedGuide++
+					}
+				}
+
+				if isNeedGuide == 0 {
 					break
 				}
-				bra := line[w.lenLine[y]-1].char
-				cket := getCket(bra)
 
-				for row := y; row < len(w.content); row++ {
-					if row+1 == len(w.content) {
-						break
-					}
+				for mm := y+1; mm < len(w.content); mm++ {
+					mmlen, _ := w.countHeadSpaceOfLine(mm)
 
-					for z := y + 1; z < len(w.content); z++ {
-						if w.content[z][x+1] == nil {
+					if mmlen < ylen {
+						doBreak := true
+						// If the line to draw an indent-guide has a wrapped line
+						// in the next line, do not skip drawing
+						if mm+1 < len(w.content) {
+							lllen, _ := w.countHeadSpaceOfLine(mm+1)
+							if lllen == w.cols {
+								break
+							}
+							if mm >= 0 {
+								if lllen > ylen {
+									for xx := 0; xx < w.lenLine[mm]; xx++ {
+										if w.content[mm][xx] == nil {
+											break
+										}
+										if w.content[mm][xx].highlight.hlName == "LineNr" {
+											if w.content[mm][xx].char == " " {
+												doBreak = false
+											} else if w.content[mm][xx].char != " " {
+												doBreak = true
+											}
+										}
+									}
+								}
+							}
+						}
+						if doBreak {
 							break
 						}
-						if w.content[z][x+1].char != " " {
-							if w.content[z][x+1].char != cket {
-								break
-							}
-
-							for v := x; v >= res; v-- {
-								if w.content[z][v] == nil {
-									break
-								}
-								if w.content[z][v].char == " " {
-									skipDraw = true
-								} else {
-									skipDraw = false
-									break
-								}
-							}
-							if skipDraw {
-								break
-							}
+					}
+					if w.content[mm][x+1] == nil {
+						break
+					}
+					if w.content[mm][x+1].char != " " {
+						if isNeedGuide > 0 {
+							continue
+						} else {
+							break
 						}
 					}
-					if !skipDraw {
-						break
-					}
-
-					ylen, _ := w.countHeadSpaceOfLine(y)
-					ynlen, _ := w.countHeadSpaceOfLine(y + 1)
-					if ynlen <= ylen {
-						break
-					}
-					if w.content[row+1][x+1] == nil {
-						break
-					}
-					if w.content[row+1][x+1].char != " " {
-						break
-					}
-					w.drawIndentline(p, x+1, row+1)
+					w.drawIndentline(p, x+1, mm)
+					isNeedGuide--
 				}
 				break
 			}
 		}
 	}
-}
-
-func getCket(bra string) string {
-	cket := " "
-
-	switch bra {
-	case "{":
-		cket = "}"
-	case "[":
-		cket = "]"
-	case "(":
-		cket = ")"
-	case "<":
-		cket = ">"
-	case `"`:
-		cket = `"`
-	case `'`:
-		cket = `'`
-	case "`":
-		cket = "`"
-	}
-
-	return cket
 }
 
 func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
@@ -1941,9 +1921,6 @@ func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 			count++
 		}
 	}
-	if count == len(line) {
-		count = 0
-	}
 	return count, nil
 }
 
@@ -2086,10 +2063,11 @@ func (w *Window) update() {
 		w.lenOldContent[i] = w.lenContent[i]
 
 		// If DrawIndentGuide is enabled
-		if editor.config.Editor.IndentGuide && i > 1 {
-			if width < w.lenContent[i-1] {
-				width = w.lenContent[i-1]
+		if editor.config.Editor.IndentGuide && i < w.rows-1 {
+			if width < w.lenContent[i+1] {
+				width = w.lenContent[i+1]
 			}
+			// width = w.maxLenContent
 		}
 
 		// If screen is minimap
