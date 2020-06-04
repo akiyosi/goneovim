@@ -632,7 +632,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		line := w.content[y]
 		res := 0
 		for x := 0; x < w.lenLine[y]; x++ {
-
+			if x+1 >= len(line) {
+				break
+			}
 			nc := line[x+1]
 			if nc == nil {
 				continue
