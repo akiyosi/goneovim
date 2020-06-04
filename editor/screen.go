@@ -609,6 +609,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if w == nil {
 		return
 	}
+	if w.s.name == "minimap" {
+		return
+	}
 	if w.isMsgGrid {
 		return
 	}
@@ -630,19 +633,6 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		res := 0
 		for x := 0; x < w.lenLine[y]; x++ {
 
-			// if x+1 >= len(nextline) {
-			// 	break
-			// }
-
-			// nlnc := nextline[x+1]
-			// if nlnc == nil {
-			// 	continue
-			// }
-			// nlc := nextline[x]
-			// if nlc == nil {
-			// 	continue
-			// }
-
 			nc := line[x+1]
 			if nc == nil {
 				continue
@@ -660,12 +650,11 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 			ylen, _ := w.countHeadSpaceOfLine(y)
 			if x > res &&
 				(x+1-res)%w.s.ws.ts == 0 &&
-				// c.char == " " && nc.char != " " &&
-				// nlc.char == " " && nlnc.char == " " {
 				c.char == " " && nc.char != " " {
 
-				isNeedGuide := false
+				isNeedGuide := 0
 
+				// Count the number of lines to draw the indentation guide
 				for nn := y+1; nn < len(w.content); nn++ {
 					nnlen, _ := w.countHeadSpaceOfLine(nn)
 
@@ -673,11 +662,11 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 						break
 					}
 					if nnlen > ylen && w.lenLine[nn] > res {
-						isNeedGuide = true
+						isNeedGuide++
 					}
 				}
 
-				if !isNeedGuide {
+				if isNeedGuide == 0 {
 					break
 				}
 
@@ -685,16 +674,47 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 					mmlen, _ := w.countHeadSpaceOfLine(mm)
 
 					if mmlen < ylen {
-						// TODO: Continue drawing when a folded line exists.
-						break
+						doBreak := true
+						// If the line to draw an indent-guide has a wrapped line
+						// in the next line, do not skip drawing
+						if mm+1 < len(w.content) {
+							lllen, _ := w.countHeadSpaceOfLine(mm+1)
+							if lllen == w.cols {
+								break
+							}
+							if mm >= 0 {
+								if lllen > ylen {
+									for xx := 0; xx < w.lenLine[mm]; xx++ {
+										if w.content[mm][xx] == nil {
+											break
+										}
+										if w.content[mm][xx].highlight.hlName == "LineNr" {
+											if w.content[mm][xx].char == " " {
+												doBreak = false
+											} else if w.content[mm][xx].char != " " {
+												doBreak = true
+											}
+										}
+									}
+								}
+							}
+						}
+						if doBreak {
+							break
+						}
 					}
 					if w.content[mm][x+1] == nil {
 						break
 					}
 					if w.content[mm][x+1].char != " " {
-						break
+						if isNeedGuide > 0 {
+							continue
+						} else {
+							break
+						}
 					}
 					w.drawIndentline(p, x+1, mm)
+					isNeedGuide--
 				}
 				break
 			}
