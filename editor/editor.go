@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
 	clipb "github.com/atotto/clipboard"
 	"github.com/jessevdk/go-flags"
@@ -187,6 +188,19 @@ func InitEditor() {
 	e.app.ConnectAboutToQuit(func() {
 		e.cleanup()
 	})
+
+	// Set the current working directory of the application to the HOME directory.
+	// If this process is not executed, CWD is set to the root directory, and
+	// nvim plugins called as descendants of the application will not work due to lack of permission.
+	// e.g. #122
+	path := core.QCoreApplication_ApplicationDirPath()
+	absHome, err := util.ExpandTildeToHomeDirectory(home)
+	if err == nil {
+		if path != absHome {
+			qdir := core.NewQDir2(path)
+			qdir.SetCurrent(absHome)
+		}
+	}
 
 	e.initFont()
 	e.initSVGS()

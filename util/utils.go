@@ -2,6 +2,8 @@ package util
 
 import (
 	"strings"
+	"os/user"
+	"path/filepath"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -267,4 +269,16 @@ func NewVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, wid
 		return nil
 	})
 	return layout
+}
+
+func ExpandTildeToHomeDirectory(path string) (string, error) {
+	if len(path) == 0 || path[0] != '~' {
+		return path, nil
+	}
+
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(usr.HomeDir, path[1:]), nil
 }

@@ -308,7 +308,7 @@ func (s *Fuzzy) processSource() {
 		if !ok {
 			s.pwd = ""
 		}
-		path, err := expand(s.pwd)
+		path, err := gonvimUtil.ExpandTildeToHomeDirectory(s.pwd)
 		if err == nil {
 			s.pwd = path
 		}
@@ -326,7 +326,7 @@ func (s *Fuzzy) processSource() {
 			if !ok {
 				dir = ""
 			}
-			path, err := expand(dir)
+			path, err := gonvimUtil.ExpandTildeToHomeDirectory(dir)
 			if err == nil {
 				dir = path
 			}
@@ -765,14 +765,3 @@ func insertAtIndex(in string, i int, newChar string) string {
 // 	return int(iface.(uint64))
 // }
 
-func expand(path string) (string, error) {
-	if len(path) == 0 || path[0] != '~' {
-		return path, nil
-	}
-
-	usr, err := user.Current()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(usr.HomeDir, path[1:]), nil
-}
