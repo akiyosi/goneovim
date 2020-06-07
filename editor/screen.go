@@ -114,9 +114,9 @@ type Screen struct {
 	width   int
 	height  int
 
-	cursor           [2]int
+	cursor [2]int
 
-	hlAttrDef    map[int]*Highlight
+	hlAttrDef      map[int]*Highlight
 	highlightGroup map[string]int
 
 	tooltip *widgets.QLabel
@@ -1505,6 +1505,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 func (s *Screen) gridCursorGoto(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
+
 		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
 		s.cursor[1] = util.ReflectToInt(arg.([]interface{})[2])
 		if isSkipGlobalId(gridid) {
@@ -1521,6 +1522,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			s.ws.cursor.font = win.getFont()
 			win.raise()
 		}
+
 	}
 }
 
@@ -2831,13 +2833,16 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		// In multigrid ui, the completion float window on the message window appears to be misaligned.
 		// Therefore, a hack to workaround this problem is implemented on the GUI front-end side.
-		cursorgridwin, ok := s.getWindow(s.ws.cursor.gridid)
-		if !ok {
-			continue
-		}
-		if cursorgridwin.isMsgGrid {
-			anchorwin = cursorgridwin
-			anchorRow = cursorgridwin.pos[0]
+		// This workaround assumes that the anchor window for the completion window on the message window is always a global grid.
+		if anchorwin.grid == 1 {
+			cursorgridwin, ok := s.getWindow(s.ws.cursor.gridid)
+			if !ok {
+				continue
+			}
+			if cursorgridwin.isMsgGrid {
+				anchorwin = cursorgridwin
+				anchorRow = cursorgridwin.pos[0]
+			}
 		}
 
 		var x, y int
@@ -2895,7 +2900,6 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		win.move(win.pos[0], win.pos[1])
 		win.show()
 		win.widget.Raise()  // Fix #111
-
 	}
 }
 
