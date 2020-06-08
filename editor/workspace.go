@@ -404,6 +404,7 @@ func (w *Workspace) initGonvim() {
 	gonvimAutoCmds := `
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
+	au GonvimAu OptionSet * call rpcnotify(0, "Gui", "gonvim_optionset")
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
 	aug GonvimAuWorkspace | au! | aug END
@@ -1207,6 +1208,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.setCwd(updates[1].(string))
 	case "gonvim_workspace_filepath":
 		w.filepath = updates[1].(string)
+	case "gonvim_optionset":
+		w.optionSet()
 	case "gonvim_termenter":
 		w.mode = "terminal-input"
 	case "gonvim_termleave":
@@ -1394,6 +1397,36 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	w.font.changeLineSpace(lineSpace)
 	w.updateSize()
 	// w.cursor.updateShape()
+}
+
+func (w *Workspace) optionSet() {
+	ts := 8
+	errCh := make(chan error, 60)
+	var err error
+	go func() {
+		err = w.nvim.Option("ts", &ts)
+		errCh <-err
+	}()
+	select {
+	case <-errCh:
+	case <-time.After(40 * time.Millisecond):
+	}
+
+	w.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
+		if win == nil {
+			return true
+		}
+		if win.isShown() {
+			if ts != 8 {
+				win.ts = ts
+			}
+		}
+
+		return true
+	})
+
 }
 
 // InputMethodEvent is

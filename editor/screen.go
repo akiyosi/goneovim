@@ -76,6 +76,7 @@ type Window struct {
 	anchor      string
 	cols        int
 	rows        int
+	ts          int
 
 	isMsgGrid  bool
 	isFloatWin bool
@@ -606,6 +607,11 @@ func (w *Window) getFont() *Font {
 }
 
 func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
+	ts := w.ts
+	if ts == 0 {
+		ts = w.s.ws.ts
+	}
+
 	if w == nil {
 		return
 	}
@@ -618,7 +624,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if w.isFloatWin {
 		return
 	}
-	if w.s.ws.ts == 0 {
+	if ts == 0 {
 		return
 	}
 	if !w.isShown() {
@@ -651,7 +657,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 			}
 			ylen, _ := w.countHeadSpaceOfLine(y)
 			if x > res &&
-				(x+1-res)%w.s.ws.ts == 0 &&
+				(x+1-res)%ts == 0 &&
 				c.char == " " && nc.char != " " {
 
 				isNeedGuide := 0
