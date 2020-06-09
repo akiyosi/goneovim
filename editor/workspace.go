@@ -1412,6 +1412,7 @@ func (w *Workspace) optionSet() {
 	case <-time.After(40 * time.Millisecond):
 	}
 
+	w.ts = ts
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1419,7 +1420,7 @@ func (w *Workspace) optionSet() {
 			return true
 		}
 		if win.isShown() {
-			if ts != w.ts {
+			if win.ts != w.ts {
 				win.ts = ts
 			}
 		}

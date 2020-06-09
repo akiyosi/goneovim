@@ -608,10 +608,6 @@ func (w *Window) getFont() *Font {
 }
 
 func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
-	ts := w.ts
-	if ts == 0 {
-		ts = w.s.ws.ts
-	}
 	if w == nil {
 		return
 	}
@@ -624,13 +620,14 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if w.isFloatWin {
 		return
 	}
-	if ts == 0 {
-		return
-	}
 	if !w.isShown() {
 		return
 	}
 
+	ts := w.ts
+	if ts == 0 {
+		return
+	}
 	drawIndents := make(map[IntInt]bool)
 
 	for y := row; y < rows; y++ {
@@ -1317,6 +1314,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		s.storeWindow(gridid, win)
 		win.setParent(s.widget)
 		win.grid = gridid
+		win.ts = s.ws.ts
 
 		// set scroll
 		if s.name != "minimap" {
