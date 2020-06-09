@@ -47,13 +47,14 @@ type HlChars struct {
 	bold   bool
 }
 
-
 // Cell is
 type Cell struct {
 	normalWidth bool
 	char        string
 	highlight   Highlight
 }
+
+type IntInt [2]int
 
 // Window is
 type Window struct {
@@ -611,7 +612,6 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if ts == 0 {
 		ts = w.s.ws.ts
 	}
-
 	if w == nil {
 		return
 	}
@@ -630,6 +630,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if !w.isShown() {
 		return
 	}
+
+	drawIndents := make(map[IntInt]bool)
+
 	for y := row; y < rows; y++ {
 		if y+1 >= len(w.content) {
 			return
@@ -637,7 +640,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		// nextline := w.content[y+1]
 		line := w.content[y]
 		res := 0
-		for x := 0; x < w.cols; x++ {
+		for x := 0; x < w.maxLenContent; x++ {
 			if x+1 >= len(line) {
 				break
 			}
@@ -719,12 +722,15 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 						break
 					}
 					if w.content[mm][x+1].char != " " {
-						continue
+						break
 					}
 					if !doPaintIndent {
-						continue
+						break
 					}
-					w.drawIndentline(p, x+1, mm)
+					if !drawIndents[[2]int{x+1, mm}] {
+						w.drawIndentline(p, x+1, mm)
+						drawIndents[[2]int{x+1, mm}] = true
+					}
 				}
 			}
 		}
