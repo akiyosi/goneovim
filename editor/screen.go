@@ -637,7 +637,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		// nextline := w.content[y+1]
 		line := w.content[y]
 		res := 0
-		for x := 0; x < w.lenLine[y]; x++ {
+		for x := 0; x < w.cols; x++ {
 			if x+1 >= len(line) {
 				break
 			}
@@ -655,14 +655,16 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 			if c.char != " " && !c.isSignColumn() {
 				break
 			}
-			ylen, _ := w.countHeadSpaceOfLine(y)
-			if x > res &&
-				(x+1-res)%ts == 0 &&
-				c.char == " " && nc.char != " " {
+			yylen, _ := w.countHeadSpaceOfLine(y)
+			if x > res && (x+1-res)%ts == 0 {
+				ylen := x+1
 
+				if ylen > yylen {
+					break
+				}
 
 				doPaintIndent := false
-				for mm := y+1; mm < len(w.content); mm++ {
+				for mm := y; mm < len(w.content); mm++ {
 					mmlen, _ := w.countHeadSpaceOfLine(mm)
 
 					if mmlen == ylen {
@@ -724,7 +726,6 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 					}
 					w.drawIndentline(p, x+1, mm)
 				}
-				break
 			}
 		}
 	}

@@ -1400,7 +1400,7 @@ func (w *Workspace) guiLinespace(args interface{}) {
 }
 
 func (w *Workspace) optionSet() {
-	ts := 8
+	ts := w.ts
 	errCh := make(chan error, 60)
 	var err error
 	go func() {
@@ -1419,7 +1419,7 @@ func (w *Workspace) optionSet() {
 			return true
 		}
 		if win.isShown() {
-			if ts != 8 {
+			if ts != w.ts {
 				win.ts = ts
 			}
 		}
