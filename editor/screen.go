@@ -660,26 +660,31 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 				(x+1-res)%ts == 0 &&
 				c.char == " " && nc.char != " " {
 
-				isNeedGuide := 0
 
-				// Count the number of lines to draw the indentation guide
-				for nn := y+1; nn < len(w.content); nn++ {
-					nnlen, _ := w.countHeadSpaceOfLine(nn)
-
-					if nnlen == ylen {
-						break
-					}
-					if nnlen > ylen && w.lenLine[nn] > res {
-						isNeedGuide++
-					}
-				}
-
-				if isNeedGuide == 0 {
-					break
-				}
-
+				doPaintIndent := false
 				for mm := y+1; mm < len(w.content); mm++ {
 					mmlen, _ := w.countHeadSpaceOfLine(mm)
+
+					if mmlen == ylen {
+						break
+					}
+
+					if mmlen > ylen && w.lenLine[mm] > res {
+						doPaintIndent = true
+					}
+
+					if mmlen == w.cols && !doPaintIndent {
+						for nn := mm+1; nn < len(w.content); nn++ {
+							nnlen, _ := w.countHeadSpaceOfLine(nn)
+							if nnlen == ylen {
+								break
+							}
+
+							if nnlen > ylen && w.lenLine[nn] > res {
+								doPaintIndent = true
+							}
+						}
+					}
 
 					if mmlen < ylen {
 						doBreak := true
@@ -687,9 +692,6 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 						// in the next line, do not skip drawing
 						if mm+1 < len(w.content) {
 							lllen, _ := w.countHeadSpaceOfLine(mm+1)
-							if lllen == w.cols {
-								break
-							}
 							if mm >= 0 {
 								if lllen > ylen {
 									for xx := 0; xx < w.lenLine[mm]; xx++ {
@@ -715,14 +717,12 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 						break
 					}
 					if w.content[mm][x+1].char != " " {
-						if isNeedGuide > 0 {
-							continue
-						} else {
-							break
-						}
+						continue
+					}
+					if !doPaintIndent {
+						continue
 					}
 					w.drawIndentline(p, x+1, mm)
-					isNeedGuide--
 				}
 				break
 			}
