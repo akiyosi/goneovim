@@ -521,40 +521,40 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 			v = pixels.Y()
 			h = pixels.X()
 		}
-		if pixels.X() < 0 && win.scrollDust[0] > 0 {
-			win.scrollDust[0] = 0
+		if pixels.X() < 0 && win.scrollPixels[0] > 0 {
+			win.scrollPixels[0] = 0
 		}
-		if pixels.Y() < 0 && win.scrollDust[1] > 0 {
-			win.scrollDust[1] = 0
+		if pixels.Y() < 0 && win.scrollPixels[1] > 0 {
+			win.scrollPixels[1] = 0
 		}
 
-		dx := math.Abs(float64(win.scrollDust[0]))
-		dy := math.Abs(float64(win.scrollDust[1]))
+		dx := math.Abs(float64(win.scrollPixels[0]))
+		dy := math.Abs(float64(win.scrollPixels[1]))
 
 		fontheight := float64(font.lineHeight)
 		fontwidth := font.truewidth
 
-		win.scrollDust[0] += h
-		win.scrollDust[1] += v
+		win.scrollPixels[0] += h
+		win.scrollPixels[1] += v
 
 		if dx >= fontwidth {
-			horiz = int(math.Trunc(float64(win.scrollDust[0]) / fontheight))
-			win.scrollDust[0] = 0
+			horiz = int(math.Trunc(float64(win.scrollPixels[0]) / fontheight))
+			win.scrollPixels[0] = 0
 		}
 		if dy >= fontwidth {
-			vert = int(math.Trunc(float64(win.scrollDust[1]) / fontwidth))
-			win.scrollDust[1] = 0
+			vert = int(math.Trunc(float64(win.scrollPixels[1]) / fontwidth))
+			win.scrollPixels[1] = 0
 		}
 
-		win.scrollDustDeltaY = int(math.Abs(float64(vert)) - float64(win.scrollDustDeltaY))
-		if win.scrollDustDeltaY < 1 {
-			win.scrollDustDeltaY = 0
+		win.scrollPixelsDeltaY = int(math.Abs(float64(vert)) - float64(win.scrollPixelsDeltaY))
+		if win.scrollPixelsDeltaY < 1 {
+			win.scrollPixelsDeltaY = 0
 		}
 
-		if win.scrollDustDeltaY <= 2 {
+		if win.scrollPixelsDeltaY <= 2 {
 			accel = 1
-		} else if win.scrollDustDeltaY > 2 {
-			accel = int(float64(win.scrollDustDeltaY) / float64(4))
+		} else if win.scrollPixelsDeltaY > 2 {
+			accel = int(float64(win.scrollPixelsDeltaY) / float64(4))
 		}
 
 	default:

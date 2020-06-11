@@ -86,8 +86,8 @@ type Window struct {
 	shown            bool
 	queueRedrawArea  [4]int
 	scrollRegion     []int
-	scrollDust       [2]int
-	scrollDustDeltaY int
+	scrollPixels       [2]int
+	scrollPixelsDeltaY int
 	devicePixelRatio float64
 	textCache        gcache.Cache
 
@@ -585,13 +585,13 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	// Reset to 0 after drawing is complete.
 	// This is to suppress flickering in smooth scroll
-	dx := math.Abs(float64(w.scrollDust[0]))
-	dy := math.Abs(float64(w.scrollDust[1]))
+	dx := math.Abs(float64(w.scrollPixels[0]))
+	dy := math.Abs(float64(w.scrollPixels[1]))
 	if dx >= font.truewidth {
-		w.scrollDust[0] = 0
+		w.scrollPixels[0] = 0
 	}
 	if dy >= float64(font.lineHeight) {
-		w.scrollDust[1] = 0
+		w.scrollPixels[1] = 0
 	}
 
 	p.DestroyQPainter()
@@ -737,7 +737,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
 	font := w.getFont()
 	X := float64(x) * font.truewidth
-	Y := float64(y * font.lineHeight)+float64(w.scrollDust[1])
+	Y := float64(y * font.lineHeight)+float64(w.scrollPixels[1])
 	p.FillRect4(
 		core.NewQRectF4(
 			X,
@@ -984,6 +984,15 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 		}
 	}
 
+	accel := 1
+	if math.Abs(float64(v)) > float64(font.lineHeight)/2 {
+		accel = int(math.Abs(float64(v)) * 2 / float64(font.lineHeight))
+	}
+	if accel == 0 {
+		accel = 1
+	}
+	vert = vert * accel
+
 	if vert == 0 && horiz == 0 {
 		return
 	}
@@ -1029,7 +1038,7 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	// Do not scroll horizontal if vertical scroll amount is greater than horizontal that
-	if math.Abs(float64(vert)) * 6 > math.Abs(float64(horiz)) {
+	if (math.Abs(float64(vert))+1)* 2 > math.Abs(float64(horiz)) * 3 {
 		return
 	}
 
@@ -1049,8 +1058,8 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 	font := w.getFont()
 
 	if isStopScroll {
-		w.scrollDust[0] = 0
-		w.scrollDust[1] = 0
+		w.scrollPixels[0] = 0
+		w.scrollPixels[1] = 0
 		for i := 0; i < w.rows; i++ {
 			w.lenContent[i] = w.maxLenContent
 		}
@@ -1060,41 +1069,41 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 		return 0, 0
 	}
 	for i := 1; i <= int(math.Abs(float64(v))); i++ {
-		if h < 0 && w.scrollDust[0] > 0 {
-			w.scrollDust[0] = 0
+		if h < 0 && w.scrollPixels[0] > 0 {
+			w.scrollPixels[0] = 0
 		}
-		// if v < 0 && w.scrollDust[1] > 0 {
-		// 	w.scrollDust[1] = 0
+		// if v < 0 && w.scrollPixels[1] > 0 {
+		// 	w.scrollPixels[1] = 0
 		// }
 
-		dx := math.Abs(float64(w.scrollDust[0]))
-		dy := math.Abs(float64(w.scrollDust[1]))
+		dx := math.Abs(float64(w.scrollPixels[0]))
+		dy := math.Abs(float64(w.scrollPixels[1]))
 
 		if dx < font.truewidth {
-			w.scrollDust[0] += h
+			w.scrollPixels[0] += h
 		}
 		if dy < float64(font.lineHeight) {
 			if v > 0 {
-				w.scrollDust[1] += 1
+				w.scrollPixels[1] += 1
 			} else if v < 0 {
-				w.scrollDust[1] += -1
+				w.scrollPixels[1] += -1
 			}
 		}
 
-		dx = math.Abs(float64(w.scrollDust[0]))
-		dy = math.Abs(float64(w.scrollDust[1]))
+		dx = math.Abs(float64(w.scrollPixels[0]))
+		dy = math.Abs(float64(w.scrollPixels[1]))
 
 		if dx >= font.truewidth {
-			horiz = int(math.Ceil(float64(w.scrollDust[0]) / font.truewidth))
+			horiz = int(math.Ceil(float64(w.scrollPixels[0]) / font.truewidth))
 			// NOTE: Reset to 0 after paint event is complete.
 			//       This is to suppress flickering.
-			// w.scrollDust[0] = 0
+			// w.scrollPixels[0] = 0
 		}
 		if dy >= float64(font.lineHeight) {
-			vert = int(math.Ceil(float64(w.scrollDust[1]) / float64(font.lineHeight)))
+			vert = int(math.Ceil(float64(w.scrollPixels[1]) / float64(font.lineHeight)))
 			// NOTE: Reset to 0 after paint event is complete.
 			//       This is to suppress flickering.
-			// w.scrollDust[1] = 0
+			// w.scrollPixels[1] = 0
 		}
 
 		w.update()
@@ -2089,7 +2098,7 @@ func (w *Window) update() {
 		}
 
 		// If scroll is smooth
-		if w.scrollDust[1] != 0 {
+		if w.scrollPixels[1] != 0 {
 			width = w.maxLenContent
 		}
 
@@ -2232,7 +2241,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 				// Fill background with pattern
 				rectF := core.NewQRectF4(
 					float64(start)*font.truewidth,
-					float64((y)*font.lineHeight+w.scrollDust[1]),
+					float64((y)*font.lineHeight+w.scrollPixels[1]),
 					float64(width)*font.truewidth,
 					float64(font.lineHeight),
 				)
@@ -2337,7 +2346,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 
 	pointF := core.NewQPointF3(
 		float64(col)*wsfont.truewidth,
-		float64(y*wsfont.lineHeight+w.scrollDust[1]),
+		float64(y*wsfont.lineHeight+w.scrollPixels[1]),
 	)
 
 	for highlight, colorSlice := range chars {
@@ -2397,7 +2406,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 		p.DrawImage7(
 			core.NewQPointF3(
 				float64(x)*wsfont.truewidth,
-				float64(y*wsfont.lineHeight+w.scrollDust[1]),
+				float64(y*wsfont.lineHeight+w.scrollPixels[1]),
 			),
 			image,
 		)
@@ -2521,7 +2530,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 	pointF := core.NewQPointF3(
 		float64(col)*wsfont.truewidth,
-		float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollDust[1]),
+		float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]),
 	)
 
 	for highlight, colorSlice := range chars {
@@ -2567,7 +2576,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			fg := line[x].highlight.fg()
 			p.SetPen2(fg.QColor())
 			pointF.SetX(float64(x) * wsfont.truewidth)
-			pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift + w.scrollDust[1]))
+			pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift + w.scrollPixels[1]))
 			font.SetBold(line[x].highlight.bold)
 			font.SetItalic(line[x].highlight.italic)
 			p.DrawText(pointF, line[x].char)
@@ -2620,8 +2629,8 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		start := float64(x) * font.truewidth
 		end := float64(x+1) * font.truewidth
 
-		Y := float64(y*font.lineHeight+w.scrollDust[1]) + float64(font.height)*1.04 + float64(font.lineSpace/2)
-		halfY := float64(y*font.lineHeight+w.scrollDust[1]) + float64(font.height)/2.0 + float64(font.lineSpace/2)
+		Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.height)*1.04 + float64(font.lineSpace/2)
+		halfY := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.height)/2.0 + float64(font.lineSpace/2)
 		weight := font.lineHeight / 14
 		if weight < 1 {
 			weight = 1
