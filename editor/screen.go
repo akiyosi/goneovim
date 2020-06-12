@@ -682,6 +682,10 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 								break
 							}
 
+							if nnlen < ylen {
+									break
+							}
+
 							if nnlen > ylen && w.lenLine[nn] > res {
 								doPaintIndent = true
 							}
