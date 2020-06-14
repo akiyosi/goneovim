@@ -629,7 +629,6 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		return
 	}
 	drawIndents := make(map[IntInt]bool)
-
 	for y := row; y < rows; y++ {
 		if y+1 >= len(w.content) {
 			return
@@ -1953,6 +1952,7 @@ func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 func (c *Cell) isSignColumn() bool {
 	switch c.highlight.hlName {
 	case "SignColumn",
+		"FoldColumn",
 		"LineNr",
 		"ALEErrorSign",
 		"ALEStyleErrorSign",
