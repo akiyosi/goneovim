@@ -594,9 +594,9 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.scrollPixels[1] = 0
 	}
 
+
 	p.DestroyQPainter()
 	w.paintMutex.Unlock()
-
 }
 
 func (w *Window) getFont() *Font {
@@ -1071,47 +1071,42 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 		w.s.ws.cursor.update()
 		return 0, 0
 	}
-	for i := 1; i <= int(math.Abs(float64(v))); i++ {
-		if h < 0 && w.scrollPixels[0] > 0 {
-			w.scrollPixels[0] = 0
-		}
-		// if v < 0 && w.scrollPixels[1] > 0 {
-		// 	w.scrollPixels[1] = 0
-		// }
 
-		dx := math.Abs(float64(w.scrollPixels[0]))
-		dy := math.Abs(float64(w.scrollPixels[1]))
-
-		if dx < font.truewidth {
-			w.scrollPixels[0] += h
-		}
-		if dy < float64(font.lineHeight) {
-			if v > 0 {
-				w.scrollPixels[1] += 1
-			} else if v < 0 {
-				w.scrollPixels[1] += -1
-			}
-		}
-
-		dx = math.Abs(float64(w.scrollPixels[0]))
-		dy = math.Abs(float64(w.scrollPixels[1]))
-
-		if dx >= font.truewidth {
-			horiz = int(math.Ceil(float64(w.scrollPixels[0]) / font.truewidth))
-			// NOTE: Reset to 0 after paint event is complete.
-			//       This is to suppress flickering.
-			// w.scrollPixels[0] = 0
-		}
-		if dy >= float64(font.lineHeight) {
-			vert = int(math.Ceil(float64(w.scrollPixels[1]) / float64(font.lineHeight)))
-			// NOTE: Reset to 0 after paint event is complete.
-			//       This is to suppress flickering.
-			// w.scrollPixels[1] = 0
-		}
-
-		w.update()
-		w.s.ws.cursor.update()
+	if h < 0 && w.scrollPixels[0] > 0 {
+		w.scrollPixels[0] = 0
 	}
+	// if v < 0 && w.scrollPixels[1] > 0 {
+	// 	w.scrollPixels[1] = 0
+	// }
+
+	dx := math.Abs(float64(w.scrollPixels[0]))
+	dy := math.Abs(float64(w.scrollPixels[1]))
+
+	if dx < font.truewidth {
+		w.scrollPixels[0] += h
+	}
+	if dy < float64(font.lineHeight) {
+		w.scrollPixels[1] += v
+	}
+
+	dx = math.Abs(float64(w.scrollPixels[0]))
+	dy = math.Abs(float64(w.scrollPixels[1]))
+
+	if dx >= font.truewidth {
+		horiz = int(math.Ceil(float64(w.scrollPixels[0]) / font.truewidth))
+		// NOTE: Reset to 0 after paint event is complete.
+		//       This is to suppress flickering.
+		// w.scrollPixels[0] = 0
+	}
+	if dy >= float64(font.lineHeight) {
+		vert = int(math.Ceil(float64(w.scrollPixels[1]) / float64(font.lineHeight)))
+		// NOTE: Reset to 0 after paint event is complete.
+		//       This is to suppress flickering.
+		// w.scrollPixels[1] = 0
+	}
+
+	w.update()
+	w.s.ws.cursor.update()
 
 	return vert, horiz
 }
