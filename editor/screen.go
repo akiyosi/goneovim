@@ -1093,20 +1093,20 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 	dy = math.Abs(float64(w.scrollPixels[1]))
 
 	if dx >= font.truewidth {
-		horiz = int(math.Ceil(float64(w.scrollPixels[0]) / font.truewidth))
-		// NOTE: Reset to 0 after paint event is complete.
-		//       This is to suppress flickering.
-		// w.scrollPixels[0] = 0
+		horiz = int(float64(w.scrollPixels[0]) / font.truewidth)
 	}
 	if dy >= float64(font.lineHeight) {
-		vert = int(math.Ceil(float64(w.scrollPixels[1]) / float64(font.lineHeight)))
+		vert = int(float64(w.scrollPixels[1]) / float64(font.lineHeight))
 		// NOTE: Reset to 0 after paint event is complete.
 		//       This is to suppress flickering.
-		// w.scrollPixels[1] = 0
 	}
 
-	w.update()
-	w.s.ws.cursor.update()
+	// w.update()
+	// w.s.ws.cursor.update()
+	if !(dx >= font.truewidth || dy >= float64(font.lineHeight)) {
+		w.update()
+		w.s.ws.cursor.update()
+	}
 
 	return vert, horiz
 }
