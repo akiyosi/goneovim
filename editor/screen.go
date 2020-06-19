@@ -58,7 +58,6 @@ type IntInt [2]int
 
 // Window is
 type Window struct {
-	rwMutex     sync.RWMutex
 	paintMutex  sync.Mutex
 	redrawMutex sync.Mutex
 
@@ -2059,13 +2058,17 @@ func (w *Window) scroll(count int) {
 }
 
 func (w *Window) update() {
+	w.redrawMutex.Lock()
+
 	if w == nil {
+		w.redrawMutex.Unlock()
 		return
 	}
 	font := w.getFont()
 
 	if w.grid != w.s.ws.cursor.gridid {
 		if w.queueRedrawArea[3] - w.queueRedrawArea[1] <= 0 {
+			w.redrawMutex.Unlock()
 			return
 		}
 	}
@@ -2115,6 +2118,8 @@ func (w *Window) update() {
 	w.queueRedrawArea[1] = w.rows
 	w.queueRedrawArea[2] = 0
 	w.queueRedrawArea[3] = 0
+
+	w.redrawMutex.Unlock()
 }
 
 func (s *Screen) update() {
