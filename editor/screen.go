@@ -1046,7 +1046,7 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 
 	x := int(float64(event.X()) / font.truewidth)
 	y := int(float64(event.Y()) / float64(font.lineHeight))
-	pos := []int{x, y}
+	pos := []int{x+win.pos[0], y+win.pos[1]}
 
 	if horiz != 0 {
 		win.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
