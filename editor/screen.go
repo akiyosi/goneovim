@@ -77,6 +77,7 @@ type Window struct {
 	cols        int
 	rows        int
 	ts          int
+	ft          string
 
 	isMsgGrid  bool
 	isFloatWin bool
@@ -616,7 +617,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if w.isMsgGrid {
 		return
 	}
-	if w.isFloatWin {
+	if w.ft == "" {
 		return
 	}
 	if !w.isShown() {
@@ -2719,8 +2720,7 @@ func (w *Window) isNormalWidth(char string) bool {
 	if char[0] <= 127 {
 		return true
 	}
-	font := w.getFont()
-	return font.fontMetrics.HorizontalAdvance(char, -1) == font.truewidth
+	return w.getFont().fontMetrics.HorizontalAdvance(char, -1) == w.getFont().truewidth
 }
 
 func (s *Screen) windowPosition(args []interface{}) {
@@ -2745,49 +2745,11 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.move(col, row)
 		// win.hideOverlappingWindows()
 		win.show()
+
+		// // for goneovim internal use
+		// win.setBufferName()
+		// win.setFiletype()
 	}
-}
-
-func (s *Screen) setBufferNames() {
-	s.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-		if win == nil {
-			return true
-		}
-		if win.grid == 1 {
-			return true
-		}
-		if win.isMsgGrid {
-			return true
-		}
-
-		bufChan := make(chan nvim.Buffer, 2)
-		var buf nvim.Buffer
-		go func() {
-			resultBuffer, _ := s.ws.nvim.WindowBuffer(win.id)
-			bufChan <- resultBuffer
-		}()
-		select {
-		case buf = <-bufChan:
-		case <-time.After(40 * time.Millisecond):
-			return true
-		}
-
-		strChan := make(chan string, 2)
-		var bufName string
-		go func() {
-			resultStr, _ := s.ws.nvim.BufferName(buf)
-			strChan <- resultStr
-		}()
-		select {
-		case bufName = <-strChan:
-		case <-time.After(40 * time.Millisecond):
-			return true
-		}
-
-		win.bufName = bufName
-		return true
-	})
 }
 
 func (s *Screen) gridDestroy(args []interface{}) {
