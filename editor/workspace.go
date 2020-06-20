@@ -404,7 +404,7 @@ func (w *Workspace) initGonvim() {
 	gonvimAutoCmds := `
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
-	au GonvimAu OptionSet * call rpcnotify(0, "Gui", "gonvim_optionset")
+	au GonvimAu OptionSet * if &filetype != "help" | call rpcnotify(0, "Gui", "gonvim_optionset") | endif
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
 	aug GonvimAuWorkspace | au! | aug END
