@@ -1218,7 +1218,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_bufenter":
 		w.bufEnter()
 	case "gonvim_filetype":
-		w.fileType()
+		go w.fileType()
 	case GonvimMarkdownNewBufferEvent:
 		go w.markdown.newBuffer()
 	case GonvimMarkdownUpdateEvent:
@@ -1479,6 +1479,7 @@ func (w *Workspace) bufEnter() {
 
 
 func (w *Workspace) fileType() {
+	time.Sleep(1000 * time.Millisecond)
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
