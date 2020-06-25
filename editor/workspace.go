@@ -1479,7 +1479,7 @@ func (w *Workspace) bufEnter() {
 
 
 func (w *Workspace) fileType() {
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1504,6 +1504,12 @@ func (w *Workspace) fileType() {
 			select {
 			case <-ftChan:
 			case <-time.After(40 * time.Millisecond):
+			}
+
+			for _, v := range editor.config.Editor.IndentGuideIgnoreFtList {
+				if v == ft {
+					return true
+				}
 			}
 			win.ft = ft
 		}
