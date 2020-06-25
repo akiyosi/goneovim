@@ -68,6 +68,7 @@ See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
 ## Getting Started
 Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](https://github.com/akiyosi/goneovim/releases) page.
+Or you can get the latest binary from Github Actions CI. See (Actions)[https://github.com/akiyosi/goneovim/actions] page.
 
 
 
