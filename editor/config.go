@@ -44,6 +44,7 @@ type editorConfig struct {
 	DrawBorder               bool
 	SkipGlobalId             bool
 	IndentGuide              bool
+	IndentGuideIgnoreFtList  []string
 	DrawBorderForFloatWindow bool
 	DrawShadowForFloatWindow bool
 	DesktopNotifications     bool
@@ -224,6 +225,7 @@ func (c *gonvimConfig) init() {
 
 	// Indent guide
 	c.Editor.IndentGuide = true
+	c.Editor.IndentGuideIgnoreFtList = []string{"markdown", "md", "txt", "text", "help", "json", "nerdtree"}
 
 	// replace diff color drawing pattern
 	c.Editor.DiffAddPattern = 1
