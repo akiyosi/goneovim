@@ -86,6 +86,7 @@ type Workspace struct {
 	normalMappings     []*nvim.Mapping
 	insertMappings     []*nvim.Mapping
 	ts                 int
+	ph                 int
 	api5               bool
 
 	escKeyInNormal     string
@@ -1435,6 +1436,19 @@ func (w *Workspace) optionSet() {
 		return true
 	})
 
+	// catch pumheight
+	ph := w.ph
+	errCh = make(chan error, 60)
+	go func() {
+		err = w.nvim.Option("pumheight", &ph)
+		errCh <-err
+	}()
+	select {
+	case <-errCh:
+	case <-time.After(40 * time.Millisecond):
+	}
+
+	w.ph = ph
 }
 
 

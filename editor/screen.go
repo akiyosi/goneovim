@@ -2805,8 +2805,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.id = arg.([]interface{})[1].(nvim.Window)
 		win.anchor = arg.([]interface{})[2].(string)
 		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
-		anchorRow := int(math.Abs(util.ReflectToFloat(arg.([]interface{})[4])))
-		anchorCol := int(math.Abs(util.ReflectToFloat(arg.([]interface{})[5])))
+		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
+		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := arg.([]interface{})[6]
 
 		win.widget.SetParent(editor.wsWidget)
@@ -2820,7 +2820,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		// In multigrid ui, the completion float window on the message window appears to be misaligned.
 		// Therefore, a hack to workaround this problem is implemented on the GUI front-end side.
 		// This workaround assumes that the anchor window for the completion window on the message window is always a global grid.
-		if anchorwin.grid == 1 && !(s.cursor[0] == 0 && s.cursor[1] == 0) {
+		pumInMsgWin := false
+		if anchorwin.grid == 1 && !(s.cursor[0] == 0 && s.cursor[1] == 0) && win.id == -1 {
 			cursorgridwin, ok := s.getWindow(s.ws.cursor.gridid)
 			if !ok {
 				continue
@@ -2829,6 +2830,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 				anchorwin = cursorgridwin
 				anchorRow = cursorgridwin.pos[0]
 			}
+			pumInMsgWin = true
 		}
 
 		var x, y int
@@ -2841,11 +2843,23 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			y = anchorwin.pos[1] + anchorRow
 		case "SW":
 			x = anchorwin.pos[0] + anchorCol
-			y = anchorwin.pos[1] + anchorRow - win.rows
+		    // In multigrid ui, the completion float window position information is not correct.
+			// Therefore, we implement a hack to compensate for this.
+			if s.ws.ph != 0 && win.id == -1 && !pumInMsgWin {
+				height := win.rows
+				if height >= s.ws.ph {
+					height = s.ws.ph
+				}
+				y = anchorwin.pos[1] + anchorRow  + height
+			} else {
+
+				y = anchorwin.pos[1] + int(math.Abs(float64(anchorRow))) - win.rows
+			}
 		case "SE":
 			x = anchorwin.pos[0] + anchorCol - win.cols
 			y = anchorwin.pos[1] + anchorRow - win.rows
 		}
+
 		win.pos[0] = x
 		win.pos[1] = y
 
@@ -3045,7 +3059,7 @@ func (w *Window) move(col int, row int) {
 	y := (row * font.lineHeight) + res
 	if w.isFloatWin {
 		if w.s.ws.drawTabline {
-			y += 6 + w.s.ws.tabline.widget.Height()
+			y += w.s.ws.tabline.widget.Height()
 		}
 	}
 	w.widget.Move2(x, y)
