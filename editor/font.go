@@ -26,15 +26,13 @@ type Font struct {
 func fontSizeNew(font *gui.QFont) (int, int, float64, float64, float64) {
 	fontMetrics := gui.NewQFontMetricsF(font)
 	h := fontMetrics.Height()
-	// We use f instead of W. Because drawing based on the width taken in W causes character misalignment.
-	// w := fontMetrics.HorizontalAdvance("W", -1)
-	w := fontMetrics.HorizontalAdvance("f", -1)
+	w := fontMetrics.HorizontalAdvance("w", -1)
 	ascent := fontMetrics.Ascent()
 	width := int(math.Ceil(w))
 	height := int(math.Ceil(h))
 	font.SetStyle(gui.QFont__StyleItalic)
 	italicFontMetrics := gui.NewQFontMetricsF(font)
-	italicWidth := italicFontMetrics.BoundingRect("f").Width()
+	italicWidth := italicFontMetrics.BoundingRect("w").Width()
 	if italicWidth < w {
 		italicWidth = w
 	}
