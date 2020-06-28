@@ -2851,14 +2851,19 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			x = anchorwin.pos[0] + anchorCol
 		    // In multigrid ui, the completion float window position information is not correct.
 			// Therefore, we implement a hack to compensate for this.
-			if s.ws.ph != 0 && win.id == -1 && !pumInMsgWin {
+			if s.ws.ph != 0 && win.id == -1 && anchorRow > 0 && !pumInMsgWin {
 				height := win.rows
 				if height >= s.ws.ph {
 					height = s.ws.ph
 				}
 				y = anchorwin.pos[1] + anchorRow  + height
+			} else if s.ws.ph == 0 && win.id == -1 && anchorRow > 0 && !pumInMsgWin {
+				height := win.rows
+				if height >= 10 {
+					height = 10
+				}
+				y = anchorwin.pos[1] + anchorRow + height
 			} else {
-
 				y = anchorwin.pos[1] + int(math.Abs(float64(anchorRow))) - win.rows
 			}
 		case "SE":
