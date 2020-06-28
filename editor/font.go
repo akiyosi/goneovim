@@ -82,9 +82,11 @@ func initFontNew(family string, size float64, lineSpace int, fast bool) *Font {
 	}
 }
 
-func (f *Font) change(family string, size float64) {
+func (f *Font) change(family string, size float64, weight gui.QFont__Weight, stretch int) {
 	f.fontNew.SetFamily(family)
 	f.fontNew.SetPointSizeF(size)
+	f.fontNew.SetWeight(int(weight))
+	f.fontNew.SetStretch(stretch)
 	f.fontMetrics = gui.NewQFontMetricsF(f.fontNew)
 	width, height, truewidth, ascent, italicWidth := fontSizeNew(f.fontNew)
 	f.width = width

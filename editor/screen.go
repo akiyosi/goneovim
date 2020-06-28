@@ -61,7 +61,7 @@ type Window struct {
 	paintMutex  sync.Mutex
 	redrawMutex sync.Mutex
 
-	s       *Screen
+	s          *Screen
 	content    [][]*Cell
 	lenLine    []int
 	lenContent    []int
@@ -537,11 +537,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	// Set devicePixelRatio if it is not set
 	if w.devicePixelRatio == 0 {
 		w.devicePixelRatio = float64(p.PaintEngine().PaintDevice().DevicePixelRatio())
-	}
-
-	// Draw text with DrawText if screen name is "minimap" or CachedDrawing is false
-	if w.s.name == "minimap" || !editor.config.Editor.CachedDrawing {
-		p.SetFont(font.fontNew)
 	}
 
 	// Draw contents
@@ -2501,7 +2496,10 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		return
 	}
 	wsfont := w.getFont()
+
+	p.SetFont(wsfont.fontNew)
 	font := p.Font()
+
 	line := w.content[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
@@ -2562,11 +2560,14 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			if fg != nil {
 				p.SetPen2(fg.QColor())
 			}
-			font.SetBold(highlight.bold)
-			font.SetItalic(highlight.italic)
+			if highlight.bold {
+				font.SetBold(true)
+			}
+			if highlight.italic {
+				font.SetItalic(true)
+			}
 			p.DrawText(pointF, text)
 		}
-
 	}
 
 	if len(specialChars) >= 1 {
@@ -2582,8 +2583,13 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			p.SetPen2(fg.QColor())
 			pointF.SetX(float64(x) * wsfont.truewidth)
 			pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift + w.scrollPixels[1]))
-			font.SetBold(line[x].highlight.bold)
-			font.SetItalic(line[x].highlight.italic)
+
+			if line[x].highlight.bold {
+				font.SetBold(true)
+			}
+			if line[x].highlight.italic {
+				font.SetItalic(true)
+			}
 			p.DrawText(pointF, line[x].char)
 		}
 		if w.s.ws.fontwide != nil && w.font == nil {

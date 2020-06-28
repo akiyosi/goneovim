@@ -1253,6 +1253,8 @@ func (w *Workspace) guiFont(args string) {
 	}
 	var fontHeight float64
 	var fontFamily string
+	var fontWeight gui.QFont__Weight
+	var fontStretch int
 
 	if args == "*" {
 		fDialog := widgets.NewQFontDialog(nil)
@@ -1268,7 +1270,7 @@ func (w *Workspace) guiFont(args string) {
 	}
 
 	for _, gfn := range strings.Split(args, ",") {
-		fontFamily, fontHeight = getFontFamilyAndHeight(gfn)
+		fontFamily, fontHeight, fontWeight, fontStretch = getFontFamilyAndHeightAndWeightAndStretch(gfn)
 		ok := checkValidFont(fontFamily)
 		if ok {
 			break
@@ -1279,7 +1281,7 @@ func (w *Workspace) guiFont(args string) {
 		fontHeight = 10.0
 	}
 
-	w.font.change(fontFamily, fontHeight)
+	w.font.change(fontFamily, fontHeight, fontWeight, fontStretch)
 	w.screen.font = w.font
 
 	w.updateSize()
@@ -1315,6 +1317,8 @@ func (w *Workspace) guiFontWide(args string) {
 
 	var fontHeight float64
 	var fontFamily string
+	var fontWeight gui.QFont__Weight
+	var fontStretch int
 
 	if args == "*" {
 		fDialog := widgets.NewQFontDialog(nil)
@@ -1330,7 +1334,7 @@ func (w *Workspace) guiFontWide(args string) {
 	}
 
 	for _, gfn := range strings.Split(args, ",") {
-		fontFamily, fontHeight = getFontFamilyAndHeight(gfn)
+		fontFamily, fontHeight, fontWeight, fontStretch = getFontFamilyAndHeightAndWeightAndStretch(gfn)
 		ok := checkValidFont(fontFamily)
 		if ok {
 			break
@@ -1341,39 +1345,59 @@ func (w *Workspace) guiFontWide(args string) {
 		fontHeight = 10.0
 	}
 
-	w.fontwide.change(fontFamily, fontHeight)
+	w.fontwide.change(fontFamily, fontHeight, fontWeight, fontStretch)
 
 	w.updateSize()
 	// w.cursor.updateFont(w.font)
 	// w.screen.toolTipFont(w.font)
 }
 
-func getFontFamilyAndHeight(s string) (string, float64) {
+func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.QFont__Weight, int) {
 	parts := strings.Split(s, ":")
 	height := 10.0
+	width := -1.0
+	weight := gui.QFont__Normal
 	if len(parts) > 1 {
 		for _, p := range parts[1:] {
 			if strings.HasPrefix(p, "h") {
-				var err error
 				// height, err = strconv.Atoi(p[1:])
-				height, err = strconv.ParseFloat(p[1:], 64)
-				if err != nil {
-					height = 10.0
+				h, err := strconv.ParseFloat(p[1:], 64)
+				if err == nil {
+					height = h
 				}
 			} else if strings.HasPrefix(p, "w") {
-				var err error
 				// width, err := strconv.Atoi(p[1:])
-				width, err := strconv.ParseFloat(p[1:], 64)
-				if err != nil {
-					height = 10.0
+				w, err := strconv.ParseFloat(p[1:], 64)
+				if err == nil {
+					width = w
 				}
-				height = 2.0 * width
+			} else if p == "t" {
+				weight = gui.QFont__Thin
+			} else if p == "el" {
+				weight = gui.QFont__ExtraLight
+			} else if p == "l" {
+				weight = gui.QFont__Light
+			} else if p == "n" {
+				// default weight, we do nothing
+			} else if p == "db" || p == "sb" {
+				weight = gui.QFont__DemiBold
+			} else if p == "b" {
+				weight = gui.QFont__Bold
+			} else if p == "eb" {
+				weight = gui.QFont__ExtraBold
+			} else {
+				weight = gui.QFont__Normal
 			}
 		}
 	}
 	family := parts[0]
 
-	return family, height
+	if width == -1.0 {
+		width = height / 2.0
+	}
+	stretch := int(float64(width) / float64(height) * 2.0 * 100.0)
+
+	return family, height, weight, stretch
 }
 
 func checkValidFont(family string) bool {
