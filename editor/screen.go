@@ -690,19 +690,21 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 						doBreak := true
 						// If the line to draw an indent-guide has a wrapped line
 						// in the next line, do not skip drawing
+						// TODO: We do not detect the wraped line when `:set nonu` setting.
 						if mm+1 < len(w.content) {
 							lllen, _ := w.countHeadSpaceOfLine(mm+1)
 							if mm >= 0 {
 								if lllen > ylen {
 									for xx := 0; xx < w.lenLine[mm]; xx++ {
 										if w.content[mm][xx] == nil {
-											break
+											continue
 										}
 										if w.content[mm][xx].highlight.hlName == "LineNr" {
 											if w.content[mm][xx].char == " " {
 												doBreak = false
 											} else if w.content[mm][xx].char != " " {
 												doBreak = true
+												break
 											}
 										}
 									}
