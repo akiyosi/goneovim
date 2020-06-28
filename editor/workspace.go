@@ -1354,7 +1354,7 @@ func (w *Workspace) guiFontWide(args string) {
 
 func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.QFont__Weight, int) {
 	parts := strings.Split(s, ":")
-	height := 10.0
+	height := -1.0
 	width := -1.0
 	weight := gui.QFont__Normal
 	if len(parts) > 1 {
@@ -1392,9 +1392,15 @@ func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.Q
 	}
 	family := parts[0]
 
-	if width == -1.0 {
+	if height <= 1.0 && width <= 0 {
+		height = 12
+		width  = 6
+	} else if height > 1.0 && width == -1.0 {
 		width = height / 2.0
+	} else if height <= 1.0 && width >= 1.0 {
+		height = width * 2.0
 	}
+
 	stretch := int(float64(width) / float64(height) * 2.0 * 100.0)
 
 	return family, height, weight, stretch
