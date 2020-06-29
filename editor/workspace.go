@@ -406,7 +406,7 @@ func (w *Workspace) initGonvim() {
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter")
-	au GonvimAu FileType * call rpcnotify(0, "Gui", "gonvim_filetype")
+	au GonvimAu BufEnter,FileType * call rpcnotify(0, "Gui", "gonvim_filetype")
 	au GonvimAu OptionSet * if &filetype != "help" | call rpcnotify(0, "Gui", "gonvim_optionset") | endif
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
@@ -1523,7 +1523,7 @@ func (w *Workspace) bufEnter() {
 
 
 func (w *Workspace) fileType() {
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
