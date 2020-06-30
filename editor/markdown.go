@@ -53,10 +53,16 @@ func newMarkdown(workspace *Workspace) *Markdown {
 		ws:              workspace,
 	}
 	m.ws.signal.ConnectMarkdownSignal(func() {
+		win, ok := m.ws.screen.getWindow(m.ws.cursor.gridid)
+		if !ok {
+			return
+		}
+		baseUrl := `file://`+ win.getCwd()+`/`
+		fmt.Println(baseUrl)
 		content := <-m.markdownUpdates
 		if !m.htmlSet {
 			m.htmlSet = true
-			m.webpage.SetHtml(m.getHTML(content), core.NewQUrl())
+			m.webpage.SetHtml(m.getHTML(content), core.NewQUrl3(baseUrl, 0))
 		} else {
 			m.container.SetPlainTextDefault(content)
 			m.container.TextChanged()

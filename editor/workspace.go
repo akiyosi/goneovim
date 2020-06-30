@@ -411,7 +411,7 @@ func (w *Workspace) initGonvim() {
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
 	aug GonvimAuWorkspace | au! | aug END
-	au GonvimAuWorkspace DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", getcwd())
+	au GonvimAuWorkspace DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", v:event)
 	aug GonvimAuFilepath | au! | aug END
 	au GonvimAuFilepath BufEnter,TabEnter,DirChanged,TermOpen,TermClose * silent call rpcnotify(0, "Gui", "gonvim_workspace_filepath", expand("%:p"))
 	aug GonvimAuMd | au! | aug END
@@ -586,6 +586,26 @@ func (w *Workspace) nvimEval(s string) (interface{}, error) {
 	}
 }
 
+func (w *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
+		scope, ok := cwdinfo["scope"]
+		if !ok {
+			scope = "global"
+		}
+		cwdITF, ok := cwdinfo["cwd"]
+		if !ok {
+			return
+		}
+		cwd := cwdITF.(string)
+		switch scope {
+		case "global" :
+			w.setCwd(cwd)
+		case "tab" :
+			w.setCwdInTab(cwd)
+		case "window" :
+			w.setCwdInWin(cwd)
+		}
+}
+
 func (w *Workspace) setCwd(cwd string) {
 	w.cwd = cwd
 	if editor.wsSide == nil {
@@ -622,6 +642,48 @@ func (w *Workspace) setCwd(cwd string) {
 			sideItem.cwdpath = path
 		}
 	}
+}
+
+func (w *Workspace) setCwdInTab(cwd string) {
+	w.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
+		if win == nil {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+		if win.isMsgGrid {
+			return true
+		}
+		if win.isShown() {
+			win.cwd = cwd
+		}
+
+		return true
+	})
+}
+
+func (w *Workspace) setCwdInWin(cwd string) {
+	w.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
+		if win == nil {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+		if win.isMsgGrid {
+			return true
+		}
+		if win.grid == w.cursor.gridid {
+			win.cwd = cwd
+		}
+
+		return true
+	})
 }
 
 func (w *Workspace) attachUIOption() map[string]interface{} {
@@ -1207,7 +1269,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_switch":
 		editor.workspaceSwitch(util.ReflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
-		w.setCwd(updates[1].(string))
+		cwdinfo :=updates[1].(map[string]interface{})
+		w.handleChangeCwd(cwdinfo)
 	case "gonvim_workspace_filepath":
 		w.filepath = updates[1].(string)
 	case "gonvim_optionset":

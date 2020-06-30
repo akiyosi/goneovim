@@ -76,20 +76,21 @@ type Window struct {
 	anchor      string
 	cols        int
 	rows        int
+	cwd         string
 	ts          int
 	ft          string
 
 	isMsgGrid  bool
 	isFloatWin bool
 
-	widget           *widgets.QWidget
-	shown            bool
-	queueRedrawArea  [4]int
-	scrollRegion     []int
+	widget             *widgets.QWidget
+	shown              bool
+	queueRedrawArea    [4]int
+	scrollRegion       []int
 	scrollPixels       [2]int
 	scrollPixelsDeltaY int
-	devicePixelRatio float64
-	textCache        gcache.Cache
+	devicePixelRatio   float64
+	textCache          gcache.Cache
 
 	font         *Font
 	background   *RGBA
@@ -592,6 +593,14 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	p.DestroyQPainter()
 	w.paintMutex.Unlock()
+}
+
+func (w *Window) getCwd() string {
+	if w.cwd == "" {
+		return w.s.ws.cwd
+	} else {
+		return w.cwd
+	}
 }
 
 func (w *Window) getFont() *Font {
