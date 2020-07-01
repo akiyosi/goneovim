@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/shurcooL/github_flavored_markdown"
 	"github.com/therecipe/qt/core"
@@ -16,17 +17,6 @@ import (
 //
 const (
 	GonvimMarkdownBufName                 = "__GonvimMarkdownPreview__"
-	GonvimMarkdownToggleEvent             = "gonvim_markdown_toggle"
-	GonvimMarkdownNewBufferEvent          = "gonvim_markdown_new_buffer"
-	GonvimMarkdownUpdateEvent             = "gonvim_markdown_update"
-	GonvimMarkdownScrollDownEvent         = "gonvim_markdown_scroll_down"
-	GonvimMarkdownScrollUpEvent           = "gonvim_markdown_scroll_up"
-	GonvimMarkdownScrollTopEvent          = "gonvim_markdown_scroll_top"
-	GonvimMarkdownScrollBottomEvent       = "gonvim_markdown_scroll_bottom"
-	GonvimMarkdownScrollPageDownEvent     = "gonvim_markdown_scroll_pagedown"
-	GonvimMarkdownScrollPageUpEvent       = "gonvim_markdown_scroll_pageup"
-	GonvimMarkdownScrollHalfPageDownEvent = "gonvim_markdown_scroll_halfpagedown"
-	GonvimMarkdownScrollHalfPageUpEvent   = "gonvim_markdown_scroll_halfpageup"
 )
 
 // Markdown is the markdown preview window
@@ -53,12 +43,18 @@ func newMarkdown(workspace *Workspace) *Markdown {
 		ws:              workspace,
 	}
 	m.ws.signal.ConnectMarkdownSignal(func() {
-		win, ok := m.ws.screen.getWindow(m.ws.cursor.gridid)
-		if !ok {
-			return
+		done := make(chan error, 60)
+		var basePath string
+		var err error
+		go func() {
+			basePath, err = m.ws.nvim.CommandOutput(`echo expand('%:p:h')`)
+			done <-err
+		}()
+		select {
+		case <-done:
+		case <-time.After(40 * time.Millisecond):
 		}
-		baseUrl := `file://`+ win.getCwd()+`/`
-		fmt.Println(baseUrl)
+		baseUrl := `file://`+ basePath +`/`
 		content := <-m.markdownUpdates
 		if !m.htmlSet {
 			m.htmlSet = true
@@ -277,35 +273,43 @@ func (m *Markdown) toggle() {
 	m.ws.nvim.Command("setlocal nowrap")
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> j :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollDownEvent,
+		"gonvim_markdown_scroll_down",
 	))
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> k :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollUpEvent,
+		"gonvim_markdown_scroll_up",
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> <C-e> :call rpcnotify(0, 'Gui', '%s')<CR>",
+		"gonvim_markdown_scroll_down",
+	))
+	m.ws.nvim.Command(fmt.Sprintf(
+		"nnoremap <silent> <buffer> <C-y> :call rpcnotify(0, 'Gui', '%s')<CR>",
+		"gonvim_markdown_scroll_up",
 	))
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> gg :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollTopEvent,
+		"gonvim_markdown_scroll_top",
 	))
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> G :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollBottomEvent,
+		"gonvim_markdown_scroll_bottom",
 	))
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> <C-b> :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollPageUpEvent,
+		"gonvim_markdown_scroll_pageup",
 	))
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> <C-f> :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollPageDownEvent,
+		"gonvim_markdown_scroll_pagedown",
 	))
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> <C-u> :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollHalfPageUpEvent,
+		"gonvim_markdown_scroll_halfpageup",
 	))
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> <C-d> :call rpcnotify(0, 'Gui', '%s')<CR>",
-		GonvimMarkdownScrollHalfPageDownEvent,
+		"gonvim_markdown_scroll_halfpagedown",
 	))
 	m.ws.nvim.Command("wincmd p")
 }

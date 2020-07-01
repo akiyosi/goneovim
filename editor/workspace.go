@@ -1283,27 +1283,27 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.bufEnter()
 	case "gonvim_filetype":
 		go w.fileType()
-	case GonvimMarkdownNewBufferEvent:
+	case "gonvim_markdown_new_buffer":
 		go w.markdown.newBuffer()
-	case GonvimMarkdownUpdateEvent:
+	case "gonvim_markdown_update":
 		go w.markdown.update()
-	case GonvimMarkdownToggleEvent:
+	case "gonvim_markdown_toggle":
 		w.markdown.toggle()
-	case GonvimMarkdownScrollDownEvent:
+	case "gonvim_markdown_scroll_down":
 		w.markdown.scrollDown()
-	case GonvimMarkdownScrollUpEvent:
+	case "gonvim_markdown_scroll_up":
 		w.markdown.scrollUp()
-	case GonvimMarkdownScrollTopEvent:
+	case "gonvim_markdown_scroll_top":
 		w.markdown.scrollTop()
-	case GonvimMarkdownScrollBottomEvent:
+	case "gonvim_markdown_scroll_bottom":
 		w.markdown.scrollBottom()
-	case GonvimMarkdownScrollPageDownEvent:
+	case "gonvim_markdown_scroll_pagedown":
 		w.markdown.scrollPageDown()
-	case GonvimMarkdownScrollPageUpEvent:
+	case "gonvim_markdown_scroll_pageup":
 		w.markdown.scrollPageUp()
-	case GonvimMarkdownScrollHalfPageDownEvent:
+	case "gonvim_markdown_scroll_halfpagedown":
 		w.markdown.scrollHalfPageDown()
-	case GonvimMarkdownScrollHalfPageUpEvent:
+	case "gonvim_markdown_scroll_halfpageup":
 		w.markdown.scrollHalfPageUp()
 	default:
 		fmt.Println("unhandled Gui event", event)
