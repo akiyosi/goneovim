@@ -387,6 +387,8 @@ func (w *Workspace) attachUI(path string) error {
 	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
 	filer.RegisterPlugin(w.nvim)
 
+	w.fontMutex.Lock()
+	defer w.fontMutex.Unlock()
 	w.uiAttached = true
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
 	if err != nil {
@@ -1282,7 +1284,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_bufenter":
 		w.bufEnter()
 	case "gonvim_filetype":
-		go w.fileType()
+		w.fileType()
 	case "gonvim_markdown_new_buffer":
 		go w.markdown.newBuffer()
 	case "gonvim_markdown_update":

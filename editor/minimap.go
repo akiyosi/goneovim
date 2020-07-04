@@ -76,6 +76,7 @@ func newMiniMap() *MiniMap {
 			cursor:         [2]int{0, 0},
 			highlightGroup: make(map[string]int),
 		},
+		visible:		editor.config.MiniMap.Visible,
 		curRegion:     curRegion,
 		stop:          make(chan struct{}),
 		signal:        NewMiniMapSignal(nil),
@@ -151,7 +152,6 @@ func (m *MiniMap) startMinimapProc() {
 		fmt.Println(err)
 	}
 	m.uiAttached = true
-	m.visible = editor.config.MiniMap.Visible
 
 	m.nvim.Subscribe("Gui")
 	m.nvim.Command(":syntax on")
