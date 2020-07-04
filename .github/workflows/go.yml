@@ -23,30 +23,21 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
-    - name: Cache Qt
-      id: cache-qt
-      uses: actions/cache@v1
-      with:
-        path: ../Qt
-        key: QtCache
-
     - name: Install Qt for linux
       if: matrix.platform == 'ubuntu-latest'
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v2.7.1
       with:
         version: 5.13.2
         host: linux
         target: desktop
-        cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Install Qt for macOS
       if: matrix.platform == 'macos-latest'
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v2.7.1
       with:
         version: 5.13.2
         host: mac
         target: desktop
-        cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - name: Get Qt binding for Go
       run: go get -v github.com/therecipe/qt/cmd/...
