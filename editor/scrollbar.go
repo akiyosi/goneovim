@@ -167,7 +167,6 @@ func (s *ScrollBar) update() {
 	font := win.getFont()
 	relativeCursorY := int(float64(s.ws.cursor.y) / float64(font.lineHeight))
 	if s.ws.maxLine == 0 {
-		//s.ws.nvim.Eval("line('$')", &s.ws.maxLine)
 		lnITF, err := s.ws.nvimEval("line('$')")
 		if err != nil {
 			s.ws.maxLine = 0

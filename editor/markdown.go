@@ -1,12 +1,16 @@
 package editor
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"runtime"
 	"time"
 
-	"github.com/shurcooL/github_flavored_markdown"
+	"github.com/akiyosi/goneovim/util"
+	"github.com/alecthomas/chroma/formatters/html"
+	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/webchannel"
@@ -16,7 +20,7 @@ import (
 
 //
 const (
-	GonvimMarkdownBufName                 = "__GonvimMarkdownPreview__"
+	GonvimMarkdownBufName = "__GonvimMarkdownPreview__"
 )
 
 // Markdown is the markdown preview window
@@ -43,6 +47,8 @@ func newMarkdown(workspace *Workspace) *Markdown {
 		ws:              workspace,
 	}
 	m.ws.signal.ConnectMarkdownSignal(func() {
+		content := <-m.markdownUpdates
+		// Get file base path
 		done := make(chan error, 60)
 		var basePath string
 		var err error
@@ -54,8 +60,8 @@ func newMarkdown(workspace *Workspace) *Markdown {
 		case <-done:
 		case <-time.After(40 * time.Millisecond):
 		}
+		// Create bae url
 		baseUrl := `file://`+ basePath +`/`
-		content := <-m.markdownUpdates
 		if !m.htmlSet {
 			m.htmlSet = true
 			m.webpage.SetHtml(m.getHTML(content), core.NewQUrl3(baseUrl, 0))
@@ -64,9 +70,6 @@ func newMarkdown(workspace *Workspace) *Markdown {
 			m.container.TextChanged()
 		}
 		m.updatePos()
-		// line, _ := m.ws.nvim.CurrentLine()
-		// m.webpage.FindText(string(line), 0)
-		// m.webpage.FindText("", 0)
 	})
 	m.webview.ConnectEventFilter(func(watched *core.QObject, event *core.QEvent) bool {
 		if event.Type() == core.QEvent__KeyPress {
@@ -127,25 +130,6 @@ func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
 }
 
 func (m *Markdown) updatePos() {
-	// for _, win := range m.ws.screen.windows {
-	// 	if win == nil {
-	// 		continue
-	// 	}
-	// 	if win.isMsgGrid || win.isFloatWin {
-	// 		continue
-	// 	}
-	// 	if filepath.Base(win.bufName) == GonvimMarkdownBufName {
-	// 		if !m.webview.IsVisible() {
-	// 			m.webview.Resize2(
-	// 				int(float64(win.cols)*m.ws.font.truewidth),
-	// 				win.rows*m.ws.font.lineHeight,
-	// 			)
-	// 			m.webview.SetParent(win.widget)
-	// 			m.show()
-	// 		}
-	// 		return
-	// 	}
-	// }
 	needHide := true
 	m.ws.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
@@ -157,15 +141,42 @@ func (m *Markdown) updatePos() {
 			return true
 		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
+			font := win.getFont()
 			if !m.webview.IsVisible() {
 				m.webview.Resize2(
-					int(float64(win.cols)*m.ws.font.truewidth),
-					win.rows*m.ws.font.lineHeight,
+					int(float64(win.cols)*font.truewidth),
+					win.rows*font.lineHeight,
 				)
 				m.webview.SetParent(win.widget)
 				m.show()
+			} else {
+				m.webview.Resize2(
+					int(float64(win.cols)*font.truewidth),
+					win.rows*m.ws.font.lineHeight,
+				)
 			}
 			needHide = false
+
+			if m.ws.maxLine == 0 {
+				lnITF, err := m.ws.nvimEval("line('$')")
+				if err != nil {
+					m.ws.maxLine = 0
+				} else {
+					m.ws.maxLine = util.ReflectToInt(lnITF)
+				}
+			}
+
+			// baseLine := 0
+			// lines := m.ws.botLine - m.ws.topLine
+			// if m.ws.curLine < m.ws.topLine + int(float64(lines)/3.0) {
+			// 	baseLine = (m.ws.topLine + m.ws.topLine)/2
+			// } else if m.ws.curLine >= m.ws.topLine + int(float64(lines)/3.0) && m.ws.curLine < m.ws.topLine + int(float64(lines*2)/3.0) {
+			// 	baseLine = m.ws.curLine
+			// } else {
+			// 	baseLine = (m.ws.curLine + m.ws.topLine)/2
+			// }
+			// position := float64(baseLine)  / float64(m.ws.maxLine)
+			// m.webpage.RunJavaScript(fmt.Sprintf("window.scrollTo(0,%f*document.body.scrollHeight)", position))
 			return false
 		}
 		return true
@@ -334,11 +345,24 @@ func (m *Markdown) update() {
 		content = append(content, '\n')
 	}
 
-	output := github_flavored_markdown.Markdown(content)
+	markdown := goldmark.New(
+		goldmark.WithExtensions(
+			highlighting.NewHighlighting(
+				highlighting.WithStyle(editor.config.Markdown.CodeHlStyle),
+				highlighting.WithFormatOptions(
+					html.WithLineNumbers(editor.config.Markdown.CodeWithLineNumbers),
+				),
+			),
+		),
+	)
+	var buff bytes.Buffer
+	if err := markdown.Convert([]byte(content), &buff); err != nil {
+		return
+	}
 	m.markdownUpdates <- fmt.Sprintf(`
 			<div id="placeholder" class="markdown-body">
 			%s
-			</div>`, string(output))
+			</div>`, buff.String())
 	m.ws.signal.MarkdownSignal()
 }
 
