@@ -705,6 +705,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 							if mm >= 0 {
 								if lllen > ylen {
 									for xx := 0; xx < w.lenLine[mm]; xx++ {
+										if xx >= len(w.content[mm]) {
+											continue
+										}
 										if w.content[mm][xx] == nil {
 											continue
 										}
