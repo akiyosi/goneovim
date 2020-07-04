@@ -408,7 +408,7 @@ func (w *Workspace) initGonvim() {
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter")
-	au GonvimAu BufEnter,FileType * call rpcnotify(0, "Gui", "gonvim_filetype")
+	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_filetype")
 	au GonvimAu OptionSet * if &filetype != "help" | call rpcnotify(0, "Gui", "gonvim_optionset") | endif
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
@@ -1284,7 +1284,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_bufenter":
 		w.bufEnter()
 	case "gonvim_filetype":
-		w.fileType()
+		w.getFileType()
 	case "gonvim_markdown_new_buffer":
 		go w.markdown.newBuffer()
 	case "gonvim_markdown_update":
@@ -1500,53 +1500,6 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	// w.cursor.updateShape()
 }
 
-func (w *Workspace) optionSet() {
-	// catch tabstop
-	ts := w.ts
-	errCh := make(chan error, 60)
-	var err error
-	go func() {
-		err = w.nvim.Option("ts", &ts)
-		errCh <-err
-	}()
-	select {
-	case <-errCh:
-	case <-time.After(40 * time.Millisecond):
-	}
-
-	w.ts = ts
-	w.screen.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-
-		if win == nil {
-			return true
-		}
-		// set tabstop
-		if win.isShown() {
-			if win.ts != w.ts {
-				win.ts = ts
-			}
-		}
-
-		return true
-	})
-
-	// catch pumheight
-	ph := w.ph
-	errCh = make(chan error, 60)
-	go func() {
-		err = w.nvim.Option("pumheight", &ph)
-		errCh <-err
-	}()
-	select {
-	case <-errCh:
-	case <-time.After(40 * time.Millisecond):
-	}
-
-	w.ph = ph
-}
-
-
 func (w *Workspace) bufEnter() {
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
@@ -1586,8 +1539,59 @@ func (w *Workspace) bufEnter() {
 	})
 }
 
+func (w *Workspace) optionSet() {
+	w.getTabStop()
+	w.getPumHeight()
+	w.getFileType()
+}
 
-func (w *Workspace) fileType() {
+func (w *Workspace) getTabStop() {
+	ts := w.ts
+	errCh := make(chan error, 60)
+	var err error
+	go func() {
+		err = w.nvim.Option("ts", &ts)
+		errCh <-err
+	}()
+	select {
+	case <-errCh:
+	case <-time.After(40 * time.Millisecond):
+	}
+
+	w.ts = ts
+	w.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
+		if win == nil {
+			return true
+		}
+		// set tabstop
+		if win.isShown() {
+			if win.ts != w.ts {
+				win.ts = ts
+			}
+		}
+
+		return true
+	})
+}
+
+func (w *Workspace) getPumHeight() {
+	ph := w.ph
+	errCh := make(chan error, 60)
+	go func() {
+		err := w.nvim.Option("pumheight", &ph)
+		errCh <-err
+	}()
+	select {
+	case <-errCh:
+	case <-time.After(40 * time.Millisecond):
+	}
+
+	w.ph = ph
+}
+
+func (w *Workspace) getFileType() {
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1602,30 +1606,26 @@ func (w *Workspace) fileType() {
 		}
 
 		if win.grid == w.cursor.gridid {
-
+			ftChan := make(chan error, 60)
+			var err error
+			var ft string
 			go func() {
-				time.Sleep(1000 * time.Millisecond)
-				ftChan := make(chan error, 60)
-				var err error
-				var ft string
-				go func() {
-					ft, err = w.nvim.CommandOutput(`echo &ft`)
-					ftChan <-err
-				}()
-				select {
-				case <-ftChan:
-				case <-time.After(40 * time.Millisecond):
-				}
-
-				for _, v := range editor.config.Editor.IndentGuideIgnoreFtList {
-					if v == ft {
-						return
-					}
-				}
-				win.paintMutex.Lock()
-				win.ft = ft
-				win.paintMutex.Unlock()
+				ft, err = w.nvim.CommandOutput(`echo &ft`)
+				ftChan <-err
 			}()
+			select {
+			case <-ftChan:
+			case <-time.After(40 * time.Millisecond):
+			}
+
+			for _, v := range editor.config.Editor.IndentGuideIgnoreFtList {
+				if v == ft {
+					return true
+				}
+			}
+			win.paintMutex.Lock()
+			win.ft = ft
+			win.paintMutex.Unlock()
 		}
 
 		return true
