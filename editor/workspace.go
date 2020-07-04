@@ -1588,7 +1588,6 @@ func (w *Workspace) bufEnter() {
 
 
 func (w *Workspace) fileType() {
-	time.Sleep(1000 * time.Millisecond)
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1603,24 +1602,30 @@ func (w *Workspace) fileType() {
 		}
 
 		if win.grid == w.cursor.gridid {
-			ftChan := make(chan error, 60)
-			var err error
-			var ft string
-			go func() {
-				ft, err = w.nvim.CommandOutput(`echo &ft`)
-				ftChan <-err
-			}()
-			select {
-			case <-ftChan:
-			case <-time.After(40 * time.Millisecond):
-			}
 
-			for _, v := range editor.config.Editor.IndentGuideIgnoreFtList {
-				if v == ft {
-					return true
+			go func() {
+				time.Sleep(1000 * time.Millisecond)
+				ftChan := make(chan error, 60)
+				var err error
+				var ft string
+				go func() {
+					ft, err = w.nvim.CommandOutput(`echo &ft`)
+					ftChan <-err
+				}()
+				select {
+				case <-ftChan:
+				case <-time.After(40 * time.Millisecond):
 				}
-			}
-			win.ft = ft
+
+				for _, v := range editor.config.Editor.IndentGuideIgnoreFtList {
+					if v == ft {
+						return
+					}
+				}
+				win.paintMutex.Lock()
+				win.ft = ft
+				win.paintMutex.Unlock()
+			}()
 		}
 
 		return true
