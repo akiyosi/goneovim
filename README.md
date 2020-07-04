@@ -37,7 +37,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Basic feature as a Text Editor
   - [x] Support multi byte character
   - [x] Drag and Drop files
-  - [x] Support InputMethod Editor (for east asian people)
+  - [x] Support InputMethod Editor (for east asian users)
 - Miscellaneous
   - [x] Supports application window transparency
   - [x] Desktop Notification of the messages emitted nvim
