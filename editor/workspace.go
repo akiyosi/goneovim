@@ -257,6 +257,7 @@ func (w *Workspace) registerSignal() {
 				index = i
 			}
 		}
+
 		if len(workspaces) == 0 {
 			editor.close()
 			return
@@ -408,7 +409,7 @@ func (w *Workspace) initGonvim() {
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter")
-	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_filetype")
+	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_filetype", &ft, win_getid())
 	au GonvimAu OptionSet * if &filetype != "help" | call rpcnotify(0, "Gui", "gonvim_optionset") | endif
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
@@ -1284,7 +1285,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_bufenter":
 		w.bufEnter()
 	case "gonvim_filetype":
-		w.getFileType()
+		w.getFileType(updates)
 	case "gonvim_markdown_new_buffer":
 		go w.markdown.newBuffer()
 	case "gonvim_markdown_update":
@@ -1542,7 +1543,7 @@ func (w *Workspace) bufEnter() {
 func (w *Workspace) optionSet() {
 	w.getTabStop()
 	w.getPumHeight()
-	w.getFileType()
+	// w.getFileType()
 }
 
 func (w *Workspace) getTabStop() {
@@ -1591,7 +1592,16 @@ func (w *Workspace) getPumHeight() {
 	w.ph = ph
 }
 
-func (w *Workspace) getFileType() {
+func (w *Workspace) getFileType(args []interface{}) {
+	ft := args[1].(string)
+	wid := util.ReflectToInt(args[2])
+
+	for _, v := range editor.config.Editor.IndentGuideIgnoreFtList {
+		if v == ft {
+			return
+		}
+	}
+
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1604,29 +1614,25 @@ func (w *Workspace) getFileType() {
 		if win.isMsgGrid {
 			return true
 		}
-
-		if win.grid == w.cursor.gridid {
-			ftChan := make(chan error, 60)
-			var err error
-			var ft string
-			go func() {
-				ft, err = w.nvim.CommandOutput(`echo &ft`)
-				ftChan <-err
-			}()
-			select {
-			case <-ftChan:
-			case <-time.After(40 * time.Millisecond):
-			}
-
-			for _, v := range editor.config.Editor.IndentGuideIgnoreFtList {
-				if v == ft {
-					return true
-				}
-			}
-			win.paintMutex.Lock()
-			win.ft = ft
-			win.paintMutex.Unlock()
+		if int(win.id) != wid {
+			return true
 		}
+
+		// ftChan := make(chan error, 60)
+		// var err error
+		// var ft string
+		// go func() {
+		// 	ft, err = w.nvim.CommandOutput(`echo &ft`)
+		// 	ftChan <-err
+		// }()
+		// select {
+		// case <-ftChan:
+		// case <-time.After(40 * time.Millisecond):
+		// }
+
+		win.paintMutex.Lock()
+		win.ft = ft
+		win.paintMutex.Unlock()
 
 		return true
 	})
