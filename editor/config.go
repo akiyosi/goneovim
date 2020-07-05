@@ -221,9 +221,9 @@ func (c *gonvimConfig) init() {
 	c.Editor.CachedDrawing = true
 	c.Editor.CacheSize = 320
 
-	c.Editor.ExtCmdline = true
+	c.Editor.ExtCmdline = false
 	c.Editor.ExtPopupmenu = false
-	c.Editor.ExtTabline = true
+	c.Editor.ExtTabline = false
 	c.Editor.ExtMessages = false
 	c.Editor.DrawBorder = false
 
