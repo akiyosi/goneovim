@@ -608,6 +608,7 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 		return
 	}
 	wsfont := w.getFont()
+	p.SetFont(wsfont.fontNew)
 	font := p.Font()
 	line := w.content[y]
 	chars := map[Highlight][]int{}
