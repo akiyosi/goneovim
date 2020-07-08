@@ -208,7 +208,9 @@ func InitEditor() {
 	e.initNotifications()
 	e.initSysTray()
 
-	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent)
+
+	isframeless := e.config.Editor.Borderless
+	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 
@@ -493,7 +495,6 @@ func (e *Editor) updateGUIColor() {
 
 	// Do not use frameless drawing on linux
 	if runtime.GOOS == "linux" {
-		// e.window.Widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f); }", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
 		e.window.TitleBar.Hide()
 		e.window.WindowWidget.SetStyleSheet(fmt.Sprintf(" #QFramelessWidget { background-color: rgba(%d, %d, %d, %f); border-radius: 0px;}", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
 		e.window.SetWindowFlag(core.Qt__FramelessWindowHint, false)

@@ -53,6 +53,7 @@ type editorConfig struct {
 	DiffDeletePattern        int
 	DiffChangePattern        int
 	ClickEffect              bool
+	Borderless               bool
 	// ExtWildmenu            bool
 	// ExtMultigrid           bool
 }
@@ -216,6 +217,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.Width = 800
 	c.Editor.Height = 600
 	c.Editor.Transparent = 1.0
+	c.Editor.Borderless = true
 
 	c.Editor.SkipGlobalId = false
 	c.Editor.CachedDrawing = true
