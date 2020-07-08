@@ -22,6 +22,7 @@ type Cursor struct {
 	text        string
 	normalWidth bool
 	gridid      int
+	oldGridid   int
 	shift       int
 	isShut      bool
 	timer       *core.QTimer

@@ -371,7 +371,14 @@ func (s *Screen) lenWindows() int {
 }
 
 func (s *Screen) gridFont(update interface{}) {
-	win, ok := s.getWindow(s.ws.cursor.gridid)
+
+	// Get current window
+	grid := s.ws.cursor.gridid
+	if !editor.config.Editor.ExtCmdline {
+		grid = s.ws.cursor.oldGridid
+	}
+
+	win, ok := s.getWindow(grid)
 	if !ok {
 		return
 	}
@@ -1540,6 +1547,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		}
 
 		if s.ws.cursor.gridid != gridid {
+			s.ws.cursor.oldGridid = s.ws.cursor.gridid
 			s.ws.cursor.gridid = gridid
 			s.ws.cursor.font = win.getFont()
 			win.raise()
