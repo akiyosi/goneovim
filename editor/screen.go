@@ -1289,12 +1289,7 @@ func (s *Screen) gridResize(args []interface{}) {
 }
 
 func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
-	win, ok := s.getWindow(gridid)
-	if ok {
-		if win.cols == cols && win.rows == rows {
-			return
-		}
-	}
+	win, _ := s.getWindow(gridid)
 
 	// make new size content
 	content := make([][]*Cell, rows)
