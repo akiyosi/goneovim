@@ -1003,7 +1003,7 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 	if accel == 0 {
 		accel = 1
 	}
-	vert = vert * accel
+	vert = vert * int(math.Sqrt(float64(accel)))
 
 	if vert == 0 && horiz == 0 {
 		return
