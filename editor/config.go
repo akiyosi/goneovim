@@ -142,7 +142,7 @@ func newGonvimConfig(home string) gonvimConfig {
 
 	if config.Editor.Transparent < 1.0 {
 		config.Editor.DrawBorder = true
-		config.Editor.Borderless = true
+		config.Editor.Borderless = false
 	}
 
 	if config.Editor.DiffAddPattern < 1 || config.Editor.DiffAddPattern > 24 {
