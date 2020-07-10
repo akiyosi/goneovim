@@ -602,7 +602,7 @@ func (s *Statusline) handleUpdates(updates []interface{}) {
 		s.filetype.redraw(filetype)
 		s.encoding.redraw(encoding)
 		s.fileFormat.redraw(fileFormat)
-		go s.git.redraw(s.ws.filepath)
+		s.git.redraw(s.ws.filepath)
 	default:
 		fmt.Println("unhandled statusline event", event)
 	}
