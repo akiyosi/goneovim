@@ -1165,8 +1165,10 @@ func (w *Workspace) getPos() {
 		return
 	}
 
-	w.curLine = curPos[1]
-	w.curColm = curPos[2]
+	w.curPosMutex.Lock()
+		w.curLine = curPos[1]
+		w.curColm = curPos[2]
+	w.curPosMutex.Unlock()
 }
 
 func (w *Workspace) windowViewport(arg []interface{}) {
