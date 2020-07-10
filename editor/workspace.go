@@ -1282,7 +1282,9 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		cwdinfo :=updates[1].(map[string]interface{})
 		w.handleChangeCwd(cwdinfo)
 	case "gonvim_workspace_filepath":
+		w.minimap.mu.Lock()
 		w.filepath = updates[1].(string)
+		w.minimap.mu.Unlock()
 	case "gonvim_optionset":
 		w.optionSet()
 	case "gonvim_termenter":

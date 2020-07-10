@@ -376,14 +376,14 @@ func (m *MiniMap) mapScroll() {
 }
 
 func (m *MiniMap) bufSync() {
+	m.mu.Lock()
+	defer func() {
+		m.isProcessSync = false
+		m.mu.Unlock()
+	}()
 	if m.isProcessSync {
 		return
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	defer func() {
-		m.isProcessSync = false
-	}()
 	m.isProcessSync = true
 	time.Sleep(800 * time.Millisecond)
 	if strings.Contains(m.ws.filepath, "[denite]") {
