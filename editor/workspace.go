@@ -885,11 +885,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "msg_set_pos":
 			s.msgSetPos(args)
 		case "win_viewport":
-			vp := args[0].([]interface{})
-			w.topLine = util.ReflectToInt(vp[2]) + 1
-			w.botLine = util.ReflectToInt(vp[3]) + 1
-			w.curLine = util.ReflectToInt(vp[4]) + 1
-			w.curColm = util.ReflectToInt(vp[5]) + 1
+			w.windowViewport(args[0].([]interface{}))
 
 		// Popupmenu Events
 		case "popupmenu_show":
@@ -1173,13 +1169,22 @@ func (w *Workspace) getPos() {
 	w.curColm = curPos[2]
 }
 
+func (w *Workspace) windowViewport(arg []interface{}) {
+	w.curPosMutex.Lock()
+	w.topLine = util.ReflectToInt(arg[2]) + 1
+	w.botLine = util.ReflectToInt(arg[3]) + 1
+	w.curLine = util.ReflectToInt(arg[4]) + 1
+	w.curColm = util.ReflectToInt(arg[5]) + 1
+	w.curPosMutex.Unlock()
+}
+
 func (w *Workspace) updateMinimap() {
 	var absMapTop int
 	var absMapBottom int
 	w.minimap.nvim.Eval("line('w0')", &absMapTop)
 	w.minimap.nvim.Eval("line('w$')", &absMapBottom)
-	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
 	w.curPosMutex.RLock()
+	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
 	defer w.curPosMutex.RUnlock()
 	switch {
 	case w.curLine >= absMapBottom:
