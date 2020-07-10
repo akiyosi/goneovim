@@ -81,6 +81,7 @@ type Workspace struct {
 	curLine            int
 	curColm            int
 	curPosMutex        sync.RWMutex
+	optionsetMutex     sync.RWMutex
 	cursorStyleEnabled bool
 	modeInfo           []map[string]interface{}
 	normalMappings     []*nvim.Mapping
@@ -1286,7 +1287,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.filepath = updates[1].(string)
 		w.minimap.mu.Unlock()
 	case "gonvim_optionset":
-		w.optionSet()
+		go w.optionSet()
 	case "gonvim_termenter":
 		w.mode = "terminal-input"
 	case "gonvim_termleave":
@@ -1550,8 +1551,10 @@ func (w *Workspace) bufEnter() {
 }
 
 func (w *Workspace) optionSet() {
+	w.optionsetMutex.Lock()
 	w.getTabStop()
 	w.getPumHeight()
+	w.optionsetMutex.Unlock()
 	// w.getFileType()
 }
 

@@ -1332,7 +1332,9 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		s.storeWindow(gridid, win)
 		win.setParent(s.widget)
 		win.grid = gridid
+		win.s.ws.optionsetMutex.RLock()
 		win.ts = s.ws.ts
+		win.s.ws.optionsetMutex.RUnlock()
 
 		// set scroll
 		if s.name != "minimap" {
@@ -2973,11 +2975,8 @@ func (w *Window) isShown() bool {
 	if w == nil {
 		return false
 	}
-	if !w.shown {
-		return false
-	}
 
-	return true
+	return w.widget.IsVisible()
 }
 
 func (w *Window) raise() {
@@ -3016,7 +3015,7 @@ func (w *Window) hideOverlappingWindows() {
 		if win.isFloatWin {
 			return true
 		}
-		if !win.shown {
+		if !win.isShown() {
 			return true
 		}
 		if w.widget.Geometry().Contains2(win.widget.Geometry(), false) {
@@ -3030,12 +3029,10 @@ func (w *Window) hideOverlappingWindows() {
 func (w *Window) show() {
 	w.fill()
 	w.widget.Show()
-	w.shown = true
 }
 
 func (w *Window) hide() {
 	w.widget.Hide()
-	w.shown = false
 }
 
 func (w *Window) setParent(a widgets.QWidget_ITF) {
