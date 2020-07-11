@@ -229,12 +229,6 @@ func InitEditor() {
 
 	e.initWorkspaces()
 
-	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		for _, ws := range e.workspaces {
-			ws.updateSize()
-		}
-	})
-
 	e.loadFileInDarwin()
 
 	go func() {
@@ -247,6 +241,12 @@ func InitEditor() {
 
 	e.window.Show()
 	e.wsWidget.SetFocus2()
+	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		for _, ws := range e.workspaces {
+			ws.updateSize()
+		}
+	})
+
 	widgets.QApplication_Exec()
 }
 

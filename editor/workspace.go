@@ -149,9 +149,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
 
-	go w.startNvim(path)
-	w.registerSignal()
-
 	w.screen = newScreen()
 	w.screen.ws = w
 	w.screen.font = w.font
@@ -208,6 +205,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
+	go w.startNvim(path)
+	w.registerSignal()
+
 	w.popup.widget.Hide()
 	w.palette.hide()
 	w.fpalette.hide()
@@ -216,7 +216,7 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	w.widget.SetParent(editor.wsWidget)
 	w.widget.Move2(0, 0)
-	w.updateSize()
+	// w.updateSize()
 
 	if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
 		go func() {
@@ -324,6 +324,8 @@ func (w *Workspace) startNvim(path string) error {
 	if err != nil {
 		return err
 	}
+	w.updateSize()
+
 	w.nvim = neovim
 	w.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
 		w.guiUpdates <- updates
@@ -333,6 +335,7 @@ func (w *Workspace) startNvim(path string) error {
 		w.redrawUpdates <- updates
 		w.signal.RedrawSignal()
 	})
+
 
 	go func() {
 		err := w.nvim.Serve()
