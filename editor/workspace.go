@@ -876,6 +876,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "win_float_pos":
 			s.windowFloatPosition(args)
 		case "win_external_pos":
+			s.windowExternalPosition(args)
 		case "win_hide":
 			s.windowHide(args)
 		case "win_scroll_over_start":

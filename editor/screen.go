@@ -82,6 +82,7 @@ type Window struct {
 
 	isMsgGrid  bool
 	isFloatWin bool
+	isExternal bool
 
 	widget             *widgets.QWidget
 	shown              bool
@@ -92,6 +93,7 @@ type Window struct {
 	devicePixelRatio   float64
 	textCache          gcache.Cache
 
+	diag         *widgets.QDialog
 	font         *Font
 	background   *RGBA
 	width        float64
@@ -2152,6 +2154,10 @@ func (s *Screen) update() {
 			// 	s.windows.Delete(grid)
 			// }
 			win.hide()
+			if win.diag != nil {
+				win.diag.Hide()
+				win.diag = nil
+			}
 			s.windows.Delete(grid)
 		}
 		if win != nil {
@@ -2902,6 +2908,53 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 	}
 }
 
+func (s *Screen) windowExternalPosition(args []interface{}) {
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		// winid := arg.([]interface{})[1].(nvim.Window)
+
+		s.windows.Range(func(_, winITF interface{}) bool {
+		        win := winITF.(*Window)
+		        if win == nil {
+		                return true
+		        }
+		        if win.grid == 1 {
+		                return true
+		        }
+		        if win.isMsgGrid {
+		                return true
+		        }
+				if win.grid == gridid && !win.isExternal {
+					win.isExternal = true
+					diag := widgets.NewQDialog(nil, core.Qt__Dialog)
+					win.widget.SetParent(diag)
+					diag.ConnectKeyPressEvent(editor.keyPress)
+					diag.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+						height := diag.Height()
+						width := diag.Width()
+						cols := int((float64(width) / win.getFont().truewidth))
+						rows := height / win.getFont().lineHeight
+						_ = s.ws.nvim.TryResizeUIGrid(win.grid, cols, rows)
+					})
+
+					win.background = s.ws.background.copy()
+					diag.SetAutoFillBackground(true)
+					p := gui.NewQPalette()
+					p.SetColor2(gui.QPalette__Background, s.ws.background.QColor())
+					diag.SetPalette(p)
+
+					diag.Show()
+
+					win.diag = diag
+				}
+
+		        return true
+		})
+
+
+	}
+}
+
 func (s *Screen) windowHide(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
@@ -2990,7 +3043,11 @@ func (w *Window) raise() {
 	w.s.ws.cursor.widget.SetParent(w.widget)
 	w.s.ws.cursor.widget.Hide()
 	w.s.ws.cursor.widget.Show()
-
+	if !w.isExternal {
+		editor.window.Raise()
+	} else if w.isExternal {
+		w.diag.Raise()
+	}
 }
 
 func (w *Window) hideOverlappingWindows() {
