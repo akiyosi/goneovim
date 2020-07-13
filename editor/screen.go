@@ -2936,6 +2936,10 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 						rows := height / win.getFont().lineHeight
 						_ = s.ws.nvim.TryResizeUIGrid(win.grid, cols, rows)
 					})
+					diag.SetWindowFlag(core.Qt__WindowMaximizeButtonHint, false)
+					diag.SetWindowFlag(core.Qt__WindowMinimizeButtonHint, false)
+					diag.SetWindowFlag(core.Qt__WindowCloseButtonHint, false)
+					diag.SetWindowFlag(core.Qt__WindowContextHelpButtonHint, false)
 
 					win.background = s.ws.background.copy()
 					diag.SetAutoFillBackground(true)
