@@ -2159,10 +2159,7 @@ func (s *Screen) update() {
 			// 	s.windows.Delete(grid)
 			// }
 			win.hide()
-			if win.extwin != nil {
-				win.extwin.Hide()
-				win.extwin = nil
-			}
+			win.deleteExternalWin()
 			s.windows.Delete(grid)
 		}
 		if win != nil {
@@ -2826,6 +2823,13 @@ func (s *Screen) gridDestroy(args []interface{}) {
 	})
 }
 
+func (w *Window) deleteExternalWin() {
+	if w.extwin != nil {
+		w.extwin.Hide()
+		w.extwin = nil
+	}
+}
+
 func (s *Screen) windowFloatPosition(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
@@ -2847,6 +2851,10 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		win.widget.SetParent(editor.wsWidget)
 		win.isFloatWin = true
+		if win.isExternal {
+			win.deleteExternalWin()
+			win.isExternal = false
+		}
 
 		anchorwin, ok := s.getWindow(anchorGrid)
 		if !ok {
