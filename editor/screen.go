@@ -3158,8 +3158,8 @@ func (w *Window) move(col int, row int) {
 		}
 	}
 	if w.isExternal {
-		x += 5
-		y += 5
+		x = 5
+		y = 5
 
 	}
 
