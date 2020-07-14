@@ -56,6 +56,11 @@ type Cell struct {
 
 type IntInt [2]int
 
+// ExternalWin is
+type ExternalWin struct {
+	widgets.QDialog
+}
+
 // Window is
 type Window struct {
 	paintMutex  sync.Mutex
@@ -93,7 +98,7 @@ type Window struct {
 	devicePixelRatio   float64
 	textCache          gcache.Cache
 
-	diag         *widgets.QDialog
+	extwin       *ExternalWin
 	font         *Font
 	background   *RGBA
 	width        float64
@@ -2154,9 +2159,9 @@ func (s *Screen) update() {
 			// 	s.windows.Delete(grid)
 			// }
 			win.hide()
-			if win.diag != nil {
-				win.diag.Hide()
-				win.diag = nil
+			if win.extwin != nil {
+				win.extwin.Hide()
+				win.extwin = nil
 			}
 			s.windows.Delete(grid)
 		}
@@ -2914,42 +2919,38 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 		// winid := arg.([]interface{})[1].(nvim.Window)
 
 		s.windows.Range(func(_, winITF interface{}) bool {
-		        win := winITF.(*Window)
-		        if win == nil {
-		                return true
-		        }
-		        if win.grid == 1 {
-		                return true
-		        }
-		        if win.isMsgGrid {
-		                return true
-		        }
+				win := winITF.(*Window)
+				if win == nil {
+				        return true
+				}
+				if win.grid == 1 {
+				        return true
+				}
+				if win.isMsgGrid {
+				        return true
+				}
 				if win.grid == gridid && !win.isExternal {
 					win.isExternal = true
-					diag := widgets.NewQDialog(nil, core.Qt__Dialog)
-					win.widget.SetParent(diag)
-					diag.ConnectKeyPressEvent(editor.keyPress)
-					diag.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-						height := diag.Height()
-						width := diag.Width()
+
+					extwin := createExternalWin()
+					win.widget.SetParent(extwin)
+					extwin.ConnectKeyPressEvent(editor.keyPress)
+					extwin.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+						height := extwin.Height()-10
+						width := extwin.Width()-10
 						cols := int((float64(width) / win.getFont().truewidth))
 						rows := height / win.getFont().lineHeight
 						_ = s.ws.nvim.TryResizeUIGrid(win.grid, cols, rows)
 					})
-					diag.SetWindowFlag(core.Qt__WindowMaximizeButtonHint, false)
-					diag.SetWindowFlag(core.Qt__WindowMinimizeButtonHint, false)
-					diag.SetWindowFlag(core.Qt__WindowCloseButtonHint, false)
-					diag.SetWindowFlag(core.Qt__WindowContextHelpButtonHint, false)
 
 					win.background = s.ws.background.copy()
-					diag.SetAutoFillBackground(true)
+					extwin.SetAutoFillBackground(true)
 					p := gui.NewQPalette()
 					p.SetColor2(gui.QPalette__Background, s.ws.background.QColor())
-					diag.SetPalette(p)
+					extwin.SetPalette(p)
 
-					diag.Show()
-
-					win.diag = diag
+					extwin.Show()
+					win.extwin = extwin
 				}
 
 		        return true
@@ -3050,7 +3051,7 @@ func (w *Window) raise() {
 	if !w.isExternal {
 		editor.window.Raise()
 	} else if w.isExternal {
-		w.diag.Raise()
+		w.extwin.Raise()
 	}
 }
 
@@ -3148,6 +3149,13 @@ func (w *Window) move(col int, row int) {
 			y += w.s.ws.tabline.widget.Height()
 		}
 	}
+	if w.isExternal {
+		x += 5
+		y += 5
+
+	}
+
+
 	w.widget.Move2(x, y)
 
 }
