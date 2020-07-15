@@ -13,15 +13,15 @@ type SvgXML struct {
 	color     *RGBA
 }
 
-// Svg is
-type Svg struct {
-	width  int
-	height int
-	color  *RGBA
-	bg     *RGBA
-	name   string
-}
-
+// // Svg is
+// type Svg struct {
+// 	width  int
+// 	height int
+// 	color  *RGBA
+// 	bg     *RGBA
+// 	name   string
+// }
+ 
 const (
 	GithubLangMercury              = "#ff2b2b"
 	GithubLangTypeScript           = "#2b7489"

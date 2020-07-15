@@ -22,15 +22,9 @@ import (
 // Statusline is
 type Statusline struct {
 	ws     *Workspace
+	hl *Highlight
 	widget *widgets.QWidget
 
-	hl *Highlight
-	bg *RGBA
-
-	borderTopWidth int
-	paddingLeft    int
-	paddingRight   int
-	margin         int
 	height         int
 
 	left *LeftStatusItem
@@ -80,7 +74,6 @@ type StatuslineLint struct {
 	okLabel    *widgets.QLabel
 	errorLabel *widgets.QLabel
 	warnLabel  *widgets.QLabel
-	svgLoaded  bool
 }
 
 // StatuslineFilepath is
@@ -131,7 +124,6 @@ type StatuslineGit struct {
 	s         *Statusline
 	branch    string
 	file      string
-	svgLoaded bool
 	c         *StatuslineComponent
 }
 
@@ -927,7 +919,7 @@ func (s *StatuslineLint) setColor() {
 	s.warnIcon.Load2(core.NewQByteArray2(svgWrnContent, len(svgWrnContent)))
 	s.errorLabel.SetStyleSheet(fmt.Sprintf("color: %s; background-color: rgba(0, 0, 0, 0.0);", s.c.fg.String()))
 	s.warnLabel.SetStyleSheet(fmt.Sprintf("color: %s; background-color: rgba(0, 0, 0, 0.0);", s.c.fg.String()))
-	s.c.widget.SetStyleSheet(fmt.Sprintf("background-color: rgba(0, 0, 0, 0.0);"))
+	s.c.widget.SetStyleSheet("background-color: rgba(0, 0, 0, 0.0);")
 }
 
 func (s *StatuslineLint) redraw(errors, warnings int) {

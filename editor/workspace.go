@@ -1834,8 +1834,6 @@ func (w *Workspace) getNum() int {
 
 // WorkspaceSideItem is
 type WorkspaceSideItem struct {
-	mu sync.Mutex
-
 	hidden    bool
 	active    bool
 	side      *WorkspaceSide

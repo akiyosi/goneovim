@@ -16,7 +16,6 @@ import (
 	clipb "github.com/atotto/clipboard"
 	"github.com/jessevdk/go-flags"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
@@ -90,22 +89,18 @@ type Editor struct {
 	notificationWidth int
 	notify            chan *Notify
 	guiInit           chan bool
-	doneGuiInit       bool
 
 	workspaces []*Workspace
 	active     int
-	nvim       *nvim.Nvim
 	window     *frameless.QFramelessWindow
 	split      *widgets.QSplitter
 	wsWidget   *widgets.QWidget
 	wsSide     *WorkspaceSide
 	sysTray    *widgets.QSystemTrayIcon
 
-	statuslineHeight int
 	width            int
 	height           int
 	iconSize         int
-	tablineHeight    int
 
 	stop     chan struct{}
 	stopOnce sync.Once

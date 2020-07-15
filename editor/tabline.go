@@ -40,8 +40,6 @@ type Tab struct {
 	ID        int
 	active    bool
 	Name      string
-	width     int
-	chars     int
 	fileIcon  *svg.QSvgWidget
 	fileType  string
 	closeIcon *svg.QSvgWidget

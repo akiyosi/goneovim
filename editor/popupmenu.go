@@ -32,8 +32,6 @@ type PopupMenu struct {
 	scrollBarHeight int
 	scrollCol       *widgets.QWidget
 	detailLabel     *widgets.QLabel
-	x               int
-	y               int
 	hideItemIdx     [2]bool
 }
 
@@ -45,7 +43,6 @@ type PopupItem struct {
 	word        string
 	wordRequest string
 
-	kind     string
 	kindwidget *widgets.QWidget
 	kindIcon *svg.QSvgWidget
 
@@ -60,8 +57,6 @@ type PopupItem struct {
 	selected        bool
 	selectedRequest bool
 
-	kindColor *RGBA
-	kindBg    *RGBA
 	hidden    bool
 
 	detailText string

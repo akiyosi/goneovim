@@ -12,10 +12,6 @@ import (
 type Filer struct {
 	Widget    *widgets.QListWidget
 	nvim      *nvim.Nvim
-	isOpen    bool
-	cancelled bool
-
-	cwd       string
 	selectnum int
 	items     [](map[string]string)
 }

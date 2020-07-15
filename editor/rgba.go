@@ -173,43 +173,6 @@ func warpColor(rgba *RGBA, v int) *RGBA {
 	}
 }
 
-func shiftColor(rgba *RGBA, v int) *RGBA {
-	if rgba == nil {
-		return &RGBA{0, 0, 0, 1}
-	}
-	var r, g, b int
-	r = rgba.R - v
-	g = rgba.G - v
-	b = rgba.B - v
-
-	if r <= 0 {
-		r = 0
-	}
-	if g <= 0 {
-		g = 0
-	}
-	if b <= 0 {
-		b = 0
-	}
-
-	if r >= 255 {
-		r = 255
-	}
-	if g >= 255 {
-		g = 255
-	}
-	if b >= 255 {
-		b = 255
-	}
-
-	return &RGBA{
-		R: r,
-		G: g,
-		B: b,
-		A: rgba.A,
-	}
-}
-
 func newRGBA(r int, g int, b int, a float64) *RGBA {
 	return &RGBA{
 		R: r,

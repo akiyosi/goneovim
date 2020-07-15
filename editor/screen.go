@@ -94,7 +94,6 @@ type Window struct {
 	isExternal bool
 
 	widget             *widgets.QWidget
-	shown              bool
 	queueRedrawArea    [4]int
 	scrollRegion       []int
 	scrollPixels       [2]int
@@ -241,7 +240,7 @@ func fileOpenInBuf(file string) {
 }
 
 func (s *Screen) howToOpen(file string) {
-	message := fmt.Sprintf("[Gonvvim] Do you want to diff between the file being dropped and the current buffer?")
+	message := "[Goneovim] Do you want to diff between the file being dropped and the current buffer?"
 	opts := []*NotifyButton{}
 	opt1 := &NotifyButton{
 		action: func() {
@@ -260,31 +259,6 @@ func (s *Screen) howToOpen(file string) {
 	opts = append(opts, opt2)
 
 	editor.pushNotification(NotifyInfo, 0, message, notifyOptionArg(opts))
-}
-
-func (s *Screen) updateRows() bool {
-	var ret bool
-	ws := s.ws
-	rows := s.height / s.font.lineHeight
-
-	if rows != ws.rows {
-		ret = true
-	}
-	ws.rows = rows
-	return ret
-}
-
-func (s *Screen) updateCols() bool {
-	var ret bool
-	ws := s.ws
-	s.width = s.widget.Width()
-	cols := int(float64(s.width) / s.font.truewidth)
-
-	if cols != ws.cols {
-		ret = true
-	}
-	ws.cols = cols
-	return ret
 }
 
 func (s *Screen) waitTime() time.Duration {
@@ -613,14 +587,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	p.DestroyQPainter()
 	w.paintMutex.Unlock()
-}
-
-func (w *Window) getCwd() string {
-	if w.cwd == "" {
-		return w.s.ws.cwd
-	} else {
-		return w.cwd
-	}
 }
 
 func (w *Window) getFont() *Font {
@@ -2782,7 +2748,6 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.pos[0] = col
 		win.pos[1] = row
 		win.move(col, row)
-		// win.hideOverlappingWindows()
 		win.show()
 
 		// // for goneovim internal use
@@ -3060,39 +3025,6 @@ func (w *Window) raise() {
 	} else if w.isExternal {
 		w.extwin.Raise()
 	}
-}
-
-func (w *Window) hideOverlappingWindows() {
-	if w.isMsgGrid {
-		return
-	}
-	w.s.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-
-		if win == nil {
-			return true
-		}
-		if win.grid == 1 {
-			return true
-		}
-		if w == win {
-			return true
-		}
-		if win.isMsgGrid {
-			return true
-		}
-		if win.isFloatWin {
-			return true
-		}
-		if !win.isShown() {
-			return true
-		}
-		if w.widget.Geometry().Contains2(win.widget.Geometry(), false) {
-			win.hide()
-		}
-
-		return true
-	})
 }
 
 func (w *Window) show() {
