@@ -19,6 +19,10 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+const (
+	EXTWINBORDERSIZE = 5
+)
+
 type gridId = int
 
 // Highlight is
@@ -98,7 +102,9 @@ type Window struct {
 	devicePixelRatio   float64
 	textCache          gcache.Cache
 
-	extwin       *ExternalWin
+	extwin                 *ExternalWin
+	extwinConnectResizable bool
+
 	font         *Font
 	background   *RGBA
 	width        float64
@@ -1366,11 +1372,9 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	s.resizeIndependentFontGrid(win, winOldCols, winOldRows)
 
 	font := win.getFont()
-	width := int(float64(cols) * font.truewidth)
+	width := int(math.Ceil(float64(cols) * font.truewidth))
 	height := rows * font.lineHeight
-	rect := core.NewQRect4(0, 0, width, height)
-	win.setGeometryAndPalette(rect)
-
+	win.setGridGeometry(width, height)
 	win.move(win.pos[0], win.pos[1])
 
 	win.show()
@@ -2943,13 +2947,6 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 					extwin := createExternalWin()
 					win.widget.SetParent(extwin)
 					extwin.ConnectKeyPressEvent(editor.keyPress)
-					extwin.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-						height := extwin.Height()-10
-						width := extwin.Width()-10
-						cols := int((float64(width) / win.getFont().truewidth))
-						rows := height / win.getFont().lineHeight
-						_ = s.ws.nvim.TryResizeUIGrid(win.grid, cols, rows)
-					})
 
 					win.background = s.ws.background.copy()
 					extwin.SetAutoFillBackground(true)
@@ -3109,7 +3106,27 @@ func (w *Window) setParent(a widgets.QWidget_ITF) {
 	w.widget.SetParent(a)
 }
 
-func (w *Window) setGeometryAndPalette(rect core.QRect_ITF) {
+func (w *Window) setGridGeometry(width, height int) {
+	if w.isExternal {
+		// We will resize the window based on the cols and rows of the grid for the first time only
+		if w.extwin != nil && !w.extwinConnectResizable {
+			w.extwin.Resize2(width+EXTWINBORDERSIZE*2, height+EXTWINBORDERSIZE*2)
+		}
+		// We resize the grid cols and rows according to the resizing of the external window,
+		//  except for the first time.
+		if !w.extwinConnectResizable {
+			w.extwin.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+				height := w.extwin.Height()-EXTWINBORDERSIZE*2
+				width := w.extwin.Width()-EXTWINBORDERSIZE*2
+				cols := int((float64(width) / w.getFont().truewidth))
+				rows := height / w.getFont().lineHeight
+				_ = w.s.ws.nvim.TryResizeUIGrid(w.grid, cols, rows)
+			})
+			w.extwinConnectResizable = true
+		}
+	}
+
+	rect := core.NewQRect4(0, 0, width, height)
 	w.widget.SetGeometry(rect)
 	w.fill()
 }
@@ -3158,8 +3175,8 @@ func (w *Window) move(col int, row int) {
 		}
 	}
 	if w.isExternal {
-		x = 5
-		y = 5
+		x = EXTWINBORDERSIZE
+		y = EXTWINBORDERSIZE
 
 	}
 

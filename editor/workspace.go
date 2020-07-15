@@ -1745,7 +1745,7 @@ func newWorkspaceSide() *WorkspaceSide {
 
 	items := []*WorkspaceSideItem{}
 	side.items = items
-	for i := 0; i < WorkspaceLen; i++ {
+	for i := 0; i < WORKSPACELEN; i++ {
 		item := newWorkspaceSideItem()
 		side.items = append(side.items, item)
 		side.items[len(side.items)-1].side = side
