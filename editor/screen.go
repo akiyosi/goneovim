@@ -19,6 +19,10 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+const (
+	EXTWINBORDERSIZE = 5
+)
+
 type gridId = int
 
 // Highlight is
@@ -56,6 +60,11 @@ type Cell struct {
 
 type IntInt [2]int
 
+// ExternalWin is
+type ExternalWin struct {
+	widgets.QDialog
+}
+
 // Window is
 type Window struct {
 	paintMutex  sync.Mutex
@@ -82,6 +91,7 @@ type Window struct {
 
 	isMsgGrid  bool
 	isFloatWin bool
+	isExternal bool
 
 	widget             *widgets.QWidget
 	shown              bool
@@ -91,6 +101,9 @@ type Window struct {
 	scrollPixelsDeltaY int
 	devicePixelRatio   float64
 	textCache          gcache.Cache
+
+	extwin                 *ExternalWin
+	extwinConnectResizable bool
 
 	font         *Font
 	background   *RGBA
@@ -1359,11 +1372,9 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	s.resizeIndependentFontGrid(win, winOldCols, winOldRows)
 
 	font := win.getFont()
-	width := int(float64(cols) * font.truewidth)
+	width := int(math.Ceil(float64(cols) * font.truewidth))
 	height := rows * font.lineHeight
-	rect := core.NewQRect4(0, 0, width, height)
-	win.setGeometryAndPalette(rect)
-
+	win.setGridGeometry(width, height)
 	win.move(win.pos[0], win.pos[1])
 
 	win.show()
@@ -2152,6 +2163,7 @@ func (s *Screen) update() {
 			// 	s.windows.Delete(grid)
 			// }
 			win.hide()
+			win.deleteExternalWin()
 			s.windows.Delete(grid)
 		}
 		if win != nil {
@@ -2213,27 +2225,27 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	// 		highlight = &line[x].highlight
 	// 	}
 	// 	if !bg.equals(w.s.ws.background) || idDrawDefaultBg {
-	// 	     // Set diff pattern
-	// 	     pattern, color, transparent := w.getFillpatternAndTransparent(highlight)
-	// 	     // Fill background with pattern
-	// 	     rectF := core.NewQRectF4(
-	// 	             float64(x)*font.truewidth,
-	// 	             float64((y)*font.lineHeight),
-	// 	             font.truewidth,
-	// 	             float64(font.lineHeight),
-	// 	     )
-	// 	     p.FillRect(
-	// 	             rectF,
-	// 	             gui.NewQBrush3(
-	// 	                     gui.NewQColor3(
-	// 	                             color.R,
-	// 	                             color.G,
-	// 	                             color.B,
-	// 	                             transparent,
-	// 	                     ),
-	// 	                     pattern,
-	// 	             ),
-	// 	     )
+	// 		 // Set diff pattern
+	// 		 pattern, color, transparent := w.getFillpatternAndTransparent(highlight)
+	// 		 // Fill background with pattern
+	// 		 rectF := core.NewQRectF4(
+	// 				 float64(x)*font.truewidth,
+	// 				 float64((y)*font.lineHeight),
+	// 				 font.truewidth,
+	// 				 float64(font.lineHeight),
+	// 		 )
+	// 		 p.FillRect(
+	// 				 rectF,
+	// 				 gui.NewQBrush3(
+	// 						 gui.NewQColor3(
+	// 								 color.R,
+	// 								 color.G,
+	// 								 color.B,
+	// 								 transparent,
+	// 						 ),
+	// 						 pattern,
+	// 				 ),
+	// 		 )
 	// 	}
 
 	// The same color combines the rectangular areas and paints at once
@@ -2794,25 +2806,32 @@ func (s *Screen) gridDestroy(args []interface{}) {
 
 	// Redraw each displayed window.Because shadows leave dust before and after float window drawing.
 	s.windows.Range(func(_, winITF interface{}) bool {
-	        win := winITF.(*Window)
-	        if win == nil {
-	                return true
-	        }
-	        if win.grid == 1 {
-	                return true
-	        }
-	        if win.isMsgGrid {
-	                return true
-	        }
-	        if win.isGridDirty {
-	                return true
-	        }
-	        if win.isShown() {
-	                win.queueRedrawAll()
-	        }
+			win := winITF.(*Window)
+			if win == nil {
+					return true
+			}
+			if win.grid == 1 {
+					return true
+			}
+			if win.isMsgGrid {
+					return true
+			}
+			if win.isGridDirty {
+					return true
+			}
+			if win.isShown() {
+					win.queueRedrawAll()
+			}
 
-	        return true
+			return true
 	})
+}
+
+func (w *Window) deleteExternalWin() {
+	if w.extwin != nil {
+		w.extwin.Hide()
+		w.extwin = nil
+	}
 }
 
 func (s *Screen) windowFloatPosition(args []interface{}) {
@@ -2836,6 +2855,10 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		win.widget.SetParent(editor.wsWidget)
 		win.isFloatWin = true
+		if win.isExternal {
+			win.deleteExternalWin()
+			win.isExternal = false
+		}
 
 		anchorwin, ok := s.getWindow(anchorGrid)
 		if !ok {
@@ -2868,7 +2891,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			y = anchorwin.pos[1] + anchorRow
 		case "SW":
 			x = anchorwin.pos[0] + anchorCol
-		    // In multigrid ui, the completion float window position information is not correct.
+			// In multigrid ui, the completion float window position information is not correct.
 			// Therefore, we implement a hack to compensate for this.
 			if s.ws.ph != 0 && win.id == -1 && anchorRow > 0 && !pumInMsgWin {
 				height := win.rows
@@ -2899,6 +2922,46 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
 		anchorwin.queueRedrawAll()
+	}
+}
+
+func (s *Screen) windowExternalPosition(args []interface{}) {
+	for _, arg := range args {
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		// winid := arg.([]interface{})[1].(nvim.Window)
+
+		s.windows.Range(func(_, winITF interface{}) bool {
+				win := winITF.(*Window)
+				if win == nil {
+						return true
+				}
+				if win.grid == 1 {
+						return true
+				}
+				if win.isMsgGrid {
+						return true
+				}
+				if win.grid == gridid && !win.isExternal {
+					win.isExternal = true
+
+					extwin := createExternalWin()
+					win.widget.SetParent(extwin)
+					extwin.ConnectKeyPressEvent(editor.keyPress)
+
+					win.background = s.ws.background.copy()
+					extwin.SetAutoFillBackground(true)
+					p := gui.NewQPalette()
+					p.SetColor2(gui.QPalette__Background, s.ws.background.QColor())
+					extwin.SetPalette(p)
+
+					extwin.Show()
+					win.extwin = extwin
+				}
+
+				return true
+		})
+
+
 	}
 }
 
@@ -2990,7 +3053,11 @@ func (w *Window) raise() {
 	w.s.ws.cursor.widget.SetParent(w.widget)
 	w.s.ws.cursor.widget.Hide()
 	w.s.ws.cursor.widget.Show()
-
+	if !w.isExternal {
+		editor.window.Raise()
+	} else if w.isExternal {
+		w.extwin.Raise()
+	}
 }
 
 func (w *Window) hideOverlappingWindows() {
@@ -3039,7 +3106,27 @@ func (w *Window) setParent(a widgets.QWidget_ITF) {
 	w.widget.SetParent(a)
 }
 
-func (w *Window) setGeometryAndPalette(rect core.QRect_ITF) {
+func (w *Window) setGridGeometry(width, height int) {
+	if w.isExternal {
+		// We will resize the window based on the cols and rows of the grid for the first time only
+		if w.extwin != nil && !w.extwinConnectResizable {
+			w.extwin.Resize2(width+EXTWINBORDERSIZE*2, height+EXTWINBORDERSIZE*2)
+		}
+		// We resize the grid cols and rows according to the resizing of the external window,
+		//  except for the first time.
+		if !w.extwinConnectResizable {
+			w.extwin.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+				height := w.extwin.Height()-EXTWINBORDERSIZE*2
+				width := w.extwin.Width()-EXTWINBORDERSIZE*2
+				cols := int((float64(width) / w.getFont().truewidth))
+				rows := height / w.getFont().lineHeight
+				_ = w.s.ws.nvim.TryResizeUIGrid(w.grid, cols, rows)
+			})
+			w.extwinConnectResizable = true
+		}
+	}
+
+	rect := core.NewQRect4(0, 0, width, height)
 	w.widget.SetGeometry(rect)
 	w.fill()
 }
@@ -3087,6 +3174,13 @@ func (w *Window) move(col int, row int) {
 			y += w.s.ws.tabline.widget.Height()
 		}
 	}
+	if w.isExternal {
+		x = EXTWINBORDERSIZE
+		y = EXTWINBORDERSIZE
+
+	}
+
+
 	w.widget.Move2(x, y)
 
 }

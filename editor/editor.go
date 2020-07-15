@@ -26,7 +26,7 @@ var editor *Editor
 
 const (
 	GONEOVIMVERSION = "v0.4.6"
-	WorkspaceLen = 20
+	WORKSPACELEN = 20
 )
 
 // ColorPalette is
@@ -269,7 +269,7 @@ func (e *Editor) initWorkspaces() {
 	e.workspaces = []*Workspace{}
 	sessionExists := false
 	if e.config.Workspace.RestoreSession {
-		for i := 0; i <= WorkspaceLen; i++ {
+		for i := 0; i <= WORKSPACELEN; i++ {
 			path := filepath.Join(e.homeDir, ".goneovim", "sessions", strconv.Itoa(i)+".vim")
 			_, err := os.Stat(path)
 			if err != nil {

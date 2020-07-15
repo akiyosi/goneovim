@@ -876,6 +876,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "win_float_pos":
 			s.windowFloatPosition(args)
 		case "win_external_pos":
+			s.windowExternalPosition(args)
 		case "win_hide":
 			s.windowHide(args)
 		case "win_scroll_over_start":
@@ -1744,7 +1745,7 @@ func newWorkspaceSide() *WorkspaceSide {
 
 	items := []*WorkspaceSideItem{}
 	side.items = items
-	for i := 0; i < WorkspaceLen; i++ {
+	for i := 0; i < WORKSPACELEN; i++ {
 		item := newWorkspaceSideItem()
 		side.items = append(side.items, item)
 		side.items[len(side.items)-1].side = side
