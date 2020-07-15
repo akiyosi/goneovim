@@ -1000,13 +1000,15 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 
 	if (v == 0 || h == 0) && isStopScroll {
 		vert, horiz = win.smoothUpdate(v, h, isStopScroll)
-	} else if (v != 0 || h != 0) {
+	} else if (v != 0 || h != 0) && event.Phase() != core.Qt__NoScrollPhase {
 		// If Scrolling has ended, reset the displacement of the line
 		vert, horiz = win.smoothUpdate(v, h, isStopScroll)
 	} else {
-
 		vert =  angles.Y()
 		horiz = angles.X()
+		if event.Inverted() {
+			vert = -1 * vert
+		}
 		// Scroll per 1 line
 		if math.Abs(float64(vert)) > 1 {
 			vert = vert / int(math.Abs(float64(vert)))
