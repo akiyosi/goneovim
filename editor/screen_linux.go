@@ -1,5 +1,9 @@
 package editor
 
+import (
+	"github.com/therecipe/qt/core"
+)
+
 func createExternalWin() *ExternalWin {
 	extwin := NewExternalWin(nil, 0)
 
