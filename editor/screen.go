@@ -2225,27 +2225,27 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	// 		highlight = &line[x].highlight
 	// 	}
 	// 	if !bg.equals(w.s.ws.background) || idDrawDefaultBg {
-	// 	     // Set diff pattern
-	// 	     pattern, color, transparent := w.getFillpatternAndTransparent(highlight)
-	// 	     // Fill background with pattern
-	// 	     rectF := core.NewQRectF4(
-	// 	             float64(x)*font.truewidth,
-	// 	             float64((y)*font.lineHeight),
-	// 	             font.truewidth,
-	// 	             float64(font.lineHeight),
-	// 	     )
-	// 	     p.FillRect(
-	// 	             rectF,
-	// 	             gui.NewQBrush3(
-	// 	                     gui.NewQColor3(
-	// 	                             color.R,
-	// 	                             color.G,
-	// 	                             color.B,
-	// 	                             transparent,
-	// 	                     ),
-	// 	                     pattern,
-	// 	             ),
-	// 	     )
+	// 		 // Set diff pattern
+	// 		 pattern, color, transparent := w.getFillpatternAndTransparent(highlight)
+	// 		 // Fill background with pattern
+	// 		 rectF := core.NewQRectF4(
+	// 				 float64(x)*font.truewidth,
+	// 				 float64((y)*font.lineHeight),
+	// 				 font.truewidth,
+	// 				 float64(font.lineHeight),
+	// 		 )
+	// 		 p.FillRect(
+	// 				 rectF,
+	// 				 gui.NewQBrush3(
+	// 						 gui.NewQColor3(
+	// 								 color.R,
+	// 								 color.G,
+	// 								 color.B,
+	// 								 transparent,
+	// 						 ),
+	// 						 pattern,
+	// 				 ),
+	// 		 )
 	// 	}
 
 	// The same color combines the rectangular areas and paints at once
@@ -2806,24 +2806,24 @@ func (s *Screen) gridDestroy(args []interface{}) {
 
 	// Redraw each displayed window.Because shadows leave dust before and after float window drawing.
 	s.windows.Range(func(_, winITF interface{}) bool {
-	        win := winITF.(*Window)
-	        if win == nil {
-	                return true
-	        }
-	        if win.grid == 1 {
-	                return true
-	        }
-	        if win.isMsgGrid {
-	                return true
-	        }
-	        if win.isGridDirty {
-	                return true
-	        }
-	        if win.isShown() {
-	                win.queueRedrawAll()
-	        }
+			win := winITF.(*Window)
+			if win == nil {
+					return true
+			}
+			if win.grid == 1 {
+					return true
+			}
+			if win.isMsgGrid {
+					return true
+			}
+			if win.isGridDirty {
+					return true
+			}
+			if win.isShown() {
+					win.queueRedrawAll()
+			}
 
-	        return true
+			return true
 	})
 }
 
@@ -2891,7 +2891,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			y = anchorwin.pos[1] + anchorRow
 		case "SW":
 			x = anchorwin.pos[0] + anchorCol
-		    // In multigrid ui, the completion float window position information is not correct.
+			// In multigrid ui, the completion float window position information is not correct.
 			// Therefore, we implement a hack to compensate for this.
 			if s.ws.ph != 0 && win.id == -1 && anchorRow > 0 && !pumInMsgWin {
 				height := win.rows
@@ -2933,13 +2933,13 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 		s.windows.Range(func(_, winITF interface{}) bool {
 				win := winITF.(*Window)
 				if win == nil {
-				        return true
+						return true
 				}
 				if win.grid == 1 {
-				        return true
+						return true
 				}
 				if win.isMsgGrid {
-				        return true
+						return true
 				}
 				if win.grid == gridid && !win.isExternal {
 					win.isExternal = true
@@ -2958,7 +2958,7 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 					win.extwin = extwin
 				}
 
-		        return true
+				return true
 		})
 
 
