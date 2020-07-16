@@ -468,7 +468,6 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		y = ws.palette.patternPadding + ws.palette.padding
 		candY = y + ws.palette.widget.Pos().Y()
 	} else {
-
 		win, ok := s.getWindow(s.ws.cursor.gridid)
 		if !ok {
 			return 0, 0, 0, 0
@@ -942,18 +941,18 @@ func (s *Screen) bottomWindowPos() int {
 	return pos
 }
 
-func (win *Window) wheelEvent(event *gui.QWheelEvent) {
+func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	var v, h, vert, horiz int
 	var vertKey string
 	var horizKey string
-	font := win.getFont()
+	font := w.getFont()
 
 	// Detect current mode
-	mode := win.s.ws.mode
+	mode := w.s.ws.mode
 	if mode == "terminal-input" {
-		win.s.ws.nvim.Input(`<C-\><C-n>`)
+		w.s.ws.nvim.Input(`<C-\><C-n>`)
 	} else if mode != "normal" {
-		win.s.ws.nvim.Input(win.s.ws.escKeyInInsert)
+		w.s.ws.nvim.Input(w.s.ws.escKeyInInsert)
 	}
 
 	pixels := event.PixelDelta()
@@ -965,10 +964,10 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 	isStopScroll := event.Phase() == core.Qt__ScrollEnd
 
 	if (v == 0 || h == 0) && isStopScroll {
-		vert, horiz = win.smoothUpdate(v, h, isStopScroll)
+		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
 	} else if (v != 0 || h != 0) && event.Phase() != core.Qt__NoScrollPhase {
 		// If Scrolling has ended, reset the displacement of the line
-		vert, horiz = win.smoothUpdate(v, h, isStopScroll)
+		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
 	} else {
 		vert =  angles.Y()
 		horiz = angles.X()
@@ -1008,11 +1007,11 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	// If the window at the mouse pointer is not the current window
-	if win.grid != win.s.ws.cursor.gridid {
+	if w.grid != w.s.ws.cursor.gridid {
 		errCh := make(chan error, 60)
 		var err error
 		go func() {
-			err = win.s.ws.nvim.SetCurrentWindow(win.id)
+			err = w.s.ws.nvim.SetCurrentWindow(w.id)
 			errCh <-err
 		}()
 
@@ -1025,15 +1024,15 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 
 	mod := event.Modifiers()
 
-	if win.s.ws.isMappingScrollKey {
+	if w.s.ws.isMappingScrollKey {
 		if vert != 0 {
-			win.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
+			w.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
 		}
 	} else {
 		if vert > 0 {
-			win.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", int(math.Abs(float64(vert)))))
+			w.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", int(math.Abs(float64(vert)))))
 		} else if vert < 0 {
-			win.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", int(math.Abs(float64(vert)))))
+			w.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", int(math.Abs(float64(vert)))))
 		}
 	}
 
@@ -1044,10 +1043,10 @@ func (win *Window) wheelEvent(event *gui.QWheelEvent) {
 
 	x := int(float64(event.X()) / font.truewidth)
 	y := int(float64(event.Y()) / float64(font.lineHeight))
-	pos := []int{x+win.pos[0], y+win.pos[1]}
+	pos := []int{x+w.pos[0], y+w.pos[1]}
 
 	if horiz != 0 {
-		win.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
+		w.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
 	}
 
 	event.Accept()
@@ -2763,7 +2762,7 @@ func (s *Screen) gridDestroy(args []interface{}) {
 			continue
 		}
 
-		// NOTE: what should we actualy do in the event ??
+		// NOTE: what should we actually do in the event ??
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue

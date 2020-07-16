@@ -360,9 +360,11 @@ func (m *Message) makeMessage(kind string, attrId int, text string, length int, 
 		}
 	}
 
+	MessageSignal := m.ws.signal.MessageSignal
+
 	item.hideAt = time.Now().Add(time.Duration(m.expires) * time.Second)
 	time.AfterFunc(time.Duration(m.expires+1)*time.Second, func() {
-		m.ws.signal.MessageSignal()
+		MessageSignal()
 	})
 	item.attrId = attrId
 	item.setKind(kind)

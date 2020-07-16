@@ -120,7 +120,7 @@ func (m *MiniMap) startMinimapProc() {
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
 		neovim, err = nvim.NewChildProcess(minimapProcessArgs, childProcessCmd)
 	} else {
-		// Attaching to nvim normaly
+		// Attaching to nvim normally
 		neovim, err = nvim.NewChildProcess(minimapProcessArgs)
 	}
 	if err != nil {
@@ -455,7 +455,6 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 		event := update[0].(string)
 		args := update[1:]
 		switch event {
-
 		case "grid_resize":
 			m.gridResize(args)
 		// case "default_colors_set":

@@ -318,7 +318,7 @@ func (w *Workspace) startNvim(path string) error {
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
 		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd)
 	} else {
-		// Attaching to nvim normaly
+		// Attaching to nvim normally
 		neovim, err = nvim.NewChildProcess(childProcessArgs)
 	}
 	if err != nil {

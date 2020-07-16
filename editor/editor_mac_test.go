@@ -106,8 +106,8 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-
 			if got := e.convertKey(tt.args); got != tt.want {
 				t.Errorf("Editor.convertKey() = %v, want %v", got, tt.want)
 			}

@@ -72,6 +72,7 @@ func TestHighlight_fg(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			hl := &Highlight{
 				id:            tt.fields.id,
@@ -310,6 +311,7 @@ func TestWindow_updateLine(t *testing.T) {
 
 	// Do tests
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			w := &Window{
 				s:                tt.fields.s,

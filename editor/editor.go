@@ -746,7 +746,7 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 			text = strings.ToLower(text)
 		}
 	}
-	c = string(text)
+	c = text
 	if c == "" {
 		return ""
 	}
