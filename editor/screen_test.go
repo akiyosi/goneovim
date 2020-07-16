@@ -3,11 +3,6 @@ package editor
 import (
 	"reflect"
 	"testing"
-	"sync"
-
-	"github.com/bluele/gcache"
-	"github.com/neovim/go-client/nvim"
-	"github.com/therecipe/qt/widgets"
 )
 
 func TestHighlight_fg(t *testing.T) {
@@ -102,35 +97,35 @@ func TestHighlight_fg(t *testing.T) {
 
 func TestWindow_updateLine(t *testing.T) {
 	type fields struct {
-		rwMutex          sync.RWMutex
-		paintMutex       sync.Mutex
-		redrawMutex      sync.Mutex
+	//	rwMutex          sync.RWMutex
+	//	paintMutex       sync.Mutex
+	//	redrawMutex      sync.Mutex
 		s                *Screen
 		content          [][]*Cell
-		lenLine          []int
-		lenContent       []int
-		lenOldContent    []int
+	//	lenLine          []int
+	//	lenContent       []int
+	//	lenOldContent    []int
 		grid             gridId
-		isGridDirty      bool
-		id               nvim.Window
-		bufName          string
-		pos              [2]int
-		anchor           string
+	//	isGridDirty      bool
+	//	id               nvim.Window
+	//	bufName          string
+	//	pos              [2]int
+	//	anchor           string
 		cols             int
 		rows             int
-		isMsgGrid        bool
-		isFloatWin       bool
-		widget           *widgets.QWidget
-		shown            bool
-		queueRedrawArea  [4]int
-		scrollRegion     []int
-		devicePixelRatio float64
-		textCache        gcache.Cache
-		font             *Font
-		background       *RGBA
-		width            float64
-		height           int
-		localWindows     *[4]localWindow
+	//	isMsgGrid        bool
+	//	isFloatWin       bool
+	//	widget           *widgets.QWidget
+	//	shown            bool
+	//	queueRedrawArea  [4]int
+	//	scrollRegion     []int
+	//	devicePixelRatio float64
+	//	textCache        gcache.Cache
+	//	font             *Font
+	//	fobackground       *RGBA
+	//	width            float64
+	//	height           int
+	//	localWindows     *[4]localWindow
 	}
 	type args struct {
 		col   int
