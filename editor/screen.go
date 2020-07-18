@@ -2699,7 +2699,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyle, *RGBA, int) {
 	color := hl.bg()
 	pattern := core.Qt__BrushStyle(1)
-	transparent := int(transparent() * 255.0)
+	transparent := int(((transparent() * 255.0)) * ((100.0 - float64(w.s.ws.pb)) / 100.0))
 	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
 		transparent = int(editor.config.Message.Transparent * 255.0)
 	}
@@ -3084,6 +3084,9 @@ func (w *Window) fill() {
 		return
 	}
 	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
+		return
+	}
+	if w.isFloatWin && w.s.ws.pb > 0 {
 		return
 	}
 	if w.background != nil {

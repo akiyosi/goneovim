@@ -88,6 +88,7 @@ type Workspace struct {
 	insertMappings     []*nvim.Mapping
 	ts                 int
 	ph                 int
+	pb                 int
 	api5               bool
 
 	escKeyInNormal     string
@@ -1130,7 +1131,8 @@ func (w *Workspace) setOption(update []interface{}) {
 		case "linespace":
 			w.guiLinespace(val)
 		case "pumblend":
-			w.popup.setPumblend(val)
+			w.setPumblend(val)
+			w.popup.setPumblend(w.pb)
 		case "showtabline":
 		case "termguicolors":
 		// case "ext_cmdline":
@@ -1513,6 +1515,26 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	w.font.changeLineSpace(lineSpace)
 	w.updateSize()
 	// w.cursor.updateShape()
+}
+
+func (w *Workspace) setPumblend(arg interface{}) {
+	var pumblend int
+	var err error
+	switch val := arg.(type) {
+	case string:
+		pumblend, err = strconv.Atoi(val)
+		if err != nil {
+			return
+		}
+	case int32: // can't combine these in a type switch without compile error
+		pumblend = int(val)
+	case int64:
+		pumblend = int(val)
+	default:
+		return
+	}
+
+	w.pb = pumblend
 }
 
 func (w *Workspace) bufEnter() {

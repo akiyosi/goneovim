@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/therecipe/qt/core"
@@ -184,22 +183,7 @@ func (p *PopupMenu) setColor() {
 	)
 }
 
-func (p *PopupMenu) setPumblend(arg interface{}) {
-	var pumblend int
-	var err error
-	switch val := arg.(type) {
-	case string:
-		pumblend, err = strconv.Atoi(val)
-		if err != nil {
-			return
-		}
-	case int32: // can't combine these in a type switch without compile error
-		pumblend = int(val)
-	case int64:
-		pumblend = int(val)
-	default:
-		return
-	}
+func (p *PopupMenu) setPumblend(pumblend int) {
 	alpha := float64(100-pumblend) / float64(100)
 	if alpha < 0 {
 		alpha = 0
