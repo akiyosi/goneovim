@@ -76,7 +76,7 @@ func newMiniMap() *MiniMap {
 			cursor:         [2]int{0, 0},
 			highlightGroup: make(map[string]int),
 		},
-		visible:		editor.config.MiniMap.Visible,
+		visible:       editor.config.MiniMap.Visible,
 		curRegion:     curRegion,
 		stop:          make(chan struct{}),
 		signal:        NewMiniMapSignal(nil),
@@ -351,7 +351,7 @@ func (m *MiniMap) mapScroll() {
 		absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
 		var absMapTop int
 		m.nvim.Eval("line('w0')", &absMapTop)
-		linePos = absScreenTop-absMapTop
+		linePos = absScreenTop - absMapTop
 	}
 
 	win, ok := m.ws.screen.getWindow(m.ws.cursor.gridid)
@@ -608,7 +608,6 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 	}
 	wsfont := w.getFont()
 	p.SetFont(wsfont.fontNew)
-	font := p.Font()
 	line := w.content[y]
 	chars := map[Highlight][]int{}
 	specialChars := []int{}
@@ -669,8 +668,6 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 			if fg != nil {
 				p.SetPen2(fg.QColor())
 			}
-			font.SetBold(highlight.bold)
-			font.SetItalic(highlight.italic)
 			p.DrawText(pointF, text)
 		}
 
@@ -684,8 +681,6 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 		p.SetPen2(fg.QColor())
 		pointF.SetX(float64(x) * wsfont.truewidth)
 		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift))
-		font.SetBold(line[x].highlight.bold)
-		font.SetItalic(line[x].highlight.italic)
 		p.DrawText(pointF, line[x].char)
 	}
 }
