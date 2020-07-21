@@ -200,7 +200,12 @@ func (m *Message) resize() {
 	if m.ws.screen == nil {
 		return
 	}
-	leftPadding := editor.wsSide.scrollarea.Width()
+	leftPadding := 0
+	if editor.wsSide != nil {
+		if editor.wsSide.scrollarea != nil {
+			leftPadding = editor.wsSide.scrollarea.Width()
+		}
+	}
 
 	var x, y int
 	var ok bool
