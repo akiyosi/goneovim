@@ -200,6 +200,7 @@ func (m *Message) resize() {
 	if m.ws.screen == nil {
 		return
 	}
+
 	leftPadding := 0
 	if editor.wsSide != nil {
 		if editor.wsSide.scrollarea != nil {
@@ -221,10 +222,18 @@ func (m *Message) resize() {
 	m.widget.Resize2(m.width+editor.iconSize, 0)
 	if !ok {
 		x = 10 + leftPadding
-		y = m.ws.widget.Height() - m.ws.statusline.widget.Height() - m.widget.Height()
+		// y = m.ws.widget.Height() - m.ws.statusline.widget.Height() - m.widget.Height()
+		y = m.ws.widget.Height() - m.widget.Height()
+		if m.ws.statusline != nil {
+			y -= m.ws.statusline.widget.Height()
+		}
 	} else {
 		x = m.ws.width + leftPadding - m.width - editor.iconSize - m.ws.scrollBar.widget.Width() - 12
-		y = 6 + m.ws.tabline.widget.Height()
+		// y = 6 + m.ws.tabline.widget.Height()
+		y = 6
+		if m.ws.tabline != nil {
+			y += m.ws.tabline.widget.Height()
+		}
 	}
 	m.widget.Move2(x, y)
 }

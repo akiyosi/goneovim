@@ -384,8 +384,12 @@ func (w *Workspace) configure() {
 func (w *Workspace) attachUI(path string) error {
 	w.nvim.Subscribe("Gui")
 	go w.initGonvim()
-	w.tabline.subscribe()
-	w.statusline.subscribe()
+	if w.tabline != nil {
+		w.tabline.subscribe()
+	}
+	if w.statusline != nil {
+		w.statusline.subscribe()
+	}
 	// w.loc.subscribe()
 	w.message.subscribe()
 
@@ -764,15 +768,23 @@ func (w *Workspace) updateSize() {
 		}
 	}
 
-	if w.drawTabline {
+	if w.drawTabline && w.tabline != nil {
 		w.tabline.height = w.tabline.widget.Height()
 	}
-	if w.drawStatusline {
+	if w.drawStatusline && w.statusline != nil {
 		w.statusline.height = w.statusline.widget.Height()
 	}
 
 	if w.screen != nil {
-		w.screen.height = w.height - w.tabline.height - w.statusline.height
+		t := 0
+		s := 0
+		if w.tabline != nil {
+			t = w.tabline.height
+		}
+		if w.statusline != nil {
+			s = w.statusline.height
+		}
+		w.screen.height = w.height - t - s
 		w.screen.updateSize()
 	}
 	if w.palette != nil {
@@ -915,7 +927,9 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Tabline Events
 		case "tabline_update":
-			w.tabline.update(args)
+			if w.tabline != nil {
+				w.tabline.update(args)
+			}
 
 		// Cmdline Events
 		case "cmdline_show":
@@ -969,8 +983,10 @@ func (w *Workspace) drawOtherUI() {
 	}
 
 	if w.drawStatusline {
-		w.statusline.pos.redraw(w.curLine, w.curColm)
-		w.statusline.mode.redraw()
+		if w.statusline != nil {
+			w.statusline.pos.redraw(w.curLine, w.curColm)
+			w.statusline.mode.redraw()
+		}
 	}
 
 	if editor.config.ScrollBar.Visible {
@@ -1083,10 +1099,14 @@ func (w *Workspace) updateWorkspaceColor() {
 	w.message.setColor()
 	w.screen.setColor()
 	if w.drawTabline {
-		w.tabline.setColor()
+		if w.tabline != nil {
+			w.tabline.setColor()
+		}
 	}
 	if w.drawStatusline {
-		w.statusline.setColor()
+		if w.statusline != nil {
+			w.statusline.setColor()
+		}
 	}
 	if editor.config.ScrollBar.Visible {
 		w.scrollBar.setColor()
@@ -1382,8 +1402,12 @@ func (w *Workspace) guiFont(args string) {
 
 	w.palette.updateFont()
 	w.fpalette.updateFont()
-	w.tabline.updateFont()
-	w.statusline.updateFont()
+	if w.tabline != nil {
+		w.tabline.updateFont()
+	}
+	if w.statusline != nil {
+		w.statusline.updateFont()
+	}
 }
 
 func (w *Workspace) guiFontWide(args string) {
@@ -1727,7 +1751,9 @@ func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {
 	x := int(float64(col) * font.truewidth)
 	y := row * font.lineHeight
 	if w.drawTabline {
-		y += w.tabline.widget.Height()
+		if w.tabline != nil {
+			y += w.tabline.widget.Height()
+		}
 	}
 	x += int(float64(win.pos[0]) * font.truewidth)
 	y += win.pos[1] * font.lineHeight
