@@ -113,7 +113,9 @@ func (s *Fuzzy) handle(args ...interface{}) {
 	case "resume":
 		s.resume()
 	case "update_max":
+		s.resultRWMtext.Lock()
 		s.max = gonvimUtil.ReflectToInt(args[1])
+		s.resultRWMtext.Unlock()
 	default:
 		fmt.Println("unhandleld fzfshim event", event)
 	}
@@ -624,10 +626,9 @@ func (s *Fuzzy) outputResult() {
 	}
 	start := s.start
 	result := s.result
-	max := s.max
 	selected := s.selected
-
 	s.resultRWMtext.RLock()
+	max := s.max
 	total := len(result)
 	if start >= total || selected >= total {
 		s.start = 0
@@ -691,6 +692,7 @@ func (s *Fuzzy) down() {
 }
 
 func (s *Fuzzy) processSelected() {
+	s.resultRWMtext.RLock()
 	if s.selected < s.start {
 		s.start = s.selected
 		s.outputResult()
@@ -698,6 +700,7 @@ func (s *Fuzzy) processSelected() {
 		s.start = s.selected - s.max + 1
 		s.outputResult()
 	}
+	s.resultRWMtext.RUnlock()
 	go s.nvim.Call("rpcnotify", nil, 0, "Gui", "finder_select", s.selected-s.start)
 }
 

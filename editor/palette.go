@@ -5,7 +5,6 @@ import (
 	"math"
 	"runtime"
 
-	"github.com/akiyosi/goneovim/fuzzy"
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -214,9 +213,6 @@ func (p *Palette) resize() {
 	itemHeight := p.resultItems[0].widget.SizeHint().Height()
 	p.itemHeight = itemHeight
 	p.showTotal = int(float64(p.ws.height)/float64(itemHeight)*editor.config.Palette.AreaRatio) - 1
-	if p.ws.uiAttached {
-		fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
-	}
 	for i := p.showTotal; i < len(p.resultItems); i++ {
 		p.resultItems[i].hide()
 	}

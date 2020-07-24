@@ -796,6 +796,9 @@ func (w *Workspace) updateSize() {
 	if w.message != nil {
 		w.message.resize()
 	}
+	if w.uiAttached {
+		fuzzy.UpdateMax(w.nvim, w.palette.showTotal)
+	}
 
 	// notification
 	e.updateNotificationPos()
