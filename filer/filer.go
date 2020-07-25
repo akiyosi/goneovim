@@ -102,26 +102,49 @@ func (f *Filer) open() {
 
 func (f *Filer) redraw() {
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_clear")
-	files, err := f.nvim.CommandOutput(`lua 
-		local uv = vim and vim.loop or require 'luv'
-		-- Ref: https://gitter.im/neovim/neovim?at=5dcf9e5b5eb2e813db330dc8
-		-- TODO: There may be an architecture that can handle go implementation and lua processing more efficiently.
-		-- TODO: replace a way to get cwd path at the neovim v0.5.0
-		--       local path = vim.fn.expand(vim.fn.getcwd())
-		local path = vim.api.nvim_eval('expand(getcwd())')
-		local h = uv.fs_scandir(path)
-		while true do
-		    local name, type = uv.fs_scandir_next(h)
-		    if not name then
-		        break
-		    end
-		    if type == "directory" then
-		        print(name .. "/")
-		    else
-		        print(name)
-		    end
-		end
-	`)
+	var files string
+	var err error
+	var api5 int
+	f.nvim.Eval(`has('nvim-0.5')`, &api5)
+	if api5 == 1 {
+		err = f.nvim.ExecLua(`
+			local uv = vim and vim.loop or require 'luv'
+			local path = vim.fn.expand(vim.fn.getcwd())
+			local h = uv.fs_scandir(path)
+			local result = ""
+			while true do
+			    local name, type = uv.fs_scandir_next(h)
+			    if not name then
+			        break
+			    end
+			    if type == "directory" then
+			        result = result .. "\n" .. name .. "/"
+			    else
+			        result = result .. "\n" .. name
+			    end
+			end
+			return result
+		`, &files)
+	} else {
+		files, err = f.nvim.CommandOutput(`lua 
+			-- Ref: https://gitter.im/neovim/neovim?at=5dcf9e5b5eb2e813db330dc8
+			local uv = vim and vim.loop or require 'luv'
+			local path = vim.api.nvim_eval('expand(getcwd())')
+			local h = uv.fs_scandir(path)
+			while true do
+			    local name, type = uv.fs_scandir_next(h)
+			    if not name then
+			        break
+			    end
+			    if type == "directory" then
+			        print(name .. "/")
+			    else
+			        print(name)
+			    end
+			end
+		`)
+	}
+
 	if err != nil {
 		return
 	}
