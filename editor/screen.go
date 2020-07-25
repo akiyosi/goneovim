@@ -433,6 +433,12 @@ func (s *Screen) gridFont(update interface{}) {
 	_ = s.ws.nvim.TryResizeUIGrid(s.ws.cursor.gridid, newCols, newRows)
 	font := win.getFont()
 	s.ws.cursor.updateFont(font)
+
+	if win.isExternal {
+		width := int(float64(newCols) * win.font.truewidth) + EXTWINBORDERSIZE*2
+		height := newRows * win.font.lineHeight + EXTWINBORDERSIZE*2
+		win.extwin.Resize2(width, height)
+	}
 }
 
 func (s *Screen) purgeTextCacheForWins() {
