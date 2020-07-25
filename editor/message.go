@@ -146,7 +146,7 @@ func (m *Message) setColor() {
 	))
 }
 
-func (m *Message) updateFont(font *Font) {
+func (m *Message) updateFont() {
 	margin := m.ws.font.height / 3
 	for _, item := range m.items {
 		item.widget.SetFixedSize2(m.ws.font.height*5/3, m.ws.font.height*5/3)

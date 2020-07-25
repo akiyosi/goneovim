@@ -144,15 +144,10 @@ func (c *Cursor) move() {
 	if runtime.GOOS == "linux" {
 		gui.QGuiApplication_InputMethod().Update(core.Qt__ImCursorRectangle)
 	}
-
 }
 
 func (c *Cursor) updateFont(font *Font) {
-	win, ok := c.ws.screen.getWindow(c.gridid)
-	if !ok {
-		return
-	}
-	c.font = win.getFont()
+	c.font = font
 }
 
 func (c *Cursor) updateCursorShape() {
@@ -279,7 +274,6 @@ func (c *Cursor) update() {
 	} else {
 		c.text = win.content[row][col].char
 		c.normalWidth = win.content[row][col].normalWidth
-
 	}
 
 	c.updateCursorShape()

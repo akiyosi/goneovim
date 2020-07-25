@@ -153,7 +153,6 @@ func (f *Filer) redraw() {
 		item["filename"] = file
 		item["filetype"] = filetype
 		items = append(items, item)
-
 	}
 	f.items = items
 	f.nvim.Call("rpcnotify", nil, 0, "Gui", "filer_resize")
@@ -215,7 +214,6 @@ func (f *Filer) right() {
 			// f.nvim.Command("GonvimFilerOpen")
 		}
 	}()
-
 }
 
 func (f *Filer) cancel() {

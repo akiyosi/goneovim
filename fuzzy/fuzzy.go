@@ -230,7 +230,6 @@ func (s *Fuzzy) scoreSource(source string) {
 	n := &[]int{}
 
 	if s.pattern != "" {
-
 		var chars util.Chars
 		var parts []string
 
@@ -268,7 +267,6 @@ func (s *Fuzzy) scoreSource(source string) {
 					newN,
 					idx+indexOffset,
 				)
-
 			}
 			n = &newN
 		}
@@ -447,7 +445,6 @@ func (s *Fuzzy) processSource() {
 							break
 						}
 					}
-
 				}
 			}
 		}()

@@ -176,7 +176,7 @@ func (c *Cmdline) cursorMove() {
 	c.ws.palette.cursorMove(c.pos + len(c.content.firstc) + c.content.indent)
 }
 
-func (c *Cmdline) hide(args []interface{}) {
+func (c *Cmdline) hide() {
 	palette := c.ws.palette
 	palette.hide()
 	if c.inFunction {

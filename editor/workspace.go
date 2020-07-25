@@ -828,7 +828,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		event := update[0].(string)
 		args := update[1:]
 		switch event {
-
 		// Global Events
 		case "set_title":
 			titleStr := (update[1].([]interface{}))[0].(string)
@@ -943,7 +942,8 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "cmdline_char":
 			w.cmdline.putChar(args)
 		case "cmdline_hide":
-			w.cmdline.hide(args)
+			// w.cmdline.hide(args)
+			w.cmdline.hide()
 		case "cmdline_function_show":
 			w.cmdline.functionShow()
 		case "cmdline_function_hide":
@@ -1389,11 +1389,18 @@ func (w *Workspace) guiFont(args string) {
 	w.font.change(fontFamily, fontHeight, fontWeight, fontStretch)
 	w.screen.font = w.font
 
+
+	win, ok := w.screen.getWindow(w.cursor.gridid)
+	if !ok {
+		return
+	}
+	font := win.getFont()
+
 	w.updateSize()
-	w.popup.updateFont(w.font)
-	w.message.updateFont(w.font)
-	w.cursor.updateFont(w.font)
-	w.screen.toolTipFont(w.font)
+	w.popup.updateFont(font)
+	w.screen.toolTipFont(font)
+	w.cursor.updateFont(font)
+	w.message.updateFont()
 
 	// Change external font if font setting of setting.yml is nothing
 	if editor.config.Editor.FontFamily == "" {

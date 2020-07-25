@@ -590,9 +590,9 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 func (w *Window) getFont() *Font {
 	if w.font == nil {
 		return w.s.font
-	} else {
-		return w.font
 	}
+
+	return w.font
 }
 
 func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
@@ -887,7 +887,6 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 
 	// Vertical
 	if y+font.lineHeight+1 < w.s.widget.Height() {
-
 		p.FillRect5(
 			int(float64(x+width)+font.truewidth/2),
 			y-(font.lineHeight/2),
@@ -1407,7 +1406,6 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 		}
 
 		if isResizeWidth && w.width > 0 {
-
 			// right window is gridfont window
 			if w.localWindows[2].grid == win.grid || (w.pos[1] == win.pos[1] && w.pos[0] == leftWindowPos) {
 				if w.localWindows[2].grid == 0 {
@@ -3136,10 +3134,8 @@ func isSkipGlobalId(id gridId) bool {
 	if editor.config.Editor.SkipGlobalId {
 		if id == 1 {
 			return true
-		} else {
-			return false
 		}
-	} else {
-		return false
 	}
+
+	return false
 }
