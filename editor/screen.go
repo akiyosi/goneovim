@@ -574,7 +574,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	// Update markdown preview
-	if w.grid != 1 {
+	if w.grid != 1 && w.s.ws.markdown != nil {
 		w.s.ws.markdown.updatePos()
 	}
 

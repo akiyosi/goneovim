@@ -796,9 +796,6 @@ func (w *Workspace) updateSize() {
 	if w.message != nil {
 		w.message.resize()
 	}
-	if w.uiAttached {
-		fuzzy.UpdateMax(w.nvim, w.palette.showTotal)
-	}
 
 	// notification
 	e.updateNotificationPos()
@@ -1231,7 +1228,9 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "gonvim_enter":
-		editor.window.SetWindowOpacity(1.0)
+		if runtime.GOOS != "windows" {
+			editor.window.SetWindowOpacity(1.0)
+		}
 		w.setCwd(updates[1].(string))
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))

@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/akiyosi/goneovim/util"
+	"github.com/akiyosi/goneovim/fuzzy"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
@@ -210,11 +211,21 @@ func (p *Palette) resize() {
 	}
 	p.widget.Move2(x/2, 10)
 
+	p.showTotal = 0
+	for i := p.showTotal; i < len(p.resultItems); i++ {
+		p.resultItems[i].hide()
+	}
+}
+
+func (p *Palette) resizeResultItems() {
+	if p.showTotal != 0 {
+		return
+	}
 	itemHeight := p.resultItems[0].widget.SizeHint().Height()
 	p.itemHeight = itemHeight
 	p.showTotal = int(float64(p.ws.height)/float64(itemHeight)*editor.config.Palette.AreaRatio) - 1
-	for i := p.showTotal; i < len(p.resultItems); i++ {
-		p.resultItems[i].hide()
+	if p.ws.uiAttached {
+		fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
 	}
 }
 
@@ -222,6 +233,7 @@ func (p *Palette) show() {
 	if !p.hidden {
 		return
 	}
+	p.resizeResultItems()
 	p.hidden = false
 	p.widget.Raise()
 	p.widget.SetWindowOpacity(1.0)

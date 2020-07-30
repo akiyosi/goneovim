@@ -42,11 +42,18 @@ func newMarkdown(workspace *Workspace) *Markdown {
 	}
 	m := &Markdown{
 		webview:         webview,
-		webpage:         webengine.NewQWebEnginePage(nil),
 		markdownUpdates: make(chan string, 1000),
 		ws:              workspace,
 	}
 	m.ws.signal.ConnectMarkdownSignal(func() {
+		if m.webpage == nil {
+			m.webpage = webengine.NewQWebEnginePage(nil)
+			m.webview.SetPage(m.webpage)
+			channel := webchannel.NewQWebChannel(nil)
+			channel.RegisterObject("content", m.container)
+			//m.webpage.SetWebChannel2(channel)
+			m.webpage.SetWebChannel(channel)
+		}
 		content := <-m.markdownUpdates
 		// Get file base path
 		done := make(chan error, 60)
@@ -99,13 +106,7 @@ func newMarkdown(workspace *Workspace) *Markdown {
 		return m.webview.EventDefault(event)
 	})
 	m.webview.ConnectWheelEvent(m.wheelEvent)
-
-	m.webview.SetPage(m.webpage)
 	m.container = widgets.NewQPlainTextEdit(nil)
-	channel := webchannel.NewQWebChannel(nil)
-	channel.RegisterObject("content", m.container)
-	//m.webpage.SetWebChannel2(channel)
-	m.webpage.SetWebChannel(channel)
 	m.hide()
 	// m.webview.SetEnabled(false)
 	return m

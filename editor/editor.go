@@ -557,7 +557,9 @@ func (e *Editor) setWindowOptions() {
 	e.height = e.config.Editor.Height
 	e.window.SetMinimumSize2(400, 300)
 	e.window.Resize2(e.width, e.height)
-	e.window.SetWindowOpacity(0.0)
+	if runtime.GOOS != "windows" {
+		e.window.SetWindowOpacity(0.0)
+	}
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)
