@@ -1406,12 +1406,11 @@ func (w *Workspace) guiFont(args string) {
 	w.font.change(fontFamily, fontHeight, fontWeight, fontStretch)
 	w.screen.font = w.font
 
-
+	font := w.font
 	win, ok := w.screen.getWindow(w.cursor.gridid)
-	if !ok {
-		return
+	if ok {
+		font = win.getFont()
 	}
-	font := win.getFont()
 
 	w.updateSize()
 	w.popup.updateFont(font)
