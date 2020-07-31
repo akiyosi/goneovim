@@ -137,10 +137,19 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.rows = editor.config.Editor.Height / w.font.lineHeight
 
 	// Basic Workspace UI component
-	w.tabline = initTabline()
-	w.tabline.ws = w
-	w.statusline = initStatusline()
-	w.statusline.ws = w
+
+	// If ExtTabline is true, then we create tabline UI component
+	if editor.config.Editor.ExtTabline {
+		w.tabline = initTabline()
+		w.tabline.ws = w
+	}
+
+	// If Statusline.Visible is true, then we create statusline UI component
+	if editor.config.Statusline.Visible {
+		w.statusline = initStatusline()
+		w.statusline.ws = w
+	}
+
 	w.loc = initLocpopup()
 	w.loc.ws = w
 	w.message = initMessage()
@@ -200,9 +209,15 @@ func newWorkspace(path string) (*Workspace, error) {
 	scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
 	scrWidget.SetLayout(scrLayout)
 
-	layout.AddWidget(w.tabline.widget, 0, 0)
+	// assemble all neovim ui 
+	if editor.config.Editor.ExtTabline {
+		layout.AddWidget(w.tabline.widget, 0, 0)
+	}
 	layout.AddWidget(scrWidget, 1, 0)
-	layout.AddWidget(w.statusline.widget, 0, 0)
+	if editor.config.Statusline.Visible {
+		layout.AddWidget(w.statusline.widget, 0, 0)
+	}
+
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
 
