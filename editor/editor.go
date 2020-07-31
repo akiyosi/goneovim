@@ -25,7 +25,7 @@ var editor *Editor
 
 const (
 	GONEOVIMVERSION = "v0.4.6"
-	WORKSPACELEN = 20
+	WORKSPACELEN = 10
 )
 
 // ColorPalette is
