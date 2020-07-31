@@ -569,11 +569,14 @@ func (w *Workspace) getNvimOptions() {
 			metakeyCount++
 		}
 	}
+
+	editor.muMetaKey.Lock()
 	if altkeyCount >= metakeyCount {
 		editor.prefixToMapMetaKey = "A-"
 	} else {
 		editor.prefixToMapMetaKey = "M-"
 	}
+	editor.muMetaKey.Unlock()
 }
 
 func (w *Workspace) getColorscheme() {
@@ -1778,6 +1781,7 @@ type WorkspaceSide struct {
 	items      []*WorkspaceSideItem
 
 	isShown bool
+	isInitResize bool
 }
 
 func newWorkspaceSide() *WorkspaceSide {
@@ -1861,6 +1865,13 @@ func (side *WorkspaceSide) show() {
 	}
 	if side.isShown {
 		return
+	}
+	if !side.isInitResize {
+		editor.split.SetSizes(
+			[]int{editor.config.SideBar.Width,
+			editor.width - editor.config.SideBar.Width},
+		)
+		side.isInitResize = true
 	}
 	side.scrollarea.Show()
 	side.isShown = true

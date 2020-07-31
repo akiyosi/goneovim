@@ -49,6 +49,7 @@ func newMarkdown(workspace *Workspace) *Markdown {
 		if m.webpage == nil {
 			m.webpage = webengine.NewQWebEnginePage(nil)
 			m.webview.SetPage(m.webpage)
+			m.container = widgets.NewQPlainTextEdit(nil)
 			channel := webchannel.NewQWebChannel(nil)
 			channel.RegisterObject("content", m.container)
 			//m.webpage.SetWebChannel2(channel)
@@ -106,7 +107,6 @@ func newMarkdown(workspace *Workspace) *Markdown {
 		return m.webview.EventDefault(event)
 	})
 	m.webview.ConnectWheelEvent(m.wheelEvent)
-	m.container = widgets.NewQPlainTextEdit(nil)
 	m.hide()
 	// m.webview.SetEnabled(false)
 	return m

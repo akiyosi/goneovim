@@ -111,6 +111,7 @@ type Editor struct {
 	keyControl         core.Qt__Key
 	keyCmd             core.Qt__Key
 	prefixToMapMetaKey string
+	muMetaKey          sync.Mutex
 
 	config                 gonvimConfig
 	notifications          []*Notification
@@ -250,7 +251,6 @@ func (e *Editor) newSplitter() {
 	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
 	splitter.AddWidget(e.wsSide.scrollarea)
 	splitter.AddWidget(e.wsWidget)
-	splitter.SetSizes([]int{e.config.SideBar.Width, e.width - e.config.SideBar.Width})
 	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
 	e.split = splitter
