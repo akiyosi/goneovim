@@ -159,8 +159,10 @@ func InitEditor() {
 		}
 	}
 
+	// put shell environment
 	putEnv()
 
+	// detect home dir
 	home, err := homedir.Dir()
 	if err != nil {
 		home = "~"
@@ -179,24 +181,15 @@ func InitEditor() {
 	}
 	e := editor
 
+	// application
 	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
 	e.app.ConnectAboutToQuit(func() {
 		e.cleanup()
 	})
 
-	// Set the current working directory of the application to the HOME directory.
-	// If this process is not executed, CWD is set to the root directory, and
-	// nvim plugins called as descendants of the application will not work due to lack of permission.
-	// e.g. #122
-	path := core.QCoreApplication_ApplicationDirPath()
-	absHome, err := util.ExpandTildeToHomeDirectory(home)
-	if err == nil {
-		if path != absHome {
-			qdir := core.NewQDir2(path)
-			qdir.SetCurrent(absHome)
-		}
-	}
+	// set application working directory path
+	setAppDirPath(home)
 
 	e.initFont()
 	e.initSVGS()
@@ -204,18 +197,22 @@ func InitEditor() {
 	e.initNotifications()
 	e.initSysTray()
 
-
+	// application main window
 	isframeless := e.config.Editor.Borderless
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
+	if runtime.GOOS == "windows" {
+		e.window.Show()
+	}
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 
+	// window layout
 	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
 	l.SetContentsMargins(0, 0, 0, 0)
 	l.SetSpacing(0)
-
 	e.window.SetupContent(l)
 
+	// window content
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
 	e.wsSide.newScrollArea()
@@ -223,10 +220,12 @@ func InitEditor() {
 	e.newSplitter()
 	l.AddWidget(e.split, 1, 0)
 
+	// neovim workspaces
 	e.initWorkspaces()
 
 	e.loadFileInDarwin()
 
+	// runs goroutine to detect stop events and quit the application
 	go func() {
 		<-e.stop
 		if runtime.GOOS == "darwin" {
@@ -235,7 +234,9 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
-	e.window.Show()
+	if runtime.GOOS != "windows" {
+		e.window.Show()
+	}
 	e.wsWidget.SetFocus2()
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
@@ -244,6 +245,22 @@ func InitEditor() {
 	})
 
 	widgets.QApplication_Exec()
+}
+
+// setAppDirPath
+// Set the current working directory of the application to the HOME directory.
+// If this process is not executed, CWD is set to the root directory, and
+// nvim plugins called as descendants of the application will not work due to lack of permission.
+// e.g. #122
+func setAppDirPath(home string) {
+	path := core.QCoreApplication_ApplicationDirPath()
+	absHome, err := util.ExpandTildeToHomeDirectory(home)
+	if err == nil {
+		if path != absHome {
+			qdir := core.NewQDir2(path)
+			qdir.SetCurrent(absHome)
+		}
+	}
 }
 
 func (e *Editor) newSplitter() {
