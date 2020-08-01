@@ -119,18 +119,18 @@ func newWorkspace(path string) (*Workspace, error) {
 		background:    newRGBA(9, 13, 17, 1),
 		special:       newRGBA(255, 255, 255, 1),
 	}
-	w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), editor.config.Editor.Linespace, true)
-	go func() {
-		w.fontMutex.Lock()
-		defer w.fontMutex.Unlock()
-		width, height, truewidth, ascent, italicWidth := fontSizeNew(w.font.fontNew)
-		w.font.width = width
-		w.font.height = height
-		w.font.truewidth = truewidth
-		w.font.lineHeight = height + w.font.lineSpace
-		w.font.ascent = ascent
-		w.font.italicWidth = italicWidth
-	}()
+	w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), editor.config.Editor.Linespace, false)
+	// go func() {
+	// go 	w.fontMutex.Lock()
+	// go 	defer w.fontMutex.Unlock()
+	// go 	width, height, truewidth, ascent, italicWidth := fontSizeNew(w.font.fontNew)
+	// go 	w.font.width = width
+	// go 	w.font.height = height
+	// go 	w.font.truewidth = truewidth
+	// go 	w.font.lineHeight = height + w.font.lineSpace
+	// go 	w.font.ascent = ascent
+	// go 	w.font.italicWidth = italicWidth
+	// go }()
 	w.font.ws = w
 
 	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)
@@ -138,10 +138,48 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	// Basic Workspace UI component
 
-	// If ExtTabline is true, then we create tabline UI component
+	w.screen = newScreen()
+	w.screen.ws = w
+	w.screen.font = w.font
+	w.screen.initInputMethodWidget()
+
+	w.cursor = initCursorNew()
+	w.cursor.ws = w
+
+	if editor.config.ScrollBar.Visible {
+		w.scrollBar = newScrollBar()
+		w.scrollBar.ws = w
+	}
+
+	w.markdown = newMarkdown(w)
+	w.markdown.webview.SetParent(w.screen.widget)
+
+	w.minimap = newMiniMap()
+	w.minimap.ws = w
+
+	// If ExtFooBar is true, then we create a UI component
 	if editor.config.Editor.ExtTabline {
 		w.tabline = initTabline()
 		w.tabline.ws = w
+	}
+
+	if editor.config.Editor.ExtCmdline {
+		w.cmdline = initCmdline()
+		w.cmdline.ws = w
+	}
+
+	if editor.config.Editor.ExtPopupmenu {
+		w.popup = initPopupmenuNew()
+		w.popup.widget.SetParent(editor.wsWidget)
+		w.popup.ws = w
+		w.popup.widget.Hide()
+		// w.signature.widget.Hide()
+	}
+
+	if editor.config.Editor.ExtMessages {
+		w.message = initMessage()
+		w.message.ws = w
+		w.message.widget.SetParent(editor.window)
 	}
 
 	// If Statusline.Visible is true, then we create statusline UI component
@@ -150,43 +188,29 @@ func newWorkspace(path string) (*Workspace, error) {
 		w.statusline.ws = w
 	}
 
-	w.loc = initLocpopup()
-	w.loc.ws = w
-	w.message = initMessage()
-	w.message.ws = w
+	if editor.config.Lint.Visible {
+		w.loc = initLocpopup()
+		w.loc.ws = w
+		w.loc.widget.SetParent(editor.wsWidget)
+		w.loc.widget.Hide()
+	}
+
+	// w.signature = initSignature()
+	// w.signature.widget.SetParent(editor.wsWidget)
+	// w.signature.ws = w
+
 	w.palette = initPalette()
 	w.palette.ws = w
+	w.palette.widget.SetParent(editor.window)
+	w.palette.hide()
+
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
-
-	w.screen = newScreen()
-	w.screen.ws = w
-	w.screen.font = w.font
-	w.screen.initInputMethodWidget()
-
-	w.loc.widget.SetParent(editor.wsWidget)
-	w.message.widget.SetParent(editor.window)
-	w.palette.widget.SetParent(editor.window)
 	w.fpalette.widget.SetParent(editor.window)
+	w.fpalette.hide()
 
-	w.scrollBar = newScrollBar()
-	w.scrollBar.ws = w
-	w.markdown = newMarkdown(w)
-	w.markdown.webview.SetParent(w.screen.widget)
-	w.cursor = initCursorNew()
-	w.cursor.ws = w
-	w.popup = initPopupmenuNew()
-	w.popup.widget.SetParent(editor.wsWidget)
-	w.popup.ws = w
 	w.finder = initFinder()
 	w.finder.ws = w
-	w.signature = initSignature()
-	w.signature.widget.SetParent(editor.wsWidget)
-	w.signature.ws = w
-	w.cmdline = initCmdline()
-	w.cmdline.ws = w
-	w.minimap = newMiniMap()
-	w.minimap.ws = w
 
 	layout := widgets.NewQVBoxLayout()
 	w.widget = widgets.NewQWidget(nil, 0)
@@ -206,7 +230,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	scrLayout.SetSpacing(0)
 	scrLayout.AddWidget(w.screen.widget, 0, 0)
 	scrLayout.AddWidget(w.minimap.widget, 0, 0)
-	scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
+	if editor.config.ScrollBar.Visible {
+		scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
+	}
 	scrWidget.SetLayout(scrLayout)
 
 	// assemble all neovim ui 
@@ -223,12 +249,6 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	go w.startNvim(path)
 	w.registerSignal()
-
-	w.popup.widget.Hide()
-	w.palette.hide()
-	w.fpalette.hide()
-	w.loc.widget.Hide()
-	w.signature.widget.Hide()
 
 	w.widget.SetParent(editor.wsWidget)
 	w.widget.Move2(0, 0)
@@ -405,8 +425,12 @@ func (w *Workspace) attachUI(path string) error {
 	if w.statusline != nil {
 		w.statusline.subscribe()
 	}
-	// w.loc.subscribe()
-	w.message.subscribe()
+	if w.loc != nil {
+		w.loc.subscribe()
+	}
+	if w.message != nil {
+		w.message.subscribe()
+	}
 
 	// Add editor feature
 	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
@@ -924,21 +948,21 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Popupmenu Events
 		case "popupmenu_show":
-			if w.cmdline.shown {
+			if w.cmdline.shown && w.cmdline != nil {
 				w.cmdline.cmdWildmenuShow(args)
-			} else {
+			} else if w.popup != nil {
 				w.popup.showItems(args)
 			}
 		case "popupmenu_select":
-			if w.cmdline.shown {
+			if w.cmdline.shown && w.cmdline != nil {
 				w.cmdline.cmdWildmenuSelect(args)
-			} else {
+			} else if w.popup != nil {
 				w.popup.selectItem(args)
 			}
 		case "popupmenu_hide":
-			if w.cmdline.shown {
+			if w.cmdline.shown && w.cmdline != nil {
 				w.cmdline.cmdWildmenuHide()
-			} else {
+			} else if w.popup != nil {
 				w.popup.hide()
 			}
 
@@ -950,19 +974,30 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Cmdline Events
 		case "cmdline_show":
-			w.cmdline.show(args)
+			if w.cmdline != nil {
+				w.cmdline.show(args)
+			}
 		case "cmdline_pos":
-			w.cmdline.changePos(args)
+			if w.cmdline != nil {
+				w.cmdline.changePos(args)
+			}
 		case "cmdline_special_char":
 		case "cmdline_char":
-			w.cmdline.putChar(args)
+			if w.cmdline != nil {
+				w.cmdline.putChar(args)
+			}
 		case "cmdline_hide":
-			// w.cmdline.hide(args)
-			w.cmdline.hide()
+			if w.cmdline != nil {
+				w.cmdline.hide()
+			}
 		case "cmdline_function_show":
-			w.cmdline.functionShow()
+			if w.cmdline != nil {
+				w.cmdline.functionShow()
+			}
 		case "cmdline_function_hide":
-			w.cmdline.functionHide()
+			if w.cmdline != nil {
+				w.cmdline.functionHide()
+			}
 		case "cmdline_block_show":
 		case "cmdline_block_append":
 		case "cmdline_block_hide":
@@ -1110,11 +1145,19 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 }
 
 func (w *Workspace) updateWorkspaceColor() {
-	w.palette.setColor()
-	w.fpalette.setColor()
-	w.popup.setColor()
-	w.signature.setColor()
-	w.message.setColor()
+	// w.signature.setColor()
+	if w.palette != nil {
+		w.palette.setColor()
+	}
+	if w.fpalette != nil {
+		w.fpalette.setColor()
+	}
+	if w.popup != nil {
+		w.popup.setColor()
+	}
+	if w.message != nil {
+		w.message.setColor()
+	}
 	w.screen.setColor()
 	if w.drawTabline {
 		if w.tabline != nil {
@@ -1170,7 +1213,9 @@ func (w *Workspace) setOption(update []interface{}) {
 			w.guiLinespace(val)
 		case "pumblend":
 			w.setPumblend(val)
-			w.popup.setPumblend(w.pb)
+			if w.popup != nil {
+				w.popup.setPumblend(w.pb)
+			}
 		case "showtabline":
 		case "termguicolors":
 		// case "ext_cmdline":
@@ -1271,12 +1316,12 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.finder.hide()
 	case "finder_select":
 		w.finder.selectResult(updates[1:])
-	case "signature_show":
-		w.signature.showItem(updates[1:])
-	case "signature_pos":
-		w.signature.pos(updates[1:])
-	case "signature_hide":
-		w.signature.hide()
+	// case "signature_show":
+	// 	w.signature.showItem(updates[1:])
+	// case "signature_pos":
+	// 	w.signature.pos(updates[1:])
+	// case "signature_hide":
+	// 	w.signature.hide()
 	case "side_open":
 		editor.wsSide.show()
 	case "side_close":
@@ -1413,10 +1458,15 @@ func (w *Workspace) guiFont(args string) {
 	}
 
 	w.updateSize()
-	w.popup.updateFont(font)
+
+	if w.popup != nil {
+		w.popup.updateFont(font)
+	}
+	if w.message != nil {
+		w.message.updateFont()
+	}
 	w.screen.toolTipFont(font)
 	w.cursor.updateFont(font)
-	w.message.updateFont()
 
 	// Change external font if font setting of setting.yml is nothing
 	if editor.config.Editor.FontFamily == "" {
@@ -1428,6 +1478,7 @@ func (w *Workspace) guiFont(args string) {
 
 	w.palette.updateFont()
 	w.fpalette.updateFont()
+
 	if w.tabline != nil {
 		w.tabline.updateFont()
 	}

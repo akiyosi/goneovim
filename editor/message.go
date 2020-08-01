@@ -208,6 +208,11 @@ func (m *Message) resize() {
 		}
 	}
 
+	scrollbarwidth := 0
+	if editor.config.ScrollBar.Visible {
+		scrollbarwidth = m.ws.scrollBar.widget.Width()
+	}
+
 	var x, y int
 	var ok bool
 	if !m.isExpand {
@@ -215,7 +220,7 @@ func (m *Message) resize() {
 		ok = m.resizeMessages()
 		if !ok {
 			m.isExpand = true
-			m.width = m.ws.screen.widget.Width() - m.ws.scrollBar.widget.Width() - 12
+			m.width = m.ws.screen.widget.Width() - scrollbarwidth - 12
 			_ = m.resizeMessages()
 		}
 	}
@@ -228,7 +233,7 @@ func (m *Message) resize() {
 			y -= m.ws.statusline.widget.Height()
 		}
 	} else {
-		x = m.ws.width + leftPadding - m.width - editor.iconSize - m.ws.scrollBar.widget.Width() - 12
+		x = m.ws.width + leftPadding - m.width - editor.iconSize - scrollbarwidth - 12
 		// y = 6 + m.ws.tabline.widget.Height()
 		y = 6
 		if m.ws.tabline != nil {
@@ -275,7 +280,11 @@ func (m *Message) msgShow(args []interface{}) {
 		var buffer bytes.Buffer
 		length := 0
 		lineLen := 0
-		maxLen := m.ws.screen.widget.Width() - m.ws.scrollBar.widget.Width() - 12
+		scrollbarwidth := 0
+		if editor.config.ScrollBar.Visible {
+			scrollbarwidth = m.ws.scrollBar.widget.Width()
+		}
+		maxLen := m.ws.screen.widget.Width() - scrollbarwidth - 12
 		var attrId int
 		for _, tupple := range arg.([]interface{})[1].([]interface{}) {
 			chunk, ok := tupple.([]interface{})
