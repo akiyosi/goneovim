@@ -649,7 +649,6 @@ func (e *Editor) workspaceUpdate() {
 	}
 	for i, ws := range e.workspaces {
 		if i == e.active {
-			ws.hide()
 			ws.show()
 		} else {
 			ws.hide()
