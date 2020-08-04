@@ -170,9 +170,9 @@ func newScreen() *Screen {
 	widget.ConnectMousePressEvent(screen.mousePressEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
-	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		screen.updateSize()
-	})
+	// widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+	// 	screen.updateSize()
+	// })
 
 	return screen
 }

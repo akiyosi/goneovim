@@ -119,7 +119,8 @@ func newWorkspace(path string) (*Workspace, error) {
 		background:    newRGBA(9, 13, 17, 1),
 		special:       newRGBA(255, 255, 255, 1),
 	}
-	w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), editor.config.Editor.Linespace, false)
+	w.registerSignal()
+	w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), 0, false)
 	// go func() {
 	// go 	w.fontMutex.Lock()
 	// go 	defer w.fontMutex.Unlock()
@@ -213,6 +214,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.finder.ws = w
 
 	layout := widgets.NewQVBoxLayout()
+	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(0)
 	w.widget = widgets.NewQWidget(nil, 0)
 	w.widget.SetContentsMargins(0, 0, 0, 0)
 	w.widget.SetLayout(layout)
@@ -244,15 +247,11 @@ func newWorkspace(path string) (*Workspace, error) {
 		layout.AddWidget(w.statusline.widget, 0, 0)
 	}
 
-	layout.SetContentsMargins(0, 0, 0, 0)
-	layout.SetSpacing(0)
-
-	go w.startNvim(path)
-	w.registerSignal()
-
 	w.widget.SetParent(editor.wsWidget)
 	w.widget.Move2(0, 0)
 	// w.updateSize()
+
+	go w.startNvim(path)
 
 	if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
 		go func() {
@@ -263,9 +262,9 @@ func newWorkspace(path string) (*Workspace, error) {
 		}()
 	}
 
-	if runtime.GOOS == "windows" {
-		<-w.doneNvimStart
-	}
+	// if runtime.GOOS == "windows" {
+	// if 	<-w.doneNvimStart
+	// if }
 
 	return w, nil
 }
@@ -396,9 +395,9 @@ func (w *Workspace) startNvim(path string) error {
 
 	go w.init(path)
 
-	if runtime.GOOS == "windows" {
-		w.doneNvimStart <- true
-	}
+	// if runtime.GOOS == "windows" {
+	// 	w.doneNvimStart <- true
+	// }
 
 	return nil
 }
@@ -1302,7 +1301,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	switch event {
 	case "gonvim_enter":
 		lazyDrawUI()
-		// w.setCwd(updates[1].(string))
+		w.setCwd(updates[1].(string))
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
 		editor.window.Resize2(width, height)
@@ -1619,6 +1618,9 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	case int64:
 		lineSpace = int(arg)
 	default:
+		return
+	}
+	if lineSpace == 0 {
 		return
 	}
 	w.font.changeLineSpace(lineSpace)
