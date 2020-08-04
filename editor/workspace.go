@@ -270,6 +270,16 @@ func newWorkspace(path string) (*Workspace, error) {
 	return w, nil
 }
 
+func lazyDrawUI() {
+	if runtime.GOOS != "windows" {
+		editor.window.SetWindowOpacity(1.0)
+	}
+	go func() {
+		time.Sleep(time.Millisecond * 1000)
+		editor.wsSide.scrollarea.SetWidget(editor.wsSide.widget)
+	}()
+}
+
 func (w *Workspace) registerSignal() {
 	w.signal.ConnectRedrawSignal(func() {
 		updates := <-w.redrawUpdates
@@ -1291,10 +1301,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "gonvim_enter":
-		if runtime.GOOS != "windows" {
-			editor.window.SetWindowOpacity(1.0)
-		}
-		w.setCwd(updates[1].(string))
+		lazyDrawUI()
+		// w.setCwd(updates[1].(string))
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
 		editor.window.Resize2(width, height)
@@ -1897,7 +1905,6 @@ func (side *WorkspaceSide) newScrollArea() {
 	// sideArea.SetFixedWidth(editor.config.SideBar.Width)
 
 	side.scrollarea = sideArea
-	side.scrollarea.SetWidget(side.widget)
 
 	side.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
 		width := side.scrollarea.Width()

@@ -486,7 +486,19 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		y = row * font.lineHeight
 
 		candX = int(float64(col+win.pos[0]) * font.truewidth)
-		candY = (row+win.pos[1])*font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
+		tablineMarginTop := 0
+		if ws.tabline != nil {
+			tablineMarginTop = ws.tabline.marginTop
+		}
+		tablineHeight := 0
+		if ws.tabline != nil {
+			tablineHeight = ws.tabline.height
+		}
+		tablineMarginBottom := 0
+		if ws.tabline != nil {
+			tablineMarginBottom = ws.tabline.marginBottom
+		}
+		candY = (row+win.pos[1])*font.lineHeight + tablineMarginTop + tablineHeight + tablineMarginBottom
 	}
 	return x, y, candX, candY
 }
