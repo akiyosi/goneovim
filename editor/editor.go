@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
@@ -90,13 +91,14 @@ type Editor struct {
 	notify            chan *Notify
 	guiInit           chan bool
 
-	workspaces []*Workspace
-	active     int
-	window     *frameless.QFramelessWindow
-	split      *widgets.QSplitter
-	wsWidget   *widgets.QWidget
-	wsSide     *WorkspaceSide
-	sysTray    *widgets.QSystemTrayIcon
+	workspaces  []*Workspace
+	active      int
+	window      *frameless.QFramelessWindow
+	split       *widgets.QSplitter
+	wsWidget    *widgets.QWidget
+	wsSide      *WorkspaceSide
+	sysTray     *widgets.QSystemTrayIcon
+	chanVisible chan bool
 
 	width            int
 	height           int
@@ -178,6 +180,7 @@ func InitEditor() {
 		homeDir: home,
 		args:    args,
 		opts:    opts,
+		chanVisible: make(chan bool, 1),
 	}
 	e := editor
 
@@ -200,9 +203,16 @@ func InitEditor() {
 	// application main window
 	isframeless := e.config.Editor.Borderless
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	if runtime.GOOS == "windows" {
+	go func() {
 		e.window.Show()
-	}
+		for {
+			if e.window.IsVisible() {
+				break
+				time.Sleep(20 * time.Millisecond)
+			}
+		}
+		e.chanVisible <-true
+	}()
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 
@@ -234,9 +244,9 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
-	if runtime.GOOS != "windows" {
-		e.window.Show()
-	}
+	// if runtime.GOOS != "windows" {
+	// 	e.window.Show()
+	// }
 	e.wsWidget.SetFocus2()
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {

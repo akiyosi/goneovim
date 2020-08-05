@@ -281,7 +281,7 @@ func (s *Screen) updateSize() {
 	defer s.ws.fontMutex.Unlock()
 
 	ws := s.ws
-	s.width = s.widget.Width()
+	s.width = editor.wsWidget.Width()
 	currentCols := int(float64(s.width) / s.font.truewidth)
 	currentRows := s.height / s.font.lineHeight
 

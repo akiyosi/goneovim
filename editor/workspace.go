@@ -249,7 +249,6 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	w.widget.SetParent(editor.wsWidget)
 	w.widget.Move2(0, 0)
-	// w.updateSize()
 
 	go w.startNvim(path)
 
@@ -344,6 +343,8 @@ func (w *Workspace) show() {
 func (w *Workspace) startNvim(path string) error {
 	var neovim *nvim.Nvim
 	var err error
+
+	<- editor.chanVisible
 
 	childProcessArgs := nvim.ChildProcessArgs(
 		append([]string{
