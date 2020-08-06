@@ -120,18 +120,8 @@ func newWorkspace(path string) (*Workspace, error) {
 		special:       newRGBA(255, 255, 255, 1),
 	}
 	w.registerSignal()
-	w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), 0, false)
-	// go func() {
-	// go 	w.fontMutex.Lock()
-	// go 	defer w.fontMutex.Unlock()
-	// go 	width, height, truewidth, ascent, italicWidth := fontSizeNew(w.font.fontNew)
-	// go 	w.font.width = width
-	// go 	w.font.height = height
-	// go 	w.font.truewidth = truewidth
-	// go 	w.font.lineHeight = height + w.font.lineSpace
-	// go 	w.font.ascent = ascent
-	// go 	w.font.italicWidth = italicWidth
-	// go }()
+	// w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), 0, false)
+	w.font = editor.font
 	w.font.ws = w
 
 	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)

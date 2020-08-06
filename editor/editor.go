@@ -91,6 +91,7 @@ type Editor struct {
 	notify            chan *Notify
 	guiInit           chan bool
 
+	font        *Font
 	workspaces  []*Workspace
 	active      int
 	window      *frameless.QFramelessWindow
@@ -190,6 +191,19 @@ func InitEditor() {
 	e.app.ConnectAboutToQuit(func() {
 		e.cleanup()
 	})
+
+	// set app font
+	// The first time multi-byte font metrics are slow to get,
+	// so get the metrics ahead of time.
+	e.font = initFontNew(
+		e.config.Editor.FontFamily,
+		float64(e.config.Editor.FontSize),
+		0,
+		false,
+	)
+	go func() {
+		e.font.fontMetrics.HorizontalAdvance("あ", -1)
+	}()
 
 	// set application working directory path
 	setAppDirPath(home)
@@ -431,19 +445,6 @@ func putEnv() {
 func (e *Editor) initFont() {
 	e.extFontFamily = e.config.Editor.FontFamily
 	e.extFontSize = e.config.Editor.FontSize
-	if e.extFontFamily == "" {
-		switch runtime.GOOS {
-		case "windows":
-			e.extFontFamily = "Consolas"
-		case "darwin":
-			e.extFontFamily = "Monaco"
-		default:
-			e.extFontFamily = "Monospace"
-		}
-	}
-	if e.extFontSize <= 5 {
-		e.extFontSize = 13
-	}
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QWidget")
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QLabel")
 }
