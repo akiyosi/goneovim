@@ -342,7 +342,9 @@ func (w *Workspace) startNvim(path string) error {
 	var neovim *nvim.Nvim
 	var err error
 
-	// <- editor.chanVisible
+	if runtime.GOOS == "darwin" {
+		<- editor.chanVisible
+	}
 
 	childProcessArgs := nvim.ChildProcessArgs(
 		append([]string{

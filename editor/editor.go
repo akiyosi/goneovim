@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
@@ -202,21 +203,19 @@ func InitEditor() {
 	// application main window
 	isframeless := e.config.Editor.Borderless
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	if runtime.GOOS == "windows" {
-		go e.window.Show()
-	}
-
-	// // for detect window size
-	// go func() {
-	// 	e.window.Show()
-	// 	for {
-	// 		if e.window.IsVisible() {
-	// 			break
-	// 			time.Sleep(20 * time.Millisecond)
-	// 		}
-	// 	}
-	// 	e.chanVisible <-true
-	// }()
+	// for detect window size
+	go func() {
+		e.window.Show()
+		if runtime.GOOS == "darwin" {
+			for {
+				if e.window.IsVisible() {
+					break
+					time.Sleep(20 * time.Millisecond)
+				}
+			}
+			e.chanVisible <-true
+		}
+	}()
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 
@@ -248,9 +247,6 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
-	if runtime.GOOS != "windows" {
-		e.window.Show()
-	}
 	e.wsWidget.SetFocus2()
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
