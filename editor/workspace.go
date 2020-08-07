@@ -121,16 +121,15 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 	w.registerSignal()
 	// w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), 0, false)
-	editor.font = initFontNew(
+	w.font = initFontNew(
 		editor.extFontFamily,
 		float64(editor.extFontSize),
 		0,
 		false,
 	)
 	// go func() {
-	// 	editor.font.fontMetrics.HorizontalAdvance("あ", -1)
+	// 	w.font.fontMetrics.HorizontalAdvance("あ", -1)
 	// }()
-	w.font = editor.font
 	w.font.ws = w
 
 	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)

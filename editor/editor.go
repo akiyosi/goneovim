@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
@@ -91,7 +90,6 @@ type Editor struct {
 	notify            chan *Notify
 	guiInit           chan bool
 
-	font        *Font
 	workspaces  []*Workspace
 	active      int
 	window      *frameless.QFramelessWindow
@@ -204,7 +202,9 @@ func InitEditor() {
 	// application main window
 	isframeless := e.config.Editor.Borderless
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	go e.window.Show()
+	if runtime.GOOS == "windows" {
+		go e.window.Show()
+	}
 
 	// // for detect window size
 	// go func() {
@@ -248,9 +248,9 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
-	// if runtime.GOOS != "windows" {
-	// 	e.window.Show()
-	// }
+	if runtime.GOOS != "windows" {
+		e.window.Show()
+	}
 	e.wsWidget.SetFocus2()
 	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range e.workspaces {
