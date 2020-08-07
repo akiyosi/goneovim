@@ -192,19 +192,6 @@ func InitEditor() {
 		e.cleanup()
 	})
 
-	// set app font
-	// The first time multi-byte font metrics are slow to get,
-	// so get the metrics ahead of time.
-	e.font = initFontNew(
-		e.config.Editor.FontFamily,
-		float64(e.config.Editor.FontSize),
-		0,
-		false,
-	)
-	go func() {
-		e.font.fontMetrics.HorizontalAdvance("あ", -1)
-	}()
-
 	// set application working directory path
 	setAppDirPath(home)
 
@@ -217,16 +204,19 @@ func InitEditor() {
 	// application main window
 	isframeless := e.config.Editor.Borderless
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	go func() {
-		e.window.Show()
-		for {
-			if e.window.IsVisible() {
-				break
-				time.Sleep(20 * time.Millisecond)
-			}
-		}
-		e.chanVisible <-true
-	}()
+	go e.window.Show()
+
+	// // for detect window size
+	// go func() {
+	// 	e.window.Show()
+	// 	for {
+	// 		if e.window.IsVisible() {
+	// 			break
+	// 			time.Sleep(20 * time.Millisecond)
+	// 		}
+	// 	}
+	// 	e.chanVisible <-true
+	// }()
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 

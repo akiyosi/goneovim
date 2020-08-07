@@ -121,6 +121,15 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 	w.registerSignal()
 	// w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), 0, false)
+	editor.font = initFontNew(
+		editor.extFontFamily,
+		float64(editor.extFontSize),
+		0,
+		false,
+	)
+	// go func() {
+	// 	editor.font.fontMetrics.HorizontalAdvance("あ", -1)
+	// }()
 	w.font = editor.font
 	w.font.ws = w
 
@@ -334,7 +343,7 @@ func (w *Workspace) startNvim(path string) error {
 	var neovim *nvim.Nvim
 	var err error
 
-	<- editor.chanVisible
+	// <- editor.chanVisible
 
 	childProcessArgs := nvim.ChildProcessArgs(
 		append([]string{
