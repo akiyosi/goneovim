@@ -203,19 +203,7 @@ func InitEditor() {
 	// application main window
 	isframeless := e.config.Editor.Borderless
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	// for detect window size
-	go func() {
-		e.window.Show()
-		if runtime.GOOS == "darwin" {
-			for {
-				if e.window.IsVisible() {
-					break
-					time.Sleep(20 * time.Millisecond)
-				}
-			}
-			e.chanVisible <-true
-		}
-	}()
+	e.showWindow()
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 
@@ -270,6 +258,24 @@ func setAppDirPath(home string) {
 			qdir := core.NewQDir2(path)
 			qdir.SetCurrent(absHome)
 		}
+	}
+}
+
+func (e *Editor) showWindow() {
+	switch runtime.GOOS {
+	case "darwin" :
+		go func() {
+			e.window.Show()
+			for {
+				if e.window.IsVisible() {
+					break
+					time.Sleep(20 * time.Millisecond)
+				}
+			}
+			e.chanVisible <-true
+		}()
+	default:
+		e.window.Show()
 	}
 }
 

@@ -342,10 +342,6 @@ func (w *Workspace) startNvim(path string) error {
 	var neovim *nvim.Nvim
 	var err error
 
-	if runtime.GOOS == "darwin" {
-		<- editor.chanVisible
-	}
-
 	childProcessArgs := nvim.ChildProcessArgs(
 		append([]string{
 			"--cmd",
@@ -369,6 +365,10 @@ func (w *Workspace) startNvim(path string) error {
 	}
 	if err != nil {
 		return err
+	}
+
+	if runtime.GOOS == "darwin" {
+		<- editor.chanVisible
 	}
 	w.updateSize()
 
