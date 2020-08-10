@@ -183,15 +183,16 @@ func (p *Palette) setColor() {
 }
 
 func (p *Palette) resize() {
-	width := int(math.Trunc(float64(editor.width) * 0.7))
+	eWidth := editor.window.Width() - 10
+	width := int(math.Trunc(float64(eWidth) * 0.7))
 	cursorBoundary := p.padding*4 + p.textLength() + p.patternPadding
 	if cursorBoundary > width {
 		width = cursorBoundary
 	}
-	if width > editor.width {
-		width = editor.width
+	if width > eWidth {
+		width = eWidth
 		p.pattern.SetAlignment(core.Qt__AlignRight | core.Qt__AlignCenter)
-	} else if width <= editor.width {
+	} else if width <= eWidth {
 		if p.pattern.Alignment() != core.Qt__AlignLeft {
 			p.pattern.SetAlignment(core.Qt__AlignLeft)
 		}
@@ -205,7 +206,7 @@ func (p *Palette) resize() {
 	p.widget.SetMaximumWidth(p.width)
 	p.widget.SetMinimumWidth(p.width)
 
-	x := editor.width - p.width
+	x := eWidth - p.width
 	if x < 0 {
 		x = 0
 	}
