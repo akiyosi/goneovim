@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
@@ -203,7 +202,7 @@ func InitEditor() {
 	// application main window
 	isframeless := e.config.Editor.Borderless
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	e.showWindow()
+	e.window.Show()
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 
@@ -212,6 +211,7 @@ func InitEditor() {
 	l.SetContentsMargins(0, 0, 0, 0)
 	l.SetSpacing(0)
 	e.window.SetupContent(l)
+
 
 	// window content
 	e.wsWidget = widgets.NewQWidget(nil, 0)
@@ -236,11 +236,6 @@ func InitEditor() {
 	}()
 
 	e.wsWidget.SetFocus2()
-	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		for _, ws := range e.workspaces {
-			ws.updateSize()
-		}
-	})
 
 	widgets.QApplication_Exec()
 }
@@ -258,24 +253,6 @@ func setAppDirPath(home string) {
 			qdir := core.NewQDir2(path)
 			qdir.SetCurrent(absHome)
 		}
-	}
-}
-
-func (e *Editor) showWindow() {
-	switch runtime.GOOS {
-	case "darwin" :
-		go func() {
-			e.window.Show()
-			for {
-				if e.window.IsVisible() {
-					break
-					time.Sleep(20 * time.Millisecond)
-				}
-			}
-			e.chanVisible <-true
-		}()
-	default:
-		e.window.Show()
 	}
 }
 
@@ -457,6 +434,7 @@ func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt 
 }
 
 func (e *Editor) popupNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
+	e.updateNotificationPos()
 	notification := newNotification(level, p, message, opt...)
 	notification.widget.SetParent(e.window)
 	notification.widget.AdjustSize()
@@ -520,7 +498,7 @@ func (e *Editor) updateGUIColor() {
 		e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 	}
 
-	e.window.SetWindowOpacity(1.0)
+	// e.window.SetWindowOpacity(1.0)
 }
 
 func hexToRGBA(hex string) *RGBA {
@@ -577,9 +555,6 @@ func (e *Editor) setWindowOptions() {
 	e.height = e.config.Editor.Height
 	e.window.SetMinimumSize2(400, 300)
 	e.window.Resize2(e.width, e.height)
-	if runtime.GOOS != "windows" {
-		e.window.SetWindowOpacity(0.0)
-	}
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)

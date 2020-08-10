@@ -267,9 +267,11 @@ func newWorkspace(path string) (*Workspace, error) {
 }
 
 func lazyDrawUI() {
-	if runtime.GOOS != "windows" {
-		editor.window.SetWindowOpacity(1.0)
-	}
+	editor.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		for _, ws := range editor.workspaces {
+			ws.updateSize()
+		}
+	})
 	go func() {
 		time.Sleep(time.Millisecond * 1000)
 		editor.wsSide.scrollarea.SetWidget(editor.wsSide.widget)
@@ -367,9 +369,9 @@ func (w *Workspace) startNvim(path string) error {
 		return err
 	}
 
-	if runtime.GOOS == "darwin" {
-		<- editor.chanVisible
-	}
+	// if runtime.GOOS == "darwin" {
+	// 	<- editor.chanVisible
+	// }
 	w.updateSize()
 
 	w.nvim = neovim
@@ -848,9 +850,6 @@ func (w *Workspace) updateSize() {
 	if w.message != nil {
 		w.message.resize()
 	}
-
-	// notification
-	e.updateNotificationPos()
 }
 
 func (e *Editor) updateNotificationPos() {
@@ -919,6 +918,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			for _, u := range update[1:] {
 				w.setColorsSet(u.([]interface{}))
 			}
+			w.updateSize()
 		case "hl_attr_define":
 			s.setHlAttrDef(args)
 		case "hl_group_set":

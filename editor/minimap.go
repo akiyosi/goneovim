@@ -222,6 +222,8 @@ func (m *MiniMap) toggle() {
 	m.curRegion.SetParent(win.widget)
 	m.bufUpdate()
 	m.bufSync()
+
+	m.ws.updateSize()
 }
 
 func (m *MiniMap) updateRows() bool {
