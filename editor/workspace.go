@@ -250,23 +250,10 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	go w.startNvim(path)
 
-	if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
-		go func() {
-			if !editor.config.MiniMap.Visible {
-				time.Sleep(1500 * time.Millisecond)
-			}
-			w.minimap.startMinimapProc()
-		}()
-	}
-
-	// if runtime.GOOS == "windows" {
-	// if 	<-w.doneNvimStart
-	// if }
-
 	return w, nil
 }
 
-func lazyDrawUI() {
+func (w *Workspace) lazyDrawUI() {
 	editor.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range editor.workspaces {
 			ws.updateSize()
@@ -275,6 +262,9 @@ func lazyDrawUI() {
 	go func() {
 		time.Sleep(time.Millisecond * 1000)
 		editor.wsSide.scrollarea.SetWidget(editor.wsSide.widget)
+		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
+			w.minimap.startMinimapProc()
+		}
 	}()
 }
 
@@ -369,9 +359,6 @@ func (w *Workspace) startNvim(path string) error {
 		return err
 	}
 
-	// if runtime.GOOS == "darwin" {
-	// 	<- editor.chanVisible
-	// }
 	w.updateSize()
 
 	w.nvim = neovim
@@ -383,7 +370,6 @@ func (w *Workspace) startNvim(path string) error {
 		w.redrawUpdates <- updates
 		w.signal.RedrawSignal()
 	})
-
 
 	go func() {
 		err := w.nvim.Serve()
@@ -397,10 +383,6 @@ func (w *Workspace) startNvim(path string) error {
 	}()
 
 	go w.init(path)
-
-	// if runtime.GOOS == "windows" {
-	// 	w.doneNvimStart <- true
-	// }
 
 	return nil
 }
@@ -1061,7 +1043,7 @@ func (w *Workspace) drawOtherUI() {
 		w.screen.toolTipMove(x, y)
 	}
 
-	if w.minimap.visible {
+	if w.minimap.visible && w.minimap.widget.IsVisible() {
 		go w.updateMinimap()
 		w.minimap.mapScroll()
 	}
@@ -1301,7 +1283,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "gonvim_enter":
-		lazyDrawUI()
+		w.lazyDrawUI()
 		w.setCwd(updates[1].(string))
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))

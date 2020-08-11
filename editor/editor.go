@@ -179,7 +179,7 @@ func InitEditor() {
 		homeDir: home,
 		args:    args,
 		opts:    opts,
-		chanVisible: make(chan bool, 1),
+		chanVisible: make(chan bool, 2),
 	}
 	e := editor
 
@@ -202,7 +202,7 @@ func InitEditor() {
 	// application main window
 	isframeless := e.config.Editor.Borderless
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	e.window.Show()
+	e.showWindow()
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 
@@ -224,6 +224,7 @@ func InitEditor() {
 	// neovim workspaces
 	e.initWorkspaces()
 
+	// load file in MacOS
 	e.loadFileInDarwin()
 
 	// runs goroutine to detect stop events and quit the application
@@ -550,11 +551,7 @@ func (e *Editor) setWindowSize(s string) (int, int) {
 
 func (e *Editor) setWindowOptions() {
 	e.window.SetupTitle("goneovim")
-	e.window.SetupWidgetColor(0, 0, 0)
-	e.width = e.config.Editor.Width
-	e.height = e.config.Editor.Height
 	e.window.SetMinimumSize2(400, 300)
-	e.window.Resize2(e.width, e.height)
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)
@@ -564,6 +561,22 @@ func (e *Editor) setWindowOptions() {
 	} else if e.config.Editor.StartMaximizedWindow || e.opts.Maximized {
 		e.window.WindowMaximize()
 	}
+}
+
+func (e *Editor) showWindow() {
+	e.width = e.config.Editor.Width
+	e.height = e.config.Editor.Height
+	e.window.Resize2(e.width, e.height)
+	e.window.Show()
+	// go func() {
+	// 	for {
+	// 		time.Sleep(20 * time.Millisecond)
+	// 		if e.window.IsVisible() {
+	// 			e.chanVisible <-true
+	// 			return
+	// 		}
+	// 	}
+	// }()
 }
 
 func isFileExist(filename string) bool {
