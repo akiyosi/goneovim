@@ -132,11 +132,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	// }()
 	w.font.ws = w
 
-	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)
-	w.rows = editor.config.Editor.Height / w.font.lineHeight
-
 	// Basic Workspace UI component
-
 	w.screen = newScreen()
 	w.screen.ws = w
 	w.screen.font = w.font
@@ -900,7 +896,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			for _, u := range update[1:] {
 				w.setColorsSet(u.([]interface{}))
 			}
-			w.updateSize()
 		case "hl_attr_define":
 			s.setHlAttrDef(args)
 			// if goneovim own statusline is visible
