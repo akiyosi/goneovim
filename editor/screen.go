@@ -575,10 +575,10 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawTextDecoration(p, y, col, cols)
 	}
 
-	// If Window is Message Area, draw separator
-	if w.isMsgGrid {
-		w.drawMsgSeparator(p)
-	}
+	// // If Window is Message Area, draw separator
+	// if w.isMsgGrid {
+	// 	w.drawMsgSeparator(p)
+	// }
 
 	// Draw float window border
 	if w.isFloatWin {
@@ -2984,17 +2984,21 @@ func (s *Screen) windowHide(args []interface{}) {
 func (s *Screen) msgSetPos(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		msgCount := util.ReflectToInt(arg.([]interface{})[1])
+		row := util.ReflectToInt(arg.([]interface{})[1])
+		scrolled := arg.([]interface{})[2].(bool)
+		// sepChar := arg.([]interface{})[3].(string)
 
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
 		}
 		win.isMsgGrid = true
-		win.pos[1] = msgCount
+		win.pos[1] = row
 		win.move(win.pos[0], win.pos[1])
 		win.show()
-		win.widget.Raise() // Fix #111
+		if scrolled {
+			win.widget.Raise() // Fix #111
+		}
 	}
 }
 
