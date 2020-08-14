@@ -120,49 +120,54 @@ func newWorkspace(path string) (*Workspace, error) {
 		special:       newRGBA(255, 255, 255, 1),
 	}
 	w.registerSignal()
-	// w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), 0, false)
+
 	w.font = initFontNew(
 		editor.extFontFamily,
 		float64(editor.extFontSize),
 		0,
 		false,
 	)
-	// go func() {
-	// 	w.font.fontMetrics.HorizontalAdvance("あ", -1)
-	// }()
 	w.font.ws = w
 
 	// Basic Workspace UI component
+	// screen
 	w.screen = newScreen()
 	w.screen.ws = w
 	w.screen.font = w.font
 	w.screen.initInputMethodWidget()
 
+	// cursor
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
 
+	// scrollbar
 	if editor.config.ScrollBar.Visible {
 		w.scrollBar = newScrollBar()
 		w.scrollBar.ws = w
 	}
 
+	// markdown
 	w.markdown = newMarkdown(w)
 	w.markdown.webview.SetParent(w.screen.widget)
 
+	// minimap
 	w.minimap = newMiniMap()
 	w.minimap.ws = w
 
 	// If ExtFooBar is true, then we create a UI component
+	// tabline
 	if editor.config.Editor.ExtTabline {
 		w.tabline = initTabline()
 		w.tabline.ws = w
 	}
 
+	// cmdline
 	if editor.config.Editor.ExtCmdline {
 		w.cmdline = initCmdline()
 		w.cmdline.ws = w
 	}
 
+	// popupmenu
 	if editor.config.Editor.ExtPopupmenu {
 		w.popup = initPopupmenuNew()
 		w.popup.widget.SetParent(editor.wsWidget)
@@ -171,6 +176,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		// w.signature.widget.Hide()
 	}
 
+	// messages
 	if editor.config.Editor.ExtMessages {
 		w.message = initMessage()
 		w.message.ws = w
@@ -183,6 +189,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		w.statusline.ws = w
 	}
 
+	// Lint
 	if editor.config.Lint.Visible {
 		w.loc = initLocpopup()
 		w.loc.ws = w
@@ -194,19 +201,23 @@ func newWorkspace(path string) (*Workspace, error) {
 	// w.signature.widget.SetParent(editor.wsWidget)
 	// w.signature.ws = w
 
+	// pallete
 	w.palette = initPalette()
 	w.palette.ws = w
 	w.palette.widget.SetParent(editor.window)
 	w.palette.hide()
 
+	// palette
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
 	w.fpalette.widget.SetParent(editor.window)
 	w.fpalette.hide()
 
+	// finder
 	w.finder = initFinder()
 	w.finder.ws = w
 
+	// workspace widget, layouts
 	layout := widgets.NewQVBoxLayout()
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
