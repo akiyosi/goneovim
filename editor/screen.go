@@ -170,9 +170,6 @@ func newScreen() *Screen {
 	widget.ConnectMousePressEvent(screen.mousePressEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
-	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		screen.updateSize()
-	})
 
 	return screen
 }
@@ -281,7 +278,15 @@ func (s *Screen) updateSize() {
 	defer s.ws.fontMutex.Unlock()
 
 	ws := s.ws
-	s.width = s.widget.Width()
+	scrollvarWidth := 0
+	if editor.config.ScrollBar.Visible {
+		scrollvarWidth = 10
+	}
+	minimapWidth := 0
+	if s.ws.minimap.visible {
+		minimapWidth = editor.config.MiniMap.Width
+	}
+	s.width = editor.wsWidget.Width() - scrollvarWidth - minimapWidth
 	currentCols := int(float64(s.width) / s.font.truewidth)
 	currentRows := s.height / s.font.lineHeight
 
@@ -486,7 +491,19 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		y = row * font.lineHeight
 
 		candX = int(float64(col+win.pos[0]) * font.truewidth)
-		candY = (row+win.pos[1])*font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
+		tablineMarginTop := 0
+		if ws.tabline != nil {
+			tablineMarginTop = ws.tabline.marginTop
+		}
+		tablineHeight := 0
+		if ws.tabline != nil {
+			tablineHeight = ws.tabline.height
+		}
+		tablineMarginBottom := 0
+		if ws.tabline != nil {
+			tablineMarginBottom = ws.tabline.marginBottom
+		}
+		candY = (row+win.pos[1])*font.lineHeight + tablineMarginTop + tablineHeight + tablineMarginBottom
 	}
 	return x, y, candX, candY
 }
@@ -555,10 +572,10 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawTextDecoration(p, y, col, cols)
 	}
 
-	// If Window is Message Area, draw separator
-	if w.isMsgGrid {
-		w.drawMsgSeparator(p)
-	}
+	// // If Window is Message Area, draw separator
+	// if w.isMsgGrid {
+	// 	w.drawMsgSeparator(p)
+	// }
 
 	// Draw float window border
 	if w.isFloatWin {
@@ -574,7 +591,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	// Update markdown preview
-	if w.grid != 1 {
+	if w.grid != 1 && w.s.ws.markdown != nil {
 		w.s.ws.markdown.updatePos()
 	}
 
@@ -2964,17 +2981,22 @@ func (s *Screen) windowHide(args []interface{}) {
 func (s *Screen) msgSetPos(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		msgCount := util.ReflectToInt(arg.([]interface{})[1])
+		row := util.ReflectToInt(arg.([]interface{})[1])
+		scrolled := arg.([]interface{})[2].(bool)
+		// TODO We should imprement to drawing msgSepChar
+		// sepChar := arg.([]interface{})[3].(string)
 
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
 		}
 		win.isMsgGrid = true
-		win.pos[1] = msgCount
+		win.pos[1] = row
 		win.move(win.pos[0], win.pos[1])
 		win.show()
-		win.widget.Raise() // Fix #111
+		if scrolled {
+			win.widget.Raise() // Fix #111
+		}
 	}
 }
 
@@ -3083,9 +3105,6 @@ func (w *Window) setGridGeometry(width, height int) {
 func (w *Window) fill() {
 	for i := 0; i < len(w.lenContent); i++ {
 		w.lenContent[i] = w.cols
-	}
-	if editor.config.Editor.DrawBorder {
-		return
 	}
 	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
 		return

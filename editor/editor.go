@@ -25,7 +25,7 @@ var editor *Editor
 
 const (
 	GONEOVIMVERSION = "v0.4.6"
-	WORKSPACELEN = 20
+	WORKSPACELEN = 10
 )
 
 // ColorPalette is
@@ -90,13 +90,14 @@ type Editor struct {
 	notify            chan *Notify
 	guiInit           chan bool
 
-	workspaces []*Workspace
-	active     int
-	window     *frameless.QFramelessWindow
-	split      *widgets.QSplitter
-	wsWidget   *widgets.QWidget
-	wsSide     *WorkspaceSide
-	sysTray    *widgets.QSystemTrayIcon
+	workspaces  []*Workspace
+	active      int
+	window      *frameless.QFramelessWindow
+	split       *widgets.QSplitter
+	wsWidget    *widgets.QWidget
+	wsSide      *WorkspaceSide
+	sysTray     *widgets.QSystemTrayIcon
+	chanVisible chan bool
 
 	width            int
 	height           int
@@ -111,6 +112,7 @@ type Editor struct {
 	keyControl         core.Qt__Key
 	keyCmd             core.Qt__Key
 	prefixToMapMetaKey string
+	muMetaKey          sync.Mutex
 
 	config                 gonvimConfig
 	notifications          []*Notification
@@ -158,8 +160,10 @@ func InitEditor() {
 		}
 	}
 
+	// put shell environment
 	putEnv()
 
+	// detect home dir
 	home, err := homedir.Dir()
 	if err != nil {
 		home = "~"
@@ -175,27 +179,19 @@ func InitEditor() {
 		homeDir: home,
 		args:    args,
 		opts:    opts,
+		chanVisible: make(chan bool, 2),
 	}
 	e := editor
 
+	// application
 	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
 	e.app.ConnectAboutToQuit(func() {
 		e.cleanup()
 	})
 
-	// Set the current working directory of the application to the HOME directory.
-	// If this process is not executed, CWD is set to the root directory, and
-	// nvim plugins called as descendants of the application will not work due to lack of permission.
-	// e.g. #122
-	path := core.QCoreApplication_ApplicationDirPath()
-	absHome, err := util.ExpandTildeToHomeDirectory(home)
-	if err == nil {
-		if path != absHome {
-			qdir := core.NewQDir2(path)
-			qdir.SetCurrent(absHome)
-		}
-	}
+	// set application working directory path
+	setAppDirPath(home)
 
 	e.initFont()
 	e.initSVGS()
@@ -203,18 +199,21 @@ func InitEditor() {
 	e.initNotifications()
 	e.initSysTray()
 
-
+	// application main window
 	isframeless := e.config.Editor.Borderless
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
+	e.showWindow()
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 
+	// window layout
 	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
 	l.SetContentsMargins(0, 0, 0, 0)
 	l.SetSpacing(0)
-
 	e.window.SetupContent(l)
 
+
+	// window content
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
 	e.wsSide.newScrollArea()
@@ -222,10 +221,13 @@ func InitEditor() {
 	e.newSplitter()
 	l.AddWidget(e.split, 1, 0)
 
+	// neovim workspaces
 	e.initWorkspaces()
 
+	// load file in MacOS
 	e.loadFileInDarwin()
 
+	// runs goroutine to detect stop events and quit the application
 	go func() {
 		<-e.stop
 		if runtime.GOOS == "darwin" {
@@ -234,15 +236,25 @@ func InitEditor() {
 		e.app.Quit()
 	}()
 
-	e.window.Show()
 	e.wsWidget.SetFocus2()
-	e.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		for _, ws := range e.workspaces {
-			ws.updateSize()
-		}
-	})
 
 	widgets.QApplication_Exec()
+}
+
+// setAppDirPath
+// Set the current working directory of the application to the HOME directory.
+// If this process is not executed, CWD is set to the root directory, and
+// nvim plugins called as descendants of the application will not work due to lack of permission.
+// e.g. #122
+func setAppDirPath(home string) {
+	path := core.QCoreApplication_ApplicationDirPath()
+	absHome, err := util.ExpandTildeToHomeDirectory(home)
+	if err == nil {
+		if path != absHome {
+			qdir := core.NewQDir2(path)
+			qdir.SetCurrent(absHome)
+		}
+	}
 }
 
 func (e *Editor) newSplitter() {
@@ -250,7 +262,6 @@ func (e *Editor) newSplitter() {
 	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
 	splitter.AddWidget(e.wsSide.scrollarea)
 	splitter.AddWidget(e.wsWidget)
-	splitter.SetSizes([]int{e.config.SideBar.Width, e.width - e.config.SideBar.Width})
 	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
 	e.split = splitter
@@ -404,19 +415,6 @@ func putEnv() {
 func (e *Editor) initFont() {
 	e.extFontFamily = e.config.Editor.FontFamily
 	e.extFontSize = e.config.Editor.FontSize
-	if e.extFontFamily == "" {
-		switch runtime.GOOS {
-		case "windows":
-			e.extFontFamily = "Consolas"
-		case "darwin":
-			e.extFontFamily = "Monaco"
-		default:
-			e.extFontFamily = "Monospace"
-		}
-	}
-	if e.extFontSize <= 5 {
-		e.extFontSize = 13
-	}
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QWidget")
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QLabel")
 }
@@ -437,6 +435,7 @@ func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt 
 }
 
 func (e *Editor) popupNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
+	e.updateNotificationPos()
 	notification := newNotification(level, p, message, opt...)
 	notification.widget.SetParent(e.window)
 	notification.widget.AdjustSize()
@@ -500,7 +499,7 @@ func (e *Editor) updateGUIColor() {
 		e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 	}
 
-	e.window.SetWindowOpacity(1.0)
+	// e.window.SetWindowOpacity(1.0)
 }
 
 func hexToRGBA(hex string) *RGBA {
@@ -552,12 +551,7 @@ func (e *Editor) setWindowSize(s string) (int, int) {
 
 func (e *Editor) setWindowOptions() {
 	e.window.SetupTitle("goneovim")
-	e.window.SetupWidgetColor(0, 0, 0)
-	e.width = e.config.Editor.Width
-	e.height = e.config.Editor.Height
 	e.window.SetMinimumSize2(400, 300)
-	e.window.Resize2(e.width, e.height)
-	e.window.SetWindowOpacity(0.0)
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)
@@ -567,6 +561,22 @@ func (e *Editor) setWindowOptions() {
 	} else if e.config.Editor.StartMaximizedWindow || e.opts.Maximized {
 		e.window.WindowMaximize()
 	}
+}
+
+func (e *Editor) showWindow() {
+	e.width = e.config.Editor.Width
+	e.height = e.config.Editor.Height
+	e.window.Resize2(e.width, e.height)
+	e.window.Show()
+	// go func() {
+	// 	for {
+	// 		time.Sleep(20 * time.Millisecond)
+	// 		if e.window.IsVisible() {
+	// 			e.chanVisible <-true
+	// 			return
+	// 		}
+	// 	}
+	// }()
 }
 
 func isFileExist(filename string) bool {
@@ -630,7 +640,6 @@ func (e *Editor) workspaceUpdate() {
 	}
 	for i, ws := range e.workspaces {
 		if i == e.active {
-			ws.hide()
 			ws.show()
 		} else {
 			ws.hide()

@@ -138,7 +138,9 @@ func (c *Cursor) move() {
 		),
 	)
 
-	c.ws.loc.updatePos()
+	if c.ws.loc != nil {
+		c.ws.loc.updatePos()
+	}
 
 	// Fix #119: Wrong candidate window position when using ibus
 	if runtime.GOOS == "linux" {

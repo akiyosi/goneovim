@@ -36,6 +36,7 @@ func (f *Finder) hide() {
 }
 
 func (f *Finder) show() {
+	f.ws.fpalette.resize()
 	f.ws.fpalette.show()
 }
 
@@ -59,6 +60,7 @@ func (f *Finder) showPattern(args []interface{}) {
 
 func (f *Finder) showResult(args []interface{}) {
 	palette := f.ws.fpalette
+
 	selected := util.ReflectToInt(args[1])
 	match := [][]int{}
 	for _, i := range args[2].([]interface{}) {

@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 
 	"github.com/BurntSushi/toml"
 )
@@ -168,6 +169,20 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Statusline.ModeIndicatorType = "textLabel"
 	}
 
+	if config.Editor.FontFamily == "" {
+		switch runtime.GOOS {
+		case "windows":
+			config.Editor.FontFamily = "Consolas"
+		case "darwin":
+			config.Editor.FontFamily = "Monaco"
+		default:
+			config.Editor.FontFamily = "Monospace"
+		}
+	}
+	if config.Editor.FontSize <= 3 {
+		config.Editor.FontSize = 12
+	}
+
 	if config.Editor.Linespace < 0 {
 		config.Editor.Linespace = 6
 	}
@@ -230,6 +245,15 @@ func (c *gonvimConfig) init() {
 	c.Editor.ExtMessages = false
 	c.Editor.DrawBorder = false
 
+	switch runtime.GOOS {
+	case "windows":
+		c.Editor.FontFamily = "Consolas"
+	case "darwin":
+		c.Editor.FontFamily = "Monaco"
+	default:
+		c.Editor.FontFamily = "Monospace"
+	}
+	c.Editor.FontSize = 12
 	c.Editor.Linespace = 6
 
 	// Indent guide

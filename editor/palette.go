@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/akiyosi/goneovim/util"
+	"github.com/akiyosi/goneovim/fuzzy"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
@@ -182,15 +183,16 @@ func (p *Palette) setColor() {
 }
 
 func (p *Palette) resize() {
-	width := int(math.Trunc(float64(editor.width) * 0.7))
+	eWidth := editor.window.Width() - 10
+	width := int(math.Trunc(float64(eWidth) * 0.7))
 	cursorBoundary := p.padding*4 + p.textLength() + p.patternPadding
 	if cursorBoundary > width {
 		width = cursorBoundary
 	}
-	if width > editor.width {
-		width = editor.width
+	if width > eWidth {
+		width = eWidth
 		p.pattern.SetAlignment(core.Qt__AlignRight | core.Qt__AlignCenter)
-	} else if width <= editor.width {
+	} else if width <= eWidth {
 		if p.pattern.Alignment() != core.Qt__AlignLeft {
 			p.pattern.SetAlignment(core.Qt__AlignLeft)
 		}
@@ -204,17 +206,27 @@ func (p *Palette) resize() {
 	p.widget.SetMaximumWidth(p.width)
 	p.widget.SetMinimumWidth(p.width)
 
-	x := editor.width - p.width
+	x := eWidth - p.width
 	if x < 0 {
 		x = 0
 	}
 	p.widget.Move2(x/2, 10)
 
+	p.showTotal = 0
+	for i := p.showTotal; i < len(p.resultItems); i++ {
+		p.resultItems[i].hide()
+	}
+}
+
+func (p *Palette) resizeResultItems() {
+	if p.showTotal != 0 {
+		return
+	}
 	itemHeight := p.resultItems[0].widget.SizeHint().Height()
 	p.itemHeight = itemHeight
 	p.showTotal = int(float64(p.ws.height)/float64(itemHeight)*editor.config.Palette.AreaRatio) - 1
-	for i := p.showTotal; i < len(p.resultItems); i++ {
-		p.resultItems[i].hide()
+	if p.ws.uiAttached {
+		fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
 	}
 }
 
@@ -222,6 +234,7 @@ func (p *Palette) show() {
 	if !p.hidden {
 		return
 	}
+	p.resizeResultItems()
 	p.hidden = false
 	p.widget.Raise()
 	p.widget.SetWindowOpacity(1.0)

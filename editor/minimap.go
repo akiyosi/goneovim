@@ -222,12 +222,18 @@ func (m *MiniMap) toggle() {
 	m.curRegion.SetParent(win.widget)
 	m.bufUpdate()
 	m.bufSync()
+
+	m.ws.updateSize()
 }
 
 func (m *MiniMap) updateRows() bool {
 	var ret bool
 	m.height = m.widget.Height()
-	rows := m.height / m.font.lineHeight
+	fontHeight := m.font.lineHeight
+	if fontHeight == 0 {
+		return false
+	}
+	rows := m.height / fontHeight
 
 	if rows != m.rows {
 		ret = true
@@ -239,7 +245,11 @@ func (m *MiniMap) updateRows() bool {
 func (m *MiniMap) updateCols() bool {
 	var ret bool
 	m.width = m.widget.Width()
-	cols := int(float64(m.width) / m.font.truewidth)
+	fontWidth := m.font.truewidth
+	if fontWidth == 0 {
+		return false
+	}
+	cols := int(float64(m.width) / fontWidth)
 
 	if cols != m.cols {
 		ret = true
