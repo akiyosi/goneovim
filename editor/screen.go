@@ -2983,6 +2983,7 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		row := util.ReflectToInt(arg.([]interface{})[1])
 		scrolled := arg.([]interface{})[2].(bool)
+		// TODO We should imprement to drawing msgSepChar
 		// sepChar := arg.([]interface{})[3].(string)
 
 		win, ok := s.getWindow(gridid)
