@@ -273,6 +273,7 @@ func (w *Workspace) lazyDrawUI() {
 			w.minimap.startMinimapProc()
 		}
 	}()
+	w.getNvimOptions()
 }
 
 func (w *Workspace) registerSignal() {
@@ -398,7 +399,6 @@ func (w *Workspace) init(path string) {
 	w.configure()
 	w.attachUI(path)
 	w.loadGinitVim()
-	w.getNvimOptions()
 }
 
 func (w *Workspace) configure() {
