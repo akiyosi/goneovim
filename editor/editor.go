@@ -200,7 +200,7 @@ func InitEditor() {
 	e.initSysTray()
 
 	// application main window
-	isframeless := e.config.Editor.Borderless
+	isframeless := e.config.Editor.BorderlessWindow
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
 	e.showWindow()
 	e.setWindowSizeFromOpts()
@@ -466,8 +466,7 @@ func (e *Editor) initColorPalette() {
 func (c *ColorPalette) update() {
 	fg := c.fg
 	bg := c.bg
-	rgbAccent := hexToRGBA(c.e.config.SideBar.AccentColor)
-	c.selectedBg = bg.brend(rgbAccent, 0.3)
+	c.selectedBg = bg.brend(hexToRGBA(c.e.config.SideBar.AccentColor), 0.3)
 	c.inactiveFg = warpColor(bg, -80)
 	c.comment = warpColor(fg, -80)
 	c.abyss = warpColor(bg, 5)
@@ -480,7 +479,21 @@ func (c *ColorPalette) update() {
 	c.widgetBg = warpColor(bg, -10)
 	c.widgetInputArea = warpColor(bg, -30)
 	c.minimapCurrentRegion = warpColor(bg, 20)
-	c.windowSeparator = warpColor(bg, -40)
+	if c.e.config.Editor.WindowSeparatorColor != "" {
+		c.windowSeparator = hexToRGBA(c.e.config.Editor.WindowSeparatorColor)
+	} else if c.e.config.Editor.WindowSeparatorTheme == "light" && c.e.config.Editor.WindowSeparatorColor == "" {
+		if fg.R < 250 && fg.G < 250 && fg.B < 250 {
+			c.windowSeparator = warpColor(fg, 10)
+		} else {
+			c.windowSeparator = warpColor(fg, -10)
+		}
+	} else if c.e.config.Editor.WindowSeparatorTheme == "dark" && c.e.config.Editor.WindowSeparatorColor == "" {
+		if bg.R > 10 && bg.G > 10 && bg.B > 10 {
+			c.windowSeparator = warpColor(bg, 10)
+		} else {
+			c.windowSeparator = warpColor(bg, -10)
+		}
+	}
 	c.indentGuide = warpColor(bg, -30)
 }
 

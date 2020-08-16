@@ -583,7 +583,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	// Draw vim window separator
-	w.drawBorders(p, row, col, rows, cols)
+	w.drawWindowSeparators(p, row, col, rows, cols)
 
 	// Draw indent guide
 	if editor.config.Editor.IndentGuide {
@@ -860,14 +860,14 @@ func (w *Window) drawFloatWindowBorder(p *gui.QPainter) {
 	)
 }
 
-func (w *Window) drawBorders(p *gui.QPainter, row, col, rows, cols int) {
+func (w *Window) drawWindowSeparators(p *gui.QPainter, row, col, rows, cols int) {
 	if w == nil {
 		return
 	}
 	if w.grid != 1 {
 		return
 	}
-	if !editor.config.Editor.DrawBorder {
+	if !editor.config.Editor.DrawWindowSeparator {
 		return
 	}
 	w.s.windows.Range(func(_, winITF interface{}) bool {
@@ -891,14 +891,14 @@ func (w *Window) drawBorders(p *gui.QPainter, row, col, rows, cols int) {
 		if win.pos[0] > (row+rows) && (win.pos[1]+win.rows) > (col+cols) {
 			return true
 		}
-		win.drawBorder(p)
+		win.drawWindowSeparator(p)
 
 		return true
 	})
 
 }
 
-func (w *Window) drawBorder(p *gui.QPainter) {
+func (w *Window) drawWindowSeparator(p *gui.QPainter) {
 	font := w.getFont()
 
 	// window position is based on cols, rows of global font setting
@@ -1800,7 +1800,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	if isSkipGlobalId(gridid) {
 		return
 	}
-	if editor.config.Editor.DrawBorder && gridid == 1 && s.name != "minimap" {
+	if editor.config.Editor.DrawWindowSeparator && gridid == 1 && s.name != "minimap" {
 		return
 	}
 	if colStart < 0 {
@@ -1977,19 +1977,6 @@ func (c *Cell) isSignColumn() bool {
 
 	}
 }
-
-// func (c *Cell) isStatuslineOrVertSplit() bool {
-// 	// If ext_statusline is implemented in Neovim, the implementation may be revised
-// 	if &c.highlight == nil {
-// 		return false
-// 	}
-// 	if c.highlight.hlName == "StatusLine" || c.highlight.hlName == "StatusLineNC" || c.highlight.hlName == "VertSplit" {
-// 		if editor.config.Editor.DrawBorder {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
 
 func (s *Screen) gridScroll(args []interface{}) {
 	var gridid gridId

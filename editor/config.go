@@ -44,6 +44,9 @@ type editorConfig struct {
 	Macmeta                  bool
 	Transparent              float64
 	DrawBorder               bool
+	DrawWindowSeparator      bool
+	WindowSeparatorTheme     string
+	WindowSeparatorColor     string
 	SkipGlobalId             bool
 	IndentGuide              bool
 	IndentGuideIgnoreFtList  []string
@@ -54,7 +57,7 @@ type editorConfig struct {
 	DiffDeletePattern        int
 	DiffChangePattern        int
 	ClickEffect              bool
-	Borderless               bool
+	BorderlessWindow         bool
 	// ExtWildmenu            bool
 	// ExtMultigrid           bool
 }
@@ -142,8 +145,8 @@ func newGonvimConfig(home string) gonvimConfig {
 	}
 
 	if config.Editor.Transparent < 1.0 {
-		config.Editor.DrawBorder = true
-		config.Editor.Borderless = true
+		config.Editor.DrawWindowSeparator = true
+		config.Editor.BorderlessWindow = true
 	}
 
 	if config.Editor.DiffAddPattern < 1 || config.Editor.DiffAddPattern > 24 {
@@ -233,7 +236,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.Width = 800
 	c.Editor.Height = 600
 	c.Editor.Transparent = 1.0
-	c.Editor.Borderless = true
+	c.Editor.BorderlessWindow = false
 
 	c.Editor.SkipGlobalId = false
 	c.Editor.CachedDrawing = true
@@ -243,7 +246,9 @@ func (c *gonvimConfig) init() {
 	c.Editor.ExtPopupmenu = false
 	c.Editor.ExtTabline = false
 	c.Editor.ExtMessages = false
-	c.Editor.DrawBorder = false
+	c.Editor.DrawWindowSeparator = false
+	c.Editor.WindowSeparatorTheme = "dark"
+	c.Editor.WindowSeparatorColor = ""
 
 	switch runtime.GOOS {
 	case "windows":
