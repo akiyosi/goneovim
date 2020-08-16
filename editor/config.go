@@ -46,6 +46,7 @@ type editorConfig struct {
 	DrawBorder               bool
 	DrawWindowSeparator      bool
 	WindowSeparatorTheme     string
+	WindowSeparatorGradient  bool
 	WindowSeparatorColor     string
 	SkipGlobalId             bool
 	IndentGuide              bool
@@ -249,6 +250,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.DrawWindowSeparator = false
 	c.Editor.WindowSeparatorTheme = "dark"
 	c.Editor.WindowSeparatorColor = ""
+	c.Editor.WindowSeparatorGradient = false
 
 	switch runtime.GOOS {
 	case "windows":

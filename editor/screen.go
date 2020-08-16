@@ -572,6 +572,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawTextDecoration(p, y, col, cols)
 	}
 
+	// TODO: We should use msgSepChar to separate message window area
 	// // If Window is Message Area, draw separator
 	// if w.isMsgGrid {
 	// 	w.drawMsgSeparator(p)
@@ -590,11 +591,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawIndentguide(p, row, rows)
 	}
 
-	// Update markdown preview
-	if w.grid != 1 && w.s.ws.markdown != nil {
-		w.s.ws.markdown.updatePos()
-	}
-
 	// Reset to 0 after drawing is complete.
 	// This is to suppress flickering in smooth scroll
 	dx := math.Abs(float64(w.scrollPixels[0]))
@@ -607,6 +603,12 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	p.DestroyQPainter()
+
+	// Update markdown preview
+	if w.grid != 1 && w.s.ws.markdown != nil {
+		w.s.ws.markdown.updatePos()
+	}
+
 	w.paintMutex.Unlock()
 }
 
@@ -906,7 +908,7 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter) {
 	y := w.pos[1] * w.s.font.lineHeight
 	width := int(float64(w.cols) * font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(font.lineHeight))
-	color := editor.colors.windowSeparator.QColor()
+	color := editor.colors.windowSeparator
 
 	// Vertical
 	if y+font.lineHeight+1 < w.s.widget.Height() {
@@ -915,7 +917,26 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter) {
 			y-(font.lineHeight/2),
 			2,
 			winHeight,
-			color,
+			color.QColor(),
+		)
+	}
+	// vertical gradient
+	if editor.config.Editor.WindowSeparatorGradient {
+		gradient := gui.NewQLinearGradient3(
+			float64(x+width)+font.truewidth/2,
+			0,
+			float64(x+width)+font.truewidth/2-6,
+			0,
+		)
+		gradient.SetColorAt(0, gui.NewQColor3(color.R, color.G, color.B, 125))
+		gradient.SetColorAt(1, gui.NewQColor3(color.R, color.G, color.B, 0))
+		brush := gui.NewQBrush10(gradient)
+		p.FillRect2(
+			int(float64(x+width)+font.truewidth/2)-6,
+			y-(font.lineHeight/2),
+			6,
+			winHeight,
+			brush,
 		)
 	}
 
@@ -934,8 +955,27 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter) {
 		y2,
 		int((float64(w.cols)+0.92)*font.truewidth),
 		2,
-		color,
+		color.QColor(),
 	)
+	// horizontal gradient
+	if editor.config.Editor.WindowSeparatorGradient {
+		hgradient := gui.NewQLinearGradient3(
+			0,
+			float64(y2),
+			0,
+			float64(y2)-6,
+		)
+		hgradient.SetColorAt(0, gui.NewQColor3(color.R, color.G, color.B, 125))
+		hgradient.SetColorAt(1, gui.NewQColor3(color.R, color.G, color.B, 0))
+		hbrush := gui.NewQBrush10(hgradient)
+		p.FillRect2(
+			int(float64(x)-font.truewidth/2),
+			y2-6,
+			int((float64(w.cols)+0.92)*font.truewidth),
+			6,
+			hbrush,
+		)
+	}
 }
 
 func (s *Screen) bottomWindowPos() int {
