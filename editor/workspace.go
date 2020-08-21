@@ -261,6 +261,7 @@ func newWorkspace(path string) (*Workspace, error) {
 }
 
 func (w *Workspace) lazyDrawUI() {
+	w.getNvimOptions()
 	editor.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range editor.workspaces {
 			ws.updateSize()
@@ -273,7 +274,6 @@ func (w *Workspace) lazyDrawUI() {
 			w.minimap.startMinimapProc()
 		}
 	}()
-	w.getNvimOptions()
 }
 
 func (w *Workspace) registerSignal() {
@@ -549,31 +549,94 @@ func (w *Workspace) loadGinitVim() {
 }
 
 func (w *Workspace) getNvimOptions() {
-	ts := 8
-	w.nvim.Option("ts", &ts)
-	w.ts = ts
 	w.getColorscheme()
-	screenbg := ""
-	w.nvim.Eval(":echo &background", &screenbg)
-	w.screenbg = screenbg
-	if w.screenbg == "light" {
-		fg := newRGBA(editor.colors.fg.R, editor.colors.fg.G, editor.colors.fg.B, 1)
-		bg := newRGBA(editor.colors.bg.R, editor.colors.bg.G, editor.colors.bg.B, 1)
-		editor.colors.fg = bg
-		editor.colors.bg = fg
-	}
+	w.getTS()
+	w.getBG()
+	w.getKeymaps()
+}
 
+func (w *Workspace) getColorscheme() {
+	done := make(chan bool, 5)
+	colorscheme := ""
+	go func() {
+		w.nvim.Var("colors_name", &colorscheme)
+		done <-true
+	}()
+	select {
+	case <-done:
+	case <-time.After(40 * time.Millisecond):
+	}
+	w.colorscheme = colorscheme
+}
+
+func (w *Workspace) getTS() {
+	done := make(chan bool, 5)
+	ts := 8
+	go func() {
+		w.nvim.Option("ts", &ts)
+		done <-true
+	}()
+	select {
+	case <-done:
+	case <-time.After(40 * time.Millisecond):
+	}
+	w.ts = ts
+}
+
+func (w *Workspace) getBG() {
+	done := make(chan bool, 5)
+	screenbg := "dark"
+	go func() {
+		w.nvim.Eval(":echo &background", &screenbg)
+		done <-true
+	}()
+	select {
+	case <-done:
+	case <-time.After(40 * time.Millisecond):
+	}
+	w.screenbg = screenbg
+
+	if w.screenbg == "light" {
+		editor.colors.bg = newRGBA(
+			editor.colors.fg.R,
+			editor.colors.fg.G,
+			editor.colors.fg.B,
+			1,
+		)
+		editor.colors.fg = newRGBA(
+			editor.colors.bg.R,
+			editor.colors.bg.G,
+			editor.colors.bg.B,
+			1,
+		)
+	}
+}
+
+func (w *Workspace) getKeymaps() {
+	done := make(chan bool, 5)
 	w.escKeyInInsert = "<Esc>"
 	w.escKeyInNormal = "<Esc>"
-	nmappings, err := w.nvim.KeyMap("normal")
-	if err != nil {
-		return
+
+	var nmappings, imappings []*nvim.Mapping
+	var err error
+
+	go func() {
+		nmappings, err = w.nvim.KeyMap("normal")
+		if err != nil {
+			return
+		}
+		w.normalMappings = nmappings
+		imappings, err = w.nvim.KeyMap("insert")
+		if err != nil {
+			return
+		}
+		done <-true
+	}()
+	select {
+	case <-done:
+	case <-time.After(80 * time.Millisecond):
 	}
-	w.normalMappings = nmappings
-	imappings, err := w.nvim.KeyMap("insert")
-	if err != nil {
-		return
-	}
+
 	w.insertMappings = imappings
 	altkeyCount := 0
 	metakeyCount := 0
@@ -617,12 +680,6 @@ func (w *Workspace) getNvimOptions() {
 		editor.prefixToMapMetaKey = "M-"
 	}
 	editor.muMetaKey.Unlock()
-}
-
-func (w *Workspace) getColorscheme() {
-	colorscheme := ""
-	w.nvim.Var("colors_name", &colorscheme)
-	w.colorscheme = colorscheme
 }
 
 func (w *Workspace) nvimEval(s string) (interface{}, error) {
