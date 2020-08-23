@@ -66,6 +66,7 @@ func (t *Tabline) setColor() {
 		border-bottom: 0px solid;
 		border-right: 0px solid;
 		background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; } `, inactiveFg))
+	t.updateTabsIcon()
 }
 
 func initTabline() *Tabline {
@@ -193,6 +194,9 @@ func (t *Tab) updateStyle() {
 	if editor.colors.fg == nil || editor.colors.bg == nil {
 		return
 	}
+	if t.t.ws.screen.hlAttrDef == nil {
+		return
+	}
 	fg := editor.colors.fg
 	inactiveFg := editor.colors.inactiveFg
 	accent := t.t.ws.screen.hlAttrDef[t.t.ws.screen.highlightGroup["TabLineFill"]].foreground.Hex()
@@ -300,6 +304,13 @@ func (t *Tabline) updateSize() {
 	}
 }
 
+func (t *Tabline) updateTabsIcon() {
+	for _, tab := range t.Tabs {
+		svgContent := editor.getSvg(tab.fileType, nil)
+		tab.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	}
+}
+
 func (t *Tabline) update(args []interface{}) {
 	arg := args[0].([]interface{})
 	t.CurrentID = int(arg[0].(nvim.Tabpage))
@@ -357,6 +368,24 @@ func getFileType(text string) string {
 		filetype := parts[len(parts)-1]
 		if filetype == "md" {
 			filetype = "markdown"
+		}
+		if filetype == "rs" {
+			filetype = "rust"
+		}
+		if filetype == "yml" {
+			filetype = "yaml"
+		}
+		if filetype == "rb" {
+			filetype = "ruby"
+		}
+		if filetype == "hs" {
+			filetype = "haskell"
+		}
+		if filetype == "pl" {
+			filetype = "perl"
+		}
+		if filetype == "jl" {
+			filetype = "julia"
 		}
 		return filetype
 	}
