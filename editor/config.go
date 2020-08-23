@@ -87,7 +87,8 @@ type statusLineConfig struct {
 }
 
 type tabLineConfig struct {
-	Visible bool
+	Visible  bool
+	ShowIcon bool
 }
 
 type popupMenuConfig struct {

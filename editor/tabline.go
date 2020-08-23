@@ -147,17 +147,22 @@ func newTab() *Tab {
 	w := widgets.NewQWidget(nil, 0)
 	w.SetContentsMargins(5, 0, 10, 0)
 	l := widgets.NewQHBoxLayout()
-	l.SetContentsMargins(0, 0, 0, 0) // tab margins
+	l.SetContentsMargins(0, 0, 0, 4) // tab margins
 	l.SetSpacing(0)
-	// fileIcon := svg.NewQSvgWidget(nil)
-	// fileIcon.SetFixedWidth(12)
-	// fileIcon.SetFixedHeight(12)
+	var fileIcon *svg.QSvgWidget
+	if editor.config.Tabline.ShowIcon {
+		fileIcon = svg.NewQSvgWidget(nil)
+		fileIcon.SetFixedWidth(12)
+		fileIcon.SetFixedHeight(12)
+	}
 	file := widgets.NewQLabel(nil, 0)
 	file.SetStyleSheet(" .QLabel { padding: 2px; background-color: rgba(0, 0, 0, 0); }")
 	closeIcon := svg.NewQSvgWidget(nil)
 	closeIcon.SetFixedWidth(editor.iconSize)
 	closeIcon.SetFixedHeight(editor.iconSize)
-	// l.AddWidget(fileIcon, 0, 0)
+	if editor.config.Tabline.ShowIcon {
+		l.AddWidget(fileIcon, 0, 0)
+	}
 	l.AddWidget(file, 1, 0)
 	l.AddWidget(closeIcon, 0, 0)
 	w.SetLayout(l)
@@ -165,8 +170,10 @@ func newTab() *Tab {
 		widget: w,
 		layout: l,
 		file:   file,
-		// fileIcon:  fileIcon,
 		closeIcon: closeIcon,
+	}
+	if editor.config.Tabline.ShowIcon {
+		tab.fileIcon = fileIcon
 	}
 	tab.closeIcon.Hide()
 
@@ -317,7 +324,9 @@ func (t *Tabline) update(args []interface{}) {
 		fileType := getFileType(text)
 		if fileType != tab.fileType {
 			tab.fileType = fileType
-			// tab.updateFileIcon()
+			if editor.config.Tabline.ShowIcon {
+				tab.updateFileIcon()
+			}
 		}
 
 		if text != tab.fileText {
