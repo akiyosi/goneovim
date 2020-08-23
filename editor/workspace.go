@@ -936,8 +936,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.cursor.update()
 		case "option_set":
 			w.setOption(update)
-		screenbg := ""
-		w.nvim.Option("background", &screenbg)
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
