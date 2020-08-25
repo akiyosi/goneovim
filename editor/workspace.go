@@ -1007,24 +1007,50 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Popupmenu Events
 		case "popupmenu_show":
-			if w.cmdline.shown && w.cmdline != nil {
-				w.cmdline.cmdWildmenuShow(args)
-			} else if w.popup != nil {
-				w.popup.showItems(args)
+			if w.cmdline != nil {
+				if w.cmdline.shown {
+					w.cmdline.cmdWildmenuShow(args)
+				}
+			}
+			if w.popup != nil {
+				if w.cmdline != nil {
+					if !w.cmdline.shown {
+						w.popup.showItems(args)
+					}
+				} else {
+					w.popup.showItems(args)
+				}
 			}
 		case "popupmenu_select":
-			if w.cmdline.shown && w.cmdline != nil {
-				w.cmdline.cmdWildmenuSelect(args)
-			} else if w.popup != nil {
-				w.popup.selectItem(args)
+			if w.cmdline != nil {
+				if w.cmdline.shown {
+					w.cmdline.cmdWildmenuSelect(args)
+				}
+			}
+			if w.popup != nil {
+				if w.cmdline != nil {
+					if !w.cmdline.shown {
+						w.popup.selectItem(args)
+					}
+				} else {
+					w.popup.selectItem(args)
+				}
 			}
 		case "popupmenu_hide":
-			if w.cmdline.shown && w.cmdline != nil {
-				w.cmdline.cmdWildmenuHide()
-			} else if w.popup != nil {
-				w.popup.hide()
+			if w.cmdline != nil {
+				if w.cmdline.shown {
+					w.cmdline.cmdWildmenuHide()
+				}
 			}
-
+			if w.popup != nil {
+				if w.cmdline != nil {
+					if !w.cmdline.shown {
+						w.popup.hide()
+					}
+				} else {
+					w.popup.hide()
+				}
+			}
 		// Tabline Events
 		case "tabline_update":
 			if w.tabline != nil {
