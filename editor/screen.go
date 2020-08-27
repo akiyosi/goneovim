@@ -298,6 +298,8 @@ func (s *Screen) updateSize() {
 	ws.cols = currentCols
 	ws.rows = currentRows
 
+	// fmt.Println("debug:: update", currentCols, currentRows, s.width, s.height)
+
 	if !ws.uiAttached {
 		return
 	}
@@ -315,6 +317,7 @@ func (s *Screen) updateSize() {
 		return true
 	})
 
+	// fmt.Println("debug:: try resize", currentCols, currentRows, s.width, s.height)
 	s.uiTryResize(currentCols, currentRows)
 }
 

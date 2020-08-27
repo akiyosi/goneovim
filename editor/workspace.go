@@ -859,6 +859,9 @@ func (w *Workspace) updateSize() {
 		width = width - e.config.SideBar.Width - e.splitter.HandleWidth()
 	}
 	height := e.window.Geometry().Height() - e.window.BorderSize()*4
+	if e.config.Editor.BorderlessWindow {
+		height = height - e.window.TitleBar.Height()
+	}
 	if width != w.width || height != w.height {
 		w.width = width
 		w.height = height
