@@ -93,7 +93,7 @@ type Editor struct {
 	workspaces  []*Workspace
 	active      int
 	window      *frameless.QFramelessWindow
-	split       *widgets.QSplitter
+	splitter    *widgets.QSplitter
 	wsWidget    *widgets.QWidget
 	wsSide      *WorkspaceSide
 	sysTray     *widgets.QSystemTrayIcon
@@ -219,7 +219,7 @@ func InitEditor() {
 	e.wsSide.newScrollArea()
 	e.wsSide.scrollarea.Hide()
 	e.newSplitter()
-	l.AddWidget(e.split, 1, 0)
+	l.AddWidget(e.splitter, 1, 0)
 
 	// neovim workspaces
 	e.initWorkspaces()
@@ -264,7 +264,7 @@ func (e *Editor) newSplitter() {
 	splitter.AddWidget(e.wsWidget)
 	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
-	e.split = splitter
+	e.splitter = splitter
 
 	if editor.config.SideBar.Visible {
 		e.wsSide.show()

@@ -286,7 +286,7 @@ func (s *Screen) updateSize() {
 	if s.ws.minimap.visible {
 		minimapWidth = editor.config.MiniMap.Width
 	}
-	s.width = editor.wsWidget.Width() - scrollvarWidth - minimapWidth
+	s.width = ws.width - scrollvarWidth - minimapWidth
 	currentCols := int(float64(s.width) / s.font.truewidth)
 	currentRows := s.height / s.font.lineHeight
 

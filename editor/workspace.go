@@ -364,6 +364,7 @@ func (w *Workspace) startNvim(path string) error {
 		neovim, err = nvim.NewChildProcess(childProcessArgs)
 	}
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 
@@ -853,8 +854,11 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 
 func (w *Workspace) updateSize() {
 	e := editor
-	width := e.wsWidget.Width()
-	height := e.wsWidget.Height()
+	width := e.window.Geometry().Width() - e.window.BorderSize()*4
+	if e.config.SideBar.Visible {
+		width = width - e.config.SideBar.Width - e.splitter.HandleWidth()
+	}
+	height := e.window.Geometry().Height() - e.window.BorderSize()*4
 	if width != w.width || height != w.height {
 		w.width = width
 		w.height = height
@@ -2017,7 +2021,7 @@ func (side *WorkspaceSide) show() {
 		return
 	}
 	if !side.isInitResize {
-		editor.split.SetSizes(
+		editor.splitter.SetSizes(
 			[]int{editor.config.SideBar.Width,
 			editor.width - editor.config.SideBar.Width},
 		)
