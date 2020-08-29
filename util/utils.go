@@ -98,7 +98,7 @@ func DropShadow(x, y, radius float64, alpha int) *widgets.QGraphicsDropShadowEff
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(radius)
 	shadow.SetColor(gui.NewQColor3(0, 0, 0, alpha))
-	shadow.SetOffset2(x, y)
+	shadow.SetOffset3(x, y)
 
 	return shadow
 }
