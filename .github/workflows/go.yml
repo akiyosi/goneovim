@@ -1,22 +1,22 @@
-name: test
+name: test and build
 on: [push, pull_request]
 jobs:
-  test:
+  test-and-build-linux:
     strategy:
       matrix:
         # go-version: [1.12.x, 1.13.x]
         go-version: [1.12.x]
-        platform: [ubuntu-latest, macos-latest] #, windows-latest]
+        platform: [ubuntu-latest] #, windows-latest]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
-      QT_VERSION: 5.12.8
       QT_DIR: ${{ github.workspace }}/Qt
+      QT_VERSION: 5.12.9
+      QT_API: 5.12.0
       GO111MODULE: off
       GOPROXY: https://goproxy.io
     steps:
     - name: Linux prerequisites 
-      if: matrix.platform == 'ubuntu-latest'
       run: |
         sudo apt update
         sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev
@@ -27,25 +27,17 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Install Qt for linux
-      if: matrix.platform == 'ubuntu-latest'
       uses: jurplel/install-qt-action@v2.7.1
       with:
-        version: 5.12.8
+        version: 5.12.9
         host: linux
         target: desktop
         dir: ${{ github.workspace }}
-
-    - name: Install Qt for macOS
-      if: matrix.platform == 'macos-latest'
-      uses: jurplel/install-qt-action@v2.7.1
-      with:
-        version: 5.12.8
-        host: mac
-        target: desktop
-        dir: ${{ github.workspace }}
+        modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
 
     - name: Get Qt binding for Go
-      run: go get -v github.com/therecipe/qt/cmd/...
+      run: |
+        go get -v github.com/therecipe/qt/cmd/...
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -53,42 +45,13 @@ jobs:
         path: ./src/github.com/${{ github.repository }}
 
     - name: Free disk space
-      if: matrix.platform == 'ubuntu-latest'
       run: |
         sudo swapoff -a
         sudo rm -f /swapfile
         sudo apt clean
-    
-    # - name: Checkout Old bindings
-    #   run: |
-    #     mv ${{ github.workspace }}/bin/qtdeploy  ${{ github.workspace }}/bin/qtdeploy.mv
-    #     mv ${{ github.workspace }}/bin/qtminimal ${{ github.workspace }}/bin/qtminimal.mv
-    #     mv ${{ github.workspace }}/bin/qtmoc     ${{ github.workspace }}/bin/qtmoc.mv
-    #     mv ${{ github.workspace }}/bin/qtrcc     ${{ github.workspace }}/bin/qtrcc.mv
-    #     mv ${{ github.workspace }}/bin/qtsetup   ${{ github.workspace }}/bin/qtsetup.mv
-    #     cd ${{ github.workspace }}/src/github.com/sirupsen/logrus
-    #     git checkout b70d15e20
-    #     cd ${{ github.workspace }}/src/github.com/therecipe/qt
-    #     git checkout 4ee12d6ea
-    #     cd ${{ github.workspace }}/src/github.com/therecipe/qt/cmd/qtdeploy
-    #     go build main.go
-    #     mv ${{ github.workspace }}/src/github.com/therecipe/qt/cmd/qtdeploy/main ${{ github.workspace }}/bin/qtdeploy
-    #     cd ${{ github.workspace }}/src/github.com/therecipe/qt/cmd/qtminimal
-    #     go build main.go
-    #     mv ${{ github.workspace }}/src/github.com/therecipe/qt/cmd/qtminimal/main ${{ github.workspace }}/bin/qtminimal
-    #     cd ${{ github.workspace }}/src/github.com/therecipe/qt/cmd/qtmoc
-    #     go build main.go
-    #     mv ${{ github.workspace }}/src/github.com/therecipe/qt/cmd/qtmoc/main ${{ github.workspace }}/bin/qtmoc
-    #     cd ${{ github.workspace }}/src/github.com/therecipe/qt/cmd/qtrcc
-    #     go build main.go
-    #     mv ${{ github.workspace }}/src/github.com/therecipe/qt/cmd/qtrcc/main ${{ github.workspace }}/bin/qtrcc
-    #     cd ${{ github.workspace }}/src/github.com/therecipe/qt/cmd/qtsetup
-    #     go build main.go
-    #     mv ${{ github.workspace }}/src/github.com/therecipe/qt/cmd/qtsetup/main ${{ github.workspace }}/bin/qtsetup
-
-
+  
     - name: Generate Qt bindings
-      run: $(go env GOPATH)/bin/qtsetup
+      run: $(go env GOPATH)/bin/qtsetup -test=false
 
     - name: Get dependencies
       run: |
@@ -105,52 +68,126 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy build desktop
 
     - name: Add executable
-      if: matrix.platform == 'ubuntu-latest'
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
         chmod u+x goneovim QtWebEngineProcess
 
-    # To fix @rpath probrem
-    # - name: Copy dylib
-    #   if: matrix.platform == 'macos-latest'
-    #   run: |
-    #     cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents
-    #     mkdir Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
-    #     cp -pR Frameworks/QtCore.framework             Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
-    #     cp -pR Frameworks/QtGui.framework              Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
-    #     cp -pR Frameworks/QtNetwork.framework          Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
-    #     cp -pR Frameworks/QtPositioning.framework      Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
-    #     cp -pR Frameworks/QtQml.framework              Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
-    #     cp -pR Frameworks/QtQuick.framework            Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
-    #     cp -pR Frameworks/QtWidgets.framework          Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
-    #     cp -pR Frameworks/QtWebChannel.framework       Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks
-    #     mkdir Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework
-    #     cd Frameworks/QtWebEngineCore.framework
-    #     cp -fpR Resources Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/
-    #     mkdir Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions
-    #     mkdir Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/5
-    #     mkdir Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/Current
-    #     cp -pR Versions/5/QtWebEngineCore       Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/5/
-    #     cp -pR Versions/5/Resources             Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/5/
-    #     cp -pR Versions/Current/QtWebEngineCore Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/Current/
-    #     cp -pR Versions/Current/Resources       Helpers/QtWebEngineProcess.app/Contents/Frameworks/QtWebEngineCore.framework/Versions/Current/
-        
+    - name: Remove unnecessary modules
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
+        rm -fr audio
+        rm -fr bearer
+        rm -fr canbus
+        rm -fr designer
+        rm -fr egldeviceintegrations
+        rm -fr gamepads
+        rm -fr generic
+        rm -fr geometryloaders
+        rm -fr geoservices
+        rm -fr iconengines
+        rm -fr imageformats
+        rm -fr mediaservice
+        rm -fr platforminputcontexts
+        rm -fr platformthemes
+        rm -fr playlistformats
+        rm -fr position
+        rm -fr printsupport
+        rm -fr qmltooling
+        rm -fr renderplugins
+        rm -fr sceneparsers
+        rm -fr sensorgestures
+        rm -fr sensors
+        rm -fr sqldrivers
+        rm -fr texttospeech
+        rm -fr virtualkeyboard
+        rm -fr webview
+        rm -fr xcbglintegrations
+
     - name: Upload for linux
-      if: matrix.platform == 'ubuntu-latest'
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-linux
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
 
+
+  test-and-build-macos:
+    strategy:
+      matrix:
+        # go-version: [1.12.x, 1.13.x]
+        go-version: [1.12.x]
+        platform: [macos-latest]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      QT_DIR: ${{ github.workspace }}/Qt
+      QT_VERSION: 5.12.9
+      QT_API: 5.12.0
+      GO111MODULE: off
+      GOPROXY: https://goproxy.io
+    steps:
+
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Install Qt for macOS
+      uses: jurplel/install-qt-action@v2.7.1
+      with:
+        version: 5.12.9
+        host: mac
+        target: desktop
+        dir: ${{ github.workspace }}
+        modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
+
+    - name: Get Qt binding for Go
+      run: |
+        go get -v github.com/therecipe/qt/cmd/...
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        path: ./src/github.com/${{ github.repository }}
+
+    - name: Generate Qt bindings
+      continue-on-error: true
+      run: $(go env GOPATH)/bin/qtsetup -test=false
+
+    - name: Get dependencies
+      run: |
+        go get -v -t -d github.com/${{ github.repository }}/editor
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
+        $(go env GOPATH)/bin/qtmoc
+
+    - name: Test
+      run: go test github.com/${{ github.repository }}/editor
+
+    - name: Build
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
+        $(go env GOPATH)/bin/qtdeploy build desktop
+
+    - name: Remove unnecessary modules
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin
+        rm -fr audio
+        rm -fr iconengines
+        rm -fr platforminputcontexts
+        rm -fr quick
+        rm -fr virtualkeyboard
+        rm -fr printsupport
+        rm -fr bearer
+        rm -fr imageformats
+        rm -fr position
+        rm -fr mediaservice
+
     - name: Upload for macos
-      if: matrix.platform == 'macos-latest'
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-macos
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin
 
-
-  build-for-windows:
+  test-and-build-windows:
     strategy:
       matrix:
         platform: [windows-latest]
@@ -161,8 +198,9 @@ jobs:
       GOROOT_BOOTSTRAP: ${{ github.workspace }}\go-boot
       GOROOT_FINAL: ${{ github.workspace }}\go-boot
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
-      CGO_ENABLED: 0
-      QT_VERSION: 5.12.8
+      CGO_ENABLED: 1
+      QT_API: 5.12.0
+      QT_VERSION: 5.12.9
       QT_DIR: ${{ github.workspace }}\Qt
       QT_MSVC: true
       GO111MODULE: off
@@ -173,7 +211,7 @@ jobs:
         curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/15/release/vs_buildtools.exe
         New-Item -Path BuildTools -ItemType Directory 
         .\vs_BuildTools.exe --quiet --wait --norestart --nocache --installPath ${{ github.workspace }}\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeOptional
-        Start-Sleep -s 1200
+        Start-Sleep -s 720
 
     - name: Check MSVC 2017 Visual C++ Buildtools installation
       run : |
@@ -190,9 +228,12 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2.7.1
       with:
-        version: 5.12.8
+        version: 5.12.9
         host: windows
         target: desktop
+        modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
+        arch: 'win64_msvc2017_64'
+        install-deps: 'true'
         dir: ${{ github.workspace }}
 
     - name: Install Go
@@ -216,33 +257,6 @@ jobs:
         $env:PATH = "${{ github.workspace }}\\go-root\\bin;$env:PATH"
         $env:PATH = "${{ github.workspace }}\\BuildTools\\VC\\Tools\\MSVC\\14.16.27023\\bin\\Hostx64\\x64;$env:PATH"
         echo "::set-env name=PATH::$env:PATH"
-
-    # - name: Get Old Qt binding for Go
-    #   run: |
-    #     Move-Item -Path ${{ github.workspace }}\bin\qtdeploy.exe  -Destination ${{ github.workspace }}\bin\qtdeploy.exe.old  -Force
-    #     Move-Item -Path ${{ github.workspace }}\bin\qtminimal.exe -Destination ${{ github.workspace }}\bin\qtminimal.exe.old -Force
-    #     Move-Item -Path ${{ github.workspace }}\bin\qtmoc.exe     -Destination ${{ github.workspace }}\bin\qtmoc.exe.old     -Force
-    #     Move-Item -Path ${{ github.workspace }}\bin\qtrcc.exe     -Destination ${{ github.workspace }}\bin\qtrcc.exe.old     -Force
-    #     Move-Item -Path ${{ github.workspace }}\bin\qtsetup.exe   -Destination ${{ github.workspace }}\bin\qtsetup.exe.old   -Force
-    #     cd ${{ github.workspace }}\src\github.com\sirupsen\logrus
-    #     git checkout b70d15e20
-    #     cd ${{ github.workspace }}\src\github.com\therecipe\qt
-    #     git checkout 4ee12d6ea
-    #     cd ${{ github.workspace }}\src\github.com\therecipe\qt\cmd\qtdeploy
-    #     go build main.go
-    #     Move-Item -Path ${{ github.workspace }}\src\github.com\therecipe\qt\cmd\qtdeploy\main.exe  -Destination ${{ github.workspace }}\bin\qtdeploy.exe -Force
-    #     cd ${{ github.workspace }}\src\github.com\therecipe\qt\cmd\qtminimal
-    #     go build main.go
-    #     Move-Item -Path ${{ github.workspace }}\src\github.com\therecipe\qt\cmd\qtminimal\main.exe -Destination ${{ github.workspace }}\bin\qtminimal.exe -Force
-    #     cd ${{ github.workspace }}\src\github.com\therecipe\qt\cmd\qtmoc
-    #     go build main.go
-    #     Move-Item -Path ${{ github.workspace }}\src\github.com\therecipe\qt\cmd\qtmoc\main.exe     -Destination ${{ github.workspace }}\bin\qtmoc.exe -Force
-    #     cd ${{ github.workspace }}\src\github.com\therecipe\qt\cmd\qtrcc
-    #     go build main.go
-    #     Move-Item -Path ${{ github.workspace }}\src\github.com\therecipe\qt\cmd\qtrcc\main.exe     -Destination ${{ github.workspace }}\bin\qtrcc.exe -Force
-    #     cd ${{ github.workspace }}\src\github.com\therecipe\qt\cmd\qtsetup
-    #     go build main.go
-    #     Move-Item -Path ${{ github.workspace }}\src\github.com\therecipe\qt\cmd\qtsetup\main.exe   -Destination ${{ github.workspace }}\bin\qtsetup.exe -Force
 
     - name: Enable experimental Go features Step.1
       continue-on-error: true
@@ -275,34 +289,15 @@ jobs:
         .\make.bat
 
     - name: Generate Qt bindings
-      run: ${{ github.workspace }}\bin\qtsetup.exe
+      run: ${{ github.workspace }}\bin\qtsetup.exe -test=false
       shell: cmd
 
     - name: Retrieving dependencies
       continue-on-error: true
       run: |
         go get -v -d github.com/${{ github.repository }}/editor
-
-    # - name: Convert to compatible sources on Qt5.12
-    #   run: |
-    #     cd ${{ github.workspace }}\src\github.com\${{ github.repository }}
-    #     $data=Get-Content  .\editor\workspace.go | % { $_ -replace "NewQVariant31", "NewQVariant33" }
-    #     $data | Out-File   .\editor\workspace.go -Encoding UTF8
-    #     $data=Get-Content  .\editor\popupmenu.go | % { $_ -replace "AddWidget2", "AddWidget" }
-    #     $data | Out-File   .\editor\popupmenu.go -Encoding UTF8
-    #     $data=Get-Content  .\editor\message.go | % { $_ -replace "AddWidget2", "AddWidget" }
-    #     $data | Out-File   .\editor\message.go -Encoding UTF8
-    #     $data=Get-Content  .\editor\screen.go | % { $_ -replace "DrawText6", "DrawText5" }
-    #     $data | Out-File   .\editor\screen.go -Encoding UTF8
-    #     $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
-    #     $data | Out-File   .\editor\screen.go -Encoding UTF8
-    #     $ch="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-    #     $rep="), int(core.Qt__AlignVCenter), text, nil,"
-    #     $data=Get-Content  .\editor\screen.go | % { $_ -replace [regex]::Escape($ch), $rep }
-    #     $data | Out-File   .\editor\screen.go -Encoding UTF8
-    #     $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
-    #     $data | Out-File   .\util\utils.go -Encoding UTF8
-    #     git diff
+        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
+        ${{ github.workspace }}\bin\qtmoc.exe
 
     # - name: Test
     #   run: go test github.com/${{ github.repository }}/editor
@@ -310,12 +305,25 @@ jobs:
     - name: Build
       run: |
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-        ${{ github.workspace }}\bin\qtmoc.exe
         ${{ github.workspace }}\bin\qtdeploy build desktop
+
+    - name: Remove unnecessary modules
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
+        Remove-Item -Path bearer -Recurse
+        Remove-Item -Path iconengines -Recurse
+        Remove-Item -Path imageformats -Recurse
+        Remove-Item -Path platforminputcontexts -Recurse
+        Remove-Item -Path position -Recurse
+        Remove-Item -Path printsupport -Recurse
+        Remove-Item -Path qmltooling -Recurse
+        Remove-Item -Path resources -Recurse
+        Remove-Item -Path scenegraph -Recurse
+        Remove-Item -Path translations -Recurse
+        Remove-Item -Path virtualkeyboard -Recurse
 
     - name: Upload for windows
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-win64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
-
