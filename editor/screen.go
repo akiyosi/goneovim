@@ -1843,9 +1843,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	if isSkipGlobalId(gridid) {
 		return
 	}
-	if editor.config.Editor.DrawWindowSeparator && gridid == 1 && s.name != "minimap" {
-		return
-	}
 	if colStart < 0 {
 		return
 	}
@@ -1856,6 +1853,39 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	}
 	if row >= win.rows {
 		return
+	}
+
+	// We should control to draw statusline, vsplitter
+	if editor.config.Editor.DrawWindowSeparator && gridid == 1 {
+
+		isDraw := false
+		if s.name != "minimap" {
+
+			// Do not Draw bottom statusline
+		    if row == win.rows - 2 {
+				isDraw = true
+			}
+
+			// // Do not Draw statusline of splitted window
+			// s.windows.Range(func(_, winITF interface{}) bool {
+			// 	w := winITF.(*Window)
+			// 	if w == nil {
+			// 		return true
+			// 	}
+			// 	if !w.isShown() {
+			// 		return true
+			// 	}
+			// 	if row == w.pos[1]-1 {
+			// 		isDraw = true
+			// 		return false
+			// 	}
+			// 	return true
+			// })
+		}
+
+		if !isDraw {
+			return
+		}
 	}
 
 	cells := arg[3].([]interface{})
