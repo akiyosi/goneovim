@@ -3136,6 +3136,9 @@ func (w *Window) fill() {
 	for i := 0; i < len(w.lenContent); i++ {
 		w.lenContent[i] = w.cols
 	}
+	if editor.config.Editor.Transparent < 1.0 {
+		return
+	}
 	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
 		return
 	}
