@@ -2305,6 +2305,17 @@ func (side *WorkspaceSide) setColor() {
 				editor.colors.sideBarSelectedItemBg, fg,
 			),
 		)
+		bg := editor.colors.sideBarSelectedItemBg
+		fg := editor.colors.fg
+		transparent := transparent() * transparent()
+		side.items[0].labelWidget.SetStyleSheet(
+			fmt.Sprintf(
+				" * { background-color: rgba(%d, %d, %d, %f); color: %s; }",
+				bg.R, bg.G, bg.B,
+				transparent,
+				fg.String(),
+			),
+		)
 	}
 
 }
@@ -2319,7 +2330,7 @@ func (i *WorkspaceSideItem) setActive() {
 	i.active = true
 	bg := editor.colors.sideBarSelectedItemBg
 	fg := editor.colors.fg
-	transparent := transparent()
+	transparent := transparent() * transparent()
 	i.labelWidget.SetStyleSheet(
 		fmt.Sprintf(
 			" * { background-color: rgba(%d, %d, %d, %f); color: %s; }",
