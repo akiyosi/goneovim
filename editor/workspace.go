@@ -975,7 +975,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.setHlAttrDef(args)
 			// if goneovim own statusline is visible
 			if w.drawStatusline {
-				w.statusline.setColor()
+				w.statusline.getColor()
 			}
 		case "hl_group_set":
 			s.setHighlightGroup(args)
