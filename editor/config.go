@@ -151,10 +151,6 @@ func newGonvimConfig(home string) gonvimConfig {
 		config.Editor.BorderlessWindow = true
 	}
 
-	if runtime.GOOS == "linux" {
-		config.Editor.BorderlessWindow = false
-	}
-
 	if config.Editor.DiffAddPattern < 1 || config.Editor.DiffAddPattern > 24 {
 		config.Editor.DiffAddPattern = 1
 	}
