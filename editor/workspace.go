@@ -1189,20 +1189,20 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 
 	var isChangeFg, isChangeBg bool
 	if editor.colors.fg != nil {
-		isChangeFg = editor.colors.fg.equals(w.foreground)
+		isChangeFg = !editor.colors.fg.equals(w.foreground)
 	}
 	if editor.colors.bg != nil {
-		isChangeBg = editor.colors.bg.equals(w.background)
+		isChangeBg = !editor.colors.bg.equals(w.background)
 	}
 
 	if !w.uiRemoteAttached {
-		if !isChangeFg || !isChangeBg {
+		if isChangeFg || isChangeBg {
 			editor.isSetGuiColor = false
 			aw := editor.workspaces[editor.active]
 			// change minimap colorscheme
 			aw.minimap.isSetColorscheme = false
 			if aw.minimap.visible && aw.minimap.nvim != nil && aw.nvim != nil {
-				editor.workspaces[editor.active].minimap.setColorscheme()
+				aw.minimap.setColorscheme()
 			}
 		}
 	}

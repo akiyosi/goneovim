@@ -34,7 +34,6 @@ type MiniMap struct {
 	currBuf     string
 	colorscheme string
 
-	isSetRuntimepath bool
 	isSetColorscheme bool
 	isProcessSync    bool
 
@@ -300,46 +299,46 @@ func (m *MiniMap) setColorscheme() {
 	}
 	colo, _ := m.ws.nvim.CommandOutput("colo")
 
-	if !m.isSetRuntimepath {
-		sep := "/"
-		switch runtime.GOOS {
-		case "windows":
-			sep = `\`
-		default:
-		}
+	sep := "/"
+	switch runtime.GOOS {
+	case "windows":
+		sep = `\`
+	default:
+	}
 
-		runtimePaths, _ := m.ws.nvim.RuntimePaths()
-		runtimeDir := ""
-		colorschemePath := ""
-		for _, path := range runtimePaths {
-			lsDirs, _ := ioutil.ReadDir(path)
-			for _, d := range lsDirs {
-				dirname := d.Name()
-				finfo, err := os.Stat(path + sep + dirname)
-				if err != nil {
-					continue
-				}
-				if finfo.IsDir() {
-					packDirs, _ := ioutil.ReadDir(path + sep + dirname)
-					for _, p := range packDirs {
-						plugname := p.Name()
-						if strings.Contains(plugname, colo) {
-							runtimeDir = path
-							colorschemePath = path + sep + dirname + sep + plugname
-							break
-						}
-					}
-					if colorschemePath != "" {
+	runtimePaths, _ := m.ws.nvim.RuntimePaths()
+	runtimeDir := ""
+	colorschemePath := ""
+	for _, path := range runtimePaths {
+		lsDirs, err := ioutil.ReadDir(path)
+		if err != nil {
+			continue
+		}
+		for _, d := range lsDirs {
+			dirname := d.Name()
+			finfo, err := os.Stat(path + sep + dirname)
+			if err != nil {
+				continue
+			}
+			if finfo.IsDir() {
+				packDirs, _ := ioutil.ReadDir(path + sep + dirname)
+				for _, p := range packDirs {
+					plugname := p.Name()
+					if strings.Contains(plugname, colo) {
+						runtimeDir = path
+						colorschemePath = path + sep + dirname + sep + plugname
 						break
 					}
 				}
+				if colorschemePath != "" {
+					continue
+				}
 			}
 		}
-
-		// set runtimepath
-		m.nvim.Command("set runtimepath^=" + runtimeDir)
-		m.isSetRuntimepath = true
 	}
+
+	// set runtimepath
+	m.nvim.Command("set runtimepath^=" + runtimeDir)
 
 	if m.colorscheme == colo {
 		return

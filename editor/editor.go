@@ -212,7 +212,6 @@ func InitEditor() {
 	l.SetSpacing(0)
 	e.window.SetupContent(l)
 
-
 	// window content
 	e.wsWidget = widgets.NewQWidget(nil, 0)
 	e.wsSide = newWorkspaceSide()
