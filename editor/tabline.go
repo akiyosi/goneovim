@@ -66,6 +66,7 @@ func (t *Tabline) setColor() {
 		border-bottom: 0px solid;
 		border-right: 0px solid;
 		background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; } `, inactiveFg))
+	t.updateTabsIcon()
 }
 
 func initTabline() *Tabline {
@@ -147,17 +148,22 @@ func newTab() *Tab {
 	w := widgets.NewQWidget(nil, 0)
 	w.SetContentsMargins(5, 0, 10, 0)
 	l := widgets.NewQHBoxLayout()
-	l.SetContentsMargins(0, 0, 0, 0) // tab margins
+	l.SetContentsMargins(0, 0, 0, 4) // tab margins
 	l.SetSpacing(0)
-	// fileIcon := svg.NewQSvgWidget(nil)
-	// fileIcon.SetFixedWidth(12)
-	// fileIcon.SetFixedHeight(12)
+	var fileIcon *svg.QSvgWidget
+	if editor.config.Tabline.ShowIcon {
+		fileIcon = svg.NewQSvgWidget(nil)
+		fileIcon.SetFixedWidth(12)
+		fileIcon.SetFixedHeight(12)
+	}
 	file := widgets.NewQLabel(nil, 0)
 	file.SetStyleSheet(" .QLabel { padding: 2px; background-color: rgba(0, 0, 0, 0); }")
 	closeIcon := svg.NewQSvgWidget(nil)
 	closeIcon.SetFixedWidth(editor.iconSize)
 	closeIcon.SetFixedHeight(editor.iconSize)
-	// l.AddWidget(fileIcon, 0, 0)
+	if editor.config.Tabline.ShowIcon {
+		l.AddWidget(fileIcon, 0, 0)
+	}
 	l.AddWidget(file, 1, 0)
 	l.AddWidget(closeIcon, 0, 0)
 	w.SetLayout(l)
@@ -165,8 +171,10 @@ func newTab() *Tab {
 		widget: w,
 		layout: l,
 		file:   file,
-		// fileIcon:  fileIcon,
 		closeIcon: closeIcon,
+	}
+	if editor.config.Tabline.ShowIcon {
+		tab.fileIcon = fileIcon
 	}
 	tab.closeIcon.Hide()
 
@@ -184,6 +192,9 @@ func newTab() *Tab {
 
 func (t *Tab) updateStyle() {
 	if editor.colors.fg == nil || editor.colors.bg == nil {
+		return
+	}
+	if t.t.ws.screen.hlAttrDef == nil {
 		return
 	}
 	fg := editor.colors.fg
@@ -293,6 +304,13 @@ func (t *Tabline) updateSize() {
 	}
 }
 
+func (t *Tabline) updateTabsIcon() {
+	for _, tab := range t.Tabs {
+		svgContent := editor.getSvg(tab.fileType, nil)
+		tab.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+	}
+}
+
 func (t *Tabline) update(args []interface{}) {
 	arg := args[0].([]interface{})
 	t.CurrentID = int(arg[0].(nvim.Tabpage))
@@ -317,7 +335,9 @@ func (t *Tabline) update(args []interface{}) {
 		fileType := getFileType(text)
 		if fileType != tab.fileType {
 			tab.fileType = fileType
-			// tab.updateFileIcon()
+			if editor.config.Tabline.ShowIcon {
+				tab.updateFileIcon()
+			}
 		}
 
 		if text != tab.fileText {
@@ -348,6 +368,24 @@ func getFileType(text string) string {
 		filetype := parts[len(parts)-1]
 		if filetype == "md" {
 			filetype = "markdown"
+		}
+		if filetype == "rs" {
+			filetype = "rust"
+		}
+		if filetype == "yml" {
+			filetype = "yaml"
+		}
+		if filetype == "rb" {
+			filetype = "ruby"
+		}
+		if filetype == "hs" {
+			filetype = "haskell"
+		}
+		if filetype == "pl" {
+			filetype = "perl"
+		}
+		if filetype == "jl" {
+			filetype = "julia"
 		}
 		return filetype
 	}

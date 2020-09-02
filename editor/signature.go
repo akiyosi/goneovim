@@ -47,7 +47,6 @@ func initSignature() *Signature {
 		cusor:  []int{0, 0},
 		widget: widget,
 		label:  label,
-		height: widget.SizeHint().Height(),
 	}
 
 	widget.SetGraphicsEffect(util.DropShadow(-2, 6, 40, 200))
@@ -125,6 +124,9 @@ func (s *Signature) move() {
 }
 
 func (s *Signature) show() {
+	if s.height == 0 {
+		s.height = s.widget.SizeHint().Height()
+	}
 	s.widget.Show()
 	s.widget.Raise()
 }

@@ -443,9 +443,8 @@ func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 	s.lint.c.widget.SetContentsMargins(l, u, r, d)
 }
 
-func (s *Statusline) setColor() {
-	// fg := s.ws.background
-	// bg := s.ws.foreground
+
+func (s *Statusline) getColor() {
 	if s.ws.screen.highlightGroup == nil || s.ws.screen.hlAttrDef == nil {
 		return
 	}
@@ -456,7 +455,22 @@ func (s *Statusline) setColor() {
 	if hl == nil {
 		return
 	}
-	s.hl = hl
+	if s.hl == nil {
+		s.hl = hl
+	} else {
+		if !s.hl.fg().equals(hl.fg()) || !s.hl.bg().equals(hl.bg()) {
+			s.hl = hl
+			s.setColor()
+		}
+	}
+}
+
+func (s *Statusline) setColor() {
+	// fg := s.ws.background
+	// bg := s.ws.foreground
+	if s.hl == nil {
+		return
+	}
 	fg := s.hl.fg()
 	bg := s.hl.bg()
 	s.widget.SetStyleSheet(fmt.Sprintf(
@@ -923,7 +937,7 @@ func (s *StatuslineLint) setColor() {
 }
 
 func (s *StatuslineLint) redraw(errors, warnings int) {
-	isSkipUpdateColor := !(s.s.ws.background.equals(s.c.fg))
+	isSkipUpdateColor := s.s.ws.background.equals(s.c.bg) && s.s.ws.foreground.equals(s.c.bg)
 	if errors == s.errors && warnings == s.warnings && isSkipUpdateColor {
 		return
 	}

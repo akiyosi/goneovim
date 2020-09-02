@@ -170,9 +170,6 @@ func newScreen() *Screen {
 	widget.ConnectMousePressEvent(screen.mousePressEvent)
 	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
-	widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		screen.updateSize()
-	})
 
 	return screen
 }
@@ -281,7 +278,15 @@ func (s *Screen) updateSize() {
 	defer s.ws.fontMutex.Unlock()
 
 	ws := s.ws
-	s.width = s.widget.Width()
+	scrollvarWidth := 0
+	if editor.config.ScrollBar.Visible {
+		scrollvarWidth = 10
+	}
+	minimapWidth := 0
+	if s.ws.minimap.visible {
+		minimapWidth = editor.config.MiniMap.Width
+	}
+	s.width = ws.width - scrollvarWidth - minimapWidth
 	currentCols := int(float64(s.width) / s.font.truewidth)
 	currentRows := s.height / s.font.lineHeight
 
@@ -292,6 +297,8 @@ func (s *Screen) updateSize() {
 
 	ws.cols = currentCols
 	ws.rows = currentRows
+
+	// fmt.Println("debug:: update", currentCols, currentRows, s.width, s.height)
 
 	if !ws.uiAttached {
 		return
@@ -310,6 +317,7 @@ func (s *Screen) updateSize() {
 		return true
 	})
 
+	// fmt.Println("debug:: try resize", currentCols, currentRows, s.width, s.height)
 	s.uiTryResize(currentCols, currentRows)
 }
 
@@ -486,7 +494,19 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 		y = row * font.lineHeight
 
 		candX = int(float64(col+win.pos[0]) * font.truewidth)
-		candY = (row+win.pos[1])*font.lineHeight + ws.tabline.height + ws.tabline.marginTop + ws.tabline.marginBottom
+		tablineMarginTop := 0
+		if ws.tabline != nil {
+			tablineMarginTop = ws.tabline.marginTop
+		}
+		tablineHeight := 0
+		if ws.tabline != nil {
+			tablineHeight = ws.tabline.height
+		}
+		tablineMarginBottom := 0
+		if ws.tabline != nil {
+			tablineMarginBottom = ws.tabline.marginBottom
+		}
+		candY = (row+win.pos[1])*font.lineHeight + tablineMarginTop + tablineHeight + tablineMarginBottom
 	}
 	return x, y, candX, candY
 }
@@ -555,10 +575,11 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawTextDecoration(p, y, col, cols)
 	}
 
-	// If Window is Message Area, draw separator
-	if w.isMsgGrid {
-		w.drawMsgSeparator(p)
-	}
+	// TODO: We should use msgSepChar to separate message window area
+	// // If Window is Message Area, draw separator
+	// if w.isMsgGrid {
+	// 	w.drawMsgSeparator(p)
+	// }
 
 	// Draw float window border
 	if w.isFloatWin {
@@ -566,16 +587,11 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	// Draw vim window separator
-	w.drawBorders(p, row, col, rows, cols)
+	w.drawWindowSeparators(p, row, col, rows, cols)
 
 	// Draw indent guide
 	if editor.config.Editor.IndentGuide {
 		w.drawIndentguide(p, row, rows)
-	}
-
-	// Update markdown preview
-	if w.grid != 1 {
-		w.s.ws.markdown.updatePos()
 	}
 
 	// Reset to 0 after drawing is complete.
@@ -590,6 +606,12 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	p.DestroyQPainter()
+
+	// Update markdown preview
+	if w.grid != 1 && w.s.ws.markdown != nil {
+		w.s.ws.markdown.updatePos()
+	}
+
 	w.paintMutex.Unlock()
 }
 
@@ -843,14 +865,14 @@ func (w *Window) drawFloatWindowBorder(p *gui.QPainter) {
 	)
 }
 
-func (w *Window) drawBorders(p *gui.QPainter, row, col, rows, cols int) {
+func (w *Window) drawWindowSeparators(p *gui.QPainter, row, col, rows, cols int) {
 	if w == nil {
 		return
 	}
 	if w.grid != 1 {
 		return
 	}
-	if !editor.config.Editor.DrawBorder {
+	if !editor.config.Editor.DrawWindowSeparator {
 		return
 	}
 	w.s.windows.Range(func(_, winITF interface{}) bool {
@@ -874,14 +896,14 @@ func (w *Window) drawBorders(p *gui.QPainter, row, col, rows, cols int) {
 		if win.pos[0] > (row+rows) && (win.pos[1]+win.rows) > (col+cols) {
 			return true
 		}
-		win.drawBorder(p)
+		win.drawWindowSeparator(p)
 
 		return true
 	})
 
 }
 
-func (w *Window) drawBorder(p *gui.QPainter) {
+func (w *Window) drawWindowSeparator(p *gui.QPainter) {
 	font := w.getFont()
 
 	// window position is based on cols, rows of global font setting
@@ -889,7 +911,7 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 	y := w.pos[1] * w.s.font.lineHeight
 	width := int(float64(w.cols) * font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(font.lineHeight))
-	color := editor.colors.windowSeparator.QColor()
+	color := editor.colors.windowSeparator
 
 	// Vertical
 	if y+font.lineHeight+1 < w.s.widget.Height() {
@@ -898,7 +920,26 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 			y-(font.lineHeight/2),
 			2,
 			winHeight,
-			color,
+			color.QColor(),
+		)
+	}
+	// vertical gradient
+	if editor.config.Editor.WindowSeparatorGradient {
+		gradient := gui.NewQLinearGradient3(
+			float64(x+width)+font.truewidth/2,
+			0,
+			float64(x+width)+font.truewidth/2-6,
+			0,
+		)
+		gradient.SetColorAt(0, gui.NewQColor3(color.R, color.G, color.B, 125))
+		gradient.SetColorAt(1, gui.NewQColor3(color.R, color.G, color.B, 0))
+		brush := gui.NewQBrush10(gradient)
+		p.FillRect2(
+			int(float64(x+width)+font.truewidth/2)-6,
+			y-(font.lineHeight/2),
+			6,
+			winHeight,
+			brush,
 		)
 	}
 
@@ -917,8 +958,27 @@ func (w *Window) drawBorder(p *gui.QPainter) {
 		y2,
 		int((float64(w.cols)+0.92)*font.truewidth),
 		2,
-		color,
+		color.QColor(),
 	)
+	// horizontal gradient
+	if editor.config.Editor.WindowSeparatorGradient {
+		hgradient := gui.NewQLinearGradient3(
+			0,
+			float64(y2),
+			0,
+			float64(y2)-6,
+		)
+		hgradient.SetColorAt(0, gui.NewQColor3(color.R, color.G, color.B, 125))
+		hgradient.SetColorAt(1, gui.NewQColor3(color.R, color.G, color.B, 0))
+		hbrush := gui.NewQBrush10(hgradient)
+		p.FillRect2(
+			int(float64(x)-font.truewidth/2),
+			y2-6,
+			int((float64(w.cols)+0.92)*font.truewidth),
+			6,
+			hbrush,
+		)
+	}
 }
 
 func (s *Screen) bottomWindowPos() int {
@@ -1783,9 +1843,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	if isSkipGlobalId(gridid) {
 		return
 	}
-	if editor.config.Editor.DrawBorder && gridid == 1 && s.name != "minimap" {
-		return
-	}
 	if colStart < 0 {
 		return
 	}
@@ -1796,6 +1853,39 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	}
 	if row >= win.rows {
 		return
+	}
+
+	// We should control to draw statusline, vsplitter
+	if editor.config.Editor.DrawWindowSeparator && gridid == 1 {
+
+		isDraw := false
+		if s.name != "minimap" {
+
+			// Do not Draw bottom statusline
+		    if row == win.rows - 2 {
+				isDraw = true
+			}
+
+			// // Do not Draw statusline of splitted window
+			// s.windows.Range(func(_, winITF interface{}) bool {
+			// 	w := winITF.(*Window)
+			// 	if w == nil {
+			// 		return true
+			// 	}
+			// 	if !w.isShown() {
+			// 		return true
+			// 	}
+			// 	if row == w.pos[1]-1 {
+			// 		isDraw = true
+			// 		return false
+			// 	}
+			// 	return true
+			// })
+		}
+
+		if !isDraw {
+			return
+		}
 	}
 
 	cells := arg[3].([]interface{})
@@ -1960,19 +2050,6 @@ func (c *Cell) isSignColumn() bool {
 
 	}
 }
-
-// func (c *Cell) isStatuslineOrVertSplit() bool {
-// 	// If ext_statusline is implemented in Neovim, the implementation may be revised
-// 	if &c.highlight == nil {
-// 		return false
-// 	}
-// 	if c.highlight.hlName == "StatusLine" || c.highlight.hlName == "StatusLineNC" || c.highlight.hlName == "VertSplit" {
-// 		if editor.config.Editor.DrawBorder {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
 
 func (s *Screen) gridScroll(args []interface{}) {
 	var gridid gridId
@@ -2964,17 +3041,22 @@ func (s *Screen) windowHide(args []interface{}) {
 func (s *Screen) msgSetPos(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		msgCount := util.ReflectToInt(arg.([]interface{})[1])
+		row := util.ReflectToInt(arg.([]interface{})[1])
+		scrolled := arg.([]interface{})[2].(bool)
+		// TODO We should imprement to drawing msgSepChar
+		// sepChar := arg.([]interface{})[3].(string)
 
 		win, ok := s.getWindow(gridid)
 		if !ok {
 			continue
 		}
 		win.isMsgGrid = true
-		win.pos[1] = msgCount
+		win.pos[1] = row
 		win.move(win.pos[0], win.pos[1])
 		win.show()
-		win.widget.Raise() // Fix #111
+		if scrolled {
+			win.widget.Raise() // Fix #111
+		}
 	}
 }
 
@@ -3084,7 +3166,7 @@ func (w *Window) fill() {
 	for i := 0; i < len(w.lenContent); i++ {
 		w.lenContent[i] = w.cols
 	}
-	if editor.config.Editor.DrawBorder {
+	if editor.config.Editor.Transparent < 1.0 {
 		return
 	}
 	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {

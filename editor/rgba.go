@@ -19,6 +19,10 @@ type HSV struct {
 	H, S, V float64
 }
 
+type XYZ struct {
+	X, Y, Z float64
+}
+
 func (rgba *RGBA) copy() *RGBA {
 	return &RGBA{
 		R: rgba.R,
@@ -180,6 +184,27 @@ func newRGBA(r int, g int, b int, a float64) *RGBA {
 		B: b,
 		A: a, // Not use this value
 	}
+}
+
+
+func (rgba *RGBA) XYZ() *XYZ {
+	r := float64(rgba.R) / 255.0
+	g := float64(rgba.G) / 255.0
+	b := float64(rgba.B) / 255.0
+
+	return &XYZ{
+		X: 2.76883*r + 1.75171*g + 1.13014*b,
+		Y: 1.00000*r + 4.59061*g + 0.06007*b,
+		Z: 0.00000*r + 0.05651*g + 5.59417*b,
+	}
+}
+
+func (rgba *RGBA) diff(t *RGBA) float64 {
+	dx := rgba.XYZ().X - t.XYZ().X
+	dy := rgba.XYZ().Y - t.XYZ().Y
+	dz := rgba.XYZ().Z - t.XYZ().Z
+
+	return math.Sqrt(dx*dx + dy*dy + dz*dz)
 }
 
 func (rgba *RGBA) HSV() *HSV {

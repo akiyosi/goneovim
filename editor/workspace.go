@@ -119,67 +119,108 @@ func newWorkspace(path string) (*Workspace, error) {
 		background:    newRGBA(9, 13, 17, 1),
 		special:       newRGBA(255, 255, 255, 1),
 	}
-	w.font = initFontNew(editor.extFontFamily, float64(editor.extFontSize), editor.config.Editor.Linespace, true)
-	go func() {
-		w.fontMutex.Lock()
-		defer w.fontMutex.Unlock()
-		width, height, truewidth, ascent, italicWidth := fontSizeNew(w.font.fontNew)
-		w.font.width = width
-		w.font.height = height
-		w.font.truewidth = truewidth
-		w.font.lineHeight = height + w.font.lineSpace
-		w.font.ascent = ascent
-		w.font.italicWidth = italicWidth
-	}()
+	w.registerSignal()
+
+	w.font = initFontNew(
+		editor.extFontFamily,
+		float64(editor.extFontSize),
+		0,
+		false,
+	)
 	w.font.ws = w
 
-	w.cols = int(float64(editor.config.Editor.Width) / w.font.truewidth)
-	w.rows = editor.config.Editor.Height / w.font.lineHeight
-
 	// Basic Workspace UI component
-	w.tabline = initTabline()
-	w.tabline.ws = w
-	w.statusline = initStatusline()
-	w.statusline.ws = w
-	w.loc = initLocpopup()
-	w.loc.ws = w
-	w.message = initMessage()
-	w.message.ws = w
-	w.palette = initPalette()
-	w.palette.ws = w
-	w.fpalette = initPalette()
-	w.fpalette.ws = w
-
+	// screen
 	w.screen = newScreen()
 	w.screen.ws = w
 	w.screen.font = w.font
 	w.screen.initInputMethodWidget()
 
-	w.loc.widget.SetParent(editor.wsWidget)
-	w.message.widget.SetParent(editor.window)
-	w.palette.widget.SetParent(editor.window)
-	w.fpalette.widget.SetParent(editor.window)
-
-	w.scrollBar = newScrollBar()
-	w.scrollBar.ws = w
-	w.markdown = newMarkdown(w)
-	w.markdown.webview.SetParent(w.screen.widget)
+	// cursor
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
-	w.popup = initPopupmenuNew()
-	w.popup.widget.SetParent(editor.wsWidget)
-	w.popup.ws = w
-	w.finder = initFinder()
-	w.finder.ws = w
-	w.signature = initSignature()
-	w.signature.widget.SetParent(editor.wsWidget)
-	w.signature.ws = w
-	w.cmdline = initCmdline()
-	w.cmdline.ws = w
+
+	// scrollbar
+	if editor.config.ScrollBar.Visible {
+		w.scrollBar = newScrollBar()
+		w.scrollBar.ws = w
+	}
+
+	// markdown
+	w.markdown = newMarkdown(w)
+	w.markdown.webview.SetParent(w.screen.widget)
+
+	// minimap
 	w.minimap = newMiniMap()
 	w.minimap.ws = w
 
+	// If ExtFooBar is true, then we create a UI component
+	// tabline
+	if editor.config.Editor.ExtTabline {
+		w.tabline = initTabline()
+		w.tabline.ws = w
+	}
+
+	// cmdline
+	if editor.config.Editor.ExtCmdline {
+		w.cmdline = initCmdline()
+		w.cmdline.ws = w
+	}
+
+	// popupmenu
+	if editor.config.Editor.ExtPopupmenu {
+		w.popup = initPopupmenuNew()
+		w.popup.widget.SetParent(editor.wsWidget)
+		w.popup.ws = w
+		w.popup.widget.Hide()
+		// w.signature.widget.Hide()
+	}
+
+	// messages
+	if editor.config.Editor.ExtMessages {
+		w.message = initMessage()
+		w.message.ws = w
+		w.message.widget.SetParent(editor.window)
+	}
+
+	// If Statusline.Visible is true, then we create statusline UI component
+	if editor.config.Statusline.Visible {
+		w.statusline = initStatusline()
+		w.statusline.ws = w
+	}
+
+	// Lint
+	if editor.config.Lint.Visible {
+		w.loc = initLocpopup()
+		w.loc.ws = w
+		w.loc.widget.SetParent(editor.wsWidget)
+		w.loc.widget.Hide()
+	}
+
+	// w.signature = initSignature()
+	// w.signature.widget.SetParent(editor.wsWidget)
+	// w.signature.ws = w
+
+	// pallete
+	w.palette = initPalette()
+	w.palette.ws = w
+	w.palette.widget.SetParent(editor.window)
+	w.palette.hide()
+
+	// palette
+	w.fpalette = initPalette()
+	w.fpalette.ws = w
+	w.fpalette.widget.SetParent(editor.window)
+	w.fpalette.hide()
+
+	// finder
+	w.finder = initFinder()
+	w.finder.ws = w
+
+	// workspace widget, layouts
 	layout := widgets.NewQVBoxLayout()
+	layout.SetContentsMargins(0, 0, 0, 0)
+	layout.SetSpacing(0)
 	w.widget = widgets.NewQWidget(nil, 0)
 	w.widget.SetContentsMargins(0, 0, 0, 0)
 	w.widget.SetLayout(layout)
@@ -197,42 +238,42 @@ func newWorkspace(path string) (*Workspace, error) {
 	scrLayout.SetSpacing(0)
 	scrLayout.AddWidget(w.screen.widget, 0, 0)
 	scrLayout.AddWidget(w.minimap.widget, 0, 0)
-	scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
+	if editor.config.ScrollBar.Visible {
+		scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
+	}
 	scrWidget.SetLayout(scrLayout)
 
-	layout.AddWidget(w.tabline.widget, 0, 0)
+	// assemble all neovim ui 
+	if editor.config.Editor.ExtTabline {
+		layout.AddWidget(w.tabline.widget, 0, 0)
+	}
 	layout.AddWidget(scrWidget, 1, 0)
-	layout.AddWidget(w.statusline.widget, 0, 0)
-	layout.SetContentsMargins(0, 0, 0, 0)
-	layout.SetSpacing(0)
-
-	go w.startNvim(path)
-	w.registerSignal()
-
-	w.popup.widget.Hide()
-	w.palette.hide()
-	w.fpalette.hide()
-	w.loc.widget.Hide()
-	w.signature.widget.Hide()
+	if editor.config.Statusline.Visible {
+		layout.AddWidget(w.statusline.widget, 0, 0)
+	}
 
 	w.widget.SetParent(editor.wsWidget)
 	w.widget.Move2(0, 0)
-	// w.updateSize()
 
-	if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
-		go func() {
-			if !editor.config.MiniMap.Visible {
-				time.Sleep(1500 * time.Millisecond)
-			}
-			w.minimap.startMinimapProc()
-		}()
-	}
-
-	if runtime.GOOS == "windows" {
-		<-w.doneNvimStart
-	}
+	go w.startNvim(path)
 
 	return w, nil
+}
+
+func (w *Workspace) lazyDrawUI() {
+	w.getNvimOptions()
+	editor.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		for _, ws := range editor.workspaces {
+			ws.updateSize()
+		}
+	})
+	go func() {
+		time.Sleep(time.Millisecond * 1000)
+		editor.wsSide.scrollarea.SetWidget(editor.wsSide.widget)
+		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
+			w.minimap.startMinimapProc()
+		}
+	}()
 }
 
 func (w *Workspace) registerSignal() {
@@ -323,8 +364,10 @@ func (w *Workspace) startNvim(path string) error {
 		neovim, err = nvim.NewChildProcess(childProcessArgs)
 	}
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
+
 	w.updateSize()
 
 	w.nvim = neovim
@@ -336,7 +379,6 @@ func (w *Workspace) startNvim(path string) error {
 		w.redrawUpdates <- updates
 		w.signal.RedrawSignal()
 	})
-
 
 	go func() {
 		err := w.nvim.Serve()
@@ -351,10 +393,6 @@ func (w *Workspace) startNvim(path string) error {
 
 	go w.init(path)
 
-	if runtime.GOOS == "windows" {
-		w.doneNvimStart <- true
-	}
-
 	return nil
 }
 
@@ -362,7 +400,6 @@ func (w *Workspace) init(path string) {
 	w.configure()
 	w.attachUI(path)
 	w.loadGinitVim()
-	w.getNvimOptions()
 }
 
 func (w *Workspace) configure() {
@@ -390,8 +427,12 @@ func (w *Workspace) attachUI(path string) error {
 	if w.statusline != nil {
 		w.statusline.subscribe()
 	}
-	// w.loc.subscribe()
-	w.message.subscribe()
+	if w.loc != nil {
+		w.loc.subscribe()
+	}
+	if w.message != nil {
+		w.message.subscribe()
+	}
 
 	// Add editor feature
 	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
@@ -509,31 +550,94 @@ func (w *Workspace) loadGinitVim() {
 }
 
 func (w *Workspace) getNvimOptions() {
-	ts := 8
-	w.nvim.Option("ts", &ts)
-	w.ts = ts
 	w.getColorscheme()
-	screenbg := ""
-	w.nvim.Eval(":echo &background", &screenbg)
-	w.screenbg = screenbg
-	if w.screenbg == "light" {
-		fg := newRGBA(editor.colors.fg.R, editor.colors.fg.G, editor.colors.fg.B, 1)
-		bg := newRGBA(editor.colors.bg.R, editor.colors.bg.G, editor.colors.bg.B, 1)
-		editor.colors.fg = bg
-		editor.colors.bg = fg
-	}
+	w.getTS()
+	w.getBG()
+	w.getKeymaps()
+}
 
+func (w *Workspace) getColorscheme() {
+	done := make(chan bool, 5)
+	colorscheme := ""
+	go func() {
+		w.nvim.Var("colors_name", &colorscheme)
+		done <-true
+	}()
+	select {
+	case <-done:
+	case <-time.After(40 * time.Millisecond):
+	}
+	w.colorscheme = colorscheme
+}
+
+func (w *Workspace) getTS() {
+	done := make(chan bool, 5)
+	ts := 8
+	go func() {
+		w.nvim.Option("ts", &ts)
+		done <-true
+	}()
+	select {
+	case <-done:
+	case <-time.After(40 * time.Millisecond):
+	}
+	w.ts = ts
+}
+
+func (w *Workspace) getBG() {
+	done := make(chan bool, 5)
+	screenbg := "dark"
+	go func() {
+		w.nvim.Option("background", &screenbg)
+		done <-true
+	}()
+	select {
+	case <-done:
+	case <-time.After(40 * time.Millisecond):
+	}
+	w.screenbg = screenbg
+
+	if w.screenbg == "light" {
+		editor.colors.bg = newRGBA(
+			editor.colors.fg.R,
+			editor.colors.fg.G,
+			editor.colors.fg.B,
+			1,
+		)
+		editor.colors.fg = newRGBA(
+			editor.colors.bg.R,
+			editor.colors.bg.G,
+			editor.colors.bg.B,
+			1,
+		)
+	}
+}
+
+func (w *Workspace) getKeymaps() {
+	done := make(chan bool, 5)
 	w.escKeyInInsert = "<Esc>"
 	w.escKeyInNormal = "<Esc>"
-	nmappings, err := w.nvim.KeyMap("normal")
-	if err != nil {
-		return
+
+	var nmappings, imappings []*nvim.Mapping
+	var err error
+
+	go func() {
+		nmappings, err = w.nvim.KeyMap("normal")
+		if err != nil {
+			return
+		}
+		w.normalMappings = nmappings
+		imappings, err = w.nvim.KeyMap("insert")
+		if err != nil {
+			return
+		}
+		done <-true
+	}()
+	select {
+	case <-done:
+	case <-time.After(80 * time.Millisecond):
 	}
-	w.normalMappings = nmappings
-	imappings, err := w.nvim.KeyMap("insert")
-	if err != nil {
-		return
-	}
+
 	w.insertMappings = imappings
 	altkeyCount := 0
 	metakeyCount := 0
@@ -569,17 +673,14 @@ func (w *Workspace) getNvimOptions() {
 			metakeyCount++
 		}
 	}
+
+	editor.muMetaKey.Lock()
 	if altkeyCount >= metakeyCount {
 		editor.prefixToMapMetaKey = "A-"
 	} else {
 		editor.prefixToMapMetaKey = "M-"
 	}
-}
-
-func (w *Workspace) getColorscheme() {
-	colorscheme := ""
-	w.nvim.Var("colors_name", &colorscheme)
-	w.colorscheme = colorscheme
+	editor.muMetaKey.Unlock()
 }
 
 func (w *Workspace) nvimEval(s string) (interface{}, error) {
@@ -753,8 +854,14 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 
 func (w *Workspace) updateSize() {
 	e := editor
-	width := e.wsWidget.Width()
-	height := e.wsWidget.Height()
+	width := e.window.Geometry().Width() - e.window.BorderSize()*4
+	if e.config.SideBar.Visible {
+		width = width - e.splitter.Sizes()[0] - e.splitter.HandleWidth()
+	}
+	height := e.window.Geometry().Height() - e.window.BorderSize()*4
+	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
+		height = height - e.window.TitleBar.Height()
+	}
 	if width != w.width || height != w.height {
 		w.width = width
 		w.height = height
@@ -796,12 +903,6 @@ func (w *Workspace) updateSize() {
 	if w.message != nil {
 		w.message.resize()
 	}
-	if w.uiAttached {
-		fuzzy.UpdateMax(w.nvim, w.palette.showTotal)
-	}
-
-	// notification
-	e.updateNotificationPos()
 }
 
 func (e *Editor) updateNotificationPos() {
@@ -872,6 +973,10 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			}
 		case "hl_attr_define":
 			s.setHlAttrDef(args)
+			// if goneovim own statusline is visible
+			if w.drawStatusline {
+				w.statusline.getColor()
+			}
 		case "hl_group_set":
 			s.setHighlightGroup(args)
 		case "grid_line":
@@ -909,24 +1014,50 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Popupmenu Events
 		case "popupmenu_show":
-			if w.cmdline.shown {
-				w.cmdline.cmdWildmenuShow(args)
-			} else {
-				w.popup.showItems(args)
+			if w.cmdline != nil {
+				if w.cmdline.shown {
+					w.cmdline.cmdWildmenuShow(args)
+				}
+			}
+			if w.popup != nil {
+				if w.cmdline != nil {
+					if !w.cmdline.shown {
+						w.popup.showItems(args)
+					}
+				} else {
+					w.popup.showItems(args)
+				}
 			}
 		case "popupmenu_select":
-			if w.cmdline.shown {
-				w.cmdline.cmdWildmenuSelect(args)
-			} else {
-				w.popup.selectItem(args)
+			if w.cmdline != nil {
+				if w.cmdline.shown {
+					w.cmdline.cmdWildmenuSelect(args)
+				}
+			}
+			if w.popup != nil {
+				if w.cmdline != nil {
+					if !w.cmdline.shown {
+						w.popup.selectItem(args)
+					}
+				} else {
+					w.popup.selectItem(args)
+				}
 			}
 		case "popupmenu_hide":
-			if w.cmdline.shown {
-				w.cmdline.cmdWildmenuHide()
-			} else {
-				w.popup.hide()
+			if w.cmdline != nil {
+				if w.cmdline.shown {
+					w.cmdline.cmdWildmenuHide()
+				}
 			}
-
+			if w.popup != nil {
+				if w.cmdline != nil {
+					if !w.cmdline.shown {
+						w.popup.hide()
+					}
+				} else {
+					w.popup.hide()
+				}
+			}
 		// Tabline Events
 		case "tabline_update":
 			if w.tabline != nil {
@@ -935,19 +1066,30 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Cmdline Events
 		case "cmdline_show":
-			w.cmdline.show(args)
+			if w.cmdline != nil {
+				w.cmdline.show(args)
+			}
 		case "cmdline_pos":
-			w.cmdline.changePos(args)
+			if w.cmdline != nil {
+				w.cmdline.changePos(args)
+			}
 		case "cmdline_special_char":
 		case "cmdline_char":
-			w.cmdline.putChar(args)
+			if w.cmdline != nil {
+				w.cmdline.putChar(args)
+			}
 		case "cmdline_hide":
-			// w.cmdline.hide(args)
-			w.cmdline.hide()
+			if w.cmdline != nil {
+				w.cmdline.hide()
+			}
 		case "cmdline_function_show":
-			w.cmdline.functionShow()
+			if w.cmdline != nil {
+				w.cmdline.functionShow()
+			}
 		case "cmdline_function_hide":
-			w.cmdline.functionHide()
+			if w.cmdline != nil {
+				w.cmdline.functionHide()
+			}
 		case "cmdline_block_show":
 		case "cmdline_block_append":
 		case "cmdline_block_hide":
@@ -1001,7 +1143,7 @@ func (w *Workspace) drawOtherUI() {
 		w.screen.toolTipMove(x, y)
 	}
 
-	if w.minimap.visible {
+	if w.minimap.visible && w.minimap.widget.IsVisible() {
 		go w.updateMinimap()
 		w.minimap.mapScroll()
 	}
@@ -1047,20 +1189,20 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 
 	var isChangeFg, isChangeBg bool
 	if editor.colors.fg != nil {
-		isChangeFg = editor.colors.fg.equals(w.foreground)
+		isChangeFg = !editor.colors.fg.equals(w.foreground)
 	}
 	if editor.colors.bg != nil {
-		isChangeBg = editor.colors.bg.equals(w.background)
+		isChangeBg = !editor.colors.bg.equals(w.background)
 	}
 
 	if !w.uiRemoteAttached {
-		if !isChangeFg || !isChangeBg {
+		if isChangeFg || isChangeBg {
 			editor.isSetGuiColor = false
 			aw := editor.workspaces[editor.active]
 			// change minimap colorscheme
 			aw.minimap.isSetColorscheme = false
 			if aw.minimap.visible && aw.minimap.nvim != nil && aw.nvim != nil {
-				editor.workspaces[editor.active].minimap.setColorscheme()
+				aw.minimap.setColorscheme()
 			}
 		}
 	}
@@ -1095,11 +1237,19 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 }
 
 func (w *Workspace) updateWorkspaceColor() {
-	w.palette.setColor()
-	w.fpalette.setColor()
-	w.popup.setColor()
-	w.signature.setColor()
-	w.message.setColor()
+	// w.signature.setColor()
+	if w.palette != nil {
+		w.palette.setColor()
+	}
+	if w.fpalette != nil {
+		w.fpalette.setColor()
+	}
+	if w.popup != nil {
+		w.popup.setColor()
+	}
+	if w.message != nil {
+		w.message.setColor()
+	}
 	w.screen.setColor()
 	if w.drawTabline {
 		if w.tabline != nil {
@@ -1155,7 +1305,9 @@ func (w *Workspace) setOption(update []interface{}) {
 			w.guiLinespace(val)
 		case "pumblend":
 			w.setPumblend(val)
-			w.popup.setPumblend(w.pb)
+			if w.popup != nil {
+				w.popup.setPumblend(w.pb)
+			}
 		case "showtabline":
 		case "termguicolors":
 		// case "ext_cmdline":
@@ -1231,7 +1383,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "gonvim_enter":
-		editor.window.SetWindowOpacity(1.0)
+		w.lazyDrawUI()
 		w.setCwd(updates[1].(string))
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
@@ -1254,12 +1406,12 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.finder.hide()
 	case "finder_select":
 		w.finder.selectResult(updates[1:])
-	case "signature_show":
-		w.signature.showItem(updates[1:])
-	case "signature_pos":
-		w.signature.pos(updates[1:])
-	case "signature_hide":
-		w.signature.hide()
+	// case "signature_show":
+	// 	w.signature.showItem(updates[1:])
+	// case "signature_pos":
+	// 	w.signature.pos(updates[1:])
+	// case "signature_hide":
+	// 	w.signature.hide()
 	case "side_open":
 		editor.wsSide.show()
 	case "side_close":
@@ -1389,18 +1541,22 @@ func (w *Workspace) guiFont(args string) {
 	w.font.change(fontFamily, fontHeight, fontWeight, fontStretch)
 	w.screen.font = w.font
 
-
+	font := w.font
 	win, ok := w.screen.getWindow(w.cursor.gridid)
-	if !ok {
-		return
+	if ok {
+		font = win.getFont()
 	}
-	font := win.getFont()
 
 	w.updateSize()
-	w.popup.updateFont(font)
+
+	if w.popup != nil {
+		w.popup.updateFont(font)
+	}
+	if w.message != nil {
+		w.message.updateFont()
+	}
 	w.screen.toolTipFont(font)
 	w.cursor.updateFont(font)
-	w.message.updateFont()
 
 	// Change external font if font setting of setting.yml is nothing
 	if editor.config.Editor.FontFamily == "" {
@@ -1412,6 +1568,7 @@ func (w *Workspace) guiFont(args string) {
 
 	w.palette.updateFont()
 	w.fpalette.updateFont()
+
 	if w.tabline != nil {
 		w.tabline.updateFont()
 	}
@@ -1544,6 +1701,9 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	case int64:
 		lineSpace = int(arg)
 	default:
+		return
+	}
+	if lineSpace == 0 {
 		return
 	}
 	w.font.changeLineSpace(lineSpace)
@@ -1779,6 +1939,7 @@ type WorkspaceSide struct {
 	items      []*WorkspaceSideItem
 
 	isShown bool
+	isInitResize bool
 }
 
 func newWorkspaceSide() *WorkspaceSide {
@@ -1829,7 +1990,6 @@ func (side *WorkspaceSide) newScrollArea() {
 	// sideArea.SetFixedWidth(editor.config.SideBar.Width)
 
 	side.scrollarea = sideArea
-	side.scrollarea.SetWidget(side.widget)
 
 	side.scrollarea.ConnectResizeEvent(func(*gui.QResizeEvent) {
 		width := side.scrollarea.Width()
@@ -1862,6 +2022,13 @@ func (side *WorkspaceSide) show() {
 	}
 	if side.isShown {
 		return
+	}
+	if !side.isInitResize {
+		editor.splitter.SetSizes(
+			[]int{editor.config.SideBar.Width,
+			editor.width - editor.config.SideBar.Width},
+		)
+		side.isInitResize = true
 	}
 	side.scrollarea.Show()
 	side.isShown = true
@@ -2138,6 +2305,17 @@ func (side *WorkspaceSide) setColor() {
 				editor.colors.sideBarSelectedItemBg, fg,
 			),
 		)
+		bg := editor.colors.sideBarSelectedItemBg
+		fg := editor.colors.fg
+		transparent := transparent() * transparent()
+		side.items[0].labelWidget.SetStyleSheet(
+			fmt.Sprintf(
+				" * { background-color: rgba(%d, %d, %d, %f); color: %s; }",
+				bg.R, bg.G, bg.B,
+				transparent,
+				fg.String(),
+			),
+		)
 	}
 
 }
@@ -2152,7 +2330,7 @@ func (i *WorkspaceSideItem) setActive() {
 	i.active = true
 	bg := editor.colors.sideBarSelectedItemBg
 	fg := editor.colors.fg
-	transparent := transparent()
+	transparent := transparent() * transparent()
 	i.labelWidget.SetStyleSheet(
 		fmt.Sprintf(
 			" * { background-color: rgba(%d, %d, %d, %f); color: %s; }",

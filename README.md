@@ -14,33 +14,33 @@ This repository forked from the original [Gonvim](https://github.com/dzhou121/go
 
 All of the features are optional. You can use it like a plain nvim or as a nvim with a rich UI.
 
-- Fast (faster than neovim-qt, many other neovim GUI's)
+- Fast (faster than neovim-qt)
 - Cross-platform
 - Modern Text Editor Features
-  - [x] Markdown Preview
-  - [x] Minimap
-  - [x] Smooth scroll
-  - [x] Fuzzy Finder
-  - [x] Workspace feature which manages multiple nvim
-  - [x] External File Explorer
-  - [x] Scrollbar
-  - [x] Support Ligature
-  - [x] Built-in Indent guide
-  - [x] Support High DPI scaling
+  - Markdown Preview
+  - Minimap
+  - Smooth scroll (with MacOS touch pad)
+  - Fuzzy Finder
+  - Workspace feature which manages multiple nvim
+  - External File Explorer
+  - Scrollbar
+  - Support Ligature
+  - Built-in Indent guide
+  - Support High DPI scaling
 - Features as neovim GUI
-  - [x] Externalizable tabline, popupmenu, wildmenu, cmdline, messsages
-  - [x] Support gui option: `guifont`, `guifontwide`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
-  - [x] Support mouse selections
-  - [x] Supports border drawing and shadow drawing of float window
-  - [x] Independent font settings per window (currently experimental)
-  - [x] Attach feature to a remote nvim
+  - Externalizable tabline, popupmenu, wildmenu, cmdline, messsages
+  - Support gui option: `guifont`, `guifontwide`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
+  - Support mouse selections
+  - Supports border drawing and shadow drawing of float window
+  - Independent font settings per window (currently experimental)
+  - Attach feature to a remote nvim
 - Basic feature as a Text Editor
-  - [x] Support multi byte character
-  - [x] Drag and Drop files
-  - [x] Support InputMethod Editor (for east asian users)
+  - Support multi byte character
+  - Drag and Drop files
+  - Support InputMethod Editor (for east asian users)
 - Miscellaneous
-  - [x] Supports application window transparency
-  - [x] Desktop Notification of the messages emitted nvim
+  - Supports application window transparency
+  - Desktop Notification of the messages emitted nvim
 
 
 ## Screenshots
@@ -62,7 +62,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/font-setting-per-window.png)
 
 ## Requirements
-* Neovim (v0.4.3 or later)
+* Neovim (v0.4.4 or later)
 
 See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 

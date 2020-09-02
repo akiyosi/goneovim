@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 
 	"github.com/BurntSushi/toml"
 )
@@ -43,6 +44,10 @@ type editorConfig struct {
 	Macmeta                  bool
 	Transparent              float64
 	DrawBorder               bool
+	DrawWindowSeparator      bool
+	WindowSeparatorTheme     string
+	WindowSeparatorGradient  bool
+	WindowSeparatorColor     string
 	SkipGlobalId             bool
 	IndentGuide              bool
 	IndentGuideIgnoreFtList  []string
@@ -53,7 +58,7 @@ type editorConfig struct {
 	DiffDeletePattern        int
 	DiffChangePattern        int
 	ClickEffect              bool
-	Borderless               bool
+	BorderlessWindow         bool
 	// ExtWildmenu            bool
 	// ExtMultigrid           bool
 }
@@ -82,7 +87,8 @@ type statusLineConfig struct {
 }
 
 type tabLineConfig struct {
-	Visible bool
+	Visible  bool
+	ShowIcon bool
 }
 
 type popupMenuConfig struct {
@@ -141,8 +147,8 @@ func newGonvimConfig(home string) gonvimConfig {
 	}
 
 	if config.Editor.Transparent < 1.0 {
-		config.Editor.DrawBorder = true
-		config.Editor.Borderless = true
+		config.Editor.DrawWindowSeparator = true
+		config.Editor.BorderlessWindow = true
 	}
 
 	if config.Editor.DiffAddPattern < 1 || config.Editor.DiffAddPattern > 24 {
@@ -166,6 +172,20 @@ func newGonvimConfig(home string) gonvimConfig {
 	}
 	if config.Statusline.ModeIndicatorType == "" {
 		config.Statusline.ModeIndicatorType = "textLabel"
+	}
+
+	if config.Editor.FontFamily == "" {
+		switch runtime.GOOS {
+		case "windows":
+			config.Editor.FontFamily = "Consolas"
+		case "darwin":
+			config.Editor.FontFamily = "Monaco"
+		default:
+			config.Editor.FontFamily = "Monospace"
+		}
+	}
+	if config.Editor.FontSize <= 3 {
+		config.Editor.FontSize = 12
 	}
 
 	if config.Editor.Linespace < 0 {
@@ -218,7 +238,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.Width = 800
 	c.Editor.Height = 600
 	c.Editor.Transparent = 1.0
-	c.Editor.Borderless = true
+	c.Editor.BorderlessWindow = false
 
 	c.Editor.SkipGlobalId = false
 	c.Editor.CachedDrawing = true
@@ -228,8 +248,20 @@ func (c *gonvimConfig) init() {
 	c.Editor.ExtPopupmenu = false
 	c.Editor.ExtTabline = false
 	c.Editor.ExtMessages = false
-	c.Editor.DrawBorder = false
+	c.Editor.DrawWindowSeparator = false
+	c.Editor.WindowSeparatorTheme = "dark"
+	c.Editor.WindowSeparatorColor = ""
+	c.Editor.WindowSeparatorGradient = false
 
+	switch runtime.GOOS {
+	case "windows":
+		c.Editor.FontFamily = "Consolas"
+	case "darwin":
+		c.Editor.FontFamily = "Monaco"
+	default:
+		c.Editor.FontFamily = "Monospace"
+	}
+	c.Editor.FontSize = 12
 	c.Editor.Linespace = 6
 
 	// Indent guide
