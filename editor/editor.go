@@ -13,7 +13,7 @@ import (
 
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
-	// clipb "github.com/atotto/clipboard"
+	clipb "github.com/atotto/clipboard"
 	"github.com/jessevdk/go-flags"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/therecipe/qt/core"
@@ -600,8 +600,12 @@ func (e *Editor) copyClipBoard() {
 	var yankedText string
 	yankedText, _ = e.workspaces[e.active].nvim.CommandOutput("echo getreg()")
 	if yankedText != "" {
-		c := e.app.Clipboard()
-		c.SetText(yankedText, gui.QClipboard__Clipboard)
+		if runtime.GOOS != "darwin" {
+			clipb.WriteAll(yankedText)
+		} else {
+			c := e.app.Clipboard()
+			c.SetText(yankedText, gui.QClipboard__Clipboard)
+		}
 	}
 
 }
