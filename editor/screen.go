@@ -2936,6 +2936,15 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			continue
 		}
 
+		anchorposx := anchorwin.pos[0]
+		anchorposy := anchorwin.pos[1]
+
+		if anchorwin.isExternal {
+			win.widget.SetParent(anchorwin.widget)
+			anchorposx = 0
+			anchorposy = 0
+		}
+
 		// In multigrid ui, the completion float window on the message window appears to be misaligned.
 		// Therefore, a hack to workaround this problem is implemented on the GUI front-end side.
 		// This workaround assumes that the anchor window for the completion window on the message window is always a global grid.
@@ -2955,13 +2964,13 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		var x, y int
 		switch win.anchor {
 		case "NW":
-			x = anchorwin.pos[0] + anchorCol
-			y = anchorwin.pos[1] + anchorRow
+			x = anchorposx + anchorCol
+			y = anchorposy + anchorRow
 		case "NE":
-			x = anchorwin.pos[0] + anchorCol - win.cols
-			y = anchorwin.pos[1] + anchorRow
+			x = anchorposx + anchorCol - win.cols
+			y = anchorposy + anchorRow
 		case "SW":
-			x = anchorwin.pos[0] + anchorCol
+			x = anchorposx + anchorCol
 			// In multigrid ui, the completion float window position information is not correct.
 			// Therefore, we implement a hack to compensate for this.
 			if s.ws.ph != 0 && win.id == -1 && anchorRow > 0 && !pumInMsgWin {
@@ -2969,19 +2978,19 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 				if height >= s.ws.ph {
 					height = s.ws.ph
 				}
-				y = anchorwin.pos[1] + anchorRow + height
+				y = anchorposy + anchorRow + height
 			} else if s.ws.ph == 0 && win.id == -1 && anchorRow > 0 && !pumInMsgWin {
 				height := win.rows
 				if height >= 10 {
 					height = 10
 				}
-				y = anchorwin.pos[1] + anchorRow + height
+				y = anchorposy + anchorRow + height
 			} else {
-				y = anchorwin.pos[1] + int(math.Abs(float64(anchorRow))) - win.rows
+				y = anchorposy + int(math.Abs(float64(anchorRow))) - win.rows
 			}
 		case "SE":
-			x = anchorwin.pos[0] + anchorCol - win.cols
-			y = anchorwin.pos[1] + anchorRow - win.rows
+			x = anchorposx + anchorCol - win.cols
+			y = anchorposy + anchorRow - win.rows
 		}
 
 		win.pos[0] = x
