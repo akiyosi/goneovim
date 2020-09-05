@@ -89,9 +89,10 @@ type Window struct {
 	ts          int
 	ft          string
 
-	isMsgGrid  bool
-	isFloatWin bool
-	isExternal bool
+	isMsgGrid   bool
+	isFloatWin  bool
+	isExternal  bool
+	isPopupmenu bool
 
 	widget             *widgets.QWidget
 	queueRedrawArea    [4]int
@@ -1959,6 +1960,12 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 				}
 			}
 
+			if line[col].highlight.uiName == "Pmenu" ||
+			line[col].highlight.uiName == "PmenuSel" ||
+			line[col].highlight.uiName == "PmenuSbar" {
+				w.isPopupmenu = true
+			}
+
 			col++
 			r++
 		}
@@ -2257,6 +2264,10 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	idDrawDefaultBg := false
 	if w.isFloatWin || (w.isMsgGrid && editor.config.Message.Transparent < 1.0) {
 		idDrawDefaultBg = true
+		// If popupmenu pumblend is set
+		if w.isPopupmenu && w.s.ws.pb > 0 {
+			w.widget.SetAutoFillBackground(false)
+		}
 	}
 
 	// // Simply paint the color into a rectangle
@@ -3172,7 +3183,8 @@ func (w *Window) fill() {
 	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
 		return
 	}
-	if w.isFloatWin && w.s.ws.pb > 0 {
+	// If popupmenu pumblend is set
+	if w.isPopupmenu && w.s.ws.pb > 0 {
 		return
 	}
 	if w.background != nil {
