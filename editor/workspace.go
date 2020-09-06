@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/akiyosi/goneovim/filer"
-	"github.com/akiyosi/goneovim/fuzzy"
+	//"github.com/akiyosi/goneovim/filer"
+	//"github.com/akiyosi/goneovim/fuzzy"
 	"github.com/akiyosi/goneovim/util"
 	shortpath "github.com/akiyosi/short_path"
 	"github.com/neovim/go-client/nvim"
@@ -378,8 +378,8 @@ func (w *Workspace) attachUI(path string) error {
 	w.message.subscribe()
 
 	// Add editor feature
-	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
-	filer.RegisterPlugin(w.nvim)
+	//fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
+	//filer.RegisterPlugin(w.nvim)
 
 	w.uiAttached = true
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
@@ -447,7 +447,7 @@ func (w *Workspace) initGonvim() {
 	command! GonvimVersion echo "%s"`, editor.version)
 	if !w.uiRemoteAttached {
 		if !editor.config.MiniMap.Disable {
-		gonvimCommands = gonvimCommands + `
+			gonvimCommands = gonvimCommands + `
 		command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
 		`
 		}
@@ -537,7 +537,7 @@ func (w *Workspace) getNvimOptions() {
 				w.escKeyInNormal = mapping.LHS
 			}
 		}
-		if strings.EqualFold(mapping.LHS, "<C-y>") || strings.EqualFold(mapping.LHS, "<C-e>"){
+		if strings.EqualFold(mapping.LHS, "<C-y>") || strings.EqualFold(mapping.LHS, "<C-e>") {
 			w.isMappingScrollKey = true
 		}
 		// Count user def alt/meta key mappings
