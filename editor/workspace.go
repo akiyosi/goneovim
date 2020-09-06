@@ -272,6 +272,9 @@ func (w *Workspace) lazyDrawUI() {
 		editor.wsSide.scrollarea.SetWidget(editor.wsSide.widget)
 		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
 			w.minimap.startMinimapProc()
+			if w.minimap.visible {
+				w.minimap.setCurrentRegion()
+			}
 		}
 	}()
 }
@@ -1418,6 +1421,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.wsSide.hide()
 	case "side_toggle":
 		editor.wsSide.toggle()
+		w.updateSize()
 	case "filer_update":
 		if !editor.wsSide.scrollarea.IsVisible() {
 			return

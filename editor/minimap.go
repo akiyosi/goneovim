@@ -208,6 +208,14 @@ func (m *MiniMap) setColor() {
 	m.curRegion.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 0.1);}", c.R, c.G, c.B))
 }
 
+func (m *MiniMap) setCurrentRegion() {
+	win, ok := m.getWindow(1)
+	if !ok {
+		return
+	}
+	m.curRegion.SetParent(win.widget)
+}
+
 func (m *MiniMap) toggle() {
 	win, ok := m.getWindow(1)
 	if !ok {
@@ -221,8 +229,6 @@ func (m *MiniMap) toggle() {
 	m.curRegion.SetParent(win.widget)
 	m.bufUpdate()
 	m.bufSync()
-
-	m.ws.updateSize()
 }
 
 func (m *MiniMap) updateRows() bool {
