@@ -2957,6 +2957,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			if cursorgridwin.isMsgGrid {
 				anchorwin = cursorgridwin
 				anchorRow = cursorgridwin.pos[0]
+				anchorposx = cursorgridwin.pos[0]
+				anchorposy = cursorgridwin.pos[1]
 			}
 			pumInMsgWin = true
 		}
