@@ -2975,20 +2975,25 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			x = anchorposx + anchorCol
 			// In multigrid ui, the completion float window position information is not correct.
 			// Therefore, we implement a hack to compensate for this.
-			if s.ws.ph != 0 && win.id == -1 && anchorRow > 0 && !pumInMsgWin {
-				height := win.rows
-				if height >= s.ws.ph {
-					height = s.ws.ph
+			// ref: src/nvim/popupmenu.c:L205-, L435-
+
+			if win.id == -1 && !pumInMsgWin {
+
+				row := 0
+				contextLine := 0
+				if anchorwin.rows - s.cursor[0] >= 2 {
+					contextLine = 2
+				} else {
+					contextLine = anchorwin.rows - s.cursor[0]
 				}
-				y = anchorposy + anchorRow + height
-			} else if s.ws.ph == 0 && win.id == -1 && anchorRow > 0 && !pumInMsgWin {
-				height := win.rows
-				if height >= 10 {
-					height = 10
+				if anchorposy+s.cursor[0] >= win.rows+contextLine {
+					row = anchorRow + win.rows
+				} else {
+					row = -anchorposy
 				}
-				y = anchorposy + anchorRow + height
+				y = anchorposy + row
 			} else {
-				y = anchorposy + int(math.Abs(float64(anchorRow))) - win.rows
+				y = anchorposy + anchorRow - win.rows
 			}
 		case "SE":
 			x = anchorposx + anchorCol - win.cols
