@@ -55,7 +55,7 @@ type HlChars struct {
 type Cell struct {
 	normalWidth bool
 	char        string
-	highlight   Highlight
+	highlight   *Highlight
 }
 
 type IntInt [2]int
@@ -1642,7 +1642,7 @@ func (s *Screen) setHlAttrDef(args []interface{}) {
 			for _, line := range win.content {
 				for _, cell := range line {
 					if cell != nil {
-						cell.highlight = *s.hlAttrDef[cell.highlight.id]
+						cell.highlight = s.hlAttrDef[cell.highlight.id]
 					}
 				}
 			}
@@ -1951,12 +1951,12 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 			//	cell in the event).
 			switch col {
 			case 0:
-				line[col].highlight = *w.s.hlAttrDef[hl]
+				line[col].highlight = w.s.hlAttrDef[hl]
 			default:
 				if hl == -1 {
 					line[col].highlight = line[col-1].highlight
 				} else {
-					line[col].highlight = *w.s.hlAttrDef[hl]
+					line[col].highlight = w.s.hlAttrDef[hl]
 				}
 			}
 
@@ -2358,7 +2358,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			if line[x] == nil {
 				highlight = w.s.hlAttrDef[0]
 			} else {
-				highlight = &line[x].highlight
+				highlight = line[x].highlight
 			}
 		} else {
 			highlight = w.s.hlAttrDef[0]
@@ -2400,7 +2400,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 	wsfont := w.getFont()
 	// font := p.Font()
 	line := w.content[y]
-	chars := map[Highlight][]int{}
+	chars := map[*Highlight][]int{}
 	specialChars := []int{}
 	textCache := w.getCache()
 	var image *gui.QImage
@@ -2502,7 +2502,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (w *Window) newTextCache(text string, highlight Highlight, isNormalWidth bool) *gui.QImage {
+func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth bool) *gui.QImage {
 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
 
 	font := w.getFont()
@@ -2592,7 +2592,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	font := p.Font()
 
 	line := w.content[y]
-	chars := map[Highlight][]int{}
+	chars := map[*Highlight][]int{}
 	specialChars := []int{}
 
 	for x := col; x <= col+cols; x++ {
