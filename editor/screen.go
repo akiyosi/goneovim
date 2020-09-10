@@ -2047,6 +2047,7 @@ func (c *Cell) isSignColumn() bool {
 	case "SignColumn",
 		"FoldColumn",
 		"LineNr",
+		"CursorLineNr",
 		"ALEErrorSign",
 		"ALEStyleErrorSign",
 		"ALEWarningSign",
