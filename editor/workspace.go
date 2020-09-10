@@ -463,7 +463,7 @@ func (w *Workspace) initGonvim() {
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter")
 	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_filetype", &ft, win_getid())
-	au GonvimAu OptionSet * if (&ro != 1 && &modeline != 1) | call rpcnotify(0, "Gui", "gonvim_optionset") | endif
+	au GonvimAu OptionSet * if &ro != 1 | call rpcnotify(0, "Gui", "gonvim_optionset") | endif
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
 	aug GonvimAuWorkspace | au! | aug END
@@ -1777,7 +1777,7 @@ func (w *Workspace) bufEnter() {
 func (w *Workspace) optionSet() {
 	w.optionsetMutex.Lock()
 	w.getTabStop()
-	w.getPumHeight()
+	// w.getPumHeight()
 	w.optionsetMutex.Unlock()
 	// w.getFileType()
 }
