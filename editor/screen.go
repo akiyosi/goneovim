@@ -1859,12 +1859,16 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	// We should control to draw statusline, vsplitter
 	if editor.config.Editor.DrawWindowSeparator && gridid == 1 {
 
-		isDraw := false
+		isSkipDraw := true
 		if s.name != "minimap" {
 
-			// Do not Draw bottom statusline
+			// Draw  bottom statusline
 		    if row == win.rows - 2 {
-				isDraw = true
+				isSkipDraw = false
+			}
+			// Draw tabline
+		    if row == 0 {
+				isSkipDraw = false
 			}
 
 			// // Do not Draw statusline of splitted window
@@ -1882,9 +1886,11 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			// 	}
 			// 	return true
 			// })
+		} else {
+			isSkipDraw = false
 		}
 
-		if !isDraw {
+		if isSkipDraw {
 			return
 		}
 	}
