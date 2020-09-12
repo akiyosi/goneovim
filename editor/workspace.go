@@ -89,6 +89,7 @@ type Workspace struct {
 	ts                 int
 	ph                 int
 	pb                 int
+	showtabline        int
 	api5               bool
 
 	escKeyInNormal     string
@@ -557,6 +558,7 @@ func (w *Workspace) getNvimOptions() {
 	w.getTS()
 	w.getBG()
 	w.getKeymaps()
+	w.getShowTabline()
 }
 
 func (w *Workspace) getColorscheme() {
@@ -614,6 +616,20 @@ func (w *Workspace) getBG() {
 			1,
 		)
 	}
+}
+
+func (w *Workspace) getShowTabline() {
+	done := make(chan bool, 5)
+	st := 1
+	go func() {
+		w.nvim.Option("showtabline", &st)
+		done <-true
+	}()
+	select {
+	case <-done:
+	case <-time.After(40 * time.Millisecond):
+	}
+	w.showtabline = st
 }
 
 func (w *Workspace) getKeymaps() {
@@ -684,6 +700,21 @@ func (w *Workspace) getKeymaps() {
 		editor.prefixToMapMetaKey = "M-"
 	}
 	editor.muMetaKey.Unlock()
+}
+
+func (w *Workspace) getNumOfTabs() int {
+	done := make(chan bool, 5)
+	num := 0
+	go func() {
+		w.nvim.Eval("tabpagenr('$')", &num)
+		done <-true
+	}()
+	select {
+	case <-done:
+	case <-time.After(40 * time.Millisecond):
+	}
+
+	return num
 }
 
 func (w *Workspace) nvimEval(s string) (interface{}, error) {
@@ -1776,26 +1807,15 @@ func (w *Workspace) bufEnter() {
 
 func (w *Workspace) optionSet() {
 	w.optionsetMutex.Lock()
-	w.getTabStop()
+	w.setTabStop()
 	// w.getPumHeight()
+	w.getShowTabline()
 	w.optionsetMutex.Unlock()
 	// w.getFileType()
 }
 
-func (w *Workspace) getTabStop() {
-	ts := w.ts
-	errCh := make(chan error, 60)
-	var err error
-	go func() {
-		err = w.nvim.Option("ts", &ts)
-		errCh <-err
-	}()
-	select {
-	case <-errCh:
-	case <-time.After(40 * time.Millisecond):
-	}
-
-	w.ts = ts
+func (w *Workspace) setTabStop() {
+	w.getTS()
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1805,7 +1825,7 @@ func (w *Workspace) getTabStop() {
 		// set tabstop
 		if win.isShown() {
 			if win.ts != w.ts {
-				win.ts = ts
+				win.ts = w.ts
 			}
 		}
 

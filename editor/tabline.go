@@ -351,12 +351,31 @@ func (t *Tabline) update(args []interface{}) {
 		}
 		tab.show()
 	}
+
+	lenhiddentabs := 0
 	for i := len(tabs); i < len(t.Tabs); i++ {
 		tab := t.Tabs[i]
 		tab.setActive(false)
 		tab.hide()
+		lenhiddentabs++
+	}
+	lenshowntabs := 24 - lenhiddentabs
+
+	t.ws.optionsetMutex.Lock()
+	defer t.ws.optionsetMutex.Unlock()
+	if t.ws.showtabline > 1 {
+		if lenshowntabs > 1 {
+			t.widget.Show()
+			t.ws.drawTabline = true
+		} else {
+			t.widget.Hide()
+			t.ws.drawTabline = false
+			t.height = 0
+		}
+		t.ws.updateSize()
 	}
 }
+
 
 func getFileType(text string) string {
 	if strings.HasPrefix(text, "term://") {
