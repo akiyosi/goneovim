@@ -558,7 +558,6 @@ func (w *Workspace) getNvimOptions() {
 	w.getTS()
 	w.getBG()
 	w.getKeymaps()
-	w.getShowTabline()
 }
 
 func (w *Workspace) getColorscheme() {
@@ -616,20 +615,6 @@ func (w *Workspace) getBG() {
 			1,
 		)
 	}
-}
-
-func (w *Workspace) getShowTabline() {
-	done := make(chan bool, 5)
-	st := 1
-	go func() {
-		w.nvim.Option("showtabline", &st)
-		done <-true
-	}()
-	select {
-	case <-done:
-	case <-time.After(40 * time.Millisecond):
-	}
-	w.showtabline = st
 }
 
 func (w *Workspace) getKeymaps() {
@@ -1343,6 +1328,7 @@ func (w *Workspace) setOption(update []interface{}) {
 				w.popup.setPumblend(w.pb)
 			}
 		case "showtabline":
+			w.showtabline = util.ReflectToInt(val)
 		case "termguicolors":
 		// case "ext_cmdline":
 		// case "ext_hlstate":
@@ -1809,7 +1795,6 @@ func (w *Workspace) optionSet() {
 	w.optionsetMutex.Lock()
 	w.setTabStop()
 	// w.getPumHeight()
-	w.getShowTabline()
 	w.optionsetMutex.Unlock()
 	// w.getFileType()
 }

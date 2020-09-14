@@ -921,12 +921,17 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 	width := int(float64(w.cols) * font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(font.lineHeight))
 
-	// The Vim uses the showtabline option to change the display state of the tabline
+	// Vim uses the showtabline option to change the display state of the tabline
 	// based on the number of tabs. We need to look at these states to adjust
 	// the length and display position of the window separator
 	tablineNum := 0
-	if w.s.ws.getNumOfTabs() > 1 {
+	numOfTabs := w.s.ws.getNumOfTabs()
+	if numOfTabs > 1 {
 		tablineNum = 1
+	}
+	drawTabline := editor.config.Tabline.Visible && editor.config.Editor.ExtTabline
+	if w.s.ws.showtabline == 2 && drawTabline && numOfTabs == 1 {
+		tablineNum = -1
 	}
 	shift := font.lineHeight/2
 	if w.rows+w.s.ws.showtabline+tablineNum+1 == gwinrows {
