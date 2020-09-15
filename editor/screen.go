@@ -876,6 +876,13 @@ func (w *Window) drawWindowSeparators(p *gui.QPainter, row, col, rows, cols int)
 	if !editor.config.Editor.DrawWindowSeparator {
 		return
 	}
+
+	gwin, ok := w.s.getWindow(1)
+	if !ok {
+		return
+	}
+	gwinrows := gwin.rows
+
 	w.s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -897,28 +904,54 @@ func (w *Window) drawWindowSeparators(p *gui.QPainter, row, col, rows, cols int)
 		if win.pos[0] > (row+rows) && (win.pos[1]+win.rows) > (col+cols) {
 			return true
 		}
-		win.drawWindowSeparator(p)
+		win.drawWindowSeparator(p, gwinrows)
 
 		return true
 	})
 
 }
 
-func (w *Window) drawWindowSeparator(p *gui.QPainter) {
+func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 	font := w.getFont()
 
 	// window position is based on cols, rows of global font setting
 	x := int(float64(w.pos[0]) * w.s.font.truewidth)
 	y := w.pos[1] * w.s.font.lineHeight
+	color := editor.colors.windowSeparator
 	width := int(float64(w.cols) * font.truewidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(font.lineHeight))
-	color := editor.colors.windowSeparator
+
+	// Vim uses the showtabline option to change the display state of the tabline
+	// based on the number of tabs. We need to look at these states to adjust
+	// the length and display position of the window separator
+	tablineNum := 0
+	numOfTabs := w.s.ws.getNumOfTabs()
+	if numOfTabs > 1 {
+		tablineNum = 1
+	}
+	drawTabline := editor.config.Tabline.Visible && editor.config.Editor.ExtTabline
+	if w.s.ws.showtabline == 2 && drawTabline && numOfTabs == 1 {
+		tablineNum = -1
+	}
+	shift := font.lineHeight/2
+	if w.rows+w.s.ws.showtabline+tablineNum+1 == gwinrows {
+		winHeight = w.rows * font.lineHeight
+		shift = 0
+	} else {
+		if w.pos[1] == tablineNum {
+			winHeight = w.rows * font.lineHeight + int(float64(font.lineHeight)/2.0)
+			shift = 0
+		}
+		if w.pos[1]+w.rows == gwinrows-2 {
+			winHeight = w.rows * font.lineHeight + int(float64(font.lineHeight)/2.0)
+		}
+	}
 
 	// Vertical
 	if y+font.lineHeight+1 < w.s.widget.Height() {
 		p.FillRect5(
 			int(float64(x+width)+font.truewidth/2),
-			y-(font.lineHeight/2),
+			y-shift,
 			2,
 			winHeight,
 			color.QColor(),
@@ -937,7 +970,7 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter) {
 		brush := gui.NewQBrush10(gradient)
 		p.FillRect2(
 			int(float64(x+width)+font.truewidth/2)-6,
-			y-(font.lineHeight/2),
+			y-shift,
 			6,
 			winHeight,
 			brush,

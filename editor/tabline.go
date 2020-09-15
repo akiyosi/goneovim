@@ -22,6 +22,7 @@ type Tabline struct {
 	CurrentID       int
 	currentFileText string
 	Tabs            []*Tab
+	showtabline     int
 	marginDefault   int
 	marginTop       int
 	marginBottom    int
@@ -123,6 +124,7 @@ func initTabline() *Tabline {
 		marginDefault: marginDefault,
 		marginTop:     marginTop,
 		marginBottom:  marginBot,
+		showtabline:   2,
 	}
 
 	tabs := []*Tab{}
@@ -351,12 +353,40 @@ func (t *Tabline) update(args []interface{}) {
 		}
 		tab.show()
 	}
+
+	lenhiddentabs := 0
 	for i := len(tabs); i < len(t.Tabs); i++ {
 		tab := t.Tabs[i]
 		tab.setActive(false)
 		tab.hide()
+		lenhiddentabs++
+	}
+	lenshowntabs := 24 - lenhiddentabs
+
+	// Support showtabline behavior in external tabline
+	if t.ws.showtabline == 1 {
+		if lenshowntabs > 1 {
+			t.widget.Show()
+			t.ws.drawTabline = true
+		} else {
+			t.widget.Hide()
+			t.ws.drawTabline = false
+			t.height = 0
+		}
+	} else if t.ws.showtabline == 2 {
+		t.widget.Show()
+		t.height = t.widget.Height()
+	} else {
+		t.widget.Hide()
+		t.ws.drawTabline = false
+		t.height = 0
+	}
+	if t.showtabline != t.ws.showtabline || t.ws.showtabline == 1 {
+		t.ws.updateSize()
+		t.showtabline = t.ws.showtabline
 	}
 }
+
 
 func getFileType(text string) string {
 	if strings.HasPrefix(text, "term://") {
