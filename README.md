@@ -61,7 +61,7 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
 ## Development
 
-See [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md)
+See [Development](https://github.com/akiyosi/goneovim/Development.md)
 
 
 ## ToDo
