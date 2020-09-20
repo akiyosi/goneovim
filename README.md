@@ -20,6 +20,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
   - Markdown Preview
   - Minimap
   - Smooth scroll (with MacOS touch pad)
+  - Fuzzy Finder
   - Workspace feature which manages multiple nvim
   - External File Explorer
   - Scrollbar
@@ -29,8 +30,8 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Features as neovim GUI
   - Externalizable tabline, popupmenu, wildmenu, cmdline, messsages
   - Support gui option: `guifont`, `guifontwide`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
-  - Support mouse
-  - Support for drawing borders and shadows in a float window
+  - Support mouse selections
+  - Supports border drawing and shadow drawing of float window
   - Independent font settings per window (currently experimental)
   - Attach feature to a remote nvim
 - Basic feature as a Text Editor
@@ -40,49 +41,6 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Miscellaneous
   - Supports application window transparency
   - Desktop Notification of the messages emitted nvim
-
-
-## Requirements
-* Neovim (v0.4.4 or later)
-
-See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
-
-
-## Getting Started
-Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](https://github.com/akiyosi/goneovim/releases) page.
-
-Or you can get the latest binary from Github Actions CI. See [Actions](https://github.com/akiyosi/goneovim/actions) page.
-
-
-## Usage
-
-See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
-
-
-## Development
-
-See [Development](https://github.com/akiyosi/goneovim/Development.md)
-
-
-## ToDo
-
-* Add test
-
-* Improve Imput Method Editor(IME) feature
-
-* Improve startup time
-
-* Support GPU rendering
-
-* Support neovim ui `ext_statusline`
-
-
-## Similar projects
-
-* [Neovide](https://github.com/Kethku/neovide)
-* [Gnvim](https://github.com/vhakulinen/gnvim)
-* [FVim](https://github.com/yatli/fvim)
-* [Veonim](https://github.com/veonim/veonim)
 
 
 ## Screenshots
@@ -102,6 +60,55 @@ See [Development](https://github.com/akiyosi/goneovim/Development.md)
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/transparent-message.png)
 * Independent font settings per window
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/font-setting-per-window.png)
+
+## Requirements
+* Neovim (v0.4.4 or later)
+
+See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
+
+## Getting Started
+Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](https://github.com/akiyosi/goneovim/releases) page.
+
+Or you can get the latest binary from Github Actions CI. See [Actions](https://github.com/akiyosi/goneovim/actions) page.
+
+
+
+## Usage
+
+See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
+
+
+## ToDo
+
+* Add test
+
+* Improve startup time
+
+* Add tree view for external file explorer
+
+* Add Git integration for external file explorer
+
+* Improve Imput Method Editor(IME) feature
+
+In the current implementation, it is not possible to highlight the keyword being converted in the input method input. At the moment I have no idea about how to improve this
+
+* Support GPU rendering
+
+* Support neovim ui `ext_statusline`
+
+
+
+## Development
+
+* [Development](https://github.com/akiyosi/goneovim/wiki/Development)
+
+
+## Similar projects
+
+* [Gnvim](https://github.com/vhakulinen/gnvim)
+* [Veonim](https://github.com/veonim/veonim)
+
+
 
 ## Credits
 
