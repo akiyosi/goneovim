@@ -1910,7 +1910,7 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 			w.cursor.widget.Move2(w.cursor.x, w.cursor.y)
 		}
 
-		return core.NewQVariant31(imrect)
+		return core.NewQVariant33(imrect)
 	}
 	return core.NewQVariant()
 }

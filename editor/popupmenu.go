@@ -125,10 +125,10 @@ func initPopupmenuNew() *PopupMenu {
 		info := widgets.NewQLabel(widget, 0)
 		info.SetContentsMargins(margin, margin, margin, margin)
 
-		itemLayout.AddWidget2(iconwidget, i, 0, 0)
-		itemLayout.AddWidget2(word, i, 1, 0)
-		itemLayout.AddWidget2(menu, i, 2, core.Qt__AlignLeft)
-		itemLayout.AddWidget2(info, i, 3, core.Qt__AlignLeft)
+		itemLayout.AddWidget(iconwidget, i, 0, 0)
+		itemLayout.AddWidget(word, i, 1, 0)
+		itemLayout.AddWidget(menu, i, 2, core.Qt__AlignLeft)
+		itemLayout.AddWidget(info, i, 3, core.Qt__AlignLeft)
 
 		popupItem := &PopupItem{
 			p:         popup,

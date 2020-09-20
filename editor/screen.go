@@ -1288,8 +1288,8 @@ func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
 	widget.SetGraphicsEffect(eff)
 	a := core.NewQPropertyAnimation2(eff, core.NewQByteArray2("opacity", len("opacity")), widget)
 	a.SetDuration(500)
-	a.SetStartValue(core.NewQVariant5(1))
-	a.SetEndValue(core.NewQVariant5(0))
+	a.SetStartValue(core.NewQVariant2(1))
+	a.SetEndValue(core.NewQVariant2(0))
 	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuart))
 	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 	go func() {
@@ -2585,13 +2585,13 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		pi.Font().SetItalic(true)
 	}
 
-	pi.DrawText6(
+	pi.DrawText5(
 		core.NewQRectF4(
 			0,
 			0,
 			width,
 			float64(font.lineHeight),
-		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
+		), int(core.Qt__AlignVCenter), text, nil,
 	)
 
 	if w.font != nil {

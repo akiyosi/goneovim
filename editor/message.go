@@ -114,9 +114,9 @@ func initMessage() *Message {
 
 	// layout message item
 	for i, item := range items {
-		layout.AddWidget2(item.widget, i, 0, 0)
+		layout.AddWidget(item.widget, i, 0, 0)
 		layout.SetAlignment(item.widget, core.Qt__AlignTop)
-		layout.AddWidget2(item.label, i, 1, 0)
+		layout.AddWidget(item.label, i, 1, 0)
 		layout.SetAlignment(item.label, core.Qt__AlignTop)
 	}
 	// Drop shadow to widget
