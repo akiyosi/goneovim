@@ -7,7 +7,7 @@ jobs:
         # go-version: [1.12.x, 1.13.x]
         go-version: [1.12.x]
         platform: [ubuntu-latest] #, windows-latest]
-        qtversion: [5.12.9, 5.13.2, 5.14.2, 5.15.1]
+        qtversion: [5.13.2, 5.14.2, 5.15.1]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -76,7 +76,7 @@ jobs:
     - name: Upload for linux
       uses: actions/upload-artifact@v1
       with:
-        name: Goneovim-latest-linux
+        name: Goneovim-latest-linux-${{ matrix.qtversion }}
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
 
 
@@ -86,7 +86,7 @@ jobs:
         # go-version: [1.12.x, 1.13.x]
         go-version: [1.12.x]
         platform: [macos-latest]
-        qtversion: [5.12.9, 5.13.2, 5.14.2, 5.15.1]
+        qtversion: [5.13.2, 5.14.2, 5.15.1]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -141,14 +141,14 @@ jobs:
     - name: Upload for macos
       uses: actions/upload-artifact@v1
       with:
-        name: Goneovim-latest-macos
+        name: Goneovim-latest-macos-${{ matrix.qtversion }}
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin
 
   test-and-build-windows:
     strategy:
       matrix:
         platform: [windows-latest]
-        qtversion: [5.12.9, 5.13.2, 5.14.2, 5.15.1]
+        qtversion: [5.13.2, 5.14.2]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -156,12 +156,12 @@ jobs:
       GOROOT_BOOTSTRAP: ${{ github.workspace }}\go-boot
       GOROOT_FINAL: ${{ github.workspace }}\go-boot
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
-      CGO_ENABLED: 1
       QT_API: 5.13.0
       QT_VERSION: ${{ matrix.qtversion }}
       QT_DIR: ${{ github.workspace }}\Qt
       QT_MSVC: true
       GO111MODULE: off
+      #CGO_ENABLED: 1
     steps:
 
     - name: Intall MSVC 2017 Visual C++ Buildtools
@@ -283,5 +283,5 @@ jobs:
     - name: Upload for windows
       uses: actions/upload-artifact@v1
       with:
-        name: Goneovim-latest-win64
+        name: Goneovim-latest-win64-${{ matrix.qtversion }}
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
