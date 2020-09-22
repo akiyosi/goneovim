@@ -144,7 +144,8 @@ jobs:
         name: Goneovim-latest-macos-${{ matrix.qtversion }}
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin
 
-  test-and-build-windows:
+  #test-and-build-windows:
+  build-windows:
     strategy:
       matrix:
         platform: [windows-latest]
@@ -257,8 +258,8 @@ jobs:
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtmoc.exe
 
-    - name: Test
-      run: go test github.com/${{ github.repository }}/editor
+    # - name: Test
+    #   run: go test github.com/${{ github.repository }}/editor
 
     - name: Build
       run: |
