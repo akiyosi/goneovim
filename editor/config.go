@@ -146,6 +146,12 @@ func newGonvimConfig(home string) gonvimConfig {
 		fmt.Println(err)
 	}
 
+	// Setting ExtMessages to true should automatically set ExtCmdLine to true as well
+	// Ref: https://github.com/akiyosi/goneovim/issues/162
+	if config.Editor.ExtMessages {
+		config.Editor.ExtCmdline = true
+	}
+
 	if config.Editor.Transparent < 1.0 {
 		config.Editor.DrawWindowSeparator = true
 		config.Editor.BorderlessWindow = true
