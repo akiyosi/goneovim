@@ -7,7 +7,7 @@ jobs:
         # go-version: [1.12.x, 1.13.x]
         go-version: [1.12.x]
         platform: [ubuntu-latest] #, windows-latest]
-        qtversion: [5.13.2, 5.14.2, 5.15.1]
+        qtversion: [5.13.1, 5.14.1, 5.15.1]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -86,7 +86,7 @@ jobs:
         # go-version: [1.12.x, 1.13.x]
         go-version: [1.12.x]
         platform: [macos-latest]
-        qtversion: [5.13.2, 5.14.2, 5.15.1]
+        qtversion: [5.13.1, 5.14.1, 5.15.1]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -148,7 +148,7 @@ jobs:
     strategy:
       matrix:
         platform: [windows-latest]
-        qtversion: [5.13.2, 5.14.2]
+        qtversion: [5.13.1, 5.14.1]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -257,8 +257,8 @@ jobs:
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtmoc.exe
 
-    # - name: Test
-    #   run: go test github.com/${{ github.repository }}/editor
+    - name: Test
+      run: go test github.com/${{ github.repository }}/editor
 
     - name: Build
       run: |
