@@ -1765,9 +1765,10 @@ func (w *Workspace) bufEnter() {
 
 		// set buffer name
 		bufChan := make(chan nvim.Buffer, 2)
+		id := win.id
 		var buf nvim.Buffer
 		go func() {
-			resultBuffer, _ := w.nvim.WindowBuffer(win.id)
+			resultBuffer, _ := w.nvim.WindowBuffer(id)
 			bufChan <- resultBuffer
 		}()
 		select {
