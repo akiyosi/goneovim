@@ -87,6 +87,7 @@ type Window struct {
 	rows        int
 	cwd         string
 	ts          int
+	wb          int
 	ft          string
 
 	isMsgGrid   bool
@@ -2308,6 +2309,9 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		if w.isPopupmenu && w.s.ws.pb > 0 {
 			w.widget.SetAutoFillBackground(false)
 		}
+		if !w.isPopupmenu && w.wb > 0 {
+			w.widget.SetAutoFillBackground(false)
+		}
 	}
 
 	// // Simply paint the color into a rectangle
@@ -2831,35 +2835,43 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyle, *RGBA, int) {
 	color := hl.bg()
 	pattern := core.Qt__BrushStyle(1)
-	transparent := int(((transparent() * 255.0)) * ((100.0 - float64(w.s.ws.pb)) / 100.0))
+	t := 255
+	// if pumblend > 0
+	if w.isPopupmenu {
+		t = int(((transparent() * 255.0)) * ((100.0 - float64(w.s.ws.pb)) / 100.0))
+	}
+	// if winblend > 0
+	if !w.isPopupmenu && w.wb > 0 {
+		t = int(((transparent() * 255.0)) * ((100.0 - float64(w.wb)) / 100.0))
+	}
 	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
-		transparent = int(editor.config.Message.Transparent * 255.0)
+		t = int(editor.config.Message.Transparent * 255.0)
 	}
 
 	if editor.config.Editor.DiffChangePattern != 1 && hl.hlName == "DiffChange" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffChangePattern)
 		if editor.config.Editor.DiffChangePattern >= 7 &&
 			editor.config.Editor.DiffChangePattern <= 14 {
-			transparent = int(editor.config.Editor.Transparent * 255)
+			t = int(editor.config.Editor.Transparent * 255)
 		}
 		color = color.HSV().Colorfulness().RGB()
 	} else if editor.config.Editor.DiffDeletePattern != 1 && hl.hlName == "DiffDelete" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffDeletePattern)
 		if editor.config.Editor.DiffDeletePattern >= 7 &&
 			editor.config.Editor.DiffDeletePattern <= 14 {
-			transparent = int(editor.config.Editor.Transparent * 255)
+			t = int(editor.config.Editor.Transparent * 255)
 		}
 		color = color.HSV().Colorfulness().RGB()
 	} else if editor.config.Editor.DiffAddPattern != 1 && hl.hlName == "DiffAdd" {
 		pattern = core.Qt__BrushStyle(editor.config.Editor.DiffAddPattern)
 		if editor.config.Editor.DiffAddPattern >= 7 &&
 			editor.config.Editor.DiffAddPattern <= 14 {
-			transparent = int(editor.config.Editor.Transparent * 255)
+			t = int(editor.config.Editor.Transparent * 255)
 		}
 		color = color.HSV().Colorfulness().RGB()
 	}
 
-	return pattern, color, transparent
+	return pattern, color, t
 }
 
 func (w *Window) isNormalWidth(char string) bool {
@@ -2945,6 +2957,42 @@ func (w *Window) deleteExternalWin() {
 	}
 }
 
+func (win *Window) getWinblend() {
+	if win.isMsgGrid {
+		return
+	}
+	if win.isPopupmenu {
+		return
+	}
+	// TODO
+	// We should implement winblend effect to external window
+
+	errCh := make(chan error, 60)
+	wb := 0
+	go func() {
+		err := win.s.ws.nvim.WindowOption(win.id, "winblend", &wb)
+		errCh <-err
+	}()
+	select {
+	case <-errCh:
+	case <-time.After(40 * time.Millisecond):
+	}
+
+
+	if wb > 0 {
+		win.widget.SetAutoFillBackground(false)
+	} else {
+		win.widget.SetAutoFillBackground(true)
+		p := gui.NewQPalette()
+		p.SetColor2(gui.QPalette__Background, win.background.QColor())
+		win.widget.SetPalette(p)
+	}
+
+	win.paintMutex.Lock()
+	win.wb = wb
+	win.paintMutex.Unlock()
+}
+
 func (s *Screen) windowFloatPosition(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
@@ -2966,6 +3014,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		win.widget.SetParent(editor.wsWidget)
 		win.isFloatWin = true
+
 		if win.isExternal {
 			win.deleteExternalWin()
 			win.isExternal = false
@@ -3045,6 +3094,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		win.move(x, y)
 		win.setShadow()
+		win.getWinblend()
 		win.show()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
@@ -3241,6 +3291,10 @@ func (w *Window) fill() {
 	}
 	// If popupmenu pumblend is set
 	if w.isPopupmenu && w.s.ws.pb > 0 {
+		return
+	}
+	// If window winblend > 0 is set
+	if !w.isPopupmenu && w.wb > 0 {
 		return
 	}
 	if w.background != nil {
