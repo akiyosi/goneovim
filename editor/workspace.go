@@ -1765,9 +1765,10 @@ func (w *Workspace) bufEnter() {
 
 		// set buffer name
 		bufChan := make(chan nvim.Buffer, 2)
+		id := win.id
 		var buf nvim.Buffer
 		go func() {
-			resultBuffer, _ := w.nvim.WindowBuffer(win.id)
+			resultBuffer, _ := w.nvim.WindowBuffer(id)
 			bufChan <- resultBuffer
 		}()
 		select {
@@ -1795,6 +1796,7 @@ func (w *Workspace) optionSet() {
 	w.optionsetMutex.Lock()
 	w.setTabStop()
 	// w.getPumHeight()
+	w.getWinblendAll()
 	w.optionsetMutex.Unlock()
 	// w.getFileType()
 }
@@ -1878,6 +1880,23 @@ func (w *Workspace) getFileType(args []interface{}) {
 		return true
 	})
 
+}
+
+
+func (w *Workspace) getWinblendAll() {
+	w.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
+		if win == nil {
+			return true
+		}
+		if !win.isFloatWin {
+			return true
+		}
+
+		win.getWinblend()
+		return true
+	})
 }
 
 // InputMethodEvent is
