@@ -10,6 +10,7 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+// ReflectToInt converts interface{} to int
 func ReflectToInt(iface interface{}) int {
 	i, ok := iface.(int64)
 	if ok {
@@ -30,6 +31,7 @@ func ReflectToInt(iface interface{}) int {
 	return 0
 }
 
+// ReflectToFloat converts interface{} to float64
 func ReflectToFloat(iface interface{}) float64 {
 	i, ok := iface.(float64)
 	if ok {
@@ -41,7 +43,7 @@ func ReflectToFloat(iface interface{}) float64 {
 	}
 	return 0
 }
-
+// IsZero determines if the value of interface{} is zero
 func IsZero(d interface{}) bool {
 	if d == nil {
 		return false
@@ -59,6 +61,7 @@ func IsZero(d interface{}) bool {
 	return false
 }
 
+// IsTrue determines the truth of the value of interface{}
 func IsTrue(d interface{}) bool {
 	if d == nil {
 		return false
@@ -76,6 +79,7 @@ func IsTrue(d interface{}) bool {
 	return false
 }
 
+// SplitVimscript splits Vimscript read as a character string with line breaks and converts it to a list format character string
 func SplitVimscript(s string) string {
 	if string(s[0]) == "\n" {
 		s = strings.TrimPrefix(s, string("\n"))
@@ -94,6 +98,7 @@ func SplitVimscript(s string) string {
 	return listLines
 }
 
+// DropShadow drops a shadow
 func DropShadow(x, y, radius float64, alpha int) *widgets.QGraphicsDropShadowEffect {
 	shadow := widgets.NewQGraphicsDropShadowEffect(nil)
 	shadow.SetBlurRadius(radius)
@@ -103,6 +108,7 @@ func DropShadow(x, y, radius float64, alpha int) *widgets.QGraphicsDropShadowEff
 	return shadow
 }
 
+// NewHFlowLayout is a horizontal flow layout. See https://doc.qt.io/qt-5.9/qtwidgets-layouts-flowlayout-example.html
 func NewHFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {
 	layout := widgets.NewQLayout2()
 	items := []*widgets.QLayoutItem{}
@@ -175,6 +181,7 @@ func NewHFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, wid
 	return layout
 }
 
+// NewVFlowLayout is a vertical flow layout. See https://doc.qt.io/qt-5.9/qtwidgets-layouts-flowlayout-example.html
 func NewVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, width int) *widgets.QLayout {
 	layout := widgets.NewQLayout2()
 	items := []*widgets.QLayoutItem{}
@@ -271,6 +278,7 @@ func NewVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, wid
 	return layout
 }
 
+// ExpandTildeToHomeDirectory is a function that expand '~' to absolute home directory path
 func ExpandTildeToHomeDirectory(path string) (string, error) {
 	if len(path) == 0 || path[0] != '~' {
 		return path, nil
