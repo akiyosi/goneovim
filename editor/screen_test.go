@@ -98,35 +98,35 @@ func TestHighlight_fg(t *testing.T) {
 
 func TestWindow_updateLine(t *testing.T) {
 	type fields struct {
-	//	rwMutex          sync.RWMutex
-	//	paintMutex       sync.Mutex
-	//	redrawMutex      sync.Mutex
-		s                *Screen
-		content          [][]*Cell
-	//	lenLine          []int
-	//	lenContent       []int
-	//	lenOldContent    []int
-		grid             gridId
-	//	isGridDirty      bool
-	//	id               nvim.Window
-	//	bufName          string
-	//	pos              [2]int
-	//	anchor           string
-		cols             int
-		rows             int
-	//	isMsgGrid        bool
-	//	isFloatWin       bool
-	//	widget           *widgets.QWidget
-	//	shown            bool
-	//	queueRedrawArea  [4]int
-	//	scrollRegion     []int
-	//	devicePixelRatio float64
-	//	textCache        gcache.Cache
-	//	font             *Font
-	//	fobackground       *RGBA
-	//	width            float64
-	//	height           int
-	//	localWindows     *[4]localWindow
+		//	rwMutex          sync.RWMutex
+		//	paintMutex       sync.Mutex
+		//	redrawMutex      sync.Mutex
+		s       *Screen
+		content [][]*Cell
+		//	lenLine          []int
+		//	lenContent       []int
+		//	lenOldContent    []int
+		grid gridId
+		//	isGridDirty      bool
+		//	id               nvim.Window
+		//	bufName          string
+		//	pos              [2]int
+		//	anchor           string
+		cols int
+		rows int
+		//	isMsgGrid        bool
+		//	isFloatWin       bool
+		//	widget           *widgets.QWidget
+		//	shown            bool
+		//	queueRedrawArea  [4]int
+		//	scrollRegion     []int
+		//	devicePixelRatio float64
+		//	textCache        gcache.Cache
+		//	font             *Font
+		//	fobackground       *RGBA
+		//	width            float64
+		//	height           int
+		//	localWindows     *[4]localWindow
 	}
 	type args struct {
 		col   int
@@ -205,107 +205,103 @@ func TestWindow_updateLine(t *testing.T) {
 		{
 			"test_updateline() 1",
 			fields{
-				s: &Screen{hlAttrDef: hldef},
+				s:       &Screen{hlAttrDef: hldef},
 				content: content,
-				grid: gridid,
-				cols: cols,
-				rows: rows,
+				grid:    gridid,
+				cols:    cols,
+				rows:    rows,
 			},
 			args{
 				col: 0,
 				row: row,
 				cells: []interface{}{
-						[]interface{}{"~", 7},
-						[]interface{}{" ", 7, 4},
-					},
+					[]interface{}{"~", 7},
+					[]interface{}{" ", 7, 4},
+				},
 			},
 			[]Cell{
-				Cell{ true, "~", hldef[7] },
-				Cell{ true, " ", hldef[7] },
-				Cell{ true, " ", hldef[7] },
-				Cell{ true, " ", hldef[7] },
-				Cell{ true, " ", hldef[7] },
+				Cell{true, "~", hldef[7]},
+				Cell{true, " ", hldef[7]},
+				Cell{true, " ", hldef[7]},
+				Cell{true, " ", hldef[7]},
+				Cell{true, " ", hldef[7]},
 			},
-
 		},
 		{
 			"test_updateline() 2",
 			fields{
-				s: &Screen{hlAttrDef: hldef},
+				s:       &Screen{hlAttrDef: hldef},
 				content: content,
-				grid: 6,
-				cols: cols,
-				rows: rows,
+				grid:    6,
+				cols:    cols,
+				rows:    rows,
 			},
 			args{
 				col: 3,
 				row: row,
 				cells: []interface{}{
-						[]interface{}{"*", 6, 2},
-					},
+					[]interface{}{"*", 6, 2},
+				},
 			},
 			[]Cell{
-				Cell{ true, "~", hldef[7] },
-				Cell{ true, " ", hldef[7] },
-				Cell{ true, " ", hldef[7] },
-				Cell{ true, "*", hldef[6] },
-				Cell{ true, "*", hldef[6] },
+				Cell{true, "~", hldef[7]},
+				Cell{true, " ", hldef[7]},
+				Cell{true, " ", hldef[7]},
+				Cell{true, "*", hldef[6]},
+				Cell{true, "*", hldef[6]},
 			},
-
 		},
 		{
 			"test_updateline() 3",
 			fields{
-				s: &Screen{hlAttrDef: hldef},
+				s:       &Screen{hlAttrDef: hldef},
 				content: content,
-				grid: 6,
-				cols: cols,
-				rows: rows,
+				grid:    6,
+				cols:    cols,
+				rows:    rows,
 			},
 			args{
 				col: 1,
 				row: row,
 				cells: []interface{}{
-						[]interface{}{"@", 6},
-						[]interface{}{"v"},
-						[]interface{}{"i"},
-						[]interface{}{"m"},
-					},
+					[]interface{}{"@", 6},
+					[]interface{}{"v"},
+					[]interface{}{"i"},
+					[]interface{}{"m"},
+				},
 			},
 			[]Cell{
-				Cell{ true, "~", hldef[7] },
-				Cell{ true, "@", hldef[6] },
-				Cell{ true, "v", hldef[6] },
-				Cell{ true, "i", hldef[6] },
-				Cell{ true, "m", hldef[6] },
+				Cell{true, "~", hldef[7]},
+				Cell{true, "@", hldef[6]},
+				Cell{true, "v", hldef[6]},
+				Cell{true, "i", hldef[6]},
+				Cell{true, "m", hldef[6]},
 			},
-
 		},
 		{
 			"test_updateline() 4",
 			fields{
-				s: &Screen{hlAttrDef: hldef},
+				s:       &Screen{hlAttrDef: hldef},
 				content: content,
-				grid: 6,
-				cols: cols,
-				rows: rows,
+				grid:    6,
+				cols:    cols,
+				rows:    rows,
 			},
 			args{
 				col: 0,
 				row: row,
 				cells: []interface{}{
-						[]interface{}{" ", 7, 2},
-						[]interface{}{"J"},
-					},
+					[]interface{}{" ", 7, 2},
+					[]interface{}{"J"},
+				},
 			},
 			[]Cell{
-				Cell{ true, " ", hldef[7] },
-				Cell{ true, " ", hldef[7] },
-				Cell{ true, "J", hldef[7] },
-				Cell{ true, "i", hldef[6] },
-				Cell{ true, "m", hldef[6] },
+				Cell{true, " ", hldef[7]},
+				Cell{true, " ", hldef[7]},
+				Cell{true, "J", hldef[7]},
+				Cell{true, "i", hldef[6]},
+				Cell{true, "m", hldef[6]},
 			},
-
 		},
 	}
 
@@ -314,15 +310,15 @@ func TestWindow_updateLine(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			w := &Window{
-				s:                tt.fields.s,
-				content:          tt.fields.content,
-				grid:             tt.fields.grid,
-				cols:             tt.fields.cols,
-				rows:             tt.fields.rows,
+				s:       tt.fields.s,
+				content: tt.fields.content,
+				grid:    tt.fields.grid,
+				cols:    tt.fields.cols,
+				rows:    tt.fields.rows,
 			}
 			w.updateLine(tt.args.col, tt.args.row, tt.args.cells)
 
-			got := w.content[row];
+			got := w.content[row]
 			for i, cell := range got {
 				if cell == nil {
 					continue

@@ -43,7 +43,7 @@ type PopupItem struct {
 	wordRequest string
 
 	kindwidget *widgets.QWidget
-	kindIcon *svg.QSvgWidget
+	kindIcon   *svg.QSvgWidget
 
 	menuLabel   *widgets.QLabel
 	menu        string
@@ -56,7 +56,7 @@ type PopupItem struct {
 	selected        bool
 	selectedRequest bool
 
-	hidden    bool
+	hidden bool
 
 	detailText string
 }
@@ -131,12 +131,12 @@ func initPopupmenuNew() *PopupMenu {
 		itemLayout.AddWidget2(info, i, 3, core.Qt__AlignLeft)
 
 		popupItem := &PopupItem{
-			p:         popup,
-			kindIcon:  kindIcon,
-			kindwidget:  iconwidget,
-			wordLabel: word,
-			menuLabel: menu,
-			infoLabel: info,
+			p:          popup,
+			kindIcon:   kindIcon,
+			kindwidget: iconwidget,
+			wordLabel:  word,
+			menuLabel:  menu,
+			infoLabel:  info,
 		}
 		popupItems = append(popupItems, popupItem)
 	}
@@ -155,7 +155,7 @@ func (p *PopupMenu) updateFont(font *Font) {
 		popupItem.menuLabel.SetFont(font.fontNew)
 		popupItem.infoLabel.SetFont(font.fontNew)
 		popupItem.kindIcon.SetFixedSize2(font.lineHeight, font.lineHeight)
-		popupItem.kindwidget.SetFixedWidth(font.lineHeight+editor.config.Editor.Linespace*2)
+		popupItem.kindwidget.SetFixedWidth(font.lineHeight + editor.config.Editor.Linespace*2)
 	}
 }
 
@@ -234,7 +234,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.detailLabel.SetText("")
 
 	popupItems := p.items
-	itemHeight := (lineHeight)+(editor.config.Editor.Linespace+4)
+	itemHeight := (lineHeight) + (editor.config.Editor.Linespace + 4)
 
 	// Calc the maximum completion items
 	//   where,
@@ -242,7 +242,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	//     `p.ws.screen.height` is the entire screen height
 	heightLeft := 0
 	if isCursorBelowTheCenter {
-		heightLeft = row*lineHeight
+		heightLeft = row * lineHeight
 	} else {
 		heightLeft = p.ws.screen.height - (row+1)*lineHeight
 	}
@@ -254,7 +254,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	}
 
 	startNum := 0
-	if selected >= len(items) - p.showTotal && len(items) > p.total {
+	if selected >= len(items)-p.showTotal && len(items) > p.total {
 		startNum = len(items) - p.showTotal
 	}
 
@@ -574,47 +574,47 @@ func (p *PopupItem) setKind(kind string, selected bool) {
 
 	icon := ""
 	switch formattedKind {
-	case "text" :
+	case "text":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
-	case "method", "function", "constructor" :
+	case "method", "function", "constructor":
 		icon = editor.getSvg("lsp_function", colorOfFunc)
-	case "field", "variable", "property" :
+	case "field", "variable", "property":
 		icon = editor.getSvg("lsp_variable", colorOfFunc)
-	case "class" :
+	case "class":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfFunc)
-	case "interface" :
+	case "interface":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfFunc)
-	case "module" :
+	case "module":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
-	case "unit" :
+	case "unit":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfStatement)
-	case "value" :
+	case "value":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
-	case "enum" :
+	case "enum":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfType)
-	case "keyword" :
+	case "keyword":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
-	case "snippet" :
+	case "snippet":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
-	case "color" :
+	case "color":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
-	case "file" :
+	case "file":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfType)
-	case "reference" :
+	case "reference":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfType)
-	case "folder" :
+	case "folder":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfType)
-	case "enummember" :
+	case "enummember":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
-	case "constant" :
+	case "constant":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfKeyword)
-	case "struct" :
+	case "struct":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfStatement)
-	case "event" :
+	case "event":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfStatement)
-	case "operato" :
+	case "operato":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfStatement)
-	case "typeparameter" :
+	case "typeparameter":
 		icon = editor.getSvg("lsp_"+formattedKind, colorOfType)
 	default:
 		iconColor := warpColor(editor.colors.fg, -45)
@@ -644,32 +644,32 @@ func (p *PopupItem) setKind(kind string, selected bool) {
 }
 
 func normalizeKind(kind string) string {
-// Completion kinds is
-//   Text
-//   Method
-//   Function
-//   Constructor
-//   Field
-//   Variable
-//   Class
-//   Interface
-//   Module
-//   Property
-//   Unit
-//   Value
-//   Enum
-//   Keyword
-//   Snippet
-//   Color
-//   File
-//   Reference
-//   Folder
-//   EnumMember
-//   Constant
-//   Struct
-//   Event
-//   Operator
-//   TypeParameter
+	// Completion kinds is
+	//   Text
+	//   Method
+	//   Function
+	//   Constructor
+	//   Field
+	//   Variable
+	//   Class
+	//   Interface
+	//   Module
+	//   Property
+	//   Unit
+	//   Value
+	//   Enum
+	//   Keyword
+	//   Snippet
+	//   Color
+	//   File
+	//   Reference
+	//   Folder
+	//   EnumMember
+	//   Constant
+	//   Struct
+	//   Event
+	//   Operator
+	//   TypeParameter
 	if len(kind) == 1 {
 		switch kind {
 		case "v":
@@ -677,7 +677,7 @@ func normalizeKind(kind string) string {
 		case "f":
 			return "function" // equate with "method", "constructor"
 		case "m":
-			return "field"    // equate with "property", "enumMember"
+			return "field" // equate with "property", "enumMember"
 		case "C":
 			return "class"
 		case "I":
@@ -687,13 +687,13 @@ func normalizeKind(kind string) string {
 		case "U":
 			return "unit"
 		case "E":
-			return "enum"     // equate with "event"??
+			return "enum" // equate with "event"??
 		case "k":
 			return "keyword"
 		case "S":
-			return "snippet"  // equate with "struct"??
+			return "snippet" // equate with "struct"??
 		case "F":
-			return "file"     // equate with "folder"
+			return "file" // equate with "folder"
 		case "r":
 			return "reference"
 		case "O":
@@ -705,7 +705,7 @@ func normalizeKind(kind string) string {
 
 	lowerKindText := strings.ToLower(kind)
 	switch lowerKindText {
-	case "func", "instance" :
+	case "func", "instance":
 		return "function"
 	case "var", "statement", "param", "const":
 		return "variable"

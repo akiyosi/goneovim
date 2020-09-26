@@ -6,14 +6,14 @@ import (
 	"sync"
 
 	"github.com/akiyosi/goneovim/util"
-	"github.com/therecipe/qt/widgets"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/widgets"
 )
 
 // ScrollBar is
 type ScrollBar struct {
-	mu        sync.Mutex
+	mu sync.Mutex
 
 	ws        *Workspace
 	widget    *widgets.QWidget
@@ -36,7 +36,7 @@ func newScrollBar() *ScrollBar {
 		thumb:  thumb,
 	}
 
-	scrollBar.thumb.ConnectMousePressEvent(scrollBar.  thumbPress)
+	scrollBar.thumb.ConnectMousePressEvent(scrollBar.thumbPress)
 	scrollBar.thumb.ConnectMouseMoveEvent(scrollBar.thumbScroll)
 	scrollBar.thumb.ConnectMouseReleaseEvent(scrollBar.thumbRelease)
 	scrollBar.thumb.ConnectEnterEvent(scrollBar.thumbEnter)
@@ -79,7 +79,7 @@ func (s *ScrollBar) thumbScroll(e *gui.QMouseEvent) {
 	if s.height < 20 {
 		thumbHeight = 20
 	}
-	ratio := float64((s.ws.maxLine * font.lineHeight) + thumbHeight) / float64(s.widget.Height())
+	ratio := float64((s.ws.maxLine*font.lineHeight)+thumbHeight) / float64(s.widget.Height())
 	v := s.beginPosY - e.GlobalPos().Y()
 	if v == 0 {
 		return

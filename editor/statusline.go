@@ -22,10 +22,10 @@ import (
 // Statusline is
 type Statusline struct {
 	ws     *Workspace
-	hl *Highlight
+	hl     *Highlight
 	widget *widgets.QWidget
 
-	height         int
+	height int
 
 	left *LeftStatusItem
 
@@ -121,10 +121,10 @@ type StatuslineMode struct {
 
 // StatuslineGit is
 type StatuslineGit struct {
-	s         *Statusline
-	branch    string
-	file      string
-	c         *StatuslineComponent
+	s      *Statusline
+	branch string
+	file   string
+	c      *StatuslineComponent
 }
 
 // StatuslineEncoding is
@@ -442,7 +442,6 @@ func (s *Statusline) setContentsMarginsForWidgets(l int, u int, r int, d int) {
 	s.encoding.c.label.SetContentsMargins(l, u, r, d)
 	s.lint.c.widget.SetContentsMargins(l, u, r, d)
 }
-
 
 func (s *Statusline) getColor() {
 	if s.ws.screen.highlightGroup == nil || s.ws.screen.hlAttrDef == nil {

@@ -25,7 +25,7 @@ var editor *Editor
 
 const (
 	GONEOVIMVERSION = "v0.4.7"
-	WORKSPACELEN = 10
+	WORKSPACELEN    = 10
 )
 
 // ColorPalette is
@@ -99,9 +99,9 @@ type Editor struct {
 	sysTray     *widgets.QSystemTrayIcon
 	chanVisible chan bool
 
-	width            int
-	height           int
-	iconSize         int
+	width    int
+	height   int
+	iconSize int
 
 	stop     chan struct{}
 	stopOnce sync.Once
@@ -170,15 +170,15 @@ func InitEditor() {
 	}
 
 	editor = &Editor{
-		version: GONEOVIMVERSION,
-		signal:  NewEditorSignal(nil),
-		notify:  make(chan *Notify, 10),
-		stop:    make(chan struct{}),
-		guiInit: make(chan bool, 1),
-		config:  newGonvimConfig(home),
-		homeDir: home,
-		args:    args,
-		opts:    opts,
+		version:     GONEOVIMVERSION,
+		signal:      NewEditorSignal(nil),
+		notify:      make(chan *Notify, 10),
+		stop:        make(chan struct{}),
+		guiInit:     make(chan bool, 1),
+		config:      newGonvimConfig(home),
+		homeDir:     home,
+		args:        args,
+		opts:        opts,
 		chanVisible: make(chan bool, 2),
 	}
 	e := editor
@@ -755,6 +755,7 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 
 	c := ""
 	if text == "" {
+
 		if key == int(core.Qt__Key_Alt     ) ||
 		   key == int(core.Qt__Key_AltGr   ) ||
 		   key == int(core.Qt__Key_CapsLock) ||
@@ -789,7 +790,7 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 
 	if runtime.GOOS == "darwin" {
 		// Remove ALT/OPTION
-		if (char.Unicode() >= 0x80 && char.IsPrint()) {
+		if char.Unicode() >= 0x80 && char.IsPrint() {
 			mod &= ^core.Qt__AltModifier
 		}
 	}
@@ -870,13 +871,11 @@ func (e *Editor) initSpecialKeys() {
 	e.specialKeys[core.Qt__Key_End]       = "End"
 	e.specialKeys[core.Qt__Key_PageUp]    = "PageUp"
 	e.specialKeys[core.Qt__Key_PageDown]  = "PageDown"
-
 	e.specialKeys[core.Qt__Key_Return]    = "Enter"
 	e.specialKeys[core.Qt__Key_Enter]     = "Enter"
 	e.specialKeys[core.Qt__Key_Tab]       = "Tab"
 	e.specialKeys[core.Qt__Key_Backtab]   = "Tab"
 	e.specialKeys[core.Qt__Key_Escape]    = "Esc"
-
 	e.specialKeys[core.Qt__Key_Backslash] = "Bslash"
 	e.specialKeys[core.Qt__Key_Space]     = "Space"
 

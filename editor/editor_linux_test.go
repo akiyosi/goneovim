@@ -12,26 +12,25 @@ import (
 
 func TestLinuxEditor_convertKey(t *testing.T) {
 	tests := []struct {
-		name   string
-		args   *gui.QKeyEvent
-		want   string
+		name string
+		args *gui.QKeyEvent
+		want string
 	}{
 		{
 			`convertKey() Linux LessThan modifier keys 1`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier | core.Qt__ControlModifier, "<", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier|core.Qt__ControlModifier, "<", false, 1),
 			"<C-lt>",
 		},
 		{
 			`convertKey() Linux LessThan modifier keys 2`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier | core.Qt__AltModifier, "<", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier|core.Qt__AltModifier, "<", false, 1),
 			"<A-lt>",
 		},
 		{
 			`convertKey() Linux LessThan modifier keys 3`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier | core.Qt__MetaModifier, "<", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier|core.Qt__MetaModifier, "<", false, 1),
 			"<D-lt>",
 		},
-
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()
@@ -39,9 +38,9 @@ func TestLinuxEditor_convertKey(t *testing.T) {
 		tests = append(
 			tests,
 			[]struct {
-				name   string
-				args   *gui.QKeyEvent
-				want   string
+				name string
+				args *gui.QKeyEvent
+				want string
 			}{
 				{
 					`convertKey() Linux special keys`,

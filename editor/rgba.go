@@ -186,7 +186,6 @@ func newRGBA(r int, g int, b int, a float64) *RGBA {
 	}
 }
 
-
 func (rgba *RGBA) XYZ() *XYZ {
 	r := float64(rgba.R) / 255.0
 	g := float64(rgba.G) / 255.0

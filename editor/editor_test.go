@@ -9,9 +9,9 @@ import (
 
 func TestEditor_convertKey(t *testing.T) {
 	tests := []struct {
-		name   string
-		args   *gui.QKeyEvent
-		want   string
+		name string
+		args *gui.QKeyEvent
+		want string
 	}{
 		{
 			`convertKey() Shift is implied with "<", send "<lt>" instead`,
@@ -98,7 +98,6 @@ func TestEditor_convertKey(t *testing.T) {
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_CapsLock), core.Qt__ControlModifier, "", false, 1),
 			"",
 		},
-
 	}
 	for _, tt := range tests {
 		tt := tt

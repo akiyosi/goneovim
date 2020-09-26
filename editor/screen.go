@@ -445,8 +445,8 @@ func (s *Screen) gridFont(update interface{}) {
 	s.ws.cursor.updateFont(font)
 
 	if win.isExternal {
-		width := int(float64(newCols) * win.font.truewidth) + EXTWINBORDERSIZE*2
-		height := newRows * win.font.lineHeight + EXTWINBORDERSIZE*2
+		width := int(float64(newCols)*win.font.truewidth) + EXTWINBORDERSIZE*2
+		height := newRows*win.font.lineHeight + EXTWINBORDERSIZE*2
 		win.extwin.Resize2(width, height)
 	}
 }
@@ -827,10 +827,9 @@ func (w *Window) drawFloatWindowBorder(p *gui.QPainter) {
 	width := float64(w.widget.Width())
 	height := float64(w.widget.Height())
 
-
-	left :=   core.NewQRectF4(      0,        0,      1, height)
-	top :=    core.NewQRectF4(      0,        0,  width,      1)
-	right :=  core.NewQRectF4(width-1,        0,      1, height)
+	left   := core.NewQRectF4(      0,        0,      1, height)
+	top    := core.NewQRectF4(      0,        0,  width,      1)
+	right  := core.NewQRectF4(width-1,        0,      1, height)
 	bottom := core.NewQRectF4(      0, height-1,  width,      1)
 
 	p.FillRect4(
@@ -934,17 +933,17 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 	if w.s.ws.showtabline == 2 && drawTabline && numOfTabs == 1 {
 		tablineNum = -1
 	}
-	shift := font.lineHeight/2
+	shift := font.lineHeight / 2
 	if w.rows+w.s.ws.showtabline+tablineNum+1 == gwinrows {
 		winHeight = w.rows * font.lineHeight
 		shift = 0
 	} else {
 		if w.pos[1] == tablineNum {
-			winHeight = w.rows * font.lineHeight + int(float64(font.lineHeight)/2.0)
+			winHeight = w.rows*font.lineHeight + int(float64(font.lineHeight)/2.0)
 			shift = 0
 		}
 		if w.pos[1]+w.rows == gwinrows-2 {
-			winHeight = w.rows * font.lineHeight + int(float64(font.lineHeight)/2.0)
+			winHeight = w.rows*font.lineHeight + int(float64(font.lineHeight)/2.0)
 		}
 	}
 
@@ -1897,11 +1896,11 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		if s.name != "minimap" {
 
 			// Draw  bottom statusline
-		    if row == win.rows - 2 {
+			if row == win.rows-2 {
 				isSkipDraw = false
 			}
 			// Draw tabline
-		    if row == 0 {
+			if row == 0 {
 				isSkipDraw = false
 			}
 
@@ -2001,8 +2000,8 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 			}
 
 			if line[col].highlight.uiName == "Pmenu" ||
-			line[col].highlight.uiName == "PmenuSel" ||
-			line[col].highlight.uiName == "PmenuSbar" {
+				line[col].highlight.uiName == "PmenuSel" ||
+				line[col].highlight.uiName == "PmenuSbar" {
 				w.isPopupmenu = true
 			}
 
@@ -2838,11 +2837,11 @@ func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyl
 	t := 255
 	// if pumblend > 0
 	if w.isPopupmenu {
-		t = int(((transparent() * 255.0)) * ((100.0 - float64(w.s.ws.pb)) / 100.0))
+		t = int((transparent() * 255.0) * ((100.0 - float64(w.s.ws.pb)) / 100.0))
 	}
 	// if winblend > 0
 	if !w.isPopupmenu && w.wb > 0 {
-		t = int(((transparent() * 255.0)) * ((100.0 - float64(w.wb)) / 100.0))
+		t = int((transparent() * 255.0) * ((100.0 - float64(w.wb)) / 100.0))
 	}
 	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
 		t = int(editor.config.Message.Transparent * 255.0)
@@ -2971,13 +2970,12 @@ func (win *Window) getWinblend() {
 	wb := 0
 	go func() {
 		err := win.s.ws.nvim.WindowOption(win.id, "winblend", &wb)
-		errCh <-err
+		errCh <- err
 	}()
 	select {
 	case <-errCh:
 	case <-time.After(40 * time.Millisecond):
 	}
-
 
 	if wb > 0 {
 		win.widget.SetAutoFillBackground(false)
@@ -3070,7 +3068,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 				row := 0
 				contextLine := 0
-				if anchorwin.rows - s.cursor[0] >= 2 {
+				if anchorwin.rows-s.cursor[0] >= 2 {
 					contextLine = 2
 				} else {
 					contextLine = anchorwin.rows - s.cursor[0]

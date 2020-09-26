@@ -170,9 +170,9 @@ func newTab() *Tab {
 	l.AddWidget(closeIcon, 0, 0)
 	w.SetLayout(l)
 	tab := &Tab{
-		widget: w,
-		layout: l,
-		file:   file,
+		widget:    w,
+		layout:    l,
+		file:      file,
 		closeIcon: closeIcon,
 	}
 	if editor.config.Tabline.ShowIcon {
@@ -386,7 +386,6 @@ func (t *Tabline) update(args []interface{}) {
 		t.showtabline = t.ws.showtabline
 	}
 }
-
 
 func getFileType(text string) string {
 	if strings.HasPrefix(text, "term://") {

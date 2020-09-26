@@ -9,13 +9,13 @@ import (
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/alecthomas/chroma/formatters/html"
-	"github.com/yuin/goldmark"
-	highlighting "github.com/yuin/goldmark-highlighting"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/webchannel"
 	"github.com/therecipe/qt/webengine"
 	"github.com/therecipe/qt/widgets"
+	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting"
 )
 
 //
@@ -62,14 +62,14 @@ func newMarkdown(workspace *Workspace) *Markdown {
 		var err error
 		go func() {
 			basePath, err = m.ws.nvim.CommandOutput(`echo expand('%:p:h')`)
-			done <-err
+			done <- err
 		}()
 		select {
 		case <-done:
 		case <-time.After(40 * time.Millisecond):
 		}
 		// Create bae url
-		baseUrl := `file://`+ basePath +`/`
+		baseUrl := `file://` + basePath + `/`
 		if !m.htmlSet {
 			m.htmlSet = true
 			m.webpage.SetHtml(m.getHTML(content), core.NewQUrl3(baseUrl, 0))

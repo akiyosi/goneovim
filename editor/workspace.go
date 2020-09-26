@@ -244,7 +244,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 	scrWidget.SetLayout(scrLayout)
 
-	// assemble all neovim ui 
+	// assemble all neovim ui
 	if editor.config.Editor.ExtTabline {
 		layout.AddWidget(w.tabline.widget, 0, 0)
 	}
@@ -513,7 +513,7 @@ func (w *Workspace) initGonvim() {
 	command! GonvimVersion echo "%s"`, editor.version)
 	if !w.uiRemoteAttached {
 		if !editor.config.MiniMap.Disable {
-		gonvimCommands = gonvimCommands + `
+			gonvimCommands = gonvimCommands + `
 		command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
 		`
 		}
@@ -565,7 +565,7 @@ func (w *Workspace) getColorscheme() {
 	colorscheme := ""
 	go func() {
 		w.nvim.Var("colors_name", &colorscheme)
-		done <-true
+		done <- true
 	}()
 	select {
 	case <-done:
@@ -579,7 +579,7 @@ func (w *Workspace) getTS() {
 	ts := 8
 	go func() {
 		w.nvim.Option("ts", &ts)
-		done <-true
+		done <- true
 	}()
 	select {
 	case <-done:
@@ -593,7 +593,7 @@ func (w *Workspace) getBG() {
 	screenbg := "dark"
 	go func() {
 		w.nvim.Option("background", &screenbg)
-		done <-true
+		done <- true
 	}()
 	select {
 	case <-done:
@@ -635,7 +635,7 @@ func (w *Workspace) getKeymaps() {
 		if err != nil {
 			return
 		}
-		done <-true
+		done <- true
 	}()
 	select {
 	case <-done:
@@ -666,7 +666,7 @@ func (w *Workspace) getKeymaps() {
 				w.escKeyInNormal = mapping.LHS
 			}
 		}
-		if strings.EqualFold(mapping.LHS, "<C-y>") || strings.EqualFold(mapping.LHS, "<C-e>"){
+		if strings.EqualFold(mapping.LHS, "<C-y>") || strings.EqualFold(mapping.LHS, "<C-e>") {
 			w.isMappingScrollKey = true
 		}
 		// Count user def alt/meta key mappings
@@ -692,7 +692,7 @@ func (w *Workspace) getNumOfTabs() int {
 	num := 0
 	go func() {
 		w.nvim.Eval("tabpagenr('$')", &num)
-		done <-true
+		done <- true
 	}()
 	select {
 	case <-done:
@@ -719,23 +719,23 @@ func (w *Workspace) nvimEval(s string) (interface{}, error) {
 }
 
 func (w *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
-		scope, ok := cwdinfo["scope"]
-		if !ok {
-			scope = "global"
-		}
-		cwdITF, ok := cwdinfo["cwd"]
-		if !ok {
-			return
-		}
-		cwd := cwdITF.(string)
-		switch scope {
-		case "global" :
-			w.setCwd(cwd)
-		case "tab" :
-			w.setCwdInTab(cwd)
-		case "window" :
-			w.setCwdInWin(cwd)
-		}
+	scope, ok := cwdinfo["scope"]
+	if !ok {
+		scope = "global"
+	}
+	cwdITF, ok := cwdinfo["cwd"]
+	if !ok {
+		return
+	}
+	cwd := cwdITF.(string)
+	switch scope {
+	case "global":
+		w.setCwd(cwd)
+	case "tab":
+		w.setCwdInTab(cwd)
+	case "window":
+		w.setCwdInWin(cwd)
+	}
 }
 
 func (w *Workspace) setCwd(cwd string) {
@@ -1368,8 +1368,8 @@ func (w *Workspace) getPos() {
 	}
 
 	w.curPosMutex.Lock()
-		w.curLine = curPos[1]
-		w.curColm = curPos[2]
+	w.curLine = curPos[1]
+	w.curColm = curPos[2]
 	w.curPosMutex.Unlock()
 }
 
@@ -1482,7 +1482,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_switch":
 		editor.workspaceSwitch(util.ReflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
-		cwdinfo :=updates[1].(map[string]interface{})
+		cwdinfo := updates[1].(map[string]interface{})
 		w.handleChangeCwd(cwdinfo)
 	case "gonvim_workspace_filepath":
 		w.minimap.mu.Lock()
@@ -1688,7 +1688,7 @@ func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.Q
 
 	if height <= 1.0 && width <= 0 {
 		height = 12
-		width  = 6
+		width = 6
 	} else if height > 1.0 && width == -1.0 {
 		width = height / 2.0
 	} else if height <= 1.0 && width >= 1.0 {
@@ -1825,7 +1825,7 @@ func (w *Workspace) getPumHeight() {
 	errCh := make(chan error, 60)
 	go func() {
 		err := w.nvim.Option("pumheight", &ph)
-		errCh <-err
+		errCh <- err
 	}()
 	select {
 	case <-errCh:
@@ -1881,7 +1881,6 @@ func (w *Workspace) getFileType(args []interface{}) {
 	})
 
 }
-
 
 func (w *Workspace) getWinblendAll() {
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
@@ -1966,7 +1965,7 @@ type WorkspaceSide struct {
 	header     *widgets.QLabel
 	items      []*WorkspaceSideItem
 
-	isShown bool
+	isShown      bool
 	isInitResize bool
 }
 
@@ -2054,7 +2053,7 @@ func (side *WorkspaceSide) show() {
 	if !side.isInitResize {
 		editor.splitter.SetSizes(
 			[]int{editor.config.SideBar.Width,
-			editor.width - editor.config.SideBar.Width},
+				editor.width - editor.config.SideBar.Width},
 		)
 		side.isInitResize = true
 	}

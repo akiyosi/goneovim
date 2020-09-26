@@ -12,9 +12,9 @@ import (
 
 func TestDarwinEditor_convertKey(t *testing.T) {
 	tests := []struct {
-		name   string
-		args   *gui.QKeyEvent
-		want   string
+		name string
+		args *gui.QKeyEvent
+		want string
 	}{
 		{
 			`convertKey() MacOS Alt special key input å`,
@@ -23,27 +23,27 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 		},
 		{
 			`convertKey() MacOS Alt special key input Å`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_A), core.Qt__ShiftModifier | core.Qt__AltModifier, "Å", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_A), core.Qt__ShiftModifier|core.Qt__AltModifier, "Å", false, 1),
 			"Å",
 		},
 		{
 			`convertKey() MacOS Alt special key input Ò`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_L), core.Qt__ShiftModifier | core.Qt__AltModifier, "Ò", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_L), core.Qt__ShiftModifier|core.Qt__AltModifier, "Ò", false, 1),
 			"Ò",
 		},
 		{
 			`convertKey() MacOS LessThan modifier keys 1`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier | core.Qt__ControlModifier, "<", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier|core.Qt__ControlModifier, "<", false, 1),
 			"<D-lt>",
 		},
 		{
 			`convertKey() MacOS LessThan modifier keys 2`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier | core.Qt__AltModifier, "<", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier|core.Qt__AltModifier, "<", false, 1),
 			"<A-lt>",
 		},
 		{
 			`convertKey() MacOS LessThan modifier keys 3`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier | core.Qt__MetaModifier, "<", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier|core.Qt__MetaModifier, "<", false, 1),
 			"<C-lt>",
 		},
 		{
@@ -53,20 +53,19 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 		},
 		{
 			`convertKey() MacOS keyboardlayout unicode hex input 2`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_A), core.Qt__AltModifier | core.Qt__ShiftModifier, "", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_A), core.Qt__AltModifier|core.Qt__ShiftModifier, "", false, 1),
 			"<A-A>",
 		},
 		{
 			`convertKey() MacOS keyboardlayout unicode hex input 3`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_A), core.Qt__MetaModifier | core.Qt__AltModifier, "", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_A), core.Qt__MetaModifier|core.Qt__AltModifier, "", false, 1),
 			"<C-A-a>",
 		},
 		{
 			`convertKey() MacOS keyboardlayout unicode hex input 4`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_A), core.Qt__MetaModifier | core.Qt__AltModifier | core.Qt__ShiftModifier, "", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_A), core.Qt__MetaModifier|core.Qt__AltModifier|core.Qt__ShiftModifier, "", false, 1),
 			"<C-A-A>",
 		},
-
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()
@@ -77,9 +76,9 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 		tests = append(
 			tests,
 			[]struct {
-				name   string
-				args   *gui.QKeyEvent
-				want   string
+				name string
+				args *gui.QKeyEvent
+				want string
 			}{
 				{
 					`convertKey() MacOS special keys`,
