@@ -202,13 +202,13 @@ func newWorkspace(path string) (*Workspace, error) {
 	// w.signature.widget.SetParent(editor.wsWidget)
 	// w.signature.ws = w
 
-	// pallete
+	// palette
 	w.palette = initPalette()
 	w.palette.ws = w
 	w.palette.widget.SetParent(editor.window)
 	w.palette.hide()
 
-	// palette
+	// palette 2
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
 	w.fpalette.widget.SetParent(editor.window)
