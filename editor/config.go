@@ -135,13 +135,13 @@ type fileExploreConfig struct {
 	MaxDisplayItems int
 }
 
-func newGonvimConfig(home string) gonvimConfig {
+func newGonvimConfig(configDir string) gonvimConfig {
 	var config gonvimConfig
 
 	config.init()
 
 	// Read toml
-	_, err := toml.DecodeFile(filepath.Join(home, ".goneovim", "setting.toml"), &config)
+	_, err := toml.DecodeFile(filepath.Join(configDir, "setting.toml"), &config)
 	if err != nil {
 		fmt.Println(err)
 	}
