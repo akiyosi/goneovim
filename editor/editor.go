@@ -580,7 +580,7 @@ func (e *Editor) setWindowSize(s string) (int, int) {
 }
 
 func (e *Editor) setWindowOptions() {
-	e.window.SetupTitle("goneovim")
+	e.window.SetupTitle("Neovim")
 	e.window.SetMinimumSize2(400, 300)
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
