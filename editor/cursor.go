@@ -12,26 +12,26 @@ import (
 
 // Cursor is
 type Cursor struct {
-	ws     *Workspace
-	widget *widgets.QWidget
-	// widget     *widgets.QLabel
-	mode        string
-	modeIdx     int
-	x           int
-	y           int
-	text        string
-	normalWidth bool
-	gridid      int
-	oldGridid   int
-	shift       int
-	isShut      bool
-	timer       *core.QTimer
-	isTextDraw  bool
-	fg          *RGBA
-	bg          *RGBA
-	brend       float64
-	font        *Font
-	fontwide    *Font
+	ws           *Workspace
+	widget       *widgets.QWidget
+	// widget      *widgets.QLabel
+	mode         string
+	modeIdx      int
+	x            int
+	y            int
+	text         string
+	normalWidth  bool
+	gridid       int
+	bufferGridid int
+	shift        int
+	isShut       bool
+	timer        *core.QTimer
+	isTextDraw   bool
+	fg           *RGBA
+	bg           *RGBA
+	brend        float64
+	font         *Font
+	fontwide     *Font
 
 	isNeedUpdateModeInfo bool
 	modeInfoModeIdx      int

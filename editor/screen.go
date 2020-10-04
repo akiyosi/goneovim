@@ -372,7 +372,7 @@ func (s *Screen) gridFont(update interface{}) {
 	// Get current window
 	grid := s.ws.cursor.gridid
 	if !editor.config.Editor.ExtCmdline {
-		grid = s.ws.cursor.oldGridid
+		grid = s.ws.cursor.bufferGridid
 	}
 
 	win, ok := s.getWindow(grid)
@@ -1624,7 +1624,9 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		}
 
 		if s.ws.cursor.gridid != gridid {
-			s.ws.cursor.oldGridid = s.ws.cursor.gridid
+			if !win.isMsgGrid {
+				s.ws.cursor.bufferGridid = gridid
+			}
 			s.ws.cursor.gridid = gridid
 			s.ws.cursor.font = win.getFont()
 			win.raise()

@@ -30,7 +30,6 @@ type Markdown struct {
 	ws              *Workspace
 	markdownUpdates chan string
 	container       *widgets.QPlainTextEdit
-	hidden          bool
 	htmlSet         bool
 }
 
@@ -189,19 +188,17 @@ func (m *Markdown) updatePos() {
 }
 
 func (m *Markdown) show() {
-	if !m.hidden {
+	if m.webview.IsVisible() {
 		return
 	}
-	m.hidden = false
 	m.webview.Show()
 	m.webview.Raise()
 }
 
 func (m *Markdown) hide() {
-	if m.hidden {
+	if !m.webview.IsVisible() {
 		return
 	}
-	m.hidden = true
 	m.webview.Hide()
 }
 
@@ -255,6 +252,7 @@ func (m *Markdown) toggle() {
 	// 		return
 	// 	}
 	// }
+	isShownPreview := false
 	m.ws.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 		if win == nil {
@@ -264,16 +262,37 @@ func (m *Markdown) toggle() {
 			return true
 		}
 		if filepath.Base(win.bufName) == GonvimMarkdownBufName {
+			// isShownPreview = true
 			m.htmlSet = false
 			m.hide()
+			isShownPreview = win.isShown()
+
+			curWin, ok := m.ws.screen.getWindow(m.ws.cursor.bufferGridid)
+			if !ok {
+				return true
+			}
+			done := make(chan bool, 2)
 			go func() {
 				m.ws.nvim.SetCurrentWindow(win.id)
 				m.ws.nvim.Command("close")
+				if !isShownPreview {
+					m.ws.nvim.SetCurrentWindow(curWin.id)
+					m.htmlSet = true
+				}
+				done <- true
 			}()
+			select {
+			case <-done:
+			case <-time.After(40 * time.Millisecond):
+			}
+
 			return false
 		}
 		return true
 	})
+	if isShownPreview {
+		return
+	}
 	m.ws.nvim.Command(`keepalt vertical botright split ` + GonvimMarkdownBufName)
 	m.ws.nvim.Command("setlocal filetype=" + GonvimMarkdownBufName)
 	m.ws.nvim.Command("setlocal buftype=nofile")

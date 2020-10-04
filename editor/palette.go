@@ -279,7 +279,7 @@ func (p *Palette) redrawAllContentInWindows() {
 	if runtime.GOOS != "windows" {
 		return
 	}
-	if !p.ws.markdown.hidden {
+	if p.ws.markdown.webview.IsVisible() {
 		return
 	}
 
