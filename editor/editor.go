@@ -80,10 +80,12 @@ type Editor struct {
 	signal  *editorSignal
 	version string
 	app     *widgets.QApplication
+	ppid    int
 
 	homeDir   string
 	configDir string
 	args      []string
+	macAppArg string
 	opts      Option
 
 	notifyStartPos    *core.QPoint
@@ -204,12 +206,10 @@ func InitEditor() {
 	// application
 	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
-	e.app.ConnectAboutToQuit(func() {
-		e.cleanup()
-	})
+	e.ppid = os.Getppid()
 
 	// set application working directory path
-	setAppDirPath(home)
+	e.setAppDirPath(home)
 
 	e.initFont()
 	e.initSVGS()
@@ -241,8 +241,12 @@ func InitEditor() {
 	// neovim workspaces
 	e.initWorkspaces()
 
-	// load file in MacOS
-	e.loadFileInDarwin()
+	e.connectAppSignals()
+
+	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
+		e.app.DisconnectEvent()
+		event.Accept()
+	})
 
 	// runs goroutine to detect stop events and quit the application
 	go func() {
@@ -259,11 +263,25 @@ func InitEditor() {
 }
 
 // setAppDirPath
-// Set the current working directory of the application to the HOME directory.
+// Set the current working directory of the application to the HOME directory in darwin, linux.
 // If this process is not executed, CWD is set to the root directory, and
 // nvim plugins called as descendants of the application will not work due to lack of permission.
 // e.g. #122
-func setAppDirPath(home string) {
+func (e *Editor) setAppDirPath(home string) {
+	if runtime.GOOS == "windows" {
+		return
+	}
+	if runtime.GOOS == "darwin" {
+		if !(e.ppid == 1 && e.macAppArg == "") {
+			return
+		}
+	}
+	if runtime.GOOS == "linux" {
+		if e.ppid != 1 {
+			return
+		}
+	}
+
 	path := core.QCoreApplication_ApplicationDirPath()
 	absHome, err := util.ExpandTildeToHomeDirectory(home)
 	if err == nil {
@@ -321,35 +339,45 @@ func (e *Editor) initWorkspaces() {
 	e.wsWidget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
 }
 
-func (e *Editor) loadFileInDarwin() {
+func (e *Editor) connectAppSignals() {
+	if e.app == nil {
+		return
+	}
+	e.app.ConnectAboutToQuit(func() {
+		e.cleanup()
+	})
+
 	if runtime.GOOS != "darwin" {
 		return
 	}
-	macosArg := ""
 	e.app.ConnectEvent(func(event *core.QEvent) bool {
 		switch event.Type() {
 		case core.QEvent__FileOpen:
 			// If goneovim not launched on finder (it is started in terminal)
-			if os.Getppid() != 1 {
+			if e.ppid != 1 {
 				return false
 			}
 			fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
-			macosArg = fileOpenEvent.File()
-			goneovim := e.workspaces[e.active].nvim
-			isModified := ""
-			isModified, _ = goneovim.CommandOutput("echo &modified")
-			if isModified == "1" {
-				goneovim.Command(fmt.Sprintf(":tabe %s", macosArg))
-			} else {
-				goneovim.Command(fmt.Sprintf(":e %s", macosArg))
-			}
+			e.macAppArg = fileOpenEvent.File()
+			e.loadFileInDarwin()
 		}
 		return true
 	})
-	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
-		e.app.DisconnectEvent()
-		event.Accept()
-	})
+}
+
+func (e *Editor) loadFileInDarwin() {
+	if runtime.GOOS != "darwin" {
+		return
+	}
+
+	goneovim := e.workspaces[e.active].nvim
+	isModified := ""
+	isModified, _ = goneovim.CommandOutput("echo &modified")
+	if isModified == "1" {
+		goneovim.Command(fmt.Sprintf(":tabe %s", e.macAppArg))
+	} else {
+		goneovim.Command(fmt.Sprintf(":e %s", e.macAppArg))
+	}
 }
 
 func (e *Editor) initNotifications() {
