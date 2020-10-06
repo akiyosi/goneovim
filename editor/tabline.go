@@ -148,17 +148,18 @@ func initTabline() *Tabline {
 
 func newTab() *Tab {
 	w := widgets.NewQWidget(nil, 0)
-	w.SetContentsMargins(5, 0, 10, 0)
+	w.SetContentsMargins(5, 0, 5, 0)
 	l := widgets.NewQHBoxLayout()
-	l.SetContentsMargins(0, 0, 0, 4) // tab margins
+	l.SetContentsMargins(0, 0, 0, 0) // tab margins
 	l.SetSpacing(0)
 	var fileIcon *svg.QSvgWidget
 	if editor.config.Tabline.ShowIcon {
 		fileIcon = svg.NewQSvgWidget(nil)
-		fileIcon.SetFixedWidth(12)
-		fileIcon.SetFixedHeight(12)
+		fileIcon.SetFixedWidth(editor.iconSize)
+		fileIcon.SetFixedHeight(editor.iconSize)
 	}
 	file := widgets.NewQLabel(nil, 0)
+	file.SetContentsMargins(0, 0, editor.iconSize/4, 0)
 	file.SetStyleSheet(" .QLabel { padding: 2px; background-color: rgba(0, 0, 0, 0); }")
 	closeIcon := svg.NewQSvgWidget(nil)
 	closeIcon.SetFixedWidth(editor.iconSize)
@@ -281,6 +282,9 @@ func (t *Tab) updateSize() {
 		t.file.Text(),
 		-1,
 	))
+	if editor.config.Tabline.ShowIcon {
+		width += +editor.iconSize
+	}
 	height := int(fontmetrics.Height()) + t.t.marginTop + t.t.marginBottom
 	t.widget.SetFixedSize2(width+editor.iconSize+5+10+5, height)
 }
