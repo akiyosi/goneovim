@@ -1724,7 +1724,7 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	default:
 		return
 	}
-	if lineSpace == 0 {
+	if lineSpace < 0 {
 		return
 	}
 	w.font.changeLineSpace(lineSpace)
