@@ -67,7 +67,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	}
 
 	// if guifontwide is set
-	shift := float64(font.lineSpace)/2 + font.ascent
+	shift := font.ascent
 	if !c.normalWidth && c.fontwide != nil {
 		p.SetFont(c.fontwide.fontNew)
 		if c.fontwide.lineHeight > font.lineHeight {
@@ -284,9 +284,12 @@ func (c *Cursor) update() {
 		return
 	}
 	font := c.font
+	if font == nil {
+		return
+	}
 
 	x := int(float64(col) * font.truewidth)
-	y := row*font.lineHeight + c.shift + win.scrollPixels[1]
+	y := row*font.lineHeight + int(float64(font.lineSpace)/2.0) + c.shift + win.scrollPixels[1]
 	c.x = x
 	c.y = y
 	c.move()

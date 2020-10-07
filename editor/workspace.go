@@ -1729,7 +1729,6 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	}
 	w.font.changeLineSpace(lineSpace)
 	w.updateSize()
-	// w.cursor.updateShape()
 }
 
 func (w *Workspace) setPumblend(arg interface{}) {
