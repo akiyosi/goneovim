@@ -84,7 +84,7 @@ See [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md
 * [Neovide](https://github.com/Kethku/neovide)
 * [Gnvim](https://github.com/vhakulinen/gnvim)
 * [FVim](https://github.com/yatli/fvim)
-* [Veonim](https://github.com/veonim/veonim)
+* [Uivonim](https://github.com/smolck/uivonim)
 
 
 ## Screenshots
