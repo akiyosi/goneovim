@@ -293,15 +293,16 @@ func (m *Markdown) toggle() {
 	if isShownPreview {
 		return
 	}
-	m.ws.nvim.Command(`keepalt vertical botright split ` + GonvimMarkdownBufName)
-	m.ws.nvim.Command("setlocal filetype=" + GonvimMarkdownBufName)
-	m.ws.nvim.Command("setlocal buftype=nofile")
-	m.ws.nvim.Command("setlocal bufhidden=hide")
-	m.ws.nvim.Command("setlocal noswapfile")
-	m.ws.nvim.Command("setlocal nobuflisted")
-	m.ws.nvim.Command("setlocal nomodifiable")
-	m.ws.nvim.Command("setlocal nolist")
-	m.ws.nvim.Command("setlocal nowrap")
+	pipe := ` | `
+	m.ws.nvim.Command(`keepalt vertical botright split ` + GonvimMarkdownBufName  + pipe +
+	"setlocal filetype=" + GonvimMarkdownBufName  + pipe +
+	"setlocal buftype=nofile"  + pipe +
+	"setlocal bufhidden=hide"  + pipe +
+	"setlocal noswapfile"  + pipe +
+	"setlocal nobuflisted"  + pipe +
+	"setlocal nomodifiable"  + pipe +
+	"setlocal nolist"  + pipe +
+	"setlocal nowrap")
 	m.ws.nvim.Command(fmt.Sprintf(
 		"nnoremap <silent> <buffer> j :call rpcnotify(0, 'Gui', '%s')<CR>",
 		"gonvim_markdown_scroll_down",
