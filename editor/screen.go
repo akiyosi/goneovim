@@ -646,6 +646,16 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if ts == 0 {
 		return
 	}
+
+	headspaceOfRows := make(map[int]int)
+	for y := row; y < rows; y++ {
+		if y+1 >= len(w.content) {
+			break
+		}
+		l, _ := w.countHeadSpaceOfLine(y)
+		headspaceOfRows[y] = l
+	}
+
 	drawIndents := make(map[IntInt]bool)
 	for y := row; y < rows; y++ {
 		if y+1 >= len(w.content) {
@@ -658,8 +668,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 			if x+1 >= len(line) {
 				break
 			}
-			nc := line[x+1]
-			if nc == nil {
+			if line[x+1] == nil {
 				continue
 			}
 			c := line[x]
@@ -672,7 +681,8 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 			if c.char != " " && !c.isSignColumn() {
 				break
 			}
-			yylen, _ := w.countHeadSpaceOfLine(y)
+			// yylen, _ := w.countHeadSpaceOfLine(y)
+			yylen := headspaceOfRows[y]
 			if x > res && (x+1-res)%ts == 0 {
 				ylen := x + 1
 
@@ -682,7 +692,12 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 
 				doPaintIndent := false
 				for mm := y; mm < len(w.content); mm++ {
-					mmlen, _ := w.countHeadSpaceOfLine(mm)
+					if drawIndents[[2]int{x+1, mm}] {
+						continue
+					}
+
+					// mmlen, _ := w.countHeadSpaceOfLine(mm)
+					mmlen := headspaceOfRows[mm]
 
 					if mmlen == ylen {
 						break
@@ -694,7 +709,8 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 
 					if mmlen == w.cols && !doPaintIndent {
 						for nn := mm + 1; nn < len(w.content); nn++ {
-							nnlen, _ := w.countHeadSpaceOfLine(nn)
+							// nnlen, _ := w.countHeadSpaceOfLine(nn)
+							nnlen := headspaceOfRows[nn]
 							if nnlen == ylen {
 								break
 							}
@@ -715,7 +731,8 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 						// in the next line, do not skip drawing
 						// TODO: We do not detect the wraped line when `:set nonu` setting.
 						if mm+1 < len(w.content) {
-							lllen, _ := w.countHeadSpaceOfLine(mm + 1)
+							// lllen, _ := w.countHeadSpaceOfLine(mm+1)
+							lllen := headspaceOfRows[mm+1]
 							if mm >= 0 {
 								if lllen > ylen {
 									for xx := 0; xx < w.lenLine[mm]; xx++ {
@@ -741,6 +758,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 							break
 						}
 					}
+
 					if w.content[mm][x+1] == nil {
 						break
 					}
@@ -750,9 +768,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 					if !doPaintIndent {
 						break
 					}
-					if !drawIndents[[2]int{x + 1, mm}] {
+					if !drawIndents[[2]int{x+1, mm}] {
 						w.drawIndentline(p, x+1, mm)
-						drawIndents[[2]int{x + 1, mm}] = true
+						drawIndents[[2]int{x+1, mm}] = true
 					}
 				}
 			}
