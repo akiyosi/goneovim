@@ -659,7 +659,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	drawIndents := make(map[IntInt]bool)
 	for y := row; y < rows; y++ {
 		if y+1 >= len(w.content) {
-			return
+			break
 		}
 		// nextline := w.content[y+1]
 		line := w.content[y]
@@ -769,27 +769,71 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 						break
 					}
 					if !drawIndents[[2]int{x+1, mm}] {
-						w.drawIndentline(p, x+1, mm)
 						drawIndents[[2]int{x+1, mm}] = true
 					}
 				}
 			}
 		}
 	}
+
+	// detect current block
+	currentBlock := make(map[IntInt]bool)
+	for x := w.s.cursor[1]; x >= 0; x-- {
+		if drawIndents[[2]int{x+1, w.s.cursor[0]}] {
+			for y := w.s.cursor[0]; y >= 0; y-- {
+				if drawIndents[[2]int{x+1, y}] {
+					currentBlock[[2]int{x+1, y}] = true
+				}
+				if !drawIndents[[2]int{x+1, y}] {
+					break
+				}
+			}
+			for y := w.s.cursor[0]; y < len(w.content); y++ {
+				if drawIndents[[2]int{x+1, y}] {
+					currentBlock[[2]int{x+1, y}] = true
+				}
+				if !drawIndents[[2]int{x+1, y}] {
+					break
+				}
+			}
+
+			break
+		}
+	}
+
+	// draw indent guide
+	for y := row; y < len(w.content); y++ {
+		for x := 0; x < w.maxLenContent; x++ {
+			if !drawIndents[[2]int{x+1, y}] {
+				continue
+			}
+			if currentBlock[[2]int{x+1, y}] {
+				w.drawIndentline(p, x+1, y, true)
+			} else {
+				w.drawIndentline(p, x+1, y, false)
+			}
+		}
+	}
 }
 
-func (w *Window) drawIndentline(p *gui.QPainter, x int, y int) {
+func (w *Window) drawIndentline(p *gui.QPainter, x int, y int, b bool) {
 	font := w.getFont()
 	X := float64(x) * font.truewidth
 	Y := float64(y*font.lineHeight) + float64(w.scrollPixels[1])
+	var color *RGBA = editor.colors.indentGuide
+	var lineWeight float64 = 1
+	if b {
+		color = warpColor(editor.colors.indentGuide, -30)
+		lineWeight = 2
+	}
 	p.FillRect4(
 		core.NewQRectF4(
 			X,
 			Y,
-			1,
+			lineWeight,
 			float64(font.lineHeight),
 		),
-		editor.colors.indentGuide.QColor(),
+		color.QColor(),
 	)
 
 	if w.lenContent[y] < x {
