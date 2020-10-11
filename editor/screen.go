@@ -823,8 +823,8 @@ func (w *Window) drawIndentline(p *gui.QPainter, x int, y int, b bool) {
 	var color *RGBA = editor.colors.indentGuide
 	var lineWeight float64 = 1
 	if b {
-		color = warpColor(editor.colors.indentGuide, -30)
-		lineWeight = 2
+		color = warpColor(editor.colors.indentGuide, -40)
+		lineWeight = 1.5
 	}
 	p.FillRect4(
 		core.NewQRectF4(
