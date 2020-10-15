@@ -2820,6 +2820,10 @@ func (w *Window) drawContents(p *gui.QPainter, y int, col int, cols int) {
 }
 
 func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
+	// If the grid is a global grid or a message grid, we don't have to process these
+	if w.grid == 1 || w.isMsgGrid {
+		return
+	}
 	if y >= len(w.content) {
 		return
 	}
@@ -2850,8 +2854,13 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		start := float64(x) * font.truewidth
 		end := float64(x+1) * font.truewidth
 
-		Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.height)*1.04 + float64(font.lineSpace/2)
-		halfY := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.height)/2.0 + float64(font.lineSpace/2)
+		space := float64(font.lineSpace)/3.0
+		if space > font.ascent / 3.0 {
+			space = font.ascent / 3.0
+		}
+		descent := float64(font.height) - font.ascent
+		Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent + descent*0.3) + float64(font.lineSpace/2) + space
+		halfY := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent)/2.0 + float64(font.lineSpace/2)
 		weight := font.lineHeight / 14
 		if weight < 1 {
 			weight = 1
@@ -2879,16 +2888,19 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			)
 		}
 		if line[x].highlight.undercurl {
-			height := 0.0
-			amplitude := font.ascent / 8.0
+			amplitude := descent*0.65 + float64(font.lineSpace)
+			maxAmplitude := font.ascent / 8.0
+			if amplitude >= maxAmplitude {
+				amplitude = maxAmplitude
+			}
 			freq := 1.0
 			phase := 0.0
-			y := Y + height/2 + amplitude*math.Sin(0)
-			point := core.NewQPointF3(start, y)
+			Y2 := Y + amplitude*math.Sin(0)
+			point := core.NewQPointF3(start, Y2)
 			path := gui.NewQPainterPath2(point)
 			for i := int(point.X()); i <= int(end); i++ {
-				y = Y + height/2 + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.truewidth+phase)
-				path.LineTo(core.NewQPointF3(float64(i), y))
+				Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.truewidth+phase)
+				path.LineTo(core.NewQPointF3(float64(i), Y2))
 			}
 			p.DrawPath(path)
 		}
