@@ -610,7 +610,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	p.DestroyQPainter()
 
 	// Update markdown preview
-	if w.grid != 1 && w.s.ws.markdown != nil {
+	if w.grid != 1 && !w.isMsgGrid && w.s.ws.markdown != nil {
 		w.s.ws.markdown.updatePos()
 	}
 
@@ -1259,7 +1259,7 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 
 	// w.update()
 	// w.s.ws.cursor.update()
-	if !(dx >= font.truewidth || dy >= float64(font.lineHeight)) {
+	if !(dx >= font.truewidth || dy > float64(font.lineHeight)) {
 		w.update()
 		w.s.ws.cursor.update()
 	}
