@@ -221,11 +221,13 @@ func (m *MiniMap) toggle() {
 	if !ok {
 		return
 	}
+	m.mu.Lock()
 	if m.visible {
 		m.visible = false
 	} else {
 		m.visible = true
 	}
+	m.mu.Unlock()
 	m.curRegion.SetParent(win.widget)
 	m.bufUpdate()
 	m.bufSync()
@@ -568,7 +570,7 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 		if win.scrollPixelsDeltaY <= 2 {
 			accel = 1
 		} else if win.scrollPixelsDeltaY > 2 {
-			accel = int(float64(win.scrollPixelsDeltaY) / float64(4))
+			accel = int(float64(win.scrollPixelsDeltaY) / float64(2))
 		}
 
 	default:

@@ -273,7 +273,10 @@ func (w *Workspace) lazyDrawUI() {
 		editor.wsSide.scrollarea.SetWidget(editor.wsSide.widget)
 		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
 			w.minimap.startMinimapProc()
-			if w.minimap.visible {
+			w.minimap.mu.Lock()
+			isSetCurrentRegion := w.minimap.visible
+			w.minimap.mu.Unlock()
+			if isSetCurrentRegion {
 				w.minimap.setCurrentRegion()
 			}
 		}
