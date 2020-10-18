@@ -1146,7 +1146,10 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 
 	accel := 1
 	if math.Abs(float64(v)) > float64(font.lineHeight)/2 {
-		accel = int(math.Abs(float64(v)) * 2 / float64(font.lineHeight))
+		accel = int(math.Abs(float64(v)) * 2.5 / float64(font.lineHeight))
+		if accel > 6 {
+			accel = 6
+		}
 	}
 	if accel == 0 {
 		accel = 1
