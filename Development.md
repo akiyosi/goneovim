@@ -71,12 +71,6 @@ Development of goneovim
     $(go env GOPATH)/bin/qtdeploy build desktop
     ```
 
-    If you have Qt5.13 installed, you can run the following command
-
-    ```
-    $(go env GOPATH)/bin/qtdeploy build desktop
-    ```
-
 
 ## For Windows
 
@@ -84,7 +78,7 @@ Development of goneovim
 
   * Install MSVC 2017 Visual C++ Buildtools
 
-  * Install Qt; Note that we recommend to install Qt 5.12.X
+  * Install Qt; Note that we recommend to install Qt 5.12.X (where X is 0-6)
   
     - Qt installation on Windows
       - [https://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe](https://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe)
@@ -96,7 +90,7 @@ Development of goneovim
 
     | environment variable name | value |
     | -----------------| ----- |
-    | QT_API           | The version of the Qt API to generate. This project now uses `5.13.0` |
+    | QT_API           | The version of the Qt API to generate. This project now uses `5.12.6` |
     | QT_VERSION       | The version of Qt you installed |
     | QT_DIR           | The directory path where qt is installed |
     | GOVSVARSPATH     | \Path\To\BuildTools\VC\Auxiliary\Build\vcvars64.bat |
@@ -158,18 +152,33 @@ Development of goneovim
     GO111MODULE=off go get -d github.com/akiyosi/goneovim/editor/
     ```
 
+  * Convert code for suit Qt 5.12
+    For Qt5.12, the following code conversion is required.
+
+	```
+    $data=Get-Content  .\editor\workspace.go | % { $_ -replace "NewQVariant31", "NewQVariant33" }
+    $data | Out-File   .\editor\workspace.go -Encoding UTF8
+    $data=Get-Content  .\editor\popupmenu.go | % { $_ -replace "AddWidget2", "AddWidget" }
+    $data | Out-File   .\editor\popupmenu.go -Encoding UTF8
+    $data=Get-Content  .\editor\message.go | % { $_ -replace "AddWidget2", "AddWidget" }
+    $data | Out-File   .\editor\message.go -Encoding UTF8
+    $data=Get-Content  .\editor\screen.go | % { $_ -replace "DrawText6", "DrawText5" }
+    $data | Out-File   .\editor\screen.go -Encoding UTF8
+    $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
+    $data | Out-File   .\editor\screen.go -Encoding UTF8
+    $ch="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+    $rep="), int(core.Qt__AlignVCenter), text, nil,"
+    $data=Get-Content  .\editor\screen.go | % { $_ -replace [regex]::Escape($ch), $rep }
+    $data | Out-File   .\editor\screen.go -Encoding UTF8
+    $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
+    $data | Out-File   .\util\utils.go -Encoding UTF8
+    ```
+
   * Generate moc files
 
     ```
 	cd %GOPATH%/src/github.com/akiyosi/goneovim
     %GOPATH%/bin/qtmoc.exe
-    ```
-
-  * Test
-    
-    ```
-    go test github.com/akiyosi/goneovim/editor
-
     ```
 
   * Build

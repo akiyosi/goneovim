@@ -149,7 +149,7 @@ jobs:
     strategy:
       matrix:
         platform: [windows-latest]
-        qtversion: [5.13.0, 5.14.1]
+        qtversion: [5.12.6, 5.13.0, 5.14.1]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -260,6 +260,27 @@ jobs:
 
     # - name: Test
     #   run: go test github.com/${{ github.repository }}/editor
+
+    - name: Convert to compatible sources on Qt5.12
+      if: matrix.qtversion == '5.12.6'
+      run: |
+        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}
+        $data=Get-Content  .\editor\workspace.go | % { $_ -replace "NewQVariant31", "NewQVariant33" }
+        $data | Out-File   .\editor\workspace.go -Encoding UTF8
+        $data=Get-Content  .\editor\popupmenu.go | % { $_ -replace "AddWidget2", "AddWidget" }
+        $data | Out-File   .\editor\popupmenu.go -Encoding UTF8
+        $data=Get-Content  .\editor\message.go | % { $_ -replace "AddWidget2", "AddWidget" }
+        $data | Out-File   .\editor\message.go -Encoding UTF8
+        $data=Get-Content  .\editor\screen.go | % { $_ -replace "DrawText6", "DrawText5" }
+        $data | Out-File   .\editor\screen.go -Encoding UTF8
+        $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
+        $data | Out-File   .\editor\screen.go -Encoding UTF8
+        $ch="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+        $rep="), int(core.Qt__AlignVCenter), text, nil,"
+        $data=Get-Content  .\editor\screen.go | % { $_ -replace [regex]::Escape($ch), $rep }
+        $data | Out-File   .\editor\screen.go -Encoding UTF8
+        $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
+        $data | Out-File   .\util\utils.go -Encoding UTF8
 
     - name: Build
       run: |
