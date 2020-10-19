@@ -310,21 +310,6 @@ jobs:
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtdeploy build desktop
 
-    - name: Remove unnecessary modules
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
-        Remove-Item -Path bearer -Recurse
-        Remove-Item -Path iconengines -Recurse
-        Remove-Item -Path imageformats -Recurse
-        Remove-Item -Path platforminputcontexts -Recurse
-        Remove-Item -Path position -Recurse
-        Remove-Item -Path printsupport -Recurse
-        Remove-Item -Path qmltooling -Recurse
-        Remove-Item -Path resources -Recurse
-        Remove-Item -Path scenegraph -Recurse
-        Remove-Item -Path translations -Recurse
-        Remove-Item -Path virtualkeyboard -Recurse
-
     - name: Upload for windows
       uses: actions/upload-artifact@v1
       with:
