@@ -14,6 +14,7 @@ jobs:
       QT_DIR: ${{ github.workspace }}/Qt
       QT_VERSION: ${{ matrix.qtversion }}
       QT_API: 5.13.0
+      QT_DEBUG: false
       GO111MODULE: off
       GOPROXY: https://goproxy.io
     steps:
@@ -93,6 +94,7 @@ jobs:
       QT_DIR: ${{ github.workspace }}/Qt
       QT_VERSION: ${{ matrix.qtversion }}
       QT_API: 5.13.0
+      QT_DEBUG: false
       GO111MODULE: off
       GOPROXY: https://goproxy.io
     steps:
@@ -160,6 +162,7 @@ jobs:
       QT_VERSION: ${{ matrix.qtversion }}
       QT_DIR: ${{ github.workspace }}\Qt
       QT_MSVC: true
+      QT_DEBUG: false
       GO111MODULE: off
       #CGO_ENABLED: 1
     steps:
