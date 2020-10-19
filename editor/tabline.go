@@ -67,7 +67,7 @@ func (t *Tabline) setColor() {
 		border-bottom: 0px solid;
 		border-right: 0px solid;
 		background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; } `, inactiveFg))
-	t.updateTabsIcon()
+	t.updateTabs()
 }
 
 func initTabline() *Tabline {
@@ -310,10 +310,13 @@ func (t *Tabline) updateSize() {
 	}
 }
 
-func (t *Tabline) updateTabsIcon() {
+func (t *Tabline) updateTabs() {
 	for _, tab := range t.Tabs {
 		svgContent := editor.getSvg(tab.fileType, nil)
 		tab.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
+		if !tab.hidden {
+			tab.updateStyle()
+		}
 	}
 }
 
