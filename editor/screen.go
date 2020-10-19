@@ -67,7 +67,7 @@ type ExternalWin struct {
 
 // Window is
 type Window struct {
-	paintMutex  sync.Mutex
+	paintMutex  sync.RWMutex
 	redrawMutex sync.Mutex
 
 	s             *Screen
@@ -90,6 +90,7 @@ type Window struct {
 	wb          int
 	ft          string
 
+	propMutex   sync.RWMutex
 	isMsgGrid   bool
 	isFloatWin  bool
 	isExternal  bool
@@ -1476,8 +1477,11 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win.setParent(s.widget)
 		win.grid = gridid
 		win.s.ws.optionsetMutex.RLock()
-		win.ts = s.ws.ts
+		ts := s.ws.ts
 		win.s.ws.optionsetMutex.RUnlock()
+		win.paintMutex.RLock()
+		win.ts = ts
+		win.paintMutex.RUnlock()
 
 		// set scroll
 		if s.name != "minimap" {
@@ -3090,12 +3094,15 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		// focusable := arg.([]interface{})[6]
 
 		win.widget.SetParent(editor.wsWidget)
+
+		win.propMutex.Lock()
 		win.isFloatWin = true
 
 		if win.isExternal {
 			win.deleteExternalWin()
 			win.isExternal = false
 		}
+		win.propMutex.Unlock()
 
 		anchorwin, ok := s.getWindow(anchorGrid)
 		if !ok {
@@ -3105,7 +3112,11 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorposx := anchorwin.pos[0]
 		anchorposy := anchorwin.pos[1]
 
-		if anchorwin.isExternal {
+		anchorwin.propMutex.Lock()
+		anchorwinIsExternal := anchorwin.isExternal
+		anchorwin.propMutex.Unlock()
+
+		if anchorwinIsExternal {
 			win.widget.SetParent(anchorwin.widget)
 			anchorposx = 0
 			anchorposy = 0
@@ -3371,7 +3382,10 @@ func (w *Window) fill() {
 		return
 	}
 	// If window winblend > 0 is set
-	if !w.isPopupmenu && w.wb > 0 {
+	w.paintMutex.RLock()
+	wb := w.wb
+	w.paintMutex.RUnlock()
+	if !w.isPopupmenu && wb > 0 {
 		return
 	}
 	if w.background != nil {

@@ -1891,7 +1891,12 @@ func (w *Workspace) getWinblendAll() {
 		if win == nil {
 			return true
 		}
-		if !win.isFloatWin {
+
+		win.propMutex.RLock()
+		isFloatWin := win.isFloatWin
+		win.propMutex.RUnlock()
+
+		if !isFloatWin {
 			return true
 		}
 
