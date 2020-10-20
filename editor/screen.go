@@ -2384,17 +2384,17 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		}
 	}
 
+	// idDrawDefaultBg := true
 	// // Simply paint the color into a rectangle
 	// for x := col; x <= col+cols; x++ {
 	// 	if x >= len(line) {
 	// 		continue
 	// 	}
-
 	// 	var highlight *Highlight
 	// 	if line[x] == nil {
 	// 		highlight = w.s.hlAttrDef[0]
 	// 	} else {
-	// 		highlight = &line[x].highlight
+	// 		highlight = line[x].highlight
 	// 	}
 	// 	if !bg.equals(w.s.ws.background) || idDrawDefaultBg {
 	// 		 // Set diff pattern
@@ -2419,6 +2419,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 	// 				 ),
 	// 		 )
 	// 	}
+	// }
 
 	// The same color combines the rectangular areas and paints at once
 	var start, end, width int
