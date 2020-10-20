@@ -2379,6 +2379,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 		if w.isPopupmenu && w.s.ws.pb > 0 {
 			w.widget.SetAutoFillBackground(false)
 		}
+		// If float window winblend is set
 		if !w.isPopupmenu && w.wb > 0 {
 			w.widget.SetAutoFillBackground(false)
 		}
@@ -2481,6 +2482,11 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 
 		bg = highlight.bg()
 
+		bounds := col+cols
+		if col+cols > len(line) {
+			bounds = len(line)
+		}
+
 		if lastBg == nil {
 			start = x
 			end = x
@@ -2491,7 +2497,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 			if lastBg.equals(bg) {
 				end = x
 			}
-			if !lastBg.equals(bg) || x == col+cols {
+			if !lastBg.equals(bg) || x == bounds {
 				fillCellRect()
 
 				start = x
@@ -2499,12 +2505,11 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 				lastBg = bg
 				lastHighlight = highlight
 
-				if !lastBg.equals(bg) && x == col+cols {
+				if !lastBg.equals(bg) && x == bounds {
 					fillCellRect()
 				}
 			}
 		}
-
 	}
 }
 
