@@ -148,8 +148,10 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 
 	// markdown
-	w.markdown = newMarkdown(w)
-	w.markdown.webview.SetParent(w.screen.widget)
+	if !editor.config.Markdown.Disable {
+		w.markdown = newMarkdown(w)
+		w.markdown.webview.SetParent(w.screen.widget)
+	}
 
 	// minimap
 	w.minimap = newMiniMap()
@@ -474,10 +476,14 @@ func (w *Workspace) initGonvim() {
 	au GonvimAuWorkspace DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", v:event)
 	aug GonvimAuFilepath | au! | aug END
 	au GonvimAuFilepath BufEnter,TabEnter,DirChanged,TermOpen,TermClose * silent call rpcnotify(0, "Gui", "gonvim_workspace_filepath", expand("%:p"))
-	aug GonvimAuMd | au! | aug END
-	au GonvimAuMd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "gonvim_markdown_update")
-	au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
 	`
+	if !editor.config.Markdown.Disable {
+		gonvimAutoCmds += `
+		aug GonvimAuMd | au! | aug END
+		au GonvimAuMd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "gonvim_markdown_update")
+		au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
+		`
+	}
 	if !w.uiRemoteAttached {
 		gonvimAutoCmds = gonvimAutoCmds + `
 		aug GonvimAuMinimap | au! | aug END
@@ -512,8 +518,12 @@ func (w *Workspace) initGonvim() {
 	gonvimCommands := fmt.Sprintf(`
 	command! -nargs=1 GonvimResize call rpcnotify(0, "Gui", "gonvim_resize", <args>)
 	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
-	command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
 	command! GonvimVersion echo "%s"`, editor.version)
+	if !editor.config.Markdown.Disable {
+		gonvimCommands += `
+		command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
+		`
+	}
 	if !w.uiRemoteAttached {
 		if !editor.config.MiniMap.Disable {
 			gonvimCommands = gonvimCommands + `
@@ -1502,10 +1512,19 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_filetype":
 		w.getFileType(updates)
 	case "gonvim_markdown_new_buffer":
+		if editor.config.Markdown.Disable {
+			return
+		}
 		go w.markdown.newBuffer()
 	case "gonvim_markdown_update":
+		if editor.config.Markdown.Disable {
+			return
+		}
 		go w.markdown.update()
 	case "gonvim_markdown_toggle":
+		if editor.config.Markdown.Disable {
+			return
+		}
 		w.markdown.toggle()
 	case "gonvim_markdown_scroll_down":
 		w.markdown.scrollDown()

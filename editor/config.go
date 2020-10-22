@@ -110,6 +110,7 @@ type miniMapConfig struct {
 }
 
 type markdownConfig struct {
+	Disable             bool
 	CodeHlStyle         string
 	CodeWithLineNumbers bool
 }
