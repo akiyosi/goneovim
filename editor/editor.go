@@ -448,7 +448,7 @@ func putEnv() {
 			return
 		}
 		for _, b := range strings.Split(string(output), "\n") {
-			splits := strings.Split(b, "=")
+			splits := strings.SplitN(b, "=", 2)
 			if len(splits) > 1 {
 				_ = os.Setenv(splits[0], splits[1])
 			}
