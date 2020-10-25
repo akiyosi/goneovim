@@ -19,7 +19,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Fast (faster than neovim-qt)
 - Cross-platform
 - Modern Text Editor Features
-  - Markdown Preview
+  - Markdown Preview (it is provide as a plugin for goneovim)
   - Minimap
   - Smooth scroll (with MacOS touch pad)
   - Workspace feature which manages multiple nvim
