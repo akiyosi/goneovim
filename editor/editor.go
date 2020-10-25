@@ -177,7 +177,7 @@ func InitEditor() {
 	if runtime.GOOS != "windows" {
 		xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
 		if xdgConfigHome != "" {
-			configDir = xdgConfigHome
+			configDir = filepath.Join(xdgConfigHome, "goneovim")
 		} else {
 			configDir = filepath.Join(home, ".config", "goneovim")
 		}
