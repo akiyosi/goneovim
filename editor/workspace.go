@@ -355,6 +355,7 @@ func (w *Workspace) startNvim(path string) error {
 		append([]string{
 			"--cmd",
 			"let g:gonvim_running=1",
+			"let g:goneovim=1",
 			"--cmd",
 			"set termguicolors",
 			"--embed",
