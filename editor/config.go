@@ -272,7 +272,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.Linespace = 6
 
 	// Indent guide
-	c.Editor.IndentGuide = true
+	c.Editor.IndentGuide = false
 	c.Editor.IndentGuideIgnoreFtList = []string{"markdown", "md", "txt", "text", "help", "json", "nerdtree"}
 
 	// replace diff color drawing pattern
