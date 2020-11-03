@@ -561,7 +561,7 @@ func (w *Workspace) initGonvim() {
 
 func (w *Workspace) loadGinitVim() {
 	if editor.config.Editor.GinitVim != "" {
-		scripts := strings.NewReplacer("\r\n", "\n", "\r", "\n", "\n", "\n").Replace(editor.config.Editor.GinitVim)
+		scripts := strings.NewReplacer(`'`, `''`, "\r\n", "\n", "\r", "\n", "\n", "\n").Replace(editor.config.Editor.GinitVim)
 		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, scripts)
 		w.nvim.Command(execGinitVim)
 	}
