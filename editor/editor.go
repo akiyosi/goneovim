@@ -761,26 +761,6 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 			return fmt.Sprintf("<%sEnter>", e.modPrefix(mod))
 		case core.Qt__Key_Period:
 			return fmt.Sprintf("<%sPoint>", e.modPrefix(mod))
-		case core.Qt__Key_0:
-			return fmt.Sprintf("<%s0>", e.modPrefix(mod))
-		case core.Qt__Key_1:
-			return fmt.Sprintf("<%s1>", e.modPrefix(mod))
-		case core.Qt__Key_2:
-			return fmt.Sprintf("<%s2>", e.modPrefix(mod))
-		case core.Qt__Key_3:
-			return fmt.Sprintf("<%s3>", e.modPrefix(mod))
-		case core.Qt__Key_4:
-			return fmt.Sprintf("<%s4>", e.modPrefix(mod))
-		case core.Qt__Key_5:
-			return fmt.Sprintf("<%s5>", e.modPrefix(mod))
-		case core.Qt__Key_6:
-			return fmt.Sprintf("<%s6>", e.modPrefix(mod))
-		case core.Qt__Key_7:
-			return fmt.Sprintf("<%s7>", e.modPrefix(mod))
-		case core.Qt__Key_8:
-			return fmt.Sprintf("<%s8>", e.modPrefix(mod))
-		case core.Qt__Key_9:
-			return fmt.Sprintf("<%s9>", e.modPrefix(mod))
 		}
 	}
 
