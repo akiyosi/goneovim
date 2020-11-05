@@ -231,6 +231,12 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	w.widget.ConnectInputMethodEvent(w.InputMethodEvent)
 	w.widget.ConnectInputMethodQuery(w.InputMethodQuery)
+	w.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
+		w.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
+	})
+	w.widget.ConnectFocusOutEvent(func(event *gui.QFocusEvent) {
+		w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
+	})
 
 	// screen widget and scrollBar widget
 	scrWidget := widgets.NewQWidget(nil, 0)
