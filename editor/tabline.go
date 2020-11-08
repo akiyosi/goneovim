@@ -211,8 +211,6 @@ func (t *Tab) updateStyle() {
 			background-color: rgba(0, 0, 0, 0); 
 		} QWidget{ color: %s; } `, accent, warpColor(fg, -30))
 		t.widget.SetStyleSheet(activeStyle)
-		svgContent := editor.getSvg("cross", nil)
-		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	} else {
 		inActiveStyle := fmt.Sprintf(`
 		.QWidget { 
@@ -220,9 +218,9 @@ func (t *Tab) updateStyle() {
 			background-color: rgba(0, 0, 0, 0); 
 		} QWidget{ color: %s; } `, accent, warpColor(inactiveFg, -30))
 		t.widget.SetStyleSheet(inActiveStyle)
-		svgContent := editor.getSvg("cross", inactiveFg)
-		t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 	}
+	svgContent := editor.getSvg("cross", fg)
+	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
 func (t *Tabline) updateFont() {
@@ -290,7 +288,11 @@ func (t *Tab) updateSize() {
 }
 
 func (t *Tab) updateFileIcon() {
-	svgContent := editor.getSvg(t.fileType, nil)
+	iconColor := editor.colors.inactiveFg
+	if t.active {
+		iconColor = nil
+	}
+	svgContent := editor.getSvg(t.fileType, iconColor)
 	t.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
@@ -340,13 +342,12 @@ func (t *Tabline) update(args []interface{}) {
 		tab := t.Tabs[i]
 		tab.ID = int(tabMap["tab"].(nvim.Tabpage))
 		text := tabMap["name"].(string)
+		tab.setActive(tab.ID == t.CurrentID)
 
 		fileType := getFileType(text)
-		if fileType != tab.fileType {
-			tab.fileType = fileType
-			if editor.config.Tabline.ShowIcon {
-				tab.updateFileIcon()
-			}
+		tab.fileType = fileType
+		if editor.config.Tabline.ShowIcon {
+			tab.updateFileIcon()
 		}
 
 		if text != tab.fileText {
@@ -354,7 +355,6 @@ func (t *Tabline) update(args []interface{}) {
 			tab.updateFileText()
 		}
 
-		tab.setActive(tab.ID == t.CurrentID)
 		if tab.ID == t.CurrentID {
 			t.currentFileText = text
 		}
@@ -463,7 +463,7 @@ func (t *Tab) closeIconReleaseEvent(event *gui.QMouseEvent) {
 func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
 	t.closeIcon.SetFixedWidth(editor.iconSize)
 	t.closeIcon.SetFixedHeight(editor.iconSize)
-	svgContent := editor.getSvg("hoverclose", nil)
+	svgContent := editor.getSvg("hoverclose", editor.colors.fg)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
 	cursor := gui.NewQCursor()
@@ -474,7 +474,7 @@ func (t *Tab) closeIconEnterEvent(event *core.QEvent) {
 func (t *Tab) closeIconLeaveEvent(event *core.QEvent) {
 	t.closeIcon.SetFixedWidth(editor.iconSize)
 	t.closeIcon.SetFixedHeight(editor.iconSize)
-	svgContent := editor.getSvg("cross", nil)
+	svgContent := editor.getSvg("cross", editor.colors.fg)
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 
 	cursor := gui.NewQCursor()
