@@ -750,17 +750,37 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		case core.Qt__Key_PageDown:
 			return fmt.Sprintf("<%sPageDown>", e.modPrefix(mod))
 		case core.Qt__Key_Plus:
-			return fmt.Sprintf("<%sPlus>", e.modPrefix(mod))
+			return fmt.Sprintf("<%skPlus>", e.modPrefix(mod))
 		case core.Qt__Key_Minus:
-			return fmt.Sprintf("<%sMinus>", e.modPrefix(mod))
+			return fmt.Sprintf("<%skMinus>", e.modPrefix(mod))
 		case core.Qt__Key_multiply:
-			return fmt.Sprintf("<%sMultiply>", e.modPrefix(mod))
+			return fmt.Sprintf("<%skMultiply>", e.modPrefix(mod))
 		case core.Qt__Key_division:
-			return fmt.Sprintf("<%sDivide>", e.modPrefix(mod))
+			return fmt.Sprintf("<%skDivide>", e.modPrefix(mod))
 		case core.Qt__Key_Enter:
-			return fmt.Sprintf("<%sEnter>", e.modPrefix(mod))
+			return fmt.Sprintf("<%skEnter>", e.modPrefix(mod))
 		case core.Qt__Key_Period:
-			return fmt.Sprintf("<%sPoint>", e.modPrefix(mod))
+			return fmt.Sprintf("<%skPoint>", e.modPrefix(mod))
+		case core.Qt__Key_0:
+			return fmt.Sprintf("<%sk0>", e.modPrefix(mod))
+		case core.Qt__Key_1:
+			return fmt.Sprintf("<%sk1>", e.modPrefix(mod))
+		case core.Qt__Key_2:
+			return fmt.Sprintf("<%sk2>", e.modPrefix(mod))
+		case core.Qt__Key_3:
+			return fmt.Sprintf("<%sk3>", e.modPrefix(mod))
+		case core.Qt__Key_4:
+			return fmt.Sprintf("<%sk4>", e.modPrefix(mod))
+		case core.Qt__Key_5:
+			return fmt.Sprintf("<%sk5>", e.modPrefix(mod))
+		case core.Qt__Key_6:
+			return fmt.Sprintf("<%sk6>", e.modPrefix(mod))
+		case core.Qt__Key_7:
+			return fmt.Sprintf("<%sk7>", e.modPrefix(mod))
+		case core.Qt__Key_8:
+			return fmt.Sprintf("<%sk8>", e.modPrefix(mod))
+		case core.Qt__Key_9:
+			return fmt.Sprintf("<%sk9>", e.modPrefix(mod))
 		}
 	}
 
