@@ -9,6 +9,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"syscall"
+	"log"
+	"os/exec"
+	"context"
 
 	"github.com/akiyosi/goneovim/filer"
 	"github.com/akiyosi/goneovim/fuzzy"
@@ -361,6 +365,7 @@ func (w *Workspace) startNvim(path string) error {
 		append([]string{
 			"--cmd",
 			"let g:gonvim_running=1",
+			"--cmd",
 			"let g:goneovim=1",
 			"--cmd",
 			"set termguicolors",
@@ -375,6 +380,10 @@ func (w *Workspace) startNvim(path string) error {
 		// Attaching to /path/to/nvim
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
 		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd)
+	} else if editor.opts.Ssh != "" {
+		// Attaching remote nvim via ssh
+		w.uiRemoteAttached = true
+		neovim, err = newRemoteChildProcess()
 	} else {
 		// Attaching to nvim normally
 		neovim, err = nvim.NewChildProcess(childProcessArgs)
@@ -410,6 +419,41 @@ func (w *Workspace) startNvim(path string) error {
 	go w.init(path)
 
 	return nil
+}
+
+var embedProcAttr *syscall.SysProcAttr
+
+func newRemoteChildProcess() (*nvim.Nvim, error) {
+	logf := log.Printf
+	command := "ssh"
+	ctx := context.Background()
+
+	cmd := exec.CommandContext(
+		ctx,
+		command,
+		editor.opts.Ssh,
+		"bash",
+		"--login",
+		"-c",
+		`"nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed"`,
+	)
+	cmd.SysProcAttr = embedProcAttr
+
+	inw, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	outr, err := cmd.StdoutPipe()
+	if err != nil {
+		inw.Close()
+		return nil, err
+	}
+	cmd.Start()
+
+	v, _ := nvim.New(outr, inw, inw, logf)
+
+	return v, nil
 }
 
 func (w *Workspace) init(path string) {
@@ -473,7 +517,7 @@ func (w *Workspace) attachUI(path string) error {
 func (w *Workspace) initGonvim() {
 	gonvimAutoCmds := `
 	aug GonvimAu | au! | aug END
-	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
+	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter")
 	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_filetype", &ft, win_getid())
 	au GonvimAu OptionSet * if &ro != 1 | silent! call rpcnotify(1, "Gui", "gonvim_optionset") | endif
@@ -1234,9 +1278,9 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 		isChangeBg = !editor.colors.bg.equals(w.background)
 	}
 
-	if !w.uiRemoteAttached {
-		if isChangeFg || isChangeBg {
+	if isChangeFg || isChangeBg {
 			editor.isSetGuiColor = false
+		if !w.uiRemoteAttached {
 			aw := editor.workspaces[editor.active]
 			// change minimap colorscheme
 			aw.minimap.isSetColorscheme = false

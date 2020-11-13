@@ -72,6 +72,7 @@ type Option struct {
 	Geometry   string `long:"geometry" description:"Initial window geomtry [e.g. 800x600]"`
 
 	Server string `long:"server" description:"Remote session address"`
+	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh"`
 	Nvim   string `long:"nvim" description:"Excutable nvim path to attach"`
 }
 
@@ -91,7 +92,6 @@ type Editor struct {
 	notifyStartPos    *core.QPoint
 	notificationWidth int
 	notify            chan *Notify
-	guiInit           chan bool
 
 	workspaces  []*Workspace
 	active      int
@@ -100,7 +100,6 @@ type Editor struct {
 	wsWidget    *widgets.QWidget
 	wsSide      *WorkspaceSide
 	sysTray     *widgets.QSystemTrayIcon
-	chanVisible chan bool
 
 	width    int
 	height   int
@@ -189,17 +188,15 @@ func InitEditor() {
 	}
 
 	editor = &Editor{
-		version:     GONEOVIMVERSION,
-		signal:      NewEditorSignal(nil),
-		notify:      make(chan *Notify, 10),
-		stop:        make(chan struct{}),
-		guiInit:     make(chan bool, 1),
-		config:      newGonvimConfig(configDir),
-		homeDir:     home,
-		configDir:   configDir,
-		args:        args,
-		opts:        opts,
-		chanVisible: make(chan bool, 2),
+		version:          GONEOVIMVERSION,
+		signal:           NewEditorSignal(nil),
+		notify:           make(chan *Notify, 10),
+		stop:             make(chan struct{}),
+		config:           newGonvimConfig(configDir),
+		homeDir:          home,
+		configDir:        configDir,
+		args:             args,
+		opts:             opts,
 	}
 	e := editor
 
@@ -626,15 +623,6 @@ func (e *Editor) showWindow() {
 	e.height = e.config.Editor.Height
 	e.window.Resize2(e.width, e.height)
 	e.window.Show()
-	// go func() {
-	// 	for {
-	// 		time.Sleep(20 * time.Millisecond)
-	// 		if e.window.IsVisible() {
-	// 			e.chanVisible <-true
-	// 			return
-	// 		}
-	// 	}
-	// }()
 }
 
 func isFileExist(filename string) bool {
