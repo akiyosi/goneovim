@@ -142,7 +142,11 @@ func newGonvimConfig(configDir string) gonvimConfig {
 	config.init()
 
 	// Read toml
-	_, err := toml.DecodeFile(filepath.Join(configDir, "setting.toml"), &config)
+	configFilePath := filepath.Join(configDir, "settings.toml")
+	if !isFileExist(configFilePath) {
+		configFilePath = filepath.Join(configDir, "setting.toml")
+	}
+	_, err := toml.DecodeFile(configFilePath, &config)
 	if err != nil {
 		fmt.Println(err)
 	}
