@@ -235,12 +235,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	w.widget.ConnectInputMethodEvent(w.InputMethodEvent)
 	w.widget.ConnectInputMethodQuery(w.InputMethodQuery)
-	w.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
-		go w.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
-	})
-	w.widget.ConnectFocusOutEvent(func(event *gui.QFocusEvent) {
-		go w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
-	})
 
 	// screen widget and scrollBar widget
 	scrWidget := widgets.NewQWidget(nil, 0)
@@ -279,6 +273,12 @@ func (w *Workspace) lazyDrawUI() {
 		for _, ws := range editor.workspaces {
 			ws.updateSize()
 		}
+	})
+	w.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
+		go w.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
+	})
+	w.widget.ConnectFocusOutEvent(func(event *gui.QFocusEvent) {
+		go w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
 	})
 	go func() {
 		time.Sleep(time.Millisecond * 1000)
