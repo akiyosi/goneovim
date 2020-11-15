@@ -622,7 +622,9 @@ func (e *Editor) showWindow() {
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
 	e.window.Resize2(e.width, e.height)
-	e.window.Show()
+	if e.opts.Ssh == "" {
+		e.window.Show()
+	}
 }
 
 func isFileExist(filename string) bool {

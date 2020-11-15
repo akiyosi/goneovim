@@ -268,6 +268,9 @@ func newWorkspace(path string) (*Workspace, error) {
 }
 
 func (w *Workspace) lazyDrawUI() {
+	if editor.opts.Ssh != "" {
+		editor.window.Show()
+	}
 	w.getNvimOptions()
 	editor.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range editor.workspaces {
