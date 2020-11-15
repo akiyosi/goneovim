@@ -69,10 +69,10 @@ type Notify struct {
 type Option struct {
 	Fullscreen bool   `long:"fullscreen" description:"Open the window in fullscreen on startup"`
 	Maximized  bool   `long:"maximized" description:"Maximize the window on startup"`
-	Geometry   string `long:"geometry" description:"Initial window geomtry [e.g. 800x600]"`
+	Geometry   string `long:"geometry" description:"Initial window geomtry [e.g. --geometry=800x600]"`
 
 	Server string `long:"server" description:"Remote session address"`
-	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh"`
+	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh [e.g. --ssh=user@host]"`
 	Nvim   string `long:"nvim" description:"Excutable nvim path to attach"`
 }
 
