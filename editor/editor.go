@@ -71,9 +71,9 @@ type Option struct {
 	Maximized  bool   `long:"maximized" description:"Maximize the window on startup"`
 	Geometry   string `long:"geometry" description:"Initial window geomtry [e.g. --geometry=800x600]"`
 
-	Server string `long:"server" description:"Remote session address"`
+	Server string `long:"server" description:"Remote session address [e.g. --server=host:3456]"`
 	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh [e.g. --ssh=user@host]"`
-	Nvim   string `long:"nvim" description:"Excutable nvim path to attach"`
+	Nvim   string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
 }
 
 // Editor is the editor
