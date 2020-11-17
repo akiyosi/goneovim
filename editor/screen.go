@@ -2264,7 +2264,12 @@ func (w *Window) update() {
 		}
 	}
 
-	for i := 0; i <= w.rows; i++ {
+	numOfLines := w.rows
+	if w.isMsgGrid {
+		numOfLines = w.queueRedrawArea[3]
+	}
+
+	for i := 0; i <= numOfLines; i++ {
 		if len(w.content) <= i {
 			continue
 		}
