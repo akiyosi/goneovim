@@ -29,7 +29,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Install Qt for linux
-      uses: jurplel/install-qt-action@v2.7.1
+      uses: jurplel/install-qt-action@v2
       with:
         version: ${{ matrix.qtversion }}
         host: linux
@@ -105,7 +105,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Install Qt for macOS
-      uses: jurplel/install-qt-action@v2.7.1
+      uses: jurplel/install-qt-action@v2
       with:
         version: ${{ matrix.qtversion }}
         host: mac
@@ -187,7 +187,7 @@ jobs:
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64
 
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2.7.1
+      uses: jurplel/install-qt-action@v2
       with:
         version: ${{ matrix.qtversion }}
         host: windows
