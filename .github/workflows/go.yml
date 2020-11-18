@@ -22,30 +22,30 @@ jobs:
       run: |
         sudo apt update
         sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev
-
+  
     - name: Install Go
       uses: actions/setup-go@v1
       with:
         go-version: ${{ matrix.go-version }}
-
+  
     - name: Install Qt for linux
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v2.10.0
       with:
         version: ${{ matrix.qtversion }}
         host: linux
         target: desktop
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
-
+  
     - name: Get Qt binding for Go
       run: |
         go get -v github.com/therecipe/qt/cmd/...
-
+  
     - name: Checkout code
       uses: actions/checkout@v2
       with:
         path: ./src/github.com/${{ github.repository }}
-
+  
     - name: Free disk space
       run: |
         sudo swapoff -a
@@ -54,33 +54,33 @@ jobs:
   
     - name: Generate Qt bindings
       run: $(go env GOPATH)/bin/qtsetup -test=false
-
+  
     - name: Get dependencies
       run: |
         go get -v -t -d github.com/${{ github.repository }}/editor
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtmoc
-
+  
     - name: Test
       run: go test github.com/${{ github.repository }}/editor
-
+  
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
-
+  
     - name: Add executable
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
         chmod u+x goneovim QtWebEngineProcess
-
+  
     - name: Upload for linux
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-linux-${{ matrix.qtversion }}
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
-
-
+  
+  
   test-and-build-macos:
     strategy:
       matrix:
@@ -98,48 +98,48 @@ jobs:
       GO111MODULE: off
       GOPROXY: https://goproxy.io
     steps:
-
+  
     - name: Install Go
       uses: actions/setup-go@v1
       with:
         go-version: ${{ matrix.go-version }}
-
+  
     - name: Install Qt for macOS
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v2.10.0
       with:
         version: ${{ matrix.qtversion }}
         host: mac
         target: desktop
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
-
+  
     - name: Get Qt binding for Go
       run: |
         go get -v github.com/therecipe/qt/cmd/...
-
+  
     - name: Checkout code
       uses: actions/checkout@v2
       with:
         path: ./src/github.com/${{ github.repository }}
-
+  
     - name: Generate Qt bindings
       continue-on-error: true
       run: $(go env GOPATH)/bin/qtsetup -test=false
-
+  
     - name: Get dependencies
       run: |
         go get -v -t -d github.com/${{ github.repository }}/editor
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtmoc
-
+  
     - name: Test
       run: go test github.com/${{ github.repository }}/editor
-
+  
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
-
+  
     - name: Upload for macos
       uses: actions/upload-artifact@v1
       with:
@@ -165,6 +165,7 @@ jobs:
       QT_DEBUG: false
       GO111MODULE: off
       #CGO_ENABLED: 1
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
 
     - name: Intall MSVC 2017 Visual C++ Buildtools
@@ -187,7 +188,7 @@ jobs:
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64
 
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v2.10.0
       with:
         version: ${{ matrix.qtversion }}
         host: windows
