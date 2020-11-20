@@ -214,6 +214,7 @@ jobs:
       with:
         path: .\src\github.com\${{ github.repository }}
 
+    # FIXME: Should be fixed with the deprecation of set-env
     - name: Set PATH
       run: |
         $env:PATH = "${{ github.workspace }}\\go-root\\bin;$env:PATH"
