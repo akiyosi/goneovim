@@ -24,7 +24,7 @@ import (
 var editor *Editor
 
 const (
-	GONEOVIMVERSION = "v0.4.8.1"
+	GONEOVIMVERSION = "v0.4.9"
 	WORKSPACELEN    = 10
 )
 
