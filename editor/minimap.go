@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/neovim/go-client/nvim"
@@ -136,7 +135,7 @@ func (m *MiniMap) startMinimapProc() {
 	m.updateSize()
 
 	go func() {
-		err = m.nvim.Serve()
+		err = neovim.Serve()
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -152,9 +151,9 @@ func (m *MiniMap) startMinimapProc() {
 	}
 	m.uiAttached = true
 
-	m.nvim.Subscribe("Gui")
-	m.nvim.Command(":syntax on")
-	m.nvim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all")
+	neovim.Subscribe("Gui")
+	neovim.Command(":syntax on")
+	neovim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all")
 }
 
 func (m *MiniMap) exit() {
@@ -231,6 +230,7 @@ func (m *MiniMap) toggle() {
 	m.curRegion.SetParent(win.widget)
 	m.bufUpdate()
 	m.bufSync()
+	m.ws.updateSize()
 }
 
 func (m *MiniMap) updateRows() bool {
@@ -275,6 +275,9 @@ func (m *MiniMap) updateSize() {
 }
 
 func (m *MiniMap) bufUpdate() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if strings.Contains(m.ws.filepath, "[denite]") {
 		return
 	}
@@ -402,15 +405,28 @@ func (m *MiniMap) bufSync() {
 		return
 	}
 	m.isProcessSync = true
-	time.Sleep(800 * time.Millisecond)
-	if strings.Contains(m.ws.filepath, "[denite]") {
-		return
-	}
+
 	if !m.visible {
 		m.widget.Hide()
 		return
 	}
 	if m.ws.nvim == nil || m.nvim == nil {
+		return
+	}
+
+	// Get current window
+	win, err := m.ws.nvim.CurrentWindow()
+	if err != nil {
+		return
+	}
+	// Get window config
+	config, err := m.ws.nvim.WindowConfig(win)
+	if err != nil {
+		return
+	}
+	// if float window
+	isFloat := isWindowFloatForConfig(config)
+	if isFloat {
 		return
 	}
 
@@ -425,6 +441,7 @@ func (m *MiniMap) bufSync() {
 	// 	return
 	// }
 
+	// TODO: Rewire code based win_viewport event
 	start := 0
 	end := 0
 	var pos [4]int
@@ -465,6 +482,22 @@ func (m *MiniMap) bufSync() {
 		false,
 		replacement,
 	)
+}
+
+func isWindowFloatForConfig(config map[string]interface{}) bool {
+	if config == nil {
+		return false
+	}
+
+	relative, ok := config["relative"]
+	if !ok {
+		return false
+	}
+	if relative == "" {
+		return false
+	}
+
+	return true
 }
 
 func (m *MiniMap) handleRedraw(updates [][]interface{}) {

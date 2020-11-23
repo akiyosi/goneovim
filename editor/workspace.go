@@ -286,13 +286,14 @@ func (w *Workspace) lazyDrawUI() {
 	go func() {
 		time.Sleep(time.Millisecond * 1000)
 		editor.wsSide.scrollarea.SetWidget(editor.wsSide.widget)
+
 		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
 			w.minimap.startMinimapProc()
-			w.minimap.mu.Lock()
-			isSetCurrentRegion := w.minimap.visible
-			w.minimap.mu.Unlock()
-			if isSetCurrentRegion {
+			time.Sleep(time.Millisecond * 100)
+			if w.minimap.visible {
 				w.minimap.setCurrentRegion()
+				w.minimap.bufUpdate()
+				w.minimap.bufSync()
 			}
 		}
 	}()
