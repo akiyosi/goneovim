@@ -2877,18 +2877,17 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			space = font.ascent / 3.0
 		}
 		descent := float64(font.height) - font.ascent
-		Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent + descent*0.3) + float64(font.lineSpace/2) + space
-		halfY := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent)/2.0 + float64(font.lineSpace/2)
-		weight := font.lineHeight / 14
+		weight := int(math.Ceil(float64(font.height) / 15.0))
 		if weight < 1 {
 			weight = 1
 		}
 		if line[x].highlight.strikethrough {
 			// strikeLinef := core.NewQLineF3(start, halfY, end, halfY)
 			// p.DrawLine(strikeLinef)
+			Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
 			p.FillRect5(
 				int(start),
-				int(halfY),
+				int(Y),
 				int(math.Ceil(font.truewidth)),
 				weight,
 				color,
@@ -2899,7 +2898,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			// p.DrawLine(linef)
 			p.FillRect5(
 				int(start),
-				int(Y)-weight,
+				int(float64((y+1)*font.lineHeight+w.scrollPixels[1]))-weight,
 				int(math.Ceil(font.truewidth)),
 				weight,
 				color,
@@ -2913,6 +2912,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			}
 			freq := 1.0
 			phase := 0.0
+			Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent + descent*0.3) + float64(font.lineSpace/2) + space
 			Y2 := Y + amplitude*math.Sin(0)
 			point := core.NewQPointF3(start, Y2)
 			path := gui.NewQPainterPath2(point)
