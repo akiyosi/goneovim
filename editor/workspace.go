@@ -435,11 +435,12 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 		ctx,
 		command,
 		editor.opts.Ssh,
-		"bash",
+		"/bin/bash",
 		"--login",
 		"-c",
 		`"nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed"`,
 	)
+	util.PrepareRunProc(cmd)
 	cmd.SysProcAttr = embedProcAttr
 
 	inw, err := cmd.StdinPipe()
