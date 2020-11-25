@@ -290,7 +290,10 @@ func (w *Workspace) lazyDrawUI() {
 		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
 			w.minimap.startMinimapProc()
 			time.Sleep(time.Millisecond * 100)
-			if w.minimap.visible {
+			w.minimap.mu.Lock()
+			isMinimapVisible := w.minimap.visible
+			w.minimap.mu.Unlock()
+			if isMinimapVisible {
 				w.minimap.setCurrentRegion()
 				w.minimap.bufUpdate()
 				w.minimap.bufSync()
