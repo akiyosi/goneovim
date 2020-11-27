@@ -92,6 +92,7 @@ type Editor struct {
 	notifyStartPos    *core.QPoint
 	notificationWidth int
 	notify            chan *Notify
+	cbChan            chan *string
 
 	workspaces  []*Workspace
 	active      int
@@ -190,8 +191,9 @@ func InitEditor() {
 	editor = &Editor{
 		version:          GONEOVIMVERSION,
 		signal:           NewEditorSignal(nil),
-		notify:           make(chan *Notify, 10),
 		stop:             make(chan struct{}),
+		notify:           make(chan *Notify, 10),
+		cbChan:           make(chan *string, 240),
 		config:           newGonvimConfig(configDir),
 		homeDir:          home,
 		configDir:        configDir,
@@ -253,6 +255,18 @@ func InitEditor() {
 		}
 		e.app.Quit()
 	}()
+
+	// launch thread to copy text to the clipboard in darwin
+	if runtime.GOOS == "darwin" {
+		if e.config.Editor.Clipboard {
+			go func() {
+				for {
+					text := <-e.cbChan
+					e.app.Clipboard().SetText(*text, gui.QClipboard__Clipboard)
+				}
+			}()
+		}
+	}
 
 	e.wsWidget.SetFocus2()
 
@@ -639,8 +653,7 @@ func (e *Editor) copyClipBoard() {
 		if runtime.GOOS != "darwin" {
 			clipb.WriteAll(yankedText)
 		} else {
-			c := e.app.Clipboard()
-			c.SetText(yankedText, gui.QClipboard__Clipboard)
+			e.cbChan <- &yankedText
 		}
 	}
 
