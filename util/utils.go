@@ -1,9 +1,9 @@
 package util
 
 import (
-	"strings"
 	"os/user"
 	"path/filepath"
+	"strings"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -43,6 +43,7 @@ func ReflectToFloat(iface interface{}) float64 {
 	}
 	return 0
 }
+
 // IsZero determines if the value of interface{} is zero
 func IsZero(d interface{}) bool {
 	if d == nil {

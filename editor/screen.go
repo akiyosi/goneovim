@@ -693,7 +693,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 
 				doPaintIndent := false
 				for mm := y; mm < len(w.content); mm++ {
-					if drawIndents[[2]int{x+1, mm}] {
+					if drawIndents[[2]int{x + 1, mm}] {
 						continue
 					}
 
@@ -769,8 +769,8 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 					if !doPaintIndent {
 						break
 					}
-					if !drawIndents[[2]int{x+1, mm}] {
-						drawIndents[[2]int{x+1, mm}] = true
+					if !drawIndents[[2]int{x + 1, mm}] {
+						drawIndents[[2]int{x + 1, mm}] = true
 					}
 				}
 			}
@@ -780,20 +780,20 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	// detect current block
 	currentBlock := make(map[IntInt]bool)
 	for x := w.s.cursor[1]; x >= 0; x-- {
-		if drawIndents[[2]int{x+1, w.s.cursor[0]}] {
+		if drawIndents[[2]int{x + 1, w.s.cursor[0]}] {
 			for y := w.s.cursor[0]; y >= 0; y-- {
-				if drawIndents[[2]int{x+1, y}] {
-					currentBlock[[2]int{x+1, y}] = true
+				if drawIndents[[2]int{x + 1, y}] {
+					currentBlock[[2]int{x + 1, y}] = true
 				}
-				if !drawIndents[[2]int{x+1, y}] {
+				if !drawIndents[[2]int{x + 1, y}] {
 					break
 				}
 			}
 			for y := w.s.cursor[0]; y < len(w.content); y++ {
-				if drawIndents[[2]int{x+1, y}] {
-					currentBlock[[2]int{x+1, y}] = true
+				if drawIndents[[2]int{x + 1, y}] {
+					currentBlock[[2]int{x + 1, y}] = true
 				}
-				if !drawIndents[[2]int{x+1, y}] {
+				if !drawIndents[[2]int{x + 1, y}] {
 					break
 				}
 			}
@@ -805,10 +805,10 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	// draw indent guide
 	for y := row; y < len(w.content); y++ {
 		for x := 0; x < w.maxLenContent; x++ {
-			if !drawIndents[[2]int{x+1, y}] {
+			if !drawIndents[[2]int{x + 1, y}] {
 				continue
 			}
-			if currentBlock[[2]int{x+1, y}] {
+			if currentBlock[[2]int{x + 1, y}] {
 				w.drawIndentline(p, x+1, y, true)
 			} else {
 				w.drawIndentline(p, x+1, y, false)
@@ -890,10 +890,10 @@ func (w *Window) drawFloatWindowBorder(p *gui.QPainter) {
 	width := float64(w.widget.Width())
 	height := float64(w.widget.Height())
 
-	left   := core.NewQRectF4(      0,        0,      1, height)
-	top    := core.NewQRectF4(      0,        0,  width,      1)
-	right  := core.NewQRectF4(width-1,        0,      1, height)
-	bottom := core.NewQRectF4(      0, height-1,  width,      1)
+	left := core.NewQRectF4(0, 0, 1, height)
+	top := core.NewQRectF4(0, 0, width, 1)
+	right := core.NewQRectF4(width-1, 0, 1, height)
+	bottom := core.NewQRectF4(0, height-1, width, 1)
 
 	p.FillRect4(
 		left,
@@ -2487,7 +2487,7 @@ func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
 
 		bg = highlight.bg()
 
-		bounds := col+cols
+		bounds := col + cols
 		if col+cols > len(line) {
 			bounds = len(line)
 		}
@@ -2872,8 +2872,8 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		start := float64(x) * font.truewidth
 		end := float64(x+1) * font.truewidth
 
-		space := float64(font.lineSpace)/3.0
-		if space > font.ascent / 3.0 {
+		space := float64(font.lineSpace) / 3.0
+		if space > font.ascent/3.0 {
 			space = font.ascent / 3.0
 		}
 		descent := float64(font.height) - font.ascent
@@ -2912,7 +2912,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			}
 			freq := 1.0
 			phase := 0.0
-			Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent + descent*0.3) + float64(font.lineSpace/2) + space
+			Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
 			Y2 := Y + amplitude*math.Sin(0)
 			point := core.NewQPointF3(start, Y2)
 			path := gui.NewQPainterPath2(point)

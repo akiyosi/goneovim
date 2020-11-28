@@ -12,8 +12,8 @@ import (
 
 // Cursor is
 type Cursor struct {
-	ws           *Workspace
-	widget       *widgets.QWidget
+	ws     *Workspace
+	widget *widgets.QWidget
 	// widget      *widgets.QLabel
 	mode         string
 	modeIdx      int

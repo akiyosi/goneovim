@@ -94,13 +94,13 @@ type Editor struct {
 	notify            chan *Notify
 	cbChan            chan *string
 
-	workspaces  []*Workspace
-	active      int
-	window      *frameless.QFramelessWindow
-	splitter    *widgets.QSplitter
-	wsWidget    *widgets.QWidget
-	wsSide      *WorkspaceSide
-	sysTray     *widgets.QSystemTrayIcon
+	workspaces []*Workspace
+	active     int
+	window     *frameless.QFramelessWindow
+	splitter   *widgets.QSplitter
+	wsWidget   *widgets.QWidget
+	wsSide     *WorkspaceSide
+	sysTray    *widgets.QSystemTrayIcon
 
 	width    int
 	height   int
@@ -189,16 +189,16 @@ func InitEditor() {
 	}
 
 	editor = &Editor{
-		version:          GONEOVIMVERSION,
-		signal:           NewEditorSignal(nil),
-		stop:             make(chan struct{}),
-		notify:           make(chan *Notify, 10),
-		cbChan:           make(chan *string, 240),
-		config:           newGonvimConfig(configDir),
-		homeDir:          home,
-		configDir:        configDir,
-		args:             args,
-		opts:             opts,
+		version:   GONEOVIMVERSION,
+		signal:    NewEditorSignal(nil),
+		stop:      make(chan struct{}),
+		notify:    make(chan *Notify, 10),
+		cbChan:    make(chan *string, 240),
+		config:    newGonvimConfig(configDir),
+		homeDir:   home,
+		configDir: configDir,
+		args:      args,
+		opts:      opts,
 	}
 	e := editor
 
@@ -805,14 +805,14 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	c := ""
 	if text == "" {
 
-		if key == int(core.Qt__Key_Alt     ) ||
-		   key == int(core.Qt__Key_AltGr   ) ||
-		   key == int(core.Qt__Key_CapsLock) ||
-		   key == int(core.Qt__Key_Control ) ||
-		   key == int(core.Qt__Key_Meta    ) ||
-		   key == int(core.Qt__Key_Shift   ) ||
-		   key == int(core.Qt__Key_Super_L ) ||
-		   key == int(core.Qt__Key_Super_R ) {
+		if key == int(core.Qt__Key_Alt) ||
+			key == int(core.Qt__Key_AltGr) ||
+			key == int(core.Qt__Key_CapsLock) ||
+			key == int(core.Qt__Key_Control) ||
+			key == int(core.Qt__Key_Meta) ||
+			key == int(core.Qt__Key_Shift) ||
+			key == int(core.Qt__Key_Super_L) ||
+			key == int(core.Qt__Key_Super_R) {
 			return ""
 		}
 		text = string(key)
@@ -914,19 +914,19 @@ func (e *Editor) initSpecialKeys() {
 	e.specialKeys[core.Qt__Key_F23] = "F23"
 	e.specialKeys[core.Qt__Key_F24] = "F24"
 	e.specialKeys[core.Qt__Key_Backspace] = "BS"
-	e.specialKeys[core.Qt__Key_Delete]    = "Del"
-	e.specialKeys[core.Qt__Key_Insert]    = "Insert"
-	e.specialKeys[core.Qt__Key_Home]      = "Home"
-	e.specialKeys[core.Qt__Key_End]       = "End"
-	e.specialKeys[core.Qt__Key_PageUp]    = "PageUp"
-	e.specialKeys[core.Qt__Key_PageDown]  = "PageDown"
-	e.specialKeys[core.Qt__Key_Return]    = "Enter"
-	e.specialKeys[core.Qt__Key_Enter]     = "Enter"
-	e.specialKeys[core.Qt__Key_Tab]       = "Tab"
-	e.specialKeys[core.Qt__Key_Backtab]   = "Tab"
-	e.specialKeys[core.Qt__Key_Escape]    = "Esc"
+	e.specialKeys[core.Qt__Key_Delete] = "Del"
+	e.specialKeys[core.Qt__Key_Insert] = "Insert"
+	e.specialKeys[core.Qt__Key_Home] = "Home"
+	e.specialKeys[core.Qt__Key_End] = "End"
+	e.specialKeys[core.Qt__Key_PageUp] = "PageUp"
+	e.specialKeys[core.Qt__Key_PageDown] = "PageDown"
+	e.specialKeys[core.Qt__Key_Return] = "Enter"
+	e.specialKeys[core.Qt__Key_Enter] = "Enter"
+	e.specialKeys[core.Qt__Key_Tab] = "Tab"
+	e.specialKeys[core.Qt__Key_Backtab] = "Tab"
+	e.specialKeys[core.Qt__Key_Escape] = "Esc"
 	e.specialKeys[core.Qt__Key_Backslash] = "Bslash"
-	e.specialKeys[core.Qt__Key_Space]     = "Space"
+	e.specialKeys[core.Qt__Key_Space] = "Space"
 
 	if runtime.GOOS == "darwin" {
 		e.controlModifier = core.Qt__MetaModifier
