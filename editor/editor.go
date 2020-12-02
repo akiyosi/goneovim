@@ -261,8 +261,13 @@ func InitEditor() {
 		if e.config.Editor.Clipboard {
 			go func() {
 				for {
-					text := <-e.cbChan
-					e.app.Clipboard().SetText(*text, gui.QClipboard__Clipboard)
+					select {
+					case <-e.stop:
+						return
+					default:
+						text := <-e.cbChan
+						e.app.Clipboard().SetText(*text, gui.QClipboard__Clipboard)
+					}
 				}
 			}()
 		}
@@ -311,10 +316,6 @@ func (e *Editor) newSplitter() {
 	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
 	e.splitter = splitter
-
-	if editor.config.SideBar.Visible {
-		e.wsSide.show()
-	}
 }
 
 func (e *Editor) initWorkspaces() {
