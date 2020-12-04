@@ -527,9 +527,6 @@ func (w *Workspace) attachUI(path string) error {
 	defer w.fontMutex.Unlock()
 	w.uiAttached = true
 	fmt.Println("attach ui", time.Now().UnixNano()/1000000-editor.startuptime)
-	var methods map[string]*nvim.ClientMethod
-	var attr nvim.ClientAttributes
-	w.nvim.SetClientInfo("goneovim", nil, "ui", methods, attr)
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
 	if err != nil {
 		fmt.Println(err)
@@ -917,51 +914,51 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 	o["rgb"] = true
 	// o["ext_multigrid"] = editor.config.Editor.ExtMultigrid
 	o["ext_multigrid"] = true
-	// o["ext_hlstate"] = true
+	o["ext_hlstate"] = true
 
-	// apiInfo, err := w.nvim.APIInfo()
-	// if err == nil {
-	// 	for _, item := range apiInfo {
-	// 		i, ok := item.(map[string]interface{})
-	// 		if !ok {
-	// 			continue
-	// 		}
-	// 		for k, v := range i {
-	// 			if k != "ui_events" {
-	// 				continue
-	// 			}
-	// 			events, ok := v.([]interface{})
-	// 			if !ok {
-	// 				continue
-	// 			}
-	// 			for _, event := range events {
-	// 				function, ok := event.(map[string]interface{})
-	// 				if !ok {
-	// 					continue
-	// 				}
-	// 				name, ok := function["name"]
-	// 				if !ok {
-	// 					continue
-	// 				}
+	apiInfo, err := w.nvim.APIInfo()
+	if err == nil {
+		for _, item := range apiInfo {
+			i, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			for k, v := range i {
+				if k != "ui_events" {
+					continue
+				}
+				events, ok := v.([]interface{})
+				if !ok {
+					continue
+				}
+				for _, event := range events {
+					function, ok := event.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					name, ok := function["name"]
+					if !ok {
+						continue
+					}
 
-	// 				switch name {
-	// 				// case "wildmenu_show" :
-	// 				// 	o["ext_wildmenu"] = editor.config.Editor.ExtCmdline
-	// 				case "cmdline_show":
-	// 					o["ext_cmdline"] = editor.config.Editor.ExtCmdline
-	// 				case "msg_show":
-	// 					o["ext_messages"] = editor.config.Editor.ExtMessages
-	// 				case "popupmenu_show":
-	// 					o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
-	// 				case "tabline_update":
-	// 					o["ext_tabline"] = editor.config.Editor.ExtTabline
-	// 				case "win_viewport":
-	// 					w.api5 = true
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+					switch name {
+					// case "wildmenu_show" :
+					// 	o["ext_wildmenu"] = editor.config.Editor.ExtCmdline
+					case "cmdline_show":
+						o["ext_cmdline"] = editor.config.Editor.ExtCmdline
+					case "msg_show":
+						o["ext_messages"] = editor.config.Editor.ExtMessages
+					case "popupmenu_show":
+						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
+					case "tabline_update":
+						o["ext_tabline"] = editor.config.Editor.ExtTabline
+					case "win_viewport":
+						w.api5 = true
+					}
+				}
+			}
+		}
+	}
 
 	return o
 }
