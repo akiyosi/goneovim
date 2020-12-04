@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 
@@ -136,7 +137,24 @@ type fileExploreConfig struct {
 	MaxDisplayItems int
 }
 
-func newGonvimConfig(configDir string) gonvimConfig {
+func newConfig(home string) (string, gonvimConfig) {
+
+	// detect config dir
+	var configDir string
+	if runtime.GOOS != "windows" {
+		xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
+		if xdgConfigHome != "" {
+			configDir = filepath.Join(xdgConfigHome, "goneovim")
+		} else {
+			configDir = filepath.Join(home, ".config", "goneovim")
+		}
+		if !isFileExist(configDir) {
+			configDir = filepath.Join(home, ".goneovim")
+		}
+	} else {
+		configDir = filepath.Join(home, ".goneovim")
+	}
+
 	var config gonvimConfig
 
 	config.init()
@@ -241,7 +259,7 @@ func newGonvimConfig(configDir string) gonvimConfig {
 		config.MiniMap.Width = 120
 	}
 
-	return config
+	return configDir, config
 }
 
 func (c *gonvimConfig) init() {

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
@@ -98,8 +99,8 @@ type Editor struct {
 	active     int
 	window     *frameless.QFramelessWindow
 	splitter   *widgets.QSplitter
-	wsWidget   *widgets.QWidget
-	wsSide     *WorkspaceSide
+	widget     *widgets.QWidget
+	sideWidget *WorkspaceSide
 	sysTray    *widgets.QSystemTrayIcon
 
 	width    int
@@ -127,6 +128,8 @@ type Editor struct {
 
 	extFontFamily string
 	extFontSize   int
+
+	startuptime int64
 }
 
 type editorSignal struct {
@@ -150,21 +153,18 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
-	// parse option
-	var opts Option
-	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
-	args, err := parser.ParseArgs(os.Args[1:])
-	if flagsErr, ok := err.(*flags.Error); ok {
-		switch flagsErr.Type {
-		case flags.ErrDuplicatedFlag:
-		case flags.ErrHelp:
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	}
+	startuptime := time.Now().UnixNano() / 1000000
+	fmt.Println("editor 0", time.Now().UnixNano()/1000000-startuptime)
+
+	// parse args
+	opts, args := parseArgs()
+
+	fmt.Println("editor 1", time.Now().UnixNano()/1000000-startuptime)
 
 	// put shell environment
 	putEnv()
+
+	fmt.Println("editor 2", time.Now().UnixNano()/1000000-startuptime)
 
 	// detect home dir
 	home, err := homedir.Dir()
@@ -172,40 +172,35 @@ func InitEditor() {
 		home = "~"
 	}
 
-	// detect config dir
-	var configDir string
-	if runtime.GOOS != "windows" {
-		xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
-		if xdgConfigHome != "" {
-			configDir = filepath.Join(xdgConfigHome, "goneovim")
-		} else {
-			configDir = filepath.Join(home, ".config", "goneovim")
-		}
-		if !isFileExist(configDir) {
-			configDir = filepath.Join(home, ".goneovim")
-		}
-	} else {
-		configDir = filepath.Join(home, ".goneovim")
-	}
+	fmt.Println("editor 3", time.Now().UnixNano()/1000000-startuptime)
+
+	configDir, config := newConfig(home)
+
+	fmt.Println("editor 4", time.Now().UnixNano()/1000000-startuptime)
 
 	editor = &Editor{
-		version:   GONEOVIMVERSION,
-		signal:    NewEditorSignal(nil),
-		stop:      make(chan struct{}),
-		notify:    make(chan *Notify, 10),
-		cbChan:    make(chan *string, 240),
-		config:    newGonvimConfig(configDir),
-		homeDir:   home,
-		configDir: configDir,
-		args:      args,
-		opts:      opts,
+		version:     GONEOVIMVERSION,
+		signal:      NewEditorSignal(nil),
+		stop:        make(chan struct{}),
+		notify:      make(chan *Notify, 10),
+		cbChan:      make(chan *string, 240),
+		config:      config,
+		homeDir:     home,
+		configDir:   configDir,
+		args:        args,
+		opts:        opts,
+		startuptime: startuptime,
 	}
 	e := editor
+
+	fmt.Println("editor 5", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// application
 	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
 	e.ppid = os.Getppid()
+
+	fmt.Println("editor 6", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// set application working directory path
 	e.setAppDirPath(home)
@@ -216,6 +211,8 @@ func InitEditor() {
 	e.initNotifications()
 	e.initSysTray()
 
+	fmt.Println("editor 7", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// application main window
 	isframeless := e.config.Editor.BorderlessWindow
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
@@ -223,19 +220,25 @@ func InitEditor() {
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 
+	fmt.Println("editor 8", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// window layout
 	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
 	l.SetContentsMargins(0, 0, 0, 0)
 	l.SetSpacing(0)
 	e.window.SetupContent(l)
 
+	fmt.Println("editor 9", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// window content
-	e.wsWidget = widgets.NewQWidget(nil, 0)
-	e.wsSide = newWorkspaceSide()
-	e.wsSide.newScrollArea()
-	e.wsSide.scrollarea.Hide()
+	e.widget = widgets.NewQWidget(nil, 0)
+	e.sideWidget = newWorkspaceSide()
+	e.sideWidget.newScrollArea()
+	e.sideWidget.scrollarea.Hide()
 	e.newSplitter()
 	l.AddWidget(e.splitter, 1, 0)
+
+	fmt.Println("editor 10", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// neovim workspaces
 	e.initWorkspaces()
@@ -273,9 +276,28 @@ func InitEditor() {
 		}
 	}
 
-	e.wsWidget.SetFocus2()
+	fmt.Println("editor 11", time.Now().UnixNano()/1000000-editor.startuptime)
+	e.widget.SetFocus2()
+	fmt.Println("editor 12", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	widgets.QApplication_Exec()
+}
+
+// parsArgs parse args
+func parseArgs() (Option, []string) {
+	var opts Option
+	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
+	args, err := parser.ParseArgs(os.Args[1:])
+	if flagsErr, ok := err.(*flags.Error); ok {
+		switch flagsErr.Type {
+		case flags.ErrDuplicatedFlag:
+		case flags.ErrHelp:
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+
+	return opts, args
 }
 
 // setAppDirPath
@@ -311,8 +333,8 @@ func (e *Editor) setAppDirPath(home string) {
 func (e *Editor) newSplitter() {
 	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
 	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
-	splitter.AddWidget(e.wsSide.scrollarea)
-	splitter.AddWidget(e.wsWidget)
+	splitter.AddWidget(e.sideWidget.scrollarea)
+	splitter.AddWidget(e.widget)
 	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
 	e.splitter = splitter
@@ -346,9 +368,9 @@ func (e *Editor) initWorkspaces() {
 
 	e.workspaceUpdate()
 
-	e.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	e.wsWidget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
-	e.wsWidget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
+	e.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	e.widget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
+	e.widget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
 }
 
 func (e *Editor) connectAppSignals() {
@@ -700,7 +722,7 @@ func (e *Editor) workspacePrevious() {
 }
 
 func (e *Editor) workspaceUpdate() {
-	if e.wsSide == nil {
+	if e.sideWidget == nil {
 		return
 	}
 	for i, ws := range e.workspaces {
@@ -710,13 +732,13 @@ func (e *Editor) workspaceUpdate() {
 			ws.hide()
 		}
 	}
-	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
-		e.wsSide.items[i].setSideItemLabel(i)
-		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
-		e.wsSide.items[i].show()
+	for i := 0; i < len(e.sideWidget.items) && i < len(e.workspaces); i++ {
+		e.sideWidget.items[i].setSideItemLabel(i)
+		e.sideWidget.items[i].setText(e.workspaces[i].cwdlabel)
+		e.sideWidget.items[i].show()
 	}
-	for i := len(e.workspaces); i < len(e.wsSide.items); i++ {
-		e.wsSide.items[i].hide()
+	for i := len(e.workspaces); i < len(e.sideWidget.items); i++ {
+		e.sideWidget.items[i].hide()
 	}
 }
 

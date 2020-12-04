@@ -3105,7 +3105,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := arg.([]interface{})[6]
 
-		win.widget.SetParent(editor.wsWidget)
+		win.widget.SetParent(editor.widget)
 
 		win.propMutex.Lock()
 		win.isFloatWin = true
