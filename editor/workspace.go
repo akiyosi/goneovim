@@ -336,11 +336,11 @@ func (w *Workspace) registerSignal() {
 		w.handleRPCGui(updates)
 	})
 	w.signal.ConnectStopSignal(func() {
-		if !w.uiRemoteAttached {
-			if !editor.config.MiniMap.Disable {
-				editor.workspaces[editor.active].minimap.exit()
-			}
-		}
+		// if !w.uiRemoteAttached {
+		// 	if !editor.config.MiniMap.Disable {
+		// 		editor.workspaces[editor.active].minimap.exit()
+		// 	}
+		// }
 		workspaces := []*Workspace{}
 		index := 0
 		for i, ws := range editor.workspaces {

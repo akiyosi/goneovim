@@ -280,8 +280,10 @@ func (c *Cursor) update() {
 
 	c.updateCursorShape()
 
-	if c.ws.palette.widget.IsVisible() {
-		return
+	if c.ws.palette != nil {
+		if c.ws.palette.widget.IsVisible() {
+			return
+		}
 	}
 	font := c.font
 	if font == nil {
