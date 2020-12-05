@@ -208,17 +208,17 @@ func newWorkspace(path string) (*Workspace, error) {
 	// w.signature.widget.SetParent(editor.widget)
 	// w.signature.ws = w
 
-	// palette
-	w.palette = initPalette()
-	w.palette.ws = w
-	w.palette.widget.SetParent(editor.window)
-	w.palette.hide()
+	// // palette
+	// w.palette = initPalette()
+	// w.palette.ws = w
+	// w.palette.widget.SetParent(editor.window)
+	// w.palette.hide()
 
-	// palette 2
-	w.fpalette = initPalette()
-	w.fpalette.ws = w
-	w.fpalette.widget.SetParent(editor.window)
-	w.fpalette.hide()
+	// // palette 2
+	// w.fpalette = initPalette()
+	// w.fpalette.ws = w
+	// w.fpalette.widget.SetParent(editor.window)
+	// w.fpalette.hide()
 
 	// finder
 	w.finder = initFinder()
@@ -289,10 +289,23 @@ func (w *Workspace) lazyDrawUI() {
 		go w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
 	})
 
+	// palette
+	w.palette = initPalette()
+
+	// palette 2
+	w.fpalette = initPalette()
+
 	e := editor
 	go func() {
 		fmt.Println("lazy draw ui 2", time.Now().UnixNano()/1000000-editor.startuptime)
-		time.Sleep(time.Millisecond * 1000)
+		time.Sleep(time.Millisecond * 100)
+		w.palette.ws = w
+		w.palette.widget.SetParent(editor.window)
+		w.palette.hide()
+		w.fpalette.ws = w
+		w.fpalette.widget.SetParent(editor.window)
+		w.fpalette.hide()
+		time.Sleep(time.Millisecond * 900)
 		editor.sideWidget.scrollarea.SetWidget(editor.sideWidget.widget)
 
 		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
