@@ -419,8 +419,7 @@ func (s *Screen) gridFont(update interface{}) {
 	win.height = oldHeight
 	win.localWindows = &[4]localWindow{}
 
-	// fontMetrics := gui.NewQFontMetricsF(gui.NewQFont2(fontfamily, height, 1, false))
-	win.font = initFontNew(fontfamily, float64(height), 1, false)
+	win.font = initFontNew(fontfamily, float64(height), 1)
 
 	// Calculate new cols, rows of current grid
 	newCols := int(oldWidth / win.font.truewidth)

@@ -128,6 +128,7 @@ type Editor struct {
 
 	extFontFamily string
 	extFontSize   int
+	font          *Font
 
 	startuptime int64
 }
@@ -162,6 +163,7 @@ func InitEditor() {
 	fmt.Println("editor 1", time.Now().UnixNano()/1000000-startuptime)
 
 	// put shell environment
+	// TODO: This process runs on a Unix-like OS, but it is very slow. I want to improve it.
 	putEnv()
 
 	fmt.Println("editor 2", time.Now().UnixNano()/1000000-startuptime)
@@ -211,6 +213,17 @@ func InitEditor() {
 	e.initNotifications()
 	e.initSysTray()
 
+	fontGenAsync := make(chan *Font, 2)
+	go func() {
+		font := initFontNew(
+			editor.extFontFamily,
+			float64(editor.extFontSize),
+			0,
+		)
+
+		fontGenAsync <- font
+	}()
+
 	fmt.Println("editor 7", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// application main window
@@ -239,6 +252,8 @@ func InitEditor() {
 	l.AddWidget(e.splitter, 1, 0)
 
 	fmt.Println("editor 10", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	e.font = <-fontGenAsync
 
 	// neovim workspaces
 	e.initWorkspaces()

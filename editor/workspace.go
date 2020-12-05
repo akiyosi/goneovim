@@ -121,19 +121,14 @@ func newWorkspace(path string) (*Workspace, error) {
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
 		doneNvimStart: make(chan bool, 1000),
-		foreground:    newRGBA(180, 185, 190, 1),
-		background:    newRGBA(9, 13, 17, 1),
+		foreground:    newRGBA(255, 255, 255, 1),
+		background:    newRGBA(0, 0, 0, 1),
 		special:       newRGBA(255, 255, 255, 1),
 	}
 	w.registerSignal()
 	fmt.Println("new workspace 1", time.Now().UnixNano()/1000000-editor.startuptime)
 
-	w.font = initFontNew(
-		editor.extFontFamily,
-		float64(editor.extFontSize),
-		0,
-		false,
-	)
+	w.font = editor.font
 	w.font.ws = w
 	fmt.Println("new workspace 2", time.Now().UnixNano()/1000000-editor.startuptime)
 
@@ -1717,7 +1712,11 @@ func (w *Workspace) guiFontWide(args string) {
 	}
 
 	if w.fontwide == nil {
-		w.fontwide = initFontNew(editor.extFontFamily, float64(editor.extFontSize), editor.config.Editor.Linespace, false)
+		w.fontwide = initFontNew(
+			editor.extFontFamily,
+			float64(editor.extFontSize),
+			editor.config.Editor.Linespace,
+		)
 		w.fontwide.ws = w
 		w.cursor.fontwide = w.fontwide
 	}

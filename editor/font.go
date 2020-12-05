@@ -41,7 +41,7 @@ func fontSizeNew(font *gui.QFont) (int, int, float64, float64, float64) {
 	return width, height, w, ascent, italicWidth
 }
 
-func initFontNew(family string, size float64, lineSpace int, fast bool) *Font {
+func initFontNew(family string, size float64, lineSpace int) *Font {
 	// font := gui.NewQFont2(family, size, int(gui.QFont__Normal), false)
 	font := gui.NewQFont()
 	font.SetFamily(family)
@@ -52,19 +52,8 @@ func initFontNew(family string, size float64, lineSpace int, fast bool) *Font {
 	font.SetFixedPitch(true)
 	font.SetKerning(false)
 
-	var width, height int
-	var truewidth, ascent, italicWidth float64
-	// fontMetrics calculate is too slow, so we calculate approximate font metrics
-	if !fast {
-		width, height, truewidth, ascent, italicWidth = fontSizeNew(font)
-	} else {
-		h := math.Trunc(float64(size)*1.28) + 2.0
-		truewidth = math.Ceil(float64(size) * 0.7)
-		height = int(math.Ceil(h))
-		width = int(math.Ceil(truewidth))
-		ascent = math.Ceil(float64(size) * 1.1)
-		italicWidth = math.Ceil(float64(size) * 0.8)
-	}
+	width, height, truewidth, ascent, italicWidth := fontSizeNew(font)
+
 	defaultFont := gui.NewQFont()
 	return &Font{
 		fontNew:            font,
