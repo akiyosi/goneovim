@@ -985,6 +985,13 @@ func (w *Workspace) updateSize() {
 		w.width = width
 		w.height = height
 		w.widget.Resize2(width, height)
+		if !w.hidden {
+			w.hide()
+			w.show()
+		} else {
+			w.show()
+			w.hide()
+		}
 	}
 
 	if w.drawTabline && w.tabline != nil {
