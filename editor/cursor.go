@@ -248,7 +248,7 @@ func (c *Cursor) updateCursorShape() {
 }
 
 func (c *Cursor) update() {
-	if c.mode != c.ws.mode {
+	if c.mode != c.ws.mode || c.mode == "terminal-input" {
 		c.mode = c.ws.mode
 		if c.mode == "terminal-input" {
 			c.widget.Hide()

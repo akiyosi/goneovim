@@ -1,18 +1,18 @@
 package editor
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"log"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 	"syscall"
-	"log"
-	"os/exec"
-	"context"
+	"time"
 
 	"github.com/akiyosi/goneovim/filer"
 	"github.com/akiyosi/goneovim/fuzzy"
@@ -1036,6 +1036,15 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.setOption(update)
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
+
+			// `mode_change` event may not send the correct events
+			// regarding the terminal buffer.
+			// We trust the TermEnter and TermLeave events for the terminal buffer.
+			mode := arg[0].(string)
+			if w.mode == "terminal-input" && mode == "normal" {
+				continue
+			}
+
 			w.mode = arg[0].(string)
 			w.modeIdx = util.ReflectToInt(arg[1])
 			if w.cursor.modeIdx != w.modeIdx {
@@ -1287,7 +1296,7 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 	}
 
 	if isChangeFg || isChangeBg {
-			editor.isSetGuiColor = false
+		editor.isSetGuiColor = false
 		if !w.uiRemoteAttached {
 			aw := editor.workspaces[editor.active]
 			// change minimap colorscheme

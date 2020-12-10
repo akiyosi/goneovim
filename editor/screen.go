@@ -1683,6 +1683,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 
 		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
 		s.cursor[1] = util.ReflectToInt(arg.([]interface{})[2])
+
 		if isSkipGlobalId(gridid) {
 			continue
 		}
