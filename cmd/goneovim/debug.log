@@ -1,0 +1,1417 @@
+editor 0 1
+editor 1 1
+editor 2 552
+editor 3 552
+editor 4 554
+editor 5 554
+editor 6 722
+editor 6-2 722
+editor 7 722
+editor 8 749
+editor 9 749
+editor 9-1 749
+editor 9-6 750
+editor 10 750
+new workspace 0 750
+new workspace 1 750
+new workspace 2 750
+new workspace 3 751
+new workspace 4 751
+new workspace 5 752
+workspaceUpdate 0 752
+editor 11 752
+editor 12 752
+start nvim 0 752
+start nvim 1 756
+start nvim 2 756
+update size 1 756
+update size 2 756
+screen update size 0 756
+screen update size 0 756
+screen update size 1 756
+screen update size 2 756
+screen update size 3 756
+start nvim 3 756
+configure 0 756
+configure 1 756
+configure 2 756
+attach ui 0 756
+attach ui 1 756
+attach ui 2 756
+attach ui 3 756
+attach ui 4 756
+attach ui 5 756
+init goneovim 0 756
+attach ui 6 766
+init goneovim 1 767
+attach ui 7 772
+attach ui 8 772
+[test event 1 :: 750] :: 792
+ui enter 792
+[test event 2 :: 805] :: 878
+[test event 3 :: 857] :: 878
+[test event 4 :: 911] :: 971
+[test event 5 :: 966] :: 971
+vim enter 1000
+lazy draw ui 1 1000
+lazy draw ui 4 1055
+lazy draw ui 2 1055
+ui enter 1055
+option_set 1055
+screen update size 0 1055
+screen update size 0 1055
+screen update size 1 1055
+screen update size 2 1055
+mouse_off 1056
+option_set 1056
+default_colors_set 1056
+update WS Color 0 1056
+update WS Color 1 1056
+update WS Color 2 1056
+update WS Color 3 1056
+screen update size 0 1058
+screen update size 0 1058
+screen update size 1 1058
+screen update size 2 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1058
+hl_attr_define 1058
+hl_group_set 1059
+option_set 1059
+default_colors_set 1059
+grid_resize 1059
+resize window 0 1059
+resize window 1 1059
+resize window 2 1059
+resize window 3 1059
+resize window 4 1059
+resize window 5 1059
+resize window 6 1059
+resize window 7 1059
+resize window 8 1059
+resize window 9 1059
+resize window 10 1059
+resize window 11 1059
+resize window 12 1059
+resize window 13 1059
+resize window 14 1059
+resize window 15 1060
+resize window 16 1060
+resize window 17 1060
+resize window 18 1060
+grid_clear 1060
+option_set 1060
+grid_resize 1060
+resize window 0 1060
+resize window 1 1060
+resize window 2 1060
+resize window 3 1060
+resize window 4 1060
+resize window 5 1060
+resize window 6 1060
+resize window 7 1061
+resize window 8 1061
+resize window 9 1061
+resize window 10 1061
+resize window 11 1061
+resize window 12 1061
+resize window 13 1061
+resize window 14 1061
+resize window 15 1061
+resize window 16 1061
+resize window 17 1061
+resize window 18 1061
+msg_set_pos 1061
+grid_line 1 1061
+grid_line 2 1061
+default_colors_set 1061
+hl_attr_define 1061
+default_colors_set 1061
+update WS Color 0 1061
+update WS Color 1 1061
+update WS Color 2 1062
+update WS Color 3 1062
+hl_attr_define 1063
+option_set 1063
+screen update size 0 1070
+screen update size 0 1070
+screen update size 1 1070
+screen update size 2 1070
+screen update size 3 1070
+screen update size 4 1070
+screen update size 5 1070
+screen update size 0 1071
+screen update size 0 1071
+screen update size 1 1071
+screen update size 2 1071
+mouse_on 1071
+option_set 1071
+hl_attr_define 1071
+hl_group_set 1071
+hl_attr_define 1071
+hl_group_set 1071
+hl_attr_define 1071
+hl_group_set 1071
+hl_attr_define 1071
+hl_group_set 1071
+hl_attr_define 1071
+hl_group_set 1071
+hl_attr_define 1071
+hl_group_set 1071
+hl_attr_define 1071
+hl_group_set 1071
+hl_attr_define 1071
+hl_group_set 1071
+hl_attr_define 1071
+hl_group_set 1071
+hl_attr_define 1071
+hl_group_set 1071
+hl_attr_define 1071
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1072
+hl_attr_define 1072
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+hl_attr_define 1073
+hl_group_set 1073
+option_set 1073
+hl_attr_define 1073
+default_colors_set 1074
+update WS Color 0 1074
+update WS Color 1 1074
+update WS Color 2 1074
+update WS Color 3 1074
+hl_attr_define 1075
+hl_group_set 1075
+hl_attr_define 1075
+hl_group_set 1075
+hl_attr_define 1075
+hl_group_set 1075
+hl_attr_define 1075
+hl_group_set 1075
+hl_attr_define 1075
+hl_group_set 1075
+hl_attr_define 1075
+hl_group_set 1075
+hl_attr_define 1075
+hl_group_set 1075
+hl_attr_define 1075
+default_colors_set 1076
+update WS Color 0 1076
+update WS Color 1 1076
+update WS Color 2 1076
+update WS Color 3 1076
+hl_attr_define 1077
+mouse_on 1077
+win_viewport 1077
+hl_group_set 1077
+grid_line 1 1077
+grid_line 2 1077
+grid_resize 1077
+resize window 0 1077
+resize window 1 1077
+resize window 2 1077
+resize window 3 1077
+resize window 4 1077
+resize window 5 1077
+resize window 6 1077
+resize window 7 1077
+resize window 8 1077
+resize window 9 1077
+resize window 10 1077
+resize window 11 1077
+resize window 12 1077
+resize window 13 1077
+resize window 14 1077
+resize window 15 1078
+resize window 16 1078
+resize window 17 1078
+resize window 18 1078
+grid_line 1 1078
+grid_line 2 1080
+set_icon 1080
+set_title 1080
+set_title 1080
+win_pos 1080
+win_viewport 1080
+grid_cursor_goto 1080
+mode_info_set 1080
+mode_change 1081
+flush 1081
+grid_cursor_goto 1081
+flush 1082
+[test event 6 :: 1021] :: 1082
+option_set 1138
+default_colors_set 1138
+grid_resize 1138
+resize window 0 1138
+resize window 1 1138
+resize window 2 1138
+resize window 3 1139
+resize window 4 1139
+resize window 11 1139
+resize window 12 1139
+resize window 13 1139
+resize window 14 1139
+resize window 15 1139
+resize window 16 1139
+resize window 17 1139
+resize window 18 1139
+grid_clear 1139
+grid_resize 1139
+resize window 0 1139
+resize window 1 1139
+resize window 2 1139
+resize window 3 1139
+resize window 4 1140
+resize window 11 1140
+resize window 12 1140
+resize window 13 1140
+resize window 14 1140
+resize window 15 1140
+resize window 16 1140
+resize window 17 1140
+resize window 18 1140
+msg_set_pos 1140
+win_pos 1140
+win_viewport 1140
+grid_resize 1140
+resize window 0 1140
+resize window 1 1140
+resize window 2 1140
+resize window 3 1140
+resize window 4 1141
+resize window 11 1141
+resize window 12 1141
+resize window 13 1141
+resize window 14 1141
+resize window 15 1141
+resize window 16 1141
+resize window 17 1141
+resize window 18 1141
+grid_line 1 1141
+grid_line 2 1141
+win_viewport 1141
+grid_cursor_goto 1141
+flush 1141
+mode_info_set 1141
+mode_change 1142
+flush 1142
+[test event 7 :: 1071] :: 1142
+[test event 8 :: 1123] :: 1142
+[test event 9 :: 1173] :: 1173
+[test event 10 :: 1225] :: 1225
+[test event 11 :: 1278] :: 1279
+[test event 12 :: 1329] :: 1329
+[test event 13 :: 1379] :: 1379
+[test event 14 :: 1429] :: 1429
+[test event 15 :: 1484] :: 1484
+[test event 16 :: 1535] :: 1535
+[test event 17 :: 1587] :: 1587
+[test event 18 :: 1639] :: 1639
+[test event 19 :: 1691] :: 1691
+[test event 20 :: 1745] :: 1745
+[test event 21 :: 1799] :: 1799
+[test event 22 :: 1851] :: 1851
+[test event 23 :: 1903] :: 1903
+[test event 24 :: 1955] :: 1955
+[test event 25 :: 2007] :: 2007
+[test event 26 :: 2062] :: 2062
+[test event 27 :: 2115] :: 2115
+[test event 28 :: 2167] :: 2219
+[test event 29 :: 2217] :: 2220
+lazy draw ui 3 2259
+[test event 30 :: 2267] :: 2267
+[test event 31 :: 2319] :: 2319
+[test event 32 :: 2371] :: 2371
+[test event 33 :: 2421] :: 2421
+[test event 34 :: 2473] :: 2473
+[test event 35 :: 2525] :: 2525
+editor 0 0
+editor 1 2
+editor 2 537
+editor 3 537
+editor 4 538
+editor 5 538
+editor 6 686
+editor 6-2 686
+editor 7 686
+editor 8 713
+editor 9 713
+editor 9-1 713
+editor 9-6 714
+editor 10 714
+new workspace 0 726
+new workspace 1 726
+new workspace 2 726
+new workspace 3 726
+new workspace 4 726
+new workspace 5 728
+workspaceUpdate 0 728
+editor 11 728
+editor 12 728
+start nvim 0 728
+start nvim 1 732
+start nvim 2 732
+update size 1 732
+update size 2 732
+screen update size 0 732
+screen update size 0 732
+screen update size 1 732
+screen update size 2 732
+screen update size 3 732
+start nvim 3 732
+configure 0 732
+configure 1 732
+configure 2 732
+attach ui 0 732
+attach ui 1 732
+attach ui 2 732
+attach ui 3 732
+attach ui 4 732
+attach ui 5 732
+init goneovim 0 733
+attach ui 6 744
+init goneovim 1 744
+attach ui 7 750
+attach ui 8 750
+[test event 1 :: 726] :: 769
+ui enter 769
+[test event 2 :: 778] :: 852
+[test event 3 :: 828] :: 852
+[test event 4 :: 882] :: 883
+[test event 5 :: 933] :: 961
+vim enter 986
+lazy draw ui 1 986
+lazy draw ui 4 1063
+lazy draw ui 2 1063
+ui enter 1063
+[test event 6 :: 987] :: 1063
+option_set 1063
+screen update size 0 1063
+screen update size 0 1063
+screen update size 1 1063
+screen update size 2 1063
+mouse_off 1064
+option_set 1064
+default_colors_set 1064
+update WS Color 0 1064
+update WS Color 1 1064
+update WS Color 2 1065
+update WS Color 3 1065
+screen update size 0 1066
+screen update size 0 1066
+screen update size 1 1066
+screen update size 2 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1066
+hl_attr_define 1066
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+hl_attr_define 1067
+hl_group_set 1067
+option_set 1067
+default_colors_set 1067
+grid_resize 1067
+resize window 0 1067
+resize window 1 1067
+resize window 2 1067
+resize window 3 1067
+resize window 4 1067
+resize window 5 1067
+resize window 6 1067
+resize window 7 1067
+resize window 8 1067
+resize window 9 1067
+resize window 10 1068
+resize window 11 1068
+resize window 12 1068
+resize window 13 1068
+resize window 14 1068
+resize window 15 1068
+resize window 16 1068
+resize window 17 1068
+resize window 18 1068
+grid_clear 1068
+option_set 1068
+grid_resize 1068
+resize window 0 1068
+resize window 1 1068
+resize window 2 1069
+resize window 3 1069
+resize window 4 1069
+resize window 5 1069
+resize window 6 1069
+resize window 7 1069
+resize window 8 1069
+resize window 9 1069
+resize window 10 1069
+resize window 11 1069
+resize window 12 1069
+resize window 13 1069
+resize window 14 1069
+resize window 15 1069
+resize window 16 1069
+resize window 17 1069
+resize window 18 1069
+msg_set_pos 1069
+grid_line 1 1070
+grid_line 2 1070
+default_colors_set 1070
+hl_attr_define 1070
+default_colors_set 1070
+update WS Color 0 1070
+update WS Color 1 1070
+update WS Color 2 1070
+update WS Color 3 1070
+hl_attr_define 1071
+option_set 1071
+screen update size 0 1078
+screen update size 0 1078
+screen update size 1 1078
+screen update size 2 1078
+screen update size 3 1078
+screen update size 4 1078
+screen update size 5 1079
+screen update size 0 1079
+screen update size 0 1079
+screen update size 1 1079
+screen update size 2 1079
+mouse_on 1079
+option_set 1079
+hl_attr_define 1079
+hl_group_set 1079
+hl_attr_define 1079
+hl_group_set 1079
+hl_attr_define 1079
+hl_group_set 1079
+hl_attr_define 1079
+hl_group_set 1079
+hl_attr_define 1079
+hl_group_set 1079
+hl_attr_define 1079
+hl_group_set 1079
+hl_attr_define 1079
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1080
+hl_attr_define 1080
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1081
+hl_attr_define 1081
+hl_group_set 1082
+hl_attr_define 1082
+hl_group_set 1082
+option_set 1082
+hl_attr_define 1082
+default_colors_set 1082
+update WS Color 0 1082
+update WS Color 1 1082
+update WS Color 2 1082
+update WS Color 3 1082
+hl_attr_define 1083
+hl_group_set 1083
+hl_attr_define 1083
+hl_group_set 1083
+hl_attr_define 1083
+hl_group_set 1083
+hl_attr_define 1083
+hl_group_set 1084
+hl_attr_define 1084
+hl_group_set 1084
+hl_attr_define 1084
+hl_group_set 1084
+hl_attr_define 1084
+hl_group_set 1084
+hl_attr_define 1084
+default_colors_set 1084
+update WS Color 0 1084
+update WS Color 1 1084
+update WS Color 2 1084
+update WS Color 3 1084
+hl_attr_define 1085
+mouse_on 1085
+win_viewport 1085
+hl_group_set 1085
+grid_line 1 1085
+grid_line 2 1085
+grid_resize 1085
+resize window 0 1085
+resize window 1 1085
+resize window 2 1085
+resize window 3 1085
+resize window 4 1085
+resize window 5 1085
+resize window 6 1085
+resize window 7 1086
+resize window 8 1086
+resize window 9 1086
+resize window 10 1086
+resize window 11 1086
+resize window 12 1086
+resize window 13 1086
+resize window 14 1086
+resize window 15 1086
+resize window 16 1086
+resize window 17 1086
+resize window 18 1086
+grid_line 1 1086
+grid_line 2 1089
+set_icon 1089
+set_title 1089
+set_title 1089
+win_pos 1089
+win_viewport 1089
+grid_cursor_goto 1089
+mode_info_set 1089
+mode_change 1089
+flush 1089
+grid_cursor_goto 1089
+flush 1090
+[test event 7 :: 1042] :: 1113
+option_set 1149
+default_colors_set 1149
+grid_resize 1149
+resize window 0 1149
+resize window 1 1149
+resize window 2 1149
+resize window 3 1149
+resize window 4 1149
+resize window 11 1149
+resize window 12 1149
+resize window 13 1149
+resize window 14 1149
+resize window 15 1149
+resize window 16 1149
+resize window 17 1149
+resize window 18 1149
+grid_clear 1149
+grid_resize 1149
+resize window 0 1149
+resize window 1 1149
+resize window 2 1149
+resize window 3 1149
+resize window 4 1149
+resize window 11 1149
+resize window 12 1149
+resize window 13 1149
+resize window 14 1149
+resize window 15 1149
+resize window 16 1149
+resize window 17 1149
+resize window 18 1149
+msg_set_pos 1149
+win_pos 1149
+win_viewport 1149
+grid_resize 1149
+resize window 0 1149
+resize window 1 1149
+resize window 2 1149
+resize window 3 1149
+resize window 4 1149
+resize window 11 1149
+resize window 12 1149
+resize window 13 1149
+resize window 14 1149
+resize window 15 1150
+resize window 16 1150
+resize window 17 1150
+resize window 18 1150
+grid_line 1 1150
+grid_line 2 1150
+win_viewport 1150
+grid_cursor_goto 1150
+flush 1150
+mode_info_set 1150
+mode_change 1150
+flush 1150
+[test event 8 :: 1094] :: 1150
+[test event 9 :: 1148] :: 1170
+[test event 10 :: 1203] :: 1203
+[test event 11 :: 1254] :: 1255
+[test event 12 :: 1306] :: 1307
+[test event 13 :: 1361] :: 1361
+[test event 14 :: 1412] :: 1413
+[test event 15 :: 1464] :: 1465
+[test event 16 :: 1518] :: 1518
+[test event 17 :: 1570] :: 1571
+[test event 18 :: 1622] :: 1623
+[test event 19 :: 1674] :: 1675
+[test event 20 :: 1725] :: 1725
+[test event 21 :: 1776] :: 1777
+[test event 22 :: 1828] :: 1829
+[test event 23 :: 1880] :: 1881
+[test event 24 :: 1935] :: 1935
+grid_line 1 1960
+grid_line 2 1960
+flush 1960
+grid_line 1 1960
+grid_line 2 1960
+mouse_on 1960
+grid_cursor_goto 1960
+mode_change 1961
+flush 1961
+[test event 25 :: 1986] :: 1994
+[test event 26 :: 2038] :: 2039
+[test event 27 :: 2090] :: 2091
+[test event 28 :: 2142] :: 2143
+[test event 29 :: 2197] :: 2230
+[test event 30 :: 2252] :: 2252
+lazy draw ui 3 2270
+[test event 31 :: 2302] :: 2303
+[test event 32 :: 2354] :: 2355
+[test event 33 :: 2406] :: 2407
+[test event 34 :: 2460] :: 2461
+[test event 35 :: 2512] :: 2513
+[test event 36 :: 2564] :: 2565
+[test event 37 :: 2619] :: 2619
+[test event 38 :: 2670] :: 2671
+[test event 39 :: 2721] :: 2721
+[test event 40 :: 2772] :: 2773
+[test event 41 :: 2826] :: 2827
+grid_line 1 2834
+grid_line 2 2834
+grid_cursor_goto 2834
+flush 2834
+[test event 42 :: 2878] :: 2879
+[test event 43 :: 2930] :: 2931
+[test event 44 :: 2983] :: 2983
+[test event 45 :: 3036] :: 3036
+grid_line 1 3057
+grid_line 2 3057
+grid_cursor_goto 3057
+flush 3057
+[test event 46 :: 3088] :: 3089
+[test event 47 :: 3140] :: 3141
+[test event 48 :: 3192] :: 3193
+[test event 49 :: 3248] :: 3248
+[test event 50 :: 3302] :: 3303
+grid_line 1 3314
+grid_line 2 3314
+grid_cursor_goto 3314
+flush 3314
+[test event 51 :: 3353] :: 3353
+grid_line 1 3393
+grid_line 2 3393
+grid_cursor_goto 3393
+flush 3393
+[test event 52 :: 3406] :: 3406
+[test event 53 :: 3456] :: 3457
+[test event 54 :: 3508] :: 3509
+grid_line 1 3521
+grid_line 2 3522
+grid_cursor_goto 3522
+flush 3522
+[test event 55 :: 3559] :: 3559
+[test event 56 :: 3610] :: 3611
+[test event 57 :: 3661] :: 3661
+[test event 58 :: 3712] :: 3713
+[test event 59 :: 3764] :: 3765
+grid_line 1 3817
+grid_line 2 3818
+grid_cursor_goto 3818
+flush 3818
+[test event 60 :: 3819] :: 3819
+[test event 61 :: 3873] :: 3874
+[test event 62 :: 3925] :: 3925
+[test event 63 :: 3976] :: 3977
+[test event 64 :: 4030] :: 4030
+[test event 65 :: 4081] :: 4081
+[test event 66 :: 4133] :: 4133
+[test event 67 :: 4187] :: 4187
+[test event 68 :: 4238] :: 4239
+[test event 69 :: 4290] :: 4291
+[test event 70 :: 4344] :: 4345
+[test event 71 :: 4396] :: 4397
+grid_line 1 4409
+grid_line 2 4410
+grid_cursor_goto 4410
+flush 4410
+[test event 72 :: 4449] :: 4449
+[test event 73 :: 4503] :: 4503
+[test event 74 :: 4554] :: 4555
+grid_line 1 4586
+grid_line 2 4586
+grid_cursor_goto 4586
+flush 4586
+[test event 75 :: 4606] :: 4607
+[test event 76 :: 4658] :: 4659
+[test event 77 :: 4709] :: 4709
+grid_line 1 4713
+grid_line 2 4713
+grid_cursor_goto 4713
+flush 4713
+grid_line 1 4715
+grid_line 2 4715
+grid_cursor_goto 4715
+flush 4715
+[test event 78 :: 4761] :: 4761
+[test event 79 :: 4813] :: 4813
+[test event 80 :: 4865] :: 4865
+[test event 81 :: 4917] :: 4917
+[test event 82 :: 4970] :: 4970
+[test event 83 :: 5023] :: 5023
+[test event 84 :: 5075] :: 5075
+[test event 85 :: 5127] :: 5127
+[test event 86 :: 5179] :: 5179
+[test event 87 :: 5231] :: 5231
+[test event 88 :: 5282] :: 5283
+[test event 89 :: 5337] :: 5337
+[test event 90 :: 5389] :: 5389
+[test event 91 :: 5441] :: 5441
+[test event 92 :: 5494] :: 5495
+[test event 93 :: 5547] :: 5547
+grid_cursor_goto 5570
+flush 5570
+mouse_on 5580
+grid_cursor_goto 5580
+mode_change 5581
+flush 5581
+screen update size 0 5581
+screen update size 0 5581
+screen update size 1 5581
+screen update size 2 5581
+[test event 94 :: 5597] :: 5598
+[test event 95 :: 5650] :: 5651
+[test event 96 :: 5704] :: 5705
+[test event 97 :: 5758] :: 5759
+[test event 98 :: 5809] :: 5809
+[test event 99 :: 5861] :: 5861
+[test event 100 :: 5911] :: 5911
+[test event 101 :: 5963] :: 5963
+[test event 102 :: 6017] :: 6017
+[test event 103 :: 6071] :: 6071
+[test event 104 :: 6121] :: 6121
+[test event 105 :: 6175] :: 6175
+[test event 106 :: 6227] :: 6227
+[test event 107 :: 6279] :: 6279
+[test event 108 :: 6331] :: 6331
+[test event 109 :: 6383] :: 6383
+[test event 110 :: 6437] :: 6437
+[test event 111 :: 6489] :: 6489
+[test event 112 :: 6541] :: 6541
+[test event 113 :: 6592] :: 6592
+[test event 114 :: 6643] :: 6643
+[test event 115 :: 6695] :: 6695
+[test event 116 :: 6746] :: 6746
+[test event 117 :: 6797] :: 6797
+grid_line 1 6808
+grid_line 2 6808
+flush 6808
+grid_line 1 6808
+grid_line 2 6808
+flush 6808
+[test event 118 :: 6849] :: 6849
+[test event 119 :: 6901] :: 6901
+[test event 120 :: 6954] :: 6954
+[test event 121 :: 7005] :: 7005
+[test event 122 :: 7060] :: 7060
+[test event 123 :: 7111] :: 7111
+[test event 124 :: 7163] :: 7163
+[test event 125 :: 7215] :: 7215
+grid_line 1 7264
+grid_line 2 7264
+flush 7264
+grid_line 1 7264
+grid_line 2 7264
+flush 7264
+[test event 126 :: 7265] :: 7271
+[test event 127 :: 7318] :: 7319
+[test event 128 :: 7371] :: 7371
+[test event 129 :: 7423] :: 7423
+[test event 130 :: 7476] :: 7476
+[test event 131 :: 7531] :: 7531
+[test event 132 :: 7583] :: 7583
+[test event 133 :: 7635] :: 7635
+[test event 134 :: 7688] :: 7688
+[test event 135 :: 7738] :: 7738
+[test event 136 :: 7788] :: 7789
+[test event 137 :: 7841] :: 7841
+[test event 138 :: 7894] :: 7894
+[test event 139 :: 7945] :: 7945
+[test event 140 :: 7997] :: 7997
+[test event 141 :: 8049] :: 8049
+[test event 142 :: 8101] :: 8101
+[test event 143 :: 8154] :: 8154
+[test event 144 :: 8207] :: 8207
+[test event 145 :: 8259] :: 8259
+grid_line 1 8304
+grid_line 2 8304
+flush 8304
+grid_line 1 8304
+grid_line 2 8304
+flush 8304
+[test event 146 :: 8313] :: 8313
+[test event 147 :: 8365] :: 8365
+[test event 148 :: 8415] :: 8415
+[test event 149 :: 8467] :: 8467
+[test event 150 :: 8521] :: 8521
+[test event 151 :: 8573] :: 8573
+[test event 152 :: 8625] :: 8625
+grid_line 1 8640
+grid_line 2 8640
+flush 8640
+grid_line 1 8640
+grid_line 2 8640
+flush 8640
+[test event 153 :: 8675] :: 8675
+[test event 154 :: 8727] :: 8727
+[test event 155 :: 8779] :: 8779
+[test event 156 :: 8831] :: 8831
+[test event 157 :: 8883] :: 8883
+[test event 158 :: 8935] :: 8935
+[test event 159 :: 8989] :: 8989
+[test event 160 :: 9042] :: 9043
+[test event 161 :: 9095] :: 9095
+[test event 162 :: 9150] :: 9150
+grid_line 1 9168
+grid_line 2 9168
+flush 9168
+grid_line 1 9168
+grid_line 2 9168
+mouse_on 9168
+grid_cursor_goto 9168
+mode_change 9170
+flush 9170
+[test event 163 :: 9201] :: 9201
+[test event 164 :: 9255] :: 9255
+[test event 165 :: 9307] :: 9307
+[test event 166 :: 9359] :: 9359
+[test event 167 :: 9411] :: 9411
+[test event 168 :: 9463] :: 9463
+grid_line 1 9474
+grid_line 2 9474
+grid_cursor_goto 9474
+flush 9474
+[test event 169 :: 9515] :: 9515
+[test event 170 :: 9567] :: 9567
+[test event 171 :: 9619] :: 9619
+[test event 172 :: 9672] :: 9673
+grid_line 1 9714
+grid_line 2 9714
+grid_cursor_goto 9714
+flush 9714
+[test event 173 :: 9726] :: 9726
+[test event 174 :: 9777] :: 9777
+[test event 175 :: 9829] :: 9829
+[test event 176 :: 9884] :: 9884
+grid_line 1 9930
+grid_line 2 9930
+grid_cursor_goto 9930
+flush 9930
+[test event 177 :: 9939] :: 9939
+[test event 178 :: 9991] :: 9991
+grid_line 1 10034
+grid_line 2 10034
+grid_cursor_goto 10034
+flush 10034
+[test event 179 :: 10042] :: 10043
+[test event 180 :: 10094] :: 10094
+grid_line 1 10122
+grid_line 2 10122
+grid_cursor_goto 10122
+flush 10122
+[test event 181 :: 10145] :: 10145
+[test event 182 :: 10197] :: 10197
+[test event 183 :: 10249] :: 10249
+[test event 184 :: 10303] :: 10303
+[test event 185 :: 10356] :: 10357
+[test event 186 :: 10407] :: 10407
+[test event 187 :: 10457] :: 10457
+grid_line 1 10490
+grid_line 2 10490
+grid_cursor_goto 10490
+flush 10490
+[test event 188 :: 10509] :: 10509
+[test event 189 :: 10561] :: 10561
+[test event 190 :: 10613] :: 10613
+[test event 191 :: 10664] :: 10664
+[test event 192 :: 10715] :: 10715
+[test event 193 :: 10767] :: 10767
+[test event 194 :: 10819] :: 10819
+[test event 195 :: 10873] :: 10873
+[test event 196 :: 10923] :: 10923
+grid_line 1 10938
+grid_line 2 10938
+grid_cursor_goto 10938
+flush 10938
+[test event 197 :: 10975] :: 10975
+[test event 198 :: 11029] :: 11029
+[test event 199 :: 11082] :: 11082
+[test event 200 :: 11134] :: 11134
+grid_line 1 11153
+grid_line 2 11153
+grid_cursor_goto 11153
+flush 11153
+[test event 201 :: 11185] :: 11185
+[test event 202 :: 11239] :: 11239
+[test event 203 :: 11293] :: 11293
+grid_line 1 11305
+grid_line 2 11305
+grid_cursor_goto 11305
+flush 11305
+grid_line 1 11306
+grid_line 2 11306
+grid_cursor_goto 11306
+flush 11306
+[test event 204 :: 11345] :: 11345
+[test event 205 :: 11400] :: 11400
+[test event 206 :: 11451] :: 11451
+[test event 207 :: 11505] :: 11505
+[test event 208 :: 11557] :: 11557
+[test event 209 :: 11607] :: 11607
+[test event 210 :: 11661] :: 11661
+[test event 211 :: 11715] :: 11715
+[test event 212 :: 11767] :: 11767
+[test event 213 :: 11819] :: 11819
+[test event 214 :: 11873] :: 11873
+[test event 215 :: 11923] :: 11923
+[test event 216 :: 11973] :: 11974
+[test event 217 :: 12025] :: 12025
+grid_cursor_goto 12042
+flush 12042
+mouse_on 12042
+grid_cursor_goto 12042
+mode_change 12042
+flush 12042
+[test event 218 :: 12075] :: 12094
+[test event 219 :: 12129] :: 12129
+[test event 220 :: 12184] :: 12184
+[test event 221 :: 12235] :: 12235
+[test event 222 :: 12287] :: 12287
+[test event 223 :: 12341] :: 12341
+[test event 224 :: 12391] :: 12391
+[test event 225 :: 12441] :: 12441
+[test event 226 :: 12491] :: 12491
+[test event 227 :: 12543] :: 12543
+[test event 228 :: 12595] :: 12595
+[test event 229 :: 12647] :: 12647
+[test event 230 :: 12699] :: 12699
+[test event 231 :: 12751] :: 12751
+[test event 232 :: 12801] :: 12802
+[test event 233 :: 12853] :: 12853
+[test event 234 :: 12905] :: 12905
+[test event 235 :: 12957] :: 12957
+[test event 236 :: 13009] :: 13009
+[test event 237 :: 13061] :: 13061
+[test event 238 :: 13115] :: 13115
+[test event 239 :: 13165] :: 13165
+[test event 240 :: 13217] :: 13217
+[test event 241 :: 13268] :: 13269
+[test event 242 :: 13323] :: 13323
+[test event 243 :: 13377] :: 13377
+[test event 244 :: 13429] :: 13429
+[test event 245 :: 13481] :: 13481
+[test event 246 :: 13533] :: 13533
+[test event 247 :: 13583] :: 13583
+[test event 248 :: 13635] :: 13635
+[test event 249 :: 13687] :: 13687
+[test event 250 :: 13741] :: 13741
+[test event 251 :: 13791] :: 13791
+[test event 252 :: 13841] :: 13841
+[test event 253 :: 13895] :: 13895
+[test event 254 :: 13949] :: 13949
+[test event 255 :: 13999] :: 13999
+[test event 256 :: 14051] :: 14051
+[test event 257 :: 14101] :: 14101
+[test event 258 :: 14151] :: 14151
+[test event 259 :: 14201] :: 14201
+[test event 260 :: 14253] :: 14253
+[test event 261 :: 14307] :: 14307
+[test event 262 :: 14359] :: 14359
+[test event 263 :: 14413] :: 14414
+[test event 264 :: 14465] :: 14467
+[test event 265 :: 14517] :: 14517
+[test event 266 :: 14569] :: 14569
+[test event 267 :: 14621] :: 14621
+[test event 268 :: 14675] :: 14675
+[test event 269 :: 14729] :: 14729
+[test event 270 :: 14779] :: 14779
+[test event 271 :: 14830] :: 14830
+[test event 272 :: 14881] :: 14881
+[test event 273 :: 14931] :: 14931
+[test event 274 :: 14985] :: 14985
+[test event 275 :: 15039] :: 15039
+[test event 276 :: 15093] :: 15093
+[test event 277 :: 15145] :: 15145
+[test event 278 :: 15199] :: 15199
+[test event 279 :: 15251] :: 15251
+[test event 280 :: 15303] :: 15303
+[test event 281 :: 15355] :: 15355
+[test event 282 :: 15409] :: 15409
+[test event 283 :: 15459] :: 15459
+[test event 284 :: 15510] :: 15510
+[test event 285 :: 15563] :: 15563
+[test event 286 :: 15615] :: 15615
+[test event 287 :: 15665] :: 15665
+[test event 288 :: 15717] :: 15717
+[test event 289 :: 15769] :: 15769
+[test event 290 :: 15821] :: 15821
+[test event 291 :: 15875] :: 15875
+[test event 292 :: 15929] :: 15929
+[test event 293 :: 15981] :: 15981
+[test event 294 :: 16033] :: 16033
+[test event 295 :: 16087] :: 16087
+[test event 296 :: 16142] :: 16142
+[test event 297 :: 16193] :: 16193
+[test event 298 :: 16245] :: 16245
+[test event 299 :: 16295] :: 16295
+[test event 300 :: 16347] :: 16347
+[test event 301 :: 16399] :: 16399
+[test event 302 :: 16451] :: 16451
+[test event 303 :: 16503] :: 16503
+[test event 304 :: 16557] :: 16557
+[test event 305 :: 16611] :: 16611
+[test event 306 :: 16665] :: 16665
+[test event 307 :: 16716] :: 16716
+[test event 308 :: 16767] :: 16767
+[test event 309 :: 16819] :: 16819
+[test event 310 :: 16871] :: 16871
+[test event 311 :: 16925] :: 16925
+[test event 312 :: 16976] :: 16976
+[test event 313 :: 17029] :: 17029
+[test event 314 :: 17083] :: 17083
+[test event 315 :: 17135] :: 17135
+[test event 316 :: 17185] :: 17185
+[test event 317 :: 17239] :: 17239
+[test event 318 :: 17293] :: 17293
+[test event 319 :: 17345] :: 17345
+[test event 320 :: 17397] :: 17397
+[test event 321 :: 17449] :: 17449
+[test event 322 :: 17501] :: 17501
+[test event 323 :: 17553] :: 17553
+[test event 324 :: 17605] :: 17605
+[test event 325 :: 17659] :: 17659
+[test event 326 :: 17713] :: 17713
+[test event 327 :: 17765] :: 17765
+[test event 328 :: 17817] :: 17817
+[test event 329 :: 17869] :: 17869
+[test event 330 :: 17920] :: 17920
+[test event 331 :: 17971] :: 17971
+[test event 332 :: 18021] :: 18021
+[test event 333 :: 18075] :: 18075
+[test event 334 :: 18127] :: 18127
+[test event 335 :: 18181] :: 18181
+[test event 336 :: 18233] :: 18233
+[test event 337 :: 18283] :: 18283
+[test event 338 :: 18335] :: 18335
+[test event 339 :: 18387] :: 18387
+[test event 340 :: 18439] :: 18443
+[test event 341 :: 18493] :: 18493
+[test event 342 :: 18545] :: 18545
+[test event 343 :: 18595] :: 18595
+[test event 344 :: 18647] :: 18647
+[test event 345 :: 18699] :: 18699
+[test event 346 :: 18751] :: 18751
+[test event 347 :: 18803] :: 18803
+[test event 348 :: 18853] :: 18853
+[test event 349 :: 18905] :: 18905
+[test event 350 :: 18957] :: 18957
+[test event 351 :: 19009] :: 19009
+[test event 352 :: 19061] :: 19061

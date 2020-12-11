@@ -29,6 +29,12 @@ const (
 	WORKSPACELEN    = 10
 )
 
+type editorSignal struct {
+	core.QObject
+	_ func() `signal:"notifySignal"`
+	_ func() `signal:"sidebarSignal"`
+}
+
 // ColorPalette is
 type ColorPalette struct {
 	e *Editor
@@ -99,10 +105,12 @@ type Editor struct {
 	active     int
 	window     *frameless.QFramelessWindow
 	// window     *widgets.QMainWindow
-	splitter   *widgets.QSplitter
-	widget     *widgets.QWidget
-	sideWidget *WorkspaceSide
-	sysTray    *widgets.QSystemTrayIcon
+	splitter       *widgets.QSplitter
+	widget         *widgets.QWidget
+	sideWidget     *WorkspaceSide
+	sideWidgetChan chan *widgets.QScrollArea
+
+	sysTray *widgets.QSystemTrayIcon
 
 	width    int
 	height   int
@@ -133,11 +141,6 @@ type Editor struct {
 
 	startuptime int64
 	file        *os.File
-}
-
-type editorSignal struct {
-	core.QObject
-	_ func() `signal:"notifySignal"`
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -262,14 +265,12 @@ func InitEditor() {
 
 	fmt.Fprintln(file, "editor 9-1", time.Now().UnixNano()/1000000-editor.startuptime)
 
-	e.sideWidget = newWorkspaceSide()
-	fmt.Fprintln(file, "editor 9-2", time.Now().UnixNano()/1000000-editor.startuptime)
-	e.sideWidget.newScrollArea()
-	fmt.Fprintln(file, "editor 9-3", time.Now().UnixNano()/1000000-editor.startuptime)
-	e.sideWidget.scrollarea.Hide()
-	fmt.Fprintln(file, "editor 9-4", time.Now().UnixNano()/1000000-editor.startuptime)
+	// e.sideWidget = newWorkspaceSide()
+	// e.sideWidget.newScrollArea()
+	// e.sideWidget.scrollarea.Hide()
+	// e.sideWidget.scrollarea.SetWidget(e.sideWidget.widget)
 	e.newSplitter()
-	fmt.Fprintln(file, "editor 9-5", time.Now().UnixNano()/1000000-editor.startuptime)
+	// e.splitter.InsertWidget(0, e.sideWidget.scrollarea)
 	e.splitter.InsertWidget(1, e.widget)
 	l.AddWidget(e.splitter, 1, 0)
 
@@ -287,6 +288,14 @@ func InitEditor() {
 	e.initWorkspaces()
 
 	e.connectAppSignals()
+
+	e.signal.ConnectSidebarSignal(func() {
+		e.sideWidget = newWorkspaceSide()
+		e.sideWidget.newScrollArea()
+		e.sideWidget.scrollarea.Hide()
+		e.sideWidget.scrollarea.SetWidget(e.sideWidget.widget)
+		e.splitter.InsertWidget(0, e.sideWidget.scrollarea)
+	})
 
 	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
 		e.app.DisconnectEvent()
@@ -320,7 +329,7 @@ func InitEditor() {
 	}
 
 	fmt.Fprintln(file, "editor 11", time.Now().UnixNano()/1000000-editor.startuptime)
-	//e.widget.SetFocus2()
+	e.widget.SetFocus2()
 	fmt.Fprintln(file, "editor 12", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	widgets.QApplication_Exec()
@@ -376,10 +385,8 @@ func (e *Editor) setAppDirPath(home string) {
 func (e *Editor) newSplitter() {
 	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
 	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
-	// splitter.InsertWidget(0, e.sideWidget.scrollarea)
-	splitter.InsertWidget(1, e.widget)
-	// fmt.Println(splitter.IndexOf(e.widget))
-	// fmt.Println(splitter.IndexOf(e.sideWidget.scrollarea))
+	// splitter.AddWidget(e.sideWidget.scrollarea)
+	// splitter.AddWidget(e.widget)
 	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
 	e.splitter = splitter
@@ -626,14 +633,14 @@ func (e *Editor) updateGUIColor() {
 
 	// Do not use frameless drawing on linux
 	if runtime.GOOS == "linux" {
-		// e.window.TitleBar.Hide()
-		// e.window.WindowWidget.SetStyleSheet(fmt.Sprintf(" #QFramelessWidget { background-color: rgba(%d, %d, %d, %f); border-radius: 0px;}", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
-		// e.window.SetWindowFlag(core.Qt__FramelessWindowHint, false)
-		// e.window.SetWindowFlag(core.Qt__NoDropShadowWindowHint, false)
-		// e.window.Show()
+		e.window.TitleBar.Hide()
+		e.window.WindowWidget.SetStyleSheet(fmt.Sprintf(" #QFramelessWidget { background-color: rgba(%d, %d, %d, %f); border-radius: 0px;}", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
+		e.window.SetWindowFlag(core.Qt__FramelessWindowHint, false)
+		e.window.SetWindowFlag(core.Qt__NoDropShadowWindowHint, false)
+		e.window.Show()
 	} else {
-		// e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B))
-		// e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
+		e.window.SetupWidgetColor((uint16)(e.colors.bg.R), (uint16)(e.colors.bg.G), (uint16)(e.colors.bg.B))
+		e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 	}
 
 	// e.window.SetWindowOpacity(1.0)
@@ -687,17 +694,17 @@ func (e *Editor) setWindowSize(s string) (int, int) {
 }
 
 func (e *Editor) setWindowOptions() {
-	// e.window.SetupTitle("Neovim")
-	// e.window.SetMinimumSize2(400, 300)
-	// e.initSpecialKeys()
+	e.window.SetupTitle("Neovim")
+	e.window.SetMinimumSize2(400, 300)
+	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)
 	e.window.SetAcceptDrops(true)
-	// if e.config.Editor.StartFullscreen || e.opts.Fullscreen {
-	// 	e.window.ShowFullScreen()
-	// } else if e.config.Editor.StartMaximizedWindow || e.opts.Maximized {
-	// 	e.window.WindowMaximize()
-	// }
+	if e.config.Editor.StartFullscreen || e.opts.Fullscreen {
+		e.window.ShowFullScreen()
+	} else if e.config.Editor.StartMaximizedWindow || e.opts.Maximized {
+		e.window.WindowMaximize()
+	}
 }
 
 func (e *Editor) showWindow() {
