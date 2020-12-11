@@ -294,11 +294,11 @@ func (w *Workspace) lazyDrawUI() {
 		w.message = initMessage()
 	}
 
-	// palette
-	w.palette = initPalette()
+	// // palette
+	// w.palette = initPalette()
 
-	// palette 2
-	w.fpalette = initPalette()
+	// // palette 2
+	// w.fpalette = initPalette()
 
 	e := editor
 	go func() {
@@ -310,12 +310,12 @@ func (w *Workspace) lazyDrawUI() {
 			w.message.ws = w
 			w.message.widget.SetParent(editor.window)
 		}
-		w.palette.ws = w
-		w.palette.widget.SetParent(editor.window)
-		w.palette.hide()
-		w.fpalette.ws = w
-		w.fpalette.widget.SetParent(editor.window)
-		w.fpalette.hide()
+		// w.palette.ws = w
+		// w.palette.widget.SetParent(editor.window)
+		// w.palette.hide()
+		// w.fpalette.ws = w
+		// w.fpalette.widget.SetParent(editor.window)
+		// w.fpalette.hide()
 
 		time.Sleep(time.Millisecond * 1000)
 
