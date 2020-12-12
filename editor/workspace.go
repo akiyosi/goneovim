@@ -27,15 +27,22 @@ import (
 
 type workspaceSignal struct {
 	core.QObject
-	// _ func() `signal:"markdownSignal"`
+
 	_ func() `signal:"stopSignal"`
 	_ func() `signal:"redrawSignal"`
 	_ func() `signal:"guiSignal"`
-	_ func() `signal:"statuslineSignal"`
+
 	// _ func() `signal:"locpopupSignal"`
+
+	_ func() `signal:"statuslineSignal"`
 	_ func() `signal:"lintSignal"`
 	_ func() `signal:"gitSignal"`
+
 	_ func() `signal:"messageSignal"`
+
+	// _ func() `signal:"markdownSignal"`
+
+	_ func() `signal:"lazyDrawSignal"`
 }
 
 // Workspace is an editor workspace
@@ -103,7 +110,6 @@ type Workspace struct {
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
 	guiUpdates    chan []interface{}
-	doneNvimStart chan bool
 	stopOnce      sync.Once
 	stop          chan struct{}
 	fontMutex     sync.Mutex
@@ -120,7 +126,6 @@ func newWorkspace(path string) (*Workspace, error) {
 		signal:        NewWorkspaceSignal(nil),
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
-		doneNvimStart: make(chan bool, 1000),
 		foreground:    newRGBA(255, 255, 255, 1),
 		background:    newRGBA(0, 0, 0, 1),
 		special:       newRGBA(255, 255, 255, 1),
@@ -183,12 +188,12 @@ func newWorkspace(path string) (*Workspace, error) {
 		// w.signature.widget.Hide()
 	}
 
-	// // messages
-	// if editor.config.Editor.ExtMessages {
-	// 	w.message = initMessage()
-	// 	w.message.ws = w
-	// 	w.message.widget.SetParent(editor.window)
-	// }
+	// messages
+	if editor.config.Editor.ExtMessages {
+		w.message = initMessage()
+		w.message.ws = w
+		w.message.widget.SetParent(editor.window)
+	}
 
 	// If Statusline.Visible is true, then we create statusline UI component
 	if editor.config.Statusline.Visible {
@@ -220,9 +225,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	// w.fpalette.widget.SetParent(editor.window)
 	// w.fpalette.hide()
 
-	// finder
-	w.finder = initFinder()
-	w.finder.ws = w
+	// // finder
+	// w.finder = initFinder()
+	// w.finder.ws = w
 
 	fmt.Fprintln(editor.file, "new workspace 4", time.Now().UnixNano()/1000000-editor.startuptime)
 
@@ -272,16 +277,49 @@ func newWorkspace(path string) (*Workspace, error) {
 }
 
 func (w *Workspace) lazyDrawUI() {
+	fmt.Fprintln(editor.file, "lazy draw ui 0", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	fmt.Fprintln(editor.file, "lazy draw ui 1", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// palette
+	w.palette = initPalette()
+	w.palette.ws = w
+	w.palette.widget.SetParent(editor.window)
+	w.palette.hide()
+
+	fmt.Fprintln(editor.file, "lazy draw ui 2", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// palette 2
+	w.fpalette = initPalette()
+	w.fpalette.ws = w
+	w.fpalette.widget.SetParent(editor.window)
+	w.fpalette.hide()
+
+	// finder
+	w.finder = initFinder()
+	w.finder.ws = w
+
+	fmt.Fprintln(editor.file, "lazy draw ui 3", time.Now().UnixNano()/1000000-editor.startuptime)
+}
+
+func (w *Workspace) vimEnterProcess() {
+	fmt.Fprintln(editor.file, "vim enter 1", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// Show window if connect remote nvim via ssh
 	if editor.opts.Ssh != "" {
 		editor.window.Show()
 	}
+
+	// get nvim option
 	w.getNvimOptions()
+
+	// connect window resize event
 	editor.widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		for _, ws := range editor.workspaces {
 			ws.updateSize()
 		}
 	})
+
 	w.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
 		go w.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
 	})
@@ -289,27 +327,35 @@ func (w *Workspace) lazyDrawUI() {
 		go w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
 	})
 
-	// messages
-	if editor.config.Editor.ExtMessages {
-		w.message = initMessage()
-	}
+	// // messages
+	// if editor.config.Editor.ExtMessages {
+	// 	w.message = initMessage()
+	// 	w.message.ws = w
+	// 	w.message.widget.SetParent(editor.window)
+	// }
 
 	// // palette
 	// w.palette = initPalette()
+	// w.palette.ws = w
+	// w.palette.widget.SetParent(editor.window)
+	// w.palette.hide()
 
 	// // palette 2
 	// w.fpalette = initPalette()
+	// w.fpalette.ws = w
+	// w.fpalette.widget.SetParent(editor.window)
+	// w.fpalette.hide()
 
 	e := editor
 	go func() {
-		fmt.Fprintln(editor.file, "lazy draw ui 2", time.Now().UnixNano()/1000000-editor.startuptime)
+		// fmt.Fprintln(editor.file, "vim enter 2", time.Now().UnixNano()/1000000-editor.startuptime)
 
-		time.Sleep(time.Millisecond * 100)
+		// time.Sleep(time.Millisecond * 100)
 
-		if editor.config.Editor.ExtMessages {
-			w.message.ws = w
-			w.message.widget.SetParent(editor.window)
-		}
+		// if editor.config.Editor.ExtMessages {
+		// 	w.message.ws = w
+		// 	w.message.widget.SetParent(editor.window)
+		// }
 		// w.palette.ws = w
 		// w.palette.widget.SetParent(editor.window)
 		// w.palette.hide()
@@ -317,8 +363,10 @@ func (w *Workspace) lazyDrawUI() {
 		// w.fpalette.widget.SetParent(editor.window)
 		// w.fpalette.hide()
 
-		time.Sleep(time.Millisecond * 1000)
+		time.Sleep(time.Millisecond * 500)
+		w.signal.LazyDrawSignal()
 
+		time.Sleep(time.Millisecond * 400)
 		e.signal.SidebarSignal()
 
 		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
@@ -334,13 +382,13 @@ func (w *Workspace) lazyDrawUI() {
 			// }
 		}
 
-		if e.config.SideBar.Visible {
-			e.sideWidget.show()
-		}
+		// if e.config.SideBar.Visible {
+		// 	e.sideWidget.show()
+		// }
 
-		fmt.Fprintln(editor.file, "lazy draw ui 3", time.Now().UnixNano()/1000000-editor.startuptime)
 	}()
-	fmt.Fprintln(editor.file, "lazy draw ui 4", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	fmt.Fprintln(editor.file, "vim enter 2", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) registerSignal() {
@@ -352,6 +400,11 @@ func (w *Workspace) registerSignal() {
 		updates := <-w.guiUpdates
 		w.handleRPCGui(updates)
 	})
+	w.signal.ConnectLazyDrawSignal(func() {
+		w.lazyDrawUI()
+	})
+
+	// for debug signal
 	z := 1
 	go func() {
 		for {
@@ -361,6 +414,7 @@ func (w *Workspace) registerSignal() {
 			time.Sleep(time.Millisecond * 50)
 		}
 	}()
+
 	w.signal.ConnectStopSignal(func() {
 		// if !w.uiRemoteAttached {
 		// 	if !editor.config.MiniMap.Disable {
@@ -1325,7 +1379,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "msg_show":
 			w.message.msgShow(args)
 		case "msg_clear":
-			// w.message.msgClear()
+			w.message.msgClear()
 		case "msg_showmode":
 		case "msg_showcmd":
 		case "msg_ruler":
@@ -1618,7 +1672,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	switch event {
 	case "gonvim_enter":
 		fmt.Fprintln(editor.file, "vim enter", time.Now().UnixNano()/1000000-editor.startuptime)
-		w.lazyDrawUI()
+		w.vimEnterProcess()
 		// w.setCwd(updates[1].(string))
 	case "gonvim_uienter":
 		fmt.Fprintln(editor.file, "ui enter", time.Now().UnixNano()/1000000-editor.startuptime)
