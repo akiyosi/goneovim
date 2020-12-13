@@ -70,7 +70,7 @@ See [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md
 
 * Add test
 
-* Improve Imput Method Editor(IME) feature
+* Improve Input Method Editor(IME) feature
 
 * Improve startup time
 
