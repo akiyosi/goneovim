@@ -323,7 +323,6 @@ func (w *Workspace) lazyDrawUI() {
 			isMinimapVisible := w.minimap.visible
 			w.minimap.mu.Unlock()
 			if isMinimapVisible {
-				w.minimap.setColorscheme()
 				w.minimap.setCurrentRegion()
 				w.minimap.bufUpdate()
 				w.minimap.bufSync()
@@ -1186,6 +1185,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.update()
 			w.cursor.update()
+			w.drawOtherUI()
 
 		// Grid Events
 		case "grid_resize":
@@ -1372,8 +1372,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			fmt.Fprintln(editor.file, update, "::", time.Now().UnixNano()/1000000-editor.startuptime)
 		}
 	}
-
-	w.drawOtherUI()
 }
 
 func (w *Workspace) drawOtherUI() {
@@ -1748,10 +1746,12 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_workspace_cwd":
 		cwdinfo := updates[1].(map[string]interface{})
 		w.handleChangeCwd(cwdinfo)
-	// case "gonvim_workspace_filepath":
-	// 	w.minimap.mu.Lock()
-	// 	w.filepath = updates[1].(string)
-	// 	w.minimap.mu.Unlock()
+	case "gonvim_workspace_filepath":
+		if w.minimap != nil {
+			w.minimap.mu.Lock()
+			w.filepath = updates[1].(string)
+			w.minimap.mu.Unlock()
+		}
 	case "gonvim_optionset":
 		go w.optionSet()
 	case "gonvim_termenter":

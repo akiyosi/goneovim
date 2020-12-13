@@ -611,6 +611,7 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 		vert = event.AngleDelta().Y()
 		accel = 16
 	}
+
 	if vert == 0 && horiz == 0 {
 		return
 	}
@@ -620,7 +621,8 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 	} else if vert < 0 {
 		m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
 	}
-	m.mapScroll()
+
+	// m.mapScroll()
 
 	event.Accept()
 }
