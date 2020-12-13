@@ -638,7 +638,7 @@ func (w *Workspace) initGonvim() {
 	fmt.Fprintln(editor.file, "init goneovim 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	gonvimAutoCmds := `
 	aug GonvimAu | au! | aug END
-	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
+	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
 	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter")
 	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_filetype", &ft, win_getid())
@@ -1659,7 +1659,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_enter":
 		fmt.Fprintln(editor.file, "vim enter", time.Now().UnixNano()/1000000-editor.startuptime)
 		w.vimEnterProcess()
-		// w.setCwd(updates[1].(string))
+		w.setCwd(updates[1].(string))
 	case "gonvim_uienter":
 		fmt.Fprintln(editor.file, "ui enter", time.Now().UnixNano()/1000000-editor.startuptime)
 	case "gonvim_resize":
