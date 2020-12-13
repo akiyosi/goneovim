@@ -1,0 +1,530 @@
+editor 0 1
+editor 1 1
+editor 2 541
+editor 3 541
+editor 4 543
+editor 5 543
+editor 6 692
+editor 6-2 692
+editor 7 693
+editor 8 717
+editor 9 717
+editor 9-1 717
+editor 9-6 718
+editor 10 718
+new workspace 0 718
+new workspace 1 718
+new workspace 2 718
+new workspace 3 719
+new workspace 4 719
+new workspace 5 720
+workspaceUpdate 0 720
+editor 11 720
+editor 12 720
+start nvim 0 720
+start nvim 1 724
+start nvim 2 724
+update size 1 724
+update size 2 724
+screen update size 0 724
+screen update size 0 724
+screen update size 1 724
+screen update size 2 724
+screen update size 3 724
+start nvim 3 724
+configure 0 725
+configure 1 725
+configure 2 725
+attach ui 0 725
+attach ui 1 725
+attach ui 2 725
+attach ui 3 725
+attach ui 4 725
+attach ui 5 725
+init goneovim 0 725
+attach ui 6 734
+init goneovim 1 738
+attach ui 7 741
+attach ui 8 741
+[test event 1 :: 718] :: 759
+get pos 0 759
+ui enter 760
+[test event 2 :: 769] :: 830
+get pos 0 830
+[test event 3 :: 819] :: 830
+get pos 0 830
+[test event 4 :: 874] :: 895
+get pos 0 895
+vim enter 914
+vim enter 1 915
+vim enter 2 924
+ui enter 924
+option_set 926
+screen update size 0 927
+screen update size 0 927
+screen update size 1 927
+screen update size 2 927
+mouse_off 927
+option_set 927
+default_colors_set 927
+update WS Color 0 927
+update WS Color 1 927
+update WS Color 2 928
+update WS Color 3 928
+screen update size 0 932
+screen update size 0 932
+screen update size 1 932
+screen update size 2 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 932
+hl_attr_define 932
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 933
+hl_group_set 933
+hl_attr_define 934
+hl_group_set 934
+hl_attr_define 934
+hl_group_set 934
+hl_attr_define 934
+hl_group_set 934
+hl_attr_define 934
+hl_group_set 934
+hl_attr_define 934
+hl_group_set 934
+hl_attr_define 934
+hl_group_set 934
+hl_attr_define 934
+hl_group_set 934
+hl_attr_define 934
+hl_group_set 934
+hl_attr_define 934
+hl_group_set 934
+hl_attr_define 934
+hl_group_set 934
+option_set 934
+default_colors_set 935
+grid_resize 935
+resize window 0 935
+resize window 1 935
+resize window 2 935
+resize window 3 935
+resize window 4 935
+resize window 5 935
+resize window 6 935
+resize window 7 935
+resize window 8 936
+resize window 9 936
+resize window 10 936
+resize window 11 936
+resize window 12 936
+resize window 13 936
+resize window 14 936
+resize window 15 936
+resize window 16 936
+resize window 17 937
+resize window 18 937
+grid_clear 937
+option_set 937
+grid_resize 937
+resize window 0 937
+resize window 1 937
+resize window 2 937
+resize window 3 937
+resize window 4 937
+resize window 5 937
+resize window 6 937
+resize window 7 937
+resize window 8 937
+resize window 9 937
+resize window 10 937
+resize window 11 937
+resize window 12 937
+resize window 13 938
+resize window 14 938
+resize window 15 938
+resize window 16 938
+resize window 17 938
+resize window 18 938
+msg_set_pos 938
+grid_line 1 939
+grid_line 2 939
+default_colors_set 939
+hl_attr_define 939
+default_colors_set 939
+update WS Color 0 939
+update WS Color 1 939
+update WS Color 2 940
+update WS Color 3 940
+hl_attr_define 943
+option_set 944
+screen update size 0 960
+screen update size 0 960
+screen update size 1 960
+screen update size 2 960
+screen update size 3 960
+screen update size 4 960
+screen update size 5 963
+screen update size 0 964
+screen update size 0 964
+screen update size 1 964
+screen update size 2 964
+mouse_on 964
+option_set 964
+hl_attr_define 964
+hl_group_set 964
+hl_attr_define 964
+hl_group_set 964
+hl_attr_define 964
+hl_group_set 964
+hl_attr_define 964
+hl_group_set 964
+hl_attr_define 964
+hl_group_set 964
+hl_attr_define 964
+hl_group_set 964
+hl_attr_define 964
+hl_group_set 964
+hl_attr_define 964
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 965
+hl_attr_define 965
+hl_group_set 966
+hl_attr_define 966
+hl_group_set 966
+hl_attr_define 966
+hl_group_set 966
+hl_attr_define 966
+hl_group_set 966
+hl_attr_define 966
+hl_group_set 966
+hl_attr_define 966
+hl_group_set 966
+hl_attr_define 966
+hl_group_set 966
+hl_attr_define 966
+hl_group_set 966
+hl_attr_define 966
+hl_group_set 966
+hl_attr_define 966
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+hl_attr_define 967
+hl_group_set 967
+option_set 967
+hl_attr_define 967
+default_colors_set 968
+update WS Color 0 968
+update WS Color 1 968
+update WS Color 2 969
+update WS Color 3 969
+hl_attr_define 971
+hl_group_set 971
+hl_attr_define 971
+hl_group_set 971
+hl_attr_define 971
+hl_group_set 971
+hl_attr_define 971
+hl_group_set 971
+hl_attr_define 971
+hl_group_set 971
+hl_attr_define 971
+hl_group_set 971
+hl_attr_define 971
+hl_group_set 971
+hl_attr_define 971
+default_colors_set 971
+update WS Color 0 972
+update WS Color 1 972
+update WS Color 2 973
+update WS Color 3 973
+hl_attr_define 975
+mouse_on 976
+win_viewport 976
+hl_group_set 976
+grid_line 1 976
+grid_line 2 976
+grid_resize 976
+resize window 0 976
+resize window 1 976
+resize window 2 976
+resize window 3 976
+resize window 4 976
+resize window 5 977
+resize window 6 977
+resize window 7 978
+resize window 8 978
+resize window 9 978
+resize window 10 978
+resize window 11 978
+resize window 12 978
+resize window 13 978
+resize window 14 978
+resize window 15 978
+resize window 16 978
+resize window 17 979
+resize window 18 979
+grid_line 1 979
+grid_line 2 986
+set_icon 986
+set_title 986
+set_title 990
+win_pos 990
+win_viewport 990
+grid_cursor_goto 990
+mode_info_set 991
+mode_change 991
+flush 991
+get pos 0 991
+grid_cursor_goto 991
+flush 993
+get pos 0 993
+[test event 5 :: 929] :: 1005
+get pos 0 1005
+option_set 1005
+default_colors_set 1006
+grid_resize 1006
+resize window 0 1006
+resize window 1 1006
+resize window 2 1006
+resize window 3 1006
+resize window 4 1006
+resize window 11 1006
+resize window 12 1006
+resize window 13 1006
+resize window 14 1006
+resize window 15 1006
+resize window 16 1006
+resize window 17 1006
+resize window 18 1006
+grid_clear 1006
+grid_resize 1006
+resize window 0 1006
+resize window 1 1006
+resize window 2 1006
+resize window 3 1006
+resize window 4 1006
+resize window 11 1006
+resize window 12 1006
+resize window 13 1006
+resize window 14 1006
+resize window 15 1006
+resize window 16 1006
+resize window 17 1006
+resize window 18 1006
+msg_set_pos 1006
+win_pos 1006
+win_viewport 1006
+grid_resize 1006
+resize window 0 1006
+resize window 1 1006
+resize window 2 1006
+resize window 3 1006
+resize window 4 1006
+resize window 11 1006
+resize window 12 1006
+resize window 13 1006
+resize window 14 1006
+resize window 15 1006
+resize window 16 1006
+resize window 17 1007
+resize window 18 1007
+grid_line 1 1007
+grid_line 2 1007
+win_viewport 1007
+grid_cursor_goto 1007
+flush 1007
+get pos 0 1007
+mode_info_set 1007
+mode_change 1007
+flush 1007
+get pos 0 1007
+[test event 6 :: 996] :: 1007
+get pos 0 1007
+[test event 7 :: 1049] :: 1049
+get pos 0 1049
+[test event 8 :: 1104] :: 1104
+get pos 0 1104
+[test event 9 :: 1155] :: 1155
+get pos 0 1156
+[test event 10 :: 1207] :: 1208
+get pos 0 1208
+[test event 11 :: 1262] :: 1262
+get pos 0 1262
+[test event 12 :: 1312] :: 1312
+get pos 0 1313
+[test event 13 :: 1368] :: 1368
+get pos 0 1368
+[test event 14 :: 1423] :: 1423
+get pos 0 1423
+lazy draw ui 0 1429
+lazy draw ui 1 1448
+lazy draw ui 2 1461
+lazy draw ui 3 1461
+lazy draw ui 4 1461
+lazy draw ui 5 1461
+lazy draw ui 6 1461
+[test event 15 :: 1473] :: 1521
+get pos 0 1521
+resize window 0 1522
+resize window 1 1522
+resize window 2 1522
+resize window 3 1522
+resize window 4 1522
+resize window 5 1522
+resize window 6 1522
+resize window 7 1523
+resize window 8 1523
+resize window 9 1523
+resize window 10 1523
+resize window 11 1523
+resize window 12 1523
+resize window 13 1523
+resize window 14 1523
+resize window 15 1523
+resize window 16 1523
+resize window 17 1523
+resize window 18 1523
+[test event 16 :: 1525] :: 1541
+get pos 0 1541
+[test event 17 :: 1578] :: 1579
+get pos 0 1579
+[test event 18 :: 1629] :: 1629
+get pos 0 1629
+[test event 19 :: 1684] :: 1685
+get pos 0 1685
+[test event 20 :: 1740] :: 1740
+get pos 0 1740
+[test event 21 :: 1793] :: 1793
+get pos 0 1793
+[test event 22 :: 1845] :: 1891
+get pos 0 1891
+[test event 23 :: 1895] :: 1898
+get pos 0 1898
+[test event 24 :: 1946] :: 1946
+get pos 0 1946
+[test event 25 :: 2000] :: 2000
+get pos 0 2000
+[test event 26 :: 2051] :: 2051
+get pos 0 2051
+[test event 27 :: 2104] :: 2104
+get pos 0 2104
+[test event 28 :: 2160] :: 2160
+get pos 0 2160

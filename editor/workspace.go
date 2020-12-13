@@ -286,12 +286,14 @@ func (w *Workspace) lazyDrawUI() {
 	w.layout2.AddWidget(w.minimap.widget, 0, 0)
 	if editor.config.ScrollBar.Visible {
 		w.layout2.AddWidget(w.scrollBar.widget, 0, 0)
+		w.scrollBar.setColor()
 	}
 
 	// palette
 	w.palette = initPalette()
 	w.palette.ws = w
 	w.palette.widget.SetParent(editor.window)
+	w.palette.setColor()
 	w.palette.hide()
 
 	fmt.Fprintln(editor.file, "lazy draw ui 1", time.Now().UnixNano()/1000000-editor.startuptime)
@@ -300,6 +302,7 @@ func (w *Workspace) lazyDrawUI() {
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
 	w.fpalette.widget.SetParent(editor.window)
+	w.fpalette.setColor()
 	w.fpalette.hide()
 
 	fmt.Fprintln(editor.file, "lazy draw ui 2", time.Now().UnixNano()/1000000-editor.startuptime)
