@@ -47,7 +47,9 @@ type workspaceSignal struct {
 
 // Workspace is an editor workspace
 type Workspace struct {
-	widget     *widgets.QWidget
+	widget  *widgets.QWidget
+	layout2 *widgets.QHBoxLayout
+
 	font       *Font
 	fontwide   *Font
 	cursor     *Cursor
@@ -64,7 +66,7 @@ type Workspace struct {
 	cmdline   *Cmdline
 	signature *Signature
 	message   *Message
-	// minimap    *MiniMap
+	minimap   *MiniMap
 
 	width  int
 	height int
@@ -149,12 +151,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	// cursor
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
-
-	// scrollbar
-	if editor.config.ScrollBar.Visible {
-		w.scrollBar = newScrollBar()
-		w.scrollBar.ws = w
-	}
 
 	// markdown
 	// if !editor.config.Markdown.Disable {
@@ -244,24 +240,20 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.ConnectInputMethodQuery(w.InputMethodQuery)
 
 	// screen widget and scrollBar widget
-	scrWidget := widgets.NewQWidget(nil, 0)
-	scrWidget.SetContentsMargins(0, 0, 0, 0)
-	scrWidget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
-	scrLayout := widgets.NewQHBoxLayout()
-	scrLayout.SetContentsMargins(0, 0, 0, 0)
-	scrLayout.SetSpacing(0)
-	scrLayout.AddWidget(w.screen.widget, 0, 0)
-	// scrLayout.AddWidget(w.minimap.widget, 0, 0)
-	if editor.config.ScrollBar.Visible {
-		scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
-	}
-	scrWidget.SetLayout(scrLayout)
+	widget2 := widgets.NewQWidget(nil, 0)
+	widget2.SetContentsMargins(0, 0, 0, 0)
+	widget2.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	w.layout2 = widgets.NewQHBoxLayout()
+	w.layout2.SetContentsMargins(0, 0, 0, 0)
+	w.layout2.SetSpacing(0)
+	w.layout2.AddWidget(w.screen.widget, 0, 0)
+	widget2.SetLayout(w.layout2)
 
-	// assemble all neovim ui
+	// assemble all neovim ui components
 	if editor.config.Editor.ExtTabline {
 		layout.AddWidget(w.tabline.widget, 0, 0)
 	}
-	layout.AddWidget(scrWidget, 1, 0)
+	layout.AddWidget(widget2, 1, 0)
 	if editor.config.Statusline.Visible {
 		layout.AddWidget(w.statusline.widget, 0, 0)
 	}
@@ -279,7 +271,22 @@ func newWorkspace(path string) (*Workspace, error) {
 func (w *Workspace) lazyDrawUI() {
 	fmt.Fprintln(editor.file, "lazy draw ui 0", time.Now().UnixNano()/1000000-editor.startuptime)
 
-	fmt.Fprintln(editor.file, "lazy draw ui 1", time.Now().UnixNano()/1000000-editor.startuptime)
+	// scrollbar
+	if editor.config.ScrollBar.Visible {
+		w.scrollBar = newScrollBar()
+		w.scrollBar.ws = w
+	}
+
+	// minimap
+	if !editor.config.MiniMap.Disable {
+		w.minimap = newMiniMap()
+		w.minimap.ws = w
+	}
+
+	w.layout2.AddWidget(w.minimap.widget, 0, 0)
+	if editor.config.ScrollBar.Visible {
+		w.layout2.AddWidget(w.scrollBar.widget, 0, 0)
+	}
 
 	// palette
 	w.palette = initPalette()
@@ -287,7 +294,7 @@ func (w *Workspace) lazyDrawUI() {
 	w.palette.widget.SetParent(editor.window)
 	w.palette.hide()
 
-	fmt.Fprintln(editor.file, "lazy draw ui 2", time.Now().UnixNano()/1000000-editor.startuptime)
+	fmt.Fprintln(editor.file, "lazy draw ui 1", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// palette 2
 	w.fpalette = initPalette()
@@ -295,11 +302,39 @@ func (w *Workspace) lazyDrawUI() {
 	w.fpalette.widget.SetParent(editor.window)
 	w.fpalette.hide()
 
+	fmt.Fprintln(editor.file, "lazy draw ui 2", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// finder
 	w.finder = initFinder()
 	w.finder.ws = w
 
 	fmt.Fprintln(editor.file, "lazy draw ui 3", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	fmt.Fprintln(editor.file, "lazy draw ui 4", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	go func() {
+		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
+			w.minimap.startMinimapProc()
+			time.Sleep(time.Millisecond * 50)
+			w.minimap.mu.Lock()
+			isMinimapVisible := w.minimap.visible
+			w.minimap.mu.Unlock()
+			if isMinimapVisible {
+				w.minimap.setColorscheme()
+				w.minimap.setCurrentRegion()
+				w.minimap.bufUpdate()
+				w.minimap.bufSync()
+			}
+		}
+	}()
+
+	fmt.Fprintln(editor.file, "lazy draw ui 5", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	if editor.config.SideBar.Visible {
+		editor.sideWidget.show()
+	}
+
+	fmt.Fprintln(editor.file, "lazy draw ui 6", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) vimEnterProcess() {
@@ -327,64 +362,13 @@ func (w *Workspace) vimEnterProcess() {
 		go w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
 	})
 
-	// // messages
-	// if editor.config.Editor.ExtMessages {
-	// 	w.message = initMessage()
-	// 	w.message.ws = w
-	// 	w.message.widget.SetParent(editor.window)
-	// }
-
-	// // palette
-	// w.palette = initPalette()
-	// w.palette.ws = w
-	// w.palette.widget.SetParent(editor.window)
-	// w.palette.hide()
-
-	// // palette 2
-	// w.fpalette = initPalette()
-	// w.fpalette.ws = w
-	// w.fpalette.widget.SetParent(editor.window)
-	// w.fpalette.hide()
-
-	e := editor
 	go func() {
-		// fmt.Fprintln(editor.file, "vim enter 2", time.Now().UnixNano()/1000000-editor.startuptime)
-
-		// time.Sleep(time.Millisecond * 100)
-
-		// if editor.config.Editor.ExtMessages {
-		// 	w.message.ws = w
-		// 	w.message.widget.SetParent(editor.window)
-		// }
-		// w.palette.ws = w
-		// w.palette.widget.SetParent(editor.window)
-		// w.palette.hide()
-		// w.fpalette.ws = w
-		// w.fpalette.widget.SetParent(editor.window)
-		// w.fpalette.hide()
 
 		time.Sleep(time.Millisecond * 500)
 		w.signal.LazyDrawSignal()
 
 		time.Sleep(time.Millisecond * 400)
-		e.signal.SidebarSignal()
-
-		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
-			// w.minimap.startMinimapProc()
-			time.Sleep(time.Millisecond * 100)
-			// w.minimap.mu.Lock()
-			// isMinimapVisible := w.minimap.visible
-			// w.minimap.mu.Unlock()
-			// if isMinimapVisible {
-			// 	w.minimap.setCurrentRegion()
-			// 	w.minimap.bufUpdate()
-			// 	w.minimap.bufSync()
-			// }
-		}
-
-		// if e.config.SideBar.Visible {
-		// 	e.sideWidget.show()
-		// }
+		editor.signal.SidebarSignal()
 
 	}()
 
@@ -738,11 +722,6 @@ func (w *Workspace) initGonvim() {
 	gonvimInitNotify := `
 	call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat, &ro)
 	`
-	if !w.uiRemoteAttached {
-		gonvimInitNotify = gonvimInitNotify + `
-		call rpcnotify(0, "Gui", "gonvim_minimap_update")
-		`
-	}
 	initialNotify := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimInitNotify))
 	w.nvim.Command(initialNotify)
 
@@ -1158,11 +1137,11 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		// Global Events
 		case "set_title":
 			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
-			// titleStr := (update[1].([]interface{}))[0].(string)
-			// editor.window.SetupTitle(titleStr)
-			// if runtime.GOOS == "linux" {
-			// 	editor.window.SetWindowTitle(titleStr)
-			// }
+			titleStr := (update[1].([]interface{}))[0].(string)
+			editor.window.SetupTitle(titleStr)
+			if runtime.GOOS == "linux" {
+				editor.window.SetWindowTitle(titleStr)
+			}
 			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "set_icon":
 			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
@@ -1397,9 +1376,9 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 func (w *Workspace) drawOtherUI() {
 	s := w.screen
 
-	// if w.minimap.visible || w.drawStatusline || editor.config.ScrollBar.Visible {
-	// 	w.getPos()
-	// }
+	if (w.minimap != nil && w.minimap.visible) || w.drawStatusline || editor.config.ScrollBar.Visible {
+		w.getPos()
+	}
 
 	if w.drawStatusline {
 		if w.statusline != nil {
@@ -1408,8 +1387,10 @@ func (w *Workspace) drawOtherUI() {
 		}
 	}
 
-	if editor.config.ScrollBar.Visible {
-		w.scrollBar.update()
+	if w.scrollBar != nil {
+		if editor.config.ScrollBar.Visible {
+			w.scrollBar.update()
+		}
 	}
 
 	if s.tooltip.IsVisible() {
@@ -1417,10 +1398,12 @@ func (w *Workspace) drawOtherUI() {
 		w.screen.toolTipMove(x, y)
 	}
 
-	// if w.minimap.visible && w.minimap.widget.IsVisible() {
-	// 	go w.updateMinimap()
-	// 	w.minimap.mapScroll()
-	// }
+	if w.minimap != nil {
+		if w.minimap.visible && w.minimap.widget.IsVisible() {
+			go w.updateMinimap()
+			w.minimap.mapScroll()
+		}
+	}
 }
 
 func (w *Workspace) disableImeInNormal() {
@@ -1471,14 +1454,14 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 
 	if isChangeFg || isChangeBg {
 		editor.isSetGuiColor = false
-		if !w.uiRemoteAttached {
-			// aw := editor.workspaces[editor.active]
-			// change minimap colorscheme
-			// aw.minimap.isSetColorscheme = false
-			// if aw.minimap.visible && aw.minimap.nvim != nil && aw.nvim != nil {
-			// 	aw.minimap.setColorscheme()
-			// }
-		}
+		// if !w.uiRemoteAttached {
+		// 	// aw := editor.workspaces[editor.active]
+		// 	// change minimap colorscheme
+		// 	// aw.minimap.isSetColorscheme = false
+		// 	// if aw.minimap.visible && aw.minimap.nvim != nil && aw.nvim != nil {
+		// 	// 	aw.minimap.setColorscheme()
+		// 	// }
+		// }
 	}
 	if len(editor.workspaces) > 1 {
 		w.updateWorkspaceColor()
@@ -1540,8 +1523,11 @@ func (w *Workspace) updateWorkspaceColor() {
 			w.statusline.setColor()
 		}
 	}
-	if editor.config.ScrollBar.Visible {
-		w.scrollBar.setColor()
+
+	if w.scrollBar != nil {
+		if editor.config.ScrollBar.Visible {
+			w.scrollBar.setColor()
+		}
 	}
 
 	fmt.Fprintln(editor.file, "update WS Color 3", time.Now().UnixNano()/1000000-editor.startuptime)
@@ -1650,22 +1636,22 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	w.curPosMutex.Unlock()
 }
 
-// func (w *Workspace) updateMinimap() {
-// 	var absMapTop int
-// 	var absMapBottom int
-// 	w.minimap.nvim.Eval("line('w0')", &absMapTop)
-// 	w.minimap.nvim.Eval("line('w$')", &absMapBottom)
-// 	w.curPosMutex.RLock()
-// 	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
-// 	defer w.curPosMutex.RUnlock()
-// 	switch {
-// 	case w.curLine >= absMapBottom:
-// 		w.minimap.nvim.Input("<C-d>")
-// 	case absMapTop >= w.curLine:
-// 		w.minimap.nvim.Input("<C-u>")
-// 	default:
-// 	}
-// }
+func (w *Workspace) updateMinimap() {
+	var absMapTop int
+	var absMapBottom int
+	w.minimap.nvim.Eval("line('w0')", &absMapTop)
+	w.minimap.nvim.Eval("line('w$')", &absMapBottom)
+	w.curPosMutex.RLock()
+	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
+	defer w.curPosMutex.RUnlock()
+	switch {
+	case w.curLine >= absMapBottom:
+		w.minimap.nvim.Input("<C-d>")
+	case absMapTop >= w.curLine:
+		w.minimap.nvim.Input("<C-u>")
+	default:
+	}
+}
 
 func (w *Workspace) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
@@ -1730,16 +1716,20 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.sideWidget.items[w.getNum()].selectItem(updates[1:])
 	case "gonvim_grid_font":
 		w.screen.gridFont(updates[1])
-	// case "gonvim_minimap_update":
-	// 	if w.minimap.visible {
-	// 		w.minimap.bufUpdate()
-	// 	}
-	// case "gonvim_minimap_sync":
-	// 	if w.minimap.visible {
-	// 		go w.minimap.bufSync()
-	// 	}
-	// case "gonvim_minimap_toggle":
-	// 	go w.minimap.toggle()
+	case "gonvim_minimap_update":
+		if w.minimap != nil {
+			if w.minimap.visible {
+				w.minimap.bufUpdate()
+			}
+		}
+	case "gonvim_minimap_sync":
+		if w.minimap != nil {
+			if w.minimap.visible {
+				go w.minimap.bufSync()
+			}
+		}
+	case "gonvim_minimap_toggle":
+		go w.minimap.toggle()
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
 	case "gonvim_get_maxline":

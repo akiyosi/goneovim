@@ -151,7 +151,7 @@ func (m *MiniMap) startMinimapProc() {
 	}
 	m.uiAttached = true
 
-	neovim.Subscribe("Gui")
+	// neovim.Subscribe("Gui")
 	neovim.Command(":syntax on")
 	neovim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all")
 }
@@ -354,6 +354,7 @@ func (m *MiniMap) setColorscheme() {
 	if m.colorscheme == colo {
 		return
 	}
+
 	// set colorscheme
 	m.nvim.Command(":colorscheme " + colo)
 	m.colorscheme = colo
