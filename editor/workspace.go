@@ -313,6 +313,8 @@ func (w *Workspace) lazyDrawUI() {
 
 	fmt.Fprintln(editor.file, "lazy draw ui 3", time.Now().UnixNano()/1000000-editor.startuptime)
 
+	w.setCwd(w.getCwd())
+
 	// Add editor feature
 	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
 	filer.RegisterPlugin(w.nvim)
@@ -337,9 +339,10 @@ func (w *Workspace) lazyDrawUI() {
 
 	fmt.Fprintln(editor.file, "lazy draw ui 5", time.Now().UnixNano()/1000000-editor.startuptime)
 
-	if editor.config.SideBar.Visible {
-		editor.sideWidget.show()
-	}
+	// side := editor.sideWidget
+	// if editor.config.SideBar.Visible {
+	// 	side.show()
+	// }
 
 	fmt.Fprintln(editor.file, "lazy draw ui 6", time.Now().UnixNano()/1000000-editor.startuptime)
 }
@@ -641,7 +644,7 @@ func (w *Workspace) initGonvim() {
 	fmt.Fprintln(editor.file, "init goneovim 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	gonvimAutoCmds := `
 	aug GonvimAu | au! | aug END
-	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
+	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
 	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter")
 	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_filetype", &ft, win_getid())
@@ -886,6 +889,21 @@ func (w *Workspace) getNumOfTabs() int {
 	}
 
 	return num
+}
+
+func (w *Workspace) getCwd() string {
+	done := make(chan bool, 5)
+	cwd := ""
+	go func() {
+		w.nvim.Eval("getcwd()", &cwd)
+		done <- true
+	}()
+	select {
+	case <-done:
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	return cwd
 }
 
 func (w *Workspace) nvimEval(s string) (interface{}, error) {
@@ -1661,7 +1679,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_enter":
 		fmt.Fprintln(editor.file, "vim enter", time.Now().UnixNano()/1000000-editor.startuptime)
 		w.vimEnterProcess()
-		w.setCwd(updates[1].(string))
 	case "gonvim_uienter":
 		fmt.Fprintln(editor.file, "ui enter", time.Now().UnixNano()/1000000-editor.startuptime)
 	case "gonvim_resize":
@@ -2349,6 +2366,19 @@ func (side *WorkspaceSide) show() {
 	}
 	side.scrollarea.Show()
 	side.isShown = true
+
+	for i := 0; i < WORKSPACELEN; i++ {
+		if side.items[i] == nil {
+			continue
+		}
+		if !side.items[i].active {
+			continue
+		}
+		if editor.workspaces[i] != nil {
+			editor.workspaces[i].setCwd(editor.workspaces[i].getCwd())
+		}
+		side.items[i].show()
+	}
 }
 
 func (side *WorkspaceSide) hide() {
@@ -2405,12 +2435,16 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	labelWidget := widgets.NewQWidget(nil, 0)
 	labelLayout := widgets.NewQHBoxLayout()
 	labelWidget.SetLayout(labelLayout)
+	labelWidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 	labelLayout.SetContentsMargins(15, 1, 1, 1)
 	labelLayout.SetSpacing(editor.iconSize / 2)
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(0, 0, 0, 0)
 	label.SetAlignment(core.Qt__AlignLeft)
+	width := editor.config.SideBar.Width
+	label.SetMaximumWidth(width)
+	label.SetMinimumWidth(width)
 
 	openIcon := svg.NewQSvgWidget(nil)
 	openIcon.SetFixedWidth(editor.iconSize - 1)

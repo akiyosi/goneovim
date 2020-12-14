@@ -290,11 +290,18 @@ func InitEditor() {
 	e.connectAppSignals()
 
 	e.signal.ConnectSidebarSignal(func() {
+		if e.sideWidget != nil {
+			return
+		}
 		e.sideWidget = newWorkspaceSide()
 		e.sideWidget.newScrollArea()
 		e.sideWidget.scrollarea.Hide()
 		e.sideWidget.scrollarea.SetWidget(e.sideWidget.widget)
 		e.splitter.InsertWidget(0, e.sideWidget.scrollarea)
+		side := e.sideWidget
+		if e.config.SideBar.Visible {
+			side.show()
+		}
 	})
 
 	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
