@@ -313,8 +313,13 @@ func (w *Workspace) lazyDrawUI() {
 
 	fmt.Fprintln(editor.file, "lazy draw ui 3", time.Now().UnixNano()/1000000-editor.startuptime)
 
+	// Add editor feature
+	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
+	filer.RegisterPlugin(w.nvim)
+
 	fmt.Fprintln(editor.file, "lazy draw ui 4", time.Now().UnixNano()/1000000-editor.startuptime)
 
+	// Asynchronously execute the process for minimap
 	go func() {
 		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
 			w.minimap.startMinimapProc()
@@ -611,10 +616,6 @@ func (w *Workspace) attachUI(path string) error {
 	}
 
 	fmt.Fprintln(editor.file, "attach ui 5", time.Now().UnixNano()/1000000-editor.startuptime)
-
-	// Add editor feature
-	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
-	filer.RegisterPlugin(w.nvim)
 
 	w.fontMutex.Lock()
 	defer w.fontMutex.Unlock()
