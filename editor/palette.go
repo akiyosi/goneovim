@@ -253,6 +253,7 @@ func (p *Palette) show() {
 	p.widget.Raise()
 	p.widget.SetWindowOpacity(1.0)
 	p.widget.Show()
+	p.resize()
 }
 
 func (p *Palette) hide() {
