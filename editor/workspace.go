@@ -316,8 +316,8 @@ func (w *Workspace) lazyDrawUI() {
 	w.setCwd(w.getCwd())
 
 	// Add editor feature
-	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
-	filer.RegisterPlugin(w.nvim)
+	go fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
+	go filer.RegisterPlugin(w.nvim)
 
 	fmt.Fprintln(editor.file, "lazy draw ui 4", time.Now().UnixNano()/1000000-editor.startuptime)
 
