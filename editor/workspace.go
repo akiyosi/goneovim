@@ -624,6 +624,13 @@ func (w *Workspace) attachUI(path string) error {
 	defer w.fontMutex.Unlock()
 	w.uiAttached = true
 	fmt.Fprintln(editor.file, "attach ui 6", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// On Windows, it may take a long time to get the width of CJK characters.
+	// Therefore, we will run this process in concurrently in the background of attaching to neovim.
+	// This issue may also be related to the following.
+	// https://github.com/equalsraf/neovim-qt/issues/614
+	go w.font.fontMetrics.HorizontalAdvance("あ", -1)
+
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
 	if err != nil {
 		fmt.Println(err)
