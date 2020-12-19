@@ -622,9 +622,9 @@ func (s *Fuzzy) outputResult() {
 		return
 	}
 	start := s.start
+	result := s.result
 	selected := s.selected
 	s.resultRWMtext.RLock()
-	result := s.result
 	max := s.max
 	total := len(result)
 	if start >= total || selected >= total {
@@ -764,3 +764,4 @@ func insertAtIndex(in string, i int, newChar string) string {
 // 	}
 // 	return int(iface.(uint64))
 // }
+
