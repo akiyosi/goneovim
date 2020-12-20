@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
@@ -27,6 +28,12 @@ const (
 	GONEOVIMVERSION = "v0.4.9"
 	WORKSPACELEN    = 10
 )
+
+type editorSignal struct {
+	core.QObject
+	_ func() `signal:"notifySignal"`
+	_ func() `signal:"sidebarSignal"`
+}
 
 // ColorPalette is
 type ColorPalette struct {
@@ -97,10 +104,13 @@ type Editor struct {
 	workspaces []*Workspace
 	active     int
 	window     *frameless.QFramelessWindow
-	splitter   *widgets.QSplitter
-	wsWidget   *widgets.QWidget
-	wsSide     *WorkspaceSide
-	sysTray    *widgets.QSystemTrayIcon
+	// window     *widgets.QMainWindow
+	splitter       *widgets.QSplitter
+	widget         *widgets.QWidget
+	sideWidget     *WorkspaceSide
+	sideWidgetChan chan *widgets.QScrollArea
+
+	sysTray *widgets.QSystemTrayIcon
 
 	width    int
 	height   int
@@ -127,11 +137,10 @@ type Editor struct {
 
 	extFontFamily string
 	extFontSize   int
-}
+	font          *Font
 
-type editorSignal struct {
-	core.QObject
-	_ func() `signal:"notifySignal"`
+	startuptime int64
+	file        *os.File
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -150,21 +159,23 @@ func (hl *Highlight) copy() Highlight {
 
 // InitEditor is
 func InitEditor() {
-	// parse option
-	var opts Option
-	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
-	args, err := parser.ParseArgs(os.Args[1:])
-	if flagsErr, ok := err.(*flags.Error); ok {
-		switch flagsErr.Type {
-		case flags.ErrDuplicatedFlag:
-		case flags.ErrHelp:
-			fmt.Println(err)
-			os.Exit(1)
-		}
+	startuptime := time.Now().UnixNano() / 1000000
+	file, err := os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return
 	}
+	fmt.Fprintln(file, "editor 0", time.Now().UnixNano()/1000000-startuptime)
+
+	// parse args
+	opts, args := parseArgs()
+
+	fmt.Fprintln(file, "editor 1", time.Now().UnixNano()/1000000-startuptime)
 
 	// put shell environment
+	// TODO: This process runs on a Unix-like OS, but it is very slow. I want to improve it.
 	putEnv()
+
+	fmt.Fprintln(file, "editor 2", time.Now().UnixNano()/1000000-startuptime)
 
 	// detect home dir
 	home, err := homedir.Dir()
@@ -172,56 +183,73 @@ func InitEditor() {
 		home = "~"
 	}
 
-	// detect config dir
-	var configDir string
-	if runtime.GOOS != "windows" {
-		xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
-		if xdgConfigHome != "" {
-			configDir = filepath.Join(xdgConfigHome, "goneovim")
-		} else {
-			configDir = filepath.Join(home, ".config", "goneovim")
-		}
-		if !isFileExist(configDir) {
-			configDir = filepath.Join(home, ".goneovim")
-		}
-	} else {
-		configDir = filepath.Join(home, ".goneovim")
-	}
+	fmt.Fprintln(file, "editor 3", time.Now().UnixNano()/1000000-startuptime)
+
+	configDir, config := newConfig(home)
+
+	fmt.Fprintln(file, "editor 4", time.Now().UnixNano()/1000000-startuptime)
 
 	editor = &Editor{
-		version:   GONEOVIMVERSION,
-		signal:    NewEditorSignal(nil),
-		stop:      make(chan struct{}),
-		notify:    make(chan *Notify, 10),
-		cbChan:    make(chan *string, 240),
-		config:    newGonvimConfig(configDir),
-		homeDir:   home,
-		configDir: configDir,
-		args:      args,
-		opts:      opts,
+		version:     GONEOVIMVERSION,
+		signal:      NewEditorSignal(nil),
+		stop:        make(chan struct{}),
+		notify:      make(chan *Notify, 10),
+		cbChan:      make(chan *string, 240),
+		config:      config,
+		homeDir:     home,
+		configDir:   configDir,
+		args:        args,
+		opts:        opts,
+		startuptime: startuptime,
+		file:        file,
 	}
 	e := editor
 
+	fmt.Fprintln(file, "editor 5", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// application
-	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
+	// core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
+	// coreapp := core.NewQCoreApplication(len(os.Args), os.Args)
+
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
+	// e.app = widgets.NewQApplicationFromPointer(coreapp)
 	e.ppid = os.Getppid()
+
+	fmt.Fprintln(file, "editor 6", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// set application working directory path
 	e.setAppDirPath(home)
 
 	e.initFont()
+	fontGenAsync := make(chan *Font, 2)
+	go func() {
+		font := initFontNew(
+			editor.extFontFamily,
+			float64(editor.extFontSize),
+			0,
+		)
+
+		fontGenAsync <- font
+	}()
+
+	fmt.Fprintln(file, "editor 6-2", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	e.initSVGS()
 	e.initColorPalette()
 	e.initNotifications()
 	e.initSysTray()
 
+	fmt.Fprintln(file, "editor 7", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// application main window
+	// e.window = widgets.NewQMainWindow(nil, 0)
 	isframeless := e.config.Editor.BorderlessWindow
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
 	e.showWindow()
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
+
+	fmt.Fprintln(file, "editor 8", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// window layout
 	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
@@ -229,18 +257,52 @@ func InitEditor() {
 	l.SetSpacing(0)
 	e.window.SetupContent(l)
 
+	fmt.Fprintln(file, "editor 9", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// window content
-	e.wsWidget = widgets.NewQWidget(nil, 0)
-	e.wsSide = newWorkspaceSide()
-	e.wsSide.newScrollArea()
-	e.wsSide.scrollarea.Hide()
+	e.widget = widgets.NewQWidget(nil, 0)
+	// e.window.SetCentralWidget(e.widget)
+
+	fmt.Fprintln(file, "editor 9-1", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// e.sideWidget = newWorkspaceSide()
+	// e.sideWidget.newScrollArea()
+	// e.sideWidget.scrollarea.Hide()
+	// e.sideWidget.scrollarea.SetWidget(e.sideWidget.widget)
 	e.newSplitter()
+	// e.splitter.InsertWidget(0, e.sideWidget.scrollarea)
+	e.splitter.InsertWidget(1, e.widget)
 	l.AddWidget(e.splitter, 1, 0)
+
+	// l.AddWidget(e.widget, 1, 0)
+
+	fmt.Fprintln(file, "editor 9-6", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// e.sideWidget.scrollarea.SetWidget(editor.sideWidget.widget)
+
+	fmt.Fprintln(file, "editor 10", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	e.font = <-fontGenAsync
 
 	// neovim workspaces
 	e.initWorkspaces()
 
 	e.connectAppSignals()
+
+	e.signal.ConnectSidebarSignal(func() {
+		if e.sideWidget != nil {
+			return
+		}
+		e.sideWidget = newWorkspaceSide()
+		e.sideWidget.newScrollArea()
+		e.sideWidget.scrollarea.Hide()
+		e.sideWidget.scrollarea.SetWidget(e.sideWidget.widget)
+		e.splitter.InsertWidget(0, e.sideWidget.scrollarea)
+		side := e.sideWidget
+		if e.config.SideBar.Visible {
+			side.show()
+		}
+	})
 
 	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
 		e.app.DisconnectEvent()
@@ -261,16 +323,40 @@ func InitEditor() {
 		if e.config.Editor.Clipboard {
 			go func() {
 				for {
-					text := <-e.cbChan
-					e.app.Clipboard().SetText(*text, gui.QClipboard__Clipboard)
+					select {
+					case <-e.stop:
+						return
+					default:
+						text := <-e.cbChan
+						e.app.Clipboard().SetText(*text, gui.QClipboard__Clipboard)
+					}
 				}
 			}()
 		}
 	}
 
-	e.wsWidget.SetFocus2()
+	fmt.Fprintln(file, "editor 11", time.Now().UnixNano()/1000000-editor.startuptime)
+	e.widget.SetFocus2()
+	fmt.Fprintln(file, "editor 12", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	widgets.QApplication_Exec()
+}
+
+// parsArgs parse args
+func parseArgs() (Option, []string) {
+	var opts Option
+	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
+	args, err := parser.ParseArgs(os.Args[1:])
+	if flagsErr, ok := err.(*flags.Error); ok {
+		switch flagsErr.Type {
+		case flags.ErrDuplicatedFlag:
+		case flags.ErrHelp:
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+
+	return opts, args
 }
 
 // setAppDirPath
@@ -306,15 +392,11 @@ func (e *Editor) setAppDirPath(home string) {
 func (e *Editor) newSplitter() {
 	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
 	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
-	splitter.AddWidget(e.wsSide.scrollarea)
-	splitter.AddWidget(e.wsWidget)
+	// splitter.AddWidget(e.sideWidget.scrollarea)
+	// splitter.AddWidget(e.widget)
 	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
 	e.splitter = splitter
-
-	if editor.config.SideBar.Visible {
-		e.wsSide.show()
-	}
 }
 
 func (e *Editor) initWorkspaces() {
@@ -345,9 +427,9 @@ func (e *Editor) initWorkspaces() {
 
 	e.workspaceUpdate()
 
-	e.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	e.wsWidget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
-	e.wsWidget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
+	e.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	e.widget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
+	e.widget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
 }
 
 func (e *Editor) connectAppSignals() {
@@ -699,24 +781,30 @@ func (e *Editor) workspacePrevious() {
 }
 
 func (e *Editor) workspaceUpdate() {
-	if e.wsSide == nil {
+	fmt.Fprintln(editor.file, "workspaceUpdate 0", time.Now().UnixNano()/1000000-editor.startuptime)
+	if e.sideWidget == nil {
 		return
 	}
 	for i, ws := range e.workspaces {
 		if i == e.active {
+			fmt.Fprintln(editor.file, "workspaceUpdate 1", time.Now().UnixNano()/1000000-editor.startuptime)
 			ws.show()
+			fmt.Fprintln(editor.file, "workspaceUpdate 2", time.Now().UnixNano()/1000000-editor.startuptime)
 		} else {
 			ws.hide()
 		}
 	}
-	for i := 0; i < len(e.wsSide.items) && i < len(e.workspaces); i++ {
-		e.wsSide.items[i].setSideItemLabel(i)
-		e.wsSide.items[i].setText(e.workspaces[i].cwdlabel)
-		e.wsSide.items[i].show()
+	for i := 0; i < len(e.sideWidget.items) && i < len(e.workspaces); i++ {
+		e.sideWidget.items[i].setSideItemLabel(i)
+		e.sideWidget.items[i].setText(e.workspaces[i].cwdlabel)
+		e.sideWidget.items[i].show()
 	}
-	for i := len(e.workspaces); i < len(e.wsSide.items); i++ {
-		e.wsSide.items[i].hide()
+	fmt.Fprintln(editor.file, "workspaceUpdate 3", time.Now().UnixNano()/1000000-editor.startuptime)
+	for i := len(e.workspaces); i < len(e.sideWidget.items); i++ {
+		e.sideWidget.items[i].hide()
 	}
+
+	fmt.Fprintln(editor.file, "workspaceUpdate 4", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {

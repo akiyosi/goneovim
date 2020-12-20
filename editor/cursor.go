@@ -138,9 +138,9 @@ func (c *Cursor) move() {
 		),
 	)
 
-	if c.ws.loc != nil {
-		c.ws.loc.updatePos()
-	}
+	// if c.ws.loc != nil {
+	// 	c.ws.loc.updatePos()
+	// }
 
 	// Fix #119: Wrong candidate window position when using ibus
 	if runtime.GOOS == "linux" {
@@ -248,7 +248,7 @@ func (c *Cursor) updateCursorShape() {
 }
 
 func (c *Cursor) update() {
-	if c.mode != c.ws.mode || c.mode == "terminal-input" {
+	if c.mode != c.ws.mode {
 		c.mode = c.ws.mode
 		if c.mode == "terminal-input" {
 			c.widget.Hide()
@@ -269,8 +269,8 @@ func (c *Cursor) update() {
 	if row >= len(win.content) ||
 		col >= len(win.content[0]) ||
 		win.content[row][col] == nil ||
-		win.content[row][col].char == "" ||
-		c.ws.palette.widget.IsVisible() {
+		win.content[row][col].char == "" {
+		// c.ws.palette.widget.IsVisible() {
 		c.text = ""
 		c.normalWidth = true
 	} else {
@@ -280,8 +280,10 @@ func (c *Cursor) update() {
 
 	c.updateCursorShape()
 
-	if c.ws.palette.widget.IsVisible() {
-		return
+	if c.ws.palette != nil {
+		if c.ws.palette.widget.IsVisible() {
+			return
+		}
 	}
 	font := c.font
 	if font == nil {

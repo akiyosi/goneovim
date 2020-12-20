@@ -277,21 +277,31 @@ func (s *Screen) waitTime() time.Duration {
 }
 
 func (s *Screen) updateSize() {
+	fmt.Fprintln(editor.file, "screen update size 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	s.ws.fontMutex.Lock()
 	defer s.ws.fontMutex.Unlock()
+
+	fmt.Fprintln(editor.file, "screen update size 0", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	ws := s.ws
 	scrollvarWidth := 0
 	if editor.config.ScrollBar.Visible {
 		scrollvarWidth = 10
 	}
+
+	fmt.Fprintln(editor.file, "screen update size 1", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	minimapWidth := 0
-	if s.ws.minimap.visible {
-		minimapWidth = editor.config.MiniMap.Width
+	if s.ws.minimap != nil {
+		if s.ws.minimap.visible {
+			minimapWidth = editor.config.MiniMap.Width
+		}
 	}
 	s.width = ws.width - scrollvarWidth - minimapWidth
 	currentCols := int(float64(s.width) / s.font.truewidth)
 	currentRows := s.height / s.font.lineHeight
+
+	fmt.Fprintln(editor.file, "screen update size 2", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	isNeedTryResize := (currentCols != ws.cols || currentRows != ws.rows)
 	if !isNeedTryResize {
@@ -300,6 +310,8 @@ func (s *Screen) updateSize() {
 
 	ws.cols = currentCols
 	ws.rows = currentRows
+
+	fmt.Fprintln(editor.file, "screen update size 3", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// fmt.Println("debug:: update", currentCols, currentRows, s.width, s.height)
 
@@ -320,8 +332,12 @@ func (s *Screen) updateSize() {
 		return true
 	})
 
+	fmt.Fprintln(editor.file, "screen update size 4", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// fmt.Println("debug:: try resize", currentCols, currentRows, s.width, s.height)
 	s.uiTryResize(currentCols, currentRows)
+
+	fmt.Fprintln(editor.file, "screen update size 5", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (s *Screen) uiTryResize(width, height int) {
@@ -419,8 +435,7 @@ func (s *Screen) gridFont(update interface{}) {
 	win.height = oldHeight
 	win.localWindows = &[4]localWindow{}
 
-	// fontMetrics := gui.NewQFontMetricsF(gui.NewQFont2(fontfamily, height, 1, false))
-	win.font = initFontNew(fontfamily, float64(height), 1, false)
+	win.font = initFontNew(fontfamily, float64(height), 1)
 
 	// Calculate new cols, rows of current grid
 	newCols := int(oldWidth / win.font.truewidth)
@@ -610,10 +625,10 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	p.DestroyQPainter()
 
-	// Update markdown preview
-	if w.grid != 1 && !w.isMsgGrid && w.s.ws.markdown != nil {
-		w.s.ws.markdown.updatePos()
-	}
+	// // Update markdown preview
+	// if w.grid != 1 && !w.isMsgGrid && w.s.ws.markdown != nil {
+	// 	w.s.ws.markdown.updatePos()
+	// }
 
 	w.paintMutex.Unlock()
 }
@@ -1440,7 +1455,10 @@ func (s *Screen) gridResize(args []interface{}) {
 }
 
 func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
+	fmt.Fprintln(editor.file, "resize window 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	win, _ := s.getWindow(gridid)
+
+	fmt.Fprintln(editor.file, "resize window 1", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// make new size content
 	content := make([][]*Cell, rows)
@@ -1448,10 +1466,14 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	lenContent := make([]int, rows)
 	lenOldContent := make([]int, rows)
 
+	fmt.Fprintln(editor.file, "resize window 2", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	for i := 0; i < rows; i++ {
 		content[i] = make([]*Cell, cols)
 		lenContent[i] = cols - 1
 	}
+
+	fmt.Fprintln(editor.file, "resize window 3", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	if win != nil && gridid != 1 {
 		for i := 0; i < rows; i++ {
@@ -1470,11 +1492,19 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		}
 	}
 
+	fmt.Fprintln(editor.file, "resize window 4", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	if win == nil {
 		win = newWindow()
+
+		fmt.Fprintln(editor.file, "resize window 5", time.Now().UnixNano()/1000000-editor.startuptime)
 		win.s = s
 		s.storeWindow(gridid, win)
+
+		fmt.Fprintln(editor.file, "resize window 6", time.Now().UnixNano()/1000000-editor.startuptime)
 		win.setParent(s.widget)
+
+		fmt.Fprintln(editor.file, "resize window 7", time.Now().UnixNano()/1000000-editor.startuptime)
 		win.grid = gridid
 		win.s.ws.optionsetMutex.RLock()
 		ts := s.ws.ts
@@ -1483,18 +1513,26 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win.ts = ts
 		win.paintMutex.RUnlock()
 
+		fmt.Fprintln(editor.file, "resize window 8", time.Now().UnixNano()/1000000-editor.startuptime)
+
 		// set scroll
 		if s.name != "minimap" {
 			win.widget.ConnectWheelEvent(win.wheelEvent)
 		}
 
+		fmt.Fprintln(editor.file, "resize window 9", time.Now().UnixNano()/1000000-editor.startuptime)
+
 		// first cursor pos at startup app
 		if gridid == 1 && s.name != "minimap" {
 			s.ws.cursor.widget.SetParent(win.widget)
 		}
+
+		fmt.Fprintln(editor.file, "resize window 10", time.Now().UnixNano()/1000000-editor.startuptime)
 	}
 	winOldCols := win.cols
 	winOldRows := win.rows
+
+	fmt.Fprintln(editor.file, "resize window 11", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	win.lenLine = lenLine
 	win.lenContent = lenContent
@@ -1503,16 +1541,30 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win.cols = cols
 	win.rows = rows
 
+	fmt.Fprintln(editor.file, "resize window 12", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	s.resizeIndependentFontGrid(win, winOldCols, winOldRows)
 
 	font := win.getFont()
+
+	fmt.Fprintln(editor.file, "resize window 13", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	width := int(math.Ceil(float64(cols) * font.truewidth))
 	height := rows * font.lineHeight
+
+	fmt.Fprintln(editor.file, "resize window 14", time.Now().UnixNano()/1000000-editor.startuptime)
 	win.setGridGeometry(width, height)
+
+	fmt.Fprintln(editor.file, "resize window 15", time.Now().UnixNano()/1000000-editor.startuptime)
 	win.move(win.pos[0], win.pos[1])
 
+	fmt.Fprintln(editor.file, "resize window 16", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	win.show()
+
+	fmt.Fprintln(editor.file, "resize window 17", time.Now().UnixNano()/1000000-editor.startuptime)
 	win.queueRedrawAll()
+	fmt.Fprintln(editor.file, "resize window 18", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
@@ -1683,7 +1735,6 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 
 		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
 		s.cursor[1] = util.ReflectToInt(arg.([]interface{})[2])
-
 		if isSkipGlobalId(gridid) {
 			continue
 		}
@@ -3105,7 +3156,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := arg.([]interface{})[6]
 
-		win.widget.SetParent(editor.wsWidget)
+		win.widget.SetParent(editor.widget)
 
 		win.propMutex.Lock()
 		win.isFloatWin = true

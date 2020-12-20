@@ -39,6 +39,9 @@ type Palette struct {
 	scrollBar        *widgets.QWidget
 	scrollBarPos     int
 	scrollCol        *widgets.QWidget
+	foreground       *RGBA
+	background       *RGBA
+	inactiveFg       *RGBA
 }
 
 // PaletteResultItem is the result item
@@ -162,13 +165,23 @@ func initPalette() *Palette {
 }
 
 func (p *Palette) setColor() {
-	fg := editor.colors.widgetFg.String()
+	if p.foreground.equals(editor.colors.widgetFg) && p.background.equals(editor.colors.widgetBg) && p.inactiveFg.equals(editor.colors.inactiveFg) {
+		return
+	}
+
+	p.foreground = editor.colors.widgetFg
+	p.background = editor.colors.widgetBg
+	p.inactiveFg = editor.colors.inactiveFg
+
+	fg := p.foreground.String()
 	bg := editor.colors.widgetBg
 	inactiveFg := editor.colors.inactiveFg
+
 	transparent := transparent() * transparent()
 	if editor.config.Palette.Transparent < 1.0 {
 		transparent = editor.config.Palette.Transparent * editor.config.Palette.Transparent
 	}
+
 	p.widget.SetStyleSheet(fmt.Sprintf(" .QWidget { background-color: rgba(%d, %d, %d, %f); } * { color: %s; } ", bg.R, bg.G, bg.B, transparent, fg))
 	p.scrollBar.SetStyleSheet(fmt.Sprintf("background-color: rgba(%d, %d, %d, %f);", inactiveFg.R, inactiveFg.G, inactiveFg.B, transparent))
 	for _, item := range p.resultItems {
@@ -234,11 +247,13 @@ func (p *Palette) show() {
 	if !p.hidden {
 		return
 	}
+	p.setColor()
 	p.resizeResultItems()
 	p.hidden = false
 	p.widget.Raise()
 	p.widget.SetWindowOpacity(1.0)
 	p.widget.Show()
+	p.resize()
 }
 
 func (p *Palette) hide() {
@@ -279,9 +294,9 @@ func (p *Palette) redrawAllContentInWindows() {
 	if runtime.GOOS != "windows" {
 		return
 	}
-	if p.ws.markdown.webview.IsVisible() {
-		return
-	}
+	// if p.ws.markdown.webview.IsVisible() {
+	// 	return
+	// }
 
 	p.hide()
 	p.resultWidget.Hide()

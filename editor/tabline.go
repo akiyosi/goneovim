@@ -31,6 +31,8 @@ type Tabline struct {
 	font       *gui.QFont
 	fontfamily string
 	fontsize   int
+
+	color *RGBA
 }
 
 // Tab in the tabline
@@ -61,12 +63,17 @@ func (t *Tabline) subscribe() {
 }
 
 func (t *Tabline) setColor() {
-	inactiveFg := editor.colors.inactiveFg.String()
+	if t.color.equals(editor.colors.inactiveFg) {
+		return
+	}
+
+	t.color = editor.colors.inactiveFg
+	colorStr := t.color.String()
 	t.widget.SetStyleSheet(fmt.Sprintf(`
 	.QWidget { 
 		border-bottom: 0px solid;
 		border-right: 0px solid;
-		background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; } `, inactiveFg))
+		background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; } `, colorStr))
 	t.updateTabs()
 }
 
@@ -369,6 +376,9 @@ func (t *Tabline) update(args []interface{}) {
 		lenhiddentabs++
 	}
 	lenshowntabs := 24 - lenhiddentabs
+
+	// Set color
+	t.setColor()
 
 	// Support showtabline behavior in external tabline
 	if t.ws.showtabline == 1 {

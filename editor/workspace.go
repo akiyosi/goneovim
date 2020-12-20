@@ -27,20 +27,29 @@ import (
 
 type workspaceSignal struct {
 	core.QObject
-	_ func() `signal:"markdownSignal"`
+
 	_ func() `signal:"stopSignal"`
 	_ func() `signal:"redrawSignal"`
 	_ func() `signal:"guiSignal"`
+
+	// _ func() `signal:"locpopupSignal"`
+
 	_ func() `signal:"statuslineSignal"`
-	_ func() `signal:"locpopupSignal"`
 	_ func() `signal:"lintSignal"`
 	_ func() `signal:"gitSignal"`
+
 	_ func() `signal:"messageSignal"`
+
+	// _ func() `signal:"markdownSignal"`
+
+	_ func() `signal:"lazyDrawSignal"`
 }
 
 // Workspace is an editor workspace
 type Workspace struct {
-	widget     *widgets.QWidget
+	widget  *widgets.QWidget
+	layout2 *widgets.QHBoxLayout
+
 	font       *Font
 	fontwide   *Font
 	cursor     *Cursor
@@ -48,16 +57,16 @@ type Workspace struct {
 	statusline *Statusline
 	screen     *Screen
 	scrollBar  *ScrollBar
-	markdown   *Markdown
-	finder     *Finder
-	palette    *Palette
-	fpalette   *Palette
-	popup      *PopupMenu
-	loc        *Locpopup
-	cmdline    *Cmdline
-	signature  *Signature
-	message    *Message
-	minimap    *MiniMap
+	// markdown   *Markdown
+	finder   *Finder
+	palette  *Palette
+	fpalette *Palette
+	popup    *PopupMenu
+	// loc        *Locpopup
+	cmdline   *Cmdline
+	signature *Signature
+	message   *Message
+	minimap   *MiniMap
 
 	width  int
 	height int
@@ -103,7 +112,6 @@ type Workspace struct {
 	signal        *workspaceSignal
 	redrawUpdates chan [][]interface{}
 	guiUpdates    chan []interface{}
-	doneNvimStart chan bool
 	stopOnce      sync.Once
 	stop          chan struct{}
 	fontMutex     sync.Mutex
@@ -114,25 +122,22 @@ type Workspace struct {
 }
 
 func newWorkspace(path string) (*Workspace, error) {
+	fmt.Fprintln(editor.file, "new workspace 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	w := &Workspace{
 		stop:          make(chan struct{}),
 		signal:        NewWorkspaceSignal(nil),
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
-		doneNvimStart: make(chan bool, 1000),
-		foreground:    newRGBA(180, 185, 190, 1),
-		background:    newRGBA(9, 13, 17, 1),
+		foreground:    newRGBA(255, 255, 255, 1),
+		background:    newRGBA(0, 0, 0, 1),
 		special:       newRGBA(255, 255, 255, 1),
 	}
 	w.registerSignal()
+	fmt.Fprintln(editor.file, "new workspace 1", time.Now().UnixNano()/1000000-editor.startuptime)
 
-	w.font = initFontNew(
-		editor.extFontFamily,
-		float64(editor.extFontSize),
-		0,
-		false,
-	)
+	w.font = editor.font
 	w.font.ws = w
+	fmt.Fprintln(editor.file, "new workspace 2", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// Basic Workspace UI component
 	// screen
@@ -141,25 +146,21 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.screen.font = w.font
 	w.screen.initInputMethodWidget()
 
+	fmt.Fprintln(editor.file, "new workspace 3", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// cursor
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
 
-	// scrollbar
-	if editor.config.ScrollBar.Visible {
-		w.scrollBar = newScrollBar()
-		w.scrollBar.ws = w
-	}
-
 	// markdown
-	if !editor.config.Markdown.Disable {
-		w.markdown = newMarkdown(w)
-		w.markdown.webview.SetParent(w.screen.widget)
-	}
+	// if !editor.config.Markdown.Disable {
+	// 	w.markdown = newMarkdown(w)
+	// 	w.markdown.webview.SetParent(w.screen.widget)
+	// }
 
-	// minimap
-	w.minimap = newMiniMap()
-	w.minimap.ws = w
+	// // minimap
+	// w.minimap = newMiniMap()
+	// w.minimap.ws = w
 
 	// If ExtFooBar is true, then we create a UI component
 	// tabline
@@ -177,7 +178,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	// popupmenu
 	if editor.config.Editor.ExtPopupmenu {
 		w.popup = initPopupmenuNew()
-		w.popup.widget.SetParent(editor.wsWidget)
+		w.popup.widget.SetParent(editor.widget)
 		w.popup.ws = w
 		w.popup.widget.Hide()
 		// w.signature.widget.Hide()
@@ -196,33 +197,35 @@ func newWorkspace(path string) (*Workspace, error) {
 		w.statusline.ws = w
 	}
 
-	// Lint
-	if editor.config.Lint.Visible {
-		w.loc = initLocpopup()
-		w.loc.ws = w
-		w.loc.widget.SetParent(editor.wsWidget)
-		w.loc.widget.Hide()
-	}
+	// // Lint
+	// if editor.config.Lint.Visible {
+	// 	w.loc = initLocpopup()
+	// 	w.loc.ws = w
+	// 	w.loc.widget.SetParent(editor.widget)
+	// 	w.loc.widget.Hide()
+	// }
 
 	// w.signature = initSignature()
-	// w.signature.widget.SetParent(editor.wsWidget)
+	// w.signature.widget.SetParent(editor.widget)
 	// w.signature.ws = w
 
-	// palette
-	w.palette = initPalette()
-	w.palette.ws = w
-	w.palette.widget.SetParent(editor.window)
-	w.palette.hide()
+	// // palette
+	// w.palette = initPalette()
+	// w.palette.ws = w
+	// w.palette.widget.SetParent(editor.window)
+	// w.palette.hide()
 
-	// palette 2
-	w.fpalette = initPalette()
-	w.fpalette.ws = w
-	w.fpalette.widget.SetParent(editor.window)
-	w.fpalette.hide()
+	// // palette 2
+	// w.fpalette = initPalette()
+	// w.fpalette.ws = w
+	// w.fpalette.widget.SetParent(editor.window)
+	// w.fpalette.hide()
 
-	// finder
-	w.finder = initFinder()
-	w.finder.ws = w
+	// // finder
+	// w.finder = initFinder()
+	// w.finder.ws = w
+
+	fmt.Fprintln(editor.file, "new workspace 4", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// workspace widget, layouts
 	layout := widgets.NewQVBoxLayout()
@@ -237,30 +240,28 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.ConnectInputMethodQuery(w.InputMethodQuery)
 
 	// screen widget and scrollBar widget
-	scrWidget := widgets.NewQWidget(nil, 0)
-	scrWidget.SetContentsMargins(0, 0, 0, 0)
-	scrWidget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
-	scrLayout := widgets.NewQHBoxLayout()
-	scrLayout.SetContentsMargins(0, 0, 0, 0)
-	scrLayout.SetSpacing(0)
-	scrLayout.AddWidget(w.screen.widget, 0, 0)
-	scrLayout.AddWidget(w.minimap.widget, 0, 0)
-	if editor.config.ScrollBar.Visible {
-		scrLayout.AddWidget(w.scrollBar.widget, 0, 0)
-	}
-	scrWidget.SetLayout(scrLayout)
+	widget2 := widgets.NewQWidget(nil, 0)
+	widget2.SetContentsMargins(0, 0, 0, 0)
+	widget2.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	w.layout2 = widgets.NewQHBoxLayout()
+	w.layout2.SetContentsMargins(0, 0, 0, 0)
+	w.layout2.SetSpacing(0)
+	w.layout2.AddWidget(w.screen.widget, 0, 0)
+	widget2.SetLayout(w.layout2)
 
-	// assemble all neovim ui
+	// assemble all neovim ui components
 	if editor.config.Editor.ExtTabline {
 		layout.AddWidget(w.tabline.widget, 0, 0)
 	}
-	layout.AddWidget(scrWidget, 1, 0)
+	layout.AddWidget(widget2, 1, 0)
 	if editor.config.Statusline.Visible {
 		layout.AddWidget(w.statusline.widget, 0, 0)
 	}
 
-	w.widget.SetParent(editor.wsWidget)
+	w.widget.SetParent(editor.widget)
 	w.widget.Move2(0, 0)
+
+	fmt.Fprintln(editor.file, "new workspace 5", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	go w.startNvim(path)
 
@@ -268,28 +269,63 @@ func newWorkspace(path string) (*Workspace, error) {
 }
 
 func (w *Workspace) lazyDrawUI() {
-	if editor.opts.Ssh != "" {
-		editor.window.Show()
-	}
-	w.getNvimOptions()
-	editor.wsWidget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		for _, ws := range editor.workspaces {
-			ws.updateSize()
-		}
-	})
-	w.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
-		go w.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
-	})
-	w.widget.ConnectFocusOutEvent(func(event *gui.QFocusEvent) {
-		go w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
-	})
-	go func() {
-		time.Sleep(time.Millisecond * 1000)
-		editor.wsSide.scrollarea.SetWidget(editor.wsSide.widget)
+	fmt.Fprintln(editor.file, "lazy draw ui 0", time.Now().UnixNano()/1000000-editor.startuptime)
 
+	// scrollbar
+	if editor.config.ScrollBar.Visible {
+		w.scrollBar = newScrollBar()
+		w.scrollBar.ws = w
+	}
+
+	// minimap
+	if !editor.config.MiniMap.Disable {
+		w.minimap = newMiniMap()
+		w.minimap.ws = w
+	}
+
+	w.layout2.AddWidget(w.minimap.widget, 0, 0)
+	if editor.config.ScrollBar.Visible {
+		w.layout2.AddWidget(w.scrollBar.widget, 0, 0)
+		w.scrollBar.setColor()
+	}
+
+	// palette
+	w.palette = initPalette()
+	w.palette.ws = w
+	w.palette.widget.SetParent(editor.window)
+	w.palette.setColor()
+	w.palette.hide()
+
+	fmt.Fprintln(editor.file, "lazy draw ui 1", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// palette 2
+	w.fpalette = initPalette()
+	w.fpalette.ws = w
+	w.fpalette.widget.SetParent(editor.window)
+	w.fpalette.setColor()
+	w.fpalette.hide()
+
+	fmt.Fprintln(editor.file, "lazy draw ui 2", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// finder
+	w.finder = initFinder()
+	w.finder.ws = w
+
+	fmt.Fprintln(editor.file, "lazy draw ui 3", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	w.setCwd(w.getCwd())
+
+	// Add editor feature
+	go fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
+	go filer.RegisterPlugin(w.nvim)
+
+	fmt.Fprintln(editor.file, "lazy draw ui 4", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// Asynchronously execute the process for minimap
+	go func() {
 		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
 			w.minimap.startMinimapProc()
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 50)
 			w.minimap.mu.Lock()
 			isMinimapVisible := w.minimap.visible
 			w.minimap.mu.Unlock()
@@ -300,6 +336,53 @@ func (w *Workspace) lazyDrawUI() {
 			}
 		}
 	}()
+
+	fmt.Fprintln(editor.file, "lazy draw ui 5", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// side := editor.sideWidget
+	// if editor.config.SideBar.Visible {
+	// 	side.show()
+	// }
+
+	fmt.Fprintln(editor.file, "lazy draw ui 6", time.Now().UnixNano()/1000000-editor.startuptime)
+}
+
+func (w *Workspace) vimEnterProcess() {
+	fmt.Fprintln(editor.file, "vim enter 1", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// Show window if connect remote nvim via ssh
+	if editor.opts.Ssh != "" {
+		editor.window.Show()
+	}
+
+	// get nvim option
+	w.getNvimOptions()
+
+	// connect window resize event
+	editor.widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		for _, ws := range editor.workspaces {
+			ws.updateSize()
+		}
+	})
+
+	w.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
+		go w.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
+	})
+	w.widget.ConnectFocusOutEvent(func(event *gui.QFocusEvent) {
+		go w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
+	})
+
+	go func() {
+
+		time.Sleep(time.Millisecond * 500)
+		w.signal.LazyDrawSignal()
+
+		time.Sleep(time.Millisecond * 400)
+		editor.signal.SidebarSignal()
+
+	}()
+
+	fmt.Fprintln(editor.file, "vim enter 2", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) registerSignal() {
@@ -311,12 +394,27 @@ func (w *Workspace) registerSignal() {
 		updates := <-w.guiUpdates
 		w.handleRPCGui(updates)
 	})
-	w.signal.ConnectStopSignal(func() {
-		if !w.uiRemoteAttached {
-			if !editor.config.MiniMap.Disable {
-				editor.workspaces[editor.active].minimap.exit()
-			}
+	w.signal.ConnectLazyDrawSignal(func() {
+		w.lazyDrawUI()
+	})
+
+	// for debug signal
+	z := 1
+	go func() {
+		for {
+			w.redrawUpdates <- [][]interface{}{[]interface{}{"test event " + fmt.Sprintf("%d :: %d", z, time.Now().UnixNano()/1000000-editor.startuptime)}}
+			w.signal.RedrawSignal()
+			z++
+			time.Sleep(time.Millisecond * 50)
 		}
+	}()
+
+	w.signal.ConnectStopSignal(func() {
+		// if !w.uiRemoteAttached {
+		// 	if !editor.config.MiniMap.Disable {
+		// 		editor.workspaces[editor.active].minimap.exit()
+		// 	}
+		// }
 		workspaces := []*Workspace{}
 		index := 0
 		for i, ws := range editor.workspaces {
@@ -331,9 +429,9 @@ func (w *Workspace) registerSignal() {
 			editor.close()
 			return
 		}
-		for i := 0; i <= len(editor.wsSide.items) && i <= len(editor.workspaces); i++ {
+		for i := 0; i <= len(editor.sideWidget.items) && i <= len(editor.workspaces); i++ {
 			if i >= index {
-				editor.wsSide.items[i].cwdpath = editor.wsSide.items[i+1].cwdpath
+				editor.sideWidget.items[i].cwdpath = editor.sideWidget.items[i+1].cwdpath
 			}
 		}
 		editor.workspaces = workspaces
@@ -365,6 +463,7 @@ func (w *Workspace) show() {
 }
 
 func (w *Workspace) startNvim(path string) error {
+	fmt.Fprintln(editor.file, "start nvim 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	var neovim *nvim.Nvim
 	var err error
 
@@ -400,17 +499,24 @@ func (w *Workspace) startNvim(path string) error {
 		return err
 	}
 
-	w.updateSize()
+	fmt.Fprintln(editor.file, "start nvim 1", time.Now().UnixNano()/1000000-editor.startuptime)
 
-	w.nvim = neovim
-	w.nvim.RegisterHandler("Gui", func(updates ...interface{}) {
+	neovim.RegisterHandler("Gui", func(updates ...interface{}) {
 		w.guiUpdates <- updates
 		w.signal.GuiSignal()
 	})
-	w.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
+	neovim.RegisterHandler("redraw", func(updates ...[]interface{}) {
 		w.redrawUpdates <- updates
 		w.signal.RedrawSignal()
 	})
+
+	fmt.Fprintln(editor.file, "start nvim 2", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	w.updateSize()
+
+	w.nvim = neovim
+
+	fmt.Fprintln(editor.file, "start nvim 3", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	go func() {
 		err := w.nvim.Serve()
@@ -471,6 +577,7 @@ func (w *Workspace) init(path string) {
 }
 
 func (w *Workspace) configure() {
+	fmt.Fprintln(editor.file, "configure 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	w.drawStatusline = editor.config.Statusline.Visible
 
 	if editor.config.Tabline.Visible && editor.config.Editor.ExtTabline {
@@ -479,53 +586,73 @@ func (w *Workspace) configure() {
 		w.drawTabline = false
 	}
 
+	fmt.Fprintln(editor.file, "configure 1", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	if editor.config.Lint.Visible {
 		w.drawLint = true
 	} else {
 		w.drawLint = false
 	}
+
+	fmt.Fprintln(editor.file, "configure 2", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) attachUI(path string) error {
-	w.nvim.Subscribe("Gui")
+	fmt.Fprintln(editor.file, "attach ui 0", time.Now().UnixNano()/1000000-editor.startuptime)
+	go w.nvim.Subscribe("Gui")
+	fmt.Fprintln(editor.file, "attach ui 1", time.Now().UnixNano()/1000000-editor.startuptime)
 	go w.initGonvim()
 	if w.tabline != nil {
 		w.tabline.subscribe()
 	}
+	fmt.Fprintln(editor.file, "attach ui 2", time.Now().UnixNano()/1000000-editor.startuptime)
 	if w.statusline != nil {
 		w.statusline.subscribe()
 	}
-	if w.loc != nil {
-		w.loc.subscribe()
-	}
+	fmt.Fprintln(editor.file, "attach ui 3", time.Now().UnixNano()/1000000-editor.startuptime)
+	// if w.loc != nil {
+	// 	w.loc.subscribe()
+	// }
+	fmt.Fprintln(editor.file, "attach ui 4", time.Now().UnixNano()/1000000-editor.startuptime)
 	if w.message != nil {
-		w.message.subscribe()
+		w.message.connectUI()
 	}
 
-	// Add editor feature
-	fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
-	filer.RegisterPlugin(w.nvim)
+	fmt.Fprintln(editor.file, "attach ui 5", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	w.fontMutex.Lock()
 	defer w.fontMutex.Unlock()
 	w.uiAttached = true
+	fmt.Fprintln(editor.file, "attach ui 6", time.Now().UnixNano()/1000000-editor.startuptime)
+
+	// On Windows, it may take a long time to get the width of CJK characters.
+	// Therefore, we will run this process in concurrently in the background of attaching to neovim.
+	// This issue may also be related to the following.
+	// https://github.com/equalsraf/neovim-qt/issues/614
+	go w.font.fontMetrics.HorizontalAdvance("あ", -1)
+
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
 	if err != nil {
 		fmt.Println(err)
 		editor.close()
 		return err
 	}
+	fmt.Fprintln(editor.file, "attach ui 7", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	if path != "" {
 		go w.nvim.Command("so " + path)
 	}
+	fmt.Fprintln(editor.file, "attach ui 8", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	return nil
 }
 
 func (w *Workspace) initGonvim() {
+	fmt.Fprintln(editor.file, "init goneovim 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	gonvimAutoCmds := `
 	aug GonvimAu | au! | aug END
-	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_enter", getcwd())
+	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
+	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter")
 	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_filetype", &ft, win_getid())
 	au GonvimAu OptionSet * if &ro != 1 | silent! call rpcnotify(1, "Gui", "gonvim_optionset") | endif
@@ -608,13 +735,10 @@ func (w *Workspace) initGonvim() {
 	gonvimInitNotify := `
 	call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat, &ro)
 	`
-	if !w.uiRemoteAttached {
-		gonvimInitNotify = gonvimInitNotify + `
-		call rpcnotify(0, "Gui", "gonvim_minimap_update")
-		`
-	}
 	initialNotify := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimInitNotify))
 	w.nvim.Command(initialNotify)
+
+	fmt.Fprintln(editor.file, "init goneovim 1", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) loadGinitVim() {
@@ -774,6 +898,21 @@ func (w *Workspace) getNumOfTabs() int {
 	return num
 }
 
+func (w *Workspace) getCwd() string {
+	done := make(chan bool, 5)
+	cwd := ""
+	go func() {
+		w.nvim.Eval("getcwd()", &cwd)
+		done <- true
+	}()
+	select {
+	case <-done:
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	return cwd
+}
+
 func (w *Workspace) nvimEval(s string) (interface{}, error) {
 	doneChannel := make(chan interface{}, 5)
 	var result interface{}
@@ -812,7 +951,7 @@ func (w *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
 
 func (w *Workspace) setCwd(cwd string) {
 	w.cwd = cwd
-	if editor.wsSide == nil {
+	if editor.sideWidget == nil {
 		return
 	}
 
@@ -830,13 +969,13 @@ func (w *Workspace) setCwd(cwd string) {
 	w.cwdlabel = labelpath
 	w.cwdBase = filepath.Base(cwd)
 	for i, ws := range editor.workspaces {
-		if i >= len(editor.wsSide.items) {
+		if i >= len(editor.sideWidget.items) {
 			return
 		}
 
 		if ws == w {
 			path, _ := filepath.Abs(cwd)
-			sideItem := editor.wsSide.items[i]
+			sideItem := editor.sideWidget.items[i]
 			if sideItem.cwdpath == path {
 				continue
 			}
@@ -940,6 +1079,7 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 			}
 		}
 	}
+
 	return o
 }
 
@@ -958,8 +1098,10 @@ func (w *Workspace) updateSize() {
 		w.height = height
 		w.widget.Resize2(width, height)
 		if !w.hidden {
+			fmt.Fprintln(editor.file, "update size 1", time.Now().UnixNano()/1000000-editor.startuptime)
 			w.hide()
 			w.show()
+			fmt.Fprintln(editor.file, "update size 2", time.Now().UnixNano()/1000000-editor.startuptime)
 		} else {
 			w.show()
 			w.hide()
@@ -1022,29 +1164,26 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		switch event {
 		// Global Events
 		case "set_title":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			titleStr := (update[1].([]interface{}))[0].(string)
 			editor.window.SetupTitle(titleStr)
 			if runtime.GOOS == "linux" {
 				editor.window.SetWindowTitle(titleStr)
 			}
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "set_icon":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "mode_info_set":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			w.modeInfoSet(args)
 			w.cursor.modeIdx = 0
 			w.cursor.update()
 		case "option_set":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			w.setOption(update)
 		case "mode_change":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			arg := update[len(update)-1].([]interface{})
-
-			// `mode_change` event may not send the correct events
-			// regarding the terminal buffer.
-			// We trust the TermEnter and TermLeave events for the terminal buffer.
-			mode := arg[0].(string)
-			if w.mode == "terminal-input" && mode == "normal" {
-				continue
-			}
-
 			w.mode = arg[0].(string)
 			w.modeIdx = util.ReflectToInt(arg[1])
 			if w.cursor.modeIdx != w.modeIdx {
@@ -1053,51 +1192,75 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			}
 			w.disableImeInNormal()
 		case "mouse_on":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "mouse_off":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "busy_start":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "busy_stop":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "suspend":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "update_menu":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "bell":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "visual_bell":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "flush":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.update()
 			w.cursor.update()
+			w.drawOtherUI()
 
 		// Grid Events
 		case "grid_resize":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridResize(args)
 		case "default_colors_set":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			for _, u := range update[1:] {
 				w.setColorsSet(u.([]interface{}))
 			}
 		case "hl_attr_define":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.setHlAttrDef(args)
 			// if goneovim own statusline is visible
 			if w.drawStatusline {
 				w.statusline.getColor()
 			}
 		case "hl_group_set":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.setHighlightGroup(args)
 		case "grid_line":
+			fmt.Fprintln(editor.file, event, "1", time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridLine(args)
+			fmt.Fprintln(editor.file, event, "2", time.Now().UnixNano()/1000000-editor.startuptime)
 		case "grid_clear":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridClear(args)
 		case "grid_destroy":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridDestroy(args)
 		case "grid_cursor_goto":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridCursorGoto(args)
 		case "grid_scroll":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridScroll(args)
 
 		// Multigrid Events
 		case "win_pos":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.windowPosition(args)
 		case "win_float_pos":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.windowFloatPosition(args)
 		case "win_external_pos":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.windowExternalPosition(args)
 		case "win_hide":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.windowHide(args)
 		case "win_scroll_over_start":
 			// old impl
@@ -1106,14 +1269,18 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			// old impl
 			// s.windowScrollOverReset()
 		case "win_close":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.windowClose()
 		case "msg_set_pos":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.msgSetPos(args)
 		case "win_viewport":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			w.windowViewport(args[0].([]interface{}))
 
 		// Popupmenu Events
 		case "popupmenu_show":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				if w.cmdline.shown {
 					w.cmdline.cmdWildmenuShow(args)
@@ -1129,6 +1296,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				}
 			}
 		case "popupmenu_select":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				if w.cmdline.shown {
 					w.cmdline.cmdWildmenuSelect(args)
@@ -1144,6 +1312,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				}
 			}
 		case "popupmenu_hide":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				if w.cmdline.shown {
 					w.cmdline.cmdWildmenuHide()
@@ -1160,33 +1329,45 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			}
 		// Tabline Events
 		case "tabline_update":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.tabline != nil {
 				w.tabline.update(args)
 			}
+			fmt.Fprintln(editor.file, event, "2", time.Now().UnixNano()/1000000-editor.startuptime)
 
 		// Cmdline Events
 		case "cmdline_show":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.show(args)
 			}
+
+			fmt.Fprintln(editor.file, event, "2", time.Now().UnixNano()/1000000-editor.startuptime)
 		case "cmdline_pos":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.changePos(args)
 			}
+			fmt.Fprintln(editor.file, event, "2", time.Now().UnixNano()/1000000-editor.startuptime)
 		case "cmdline_special_char":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "cmdline_char":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.putChar(args)
 			}
 		case "cmdline_hide":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.hide()
 			}
 		case "cmdline_function_show":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.functionShow()
 			}
 		case "cmdline_function_hide":
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.functionHide()
 			}
@@ -1214,16 +1395,15 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.message.msgHistoryShow(args)
 
 		default:
+			fmt.Fprintln(editor.file, update, "::", time.Now().UnixNano()/1000000-editor.startuptime)
 		}
 	}
-
-	w.drawOtherUI()
 }
 
 func (w *Workspace) drawOtherUI() {
 	s := w.screen
 
-	if w.minimap.visible || w.drawStatusline || editor.config.ScrollBar.Visible {
+	if (w.minimap != nil && w.minimap.visible) || w.drawStatusline || editor.config.ScrollBar.Visible {
 		w.getPos()
 	}
 
@@ -1234,8 +1414,10 @@ func (w *Workspace) drawOtherUI() {
 		}
 	}
 
-	if editor.config.ScrollBar.Visible {
-		w.scrollBar.update()
+	if w.scrollBar != nil {
+		if editor.config.ScrollBar.Visible {
+			w.scrollBar.update()
+		}
 	}
 
 	if s.tooltip.IsVisible() {
@@ -1243,9 +1425,11 @@ func (w *Workspace) drawOtherUI() {
 		w.screen.toolTipMove(x, y)
 	}
 
-	if w.minimap.visible && w.minimap.widget.IsVisible() {
-		go w.updateMinimap()
-		w.minimap.mapScroll()
+	if w.minimap != nil {
+		if w.minimap.visible && w.minimap.widget.IsVisible() {
+			go w.updateMinimap()
+			w.minimap.mapScroll()
+		}
 	}
 }
 
@@ -1256,13 +1440,13 @@ func (w *Workspace) disableImeInNormal() {
 	switch w.mode {
 	case "insert":
 		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-		editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	case "cmdline_normal":
 		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-		editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	default:
 		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
-		editor.wsWidget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
+		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
 	}
 }
 
@@ -1297,14 +1481,14 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 
 	if isChangeFg || isChangeBg {
 		editor.isSetGuiColor = false
-		if !w.uiRemoteAttached {
-			aw := editor.workspaces[editor.active]
-			// change minimap colorscheme
-			aw.minimap.isSetColorscheme = false
-			if aw.minimap.visible && aw.minimap.nvim != nil && aw.nvim != nil {
-				aw.minimap.setColorscheme()
-			}
-		}
+		// if !w.uiRemoteAttached {
+		// 	// aw := editor.workspaces[editor.active]
+		// 	// change minimap colorscheme
+		// 	// aw.minimap.isSetColorscheme = false
+		// 	// if aw.minimap.visible && aw.minimap.nvim != nil && aw.nvim != nil {
+		// 	// 	aw.minimap.setColorscheme()
+		// 	// }
+		// }
 	}
 	if len(editor.workspaces) > 1 {
 		w.updateWorkspaceColor()
@@ -1337,39 +1521,49 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 }
 
 func (w *Workspace) updateWorkspaceColor() {
+	fmt.Fprintln(editor.file, "update WS Color 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	// w.signature.setColor()
-	if w.palette != nil {
-		w.palette.setColor()
-	}
-	if w.fpalette != nil {
-		w.fpalette.setColor()
-	}
+	// if w.palette != nil {
+	// 	w.palette.setColor()
+	// }
+	// if w.fpalette != nil {
+	// 	w.fpalette.setColor()
+	// }
 	if w.popup != nil {
 		w.popup.setColor()
 	}
+
+	fmt.Fprintln(editor.file, "update WS Color 1", time.Now().UnixNano()/1000000-editor.startuptime)
 	if w.message != nil {
 		w.message.setColor()
 	}
 	w.screen.setColor()
-	if w.drawTabline {
-		if w.tabline != nil {
-			w.tabline.setColor()
-		}
-	}
+
+	fmt.Fprintln(editor.file, "update WS Color 2", time.Now().UnixNano()/1000000-editor.startuptime)
+	// if w.drawTabline {
+	// 	if w.tabline != nil {
+	// 		w.tabline.setColor()
+	// 	}
+	// }
 	if w.drawStatusline {
 		if w.statusline != nil {
 			w.statusline.setColor()
 		}
 	}
-	if editor.config.ScrollBar.Visible {
-		w.scrollBar.setColor()
+
+	if w.scrollBar != nil {
+		if editor.config.ScrollBar.Visible {
+			w.scrollBar.setColor()
+		}
 	}
-	if editor.config.Lint.Visible {
-		w.loc.setColor()
-	}
-	if editor.wsSide != nil {
-		editor.wsSide.setColor()
-	}
+
+	fmt.Fprintln(editor.file, "update WS Color 3", time.Now().UnixNano()/1000000-editor.startuptime)
+	// if editor.config.Lint.Visible {
+	// 	w.loc.setColor()
+	// }
+	// if editor.sideWidget != nil {
+	// 	editor.sideWidget.setColor()
+	// }
 }
 
 func (w *Workspace) modeInfoSet(args []interface{}) {
@@ -1425,6 +1619,7 @@ func (w *Workspace) setOption(update []interface{}) {
 }
 
 func (w *Workspace) getPos() {
+	fmt.Fprintln(editor.file, "get pos 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	if w.api5 {
 		return
 	}
@@ -1441,6 +1636,7 @@ func (w *Workspace) getPos() {
 			`, &curPos)
 		done <- err
 	}()
+	fmt.Fprintln(editor.file, "get pos 1", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	select {
 	case <-done:
@@ -1448,10 +1644,14 @@ func (w *Workspace) getPos() {
 		return
 	}
 
+	fmt.Fprintln(editor.file, "get pos 2", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	w.curPosMutex.Lock()
 	w.curLine = curPos[1]
 	w.curColm = curPos[2]
 	w.curPosMutex.Unlock()
+
+	fmt.Fprintln(editor.file, "get pos 3", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) windowViewport(arg []interface{}) {
@@ -1484,13 +1684,15 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "gonvim_enter":
-		w.lazyDrawUI()
-		w.setCwd(updates[1].(string))
+		fmt.Fprintln(editor.file, "vim enter", time.Now().UnixNano()/1000000-editor.startuptime)
+		w.vimEnterProcess()
+	case "gonvim_uienter":
+		fmt.Fprintln(editor.file, "ui enter", time.Now().UnixNano()/1000000-editor.startuptime)
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
 		editor.window.Resize2(width, height)
 	case "gonvim_maximize":
-		editor.window.WindowMaximize()
+		// editor.window.WindowMaximize()
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
@@ -1514,39 +1716,43 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	// case "signature_hide":
 	// 	w.signature.hide()
 	case "side_open":
-		editor.wsSide.show()
+		editor.sideWidget.show()
 	case "side_close":
-		editor.wsSide.hide()
+		editor.sideWidget.hide()
 	case "side_toggle":
-		editor.wsSide.toggle()
+		editor.sideWidget.toggle()
 		w.updateSize()
 	case "filer_update":
-		if !editor.wsSide.scrollarea.IsVisible() {
+		if !editor.sideWidget.scrollarea.IsVisible() {
 			return
 		}
-		if !editor.wsSide.items[editor.active].isContentHide {
+		if !editor.sideWidget.items[editor.active].isContentHide {
 			go w.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
 		}
 	case "filer_open":
-		editor.wsSide.items[w.getNum()].isContentHide = false
-		editor.wsSide.items[w.getNum()].openContent()
+		editor.sideWidget.items[w.getNum()].isContentHide = false
+		editor.sideWidget.items[w.getNum()].openContent()
 	case "filer_clear":
-		editor.wsSide.items[w.getNum()].clear()
+		editor.sideWidget.items[w.getNum()].clear()
 	case "filer_resize":
-		editor.wsSide.items[w.getNum()].resizeContent()
+		editor.sideWidget.items[w.getNum()].resizeContent()
 	case "filer_item_add":
-		editor.wsSide.items[w.getNum()].addItem(updates[1:])
+		editor.sideWidget.items[w.getNum()].addItem(updates[1:])
 	case "filer_item_select":
-		editor.wsSide.items[w.getNum()].selectItem(updates[1:])
+		editor.sideWidget.items[w.getNum()].selectItem(updates[1:])
 	case "gonvim_grid_font":
 		w.screen.gridFont(updates[1])
 	case "gonvim_minimap_update":
-		if w.minimap.visible {
-			w.minimap.bufUpdate()
+		if w.minimap != nil {
+			if w.minimap.visible {
+				w.minimap.bufUpdate()
+			}
 		}
 	case "gonvim_minimap_sync":
-		if w.minimap.visible {
-			go w.minimap.bufSync()
+		if w.minimap != nil {
+			if w.minimap.visible {
+				go w.minimap.bufSync()
+			}
 		}
 	case "gonvim_minimap_toggle":
 		go w.minimap.toggle()
@@ -1566,9 +1772,11 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		cwdinfo := updates[1].(map[string]interface{})
 		w.handleChangeCwd(cwdinfo)
 	case "gonvim_workspace_filepath":
-		w.minimap.mu.Lock()
-		w.filepath = updates[1].(string)
-		w.minimap.mu.Unlock()
+		if w.minimap != nil {
+			w.minimap.mu.Lock()
+			w.filepath = updates[1].(string)
+			w.minimap.mu.Unlock()
+		}
 	case "gonvim_optionset":
 		go w.optionSet()
 	case "gonvim_termenter":
@@ -1579,37 +1787,37 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.bufEnter()
 	case "gonvim_filetype":
 		w.getFileType(updates)
-	case "gonvim_markdown_new_buffer":
-		if editor.config.Markdown.Disable {
-			return
-		}
-		go w.markdown.newBuffer()
-	case "gonvim_markdown_update":
-		if editor.config.Markdown.Disable {
-			return
-		}
-		go w.markdown.update()
-	case "gonvim_markdown_toggle":
-		if editor.config.Markdown.Disable {
-			return
-		}
-		w.markdown.toggle()
-	case "gonvim_markdown_scroll_down":
-		w.markdown.scrollDown()
-	case "gonvim_markdown_scroll_up":
-		w.markdown.scrollUp()
-	case "gonvim_markdown_scroll_top":
-		w.markdown.scrollTop()
-	case "gonvim_markdown_scroll_bottom":
-		w.markdown.scrollBottom()
-	case "gonvim_markdown_scroll_pagedown":
-		w.markdown.scrollPageDown()
-	case "gonvim_markdown_scroll_pageup":
-		w.markdown.scrollPageUp()
-	case "gonvim_markdown_scroll_halfpagedown":
-		w.markdown.scrollHalfPageDown()
-	case "gonvim_markdown_scroll_halfpageup":
-		w.markdown.scrollHalfPageUp()
+	// case "gonvim_markdown_new_buffer":
+	// 	if editor.config.Markdown.Disable {
+	// 		return
+	// 	}
+	// 	go w.markdown.newBuffer()
+	// case "gonvim_markdown_update":
+	// 	if editor.config.Markdown.Disable {
+	// 		return
+	// 	}
+	// 	go w.markdown.update()
+	// case "gonvim_markdown_toggle":
+	// 	if editor.config.Markdown.Disable {
+	// 		return
+	// 	}
+	// 	w.markdown.toggle()
+	// case "gonvim_markdown_scroll_down":
+	// 	w.markdown.scrollDown()
+	// case "gonvim_markdown_scroll_up":
+	// 	w.markdown.scrollUp()
+	// case "gonvim_markdown_scroll_top":
+	// 	w.markdown.scrollTop()
+	// case "gonvim_markdown_scroll_bottom":
+	// 	w.markdown.scrollBottom()
+	// case "gonvim_markdown_scroll_pagedown":
+	// 	w.markdown.scrollPageDown()
+	// case "gonvim_markdown_scroll_pageup":
+	// 	w.markdown.scrollPageUp()
+	// case "gonvim_markdown_scroll_halfpagedown":
+	// 	w.markdown.scrollHalfPageDown()
+	// case "gonvim_markdown_scroll_halfpageup":
+	// 	w.markdown.scrollHalfPageUp()
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}
@@ -1677,8 +1885,8 @@ func (w *Workspace) guiFont(args string) {
 		editor.extFontSize = int(fontHeight)
 	}
 
-	w.palette.updateFont()
-	w.fpalette.updateFont()
+	// w.palette.updateFont()
+	// w.fpalette.updateFont()
 
 	if w.tabline != nil {
 		w.tabline.updateFont()
@@ -1694,7 +1902,11 @@ func (w *Workspace) guiFontWide(args string) {
 	}
 
 	if w.fontwide == nil {
-		w.fontwide = initFontNew(editor.extFontFamily, float64(editor.extFontSize), editor.config.Editor.Linespace, false)
+		w.fontwide = initFontNew(
+			editor.extFontFamily,
+			float64(editor.extFontSize),
+			editor.config.Editor.Linespace,
+		)
 		w.fontwide.ws = w
 		w.cursor.fontwide = w.fontwide
 	}
@@ -2061,6 +2273,13 @@ type WorkspaceSide struct {
 
 	isShown      bool
 	isInitResize bool
+
+	fg       *RGBA
+	sfg      *RGBA
+	scrollFg *RGBA
+	scrollBg *RGBA
+	selectBg *RGBA
+	accent   *RGBA
 }
 
 func newWorkspaceSide() *WorkspaceSide {
@@ -2141,6 +2360,7 @@ func (side *WorkspaceSide) show() {
 	if side == nil {
 		return
 	}
+	side.setColor()
 	if side.isShown {
 		return
 	}
@@ -2153,6 +2373,19 @@ func (side *WorkspaceSide) show() {
 	}
 	side.scrollarea.Show()
 	side.isShown = true
+
+	for i := 0; i < WORKSPACELEN; i++ {
+		if side.items[i] == nil {
+			continue
+		}
+		if !side.items[i].active {
+			continue
+		}
+		if editor.workspaces[i] != nil {
+			editor.workspaces[i].setCwd(editor.workspaces[i].getCwd())
+		}
+		side.items[i].show()
+	}
 }
 
 func (side *WorkspaceSide) hide() {
@@ -2209,12 +2442,16 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	labelWidget := widgets.NewQWidget(nil, 0)
 	labelLayout := widgets.NewQHBoxLayout()
 	labelWidget.SetLayout(labelLayout)
+	labelWidget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 	labelLayout.SetContentsMargins(15, 1, 1, 1)
 	labelLayout.SetSpacing(editor.iconSize / 2)
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetContentsMargins(0, 0, 0, 0)
 	label.SetAlignment(core.Qt__AlignLeft)
+	width := editor.config.SideBar.Width
+	label.SetMaximumWidth(width)
+	label.SetMinimumWidth(width)
 
 	openIcon := svg.NewQSvgWidget(nil)
 	openIcon.SetFixedWidth(editor.iconSize - 1)
@@ -2292,10 +2529,10 @@ func (i *WorkspaceSideItem) fileDoubleClicked(item *widgets.QListWidgetItem) {
 
 	execCommand := exec + filepath
 	for j, ws := range editor.workspaces {
-		if editor.wsSide.items[j] == nil {
+		if editor.sideWidget.items[j] == nil {
 			continue
 		}
-		sideItem := editor.wsSide.items[j]
+		sideItem := editor.sideWidget.items[j]
 		if i == sideItem {
 			go ws.nvim.Command(execCommand)
 		}
@@ -2308,10 +2545,10 @@ func (i *WorkspaceSideItem) toggleContent(event *gui.QMouseEvent) {
 	}
 	if i.isContentHide {
 		for j, ws := range editor.workspaces {
-			if editor.wsSide.items[j] == nil {
+			if editor.sideWidget.items[j] == nil {
 				continue
 			}
-			sideItem := editor.wsSide.items[j]
+			sideItem := editor.sideWidget.items[j]
 			if i == sideItem {
 				i.isContentHide = false
 				i.openContent()
@@ -2408,33 +2645,61 @@ func (i *WorkspaceSideItem) selectItem(args []interface{}) {
 }
 
 func (side *WorkspaceSide) setColor() {
-	fg := editor.colors.sideBarFg.String()
-	sfg := editor.colors.scrollBarFg.String()
-	sbg := editor.colors.scrollBarBg.StringTransparent()
-	side.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", fg))
-	side.widget.SetStyleSheet(fmt.Sprintf(".QWidget { border: 0px solid #000; padding-top: 5px; background-color: rgba(0, 0, 0, 0); } QWidget { color: %s; border-right: 0px solid; }", fg))
+	if side.fg.equals(editor.colors.fg) &&
+		side.sfg.equals(editor.colors.sideBarFg) &&
+		side.scrollFg.equals(editor.colors.scrollBarFg) &&
+		side.scrollBg.equals(editor.colors.scrollBarBg) &&
+		side.selectBg.equals(editor.colors.sideBarSelectedItemBg) &&
+		side.accent.equals(editor.colors.matchFg) {
+		return
+	}
+
+	side.fg = editor.colors.fg
+	side.sfg = editor.colors.sideBarFg
+	side.scrollFg = editor.colors.scrollBarFg
+	side.scrollBg = editor.colors.scrollBarBg
+	side.selectBg = editor.colors.sideBarSelectedItemBg
+	side.accent = editor.colors.matchFg
+
+	scrfg := side.scrollFg.String()
+	scrbg := side.scrollBg.StringTransparent()
+	hover := side.accent.String()
+
+	side.header.SetStyleSheet(fmt.Sprintf(" .QLabel{ color: %s;} ", side.sfg.String()))
+	side.widget.SetStyleSheet(
+		fmt.Sprintf(`
+		.QWidget { border: 0px solid #000; padding-top: 5px; background-color: rgba(0, 0, 0, 0); }
+		QWidget { color: %s; border-right: 0px solid; }
+		`, side.sfg.String()),
+	)
 	if side.scrollarea == nil {
 		return
 	}
-	side.scrollarea.SetStyleSheet(fmt.Sprintf(".QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; } .QScrollBar::handle:vertical {background-color: %s; min-height: 25px;} .QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;} .QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; } .QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }", sbg, sfg, editor.config.SideBar.AccentColor))
+	side.scrollarea.SetStyleSheet(
+		fmt.Sprintf(`
+		.QScrollBar { border-width: 0px; background-color: %s; width: 5px; margin: 0 0 0 0; }
+		.QScrollBar::handle:vertical {background-color: %s; min-height: 25px;}
+		.QScrollBar::handle:vertical:hover {background-color: %s; min-height: 25px;}
+		.QScrollBar::add-line:vertical, .QScrollBar::sub-line:vertical { border: none; background: none; }
+		.QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }`,
+			scrbg, scrfg, hover),
+	)
 
 	if len(editor.workspaces) == 1 {
 		side.items[0].active = true
-		side.items[0].labelWidget.SetStyleSheet(
-			fmt.Sprintf(
-				" * { background-color: %s; color: %s; }",
-				editor.colors.sideBarSelectedItemBg, fg,
-			),
-		)
-		bg := editor.colors.sideBarSelectedItemBg
-		fg := editor.colors.fg
+		// side.items[0].labelWidget.SetStyleSheet(
+		// 	fmt.Sprintf(
+		// 		" * { background-color: %s; color: %s; }",
+		// 		side.selectBg.String(), side.sfg.String(),
+		// 	),
+		// )
 		transparent := transparent() * transparent()
 		side.items[0].labelWidget.SetStyleSheet(
 			fmt.Sprintf(
 				" * { background-color: rgba(%d, %d, %d, %f); color: %s; }",
-				bg.R, bg.G, bg.B,
+				side.selectBg.R, side.selectBg.G, side.selectBg.B,
 				transparent,
-				fg.String(),
+				side.fg.String(),
 			),
 		)
 	}
@@ -2445,7 +2710,7 @@ func (i *WorkspaceSideItem) setActive() {
 	if editor.colors.fg == nil {
 		return
 	}
-	if editor.wsSide.scrollarea == nil {
+	if editor.sideWidget.scrollarea == nil {
 		return
 	}
 	i.active = true
@@ -2470,7 +2735,7 @@ func (i *WorkspaceSideItem) setInactive() {
 	if editor.colors.fg == nil {
 		return
 	}
-	if editor.wsSide.scrollarea == nil {
+	if editor.sideWidget.scrollarea == nil {
 		return
 	}
 	i.active = false

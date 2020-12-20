@@ -96,11 +96,11 @@ func newMiniMap() *MiniMap {
 
 	switch runtime.GOOS {
 	case "windows":
-		m.font = initFontNew("Consolas", 1.0, 0, false)
+		m.font = initFontNew("Consolas", 1.0, 0)
 	case "darwin":
-		m.font = initFontNew("Courier New", 2.0, 0, false)
+		m.font = initFontNew("Courier New", 2.0, 0)
 	default:
-		m.font = initFontNew("Monospace", 1.0, 0, false)
+		m.font = initFontNew("Monospace", 1.0, 0)
 	}
 
 	return m
@@ -151,7 +151,7 @@ func (m *MiniMap) startMinimapProc() {
 	}
 	m.uiAttached = true
 
-	neovim.Subscribe("Gui")
+	// neovim.Subscribe("Gui")
 	neovim.Command(":syntax on")
 	neovim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all")
 }
@@ -354,6 +354,7 @@ func (m *MiniMap) setColorscheme() {
 	if m.colorscheme == colo {
 		return
 	}
+
 	// set colorscheme
 	m.nvim.Command(":colorscheme " + colo)
 	m.colorscheme = colo
@@ -610,6 +611,7 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 		vert = event.AngleDelta().Y()
 		accel = 16
 	}
+
 	if vert == 0 && horiz == 0 {
 		return
 	}
@@ -619,7 +621,8 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 	} else if vert < 0 {
 		m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
 	}
-	m.mapScroll()
+
+	// m.mapScroll()
 
 	event.Accept()
 }

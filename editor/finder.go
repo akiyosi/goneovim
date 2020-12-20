@@ -53,9 +53,12 @@ func (f *Finder) selectResult(args []interface{}) {
 func (f *Finder) showPattern(args []interface{}) {
 	palette := f.ws.fpalette
 	p := args[0].(string)
-	palette.patternText = p
-	palette.pattern.SetText(palette.patternText)
+	isResize := palette.patternText != p
+	palette.setPattern(p)
 	palette.cursorMove(util.ReflectToInt(args[1]))
+	if isResize {
+		palette.resize()
+	}
 }
 
 func (f *Finder) showResult(args []interface{}) {
