@@ -40,7 +40,7 @@ type workspaceSignal struct {
 
 	_ func() `signal:"messageSignal"`
 
-	// _ func() `signal:"markdownSignal"`
+	_ func() `signal:"markdownSignal"`
 
 	_ func() `signal:"lazyDrawSignal"`
 }
@@ -57,11 +57,11 @@ type Workspace struct {
 	statusline *Statusline
 	screen     *Screen
 	scrollBar  *ScrollBar
-	// markdown   *Markdown
-	finder   *Finder
-	palette  *Palette
-	fpalette *Palette
-	popup    *PopupMenu
+	markdown   *Markdown
+	finder     *Finder
+	palette    *Palette
+	fpalette   *Palette
+	popup      *PopupMenu
 	// loc        *Locpopup
 	cmdline   *Cmdline
 	signature *Signature
@@ -318,6 +318,12 @@ func (w *Workspace) lazyDrawUI() {
 	// Add editor feature
 	go fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
 	go filer.RegisterPlugin(w.nvim)
+
+	// markdown
+	if !editor.config.Markdown.Disable {
+		w.markdown = newMarkdown(w)
+		w.markdown.webview.SetParent(w.screen.widget)
+	}
 
 	fmt.Fprintln(editor.file, "lazy draw ui 4", time.Now().UnixNano()/1000000-editor.startuptime)
 
@@ -1787,37 +1793,37 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.bufEnter()
 	case "gonvim_filetype":
 		w.getFileType(updates)
-	// case "gonvim_markdown_new_buffer":
-	// 	if editor.config.Markdown.Disable {
-	// 		return
-	// 	}
-	// 	go w.markdown.newBuffer()
-	// case "gonvim_markdown_update":
-	// 	if editor.config.Markdown.Disable {
-	// 		return
-	// 	}
-	// 	go w.markdown.update()
-	// case "gonvim_markdown_toggle":
-	// 	if editor.config.Markdown.Disable {
-	// 		return
-	// 	}
-	// 	w.markdown.toggle()
-	// case "gonvim_markdown_scroll_down":
-	// 	w.markdown.scrollDown()
-	// case "gonvim_markdown_scroll_up":
-	// 	w.markdown.scrollUp()
-	// case "gonvim_markdown_scroll_top":
-	// 	w.markdown.scrollTop()
-	// case "gonvim_markdown_scroll_bottom":
-	// 	w.markdown.scrollBottom()
-	// case "gonvim_markdown_scroll_pagedown":
-	// 	w.markdown.scrollPageDown()
-	// case "gonvim_markdown_scroll_pageup":
-	// 	w.markdown.scrollPageUp()
-	// case "gonvim_markdown_scroll_halfpagedown":
-	// 	w.markdown.scrollHalfPageDown()
-	// case "gonvim_markdown_scroll_halfpageup":
-	// 	w.markdown.scrollHalfPageUp()
+	case "gonvim_markdown_new_buffer":
+		if editor.config.Markdown.Disable {
+			return
+		}
+		go w.markdown.newBuffer()
+	case "gonvim_markdown_update":
+		if editor.config.Markdown.Disable {
+			return
+		}
+		go w.markdown.update()
+	case "gonvim_markdown_toggle":
+		if editor.config.Markdown.Disable {
+			return
+		}
+		w.markdown.toggle()
+	case "gonvim_markdown_scroll_down":
+		w.markdown.scrollDown()
+	case "gonvim_markdown_scroll_up":
+		w.markdown.scrollUp()
+	case "gonvim_markdown_scroll_top":
+		w.markdown.scrollTop()
+	case "gonvim_markdown_scroll_bottom":
+		w.markdown.scrollBottom()
+	case "gonvim_markdown_scroll_pagedown":
+		w.markdown.scrollPageDown()
+	case "gonvim_markdown_scroll_pageup":
+		w.markdown.scrollPageUp()
+	case "gonvim_markdown_scroll_halfpagedown":
+		w.markdown.scrollHalfPageDown()
+	case "gonvim_markdown_scroll_halfpageup":
+		w.markdown.scrollHalfPageUp()
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}

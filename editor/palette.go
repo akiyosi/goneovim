@@ -294,9 +294,9 @@ func (p *Palette) redrawAllContentInWindows() {
 	if runtime.GOOS != "windows" {
 		return
 	}
-	// if p.ws.markdown.webview.IsVisible() {
-	// 	return
-	// }
+	if p.ws.markdown.webview.IsVisible() {
+		return
+	}
 
 	p.hide()
 	p.resultWidget.Hide()
