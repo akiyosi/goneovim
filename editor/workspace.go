@@ -122,7 +122,7 @@ type Workspace struct {
 }
 
 func newWorkspace(path string) (*Workspace, error) {
-
+	fmt.Fprintln(editor.file, "new workspace 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	w := &Workspace{
 		stop:          make(chan struct{}),
 		signal:        NewWorkspaceSignal(nil),
@@ -133,9 +133,11 @@ func newWorkspace(path string) (*Workspace, error) {
 		special:       newRGBA(255, 255, 255, 1),
 	}
 	w.registerSignal()
+	fmt.Fprintln(editor.file, "new workspace 1", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	w.font = editor.font
 	w.font.ws = w
+	fmt.Fprintln(editor.file, "new workspace 2", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// Basic Workspace UI component
 	// screen
@@ -143,6 +145,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.screen.ws = w
 	w.screen.font = w.font
 	w.screen.initInputMethodWidget()
+
+	fmt.Fprintln(editor.file, "new workspace 3", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// cursor
 	w.cursor = initCursorNew()
@@ -221,6 +225,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	// w.finder = initFinder()
 	// w.finder.ws = w
 
+	fmt.Fprintln(editor.file, "new workspace 4", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// workspace widget, layouts
 	layout := widgets.NewQVBoxLayout()
 	layout.SetContentsMargins(0, 0, 0, 0)
@@ -255,12 +261,15 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.SetParent(editor.widget)
 	w.widget.Move2(0, 0)
 
+	fmt.Fprintln(editor.file, "new workspace 5", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	go w.startNvim(path)
 
 	return w, nil
 }
 
 func (w *Workspace) lazyDrawUI() {
+	fmt.Fprintln(editor.file, "lazy draw ui 0", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// scrollbar
 	if editor.config.ScrollBar.Visible {
@@ -287,6 +296,8 @@ func (w *Workspace) lazyDrawUI() {
 	w.palette.setColor()
 	w.palette.hide()
 
+	fmt.Fprintln(editor.file, "lazy draw ui 1", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// palette 2
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
@@ -294,9 +305,13 @@ func (w *Workspace) lazyDrawUI() {
 	w.fpalette.setColor()
 	w.fpalette.hide()
 
+	fmt.Fprintln(editor.file, "lazy draw ui 2", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// finder
 	w.finder = initFinder()
 	w.finder.ws = w
+
+	fmt.Fprintln(editor.file, "lazy draw ui 3", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	w.setCwd(w.getCwd())
 
@@ -309,6 +324,8 @@ func (w *Workspace) lazyDrawUI() {
 		w.markdown = newMarkdown(w)
 		w.markdown.webview.SetParent(w.screen.widget)
 	}
+
+	fmt.Fprintln(editor.file, "lazy draw ui 4", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// Asynchronously execute the process for minimap
 	go func() {
@@ -326,14 +343,18 @@ func (w *Workspace) lazyDrawUI() {
 		}
 	}()
 
+	fmt.Fprintln(editor.file, "lazy draw ui 5", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	// side := editor.sideWidget
 	// if editor.config.SideBar.Visible {
 	// 	side.show()
 	// }
 
+	fmt.Fprintln(editor.file, "lazy draw ui 6", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) vimEnterProcess() {
+	fmt.Fprintln(editor.file, "vim enter 1", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// Show window if connect remote nvim via ssh
 	if editor.opts.Ssh != "" {
@@ -367,6 +388,7 @@ func (w *Workspace) vimEnterProcess() {
 
 	}()
 
+	fmt.Fprintln(editor.file, "vim enter 2", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) registerSignal() {
@@ -381,6 +403,17 @@ func (w *Workspace) registerSignal() {
 	w.signal.ConnectLazyDrawSignal(func() {
 		w.lazyDrawUI()
 	})
+
+	// for debug signal
+	z := 1
+	go func() {
+		for {
+			w.redrawUpdates <- [][]interface{}{[]interface{}{"test event " + fmt.Sprintf("%d :: %d", z, time.Now().UnixNano()/1000000-editor.startuptime)}}
+			w.signal.RedrawSignal()
+			z++
+			time.Sleep(time.Millisecond * 50)
+		}
+	}()
 
 	w.signal.ConnectStopSignal(func() {
 		// if !w.uiRemoteAttached {
@@ -436,7 +469,7 @@ func (w *Workspace) show() {
 }
 
 func (w *Workspace) startNvim(path string) error {
-
+	fmt.Fprintln(editor.file, "start nvim 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	var neovim *nvim.Nvim
 	var err error
 
@@ -472,6 +505,8 @@ func (w *Workspace) startNvim(path string) error {
 		return err
 	}
 
+	fmt.Fprintln(editor.file, "start nvim 1", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	neovim.RegisterHandler("Gui", func(updates ...interface{}) {
 		w.guiUpdates <- updates
 		w.signal.GuiSignal()
@@ -481,9 +516,13 @@ func (w *Workspace) startNvim(path string) error {
 		w.signal.RedrawSignal()
 	})
 
+	fmt.Fprintln(editor.file, "start nvim 2", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	w.updateSize()
 
 	w.nvim = neovim
+
+	fmt.Fprintln(editor.file, "start nvim 3", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	go func() {
 		err := w.nvim.Serve()
@@ -544,7 +583,7 @@ func (w *Workspace) init(path string) {
 }
 
 func (w *Workspace) configure() {
-
+	fmt.Fprintln(editor.file, "configure 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	w.drawStatusline = editor.config.Statusline.Visible
 
 	if editor.config.Tabline.Visible && editor.config.Editor.ExtTabline {
@@ -553,38 +592,44 @@ func (w *Workspace) configure() {
 		w.drawTabline = false
 	}
 
+	fmt.Fprintln(editor.file, "configure 1", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	if editor.config.Lint.Visible {
 		w.drawLint = true
 	} else {
 		w.drawLint = false
 	}
 
+	fmt.Fprintln(editor.file, "configure 2", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) attachUI(path string) error {
-
+	fmt.Fprintln(editor.file, "attach ui 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	go w.nvim.Subscribe("Gui")
-
+	fmt.Fprintln(editor.file, "attach ui 1", time.Now().UnixNano()/1000000-editor.startuptime)
 	go w.initGonvim()
 	if w.tabline != nil {
 		w.tabline.subscribe()
 	}
-
+	fmt.Fprintln(editor.file, "attach ui 2", time.Now().UnixNano()/1000000-editor.startuptime)
 	if w.statusline != nil {
 		w.statusline.subscribe()
 	}
-
+	fmt.Fprintln(editor.file, "attach ui 3", time.Now().UnixNano()/1000000-editor.startuptime)
 	// if w.loc != nil {
 	// 	w.loc.subscribe()
 	// }
-
+	fmt.Fprintln(editor.file, "attach ui 4", time.Now().UnixNano()/1000000-editor.startuptime)
 	if w.message != nil {
 		w.message.connectUI()
 	}
 
+	fmt.Fprintln(editor.file, "attach ui 5", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	w.fontMutex.Lock()
 	defer w.fontMutex.Unlock()
 	w.uiAttached = true
+	fmt.Fprintln(editor.file, "attach ui 6", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	// On Windows, it may take a long time to get the width of CJK characters.
 	// Therefore, we will run this process in concurrently in the background of attaching to neovim.
@@ -598,16 +643,18 @@ func (w *Workspace) attachUI(path string) error {
 		editor.close()
 		return err
 	}
+	fmt.Fprintln(editor.file, "attach ui 7", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	if path != "" {
 		go w.nvim.Command("so " + path)
 	}
+	fmt.Fprintln(editor.file, "attach ui 8", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	return nil
 }
 
 func (w *Workspace) initGonvim() {
-
+	fmt.Fprintln(editor.file, "init goneovim 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	gonvimAutoCmds := `
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
@@ -697,6 +744,7 @@ func (w *Workspace) initGonvim() {
 	initialNotify := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimInitNotify))
 	w.nvim.Command(initialNotify)
 
+	fmt.Fprintln(editor.file, "init goneovim 1", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) loadGinitVim() {
@@ -1056,10 +1104,10 @@ func (w *Workspace) updateSize() {
 		w.height = height
 		w.widget.Resize2(width, height)
 		if !w.hidden {
-
+			fmt.Fprintln(editor.file, "update size 1", time.Now().UnixNano()/1000000-editor.startuptime)
 			w.hide()
 			w.show()
-
+			fmt.Fprintln(editor.file, "update size 2", time.Now().UnixNano()/1000000-editor.startuptime)
 		} else {
 			w.show()
 			w.hide()
@@ -1122,25 +1170,25 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		switch event {
 		// Global Events
 		case "set_title":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			titleStr := (update[1].([]interface{}))[0].(string)
 			editor.window.SetupTitle(titleStr)
 			if runtime.GOOS == "linux" {
 				editor.window.SetWindowTitle(titleStr)
 			}
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "set_icon":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "mode_info_set":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			w.modeInfoSet(args)
 			w.cursor.modeIdx = 0
 			w.cursor.update()
 		case "option_set":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			w.setOption(update)
 		case "mode_change":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			arg := update[len(update)-1].([]interface{})
 			w.mode = arg[0].(string)
 			w.modeIdx = util.ReflectToInt(arg[1])
@@ -1150,75 +1198,75 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			}
 			w.disableImeInNormal()
 		case "mouse_on":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "mouse_off":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "busy_start":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "busy_stop":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "suspend":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "update_menu":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "bell":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "visual_bell":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "flush":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.update()
 			w.cursor.update()
 			w.drawOtherUI()
 
 		// Grid Events
 		case "grid_resize":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridResize(args)
 		case "default_colors_set":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			for _, u := range update[1:] {
 				w.setColorsSet(u.([]interface{}))
 			}
 		case "hl_attr_define":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.setHlAttrDef(args)
 			// if goneovim own statusline is visible
 			if w.drawStatusline {
 				w.statusline.getColor()
 			}
 		case "hl_group_set":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.setHighlightGroup(args)
 		case "grid_line":
-
+			fmt.Fprintln(editor.file, event, "1", time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridLine(args)
-
+			fmt.Fprintln(editor.file, event, "2", time.Now().UnixNano()/1000000-editor.startuptime)
 		case "grid_clear":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridClear(args)
 		case "grid_destroy":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridDestroy(args)
 		case "grid_cursor_goto":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridCursorGoto(args)
 		case "grid_scroll":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.gridScroll(args)
 
 		// Multigrid Events
 		case "win_pos":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.windowPosition(args)
 		case "win_float_pos":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.windowFloatPosition(args)
 		case "win_external_pos":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.windowExternalPosition(args)
 		case "win_hide":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.windowHide(args)
 		case "win_scroll_over_start":
 			// old impl
@@ -1227,18 +1275,18 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			// old impl
 			// s.windowScrollOverReset()
 		case "win_close":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.windowClose()
 		case "msg_set_pos":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			s.msgSetPos(args)
 		case "win_viewport":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			w.windowViewport(args[0].([]interface{}))
 
 		// Popupmenu Events
 		case "popupmenu_show":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				if w.cmdline.shown {
 					w.cmdline.cmdWildmenuShow(args)
@@ -1254,7 +1302,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				}
 			}
 		case "popupmenu_select":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				if w.cmdline.shown {
 					w.cmdline.cmdWildmenuSelect(args)
@@ -1270,7 +1318,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				}
 			}
 		case "popupmenu_hide":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				if w.cmdline.shown {
 					w.cmdline.cmdWildmenuHide()
@@ -1287,43 +1335,45 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			}
 		// Tabline Events
 		case "tabline_update":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.tabline != nil {
 				w.tabline.update(args)
 			}
+			fmt.Fprintln(editor.file, event, "2", time.Now().UnixNano()/1000000-editor.startuptime)
 
 		// Cmdline Events
 		case "cmdline_show":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.show(args)
 			}
 
+			fmt.Fprintln(editor.file, event, "2", time.Now().UnixNano()/1000000-editor.startuptime)
 		case "cmdline_pos":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.changePos(args)
 			}
-
+			fmt.Fprintln(editor.file, event, "2", time.Now().UnixNano()/1000000-editor.startuptime)
 		case "cmdline_special_char":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 		case "cmdline_char":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.putChar(args)
 			}
 		case "cmdline_hide":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.hide()
 			}
 		case "cmdline_function_show":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.functionShow()
 			}
 		case "cmdline_function_hide":
-
+			fmt.Fprintln(editor.file, event, time.Now().UnixNano()/1000000-editor.startuptime)
 			if w.cmdline != nil {
 				w.cmdline.functionHide()
 			}
@@ -1351,7 +1401,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.message.msgHistoryShow(args)
 
 		default:
-
+			fmt.Fprintln(editor.file, update, "::", time.Now().UnixNano()/1000000-editor.startuptime)
 		}
 	}
 }
@@ -1477,7 +1527,7 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 }
 
 func (w *Workspace) updateWorkspaceColor() {
-
+	fmt.Fprintln(editor.file, "update WS Color 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	// w.signature.setColor()
 	// if w.palette != nil {
 	// 	w.palette.setColor()
@@ -1489,11 +1539,13 @@ func (w *Workspace) updateWorkspaceColor() {
 		w.popup.setColor()
 	}
 
+	fmt.Fprintln(editor.file, "update WS Color 1", time.Now().UnixNano()/1000000-editor.startuptime)
 	if w.message != nil {
 		w.message.setColor()
 	}
 	w.screen.setColor()
 
+	fmt.Fprintln(editor.file, "update WS Color 2", time.Now().UnixNano()/1000000-editor.startuptime)
 	// if w.drawTabline {
 	// 	if w.tabline != nil {
 	// 		w.tabline.setColor()
@@ -1511,6 +1563,7 @@ func (w *Workspace) updateWorkspaceColor() {
 		}
 	}
 
+	fmt.Fprintln(editor.file, "update WS Color 3", time.Now().UnixNano()/1000000-editor.startuptime)
 	// if editor.config.Lint.Visible {
 	// 	w.loc.setColor()
 	// }
@@ -1572,7 +1625,7 @@ func (w *Workspace) setOption(update []interface{}) {
 }
 
 func (w *Workspace) getPos() {
-
+	fmt.Fprintln(editor.file, "get pos 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	if w.api5 {
 		return
 	}
@@ -1589,6 +1642,7 @@ func (w *Workspace) getPos() {
 			`, &curPos)
 		done <- err
 	}()
+	fmt.Fprintln(editor.file, "get pos 1", time.Now().UnixNano()/1000000-editor.startuptime)
 
 	select {
 	case <-done:
@@ -1596,11 +1650,14 @@ func (w *Workspace) getPos() {
 		return
 	}
 
+	fmt.Fprintln(editor.file, "get pos 2", time.Now().UnixNano()/1000000-editor.startuptime)
+
 	w.curPosMutex.Lock()
 	w.curLine = curPos[1]
 	w.curColm = curPos[2]
 	w.curPosMutex.Unlock()
 
+	fmt.Fprintln(editor.file, "get pos 3", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (w *Workspace) windowViewport(arg []interface{}) {
@@ -1633,10 +1690,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "gonvim_enter":
-
+		fmt.Fprintln(editor.file, "vim enter", time.Now().UnixNano()/1000000-editor.startuptime)
 		w.vimEnterProcess()
 	case "gonvim_uienter":
-
+		fmt.Fprintln(editor.file, "ui enter", time.Now().UnixNano()/1000000-editor.startuptime)
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
 		editor.window.Resize2(width, height)
