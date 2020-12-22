@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,7 +16,6 @@ import (
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
 	clipb "github.com/atotto/clipboard"
-	"github.com/jessevdk/go-flags"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -73,7 +73,7 @@ type Notify struct {
 	buttons []*NotifyButton
 }
 
-type Option struct {
+type Options struct {
 	Fullscreen bool   `long:"fullscreen" description:"Open the window in fullscreen on startup"`
 	Maximized  bool   `long:"maximized" description:"Maximize the window on startup"`
 	Geometry   string `long:"geometry" description:"Initial window geomtry [e.g. --geometry=800x600]"`
@@ -81,6 +81,8 @@ type Option struct {
 	Server string `long:"server" description:"Remote session address [e.g. --server=host:3456]"`
 	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh [e.g. --ssh=user@host]"`
 	Nvim   string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
+
+	Debug bool `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=mydebug.log]"`
 }
 
 // Editor is the editor
@@ -94,7 +96,7 @@ type Editor struct {
 	configDir string
 	args      []string
 	macAppArg string
-	opts      Option
+	opts      Options
 
 	notifyStartPos    *core.QPoint
 	notificationWidth int
@@ -158,67 +160,67 @@ func (hl *Highlight) copy() Highlight {
 }
 
 // InitEditor is
-func InitEditor() {
-	startuptime := time.Now().UnixNano() / 1000000
-	file, err := os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		return
+func InitEditor(options Options, args []string) {
+
+	// startup time
+	startuptime := time.Now().UnixNano() / 1000
+
+	// create editor struct
+	editor = &Editor{
+		version:     GONEOVIMVERSION,
+		args:        args,
+		opts:        options,
+		startuptime: startuptime,
 	}
-	fmt.Fprintln(file, "editor 0", time.Now().UnixNano()/1000000-startuptime)
+	e := editor
 
-	// parse args
-	opts, args := parseArgs()
+	// log
+	var file *os.File
+	var err error
+	if e.opts.Debug {
+		file, err = os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			os.Exit(1)
+		}
+		log.SetOutput(file)
+		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+	}
+	e.putLog("--- GONEOVIM STARTING ---")
 
-	fmt.Fprintln(file, "editor 1", time.Now().UnixNano()/1000000-startuptime)
+	e.signal = NewEditorSignal(nil)
+	e.stop = make(chan struct{})
+	e.notify = make(chan *Notify, 10)
+	e.cbChan = make(chan *string, 240)
 
 	// put shell environment
 	// TODO: This process runs on a Unix-like OS, but it is very slow. I want to improve it.
-	putEnv()
-
-	fmt.Fprintln(file, "editor 2", time.Now().UnixNano()/1000000-startuptime)
+	setEnv()
+	e.putLog("setting environment variable")
 
 	// detect home dir
 	home, err := homedir.Dir()
 	if err != nil {
 		home = "~"
 	}
-
-	fmt.Fprintln(file, "editor 3", time.Now().UnixNano()/1000000-startuptime)
+	e.putLog("detecting home directory path")
 
 	configDir, config := newConfig(home)
 
-	fmt.Fprintln(file, "editor 4", time.Now().UnixNano()/1000000-startuptime)
-
-	editor = &Editor{
-		version:     GONEOVIMVERSION,
-		signal:      NewEditorSignal(nil),
-		stop:        make(chan struct{}),
-		notify:      make(chan *Notify, 10),
-		cbChan:      make(chan *string, 240),
-		config:      config,
-		homeDir:     home,
-		configDir:   configDir,
-		args:        args,
-		opts:        opts,
-		startuptime: startuptime,
-		file:        file,
-	}
-	e := editor
-
-	fmt.Fprintln(file, "editor 5", time.Now().UnixNano()/1000000-editor.startuptime)
+	e.config = config
+	e.homeDir = home
+	e.configDir = configDir
+	e.putLog("reading config")
 
 	// application
-	// core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
-	// coreapp := core.NewQCoreApplication(len(os.Args), os.Args)
-
+	e.putLog("start    generating the application")
+	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
-	// e.app = widgets.NewQApplicationFromPointer(coreapp)
 	e.ppid = os.Getppid()
-
-	fmt.Fprintln(file, "editor 6", time.Now().UnixNano()/1000000-editor.startuptime)
+	e.putLog("finished generating the application")
 
 	// set application working directory path
 	e.setAppDirPath(home)
+	e.putLog("set working directory path")
 
 	e.initFont()
 	fontGenAsync := make(chan *Font, 2)
@@ -231,25 +233,28 @@ func InitEditor() {
 
 		fontGenAsync <- font
 	}()
-
-	fmt.Fprintln(file, "editor 6-2", time.Now().UnixNano()/1000000-editor.startuptime)
+	e.putLog("initializing font")
 
 	e.initSVGS()
-	e.initColorPalette()
-	e.initNotifications()
-	e.initSysTray()
+	e.putLog("initializing svg images")
 
-	fmt.Fprintln(file, "editor 7", time.Now().UnixNano()/1000000-editor.startuptime)
+	e.initColorPalette()
+	e.putLog("initializing color palette")
+
+	e.initNotifications()
+	e.putLog("initializing notification UI")
+
+	e.initSysTray()
 
 	// application main window
 	// e.window = widgets.NewQMainWindow(nil, 0)
+	e.putLog("start    preparing the application window.")
 	isframeless := e.config.Editor.BorderlessWindow
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	e.showWindow()
 	e.setWindowSizeFromOpts()
+	e.showWindow()
 	e.setWindowOptions()
-
-	fmt.Fprintln(file, "editor 8", time.Now().UnixNano()/1000000-editor.startuptime)
+	e.putLog("finished prepaing the application window.")
 
 	// window layout
 	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
@@ -257,35 +262,19 @@ func InitEditor() {
 	l.SetSpacing(0)
 	e.window.SetupContent(l)
 
-	fmt.Fprintln(file, "editor 9", time.Now().UnixNano()/1000000-editor.startuptime)
-
 	// window content
 	e.widget = widgets.NewQWidget(nil, 0)
-	// e.window.SetCentralWidget(e.widget)
-
-	fmt.Fprintln(file, "editor 9-1", time.Now().UnixNano()/1000000-editor.startuptime)
-
-	// e.sideWidget = newWorkspaceSide()
-	// e.sideWidget.newScrollArea()
-	// e.sideWidget.scrollarea.Hide()
-	// e.sideWidget.scrollarea.SetWidget(e.sideWidget.widget)
 	e.newSplitter()
-	// e.splitter.InsertWidget(0, e.sideWidget.scrollarea)
 	e.splitter.InsertWidget(1, e.widget)
 	l.AddWidget(e.splitter, 1, 0)
-
-	// l.AddWidget(e.widget, 1, 0)
-
-	fmt.Fprintln(file, "editor 9-6", time.Now().UnixNano()/1000000-editor.startuptime)
-
-	// e.sideWidget.scrollarea.SetWidget(editor.sideWidget.widget)
-
-	fmt.Fprintln(file, "editor 10", time.Now().UnixNano()/1000000-editor.startuptime)
+	e.putLog("window layout done")
 
 	e.font = <-fontGenAsync
+	e.putLog("done calculating the width of the font.")
 
 	// neovim workspaces
 	e.initWorkspaces()
+	e.putLog("done initialazing workspaces")
 
 	e.connectAppSignals()
 
@@ -334,29 +323,23 @@ func InitEditor() {
 			}()
 		}
 	}
+	e.putLog("done connecting UI siganal")
 
-	fmt.Fprintln(file, "editor 11", time.Now().UnixNano()/1000000-editor.startuptime)
 	e.widget.SetFocus2()
-	fmt.Fprintln(file, "editor 12", time.Now().UnixNano()/1000000-editor.startuptime)
+	e.putLog("focused UI")
 
 	widgets.QApplication_Exec()
 }
 
-// parsArgs parse args
-func parseArgs() (Option, []string) {
-	var opts Option
-	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassDoubleDash)
-	args, err := parser.ParseArgs(os.Args[1:])
-	if flagsErr, ok := err.(*flags.Error); ok {
-		switch flagsErr.Type {
-		case flags.ErrDuplicatedFlag:
-		case flags.ErrHelp:
-			fmt.Println(err)
-			os.Exit(1)
-		}
+func (e *Editor) putLog(v ...interface{}) {
+	if !e.opts.Debug {
+		return
 	}
 
-	return opts, args
+	log.Println(
+		fmt.Sprintf("%07.3f", float64(time.Now().UnixNano()/1000-e.startuptime)/1000),
+		strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%s", v), "["), "]"),
+	)
 }
 
 // setAppDirPath
@@ -512,9 +495,10 @@ func (e *Editor) initSysTray() {
 	}
 	e.sysTray = widgets.NewQSystemTrayIcon2(trayIcon, e.app)
 	e.sysTray.Show()
+	e.putLog("initialize system tray")
 }
 
-func putEnv() {
+func setEnv() {
 	if runtime.GOOS == "linux" {
 		exe, _ := os.Executable()
 		dir, _ := filepath.Split(exe)
@@ -558,15 +542,15 @@ func (e *Editor) initFont() {
 }
 
 func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
-	opts := NotifyOptions{}
+	a := NotifyOptions{}
 	for _, o := range opt {
-		o(&opts)
+		o(&a)
 	}
 	n := &Notify{
 		level:   level,
 		period:  p,
 		message: message,
-		buttons: opts.buttons,
+		buttons: a.buttons,
 	}
 	e.notify <- n
 	e.signal.NotifySignal()
@@ -636,6 +620,7 @@ func (c *ColorPalette) update() {
 }
 
 func (e *Editor) updateGUIColor() {
+	e.putLog("start    updating UI color")
 	e.workspaces[e.active].updateWorkspaceColor()
 
 	// Do not use frameless drawing on linux
@@ -651,6 +636,7 @@ func (e *Editor) updateGUIColor() {
 	}
 
 	// e.window.SetWindowOpacity(1.0)
+	e.putLog("finished updating UI color")
 }
 
 func hexToRGBA(hex string) *RGBA {
@@ -781,15 +767,12 @@ func (e *Editor) workspacePrevious() {
 }
 
 func (e *Editor) workspaceUpdate() {
-	fmt.Fprintln(editor.file, "workspaceUpdate 0", time.Now().UnixNano()/1000000-editor.startuptime)
 	if e.sideWidget == nil {
 		return
 	}
 	for i, ws := range e.workspaces {
 		if i == e.active {
-			fmt.Fprintln(editor.file, "workspaceUpdate 1", time.Now().UnixNano()/1000000-editor.startuptime)
 			ws.show()
-			fmt.Fprintln(editor.file, "workspaceUpdate 2", time.Now().UnixNano()/1000000-editor.startuptime)
 		} else {
 			ws.hide()
 		}
@@ -799,12 +782,9 @@ func (e *Editor) workspaceUpdate() {
 		e.sideWidget.items[i].setText(e.workspaces[i].cwdlabel)
 		e.sideWidget.items[i].show()
 	}
-	fmt.Fprintln(editor.file, "workspaceUpdate 3", time.Now().UnixNano()/1000000-editor.startuptime)
 	for i := len(e.workspaces); i < len(e.sideWidget.items); i++ {
 		e.sideWidget.items[i].hide()
 	}
-
-	fmt.Fprintln(editor.file, "workspaceUpdate 4", time.Now().UnixNano()/1000000-editor.startuptime)
 }
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
