@@ -493,6 +493,9 @@ var embedProcAttr *syscall.SysProcAttr
 func newRemoteChildProcess() (*nvim.Nvim, error) {
 	logf := log.Printf
 	command := "ssh"
+	if runtime.GOOS == "windows" {
+		command = `C:\windows\system32\OpenSSH\ssh.exe`
+	}
 	ctx := context.Background()
 
 	cmd := exec.CommandContext(
