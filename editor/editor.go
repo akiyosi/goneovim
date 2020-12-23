@@ -254,7 +254,7 @@ func InitEditor(options Options, args []string) {
 	e.setWindowSizeFromOpts()
 	e.showWindow()
 	e.setWindowOptions()
-	e.putLog("finished prepaing the application window.")
+	e.putLog("finished preparing the application window.")
 
 	// window layout
 	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
