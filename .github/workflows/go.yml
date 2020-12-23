@@ -57,7 +57,7 @@ jobs:
   
     - name: Get dependencies
       run: |
-        go get -v -t -d github.com/${{ github.repository }}/editor
+        go get -v -t -d github.com/${{ github.repository }}/...
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtmoc
   
@@ -128,7 +128,7 @@ jobs:
   
     - name: Get dependencies
       run: |
-        go get -v -t -d github.com/${{ github.repository }}/editor
+        go get -v -t -d github.com/${{ github.repository }}/...
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtmoc
   
@@ -268,7 +268,7 @@ jobs:
     - name: Retrieving dependencies
       continue-on-error: true
       run: |
-        go get -v -d github.com/${{ github.repository }}/editor
+        go get -v -d github.com/${{ github.repository }}/...
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtmoc.exe
 
