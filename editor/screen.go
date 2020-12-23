@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/bluele/gcache"
@@ -2975,13 +2976,37 @@ func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyl
 	return pattern, color, t
 }
 
+func isCJK(char string) bool {
+	if unicode.Is(unicode.Han, []rune(char)[0]) {
+		return true
+	}
+	if unicode.Is(unicode.Hiragana, []rune(char)[0]) {
+		return true
+	}
+	if unicode.Is(unicode.Katakana, []rune(char)[0]) {
+		return true
+	}
+	if unicode.Is(unicode.Hangul, []rune(char)[0]) {
+		return true
+	}
+
+	return false
+}
+
 func (w *Window) isNormalWidth(char string) bool {
+	// if ASCII
 	if len(char) == 0 {
 		return true
 	}
 	if char[0] <= 127 {
 		return true
 	}
+
+	// if CJK
+	if isCJK(char) {
+		return false
+	}
+
 	return w.getFont().fontMetrics.HorizontalAdvance(char, -1) == w.getFont().truewidth
 }
 
