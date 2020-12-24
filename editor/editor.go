@@ -82,7 +82,7 @@ type Options struct {
 	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh [e.g. --ssh=user@host]"`
 	Nvim   string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
 
-	Debug bool `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=mydebug.log]"`
+	Debug bool `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug]"`
 }
 
 // Editor is the editor
@@ -222,7 +222,8 @@ func InitEditor(options Options, args []string) {
 	e.setAppDirPath(home)
 	e.putLog("set working directory path")
 
-	e.initFont()
+	e.extFontFamily = e.config.Editor.FontFamily
+	e.extFontSize = e.config.Editor.FontSize
 	fontGenAsync := make(chan *Font, 2)
 	go func() {
 		font := initFontNew(
@@ -233,6 +234,7 @@ func InitEditor(options Options, args []string) {
 
 		fontGenAsync <- font
 	}()
+	e.initFont()
 	e.putLog("initializing font")
 
 	e.initSVGS()
@@ -251,8 +253,8 @@ func InitEditor(options Options, args []string) {
 	e.putLog("start    preparing the application window.")
 	isframeless := e.config.Editor.BorderlessWindow
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	e.setWindowSizeFromOpts()
 	e.showWindow()
+	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
 	e.putLog("finished preparing the application window.")
 
@@ -535,8 +537,6 @@ func setEnv() {
 }
 
 func (e *Editor) initFont() {
-	e.extFontFamily = e.config.Editor.FontFamily
-	e.extFontSize = e.config.Editor.FontSize
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QWidget")
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QLabel")
 }
