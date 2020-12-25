@@ -2644,7 +2644,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	width := float64(len(text)) * font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
-		width = math.Ceil(font.fontMetrics.HorizontalAdvance(text, -1))
+		width = math.Ceil(w.s.runeTextWidth(text))
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -2976,34 +2976,63 @@ func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyl
 	return pattern, color, t
 }
 
-func isCJK(char string) bool {
-	if unicode.Is(unicode.Han, []rune(char)[0]) {
+func (s *Screen) runeTextWidth(text string) float64 {
+	cjk := 0
+	ascii := 0
+	var buffer bytes.Buffer
+	for _, c := range []rune(text) {
+		if isCJK(c) {
+			cjk++
+		} else if c <= 127 {
+			ascii++
+		} else {
+			buffer.WriteString(string(c))
+		}
+	}
+
+	r := buffer.String()
+	width := (s.font.truewidth)*float64(ascii) + (s.font.truewidth)*float64(cjk)*2
+	if r == "" {
+		return width
+	}
+
+	return width + s.font.fontMetrics.HorizontalAdvance(r, -1)
+}
+
+func isCJK(char rune) bool {
+	if unicode.Is(unicode.Han, char) {
 		return true
 	}
-	if unicode.Is(unicode.Hiragana, []rune(char)[0]) {
+	if unicode.Is(unicode.Hiragana, char) {
 		return true
 	}
-	if unicode.Is(unicode.Katakana, []rune(char)[0]) {
+	if unicode.Is(unicode.Katakana, char) {
 		return true
 	}
-	if unicode.Is(unicode.Hangul, []rune(char)[0]) {
+	if unicode.Is(unicode.Hangul, char) {
 		return true
 	}
 
 	return false
 }
 
+// isNormalWidth is:
+// On Windows, HorizontalAdvance() may take a long time to get the width of CJK characters.
+// For this reason, for CJK characters, the character width should be the double width of ASCII characters.
+// This issue may also be related to the following.
+// https://github.com/equalsraf/neovim-qt/issues/614
 func (w *Window) isNormalWidth(char string) bool {
-	// if ASCII
 	if len(char) == 0 {
 		return true
 	}
+
+	// if ASCII
 	if char[0] <= 127 {
 		return true
 	}
 
 	// if CJK
-	if isCJK(char) {
+	if isCJK([]rune(char)[0]) {
 		return false
 	}
 
