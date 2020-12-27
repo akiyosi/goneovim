@@ -192,11 +192,6 @@ func InitEditor(options Options, args []string) {
 	e.notify = make(chan *Notify, 10)
 	e.cbChan = make(chan *string, 240)
 
-	// put shell environment
-	// TODO: This process runs on a Unix-like OS, but it is very slow. I want to improve it.
-	setEnv()
-	e.putLog("setting environment variable")
-
 	// detect home dir
 	home, err := homedir.Dir()
 	if err != nil {
@@ -217,6 +212,11 @@ func InitEditor(options Options, args []string) {
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
 	e.ppid = os.Getppid()
 	e.putLog("finished generating the application")
+
+	// put shell environment
+	// TODO: This process runs on a Unix-like OS, but it is very slow. I want to improve it.
+	e.setEnv()
+	e.putLog("setting environment variable")
 
 	// set application working directory path
 	e.setAppDirPath(home)
@@ -500,7 +500,7 @@ func (e *Editor) initSysTray() {
 	e.putLog("initialize system tray")
 }
 
-func setEnv() {
+func (e *Editor) setEnv() {
 	if runtime.GOOS == "linux" {
 		exe, _ := os.Executable()
 		dir, _ := filepath.Split(exe)
@@ -508,12 +508,13 @@ func setEnv() {
 		_ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
 		_ = os.Setenv("RESOURCE_NAME", "goneovim")
 	}
-	if runtime.GOOS == "darwin" {
+	if runtime.GOOS == "darwin" && e.ppid == 1 {
 		shell := os.Getenv("SHELL")
 		if shell == "" {
 			shell = os.Getenv("/bin/bash")
 		}
-		cmd := exec.Command(shell, "-l", "-c", "env", "-i")
+		// cmd := exec.Command(shell, "-l", "-c", "env", "-i")
+		cmd := exec.Command("printenv")
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
 			return
