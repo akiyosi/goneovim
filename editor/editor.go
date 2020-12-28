@@ -218,7 +218,6 @@ func InitEditor(options Options, args []string) {
 	// put shell environment
 	// TODO: This process runs on a Unix-like OS, but it is very slow. I want to improve it.
 	e.setEnv()
-	e.lang = os.Getenv("LANG")
 	e.putLog("setting environment variable")
 
 	// set application working directory path

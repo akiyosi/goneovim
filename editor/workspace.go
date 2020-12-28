@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -595,6 +596,7 @@ func (w *Workspace) preCacheFont() {
 	if runtime.GOOS != "windows" {
 		return
 	}
+	editor.lang = os.Getenv("LANG")
 
 	if strings.Contains(editor.lang, "ja") {
 		w.font.fontMetrics.HorizontalAdvance("無", -1)
