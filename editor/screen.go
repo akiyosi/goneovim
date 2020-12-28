@@ -627,6 +627,14 @@ func (w *Window) getFont() *Font {
 	return w.font
 }
 
+func (w *Window) getTS() int {
+	if w.ts <= 0 {
+		return w.s.ws.ts
+	}
+
+	return w.ts
+}
+
 func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if w == nil {
 		return
@@ -644,8 +652,8 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		return
 	}
 
-	ts := w.ts
-	if ts == 0 {
+	ts := w.getTS()
+	if ts <= 0 {
 		return
 	}
 

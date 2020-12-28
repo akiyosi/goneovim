@@ -613,7 +613,7 @@ func (w *Workspace) initGonvim() {
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
 	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter")
-	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_filetype", &ft, win_getid())
+	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid())
 	au GonvimAu OptionSet * if &ro != 1 | silent! call rpcnotify(1, "Gui", "gonvim_optionset") | endif
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
@@ -739,6 +739,21 @@ func (w *Workspace) getTS() {
 	case <-time.After(40 * time.Millisecond):
 	}
 	w.ts = ts
+}
+
+func (w *Workspace) getBuffTS(buf nvim.Buffer, bufname string) int {
+	done := make(chan bool, 5)
+	ts := 8
+	go func() {
+		w.nvim.BufferOption(buf, "ts", &ts)
+		done <- true
+	}()
+	select {
+	case <-done:
+	case <-time.After(90 * time.Millisecond):
+	}
+
+	return ts
 }
 
 func (w *Workspace) getBG() {
@@ -1688,9 +1703,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_termleave":
 		w.mode = "normal"
 	case "gonvim_bufenter":
-		w.bufEnter()
-	case "gonvim_filetype":
+		w.getBufnameAndTS()
+	case "gonvim_winenter_filetype":
 		w.getFileType(updates)
+		w.getBufnameAndTS()
 	case "gonvim_markdown_new_buffer":
 		if editor.config.Markdown.Disable {
 			return
@@ -1957,7 +1973,7 @@ func (w *Workspace) setPumblend(arg interface{}) {
 	w.pb = pumblend
 }
 
-func (w *Workspace) bufEnter() {
+func (w *Workspace) getBufnameAndTS() {
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1993,36 +2009,18 @@ func (w *Workspace) bufEnter() {
 		}
 
 		win.bufName = bufName
+		win.ts = w.getBuffTS(buf, bufName)
 		return true
 	})
 }
 
 func (w *Workspace) optionSet() {
 	w.optionsetMutex.Lock()
-	w.setTabStop()
+	w.getTS()
 	// w.getPumHeight()
 	w.getWinblendAll()
 	w.optionsetMutex.Unlock()
 	// w.getFileType()
-}
-
-func (w *Workspace) setTabStop() {
-	w.getTS()
-	w.screen.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-
-		if win == nil {
-			return true
-		}
-		// set tabstop
-		if win.isShown() {
-			if win.ts != w.ts {
-				win.ts = w.ts
-			}
-		}
-
-		return true
-	})
 }
 
 func (w *Workspace) getPumHeight() {
