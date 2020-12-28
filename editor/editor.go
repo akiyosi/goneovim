@@ -141,6 +141,8 @@ type Editor struct {
 	extFontSize   int
 	font          *Font
 
+	lang string
+
 	startuptime int64
 	file        *os.File
 }
@@ -216,6 +218,7 @@ func InitEditor(options Options, args []string) {
 	// put shell environment
 	// TODO: This process runs on a Unix-like OS, but it is very slow. I want to improve it.
 	e.setEnv()
+	e.lang = os.Getenv("LANG")
 	e.putLog("setting environment variable")
 
 	// set application working directory path
@@ -513,8 +516,8 @@ func (e *Editor) setEnv() {
 		if shell == "" {
 			shell = os.Getenv("/bin/bash")
 		}
-		// cmd := exec.Command(shell, "-l", "-c", "env", "-i")
-		cmd := exec.Command("printenv")
+		cmd := exec.Command(shell, "-l", "-c", "env", "-i")
+		// cmd := exec.Command("printenv")
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
 			return
