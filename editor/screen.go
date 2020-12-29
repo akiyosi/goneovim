@@ -2646,13 +2646,14 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 
 func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth bool) *gui.QImage {
 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
+	editor.putLog("start creating word cache:", text)
 
 	font := w.getFont()
 
 	width := float64(len(text)) * font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
-		width = math.Ceil(w.s.runeTextWidth(text))
+		width = math.Ceil(w.s.runeTextWidth(font, text))
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -2721,6 +2722,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	}
 
 	pi.DestroyQPainter()
+	editor.putLog("finished creating word cache:", text)
+
 	return image
 }
 
@@ -2984,7 +2987,7 @@ func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyl
 	return pattern, color, t
 }
 
-func (s *Screen) runeTextWidth(text string) float64 {
+func (s *Screen) runeTextWidth(font *Font, text string) float64 {
 	cjk := 0
 	ascii := 0
 	var buffer bytes.Buffer
@@ -2999,12 +3002,15 @@ func (s *Screen) runeTextWidth(text string) float64 {
 	}
 
 	r := buffer.String()
-	width := (s.font.truewidth)*float64(ascii) + (s.font.truewidth)*float64(cjk)*2
+	width := (font.truewidth)*float64(ascii) + (font.truewidth)*float64(cjk)*2
 	if r == "" {
-		return width
+		width += font.fontMetrics.HorizontalAdvance(r, -1)
+	}
+	if width == 0 {
+		width = font.truewidth * 2
 	}
 
-	return width + s.font.fontMetrics.HorizontalAdvance(r, -1)
+	return width
 }
 
 func isCJK(char rune) bool {

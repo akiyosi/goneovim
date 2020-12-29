@@ -340,7 +340,7 @@ func (p *PopupMenu) setWidgetWidth() {
 			item.infoLabel.Show()
 		}
 
-		wordLabelLen := int(math.Ceil(p.ws.screen.runeTextWidth(item.wordLabel.Text())))
+		wordLabelLen := int(math.Ceil(p.ws.screen.runeTextWidth(p.ws.screen.font, item.wordLabel.Text())))
 		if wordLabelLen > maxWordLabelLen {
 			maxWordLabelLen = wordLabelLen
 		}
@@ -489,7 +489,7 @@ func (p *PopupItem) updateContent() {
 		p.menuLabel.SetText(menuLines[0])
 		p.infoLabel.SetText(infoLines[0])
 
-		menuLabelTextLen := math.Ceil(p.p.ws.screen.runeTextWidth(menuLines[0]))
+		menuLabelTextLen := math.Ceil(p.p.ws.screen.runeTextWidth(p.p.ws.screen.font, menuLines[0]))
 
 		if len(menuLines) > 1 || len(infoLines) > 1 || menuLabelTextLen > float64(editor.config.Popupmenu.MenuWidth) {
 			p.detailText = p.menuRequest + "\n" + p.infoRequest
