@@ -485,16 +485,12 @@ func (m *MiniMap) bufSync() {
 	)
 }
 
-func isWindowFloatForConfig(config map[string]interface{}) bool {
-	if config == nil {
+func isWindowFloatForConfig(wc *nvim.WindowConfig) bool {
+	if wc == nil {
 		return false
 	}
 
-	relative, ok := config["relative"]
-	if !ok {
-		return false
-	}
-	if relative == "" {
+	if wc.Relative == "" {
 		return false
 	}
 
