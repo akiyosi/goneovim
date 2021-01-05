@@ -2,6 +2,7 @@ package editor
 
 import (
 	"math"
+	"runtime"
 
 	"github.com/therecipe/qt/gui"
 )
@@ -27,6 +28,15 @@ func fontSizeNew(font *gui.QFont) (int, int, float64, float64, float64) {
 	fontMetrics := gui.NewQFontMetricsF(font)
 	h := fontMetrics.Height()
 	w := fontMetrics.HorizontalAdvance("w", -1)
+
+	// On Windows, it may take a long time (~500ms) to drawing CJK characters for qpainter.
+	// Therefore, we will run this process in concurrently in the background of attaching to neovim.
+	// This issue may also be related to the following.
+	// https://github.com/equalsraf/neovim-qt/issues/614
+	if runtime.GOOS == "windows" {
+		go fontMetrics.HorizontalAdvance("無未제", -1)
+	}
+
 	ascent := fontMetrics.Ascent()
 	width := int(math.Ceil(w))
 	height := int(math.Ceil(h))
