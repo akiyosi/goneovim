@@ -574,9 +574,8 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		if y >= w.rows {
 			continue
 		}
-		w.fillBackground(p, y, col, cols)
-		w.drawContents(p, y, col, cols)
-		w.drawTextDecoration(p, y, col, cols)
+		w.drawBackground(p, y, col, cols)
+		w.drawForeground(p, y, col, cols)
 	}
 
 	// TODO: We should use msgSepChar to separate message window area
@@ -2385,7 +2384,7 @@ func (w *Window) queueRedraw(x, y, width, height int) {
 	}
 }
 
-func (w *Window) fillBackground(p *gui.QPainter, y int, col int, cols int) {
+func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
@@ -2846,15 +2845,15 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (w *Window) drawContents(p *gui.QPainter, y int, col int, cols int) {
+func (w *Window) drawForeground(p *gui.QPainter, y int, col int, cols int) {
 	if w.s.name == "minimap" {
 		w.drawMinimap(p, y, col, cols)
 	} else if !editor.config.Editor.CachedDrawing {
 		w.drawText(p, y, col, cols)
 	} else {
-		// w.drawChars(p, y, col, cols)
 		w.drawTextWithCache(p, y, col, cols)
 	}
+	w.drawTextDecoration(p, y, col, cols)
 }
 
 func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
