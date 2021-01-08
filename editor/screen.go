@@ -1976,6 +1976,11 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		return
 	}
 
+	// Suppresses flickering during smooth scrolling
+	if win.scrollPixels[1] != 0 {
+		win.scrollPixels[1] = 0
+	}
+
 	// We should control to draw statusline, vsplitter
 	if editor.config.Editor.DrawWindowSeparator && gridid == 1 {
 
@@ -2259,6 +2264,11 @@ func (w *Window) scroll(count int) {
 				content[row][col] = nil
 			}
 		}
+	}
+
+	// Suppresses flickering during smooth scrolling
+	if w.scrollPixels[1] != 0 {
+		w.scrollPixels[1] = 0
 	}
 
 	w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
