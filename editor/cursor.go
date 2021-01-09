@@ -12,13 +12,14 @@ import (
 
 // Cursor is
 type Cursor struct {
-	ws     *Workspace
-	widget *widgets.QWidget
-	// widget      *widgets.QLabel
+	ws           *Workspace
+	widget       *widgets.QWidget
 	mode         string
 	modeIdx      int
 	x            int
 	y            int
+	width        int
+	height       int
 	text         string
 	normalWidth  bool
 	gridid       int
@@ -58,8 +59,11 @@ func initCursorNew() *Cursor {
 }
 
 func (c *Cursor) paint(event *gui.QPaintEvent) {
+
 	p := gui.NewQPainter2(c.widget)
 	defer p.DestroyQPainter()
+
+	// p.SetCompositionMode(gui.QPainter__RasterOp_SourceXorDestination)
 
 	font := c.font
 	if font == nil {
@@ -90,10 +94,12 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		width,
 		float64(font.lineHeight),
 	)
+
 	p.FillRect4(
 		rectF,
 		c.bg.brend(c.ws.background, c.brend).QColor(),
 	)
+
 	p.DrawText(
 		core.NewQPointF3(
 			0,
@@ -159,8 +165,8 @@ func (c *Cursor) updateCursorShape() {
 
 	if c.modeInfoModeIdx != c.modeIdx || c.isNeedUpdateModeInfo {
 		c.modeInfoModeIdx = c.modeIdx
-		modeInfo := c.ws.modeInfo[c.modeIdx]
 
+		modeInfo := c.ws.modeInfo[c.modeIdx]
 		attrIdITF, ok := modeInfo["attr_id"]
 		if ok {
 			c.currAttrId = util.ReflectToInt(attrIdITF)
@@ -202,6 +208,7 @@ func (c *Cursor) updateCursorShape() {
 		if ok {
 			c.blinkOff = util.ReflectToInt(blinkOffITF)
 		}
+
 		c.setBlink()
 
 		c.isNeedUpdateModeInfo = false
@@ -243,7 +250,13 @@ func (c *Cursor) updateCursorShape() {
 		c.brend = 0.0
 		c.timer.Start(c.blinkWait)
 	}
-	c.widget.Resize2(width, height)
+
+	if !(c.width == width && c.height == height) {
+		c.width = width
+		c.height = height
+		c.widget.Resize2(width, height)
+	}
+
 	c.widget.Update()
 }
 
