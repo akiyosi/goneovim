@@ -1115,6 +1115,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	var v, h, vert, horiz int
 	var vertKey string
 	var horizKey string
+
 	font := w.getFont()
 
 	// Detect current mode
@@ -1130,7 +1131,6 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		v = pixels.Y()
 		h = pixels.X()
 	}
-	angles := event.AngleDelta()
 	isStopScroll := event.Phase() == core.Qt__ScrollEnd
 
 	if (v == 0 || h == 0) && isStopScroll {
@@ -1139,6 +1139,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		// If Scrolling has ended, reset the displacement of the line
 		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
 	} else {
+		angles := event.AngleDelta()
 		vert = angles.Y()
 		horiz = angles.X()
 		if event.Inverted() {
@@ -1153,8 +1154,9 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		}
 	}
 
+	// Scroll acceleration
 	accel := 1
-	if math.Abs(float64(v)) > float64(font.lineHeight)/2 {
+	if math.Abs(float64(v)) > float64(font.lineHeight) {
 		accel = int(math.Abs(float64(v)) * 2.5 / float64(font.lineHeight))
 		if accel > 6 {
 			accel = 6
@@ -1181,35 +1183,33 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 
 	// If the window at the mouse pointer is not the current window
 	if w.grid != w.s.ws.cursor.gridid {
-		errCh := make(chan error, 60)
-		var err error
+		done := make(chan bool, 2)
 		go func() {
-			err = w.s.ws.nvim.SetCurrentWindow(w.id)
-			errCh <- err
+			_ = w.s.ws.nvim.SetCurrentWindow(w.id)
+			done <- true
 		}()
 
 		select {
-		case <-errCh:
+		case <-done:
 		case <-time.After(40 * time.Millisecond):
 		}
 	}
-
 	mod := event.Modifiers()
 
 	if w.s.ws.isMappingScrollKey {
 		if vert != 0 {
-			w.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
+			go w.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
 		}
 	} else {
 		if vert > 0 {
-			w.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", int(math.Abs(float64(vert)))))
+			go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", int(math.Abs(float64(vert)))))
 		} else if vert < 0 {
-			w.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", int(math.Abs(float64(vert)))))
+			go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", int(math.Abs(float64(vert)))))
 		}
 	}
 
 	// Do not scroll horizontal if vertical scroll amount is greater than horizontal that
-	if (math.Abs(float64(vert))+1)*2 > math.Abs(float64(horiz))*3 {
+	if (math.Abs(float64(vert))+1)*2 > math.Abs(float64(horiz))*5 {
 		return
 	}
 
