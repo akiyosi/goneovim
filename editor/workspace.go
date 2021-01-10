@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -92,6 +93,7 @@ type Workspace struct {
 	topLine            int
 	oldTopLine         int
 	botLine            int
+	oldBotLine         int
 	curLine            int
 	curColm            int
 	curPosMutex        sync.RWMutex
@@ -1582,6 +1584,12 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	}
 
 	// smooth scroll
+	if diff != 0 {
+		win.snapshots[1] = win.snapshots[0]
+		win.snapshots[0] = win.Grab(win.Rect())
+		win.scrollCols = int(math.Abs(float64(diff)))
+	}
+
 	a := core.NewQPropertyAnimation2(win, core.NewQByteArray2("scrollDiff", len("scrollDiff")), win)
 	a.ConnectValueChanged(func(value *core.QVariant) {
 		ok := false

@@ -71,6 +71,8 @@ type Window struct {
 	widgets.QWidget
 	_ float64 `property:"scrollDiff"`
 
+	snapshots [2]*gui.QPixmap
+
 	paintMutex  sync.RWMutex
 	redrawMutex sync.Mutex
 
@@ -100,10 +102,12 @@ type Window struct {
 	isExternal  bool
 	isPopupmenu bool
 
-	queueRedrawArea    [4]int
+	scrollRegion    []int
+	queueRedrawArea [4]int
+
 	scrollPixels2      int
+	scrollCols         int
 	isWheelScrolling   bool
-	scrollRegion       []int
 	scrollPixels       [2]int
 	scrollPixelsDeltaY int
 	devicePixelRatio   float64
@@ -567,13 +571,32 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.devicePixelRatio = float64(p.PaintEngine().PaintDevice().DevicePixelRatio())
 	}
 
-	// Draw contents
 	rect := event.Rect()
 	col := int(float64(rect.Left()) / font.truewidth)
 	row := int(float64(rect.Top()) / float64(font.lineHeight))
 	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
 	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
 
+	// Draw scroll snapshot
+	if w.snapshots[1] != nil {
+		snapshotPos := 0
+		scrollHeight := w.scrollCols * font.lineHeight
+		if w.scrollPixels2 > 0 {
+			snapshotPos = w.scrollPixels2 - scrollHeight
+		} else if w.scrollPixels2 < 0 {
+			snapshotPos = scrollHeight + w.scrollPixels2
+		}
+
+		if w.scrollPixels2 != 0 {
+			p.DrawPixmap9(
+				0,
+				snapshotPos,
+				w.snapshots[1],
+			)
+		}
+	}
+
+	// Draw contents
 	for y := row; y < row+rows; y++ {
 		if y >= w.rows {
 			continue
