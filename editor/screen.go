@@ -68,6 +68,9 @@ type ExternalWin struct {
 
 // Window is
 type Window struct {
+	widgets.QWidget
+	_ float64 `property:"scrollDiff"`
+
 	paintMutex  sync.RWMutex
 	redrawMutex sync.Mutex
 
@@ -97,8 +100,10 @@ type Window struct {
 	isExternal  bool
 	isPopupmenu bool
 
-	widget             *widgets.QWidget
 	queueRedrawArea    [4]int
+	scrollPixels2      int
+	scrollQue          chan int
+	a                  *core.QPropertyAnimation
 	scrollRegion       []int
 	scrollPixels       [2]int
 	scrollPixelsDeltaY int
@@ -532,7 +537,7 @@ func (s *Screen) toolTipShow() {
 	if !s.ws.palette.widget.IsVisible() {
 		win, ok := s.getWindow(s.ws.cursor.gridid)
 		if ok {
-			s.tooltip.SetParent(win.widget)
+			s.tooltip.SetParent(win)
 		}
 	}
 	s.tooltip.AdjustSize()
@@ -555,7 +560,7 @@ func (s *Screen) toolTip(text string) {
 func (w *Window) paint(event *gui.QPaintEvent) {
 	w.paintMutex.Lock()
 
-	p := gui.NewQPainter2(w.widget)
+	p := gui.NewQPainter2(w)
 	font := w.getFont()
 
 	// Set devicePixelRatio if it is not set
@@ -584,6 +589,11 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	// 	w.drawMsgSeparator(p)
 	// }
 
+	// Draw indent guide
+	if editor.config.Editor.IndentGuide {
+		w.drawIndentguide(p, row, rows)
+	}
+
 	// Draw float window border
 	if w.isFloatWin {
 		w.drawFloatWindowBorder(p)
@@ -591,11 +601,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	// Draw vim window separator
 	w.drawWindowSeparators(p, row, col, rows, cols)
-
-	// Draw indent guide
-	if editor.config.Editor.IndentGuide {
-		w.drawIndentguide(p, row, rows)
-	}
 
 	// Reset to 0 after drawing is complete.
 	// This is to suppress flickering in smooth scroll
@@ -828,7 +833,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 func (w *Window) drawIndentline(p *gui.QPainter, x int, y int, b bool) {
 	font := w.getFont()
 	X := float64(x) * font.truewidth
-	Y := float64(y*font.lineHeight) + float64(w.scrollPixels[1])
+	Y := float64(y*font.lineHeight) + float64(w.scrollPixels[1]) + float64(w.scrollPixels2)
 	var color *RGBA = editor.colors.indentGuide
 	var lineWeight float64 = 1
 	if b {
@@ -867,7 +872,7 @@ func (w *Window) drawMsgSeparator(p *gui.QPainter) {
 		core.NewQRectF4(
 			0,
 			0,
-			float64(w.widget.Width()),
+			float64(w.Width()),
 			1,
 		),
 		gui.NewQColor3(
@@ -895,8 +900,8 @@ func (w *Window) drawFloatWindowBorder(p *gui.QPainter) {
 		}
 	}
 
-	width := float64(w.widget.Width())
-	height := float64(w.widget.Height())
+	width := float64(w.Width())
+	height := float64(w.Height())
 
 	left := core.NewQRectF4(0, 0, 1, height)
 	top := core.NewQRectF4(0, 0, width, 1)
@@ -1048,7 +1053,7 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 		)
 	}
 
-	bottomBorderPos := w.pos[1]*w.s.font.lineHeight + w.widget.Rect().Bottom()
+	bottomBorderPos := w.pos[1]*w.s.font.lineHeight + w.Rect().Bottom()
 	isSkipDrawBottomBorder := bottomBorderPos > w.s.bottomWindowPos()-w.s.font.lineHeight && bottomBorderPos < w.s.bottomWindowPos()+w.s.font.lineHeight
 	if isSkipDrawBottomBorder {
 		return
@@ -1100,7 +1105,7 @@ func (s *Screen) bottomWindowPos() int {
 		if win.isMsgGrid {
 			return true
 		}
-		position := win.pos[1]*win.s.font.lineHeight + win.widget.Rect().Bottom()
+		position := win.pos[1]*win.s.font.lineHeight + win.Rect().Bottom()
 		if pos < position {
 			pos = position
 		}
@@ -1293,7 +1298,7 @@ func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
-	widget.SetParent(win.widget)
+	widget.SetParent(win)
 	widget.SetFixedSize2(font.lineHeight*4/3, font.lineHeight*4/3)
 	widget.Show()
 	widget.ConnectPaintEvent(func(e *gui.QPaintEvent) {
@@ -1496,12 +1501,12 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 		// set scroll
 		if s.name != "minimap" {
-			win.widget.ConnectWheelEvent(win.wheelEvent)
+			win.ConnectWheelEvent(win.wheelEvent)
 		}
 
 		// first cursor pos at startup app
 		if gridid == 1 && s.name != "minimap" {
-			s.ws.cursor.widget.SetParent(win.widget)
+			s.ws.cursor.widget.SetParent(win)
 		}
 
 	}
@@ -2325,10 +2330,14 @@ func (w *Window) update() {
 		if w.scrollPixels[1] != 0 {
 			width = w.maxLenContent
 		}
+		// If scroll is smooth
+		if w.scrollPixels2 != 0 {
+			width = w.maxLenContent
+		}
 
 		width++
 
-		w.widget.Update2(
+		w.Update2(
 			0,
 			i*font.lineHeight,
 			int(float64(width)*font.truewidth),
@@ -2408,11 +2417,11 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 		idDrawDefaultBg = true
 		// If popupmenu pumblend is set
 		if w.isPopupmenu && w.s.ws.pb > 0 {
-			w.widget.SetAutoFillBackground(false)
+			w.SetAutoFillBackground(false)
 		}
 		// If float window winblend is set
 		if !w.isPopupmenu && w.wb > 0 {
-			w.widget.SetAutoFillBackground(false)
+			w.SetAutoFillBackground(false)
 		}
 	}
 
@@ -2477,7 +2486,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 				// Fill background with pattern
 				rectF := core.NewQRectF4(
 					float64(start)*font.truewidth,
-					float64((y)*font.lineHeight+w.scrollPixels[1]),
+					float64((y)*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
 					float64(width)*font.truewidth,
 					float64(font.lineHeight),
 				)
@@ -2586,7 +2595,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 
 	pointF := core.NewQPointF3(
 		float64(col)*wsfont.truewidth,
-		float64(y*wsfont.lineHeight+w.scrollPixels[1]),
+		float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
 	)
 
 	for highlight, colorSlice := range chars {
@@ -2646,7 +2655,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 		p.DrawImage7(
 			core.NewQPointF3(
 				float64(x)*wsfont.truewidth,
-				float64(y*wsfont.lineHeight+w.scrollPixels[1]),
+				float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
 			),
 			image,
 		)
@@ -2778,7 +2787,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 	pointF := core.NewQPointF3(
 		float64(col)*wsfont.truewidth,
-		float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]),
+		float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
 	)
 
 	for highlight, colorSlice := range chars {
@@ -2833,7 +2842,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			fg := line[x].highlight.fg()
 			p.SetPen2(fg.QColor())
 			pointF.SetX(float64(x) * wsfont.truewidth)
-			pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift + w.scrollPixels[1]))
+			pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift + w.scrollPixels[1] + w.scrollPixels2))
 
 			if line[x].highlight.bold {
 				// font.SetWeight(wsfont.fontNew.Weight() + 25)
@@ -2927,7 +2936,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			// p.DrawLine(linef)
 			p.FillRect5(
 				int(start),
-				int(float64((y+1)*font.lineHeight+w.scrollPixels[1]))-weight,
+				int(float64((y+1)*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2))-weight,
 				int(math.Ceil(font.truewidth)),
 				weight,
 				color,
@@ -2941,7 +2950,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			}
 			freq := 1.0
 			phase := 0.0
-			Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
+			Y := float64(y*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
 			Y2 := Y + amplitude*math.Sin(0)
 			point := core.NewQPointF3(start, Y2)
 			path := gui.NewQPainterPath2(point)
@@ -3157,12 +3166,12 @@ func (win *Window) getWinblend() {
 	}
 
 	if wb > 0 {
-		win.widget.SetAutoFillBackground(false)
+		win.SetAutoFillBackground(false)
 	} else {
-		win.widget.SetAutoFillBackground(true)
+		win.SetAutoFillBackground(true)
 		p := gui.NewQPalette()
 		p.SetColor2(gui.QPalette__Background, win.background.QColor())
-		win.widget.SetPalette(p)
+		win.SetPalette(p)
 	}
 
 	win.paintMutex.Lock()
@@ -3189,7 +3198,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := arg.([]interface{})[6]
 
-		win.widget.SetParent(editor.widget)
+		win.SetParent(editor.widget)
 
 		win.propMutex.Lock()
 		win.isFloatWin = true
@@ -3213,7 +3222,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorwin.propMutex.Unlock()
 
 		if anchorwinIsExternal {
-			win.widget.SetParent(anchorwin.widget)
+			win.SetParent(anchorwin)
 			anchorposx = 0
 			anchorposy = 0
 		}
@@ -3306,7 +3315,7 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				win.isExternal = true
 
 				extwin := createExternalWin()
-				win.widget.SetParent(extwin)
+				win.SetParent(extwin)
 				extwin.ConnectKeyPressEvent(editor.keyPress)
 
 				win.background = s.ws.background.copy()
@@ -3356,7 +3365,7 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		win.move(win.pos[0], win.pos[1])
 		win.show()
 		if scrolled {
-			win.widget.Raise() // Fix #111
+			win.Raise() // Fix #111
 		}
 	}
 }
@@ -3383,20 +3392,18 @@ func (w *Window) getCache() gcache.Cache {
 }
 
 func newWindow() *Window {
-	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(0, 0, 0, 0)
-	widget.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
-	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
+	// widget := widgets.NewQWidget(nil, 0)
+	win := NewWindow(nil, 0)
+	win.SetContentsMargins(0, 0, 0, 0)
+	win.scrollQue = make(chan int, 50)
+	win.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	win.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
+	win.scrollRegion = []int{0, 0, 0, 0}
+	win.background = editor.colors.bg
 
-	w := &Window{
-		widget:       widget,
-		scrollRegion: []int{0, 0, 0, 0},
-		background:   editor.colors.bg,
-	}
+	win.ConnectPaintEvent(win.paint)
 
-	widget.ConnectPaintEvent(w.paint)
-
-	return w
+	return win
 }
 
 func (w *Window) isShown() bool {
@@ -3404,18 +3411,18 @@ func (w *Window) isShown() bool {
 		return false
 	}
 
-	return w.widget.IsVisible()
+	return w.IsVisible()
 }
 
 func (w *Window) raise() {
 	if w.grid == 1 {
 		return
 	}
-	w.widget.Raise()
+	w.Raise()
 
 	font := w.getFont()
 	w.s.ws.cursor.updateFont(font)
-	w.s.ws.cursor.widget.SetParent(w.widget)
+	w.s.ws.cursor.widget.SetParent(w)
 	w.s.ws.cursor.widget.Hide()
 	w.s.ws.cursor.widget.Show()
 	if !w.isExternal {
@@ -3427,15 +3434,15 @@ func (w *Window) raise() {
 
 func (w *Window) show() {
 	w.fill()
-	w.widget.Show()
+	w.Show()
 }
 
 func (w *Window) hide() {
-	w.widget.Hide()
+	w.Hide()
 }
 
 func (w *Window) setParent(a widgets.QWidget_ITF) {
-	w.widget.SetParent(a)
+	w.SetParent(a)
 }
 
 func (w *Window) setGridGeometry(width, height int) {
@@ -3459,7 +3466,7 @@ func (w *Window) setGridGeometry(width, height int) {
 	}
 
 	rect := core.NewQRect4(0, 0, width, height)
-	w.widget.SetGeometry(rect)
+	w.SetGeometry(rect)
 	w.fill()
 }
 
@@ -3485,10 +3492,10 @@ func (w *Window) fill() {
 		return
 	}
 	if w.background != nil {
-		w.widget.SetAutoFillBackground(true)
+		w.SetAutoFillBackground(true)
 		p := gui.NewQPalette()
 		p.SetColor2(gui.QPalette__Background, w.background.QColor())
-		w.widget.SetPalette(p)
+		w.SetPalette(p)
 	}
 }
 
@@ -3496,7 +3503,7 @@ func (w *Window) setShadow() {
 	if !editor.config.Editor.DrawShadowForFloatWindow {
 		return
 	}
-	w.widget.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))
+	w.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))
 }
 
 func (w *Window) move(col int, row int) {
@@ -3523,7 +3530,7 @@ func (w *Window) move(col int, row int) {
 
 	}
 
-	w.widget.Move2(x, y)
+	w.Move2(x, y)
 
 }
 

@@ -90,6 +90,7 @@ type Workspace struct {
 	cwdlabel           string
 	maxLine            int
 	topLine            int
+	oldTopLine         int
 	botLine            int
 	curLine            int
 	curColm            int
@@ -1551,12 +1552,47 @@ func (w *Workspace) getPos() {
 }
 
 func (w *Workspace) windowViewport(arg []interface{}) {
+	grid := util.ReflectToInt(arg[0])
+	topLine := util.ReflectToInt(arg[2]) + 1
+	botLine := util.ReflectToInt(arg[3]) + 1
+
+	if grid == 1 {
+		return
+	}
+	win, ok := w.screen.getWindow(grid)
+	if !ok {
+		return
+	}
+	if win.isMsgGrid {
+		return
+	}
+	diff := w.topLine - w.oldTopLine
+
 	w.curPosMutex.Lock()
-	w.topLine = util.ReflectToInt(arg[2]) + 1
-	w.botLine = util.ReflectToInt(arg[3]) + 1
+	w.oldTopLine = w.topLine
+	w.topLine = topLine
+	w.botLine = botLine
 	w.curLine = util.ReflectToInt(arg[4]) + 1
 	w.curColm = util.ReflectToInt(arg[5]) + 1
 	w.curPosMutex.Unlock()
+
+	// smooth scroll
+	a := core.NewQPropertyAnimation2(win, core.NewQByteArray2("scrollDiff", len("scrollDiff")), win)
+	a.ConnectValueChanged(func(value *core.QVariant) {
+		ok := false
+		v := value.ToDouble(&ok)
+		if !ok {
+			return
+		}
+		font := win.getFont()
+		win.scrollPixels2 = int(float64(diff) * v * float64(font.lineHeight))
+		win.update()
+	})
+	a.SetDuration(200)
+	a.SetStartValue(core.NewQVariant10(1))
+	a.SetEndValue(core.NewQVariant10(0))
+	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
+	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 }
 
 func (w *Workspace) updateMinimap() {

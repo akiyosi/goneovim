@@ -212,7 +212,7 @@ func (m *MiniMap) setCurrentRegion() {
 	if !ok {
 		return
 	}
-	m.curRegion.SetParent(win.widget)
+	m.curRegion.SetParent(win)
 }
 
 func (m *MiniMap) toggle() {
@@ -227,7 +227,7 @@ func (m *MiniMap) toggle() {
 		m.visible = true
 	}
 	m.mu.Unlock()
-	m.curRegion.SetParent(win.widget)
+	m.curRegion.SetParent(win)
 	m.bufUpdate()
 	m.bufSync()
 	m.ws.updateSize()
