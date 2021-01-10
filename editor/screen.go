@@ -2354,8 +2354,10 @@ func (w *Window) update() {
 			width = w.maxLenContent
 		}
 		// If scroll is smooth
-		if w.scrollPixels2 != 0 {
-			width = w.maxLenContent
+		if !editor.config.Editor.SmoothScroll {
+			if w.scrollPixels2 != 0 {
+				width = w.maxLenContent
+			}
 		}
 
 		width++

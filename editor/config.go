@@ -52,6 +52,7 @@ type editorConfig struct {
 	SkipGlobalId             bool
 	IndentGuide              bool
 	IndentGuideIgnoreFtList  []string
+	SmoothScroll             bool
 	DrawBorderForFloatWindow bool
 	DrawShadowForFloatWindow bool
 	DesktopNotifications     bool

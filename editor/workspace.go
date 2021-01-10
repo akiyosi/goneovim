@@ -1584,6 +1584,10 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	}
 
 	// smooth scroll
+	if !editor.config.Editor.SmoothScroll {
+		return
+	}
+
 	if diff != 0 {
 		win.snapshots[1] = win.snapshots[0]
 		win.snapshots[0] = win.Grab(win.Rect())
@@ -1601,11 +1605,11 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		win.scrollPixels2 = int(float64(diff) * v * float64(font.lineHeight))
 		win.update()
 	})
-	a.SetDuration(200)
+	a.SetDuration(250)
 	a.SetStartValue(core.NewQVariant10(1))
 	a.SetEndValue(core.NewQVariant10(0))
-	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
+	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
 	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 }
