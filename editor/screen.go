@@ -105,13 +105,14 @@ type Window struct {
 	scrollRegion    []int
 	queueRedrawArea [4]int
 
-	scrollPixels2      int
-	scrollCols         int
-	isWheelScrolling   bool
 	scrollPixels       [2]int
 	scrollPixelsDeltaY int
-	devicePixelRatio   float64
-	textCache          gcache.Cache
+	isWheelScrolling   bool
+	scrollPixels2      int
+	scrollCols         int
+
+	devicePixelRatio float64
+	textCache        gcache.Cache
 
 	extwin                 *ExternalWin
 	extwinConnectResizable bool
@@ -2354,7 +2355,7 @@ func (w *Window) update() {
 			width = w.maxLenContent
 		}
 		// If scroll is smooth
-		if !editor.config.Editor.SmoothScroll {
+		if editor.config.Editor.SmoothScroll {
 			if w.scrollPixels2 != 0 {
 				width = w.maxLenContent
 			}

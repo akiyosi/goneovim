@@ -73,29 +73,31 @@ type Workspace struct {
 	height int
 	hidden bool
 
-	nvim               *nvim.Nvim
-	rows               int
-	cols               int
-	uiAttached         bool
-	uiRemoteAttached   bool
-	screenbg           string
-	colorscheme        string
-	foreground         *RGBA
-	background         *RGBA
-	special            *RGBA
-	mode               string
-	modeIdx            int
-	filepath           string
-	cwd                string
-	cwdBase            string
-	cwdlabel           string
-	maxLine            int
-	topLine            int
-	oldTopLine         int
-	botLine            int
-	oldBotLine         int
-	curLine            int
-	curColm            int
+	nvim             *nvim.Nvim
+	rows             int
+	cols             int
+	uiAttached       bool
+	uiRemoteAttached bool
+	screenbg         string
+	colorscheme      string
+	foreground       *RGBA
+	background       *RGBA
+	special          *RGBA
+	mode             string
+	modeIdx          int
+	filepath         string
+	cwd              string
+	cwdBase          string
+	cwdlabel         string
+	maxLine          int
+	// topLine            int
+	// oldTopLine         int
+	// botLine            int
+	// oldBotLine         int
+	// curLine            int
+	// curColm            int
+	viewport           [4]int // topline, botline, curline, curcol
+	oldViewport        [4]int
 	curPosMutex        sync.RWMutex
 	optionsetMutex     sync.RWMutex
 	cursorStyleEnabled bool
@@ -1318,7 +1320,7 @@ func (w *Workspace) drawOtherUI() {
 
 	if w.drawStatusline {
 		if w.statusline != nil {
-			w.statusline.pos.redraw(w.curLine, w.curColm)
+			w.statusline.pos.redraw(w.viewport[2], w.viewport[3])
 			w.statusline.mode.redraw()
 		}
 	}
@@ -1548,8 +1550,8 @@ func (w *Workspace) getPos() {
 	}
 
 	w.curPosMutex.Lock()
-	w.curLine = curPos[1]
-	w.curColm = curPos[2]
+	w.viewport[2] = curPos[1]
+	w.viewport[3] = curPos[2]
 	w.curPosMutex.Unlock()
 }
 
@@ -1568,14 +1570,22 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	if win.isMsgGrid {
 		return
 	}
-	diff := w.topLine - w.oldTopLine
+	diff := w.viewport[0] - w.oldViewport[0]
 
 	w.curPosMutex.Lock()
-	w.oldTopLine = w.topLine
-	w.topLine = topLine
-	w.botLine = botLine
-	w.curLine = util.ReflectToInt(arg[4]) + 1
-	w.curColm = util.ReflectToInt(arg[5]) + 1
+
+	w.oldViewport[0] = w.viewport[0]
+	w.viewport = [4]int{
+		topLine,
+		botLine,
+		util.ReflectToInt(arg[4]) + 1,
+		util.ReflectToInt(arg[5]) + 1,
+	}
+	// w.topLine = topLine
+	// w.botLine = botLine
+	// w.curLine = util.ReflectToInt(arg[4]) + 1
+	// w.curColm = util.ReflectToInt(arg[5]) + 1
+
 	w.curPosMutex.Unlock()
 
 	// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
@@ -1620,12 +1630,12 @@ func (w *Workspace) updateMinimap() {
 	w.minimap.nvim.Eval("line('w0')", &absMapTop)
 	w.minimap.nvim.Eval("line('w$')", &absMapBottom)
 	w.curPosMutex.RLock()
-	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
+	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.viewport[2], 0))
 	defer w.curPosMutex.RUnlock()
 	switch {
-	case w.curLine >= absMapBottom:
+	case w.viewport[2] >= absMapBottom:
 		w.minimap.nvim.Input("<C-d>")
-	case absMapTop >= w.curLine:
+	case absMapTop >= w.viewport[2]:
 		w.minimap.nvim.Input("<C-u>")
 	default:
 	}

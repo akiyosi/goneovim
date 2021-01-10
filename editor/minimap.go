@@ -47,10 +47,12 @@ type MiniMap struct {
 	api5       bool
 	rows       int
 	cols       int
-	topLine    int
-	botLine    int
-	curLine    int
-	curColm    int
+
+	viewport [4]int
+	// topLine    int
+	// botLine    int
+	// curLine    int
+	// curColm    int
 }
 
 func newMiniMap() *MiniMap {
@@ -366,10 +368,11 @@ func (m *MiniMap) mapScroll() {
 	regionHeight := 0
 
 	if m.api5 {
-		linePos = m.ws.topLine - m.topLine
-		regionHeight = m.ws.botLine - m.ws.topLine
+		// linePos = m.ws.topLine - m.topLine
+		linePos = m.ws.viewport[0] - m.viewport[0]
+		regionHeight = m.ws.viewport[1] - m.ws.viewport[0]
 	} else {
-		absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
+		absScreenTop := m.ws.viewport[2] - m.ws.screen.cursor[0]
 		var absMapTop int
 		m.nvim.Eval("line('w0')", &absMapTop)
 		linePos = absScreenTop - absMapTop
@@ -526,10 +529,16 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 
 		case "win_viewport":
 			vp := args[0].([]interface{})
-			m.topLine = util.ReflectToInt(vp[2]) + 1
-			m.botLine = util.ReflectToInt(vp[3]) + 1
-			m.curLine = util.ReflectToInt(vp[4]) + 1
-			m.curColm = util.ReflectToInt(vp[5]) + 1
+			m.viewport = [4]int{
+				util.ReflectToInt(vp[2]) + 1,
+				util.ReflectToInt(vp[3]) + 1,
+				util.ReflectToInt(vp[4]) + 1,
+				util.ReflectToInt(vp[5]) + 1,
+			}
+			// m.topLine = util.ReflectToInt(vp[2]) + 1
+			// m.botLine = util.ReflectToInt(vp[3]) + 1
+			// m.curLine = util.ReflectToInt(vp[4]) + 1
+			// m.curColm = util.ReflectToInt(vp[5]) + 1
 
 		default:
 		}
@@ -628,7 +637,8 @@ func (m *MiniMap) mouseEvent(event *gui.QMouseEvent) {
 	y := int(float64(event.Y()) / float64(font.lineHeight))
 	targetPos := 0
 	if m.api5 {
-		targetPos = m.topLine + y
+		// targetPos = m.topLine + y
+		targetPos = m.viewport[0] + y
 	} else {
 		var absMapTop int
 		m.nvim.Eval("line('w0')", &absMapTop)

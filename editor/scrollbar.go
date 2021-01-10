@@ -183,7 +183,7 @@ func (s *ScrollBar) update() {
 			thumbHeight = 20
 		}
 		s.thumb.SetFixedHeight(thumbHeight)
-		s.pos = int(float64(s.ws.curLine-relativeCursorY) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+		s.pos = int(float64(s.ws.viewport[2]-relativeCursorY) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		s.thumb.Move2(0, s.pos)
 		s.widget.Show()
 	} else {
