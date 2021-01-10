@@ -102,8 +102,7 @@ type Window struct {
 
 	queueRedrawArea    [4]int
 	scrollPixels2      int
-	scrollQue          chan int
-	a                  *core.QPropertyAnimation
+	isWheelScrolling   bool
 	scrollRegion       []int
 	scrollPixels       [2]int
 	scrollPixelsDeltaY int
@@ -1136,7 +1135,8 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		v = pixels.Y()
 		h = pixels.X()
 	}
-	isStopScroll := event.Phase() == core.Qt__ScrollEnd
+	isStopScroll := (event.Phase() == core.Qt__ScrollEnd)
+	w.isWheelScrolling = !isStopScroll
 
 	if (v == 0 || h == 0) && isStopScroll {
 		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
@@ -3395,7 +3395,6 @@ func newWindow() *Window {
 	// widget := widgets.NewQWidget(nil, 0)
 	win := NewWindow(nil, 0)
 	win.SetContentsMargins(0, 0, 0, 0)
-	win.scrollQue = make(chan int, 50)
 	win.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	win.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	win.scrollRegion = []int{0, 0, 0, 0}

@@ -1576,6 +1576,11 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	w.curColm = util.ReflectToInt(arg[5]) + 1
 	w.curPosMutex.Unlock()
 
+	// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
+	if win.isWheelScrolling {
+		return
+	}
+
 	// smooth scroll
 	a := core.NewQPropertyAnimation2(win, core.NewQByteArray2("scrollDiff", len("scrollDiff")), win)
 	a.ConnectValueChanged(func(value *core.QVariant) {
@@ -1592,6 +1597,8 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	a.SetStartValue(core.NewQVariant10(1))
 	a.SetEndValue(core.NewQVariant10(0))
 	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
 	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 }
 
