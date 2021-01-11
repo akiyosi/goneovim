@@ -73,31 +73,25 @@ type Workspace struct {
 	height int
 	hidden bool
 
-	nvim             *nvim.Nvim
-	rows             int
-	cols             int
-	uiAttached       bool
-	uiRemoteAttached bool
-	screenbg         string
-	colorscheme      string
-	foreground       *RGBA
-	background       *RGBA
-	special          *RGBA
-	mode             string
-	modeIdx          int
-	filepath         string
-	cwd              string
-	cwdBase          string
-	cwdlabel         string
-	maxLine          int
-	// topLine            int
-	// oldTopLine         int
-	// botLine            int
-	// oldBotLine         int
-	// curLine            int
-	// curColm            int
-	viewport           [4]int // topline, botline, curline, curcol
-	oldViewport        [4]int
+	nvim               *nvim.Nvim
+	rows               int
+	cols               int
+	uiAttached         bool
+	uiRemoteAttached   bool
+	screenbg           string
+	colorscheme        string
+	foreground         *RGBA
+	background         *RGBA
+	special            *RGBA
+	mode               string
+	modeIdx            int
+	filepath           string
+	cwd                string
+	cwdBase            string
+	cwdlabel           string
+	maxLine            int
+	viewport           [5]int // topline, botline, curline, curcol, grid
+	oldViewport        [5]int // oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
 	curPosMutex        sync.RWMutex
 	optionsetMutex     sync.RWMutex
 	cursorStyleEnabled bool
@@ -1571,20 +1565,24 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		return
 	}
 	diff := w.viewport[0] - w.oldViewport[0]
+	isGridGoto := w.viewport[4] != w.oldViewport[4]
 
 	w.curPosMutex.Lock()
 
-	w.oldViewport[0] = w.viewport[0]
-	w.viewport = [4]int{
+	w.oldViewport = [5]int{
+		w.viewport[0],
+		w.viewport[1],
+		w.viewport[2],
+		w.viewport[3],
+		w.viewport[4],
+	}
+	w.viewport = [5]int{
 		topLine,
 		botLine,
 		util.ReflectToInt(arg[4]) + 1,
 		util.ReflectToInt(arg[5]) + 1,
+		grid,
 	}
-	// w.topLine = topLine
-	// w.botLine = botLine
-	// w.curLine = util.ReflectToInt(arg[4]) + 1
-	// w.curColm = util.ReflectToInt(arg[5]) + 1
 
 	w.curPosMutex.Unlock()
 
@@ -1595,6 +1593,9 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 
 	// smooth scroll
 	if !editor.config.Editor.SmoothScroll {
+		return
+	}
+	if isGridGoto {
 		return
 	}
 

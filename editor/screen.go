@@ -579,6 +579,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
 
 	// Draw scroll snapshot
+	// TODO: If there are wrapped lines in the viewport, the snapshot will be misaligned.
 	if w.snapshots[1] != nil {
 		snapshotPos := 0
 		scrollHeight := w.scrollCols * font.lineHeight
@@ -1744,8 +1745,10 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			s.ws.cursor.gridid = gridid
 			s.ws.cursor.font = win.getFont()
 			win.raise()
-		}
 
+			// reset smooth scroll scrolling offset
+			win.scrollPixels2 = 0
+		}
 	}
 }
 
