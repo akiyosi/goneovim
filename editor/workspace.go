@@ -1565,6 +1565,9 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		return
 	}
 	diff := w.viewport[0] - w.oldViewport[0]
+	if diff == 0 {
+		diff = w.viewport[1] - w.oldViewport[1]
+	}
 	isGridGoto := w.viewport[4] != w.oldViewport[4]
 
 	w.curPosMutex.Lock()
@@ -1595,14 +1598,19 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	if !editor.config.Editor.SmoothScroll {
 		return
 	}
+
+	// get snapshot
+	if diff != 0 {
+		win.snapshots[1] = win.snapshots[0]
+		win.snapshots[0] = win.Grab(win.Rect())
+		win.scrollCols = int(math.Abs(float64(diff)))
+	}
+
 	if isGridGoto {
 		return
 	}
 
-	win.snapshots[1] = win.snapshots[0]
-	win.snapshots[0] = win.Grab(win.Rect())
-	win.scrollCols = int(math.Abs(float64(diff)))
-
+	// process smooth scroll
 	a := core.NewQPropertyAnimation2(win, core.NewQByteArray2("scrollDiff", len("scrollDiff")), win)
 	a.ConnectValueChanged(func(value *core.QVariant) {
 		ok := false
