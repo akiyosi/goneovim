@@ -1599,11 +1599,9 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		return
 	}
 
-	if diff != 0 {
-		win.snapshots[1] = win.snapshots[0]
-		win.snapshots[0] = win.Grab(win.Rect())
-		win.scrollCols = int(math.Abs(float64(diff)))
-	}
+	win.snapshots[1] = win.snapshots[0]
+	win.snapshots[0] = win.Grab(win.Rect())
+	win.scrollCols = int(math.Abs(float64(diff)))
 
 	a := core.NewQPropertyAnimation2(win, core.NewQByteArray2("scrollDiff", len("scrollDiff")), win)
 	a.ConnectValueChanged(func(value *core.QVariant) {
