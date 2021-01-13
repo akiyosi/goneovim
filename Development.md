@@ -47,7 +47,7 @@ Development of goneovim
   * Clone this repository
 
     ```
-    go get -d github.com/akiyosi/goneovim/editor/
+    go get -d github.com/akiyosi/goneovim/...
     ```
 
   * Generate moc files
@@ -149,7 +149,7 @@ Development of goneovim
   * Clone this repository
 
     ```
-    GO111MODULE=off go get -d github.com/akiyosi/goneovim/editor/
+    GO111MODULE=off go get -d github.com/akiyosi/goneovim/...
     ```
 
   * Convert code for suit Qt 5.12
