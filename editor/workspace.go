@@ -1550,19 +1550,31 @@ func (w *Workspace) getPos() {
 }
 
 func (w *Workspace) windowViewport(arg []interface{}) {
-	grid := util.ReflectToInt(arg[0])
-	topLine := util.ReflectToInt(arg[2]) + 1
-	botLine := util.ReflectToInt(arg[3]) + 1
+	viewport := [5]int{
+		util.ReflectToInt(arg[2]) + 1,
+		util.ReflectToInt(arg[3]) + 1,
+		util.ReflectToInt(arg[4]) + 1,
+		util.ReflectToInt(arg[5]) + 1,
+		util.ReflectToInt(arg[0]),
+	}
 
-	if grid == 1 {
+	if viewport[4] == 1 { // if global grid
 		return
 	}
-	win, ok := w.screen.getWindow(grid)
+
+	win, diff, ok := w.handleViewport(viewport)
+	if ok {
+		w.smoothScroll(win, diff)
+	}
+}
+
+func (w *Workspace) handleViewport(viewport [5]int) (*Window, int, bool) {
+	win, ok := w.screen.getWindow(viewport[4])
 	if !ok {
-		return
+		return nil, 0, false
 	}
 	if win.isMsgGrid {
-		return
+		return nil, 0, false
 	}
 	diff := w.viewport[0] - w.oldViewport[0]
 	if diff == 0 {
@@ -1579,24 +1591,22 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		w.viewport[3],
 		w.viewport[4],
 	}
-	w.viewport = [5]int{
-		topLine,
-		botLine,
-		util.ReflectToInt(arg[4]) + 1,
-		util.ReflectToInt(arg[5]) + 1,
-		grid,
-	}
+	w.viewport = viewport
 
 	w.curPosMutex.Unlock()
 
-	// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
-	if win.isWheelScrolling {
-		return
-	}
-
 	// smooth scroll
 	if !editor.config.Editor.SmoothScroll {
-		return
+		return nil, 0, false
+	}
+
+	if w.maxLine < w.rows {
+		return nil, 0, false
+	}
+
+	// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
+	if win.isWheelScrolling || editor.isKeyAutoRepeating {
+		return nil, 0, false
 	}
 
 	// get snapshot
@@ -1607,9 +1617,13 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	}
 
 	if isGridGoto {
-		return
+		return win, diff, false
 	}
 
+	return win, diff, true
+}
+
+func (w *Workspace) smoothScroll(win *Window, diff int) {
 	// process smooth scroll
 	a := core.NewQPropertyAnimation2(win, core.NewQByteArray2("scrollDiff", len("scrollDiff")), win)
 	a.ConnectValueChanged(func(value *core.QVariant) {

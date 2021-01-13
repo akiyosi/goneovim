@@ -126,6 +126,7 @@ type Editor struct {
 	cmdModifier        core.Qt__KeyboardModifier
 	keyControl         core.Qt__Key
 	keyCmd             core.Qt__Key
+	isKeyAutoRepeating bool
 	prefixToMapMetaKey string
 	muMetaKey          sync.Mutex
 
@@ -694,6 +695,7 @@ func (e *Editor) setWindowOptions() {
 	e.window.SetMinimumSize2(400, 300)
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
+	e.window.ConnectKeyReleaseEvent(e.keyRelease)
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)
 	e.window.SetAcceptDrops(true)
 	if e.config.Editor.StartFullscreen || e.opts.Fullscreen {
@@ -790,8 +792,25 @@ func (e *Editor) workspaceUpdate() {
 	}
 }
 
+func (e *Editor) keyRelease(event *gui.QKeyEvent) {
+	if !e.isKeyAutoRepeating {
+		return
+	}
+	ws := e.workspaces[e.active]
+	win, ok := ws.screen.getWindow(ws.cursor.gridid)
+	if !ok {
+		return
+	}
+	win.snapshots[1] = win.snapshots[0]
+	win.snapshots[0] = win.Grab(win.Rect())
+	e.isKeyAutoRepeating = false
+}
+
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event)
+	if event.IsAutoRepeat() {
+		e.isKeyAutoRepeating = true
+	}
 	if input != "" {
 		e.workspaces[e.active].nvim.Input(input)
 	}
