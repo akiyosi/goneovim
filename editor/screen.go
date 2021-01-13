@@ -580,25 +580,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	// Draw scroll snapshot
 	// TODO: If there are wrapped lines in the viewport, the snapshot will be misaligned.
-	if editor.config.Editor.SmoothScroll {
-		if w.snapshots[1] != nil && !editor.isKeyAutoRepeating {
-			snapshotPos := 0
-			scrollHeight := w.scrollCols * font.lineHeight
-			if w.scrollPixels2 > 0 {
-				snapshotPos = w.scrollPixels2 - scrollHeight
-			} else if w.scrollPixels2 < 0 {
-				snapshotPos = scrollHeight + w.scrollPixels2
-			}
-
-			if w.scrollPixels2 != 0 {
-				p.DrawPixmap9(
-					0,
-					snapshotPos,
-					w.snapshots[1],
-				)
-			}
-		}
-	}
+	w.drawScrollSnapshot(p)
 
 	// Draw contents
 	for y := row; y < row+rows; y++ {
@@ -647,6 +629,31 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	w.paintMutex.Unlock()
+}
+
+func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
+	if !editor.config.Editor.SmoothScroll {
+		return
+	}
+	if w.snapshots[1] == nil || editor.isKeyAutoRepeating {
+		return
+	}
+
+	font := w.getFont()
+	height := w.scrollCols * font.lineHeight
+	snapshotPos := 0
+	if w.scrollPixels2 > 0 {
+		snapshotPos = w.scrollPixels2 - height
+	} else if w.scrollPixels2 < 0 {
+		snapshotPos = height + w.scrollPixels2
+	}
+	if w.scrollPixels2 != 0 {
+		p.DrawPixmap9(
+			0,
+			snapshotPos,
+			w.snapshots[1],
+		)
+	}
 }
 
 func (w *Window) getFont() *Font {
