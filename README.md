@@ -21,7 +21,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Modern Text Editor Features
   - Markdown Preview
   - Minimap
-  - Smooth scroll (with MacOS touch pad)
+  - Smooth scroll (with touchpad or scroll command of neovim)
   - Workspace feature which manages multiple nvim
   - External File Explorer
   - Scrollbar

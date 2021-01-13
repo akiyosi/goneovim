@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -89,10 +90,8 @@ type Workspace struct {
 	cwdBase            string
 	cwdlabel           string
 	maxLine            int
-	topLine            int
-	botLine            int
-	curLine            int
-	curColm            int
+	viewport           [5]int // topline, botline, curline, curcol, grid
+	oldViewport        [5]int // oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
 	curPosMutex        sync.RWMutex
 	optionsetMutex     sync.RWMutex
 	cursorStyleEnabled bool
@@ -1315,7 +1314,7 @@ func (w *Workspace) drawOtherUI() {
 
 	if w.drawStatusline {
 		if w.statusline != nil {
-			w.statusline.pos.redraw(w.curLine, w.curColm)
+			w.statusline.pos.redraw(w.viewport[2], w.viewport[3])
 			w.statusline.mode.redraw()
 		}
 	}
@@ -1545,18 +1544,105 @@ func (w *Workspace) getPos() {
 	}
 
 	w.curPosMutex.Lock()
-	w.curLine = curPos[1]
-	w.curColm = curPos[2]
+	w.viewport[2] = curPos[1]
+	w.viewport[3] = curPos[2]
 	w.curPosMutex.Unlock()
 }
 
 func (w *Workspace) windowViewport(arg []interface{}) {
+	viewport := [5]int{
+		util.ReflectToInt(arg[2]) + 1,
+		util.ReflectToInt(arg[3]) + 1,
+		util.ReflectToInt(arg[4]) + 1,
+		util.ReflectToInt(arg[5]) + 1,
+		util.ReflectToInt(arg[0]),
+	}
+
+	if viewport[4] == 1 { // if global grid
+		return
+	}
+
+	win, diff, ok := w.handleViewport(viewport)
+	if ok {
+		w.smoothScroll(win, diff)
+	}
+}
+
+func (w *Workspace) handleViewport(viewport [5]int) (*Window, int, bool) {
+	win, ok := w.screen.getWindow(viewport[4])
+	if !ok {
+		return nil, 0, false
+	}
+	if win.isMsgGrid {
+		return nil, 0, false
+	}
+	diff := w.viewport[0] - w.oldViewport[0]
+	if diff == 0 {
+		diff = w.viewport[1] - w.oldViewport[1]
+	}
+	isGridGoto := w.viewport[4] != w.oldViewport[4]
+
 	w.curPosMutex.Lock()
-	w.topLine = util.ReflectToInt(arg[2]) + 1
-	w.botLine = util.ReflectToInt(arg[3]) + 1
-	w.curLine = util.ReflectToInt(arg[4]) + 1
-	w.curColm = util.ReflectToInt(arg[5]) + 1
+
+	w.oldViewport = [5]int{
+		w.viewport[0],
+		w.viewport[1],
+		w.viewport[2],
+		w.viewport[3],
+		w.viewport[4],
+	}
+	w.viewport = viewport
+
 	w.curPosMutex.Unlock()
+
+	// smooth scroll
+	if !editor.config.Editor.SmoothScroll {
+		return nil, 0, false
+	}
+
+	if w.maxLine < w.rows {
+		return nil, 0, false
+	}
+
+	// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
+	if win.isWheelScrolling || editor.isKeyAutoRepeating {
+		return nil, 0, false
+	}
+
+	// get snapshot
+	if diff != 0 {
+		win.snapshots[1] = win.snapshots[0]
+		win.snapshots[0] = win.Grab(win.Rect())
+		win.scrollCols = int(math.Abs(float64(diff)))
+	}
+
+	if isGridGoto {
+		return win, diff, false
+	}
+
+	return win, diff, true
+}
+
+func (w *Workspace) smoothScroll(win *Window, diff int) {
+	// process smooth scroll
+	a := core.NewQPropertyAnimation2(win, core.NewQByteArray2("scrollDiff", len("scrollDiff")), win)
+	a.ConnectValueChanged(func(value *core.QVariant) {
+		ok := false
+		v := value.ToDouble(&ok)
+		if !ok {
+			return
+		}
+		font := win.getFont()
+		win.scrollPixels2 = int(float64(diff) * v * float64(font.lineHeight))
+		win.update()
+	})
+	a.SetDuration(250)
+	a.SetStartValue(core.NewQVariant10(1))
+	a.SetEndValue(core.NewQVariant10(0))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
+	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
+	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 }
 
 func (w *Workspace) updateMinimap() {
@@ -1565,12 +1651,12 @@ func (w *Workspace) updateMinimap() {
 	w.minimap.nvim.Eval("line('w0')", &absMapTop)
 	w.minimap.nvim.Eval("line('w$')", &absMapBottom)
 	w.curPosMutex.RLock()
-	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.curLine, 0))
+	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.viewport[2], 0))
 	defer w.curPosMutex.RUnlock()
 	switch {
-	case w.curLine >= absMapBottom:
+	case w.viewport[2] >= absMapBottom:
 		w.minimap.nvim.Input("<C-d>")
-	case absMapTop >= w.curLine:
+	case absMapTop >= w.viewport[2]:
 		w.minimap.nvim.Input("<C-u>")
 	default:
 	}
