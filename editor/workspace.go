@@ -1634,7 +1634,23 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 		}
 		font := win.getFont()
 		win.scrollPixels2 = int(float64(diff) * v * float64(font.lineHeight))
-		win.update()
+		// win.update()
+		win.Update2(
+			0,
+			0,
+			int(float64(win.cols)*font.truewidth),
+			win.cols*font.lineHeight,
+		)
+		if win.scrollPixels2 == 0 {
+			win.doErase = true
+			win.Update2(
+				0,
+				0,
+				int(float64(win.cols)*font.truewidth),
+				win.cols*font.lineHeight,
+			)
+			win.doErase = false
+		}
 	})
 	a.SetDuration(250)
 	a.SetStartValue(core.NewQVariant10(1))

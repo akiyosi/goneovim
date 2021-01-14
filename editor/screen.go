@@ -75,6 +75,7 @@ type Window struct {
 
 	paintMutex  sync.RWMutex
 	redrawMutex sync.Mutex
+	doErase     bool
 
 	s             *Screen
 	content       [][]*Cell
@@ -565,6 +566,11 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	w.paintMutex.Lock()
 
 	p := gui.NewQPainter2(w)
+	if w.doErase {
+		p.EraseRect3(w.Rect())
+		p.DestroyQPainter()
+		return
+	}
 	font := w.getFont()
 
 	// Set devicePixelRatio if it is not set
@@ -578,10 +584,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
 	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
 
-	// Draw scroll snapshot
-	// TODO: If there are wrapped lines in the viewport, the snapshot will be misaligned.
-	w.drawScrollSnapshot(p)
-
 	// Draw contents
 	for y := row; y < row+rows; y++ {
 		if y >= w.rows {
@@ -590,6 +592,10 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawBackground(p, y, col, cols)
 		w.drawForeground(p, y, col, cols)
 	}
+
+	// Draw scroll snapshot
+	// TODO: If there are wrapped lines in the viewport, the snapshot will be misaligned.
+	w.drawScrollSnapshot(p)
 
 	// TODO: We should use msgSepChar to separate message window area
 	// // If Window is Message Area, draw separator
