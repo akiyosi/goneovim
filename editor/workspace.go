@@ -92,6 +92,7 @@ type Workspace struct {
 	maxLine            int
 	viewport           [5]int // topline, botline, curline, curcol, grid
 	oldViewport        [5]int // oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
+	viewportQue        chan [5]int
 	curPosMutex        sync.RWMutex
 	optionsetMutex     sync.RWMutex
 	cursorStyleEnabled bool
@@ -127,6 +128,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		signal:        NewWorkspaceSignal(nil),
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
+		viewportQue:   make(chan [5]int, 99),
 		foreground:    newRGBA(255, 255, 255, 1),
 		background:    newRGBA(0, 0, 0, 1),
 		special:       newRGBA(255, 255, 255, 1),
@@ -588,7 +590,7 @@ func (w *Workspace) initGonvim() {
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
 	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
-	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter")
+	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"))
 	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid())
 	au GonvimAu OptionSet * if &ro != 1 | silent! call rpcnotify(1, "Gui", "gonvim_optionset") | endif
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
@@ -617,7 +619,7 @@ func (w *Workspace) initGonvim() {
 	if editor.config.ScrollBar.Visible {
 		gonvimAutoCmds = gonvimAutoCmds + `
 	aug GonvimAuScrollbar | au! | aug END
-	au GonvimAuScrollbar TextChanged,TextChangedI,BufReadPost * call rpcnotify(0, "Gui", "gonvim_get_maxline", line("$"))
+	au GonvimAuScrollbar TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_textchanged", line("$"))
 	`
 	}
 	if editor.config.Editor.Clipboard {
@@ -1142,9 +1144,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "bell":
 		case "visual_bell":
 		case "flush":
-			s.update()
-			w.cursor.update()
-			w.drawOtherUI()
+			w.flush()
 
 		// Grid Events
 		case "grid_resize":
@@ -1303,6 +1303,29 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		}
 		editor.putLog("finished", event)
 	}
+}
+
+func (w *Workspace) flush() {
+	doSmoothScroll := false
+	if len(w.viewportQue) == 2 {
+		doSmoothScroll = true
+	}
+	for {
+		if len(w.viewportQue) == 0 {
+			break
+		}
+		select {
+		case viewport := <-w.viewportQue:
+			win, diff, ok := w.handleViewport(viewport)
+			if ok && doSmoothScroll {
+				w.smoothScroll(win, diff)
+			}
+		default:
+		}
+	}
+	w.screen.update()
+	w.cursor.update()
+	w.drawOtherUI()
 }
 
 func (w *Workspace) drawOtherUI() {
@@ -1561,11 +1584,7 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	if viewport[4] == 1 { // if global grid
 		return
 	}
-
-	win, diff, ok := w.handleViewport(viewport)
-	if ok {
-		w.smoothScroll(win, diff)
-	}
+	w.viewportQue <- viewport
 }
 
 func (w *Workspace) handleViewport(viewport [5]int) (*Window, int, bool) {
@@ -1756,7 +1775,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		go w.minimap.toggle()
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
-	case "gonvim_get_maxline":
+	case "gonvim_textchanged":
 		w.maxLine = util.ReflectToInt(updates[1])
 	case "gonvim_workspace_new":
 		editor.workspaceNew()
@@ -1783,6 +1802,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.mode = "normal"
 	case "gonvim_bufenter":
 		w.getBufnameAndTS()
+		w.maxLine = util.ReflectToInt(updates[1])
 	case "gonvim_winenter_filetype":
 		w.getFileType(updates)
 		w.getBufnameAndTS()
