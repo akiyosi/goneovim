@@ -1316,8 +1316,11 @@ func (w *Workspace) flush() {
 		}
 		select {
 		case viewport := <-w.viewportQue:
+			if !doSmoothScroll {
+				continue
+			}
 			win, diff, ok := w.handleViewport(viewport)
-			if ok && doSmoothScroll {
+			if ok {
 				w.smoothScroll(win, diff)
 			}
 		default:
@@ -1595,6 +1598,11 @@ func (w *Workspace) handleViewport(viewport [5]int) (*Window, int, bool) {
 	if win.isMsgGrid {
 		return nil, 0, false
 	}
+
+	if viewport[0] == w.viewport[0] && w.viewport[0] == w.oldViewport[0] {
+		return nil, 0, false
+	}
+
 	diff := w.viewport[0] - w.oldViewport[0]
 	if diff == 0 {
 		diff = w.viewport[1] - w.oldViewport[1]
