@@ -1600,9 +1600,17 @@ func (w *Workspace) handleViewport(viewport [5]int) (*Window, int, bool) {
 		diff = w.viewport[1] - w.oldViewport[1]
 	}
 	isGridGoto := w.viewport[4] != w.oldViewport[4]
+	if int(math.Abs(float64(diff))) >= win.rows/2 {
+		wrappedLines1 := win.rows - (w.viewport[1] - w.viewport[0] - 1)
+		wrappedLines2 := win.rows - (w.oldViewport[1] - w.oldViewport[0] - 1)
+		if diff < 0 {
+			diff -= wrappedLines1
+		} else if diff > 0 {
+			diff += wrappedLines2
+		}
+	}
 
 	w.curPosMutex.Lock()
-
 	w.oldViewport = [5]int{
 		w.viewport[0],
 		w.viewport[1],
@@ -1611,7 +1619,6 @@ func (w *Workspace) handleViewport(viewport [5]int) (*Window, int, bool) {
 		w.viewport[4],
 	}
 	w.viewport = viewport
-
 	w.curPosMutex.Unlock()
 
 	// smooth scroll
