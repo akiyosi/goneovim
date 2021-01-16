@@ -2682,8 +2682,14 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 				italic: highlight.italic,
 				bold:   highlight.bold,
 			})
+
+			done := make(chan bool, 1)
 			if err != nil {
 				image = w.newTextCache(text, highlight, true)
+				go func() {
+					w.setTextCache(text, highlight, image)
+					done <- true
+				}()
 			} else {
 				image = imagev.(*gui.QImage)
 			}
@@ -2691,6 +2697,13 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 				pointF,
 				image,
 			)
+
+			// Wait for the cache to be set in textcache
+			if err != nil {
+				select {
+				case <-done:
+				}
+			}
 		}
 
 	}
@@ -2705,8 +2718,13 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 			italic: line[x].highlight.italic,
 			bold:   line[x].highlight.bold,
 		})
+		done := make(chan bool, 1)
 		if err != nil {
 			image = w.newTextCache(line[x].char, line[x].highlight, false)
+			go func() {
+				w.setTextCache(line[x].char, line[x].highlight, image)
+				done <- true
+			}()
 		} else {
 			image = imagev.(*gui.QImage)
 		}
@@ -2715,6 +2733,39 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 				float64(x)*wsfont.truewidth,
 				float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
 			),
+			image,
+		)
+
+		// Wait for the cache to be set in textcache
+		if err != nil {
+			select {
+			case <-done:
+			}
+		}
+	}
+}
+
+func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QImage) {
+	if w.font != nil {
+		// If window has own font setting
+		w.textCache.set(
+			HlChars{
+				text:   text,
+				fg:     highlight.fg(),
+				italic: highlight.italic,
+				bold:   highlight.bold,
+			},
+			image,
+		)
+	} else {
+		// screen text cache
+		w.s.textCache.set(
+			HlChars{
+				text:   text,
+				fg:     highlight.fg(),
+				italic: highlight.italic,
+				bold:   highlight.bold,
+			},
 			image,
 		)
 	}
@@ -2773,30 +2824,6 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
 	pi.DestroyQPainter()
-
-	if w.font != nil {
-		// If window has own font setting
-		w.textCache.set(
-			HlChars{
-				text:   text,
-				fg:     highlight.fg(),
-				italic: highlight.italic,
-				bold:   highlight.bold,
-			},
-			image,
-		)
-	} else {
-		// screen text cache
-		w.s.textCache.set(
-			HlChars{
-				text:   text,
-				fg:     highlight.fg(),
-				italic: highlight.italic,
-				bold:   highlight.bold,
-			},
-			image,
-		)
-	}
 
 	editor.putLog("finished creating word cache:", text)
 
