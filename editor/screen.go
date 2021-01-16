@@ -2772,6 +2772,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 			float64(font.lineHeight),
 		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
+	pi.DestroyQPainter()
 
 	if w.font != nil {
 		// If window has own font setting
@@ -2797,7 +2798,6 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		)
 	}
 
-	pi.DestroyQPainter()
 	editor.putLog("finished creating word cache:", text)
 
 	return image
