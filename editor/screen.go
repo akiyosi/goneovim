@@ -14,11 +14,7 @@ import (
 	"unsafe"
 
 	"github.com/akiyosi/goneovim/util"
-	// "github.com/bluele/gcache"
-	// "github.com/coocood/freecache"
-
-	"github.com/golang/groupcache/lru"
-
+	"github.com/bluele/gcache"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -161,7 +157,7 @@ type Screen struct {
 }
 
 type Cache struct {
-	lru.Cache
+	gcache.Cache
 }
 
 func newScreen() *Screen {
@@ -194,29 +190,23 @@ func purgeQimage(key, value interface{}) {
 }
 
 func newCache() Cache {
-	// g := gcache.New(editor.config.Editor.CacheSize).LRU().
-	// 	EvictedFunc(purgeQimage).
-	// 	PurgeVisitorFunc(purgeQimage).
-	// 	Build()
-	g := lru.New(editor.config.Editor.CacheSize * 10)
+	g := gcache.New(editor.config.Editor.CacheSize).LRU().
+		EvictedFunc(purgeQimage).
+		PurgeVisitorFunc(purgeQimage).
+		Build()
 	return *(*Cache)(unsafe.Pointer(&g))
 }
 
-func (c *Cache) set(key, value interface{}) {
-	c.Add(key.(lru.Key), value)
+func (c *Cache) set(key, value interface{}) error {
+	return c.Set(key, value)
 }
 
 func (c *Cache) get(key interface{}) (interface{}, error) {
-	value, ok := c.Get(key.(lru.Key))
-	if !ok {
-		return nil, errors.New("Not found")
-	}
-
-	return value, nil
+	return c.Get(key)
 }
 
 func (c *Cache) purge() {
-	c.Clear()
+	c.Purge()
 }
 
 func (s *Screen) initInputMethodWidget() {
