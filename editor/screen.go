@@ -2683,13 +2683,9 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 				bold:   highlight.bold,
 			})
 
-			done := make(chan bool, 1)
 			if err != nil {
 				image = w.newTextCache(text, highlight, true)
-				go func() {
-					w.setTextCache(text, highlight, image)
-					done <- true
-				}()
+				w.setTextCache(text, highlight, image)
 			} else {
 				image = imagev.(*gui.QImage)
 			}
@@ -2697,13 +2693,6 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 				pointF,
 				image,
 			)
-
-			// Wait for the cache to be set in textcache
-			if err != nil {
-				select {
-				case <-done:
-				}
-			}
 		}
 
 	}
@@ -2718,13 +2707,9 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 			italic: line[x].highlight.italic,
 			bold:   line[x].highlight.bold,
 		})
-		done := make(chan bool, 1)
 		if err != nil {
 			image = w.newTextCache(line[x].char, line[x].highlight, false)
-			go func() {
-				w.setTextCache(line[x].char, line[x].highlight, image)
-				done <- true
-			}()
+			w.setTextCache(line[x].char, line[x].highlight, image)
 		} else {
 			image = imagev.(*gui.QImage)
 		}
@@ -2735,13 +2720,6 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 			),
 			image,
 		)
-
-		// Wait for the cache to be set in textcache
-		if err != nil {
-			select {
-			case <-done:
-			}
-		}
 	}
 }
 
