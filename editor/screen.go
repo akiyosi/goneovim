@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 	"unicode"
+	"unsafe"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/bluele/gcache"
@@ -113,7 +114,7 @@ type Window struct {
 	scrollCols         int
 
 	devicePixelRatio float64
-	textCache        gcache.Cache
+	textCache        Cache
 
 	extwin                 *ExternalWin
 	extwinConnectResizable bool
@@ -150,9 +151,13 @@ type Screen struct {
 
 	tooltip *widgets.QLabel
 
-	textCache gcache.Cache
+	textCache Cache
 
 	resizeCount uint
+}
+
+type Cache struct {
+	gcache.Cache
 }
 
 func newScreen() *Screen {
@@ -160,21 +165,12 @@ func newScreen() *Screen {
 	widget.SetContentsMargins(0, 0, 0, 0)
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
-	purgeQimage := func(key, value interface{}) {
-		image := value.(*gui.QImage)
-		image.DestroyQImage()
-	}
-	cache := gcache.New(editor.config.Editor.CacheSize).LRU().
-		EvictedFunc(purgeQimage).
-		PurgeVisitorFunc(purgeQimage).
-		Build()
-
 	screen := &Screen{
 		widget:         widget,
 		windows:        sync.Map{},
 		cursor:         [2]int{0, 0},
 		highlightGroup: make(map[string]int),
-		textCache:      cache,
+		textCache:      newCache(),
 	}
 
 	widget.SetAcceptDrops(true)
@@ -186,6 +182,31 @@ func newScreen() *Screen {
 	widget.ConnectMouseMoveEvent(screen.mouseEvent)
 
 	return screen
+}
+
+func purgeQimage(key, value interface{}) {
+	image := value.(*gui.QImage)
+	image.DestroyQImage()
+}
+
+func newCache() Cache {
+	g := gcache.New(editor.config.Editor.CacheSize).LRU().
+		EvictedFunc(purgeQimage).
+		PurgeVisitorFunc(purgeQimage).
+		Build()
+	return *(*Cache)(unsafe.Pointer(&g))
+}
+
+func (c *Cache) set(key, value interface{}) error {
+	return c.Set(key, value)
+}
+
+func (c *Cache) get(key interface{}) (interface{}, error) {
+	return c.Get(key)
+}
+
+func (c *Cache) purge() {
+	c.Purge()
 }
 
 func (s *Screen) initInputMethodWidget() {
@@ -438,18 +459,11 @@ func (s *Screen) gridFont(update interface{}) {
 	newRows := oldHeight / win.font.lineHeight
 
 	// Cache
-	if win.textCache == nil {
-		purgeQimage := func(key, value interface{}) {
-			image := value.(*gui.QImage)
-			image.DestroyQImage()
-		}
-		cache := gcache.New(editor.config.Editor.CacheSize).LRU().
-			EvictedFunc(purgeQimage).
-			PurgeVisitorFunc(purgeQimage).
-			Build()
+	if &win.textCache == nil {
+		cache := newCache()
 		win.textCache = cache
 	} else {
-		win.textCache.Purge()
+		win.textCache.purge()
 	}
 
 	_ = s.ws.nvim.TryResizeUIGrid(s.ws.cursor.gridid, newCols, newRows)
@@ -467,7 +481,7 @@ func (s *Screen) purgeTextCacheForWins() {
 	if !editor.config.Editor.CachedDrawing {
 		return
 	}
-	s.textCache.Purge()
+	s.textCache.purge()
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 		if win == nil {
@@ -476,7 +490,7 @@ func (s *Screen) purgeTextCacheForWins() {
 		if win.font == nil {
 			return true
 		}
-		win.textCache.Purge()
+		win.textCache.purge()
 		return true
 	})
 }
@@ -2662,14 +2676,16 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 
 		text := buffer.String()
 		if text != "" {
-			imagev, err := textCache.Get(HlChars{
+			imagev, err := textCache.get(HlChars{
 				text:   text,
 				fg:     highlight.fg(),
 				italic: highlight.italic,
 				bold:   highlight.bold,
 			})
+
 			if err != nil {
 				image = w.newTextCache(text, highlight, true)
+				w.setTextCache(text, highlight, image)
 			} else {
 				image = imagev.(*gui.QImage)
 			}
@@ -2685,7 +2701,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 		if line[x] == nil || line[x].char == " " {
 			continue
 		}
-		imagev, err := textCache.Get(HlChars{
+		imagev, err := textCache.get(HlChars{
 			text:   line[x].char,
 			fg:     line[x].highlight.fg(),
 			italic: line[x].highlight.italic,
@@ -2693,6 +2709,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 		})
 		if err != nil {
 			image = w.newTextCache(line[x].char, line[x].highlight, false)
+			w.setTextCache(line[x].char, line[x].highlight, image)
 		} else {
 			image = imagev.(*gui.QImage)
 		}
@@ -2701,6 +2718,32 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 				float64(x)*wsfont.truewidth,
 				float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
 			),
+			image,
+		)
+	}
+}
+
+func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QImage) {
+	if w.font != nil {
+		// If window has own font setting
+		w.textCache.set(
+			HlChars{
+				text:   text,
+				fg:     highlight.fg(),
+				italic: highlight.italic,
+				bold:   highlight.bold,
+			},
+			image,
+		)
+	} else {
+		// screen text cache
+		w.s.textCache.set(
+			HlChars{
+				text:   text,
+				fg:     highlight.fg(),
+				italic: highlight.italic,
+				bold:   highlight.bold,
+			},
 			image,
 		)
 	}
@@ -2758,32 +2801,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 			float64(font.lineHeight),
 		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
-
-	if w.font != nil {
-		// If window has own font setting
-		w.textCache.Set(
-			HlChars{
-				text:   text,
-				fg:     highlight.fg(),
-				italic: highlight.italic,
-				bold:   highlight.bold,
-			},
-			image,
-		)
-	} else {
-		// screen text cache
-		w.s.textCache.Set(
-			HlChars{
-				text:   text,
-				fg:     highlight.fg(),
-				italic: highlight.italic,
-				bold:   highlight.bold,
-			},
-			image,
-		)
-	}
-
 	pi.DestroyQPainter()
+
 	editor.putLog("finished creating word cache:", text)
 
 	return image
@@ -3427,7 +3446,7 @@ func (s *Screen) setColor() {
 	)
 }
 
-func (w *Window) getCache() gcache.Cache {
+func (w *Window) getCache() Cache {
 	if w.font != nil {
 		return w.textCache
 	}
