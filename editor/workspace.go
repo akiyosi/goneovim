@@ -1686,7 +1686,7 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 			win.doErase = false
 		}
 	})
-	a.SetDuration(250)
+	a.SetDuration(200)
 	a.SetStartValue(core.NewQVariant10(1))
 	a.SetEndValue(core.NewQVariant10(0))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
