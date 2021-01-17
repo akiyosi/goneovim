@@ -25,6 +25,8 @@ func main() {
 
 	// parse args
 	options, args := parseArgs()
+
+	// start editor
 	editor.InitEditor(options, args)
 }
 
