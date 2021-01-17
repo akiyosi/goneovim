@@ -2939,10 +2939,6 @@ func (w *Window) drawForeground(p *gui.QPainter, y int, col int, cols int) {
 }
 
 func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
-	// If the grid is a global grid or a message grid, we don't have to process these
-	if w.grid == 1 || w.isMsgGrid {
-		return
-	}
 	if y >= len(w.content) {
 		return
 	}
