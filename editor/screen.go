@@ -643,11 +643,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	p.DestroyQPainter()
 
-	// Update markdown preview
-	if w.grid != 1 && !w.isMsgGrid && w.s.ws.markdown != nil {
-		w.s.ws.markdown.updatePos()
-	}
-
 	w.paintMutex.Unlock()
 }
 
@@ -2436,6 +2431,11 @@ func (s *Screen) update() {
 				win.fill()
 			}
 			win.update()
+
+			// Update markdown preview
+			if win.grid != 1 && !win.isMsgGrid && s.ws.markdown != nil {
+				s.ws.markdown.updatePos()
+			}
 		}
 
 		return true
