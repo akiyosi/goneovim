@@ -154,18 +154,7 @@ func (s *ScrollBar) setColor() {
 }
 
 func (s *ScrollBar) update() {
-	win, ok := s.ws.screen.getWindow(s.ws.cursor.gridid)
-	if !ok {
-		return
-	}
-	top := win.scrollRegion[0]
-	bot := win.scrollRegion[1]
-	if top == 0 && bot == 0 {
-		top = 0
-		bot = s.ws.rows - 1
-	}
-	font := win.getFont()
-	relativeCursorY := int(float64(s.ws.cursor.y) / float64(font.lineHeight))
+	rows := s.ws.rows - 1
 	if s.ws.maxLine == 0 {
 		lnITF, err := s.ws.nvimEval("line('$')")
 		if err != nil {
@@ -173,17 +162,16 @@ func (s *ScrollBar) update() {
 		} else {
 			s.ws.maxLine = util.ReflectToInt(lnITF)
 		}
-
 	}
 
-	if s.ws.maxLine > bot-top {
-		s.height = int(float64(bot-top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+	if s.ws.maxLine > rows {
+		s.height = int(float64(rows) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		thumbHeight := s.height
 		if s.height < 20 {
 			thumbHeight = 20
 		}
 		s.thumb.SetFixedHeight(thumbHeight)
-		s.pos = int(float64(s.ws.viewport[2]-relativeCursorY) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+		s.pos = int(float64(s.ws.viewport[0]-s.ws.screen.cursor[1]) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		s.thumb.Move2(0, s.pos)
 		s.widget.Show()
 	} else {
