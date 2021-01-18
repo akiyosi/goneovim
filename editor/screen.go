@@ -3061,7 +3061,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			color = sp.QColor()
 			pen.SetColor(color)
 		} else {
-			fg := editor.colors.fg
+			fg := line[x].highlight.foreground
 			color = fg.QColor()
 			pen.SetColor(color)
 		}
@@ -3074,7 +3074,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			space = font.ascent / 3.0
 		}
 		descent := float64(font.height) - font.ascent
-		weight := int(math.Ceil(float64(font.height) / 15.0))
+		weight := int(math.Ceil(float64(font.height) / 16.0))
 		if weight < 1 {
 			weight = 1
 		}
