@@ -318,10 +318,14 @@ func (m *MiniMap) setColorscheme() {
 	runtimePaths, _ := m.ws.nvim.RuntimePaths()
 	runtimeDir := ""
 	colorschemePath := ""
+	treesitterPath := ""
 	for _, path := range runtimePaths {
 		lsDirs, err := ioutil.ReadDir(path)
 		if err != nil {
 			continue
+		}
+		if strings.Contains(path, "nvim-treesitter") {
+			treesitterPath = path
 		}
 		for _, d := range lsDirs {
 			dirname := d.Name()
@@ -352,11 +356,23 @@ func (m *MiniMap) setColorscheme() {
 	if m.colorscheme == colo {
 		return
 	}
-
 	// set colorscheme
 	m.nvim.Command(":colorscheme " + colo)
 	m.colorscheme = colo
 	m.isSetColorscheme = true
+
+	// if nvim-treesitter is installed
+	// m.nvim.Command("luafile ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/lua/nvim-treesitter.lua")
+	// m.nvim.Command("luafile ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/lua/nvim-treesitter/highlight.lua")
+	// m.nvim.Command("luafile ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/lua/nvim-treesitter/configs.lua")
+	// m.nvim.Command("source ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/plugin//nvim-treesitter.vim")
+	// m.nvim.Command("TSEnableAll highlight")
+	m.nvim.Command("luafile " + treesitterPath + "/lua/nvim-treesitter.lua")
+	m.nvim.Command("luafile " + treesitterPath + "/lua/nvim-treesitter/highlight.lua")
+	m.nvim.Command("luafile " + treesitterPath + "/lua/nvim-treesitter/configs.lua")
+	m.nvim.Command("source  " + treesitterPath + "/plugin//nvim-treesitter.vim")
+	m.nvim.Command("TSEnableAll highlight")
+
 }
 
 func (m *MiniMap) mapScroll() {
