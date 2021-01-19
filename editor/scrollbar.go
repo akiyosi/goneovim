@@ -154,7 +154,11 @@ func (s *ScrollBar) setColor() {
 }
 
 func (s *ScrollBar) update() {
-	rows := s.ws.rows - 1
+	win, ok := s.ws.screen.getWindow(s.ws.cursor.gridid)
+	if !ok {
+		return
+	}
+	rows := win.rows
 	if s.ws.maxLine == 0 {
 		lnITF, err := s.ws.nvimEval("line('$')")
 		if err != nil {
@@ -171,7 +175,8 @@ func (s *ScrollBar) update() {
 			thumbHeight = 20
 		}
 		s.thumb.SetFixedHeight(thumbHeight)
-		s.pos = int(float64(s.ws.viewport[0]-s.ws.screen.cursor[1]) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+		top := s.ws.viewport[0] - 1
+		s.pos = int(float64(top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		s.thumb.Move2(0, s.pos)
 		s.widget.Show()
 	} else {

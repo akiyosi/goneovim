@@ -49,10 +49,6 @@ type MiniMap struct {
 	cols       int
 
 	viewport [4]int
-	// topLine    int
-	// botLine    int
-	// curLine    int
-	// curColm    int
 }
 
 func newMiniMap() *MiniMap {
@@ -372,9 +368,10 @@ func (m *MiniMap) mapScroll() {
 		linePos = m.ws.viewport[0] - m.viewport[0]
 		regionHeight = m.ws.viewport[1] - m.ws.viewport[0]
 	} else {
-		absScreenTop := m.ws.viewport[2] - m.ws.screen.cursor[0]
-		var absMapTop int
-		m.nvim.Eval("line('w0')", &absMapTop)
+		absScreenTop := m.ws.viewport[0]
+		// var absMapTop int
+		// m.nvim.Eval("line('w0')", &absMapTop)
+		absMapTop := m.viewport[0]
 		linePos = absScreenTop - absMapTop
 	}
 
