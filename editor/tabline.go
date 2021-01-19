@@ -123,8 +123,8 @@ func initTabline() *Tabline {
 	widget.SetLayout(layout)
 
 	marginDefault := 10
-	marginTop := int(float64(editor.extFontSize) / 2.2) // No effect now
-	marginBot := int(float64(editor.extFontSize) / 1.8) // No effect now
+	marginTop := int(float64(editor.extFontSize)) // No effect now
+	marginBot := int(float64(editor.extFontSize)) // No effect now
 	tabline := &Tabline{
 		widget:        widget,
 		layout:        layout,
@@ -155,19 +155,20 @@ func initTabline() *Tabline {
 
 func newTab() *Tab {
 	w := widgets.NewQWidget(nil, 0)
-	w.SetContentsMargins(5, 0, 5, 0)
+	space := int(float64(editor.config.Editor.Linespace) * 0.3)
+	w.SetContentsMargins(5, space, 5, space+editor.iconSize*1/6)
 	l := widgets.NewQHBoxLayout()
 	l.SetContentsMargins(0, 0, 0, 0) // tab margins
 	l.SetSpacing(0)
 	var fileIcon *svg.QSvgWidget
 	if editor.config.Tabline.ShowIcon {
 		fileIcon = svg.NewQSvgWidget(nil)
-		fileIcon.SetFixedWidth(editor.iconSize)
-		fileIcon.SetFixedHeight(editor.iconSize)
+		fileIcon.SetFixedWidth(editor.iconSize * 5 / 6)
+		fileIcon.SetFixedHeight(editor.iconSize * 5 / 6)
 	}
 	file := widgets.NewQLabel(nil, 0)
 	file.SetContentsMargins(0, 0, editor.iconSize/4, 0)
-	file.SetStyleSheet(" .QLabel { padding: 2px; background-color: rgba(0, 0, 0, 0); }")
+	file.SetStyleSheet(" .QLabel { padding: 1px; background-color: rgba(0, 0, 0, 0); }")
 	closeIcon := svg.NewQSvgWidget(nil)
 	closeIcon.SetFixedWidth(editor.iconSize)
 	closeIcon.SetFixedHeight(editor.iconSize)
