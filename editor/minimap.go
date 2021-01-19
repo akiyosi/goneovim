@@ -664,9 +664,9 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 	}
 	wsfont := w.getFont()
 	p.SetFont(wsfont.fontNew)
+	p.SetRenderHint(gui.QPainter__Antialiasing, true)
 	line := w.content[y]
 	chars := map[*Highlight][]int{}
-	specialChars := []int{}
 
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
@@ -681,10 +681,6 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 		if line[x].char == "" {
 			continue
 		}
-		if !line[x].normalWidth {
-			specialChars = append(specialChars, x)
-			continue
-		}
 
 		highlight := line[x].highlight
 		colorSlice, ok := chars[highlight]
@@ -694,11 +690,6 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 		colorSlice = append(colorSlice, x)
 		chars[highlight] = colorSlice
 	}
-
-	pointF := core.NewQPointF3(
-		float64(col)*wsfont.truewidth,
-		float64((y)*wsfont.lineHeight+wsfont.shift),
-	)
 
 	for highlight, colorSlice := range chars {
 		var buffer bytes.Buffer
@@ -724,19 +715,32 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 			if fg != nil {
 				p.SetPen2(fg.QColor())
 			}
-			p.DrawText(pointF, text)
+
+			width := 0
+			for i, c := range text {
+				if string(c) == "@" {
+					width++
+				}
+				if string(c) == " " || i == len(text)-1 {
+					if width > 0 {
+						path := gui.NewQPainterPath()
+						path.AddRoundedRect2(
+							float64(col+i-width)*wsfont.truewidth,
+							float64(y*wsfont.lineHeight+wsfont.shift),
+							float64(width)*wsfont.truewidth,
+							0.75*float64(wsfont.lineHeight),
+							2,
+							2,
+							core.Qt__AbsoluteSize,
+						)
+						p.FillPath(path, gui.NewQBrush3(fg.QColor(), core.Qt__SolidPattern))
+						width = 0
+					} else {
+						continue
+					}
+				}
+			}
 		}
 
-	}
-
-	for _, x := range specialChars {
-		if line[x] == nil || line[x].char == " " {
-			continue
-		}
-		fg := line[x].highlight.fg()
-		p.SetPen2(fg.QColor())
-		pointF.SetX(float64(x) * wsfont.truewidth)
-		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift))
-		p.DrawText(pointF, line[x].char)
 	}
 }
