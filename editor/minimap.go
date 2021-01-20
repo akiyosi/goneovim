@@ -381,8 +381,8 @@ func (m *MiniMap) mapScroll() {
 
 	if m.api5 {
 		// linePos = m.ws.topLine - m.topLine
-		linePos = m.ws.viewport[0] - m.viewport[0]
 		regionHeight = m.ws.viewport[1] - m.ws.viewport[0]
+		linePos = m.ws.viewport[0] - m.viewport[0]
 	} else {
 		absScreenTop := m.ws.viewport[0]
 		// var absMapTop int
@@ -538,7 +538,6 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 			// m.gridCursorGoto(args)
 		case "grid_scroll":
 			m.gridScroll(args)
-			m.mapScroll()
 
 		case "win_viewport":
 			vp := args[0].([]interface{})
@@ -548,15 +547,13 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 				util.ReflectToInt(vp[4]) + 1,
 				util.ReflectToInt(vp[5]) + 1,
 			}
-			// m.topLine = util.ReflectToInt(vp[2]) + 1
-			// m.botLine = util.ReflectToInt(vp[3]) + 1
-			// m.curLine = util.ReflectToInt(vp[4]) + 1
-			// m.curColm = util.ReflectToInt(vp[5]) + 1
+		case "flush":
+			m.update()
+			m.mapScroll()
 
 		default:
 		}
 	}
-	m.update()
 }
 
 func (m *MiniMap) transparent(bg *RGBA) int {

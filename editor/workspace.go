@@ -1561,7 +1561,6 @@ func (w *Workspace) getPos() {
 	case <-time.After(10 * time.Millisecond):
 		return
 	}
-	fmt.Println(curPos)
 
 	w.curPosMutex.Lock()
 	w.viewport[2] = curPos[1]
