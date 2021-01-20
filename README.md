@@ -1,5 +1,4 @@
-<img src="https://raw.githubusercontent.com/wiki/akiyosi/goneovim/images/GoNeovim.png" width="250" align="top" >
-
+Goneovim
 ---
 
 ![test](https://github.com/akiyosi/goneovim/workflows/test/badge.svg)
@@ -7,7 +6,7 @@
 ![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.4.10/total)
 [![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
 
-*GoNeovim* is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
+Goneovim is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
 This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
 
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/screenshot-202009.png)
@@ -66,18 +65,6 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 See [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md)
 
 
-## ToDo
-
-* Add test
-
-* Improve Input Method Editor(IME) feature
-
-* Improve startup time
-
-* Support GPU rendering
-
-* Support neovim ui `ext_statusline`
-
 
 ## Similar projects
 
@@ -89,21 +76,6 @@ See [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md
 
 ## Screenshots
 
-* Workspaces, external file explorer
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/workspaces-fileexplorer.png)
-* Fuzzy Finder
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/fuzzyfinder.png)
-* Markdown preview
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/markdown-preview.png)
-* Minimap
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/minimap.png)
-* Indentguide, display ligatures(Fira Code)
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/indentguide.png)
-* Transparent app window, Transparent message window
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/transparent.png)
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/transparent-message.png)
-* Independent font settings per window
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/font-setting-per-window.png)
 
 ## Credits
 
