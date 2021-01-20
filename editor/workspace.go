@@ -90,8 +90,8 @@ type Workspace struct {
 	cwdBase            string
 	cwdlabel           string
 	maxLine            int
-	viewport           [5]int // topline, botline, curline, curcol, grid
-	oldViewport        [5]int // oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
+	viewport           [4]int    // topline, botline, curline, curcol
+	scrollViewport     [2][5]int // 1. topline, botline, curline, curcol, grid, 2. oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
 	viewportQue        chan [5]int
 	curPosMutex        sync.RWMutex
 	optionsetMutex     sync.RWMutex
@@ -1569,6 +1569,12 @@ func (w *Workspace) getPos() {
 }
 
 func (w *Workspace) windowViewport(arg []interface{}) {
+	w.viewport = [4]int{
+		util.ReflectToInt(arg[2]) + 1,
+		util.ReflectToInt(arg[3]) + 1,
+		util.ReflectToInt(arg[4]) + 1,
+		util.ReflectToInt(arg[5]) + 1,
+	}
 	viewport := [5]int{
 		util.ReflectToInt(arg[2]) + 1,
 		util.ReflectToInt(arg[3]) + 1,
@@ -1583,8 +1589,8 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	w.viewportQue <- viewport
 }
 
-func (w *Workspace) handleViewport(viewport [5]int) (*Window, int, bool) {
-	win, ok := w.screen.getWindow(viewport[4])
+func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
+	win, ok := w.screen.getWindow(vp[4])
 	if !ok {
 		return nil, 0, false
 	}
@@ -1592,18 +1598,21 @@ func (w *Workspace) handleViewport(viewport [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
-	if viewport[0] == w.viewport[0] && w.viewport[0] == w.oldViewport[0] {
+	viewport := w.scrollViewport[0]
+	oldViewport := w.scrollViewport[1]
+
+	if vp[0] == viewport[0] && viewport[0] == oldViewport[0] {
 		return nil, 0, false
 	}
 
-	diff := w.viewport[0] - w.oldViewport[0]
+	diff := viewport[0] - oldViewport[0]
 	if diff == 0 {
-		diff = w.viewport[1] - w.oldViewport[1]
+		diff = viewport[1] - oldViewport[1]
 	}
-	isGridGoto := w.viewport[4] != w.oldViewport[4]
+	isGridGoto := viewport[4] != oldViewport[4]
 	if int(math.Abs(float64(diff))) >= win.rows/2 {
-		wrappedLines1 := win.rows - (w.viewport[1] - w.viewport[0] - 1)
-		wrappedLines2 := win.rows - (w.oldViewport[1] - w.oldViewport[0] - 1)
+		wrappedLines1 := win.rows - (viewport[1] - viewport[0] - 1)
+		wrappedLines2 := win.rows - (oldViewport[1] - oldViewport[0] - 1)
 		if diff < 0 {
 			diff -= wrappedLines1
 		} else if diff > 0 {
@@ -1612,14 +1621,14 @@ func (w *Workspace) handleViewport(viewport [5]int) (*Window, int, bool) {
 	}
 
 	w.curPosMutex.Lock()
-	w.oldViewport = [5]int{
-		w.viewport[0],
-		w.viewport[1],
-		w.viewport[2],
-		w.viewport[3],
-		w.viewport[4],
+	w.scrollViewport[1] = [5]int{
+		viewport[0],
+		viewport[1],
+		viewport[2],
+		viewport[3],
+		viewport[4],
 	}
-	w.viewport = viewport
+	w.scrollViewport[0] = vp
 	w.curPosMutex.Unlock()
 
 	// smooth scroll
