@@ -329,7 +329,7 @@ func (c *gonvimConfig) init() {
 
 	c.ScrollBar.Visible = false
 
-	c.MiniMap.Width = 120
+	c.MiniMap.Width = 110
 
 	c.Markdown.CodeHlStyle = "github"
 

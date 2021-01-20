@@ -738,9 +738,9 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 					if width > 0 {
 						path := gui.NewQPainterPath()
 						path.AddRoundedRect2(
-							float64(col+i-width)*wsfont.truewidth,
+							float64(col+i-width)*wsfont.truewidth*0.75,
 							float64(y*wsfont.lineHeight+wsfont.shift),
-							float64(width)*wsfont.truewidth,
+							float64(width)*wsfont.truewidth*0.75,
 							0.75*float64(wsfont.lineHeight),
 							2,
 							2,
