@@ -1549,17 +1549,10 @@ func (w *Workspace) getPos() {
 	if w.api5 {
 		return
 	}
-	done := make(chan error, 2000)
+	done := make(chan error, 20)
 	var curPos [4]int
 	go func() {
-		err := w.nvim.ExecuteLua(`
-			-- if vim.fn.has('nvim-0.5') == 1 then
-			if vim.fn == nil then
-			  return vim.api.nvim_eval('getpos(".")')
-			else
-			  return vim.fn.getpos('.')
-			end
-			`, &curPos)
+		err := w.nvim.Eval("getpos('.')", &curPos)
 		done <- err
 	}()
 
@@ -1568,6 +1561,7 @@ func (w *Workspace) getPos() {
 	case <-time.After(10 * time.Millisecond):
 		return
 	}
+	fmt.Println(curPos)
 
 	w.curPosMutex.Lock()
 	w.viewport[2] = curPos[1]
