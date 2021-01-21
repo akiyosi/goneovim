@@ -611,8 +611,8 @@ func (w *Workspace) initGonvim() {
 		gonvimAutoCmds = gonvimAutoCmds + `
 		aug GonvimAuMinimap | au! | aug END
 		au GonvimAuMinimap BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
-		aug GonvimAuMinimapSync | au! | aug END
-		au GonvimAuMinimapSync TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_minimap_sync")
+		au GonvimAuMinimap TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_minimap_sync")
+		au GonvimAuMinimap ColorScheme * call rpcnotify(0, "Gui", "gonvim_colorscheme")
 		`
 	}
 
@@ -1790,6 +1790,11 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		}
 	case "gonvim_minimap_toggle":
 		go w.minimap.toggle()
+	case "gonvim_colorscheme":
+		if w.minimap != nil {
+			w.minimap.isSetColorscheme = false
+			w.minimap.setColorscheme()
+		}
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
 	case "gonvim_textchanged":
