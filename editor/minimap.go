@@ -151,7 +151,7 @@ func (m *MiniMap) startMinimapProc() {
 
 	// neovim.Subscribe("Gui")
 	neovim.Command(":syntax on")
-	neovim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all")
+	neovim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all ts=4")
 }
 
 func (m *MiniMap) exit() {
@@ -724,7 +724,7 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 
 		text := buffer.String()
 		if text != "" {
-			fg := highlight.fg()
+			fg := highlight.fg().HSV().Colorless().RGB()
 			if fg != nil {
 				p.SetPen2(fg.QColor())
 			}
@@ -736,12 +736,13 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 				}
 				if string(c) == " " || i == len(text)-1 {
 					if width > 0 {
+						k := 0.8
 						path := gui.NewQPainterPath()
 						path.AddRoundedRect2(
-							float64(col+i-width)*wsfont.truewidth*0.75,
+							float64(col+i-width)*wsfont.truewidth*k,
 							float64(y*wsfont.lineHeight+wsfont.shift),
-							float64(width)*wsfont.truewidth*0.75,
-							0.75*float64(wsfont.lineHeight),
+							float64(width)*wsfont.truewidth*k,
+							float64(wsfont.lineHeight)*k,
 							2,
 							2,
 							core.Qt__AbsoluteSize,
