@@ -202,9 +202,9 @@ func (m *Message) resize() {
 	}
 
 	leftPadding := 0
-	if editor.sideWidget != nil {
-		if editor.sideWidget.scrollarea != nil {
-			leftPadding = editor.sideWidget.scrollarea.Width()
+	if editor.side != nil {
+		if editor.side.scrollarea != nil {
+			leftPadding = editor.side.scrollarea.Width()
 		}
 	}
 

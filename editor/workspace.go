@@ -387,9 +387,9 @@ func (w *Workspace) registerSignal() {
 			editor.close()
 			return
 		}
-		for i := 0; i <= len(editor.sideWidget.items) && i <= len(editor.workspaces); i++ {
+		for i := 0; i <= len(editor.side.items) && i <= len(editor.workspaces); i++ {
 			if i >= index {
-				editor.sideWidget.items[i].cwdpath = editor.sideWidget.items[i+1].cwdpath
+				editor.side.items[i].cwdpath = editor.side.items[i+1].cwdpath
 			}
 		}
 		editor.workspaces = workspaces
@@ -901,7 +901,7 @@ func (w *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
 
 func (w *Workspace) setCwd(cwd string) {
 	w.cwd = cwd
-	if editor.sideWidget == nil {
+	if editor.side == nil {
 		return
 	}
 
@@ -919,13 +919,13 @@ func (w *Workspace) setCwd(cwd string) {
 	w.cwdlabel = labelpath
 	w.cwdBase = filepath.Base(cwd)
 	for i, ws := range editor.workspaces {
-		if i >= len(editor.sideWidget.items) {
+		if i >= len(editor.side.items) {
 			return
 		}
 
 		if ws == w {
 			path, _ := filepath.Abs(cwd)
-			sideItem := editor.sideWidget.items[i]
+			sideItem := editor.side.items[i]
 			if sideItem.cwdpath == path {
 				continue
 			}
@@ -1036,8 +1036,10 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 func (w *Workspace) updateSize() {
 	e := editor
 	width := e.window.Geometry().Width() - e.window.BorderSize()*4
-	if e.config.SideBar.Visible {
-		width = width - e.splitter.Sizes()[0] - e.splitter.HandleWidth()
+	if e.side != nil {
+		if e.side.widget.IsVisible() {
+			width = width - e.splitter.Sizes()[0] - e.splitter.HandleWidth()
+		}
 	}
 	height := e.window.Geometry().Height() - e.window.BorderSize()*4
 	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
@@ -1412,14 +1414,6 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 
 	if isChangeFg || isChangeBg {
 		editor.isSetGuiColor = false
-		// if !w.uiRemoteAttached {
-		// 	// aw := editor.workspaces[editor.active]
-		// 	// change minimap colorscheme
-		// 	// aw.minimap.isSetColorscheme = false
-		// 	// if aw.minimap.visible && aw.minimap.nvim != nil && aw.nvim != nil {
-		// 	// 	aw.minimap.setColorscheme()
-		// 	// }
-		// }
 	}
 	if len(editor.workspaces) > 1 {
 		w.updateWorkspaceColor()
@@ -1429,7 +1423,7 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 		}
 	}
 
-	// Exit if there si no change in foreground / background
+	// Exit if there is no change in foreground / background
 	if editor.isSetGuiColor {
 		return
 	}
@@ -1473,6 +1467,7 @@ func (w *Workspace) updateWorkspaceColor() {
 	// 		w.tabline.setColor()
 	// 	}
 	// }
+
 	if w.drawStatusline {
 		if w.statusline != nil {
 			w.statusline.setColor()
@@ -1488,9 +1483,11 @@ func (w *Workspace) updateWorkspaceColor() {
 	// if editor.config.Lint.Visible {
 	// 	w.loc.setColor()
 	// }
-	// if editor.sideWidget != nil {
-	// 	editor.sideWidget.setColor()
-	// }
+
+	if editor.side != nil {
+		editor.side.setColor()
+		editor.side.setColorForItems()
+	}
 }
 
 func (w *Workspace) modeInfoSet(args []interface{}) {
@@ -1750,30 +1747,30 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	// case "signature_hide":
 	// 	w.signature.hide()
 	case "side_open":
-		editor.sideWidget.show()
+		editor.side.show()
 	case "side_close":
-		editor.sideWidget.hide()
+		editor.side.hide()
 	case "side_toggle":
-		editor.sideWidget.toggle()
+		editor.side.toggle()
 		w.updateSize()
 	case "filer_update":
-		if !editor.sideWidget.scrollarea.IsVisible() {
+		if !editor.side.scrollarea.IsVisible() {
 			return
 		}
-		if !editor.sideWidget.items[editor.active].isContentHide {
+		if !editor.side.items[editor.active].isContentHide {
 			go w.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
 		}
 	case "filer_open":
-		editor.sideWidget.items[w.getNum()].isContentHide = false
-		editor.sideWidget.items[w.getNum()].openContent()
+		editor.side.items[w.getNum()].isContentHide = false
+		editor.side.items[w.getNum()].openContent()
 	case "filer_clear":
-		editor.sideWidget.items[w.getNum()].clear()
+		editor.side.items[w.getNum()].clear()
 	case "filer_resize":
-		editor.sideWidget.items[w.getNum()].resizeContent()
+		editor.side.items[w.getNum()].resizeContent()
 	case "filer_item_add":
-		editor.sideWidget.items[w.getNum()].addItem(updates[1:])
+		editor.side.items[w.getNum()].addItem(updates[1:])
 	case "filer_item_select":
-		editor.sideWidget.items[w.getNum()].selectItem(updates[1:])
+		editor.side.items[w.getNum()].selectItem(updates[1:])
 	case "gonvim_grid_font":
 		w.screen.gridFont(updates[1])
 	case "gonvim_minimap_update":
@@ -1795,6 +1792,14 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			w.minimap.isSetColorscheme = false
 			w.minimap.setColorscheme()
 		}
+
+		win, ok := w.screen.getWindow(w.cursor.gridid)
+		if !ok {
+			return
+		}
+		win.snapshots[0] = nil
+		win.snapshots[1] = nil
+
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
 	case "gonvim_textchanged":
@@ -2552,10 +2557,10 @@ func (i *WorkspaceSideItem) fileDoubleClicked(item *widgets.QListWidgetItem) {
 
 	execCommand := exec + filepath
 	for j, ws := range editor.workspaces {
-		if editor.sideWidget.items[j] == nil {
+		if editor.side.items[j] == nil {
 			continue
 		}
-		sideItem := editor.sideWidget.items[j]
+		sideItem := editor.side.items[j]
 		if i == sideItem {
 			go ws.nvim.Command(execCommand)
 		}
@@ -2568,10 +2573,10 @@ func (i *WorkspaceSideItem) toggleContent(event *gui.QMouseEvent) {
 	}
 	if i.isContentHide {
 		for j, ws := range editor.workspaces {
-			if editor.sideWidget.items[j] == nil {
+			if editor.side.items[j] == nil {
 				continue
 			}
-			sideItem := editor.sideWidget.items[j]
+			sideItem := editor.side.items[j]
 			if i == sideItem {
 				i.isContentHide = false
 				i.openContent()
@@ -2674,6 +2679,8 @@ func (side *WorkspaceSide) setColor() {
 		side.scrollBg.equals(editor.colors.scrollBarBg) &&
 		side.selectBg.equals(editor.colors.sideBarSelectedItemBg) &&
 		side.accent.equals(editor.colors.matchFg) {
+
+		fmt.Println("return")
 		return
 	}
 
@@ -2726,14 +2733,82 @@ func (side *WorkspaceSide) setColor() {
 			),
 		)
 	}
+}
 
+func (side *WorkspaceSide) setColorForItems() {
+	for _, item := range side.items {
+		if item == nil {
+			continue
+		}
+		if item.hidden {
+			continue
+		}
+		item.content.SetStyleSheet(
+			fmt.Sprintf(`
+				QListWidget::item {
+				   color: %s;
+				   padding-left: 20px;
+				   background-color: rgba(0, 0, 0, 0.0);
+				}
+				QListWidget::item:selected {
+				   background-color: %s;
+				}`,
+				editor.colors.sideBarFg.String(),
+				editor.colors.selectedBg.String(),
+			),
+		)
+		item.hide()
+		item.show()
+		fmt.Println(
+			fmt.Sprintf(`
+				QListWidget::item {
+				   color: %s;
+				   padding-left: 20px;
+				   background-color: rgba(0, 0, 0, 0.0);
+				}
+				QListWidget::item:selected {
+				   background-color: %s;
+				}`,
+				editor.colors.sideBarFg.String(),
+				editor.colors.selectedBg.String(),
+			),
+		)
+		// update icon color
+		for i := 0; i < item.content.Count(); i++ {
+			l := item.content.Item(i)
+			if l == nil {
+				break
+			}
+			filename := l.Text()
+			parts := strings.SplitN(filename, ".", -1)
+			filetype := ""
+			if len(parts) > 1 {
+				filetype = parts[len(parts)-1]
+			}
+			// If it is directory
+			if filename[len(filename)-1] == '/' {
+				filetype = string("/")
+			}
+			var svg string
+			if filetype == `/` {
+				svg = editor.getSvg("directory", nil)
+			} else {
+				svg = editor.getSvg(filetype, nil)
+			}
+			pixmap := gui.NewQPixmap()
+			pixmap.LoadFromData2(core.NewQByteArray2(svg, len(svg)), "SVG", core.Qt__ColorOnly)
+			icon := gui.NewQIcon2(pixmap)
+
+			l.SetIcon(icon)
+		}
+	}
 }
 
 func (i *WorkspaceSideItem) setActive() {
 	if editor.colors.fg == nil {
 		return
 	}
-	if editor.sideWidget.scrollarea == nil {
+	if editor.side.scrollarea == nil {
 		return
 	}
 	i.active = true
@@ -2758,7 +2833,7 @@ func (i *WorkspaceSideItem) setInactive() {
 	if editor.colors.fg == nil {
 		return
 	}
-	if editor.sideWidget.scrollarea == nil {
+	if editor.side.scrollarea == nil {
 		return
 	}
 	i.active = false

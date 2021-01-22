@@ -107,10 +107,10 @@ type Editor struct {
 	active     int
 	window     *frameless.QFramelessWindow
 	// window     *widgets.QMainWindow
-	splitter       *widgets.QSplitter
-	widget         *widgets.QWidget
-	sideWidget     *WorkspaceSide
-	sideWidgetChan chan *widgets.QScrollArea
+	splitter  *widgets.QSplitter
+	widget    *widgets.QWidget
+	side      *WorkspaceSide
+	sidetChan chan *widgets.QScrollArea
 
 	sysTray *widgets.QSystemTrayIcon
 
@@ -284,15 +284,15 @@ func InitEditor(options Options, args []string) {
 	e.connectAppSignals()
 
 	e.signal.ConnectSidebarSignal(func() {
-		if e.sideWidget != nil {
+		if e.side != nil {
 			return
 		}
-		e.sideWidget = newWorkspaceSide()
-		e.sideWidget.newScrollArea()
-		e.sideWidget.scrollarea.Hide()
-		e.sideWidget.scrollarea.SetWidget(e.sideWidget.widget)
-		e.splitter.InsertWidget(0, e.sideWidget.scrollarea)
-		side := e.sideWidget
+		e.side = newWorkspaceSide()
+		e.side.newScrollArea()
+		e.side.scrollarea.Hide()
+		e.side.scrollarea.SetWidget(e.side.widget)
+		e.splitter.InsertWidget(0, e.side.scrollarea)
+		side := e.side
 		if e.config.SideBar.Visible {
 			side.show()
 		}
@@ -380,8 +380,6 @@ func (e *Editor) setAppDirPath(home string) {
 func (e *Editor) newSplitter() {
 	splitter := widgets.NewQSplitter2(core.Qt__Horizontal, nil)
 	splitter.SetStyleSheet("* {background-color: rgba(0, 0, 0, 0);}")
-	// splitter.AddWidget(e.sideWidget.scrollarea)
-	// splitter.AddWidget(e.widget)
 	splitter.SetStretchFactor(1, 100)
 	splitter.SetObjectName("splitter")
 	e.splitter = splitter
@@ -772,7 +770,7 @@ func (e *Editor) workspacePrevious() {
 }
 
 func (e *Editor) workspaceUpdate() {
-	if e.sideWidget == nil {
+	if e.side == nil {
 		return
 	}
 	for i, ws := range e.workspaces {
@@ -782,13 +780,13 @@ func (e *Editor) workspaceUpdate() {
 			ws.hide()
 		}
 	}
-	for i := 0; i < len(e.sideWidget.items) && i < len(e.workspaces); i++ {
-		e.sideWidget.items[i].setSideItemLabel(i)
-		e.sideWidget.items[i].setText(e.workspaces[i].cwdlabel)
-		e.sideWidget.items[i].show()
+	for i := 0; i < len(e.side.items) && i < len(e.workspaces); i++ {
+		e.side.items[i].setSideItemLabel(i)
+		e.side.items[i].setText(e.workspaces[i].cwdlabel)
+		e.side.items[i].show()
 	}
-	for i := len(e.workspaces); i < len(e.sideWidget.items); i++ {
-		e.sideWidget.items[i].hide()
+	for i := len(e.workspaces); i < len(e.side.items); i++ {
+		e.side.items[i].hide()
 	}
 }
 
