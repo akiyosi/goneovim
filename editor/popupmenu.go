@@ -514,13 +514,7 @@ func (p *PopupItem) updateContent() {
 			if p.infoLabel.StyleSheet() != infoStyle {
 				p.infoLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 			}
-
-			p.kindwidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			p.wordLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			p.infoLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 		} else {
-
 			kindStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
 			wordStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
 			menuStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
