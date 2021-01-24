@@ -499,10 +499,29 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 	}
 	ctx := context.Background()
 
+	userhost := ""
+	port := "22"
+	parts := strings.Split(editor.opts.Ssh, ":")
+	if len(parts) >= 3 {
+		return nil, errors.New("Invalid hostname")
+	}
+	if len(parts) == 2 {
+		userhost = parts[0]
+		port = parts[1]
+		_, err := strconv.Atoi(port)
+		if port == "" || err != nil {
+			port = "22"
+		}
+	}
+	if len(parts) == 1 {
+		userhost = parts[0]
+	}
+
 	cmd := exec.CommandContext(
 		ctx,
 		command,
-		editor.opts.Ssh,
+		userhost,
+		"-p", port,
 		"/bin/bash",
 		"--login",
 		"-c",

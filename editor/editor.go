@@ -79,7 +79,7 @@ type Options struct {
 	Geometry   string `long:"geometry" description:"Initial window geomtry [e.g. --geometry=800x600]"`
 
 	Server string `long:"server" description:"Remote session address [e.g. --server=host:3456]"`
-	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh [e.g. --ssh=user@host]"`
+	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]"`
 	Nvim   string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
 
 	Debug bool `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug]"`
