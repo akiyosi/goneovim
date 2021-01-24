@@ -321,7 +321,6 @@ func (e *Editor) getSvg(name string, color *RGBA) string {
 	if len(e.workspaces) > 0 {
 		if color.diff(e.workspaces[0].background) < 3.5 {
 			color = invertColor(color)
-			fmt.Println("invert")
 		}
 	}
 
