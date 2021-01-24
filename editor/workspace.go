@@ -91,6 +91,7 @@ type Workspace struct {
 	cwdlabel           string
 	maxLine            int
 	viewport           [4]int    // topline, botline, curline, curcol
+	oldViewport        [4]int    // topline, botline, curline, curcol
 	scrollViewport     [2][5]int // 1. topline, botline, curline, curcol, grid, 2. oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
 	viewportQue        chan [5]int
 	curPosMutex        sync.RWMutex
@@ -1585,7 +1586,7 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		util.ReflectToInt(arg[5]) + 1,
 	}
 
-	if w.viewport == viewport {
+	if w.viewport == viewport && (w.oldViewport[0] != w.viewport[0] || w.oldViewport[1] != w.viewport[1]) {
 		scrollvp := [5]int{
 			util.ReflectToInt(arg[2]) + 1,
 			util.ReflectToInt(arg[3]) + 1,
@@ -1593,12 +1594,12 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 			util.ReflectToInt(arg[5]) + 1,
 			util.ReflectToInt(arg[0]),
 		}
-		if scrollvp[4] == 1 { // if global grid
-			return
-		}
 		w.viewportQue <- scrollvp
 	}
 
+	if w.viewport != w.oldViewport {
+		w.oldViewport = w.viewport
+	}
 	w.viewport = viewport
 
 }
@@ -1609,6 +1610,9 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 	if win.isMsgGrid {
+		return nil, 0, false
+	}
+	if vp[4] == 1 { // if global grid
 		return nil, 0, false
 	}
 
