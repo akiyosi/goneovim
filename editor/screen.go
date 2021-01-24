@@ -650,7 +650,12 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 	if !editor.config.Editor.SmoothScroll {
 		return
 	}
-	if w.snapshots[1] == nil || editor.isKeyAutoRepeating {
+
+	snapshot := w.snapshots[1]
+	if snapshot == nil {
+		snapshot = w.snapshots[0]
+	}
+	if snapshot == nil || editor.isKeyAutoRepeating {
 		return
 	}
 
@@ -666,7 +671,7 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 		p.DrawPixmap9(
 			0,
 			snapshotPos,
-			w.snapshots[1],
+			snapshot,
 		)
 	}
 }

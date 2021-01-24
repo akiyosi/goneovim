@@ -1327,19 +1327,12 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 }
 
 func (w *Workspace) flush() {
-	doSmoothScroll := false
-	if len(w.viewportQue) == 2 {
-		doSmoothScroll = true
-	}
 	for {
 		if len(w.viewportQue) == 0 {
 			break
 		}
 		select {
 		case viewport := <-w.viewportQue:
-			if !doSmoothScroll {
-				continue
-			}
 			win, diff, ok := w.handleViewport(viewport)
 			if ok {
 				w.smoothScroll(win, diff)
@@ -1585,24 +1578,29 @@ func (w *Workspace) getPos() {
 }
 
 func (w *Workspace) windowViewport(arg []interface{}) {
-	w.viewport = [4]int{
+	viewport := [4]int{
 		util.ReflectToInt(arg[2]) + 1,
 		util.ReflectToInt(arg[3]) + 1,
 		util.ReflectToInt(arg[4]) + 1,
 		util.ReflectToInt(arg[5]) + 1,
-	}
-	viewport := [5]int{
-		util.ReflectToInt(arg[2]) + 1,
-		util.ReflectToInt(arg[3]) + 1,
-		util.ReflectToInt(arg[4]) + 1,
-		util.ReflectToInt(arg[5]) + 1,
-		util.ReflectToInt(arg[0]),
 	}
 
-	if viewport[4] == 1 { // if global grid
-		return
+	if w.viewport == viewport {
+		scrollvp := [5]int{
+			util.ReflectToInt(arg[2]) + 1,
+			util.ReflectToInt(arg[3]) + 1,
+			util.ReflectToInt(arg[4]) + 1,
+			util.ReflectToInt(arg[5]) + 1,
+			util.ReflectToInt(arg[0]),
+		}
+		if scrollvp[4] == 1 { // if global grid
+			return
+		}
+		w.viewportQue <- scrollvp
 	}
-	w.viewportQue <- viewport
+
+	w.viewport = viewport
+
 }
 
 func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
@@ -1614,12 +1612,12 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
+	w.curPosMutex.Lock()
+	w.scrollViewport[1] = w.scrollViewport[0]
+	w.scrollViewport[0] = vp
+	w.curPosMutex.Unlock()
 	viewport := w.scrollViewport[0]
 	oldViewport := w.scrollViewport[1]
-
-	if vp[0] == viewport[0] && viewport[0] == oldViewport[0] {
-		return nil, 0, false
-	}
 
 	diff := viewport[0] - oldViewport[0]
 	if diff == 0 {
@@ -1635,17 +1633,6 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 			diff += wrappedLines2
 		}
 	}
-
-	w.curPosMutex.Lock()
-	w.scrollViewport[1] = [5]int{
-		viewport[0],
-		viewport[1],
-		viewport[2],
-		viewport[3],
-		viewport[4],
-	}
-	w.scrollViewport[0] = vp
-	w.curPosMutex.Unlock()
 
 	// smooth scroll
 	if !editor.config.Editor.SmoothScroll {
@@ -1704,7 +1691,7 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 			win.doErase = false
 		}
 	})
-	a.SetDuration(200)
+	a.SetDuration(180)
 	a.SetStartValue(core.NewQVariant10(1))
 	a.SetEndValue(core.NewQVariant10(0))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
@@ -2699,7 +2686,6 @@ func (side *WorkspaceSide) setColor() {
 		side.selectBg.equals(editor.colors.sideBarSelectedItemBg) &&
 		side.accent.equals(editor.colors.matchFg) {
 
-		fmt.Println("return")
 		return
 	}
 
@@ -2778,20 +2764,6 @@ func (side *WorkspaceSide) setColorForItems() {
 		)
 		item.hide()
 		item.show()
-		fmt.Println(
-			fmt.Sprintf(`
-				QListWidget::item {
-				   color: %s;
-				   padding-left: 20px;
-				   background-color: rgba(0, 0, 0, 0.0);
-				}
-				QListWidget::item:selected {
-				   background-color: %s;
-				}`,
-				editor.colors.sideBarFg.String(),
-				editor.colors.selectedBg.String(),
-			),
-		)
 		// update icon color
 		for i := 0; i < item.content.Count(); i++ {
 			l := item.content.Item(i)
