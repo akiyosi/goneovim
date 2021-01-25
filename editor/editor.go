@@ -82,7 +82,7 @@ type Options struct {
 	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]"`
 	Nvim   string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
 
-	Debug bool `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug]"`
+	Debug string `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]" optional:"yes" default:"debug.log"`
 }
 
 // Editor is the editor
@@ -180,9 +180,12 @@ func InitEditor(options Options, args []string) {
 	// log
 	var file *os.File
 	var err error
-	if e.opts.Debug {
-		file, err = os.OpenFile("debug.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+
+	if e.opts.Debug != "" {
+		file, err = os.OpenFile(e.opts.Debug, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
+			fmt.Println(err)
+
 			os.Exit(1)
 		}
 		log.SetOutput(file)
@@ -337,7 +340,7 @@ func InitEditor(options Options, args []string) {
 }
 
 func (e *Editor) putLog(v ...interface{}) {
-	if !e.opts.Debug {
+	if e.opts.Debug == "" {
 		return
 	}
 
