@@ -33,6 +33,7 @@ type Cursor struct {
 	brend        float64
 	font         *Font
 	fontwide     *Font
+	isInPalette  bool
 
 	isNeedUpdateModeInfo bool
 	modeInfoModeIdx      int
@@ -289,6 +290,11 @@ func (c *Cursor) update() {
 	} else {
 		c.text = win.content[row][col].char
 		c.normalWidth = win.content[row][col].normalWidth
+	}
+	if c.ws.palette != nil {
+		if c.isInPalette {
+			c.text = ""
+		}
 	}
 
 	c.updateCursorShape()

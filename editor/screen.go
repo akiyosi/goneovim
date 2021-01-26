@@ -3585,6 +3585,7 @@ func (w *Window) raise() {
 
 	font := w.getFont()
 	w.s.ws.cursor.updateFont(font)
+	w.s.ws.cursor.isInPalette = false
 	w.s.ws.cursor.widget.SetParent(w)
 	w.s.ws.cursor.widget.Hide()
 	w.s.ws.cursor.widget.Show()
