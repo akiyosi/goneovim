@@ -1055,7 +1055,7 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 
 func (w *Workspace) updateSize() {
 	e := editor
-	width := e.window.Geometry().Width() - e.window.BorderSize()*4
+	width := e.window.Geometry().Width() - e.window.BorderSize()*4 - e.window.WindowGap()*2
 	if e.side != nil {
 		if e.side.widget.IsVisible() {
 			width = width - e.splitter.Sizes()[0] - e.splitter.HandleWidth()

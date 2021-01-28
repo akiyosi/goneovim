@@ -28,6 +28,7 @@ type gonvimConfig struct {
 type editorConfig struct {
 	Width                    int
 	Height                   int
+	Gap                      int
 	FontFamily               string
 	FontSize                 int
 	Linespace                int

@@ -259,6 +259,7 @@ func InitEditor(options Options, args []string) {
 	e.putLog("start    preparing the application window.")
 	isframeless := e.config.Editor.BorderlessWindow
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
+	e.window.SetupWindowGap(e.config.Editor.Gap)
 	e.showWindow()
 	e.setWindowSizeFromOpts()
 	e.setWindowOptions()
