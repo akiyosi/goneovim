@@ -286,7 +286,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 
 		popupItem.setItem(item, selected == i)
 
-		popupItem.setDigit(i + 1)
+		popupItem.setDigit(i+1, gridid)
 		popupItem.hide()
 		popupItem.show()
 
@@ -481,9 +481,15 @@ func (p *PopupMenu) scroll(n int) {
 	p.setWidgetWidth()
 }
 
-func (p *PopupItem) setDigit(num int) {
+func (p *PopupItem) setDigit(num int, gridid int) {
 	if !editor.config.Popupmenu.ShowDigit {
 		return
+	}
+	if gridid == 1 {
+		p.digitLabel.Hide()
+		return
+	} else {
+		p.digitLabel.Show()
 	}
 	if num == 10 {
 		num = 0

@@ -426,16 +426,24 @@ func (w *Workspace) startNvim(path string) error {
 	var neovim *nvim.Nvim
 	var err error
 
+	option := []string{
+		"--cmd",
+		"let g:gonvim_running=1",
+		"--cmd",
+		"let g:goneovim=1",
+		"--cmd",
+		"set termguicolors",
+	}
+	appdirpath := core.QCoreApplication_ApplicationDirPath()
+
+	s := fmt.Sprintf("let &rtp.=',%s'", appdirpath)
+	if editor.config.Popupmenu.ShowDigit {
+		option = append(option, "--cmd")
+		option = append(option, s)
+	}
+	option = append(option, "--embed")
 	childProcessArgs := nvim.ChildProcessArgs(
-		append([]string{
-			"--cmd",
-			"let g:gonvim_running=1",
-			"--cmd",
-			"let g:goneovim=1",
-			"--cmd",
-			"set termguicolors",
-			"--embed",
-		}, editor.args...)...,
+		append(option, editor.args...)...,
 	)
 	if editor.opts.Server != "" {
 		// Attaching to remote nvim session
@@ -701,6 +709,9 @@ func (w *Workspace) loadGinitVim() {
 		scripts := strings.NewReplacer(`'`, `''`, "\r\n", "\n", "\r", "\n", "\n", "\n").Replace(editor.config.Editor.GinitVim)
 		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, scripts)
 		w.nvim.Command(execGinitVim)
+	}
+	if editor.config.Popupmenu.ShowDigit {
+		w.nvim.Command("runtime! runtime/plugin/showdigit.vim")
 	}
 }
 
