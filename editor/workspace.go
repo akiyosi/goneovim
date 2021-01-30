@@ -421,6 +421,19 @@ func (w *Workspace) show() {
 	w.widget.SetFocus2Default()
 }
 
+func getResourcePath() string {
+	p := ""
+	if runtime.GOOS == "darwin" {
+		p = core.QCoreApplication_ApplicationDirPath() + "/../Resources"
+	} else if runtime.GOOS == "linux" {
+		p = core.QCoreApplication_ApplicationDirPath()
+	} else if runtime.GOOS == "windows" {
+		p = core.QCoreApplication_ApplicationDirPath()
+	}
+
+	return p
+}
+
 func (w *Workspace) startNvim(path string) error {
 	editor.putLog("starting nvim")
 	var neovim *nvim.Nvim
@@ -434,9 +447,9 @@ func (w *Workspace) startNvim(path string) error {
 		"--cmd",
 		"set termguicolors",
 	}
-	appdirpath := core.QCoreApplication_ApplicationDirPath()
 
-	s := fmt.Sprintf("let &rtp.=',%s'", appdirpath)
+	runtimepath := getResourcePath() + "/runtime/"
+	s := fmt.Sprintf("let &rtp.=',%s'", runtimepath)
 	if editor.config.Popupmenu.ShowDigit {
 		option = append(option, "--cmd")
 		option = append(option, s)
@@ -711,7 +724,7 @@ func (w *Workspace) loadGinitVim() {
 		w.nvim.Command(execGinitVim)
 	}
 	if editor.config.Popupmenu.ShowDigit {
-		w.nvim.Command("runtime! runtime/plugin/showdigit.vim")
+		w.nvim.Command("runtime! plugin/showdigit.vim")
 	}
 }
 

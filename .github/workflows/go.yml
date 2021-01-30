@@ -316,7 +316,7 @@ jobs:
       run: |
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtdeploy build desktop
-        cp -pR ../../runtime ./deploy/windows
+        Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
 
     - name: Upload for windows
       uses: actions/upload-artifact@v1

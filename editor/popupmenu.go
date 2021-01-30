@@ -312,6 +312,18 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.scrollCol.Hide()
 	}
 
+	if gridid == 1 {
+		for _, item := range p.items {
+			item.digitLabel.SetStyleSheet("color: rgba(0,0,0,0);")
+		}
+	} else {
+		for _, item := range p.items {
+			fg := editor.colors.inactiveFg
+			item.digitLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d,%d,%d,%f);", fg.R, fg.G, fg.B, 1.0))
+			item.digitLabel.Show()
+		}
+	}
+
 	// p.hide()
 	p.show()
 
@@ -485,12 +497,6 @@ func (p *PopupItem) setDigit(num int, gridid int) {
 	if !editor.config.Popupmenu.ShowDigit {
 		return
 	}
-	if gridid == 1 {
-		p.digitLabel.Hide()
-		return
-	} else {
-		p.digitLabel.Show()
-	}
 	if num == 10 {
 		num = 0
 	}
@@ -506,6 +512,7 @@ func (p *PopupItem) updateContent() {
 		if p.selected {
 			kindStyle := fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
 			wordStyle := fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
+			digitStyle := fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
 			menuStyle := fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
 			infoStyle := fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
 			if p.kindwidget.StyleSheet() != kindStyle {
@@ -513,6 +520,9 @@ func (p *PopupItem) updateContent() {
 			}
 			if p.wordLabel.StyleSheet() != wordStyle {
 				p.wordLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			}
+			if p.digitLabel.StyleSheet() != digitStyle {
+				p.digitLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
 			}
 			if p.menuLabel.StyleSheet() != menuStyle {
 				p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
@@ -523,6 +533,7 @@ func (p *PopupItem) updateContent() {
 		} else {
 			kindStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
 			wordStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
+			digitStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
 			menuStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
 			infoStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
 			if p.kindwidget.StyleSheet() != kindStyle {
@@ -530,6 +541,9 @@ func (p *PopupItem) updateContent() {
 			}
 			if p.wordLabel.StyleSheet() != wordStyle {
 				p.wordLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			}
+			if p.digitLabel.StyleSheet() != digitStyle {
+				p.digitLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
 			}
 			if p.menuLabel.StyleSheet() != menuStyle {
 				p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
