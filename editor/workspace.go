@@ -95,7 +95,7 @@ type Workspace struct {
 	oldViewport        [4]int    // topline, botline, curline, curcol
 	scrollViewport     [2][5]int // 1. topline, botline, curline, curcol, grid, 2. oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
 	viewportQue        chan [5]int
-	curPosMutex        sync.RWMutex
+	viewportMutex      sync.RWMutex
 	optionsetMutex     sync.RWMutex
 	cursorStyleEnabled bool
 	modeInfo           []map[string]interface{}
@@ -1605,10 +1605,10 @@ func (w *Workspace) getPos() {
 		return
 	}
 
-	w.curPosMutex.Lock()
+	w.viewportMutex.Lock()
 	w.viewport[2] = curPos[1]
 	w.viewport[3] = curPos[2]
-	w.curPosMutex.Unlock()
+	w.viewportMutex.Unlock()
 }
 
 func (w *Workspace) windowViewport(arg []interface{}) {
@@ -1633,7 +1633,9 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 	if w.viewport != w.oldViewport {
 		w.oldViewport = w.viewport
 	}
+	w.viewportMutex.Lock()
 	w.viewport = viewport
+	w.viewportMutex.Unlock()
 
 }
 
@@ -1649,10 +1651,10 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
-	w.curPosMutex.Lock()
+	w.viewportMutex.Lock()
 	w.scrollViewport[1] = w.scrollViewport[0]
 	w.scrollViewport[0] = vp
-	w.curPosMutex.Unlock()
+	w.viewportMutex.Unlock()
 	viewport := w.scrollViewport[0]
 	oldViewport := w.scrollViewport[1]
 
@@ -1742,13 +1744,14 @@ func (w *Workspace) updateMinimap() {
 	var absMapBottom int
 	w.minimap.nvim.Eval("line('w0')", &absMapTop)
 	w.minimap.nvim.Eval("line('w$')", &absMapBottom)
-	w.curPosMutex.RLock()
+	w.viewportMutex.RLock()
 	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.viewport[2], 0))
-	defer w.curPosMutex.RUnlock()
+	topLine := w.viewport[2]
+	w.viewportMutex.RUnlock()
 	switch {
-	case w.viewport[2] >= absMapBottom:
+	case topLine >= absMapBottom:
 		w.minimap.nvim.Input("<C-d>")
-	case absMapTop >= w.viewport[2]:
+	case absMapTop >= topLine:
 		w.minimap.nvim.Input("<C-u>")
 	default:
 	}
