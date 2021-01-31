@@ -18,6 +18,7 @@ import (
 type PopupMenu struct {
 	ws              *Workspace
 	widget          *widgets.QWidget
+	gridid          int
 	itemLayout      *widgets.QGridLayout
 	items           []*PopupItem
 	rawItems        []interface{}
@@ -232,6 +233,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.rawItems = items
 	p.selected = selected
 	p.top = 0
+	p.gridid = gridid
 
 	x, y, lineHeight, isCursorBelowTheCenter := p.ws.getPointInWidget(col, row, gridid)
 
@@ -314,13 +316,20 @@ func (p *PopupMenu) showItems(args []interface{}) {
 
 	if gridid == 1 {
 		for _, item := range p.items {
-			item.digitLabel.SetStyleSheet("color: rgba(0,0,0,0);")
+			if item.selected {
+				item.digitLabel.SetStyleSheet(fmt.Sprintf("background-color: %s; color: rgba(0,0,0,0);", editor.colors.selectedBg.StringTransparent()))
+			} else {
+				item.digitLabel.SetStyleSheet("color: rgba(0,0,0,0);")
+			}
 		}
 	} else {
 		for _, item := range p.items {
 			fg := editor.colors.inactiveFg
-			item.digitLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d,%d,%d,%f);", fg.R, fg.G, fg.B, 1.0))
-			item.digitLabel.Show()
+			if item.selected {
+				item.digitLabel.SetStyleSheet(fmt.Sprintf("background-color: %s; color: rgba(%d,%d,%d,%f);", editor.colors.selectedBg.StringTransparent(), fg.R, fg.G, fg.B, 1.0))
+			} else {
+				item.digitLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d,%d,%d,%f);", fg.R, fg.G, fg.B, 1.0))
+			}
 		}
 	}
 
@@ -509,49 +518,49 @@ func (p *PopupItem) setDigit(num int, gridid int) {
 func (p *PopupItem) updateContent() {
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
+		kindStyle := ""
+		wordStyle := ""
+		digitStyle := ""
+		menuStyle := ""
+		infoStyle := ""
+		fg := editor.colors.inactiveFg
 		if p.selected {
-			kindStyle := fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
-			wordStyle := fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
-			digitStyle := fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
-			menuStyle := fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
-			infoStyle := fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
-			if p.kindwidget.StyleSheet() != kindStyle {
-				p.kindwidget.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
+			kindStyle = fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
+			wordStyle = fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
+			digitStyle = ""
+			if p.p.gridid == 1 {
+				digitStyle = fmt.Sprintf("background-color: %s; color: rgba(0,0,0,0);", editor.colors.selectedBg.StringTransparent())
+			} else {
+				digitStyle = fmt.Sprintf("background-color: %s; color: rgba(%d,%d,%d,%f);", editor.colors.selectedBg.StringTransparent(), fg.R, fg.G, fg.B, 1.0)
 			}
-			if p.wordLabel.StyleSheet() != wordStyle {
-				p.wordLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			}
-			if p.digitLabel.StyleSheet() != digitStyle {
-				p.digitLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			}
-			if p.menuLabel.StyleSheet() != menuStyle {
-				p.menuLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			}
-			if p.infoLabel.StyleSheet() != infoStyle {
-				p.infoLabel.SetStyleSheet(fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent()))
-			}
+			menuStyle = fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
+			infoStyle = fmt.Sprintf("background-color: %s;", editor.colors.selectedBg.StringTransparent())
 		} else {
-			kindStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
-			wordStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
-			digitStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
-			menuStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
-			infoStyle := fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
-			if p.kindwidget.StyleSheet() != kindStyle {
-				p.kindwidget.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
+			kindStyle = fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
+			wordStyle = fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
+			digitStyle = ""
+			if p.p.gridid == 1 {
+				digitStyle = fmt.Sprintf("background-color: rgba(0,0,0,0); color: rgba(0,0,0,0);")
+			} else {
+				digitStyle = fmt.Sprintf("background-color: rgba(0,0,0,0); color: rgba(%d,%d,%d,1.0);", fg.R, fg.G, fg.B)
 			}
-			if p.wordLabel.StyleSheet() != wordStyle {
-				p.wordLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-			}
-			if p.digitLabel.StyleSheet() != digitStyle {
-				p.digitLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-			}
-			if p.menuLabel.StyleSheet() != menuStyle {
-				p.menuLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-			}
-			if p.infoLabel.StyleSheet() != infoStyle {
-				p.infoLabel.SetStyleSheet("background-color: rgba(0, 0, 0, 0);")
-			}
-
+			menuStyle = fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
+			infoStyle = fmt.Sprintf("background-color: rgba(0, 0, 0, 0);")
+		}
+		if p.kindwidget.StyleSheet() != kindStyle {
+			p.kindwidget.SetStyleSheet(kindStyle)
+		}
+		if p.wordLabel.StyleSheet() != wordStyle {
+			p.wordLabel.SetStyleSheet(wordStyle)
+		}
+		if p.digitLabel.StyleSheet() != digitStyle {
+			p.digitLabel.SetStyleSheet(digitStyle)
+		}
+		if p.menuLabel.StyleSheet() != menuStyle {
+			p.menuLabel.SetStyleSheet(menuStyle)
+		}
+		if p.infoLabel.StyleSheet() != infoStyle {
+			p.infoLabel.SetStyleSheet(infoStyle)
 		}
 	}
 	if p.wordRequest != p.word {
