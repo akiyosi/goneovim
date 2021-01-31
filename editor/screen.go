@@ -2456,6 +2456,7 @@ func (w *Window) queueRedrawAll() {
 }
 
 func (w *Window) queueRedraw(x, y, width, height int) {
+	w.redrawMutex.Lock()
 	if x < w.queueRedrawArea[0] {
 		w.queueRedrawArea[0] = x
 	}
@@ -2468,6 +2469,7 @@ func (w *Window) queueRedraw(x, y, width, height int) {
 	if (y + height) > w.queueRedrawArea[3] {
 		w.queueRedrawArea[3] = y + height
 	}
+	w.redrawMutex.Unlock()
 }
 
 func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
