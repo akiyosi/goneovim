@@ -76,7 +76,9 @@ type Window struct {
 
 	paintMutex  sync.RWMutex
 	redrawMutex sync.Mutex
-	doErase     bool
+	updateMutex sync.RWMutex
+
+	doErase bool
 
 	s             *Screen
 	content       [][]*Cell
@@ -2100,6 +2102,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 }
 
 func (w *Window) updateLine(col, row int, cells []interface{}) {
+	w.updateMutex.Lock()
 	line := w.content[row]
 	colStart := col
 	for _, arg := range cells {
@@ -2162,6 +2165,7 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 			r++
 		}
 	}
+	w.updateMutex.Unlock()
 
 	w.queueRedraw(colStart, row, col-colStart+1, 1)
 }
@@ -3312,7 +3316,11 @@ func (win *Window) getWinblend() {
 	if win.isMsgGrid {
 		return
 	}
-	if win.isPopupmenu {
+
+	win.updateMutex.RLock()
+	isPopupmenu := win.isPopupmenu
+	win.updateMutex.RUnlock()
+	if isPopupmenu {
 		return
 	}
 	// TODO
@@ -3320,8 +3328,11 @@ func (win *Window) getWinblend() {
 
 	errCh := make(chan error, 60)
 	wb := 0
+	win.updateMutex.RLock()
+	id := win.id
+	win.updateMutex.RUnlock()
 	go func() {
-		err := win.s.ws.nvim.WindowOption(win.id, "winblend", &wb)
+		err := win.s.ws.nvim.WindowOption(id, "winblend", &wb)
 		errCh <- err
 	}()
 	select {
@@ -3355,7 +3366,9 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			continue
 		}
 
+		win.updateMutex.Lock()
 		win.id = arg.([]interface{})[1].(nvim.Window)
+		win.updateMutex.Unlock()
 		win.anchor = arg.([]interface{})[2].(string)
 		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
 		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
