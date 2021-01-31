@@ -69,6 +69,7 @@ jobs:
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
+        cp -pR ../../runtime ./deploy/linux/
   
     - name: Add executable
       run: |
@@ -141,6 +142,7 @@ jobs:
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
+        cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
   
     - name: Upload for macos
       uses: actions/upload-artifact@v1
@@ -175,7 +177,7 @@ jobs:
         curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/15/release/vs_buildtools.exe
         New-Item -Path BuildTools -ItemType Directory 
         .\vs_BuildTools.exe --quiet --wait --norestart --nocache --installPath ${{ github.workspace }}\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeOptional
-        Start-Sleep -s 720
+        Start-Sleep -s 650
 
     - name: Check MSVC 2017 Visual C++ Buildtools installation
       run : |
@@ -314,6 +316,7 @@ jobs:
       run: |
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtdeploy build desktop
+        Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
 
     - name: Upload for windows
       uses: actions/upload-artifact@v1

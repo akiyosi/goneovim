@@ -101,6 +101,7 @@ type popupMenuConfig struct {
 	MenuWidth   int
 	InfoWidth   int
 	DetailWidth int
+	ShowDigit   bool
 }
 
 type lintConfig struct {

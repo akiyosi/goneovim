@@ -421,21 +421,42 @@ func (w *Workspace) show() {
 	w.widget.SetFocus2Default()
 }
 
+func getResourcePath() string {
+	p := ""
+	if runtime.GOOS == "darwin" {
+		p = core.QCoreApplication_ApplicationDirPath() + "/../Resources"
+	} else if runtime.GOOS == "linux" {
+		p = core.QCoreApplication_ApplicationDirPath()
+	} else if runtime.GOOS == "windows" {
+		p = core.QCoreApplication_ApplicationDirPath()
+	}
+
+	return p
+}
+
 func (w *Workspace) startNvim(path string) error {
 	editor.putLog("starting nvim")
 	var neovim *nvim.Nvim
 	var err error
 
+	option := []string{
+		"--cmd",
+		"let g:gonvim_running=1",
+		"--cmd",
+		"let g:goneovim=1",
+		"--cmd",
+		"set termguicolors",
+	}
+
+	runtimepath := getResourcePath() + "/runtime/"
+	s := fmt.Sprintf("let &rtp.=',%s'", runtimepath)
+	if editor.config.Popupmenu.ShowDigit {
+		option = append(option, "--cmd")
+		option = append(option, s)
+	}
+	option = append(option, "--embed")
 	childProcessArgs := nvim.ChildProcessArgs(
-		append([]string{
-			"--cmd",
-			"let g:gonvim_running=1",
-			"--cmd",
-			"let g:goneovim=1",
-			"--cmd",
-			"set termguicolors",
-			"--embed",
-		}, editor.args...)...,
+		append(option, editor.args...)...,
 	)
 	if editor.opts.Server != "" {
 		// Attaching to remote nvim session
@@ -701,6 +722,9 @@ func (w *Workspace) loadGinitVim() {
 		scripts := strings.NewReplacer(`'`, `''`, "\r\n", "\n", "\r", "\n", "\n", "\n").Replace(editor.config.Editor.GinitVim)
 		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, scripts)
 		w.nvim.Command(execGinitVim)
+	}
+	if editor.config.Popupmenu.ShowDigit {
+		w.nvim.Command("runtime! plugin/showdigit.vim")
 	}
 }
 
