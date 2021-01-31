@@ -135,7 +135,7 @@ func initPopupmenuNew() *PopupMenu {
 
 		itemLayout.AddWidget2(iconwidget, i, 0, 0)
 		itemLayout.AddWidget2(word, i, 1, 0)
-		itemLayout.AddWidget2(digit, i, 2, core.Qt__AlignRight)
+		itemLayout.AddWidget2(digit, i, 2, core.Qt__AlignLeft)
 		itemLayout.AddWidget2(menu, i, 3, core.Qt__AlignLeft)
 		itemLayout.AddWidget2(info, i, 4, core.Qt__AlignLeft)
 
@@ -393,6 +393,8 @@ func (p *PopupMenu) setWidgetWidth() {
 		menuWidth = editor.config.Popupmenu.MenuWidth
 	}
 
+	digitLabel := p.items[0].digitLabel.Width()
+
 	infoWidth := 0
 	if !isInfoHidden {
 		infoWidth = editor.config.Popupmenu.InfoWidth
@@ -406,7 +408,7 @@ func (p *PopupMenu) setWidgetWidth() {
 	margin := editor.config.Editor.Linespace/2 + 2
 
 	p.widget.SetFixedWidth(
-		editor.iconSize*2 + maxWordLabelLen + menuWidth + infoWidth + detailWidth + 5 + margin*4 + editor.iconSize/5*4,
+		editor.iconSize*2 + maxWordLabelLen + menuWidth + digitLabel + infoWidth + detailWidth + 5 + margin*4 + editor.iconSize/5*4,
 	)
 }
 
