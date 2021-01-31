@@ -572,6 +572,7 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 func (w *Workspace) init(path string) {
 	w.configure()
 	w.attachUI(path)
+	w.loadGoneovimRuntime()
 	w.loadGinitVim()
 }
 
@@ -717,14 +718,17 @@ func (w *Workspace) initGonvim() {
 	w.nvim.Command(initialNotify)
 }
 
+func (w *Workspace) loadGoneovimRuntime() {
+	if editor.config.Popupmenu.ShowDigit {
+		w.nvim.Command("runtime! plugin/showdigit.vim")
+	}
+}
+
 func (w *Workspace) loadGinitVim() {
 	if editor.config.Editor.GinitVim != "" {
 		scripts := strings.NewReplacer(`'`, `''`, "\r\n", "\n", "\r", "\n", "\n", "\n").Replace(editor.config.Editor.GinitVim)
 		execGinitVim := fmt.Sprintf(`call execute(split('%s', '\n'))`, scripts)
 		w.nvim.Command(execGinitVim)
-	}
-	if editor.config.Popupmenu.ShowDigit {
-		w.nvim.Command("runtime! plugin/showdigit.vim")
 	}
 }
 
