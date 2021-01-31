@@ -1865,7 +1865,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			w.minimap.mu.Unlock()
 		}
 	case "gonvim_optionset":
-		go w.optionSet()
+		w.optionSet()
 	case "gonvim_termenter":
 		w.mode = "terminal-input"
 	case "gonvim_termleave":
