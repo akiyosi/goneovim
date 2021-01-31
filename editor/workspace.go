@@ -48,8 +48,9 @@ type workspaceSignal struct {
 
 // Workspace is an editor workspace
 type Workspace struct {
-	widget  *widgets.QWidget
-	layout2 *widgets.QHBoxLayout
+	widget    *widgets.QWidget
+	layout2   *widgets.QHBoxLayout
+	hasLazyUI bool
 
 	font       *Font
 	fontwide   *Font
@@ -354,6 +355,10 @@ func (w *Workspace) registerSignal() {
 		w.handleRPCGui(updates)
 	})
 	w.signal.ConnectLazyDrawSignal(func() {
+		if w.hasLazyUI {
+			return
+		}
+		w.hasLazyUI = true
 		w.lazyDrawUI()
 	})
 
@@ -1875,15 +1880,24 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		if editor.config.Markdown.Disable {
 			return
 		}
+		if w.markdown == nil {
+			w.signal.LazyDrawSignal()
+		}
 		go w.markdown.newBuffer()
 	case "gonvim_markdown_update":
 		if editor.config.Markdown.Disable {
 			return
 		}
+		if w.markdown == nil {
+			w.signal.LazyDrawSignal()
+		}
 		go w.markdown.update()
 	case "gonvim_markdown_toggle":
 		if editor.config.Markdown.Disable {
 			return
+		}
+		if w.markdown == nil {
+			w.signal.LazyDrawSignal()
 		}
 		w.markdown.toggle()
 	case "gonvim_markdown_scroll_down":
