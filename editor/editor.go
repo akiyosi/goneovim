@@ -291,6 +291,7 @@ func InitEditor(options Options, args []string) {
 		if e.side != nil {
 			return
 		}
+		e.putLog("create workspace sidebar")
 		e.side = newWorkspaceSide()
 		e.side.newScrollArea()
 		e.side.scrollarea.Hide()
@@ -522,13 +523,16 @@ func (e *Editor) setEnv() {
 		// cmd := exec.Command("printenv")
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
+			e.putLog(err)
 			return
 		}
 		if err := cmd.Start(); err != nil {
+			e.putLog(err)
 			return
 		}
 		output, err := ioutil.ReadAll(stdout)
 		if err != nil {
+			e.putLog(err)
 			stdout.Close()
 			return
 		}
@@ -813,6 +817,7 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	if event.IsAutoRepeat() {
 		e.isKeyAutoRepeating = true
 	}
+	e.putLog("key input:", input, fmt.Sprintf("%s, %d, %v", event.Text(), event.Key(), event.Modifiers()))
 	if input != "" {
 		e.workspaces[e.active].nvim.Input(input)
 	}
