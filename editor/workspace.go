@@ -637,8 +637,8 @@ func (w *Workspace) initGonvim() {
 	aug GonvimAu | au! | aug END
 	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
 	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
-	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"))
-	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid())
+	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"), win_getid(), bufname())
+	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid(), bufname())
 	au GonvimAu OptionSet * if &ro != 1 | silent! call rpcnotify(1, "Gui", "gonvim_optionset") | endif
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
@@ -772,7 +772,7 @@ func (w *Workspace) getTS() {
 	w.ts = ts
 }
 
-func (w *Workspace) getBuffTS(buf nvim.Buffer, bufname string) int {
+func (w *Workspace) getBuffTS(buf nvim.Buffer) int {
 	done := make(chan bool, 5)
 	ts := 8
 	go func() {
@@ -1874,11 +1874,11 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_termleave":
 		w.mode = "normal"
 	case "gonvim_bufenter":
-		w.getBufnameAndTS()
 		w.maxLine = util.ReflectToInt(updates[1])
+		w.getBufnameAndTS(updates[2], updates[3])
 	case "gonvim_winenter_filetype":
 		w.getFileType(updates)
-		w.getBufnameAndTS()
+		w.getBufnameAndTS(updates[2], updates[3])
 	case "gonvim_markdown_new_buffer":
 		if editor.config.Markdown.Disable {
 			return
@@ -1922,6 +1922,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}
+
 }
 
 func (w *Workspace) guiFont(args string) {
@@ -2154,7 +2155,13 @@ func (w *Workspace) setPumblend(arg interface{}) {
 	w.pb = pumblend
 }
 
-func (w *Workspace) getBufnameAndTS() {
+func (w *Workspace) getBufnameAndTS(idITF, nameITF interface{}) {
+	id := (nvim.Window)(util.ReflectToInt(idITF))
+	name := nameITF.(string)
+	bufChan := make(chan nvim.Buffer, 10)
+	var buf nvim.Buffer
+	strChan := make(chan string, 10)
+
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -2164,13 +2171,16 @@ func (w *Workspace) getBufnameAndTS() {
 		if win.grid == 1 {
 			return true
 		}
+		if win.isMsgGrid {
+			return true
+		}
+		if win.id != id && win.bufName != "" {
+			return true
+		}
 
 		// set buffer name
-		bufChan := make(chan nvim.Buffer, 2)
-		id := win.id
-		var buf nvim.Buffer
 		go func() {
-			resultBuffer, _ := w.nvim.WindowBuffer(id)
+			resultBuffer, _ := w.nvim.WindowBuffer(win.id)
 			bufChan <- resultBuffer
 		}()
 		select {
@@ -2178,19 +2188,19 @@ func (w *Workspace) getBufnameAndTS() {
 		case <-time.After(40 * time.Millisecond):
 		}
 
-		strChan := make(chan string, 2)
-		var bufName string
-		go func() {
-			resultStr, _ := w.nvim.BufferName(buf)
-			strChan <- resultStr
-		}()
-		select {
-		case bufName = <-strChan:
-		case <-time.After(40 * time.Millisecond):
+		if win.bufName == "" {
+			go func() {
+				resultStr, _ := w.nvim.BufferName(buf)
+				strChan <- resultStr
+			}()
+			select {
+			case name = <-strChan:
+			case <-time.After(40 * time.Millisecond):
+			}
 		}
 
-		win.bufName = bufName
-		win.ts = w.getBuffTS(buf, bufName)
+		win.bufName = name
+		win.ts = w.getBuffTS(buf)
 		return true
 	})
 }
