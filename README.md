@@ -64,10 +64,10 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 ### Workspaces
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-workspaces.gif)
 
-### Smooth Scroll 1
+### Smooth Scroll with touchpad
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-smoothscroll-1.gif)
 
-### Smooth Scroll 2
+### Smooth Scroll for neovim scroll commands
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-smoothscroll-2.gif)
 
 ### Markdown Preview
