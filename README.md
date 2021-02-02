@@ -9,7 +9,7 @@ Goneovim
 Goneovim is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
 This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
 
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/screenshot-202009.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-top.png)
 
 ## Features
 
@@ -59,6 +59,20 @@ Or you can get the latest binary from Github Actions CI. See [Actions](https://g
 
 See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
+## Screenshots
+
+### Workspaces
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-workspaces.gif)
+
+### Smooth Scroll 1
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-smoothscroll-1.gif)
+
+### Smooth Scroll 2
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-smoothscroll-2.gif)
+
+### Markdown Preview
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-markdown.gif)
+
 
 ## Development
 
@@ -72,10 +86,6 @@ See [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md
 * [Gnvim](https://github.com/vhakulinen/gnvim)
 * [FVim](https://github.com/yatli/fvim)
 * [Uivonim](https://github.com/smolck/uivonim)
-
-
-## Screenshots
-
 
 ## Credits
 
