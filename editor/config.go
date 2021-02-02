@@ -260,7 +260,7 @@ func newConfig(home string) (string, gonvimConfig) {
 	}
 
 	if config.MiniMap.Width == 0 || config.MiniMap.Width >= 250 {
-		config.MiniMap.Width = 120
+		config.MiniMap.Width = 100
 	}
 
 	return configDir, config
