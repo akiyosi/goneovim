@@ -71,7 +71,7 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-smoothscroll-2.gif)
 
 ### Markdown Preview
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-markdown.gif)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-markdown.png)
 
 
 ## Development
