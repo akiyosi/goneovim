@@ -3357,8 +3357,6 @@ func (win *Window) getWinblend() {
 }
 
 func (s *Screen) windowFloatPosition(args []interface{}) {
-	fmt.Println(args)
-
 	// A workaround for the problem that the position of the float window,
 	// which is created as a tooltip suggested by LSP, is not the correct
 	// position in multigrid ui api.

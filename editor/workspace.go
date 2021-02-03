@@ -1619,7 +1619,7 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		util.ReflectToInt(arg[5]) + 1,
 	}
 
-	if w.viewport == viewport && (w.oldViewport[0] != w.viewport[0] || w.oldViewport[1] != w.viewport[1]) {
+	if w.viewport[0] == viewport[0] && (w.oldViewport[0] != w.viewport[0] || w.oldViewport[1] != w.viewport[1]) {
 		scrollvp := [5]int{
 			util.ReflectToInt(arg[2]) + 1,
 			util.ReflectToInt(arg[3]) + 1,
