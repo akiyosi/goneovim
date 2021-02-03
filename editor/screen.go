@@ -3357,6 +3357,32 @@ func (win *Window) getWinblend() {
 }
 
 func (s *Screen) windowFloatPosition(args []interface{}) {
+	fmt.Println(args)
+
+	// A workaround for the problem that the position of the float window,
+	// which is created as a tooltip suggested by LSP, is not the correct
+	// position in multigrid ui api.
+	isExistPopupmenu := false
+	if s.ws.mode == "insert" {
+		s.windows.Range(func(_, winITF interface{}) bool {
+			win := winITF.(*Window)
+			if win == nil {
+				return true
+			}
+			if win.grid == 1 {
+				return true
+			}
+			if win.isMsgGrid {
+				return true
+			}
+			if win.isPopupmenu {
+				isExistPopupmenu = true
+			}
+
+			return true
+		})
+	}
+
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		if isSkipGlobalId(gridid) {
@@ -3376,6 +3402,10 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := arg.([]interface{})[6]
+
+		if isExistPopupmenu && win.id != -1 {
+			anchorGrid = s.ws.cursor.gridid
+		}
 
 		win.SetParent(editor.widget)
 
@@ -3437,7 +3467,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			// In multigrid ui, the completion float window position information is not correct.
 			// Therefore, we implement a hack to compensate for this.
 			// ref: src/nvim/popupmenu.c:L205-, L435-
-
 			if win.id == -1 && !pumInMsgWin {
 
 				row := 0
@@ -3459,6 +3488,10 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		case "SE":
 			x = anchorposx + anchorCol - win.cols
 			y = anchorposy + anchorRow - win.rows
+		}
+
+		if x < 0 {
+			x = 0
 		}
 
 		win.pos[0] = x
