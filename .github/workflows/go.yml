@@ -177,7 +177,7 @@ jobs:
         curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/15/release/vs_buildtools.exe
         New-Item -Path BuildTools -ItemType Directory 
         .\vs_BuildTools.exe --quiet --wait --norestart --nocache --installPath ${{ github.workspace }}\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeOptional
-        Start-Sleep -s 650
+        Start-Sleep -s 690
 
     - name: Check MSVC 2017 Visual C++ Buildtools installation
       run : |
