@@ -44,13 +44,21 @@ type Highlight struct {
 	strikethrough bool
 }
 
-// HlChar is used in screen cache
+// HlChars is used in screen cache
 type HlChars struct {
 	text string
 	fg   *RGBA
 	// bg     *RGBA
 	italic bool
 	bold   bool
+}
+
+// HlDecoration is used in screen cache
+type HlDecoration struct {
+	fg            *RGBA
+	underline     bool
+	undercurl     bool
+	strikethrough bool
 }
 
 // Cell is
@@ -116,7 +124,7 @@ type Window struct {
 	scrollCols         int
 
 	devicePixelRatio float64
-	textCache        Cache
+	fgCache          Cache
 
 	extwin                 *ExternalWin
 	extwinConnectResizable bool
@@ -153,7 +161,7 @@ type Screen struct {
 
 	tooltip *widgets.QLabel
 
-	textCache Cache
+	fgCache Cache
 
 	resizeCount uint
 }
@@ -172,7 +180,7 @@ func newScreen() *Screen {
 		windows:        sync.Map{},
 		cursor:         [2]int{0, 0},
 		highlightGroup: make(map[string]int),
-		textCache:      newCache(),
+		fgCache:        newCache(),
 	}
 
 	widget.SetAcceptDrops(true)
@@ -461,11 +469,11 @@ func (s *Screen) gridFont(update interface{}) {
 	newRows := oldHeight / win.font.lineHeight
 
 	// Cache
-	if &win.textCache == nil {
+	if &win.fgCache == nil {
 		cache := newCache()
-		win.textCache = cache
+		win.fgCache = cache
 	} else {
-		win.textCache.purge()
+		win.fgCache.purge()
 	}
 
 	_ = s.ws.nvim.TryResizeUIGrid(s.ws.cursor.gridid, newCols, newRows)
@@ -483,7 +491,7 @@ func (s *Screen) purgeTextCacheForWins() {
 	if !editor.config.Editor.CachedDrawing {
 		return
 	}
-	s.textCache.purge()
+	s.fgCache.purge()
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 		if win == nil {
@@ -492,7 +500,7 @@ func (s *Screen) purgeTextCacheForWins() {
 		if win.font == nil {
 			return true
 		}
-		win.textCache.purge()
+		win.fgCache.purge()
 		return true
 	})
 }
@@ -2707,7 +2715,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 				true,
 			)
 			// if text != "" {
-			// 	imagev, err := textCache.get(HlChars{
+			// 	imagev, err := fgCache.get(HlChars{
 			// 		text:   text,
 			// 		fg:     highlight.fg(),
 			// 		italic: highlight.italic,
@@ -2743,7 +2751,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 			line[x].highlight,
 			false,
 		)
-		// imagev, err := textCache.get(HlChars{
+		// imagev, err := fgCache.get(HlChars{
 		// 	text:   line[x].char,
 		// 	fg:     line[x].highlight.fg(),
 		// 	italic: line[x].highlight.italic,
@@ -2770,9 +2778,9 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, point *core.QPointF, te
 		return
 	}
 
-	textCache := w.getCache()
+	fgCache := w.getCache()
 	var image *gui.QImage
-	imagev, err := textCache.get(HlChars{
+	imagev, err := fgCache.get(HlChars{
 		text:   text,
 		fg:     highlight.fg(),
 		italic: highlight.italic,
@@ -2791,10 +2799,129 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, point *core.QPointF, te
 	)
 }
 
+func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
+	if w.font != nil {
+		// If window has own font setting
+		w.fgCache.set(
+			HlDecoration{
+				fg:            highlight.fg(),
+				underline:     highlight.underline,
+				undercurl:     highlight.undercurl,
+				strikethrough: highlight.strikethrough,
+			},
+			image,
+		)
+	} else {
+		// screen text cache
+		w.s.fgCache.set(
+			HlDecoration{
+				fg:            highlight.fg(),
+				underline:     highlight.underline,
+				undercurl:     highlight.undercurl,
+				strikethrough: highlight.strikethrough,
+			},
+			image,
+		)
+	}
+}
+
+func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalWidth bool) *gui.QImage {
+	font := w.getFont()
+
+	width := font.truewidth
+	fg := highlight.fg()
+	if !isNormalWidth {
+		width = math.Ceil(w.s.runeTextWidth(font, char))
+	}
+
+	// QImage default device pixel ratio is 1.0,
+	// So we set the correct device pixel ratio
+	image := gui.NewQImage2(
+		core.NewQRectF4(
+			0,
+			0,
+			w.devicePixelRatio*width,
+			w.devicePixelRatio*float64(font.lineHeight),
+		).Size().ToSize(),
+		gui.QImage__Format_ARGB32_Premultiplied,
+	)
+	image.SetDevicePixelRatio(w.devicePixelRatio)
+	image.Fill3(core.Qt__transparent)
+
+	pi := gui.NewQPainter2(image)
+	pi.SetPen2(fg.QColor())
+
+	pen := gui.NewQPen()
+	var color *gui.QColor
+	sp := highlight.special
+	if sp != nil {
+		color = sp.QColor()
+		pen.SetColor(color)
+	} else {
+		fg := highlight.foreground
+		color = fg.QColor()
+		pen.SetColor(color)
+	}
+	pi.SetPen(pen)
+	start := float64(0) * font.truewidth
+	end := float64(width) * font.truewidth
+
+	space := float64(font.lineSpace) / 3.0
+	if space > font.ascent/3.0 {
+		space = font.ascent / 3.0
+	}
+	descent := float64(font.height) - font.ascent
+	weight := int(math.Ceil(float64(font.height) / 16.0))
+	if weight < 1 {
+		weight = 1
+	}
+	if highlight.strikethrough {
+		Y := float64(0*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
+		pi.FillRect5(
+			int(start),
+			int(Y),
+			int(math.Ceil(font.truewidth)),
+			weight,
+			color,
+		)
+	}
+	if highlight.underline {
+		pi.FillRect5(
+			int(start),
+			int(float64((0+1)*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2))-weight,
+			int(math.Ceil(font.truewidth)),
+			weight,
+			color,
+		)
+	}
+	if highlight.undercurl {
+		amplitude := descent*0.65 + float64(font.lineSpace)
+		maxAmplitude := font.ascent / 8.0
+		if amplitude >= maxAmplitude {
+			amplitude = maxAmplitude
+		}
+		freq := 1.0
+		phase := 0.0
+		Y := float64(0*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
+		Y2 := Y + amplitude*math.Sin(0)
+		point := core.NewQPointF3(start, Y2)
+		path := gui.NewQPainterPath2(point)
+		for i := int(point.X()); i <= int(end); i++ {
+			Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.truewidth+phase)
+			path.LineTo(core.NewQPointF3(float64(i), Y2))
+		}
+		pi.DrawPath(path)
+	}
+
+	pi.DestroyQPainter()
+
+	return image
+}
+
 func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QImage) {
 	if w.font != nil {
 		// If window has own font setting
-		w.textCache.set(
+		w.fgCache.set(
 			HlChars{
 				text:   text,
 				fg:     highlight.fg(),
@@ -2805,7 +2932,7 @@ func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QIma
 		)
 	} else {
 		// screen text cache
-		w.s.textCache.set(
+		w.s.fgCache.set(
 			HlChars{
 				text:   text,
 				fg:     highlight.fg(),
@@ -3043,10 +3170,11 @@ func (w *Window) drawForeground(p *gui.QPainter, y int, col int, cols int) {
 		w.drawMinimap(p, y, col, cols)
 	} else if !editor.config.Editor.CachedDrawing {
 		w.drawText(p, y, col, cols)
+		w.drawTextDecoration(p, y, col, cols)
 	} else {
 		w.drawTextWithCache(p, y, col, cols)
+		w.drawTextDecorationWithCache(p, y, col, cols)
 	}
-	w.drawTextDecoration(p, y, col, cols)
 }
 
 func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
@@ -3130,6 +3258,50 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			}
 			p.DrawPath(path)
 		}
+	}
+}
+
+func (w *Window) drawTextDecorationWithCache(p *gui.QPainter, y int, col int, cols int) {
+	if y >= len(w.content) {
+		return
+	}
+	line := w.content[y]
+	font := w.getFont()
+	for x := col; x <= col+cols; x++ {
+		if x >= len(line) {
+			continue
+		}
+		if line[x] == nil {
+			continue
+		}
+		if !line[x].highlight.underline && !line[x].highlight.undercurl && !line[x].highlight.strikethrough {
+			continue
+		}
+
+		fgCache := w.getCache()
+		var image *gui.QImage
+		imagev, err := fgCache.get(HlDecoration{
+			fg:            line[x].highlight.fg(),
+			underline:     line[x].highlight.underline,
+			undercurl:     line[x].highlight.undercurl,
+			strikethrough: line[x].highlight.strikethrough,
+		})
+
+		if err != nil {
+			image = w.newDecorationCache(line[x].char, line[x].highlight, line[x].normalWidth)
+			w.setDecorationCache(line[x].highlight, image)
+		} else {
+			image = imagev.(*gui.QImage)
+		}
+
+		p.DrawImage7(
+			core.NewQPointF3(
+				float64(x)*font.truewidth,
+				float64(y*font.lineHeight)+float64(w.scrollPixels[1])+float64(w.scrollPixels2),
+			),
+			image,
+		)
+
 	}
 }
 
@@ -3595,10 +3767,10 @@ func (s *Screen) setColor() {
 
 func (w *Window) getCache() Cache {
 	if w.font != nil {
-		return w.textCache
+		return w.fgCache
 	}
 
-	return w.s.textCache
+	return w.s.fgCache
 }
 
 func newWindow() *Window {
