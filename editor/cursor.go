@@ -12,28 +12,30 @@ import (
 
 // Cursor is
 type Cursor struct {
-	ws           *Workspace
-	widget       *widgets.QWidget
-	mode         string
-	modeIdx      int
-	x            int
-	y            int
-	width        int
-	height       int
-	text         string
-	normalWidth  bool
-	gridid       int
-	bufferGridid int
-	shift        int
-	isShut       bool
-	timer        *core.QTimer
-	isTextDraw   bool
-	fg           *RGBA
-	bg           *RGBA
-	brend        float64
-	font         *Font
-	fontwide     *Font
-	isInPalette  bool
+	ws               *Workspace
+	widget           *widgets.QWidget
+	mode             string
+	modeIdx          int
+	x                int
+	y                int
+	width            int
+	height           int
+	text             string
+	normalWidth      bool
+	gridid           int
+	bufferGridid     int
+	shift            int
+	isShut           bool
+	timer            *core.QTimer
+	isTextDraw       bool
+	fg               *RGBA
+	bg               *RGBA
+	brend            float64
+	font             *Font
+	fontwide         *Font
+	isInPalette      bool
+	charCache        *Cache
+	devicePixelRatio float64
 
 	isNeedUpdateModeInfo bool
 	modeInfoModeIdx      int
@@ -60,53 +62,145 @@ func initCursorNew() *Cursor {
 }
 
 func (c *Cursor) paint(event *gui.QPaintEvent) {
-
-	p := gui.NewQPainter2(c.widget)
-	defer p.DestroyQPainter()
-
-	// p.SetCompositionMode(gui.QPainter__RasterOp_SourceXorDestination)
-
 	font := c.font
 	if font == nil {
 		return
 	}
-
-	// if guifontwide is set
-	shift := font.ascent
-	if !c.normalWidth && c.fontwide != nil {
-		p.SetFont(c.fontwide.fontNew)
-		if c.fontwide.lineHeight > font.lineHeight {
-			shift = shift + c.fontwide.ascent - font.ascent
-		}
-	} else {
-		p.SetFont(font.fontNew)
+	if c.charCache == nil {
+		return
+	}
+	if c.widget == nil {
+		return
 	}
 
-	p.SetPen2(c.fg.QColor())
+	// If guifontwide is set
+	shift := font.ascent
 
 	width := font.truewidth
 	if !c.normalWidth {
 		width = width * 2
 	}
 
-	rectF := core.NewQRectF4(
-		0,
-		0,
-		width,
-		float64(font.lineHeight),
-	)
+	p := gui.NewQPainter2(c.widget)
 
+	// Draw cursor background
 	p.FillRect4(
-		rectF,
+		core.NewQRectF4(
+			0,
+			0,
+			width,
+			float64(font.lineHeight),
+		),
 		c.bg.brend(c.ws.background, c.brend).QColor(),
 	)
 
-	p.DrawText(
-		core.NewQPointF3(
+	if c.text == "" || c.devicePixelRatio == 0 {
+		p.DestroyQPainter()
+		return
+	}
+
+	// Draw cursor foreground
+	if editor.config.Editor.CachedDrawing {
+		var image *gui.QImage
+		charCache := *c.charCache
+		imagev, err := charCache.get(HlChars{
+			text:   c.text,
+			fg:     c.fg,
+			italic: false,
+			bold:   false,
+		})
+		if err != nil {
+			image = c.newCharCache(c.text, c.fg, c.normalWidth)
+			c.setCharCache(c.text, c.fg, image)
+		} else {
+			image = imagev.(*gui.QImage)
+		}
+		p.DrawImage7(
+			core.NewQPointF3(
+				0,
+				0,
+			),
+			image,
+		)
+	} else {
+		if !c.normalWidth && c.fontwide != nil {
+			p.SetFont(c.fontwide.fontNew)
+			if c.fontwide.lineHeight > font.lineHeight {
+				shift = shift + c.fontwide.ascent - font.ascent
+			}
+		} else {
+			p.SetFont(font.fontNew)
+		}
+		p.SetPen2(c.fg.QColor())
+		p.DrawText(
+			core.NewQPointF3(
+				0,
+				shift,
+			),
+			c.text,
+		)
+	}
+
+	p.DestroyQPainter()
+}
+
+func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QImage {
+	font := c.font
+
+	width := float64(len(text)) * font.italicWidth
+	if !isNormalWidth {
+		width = math.Ceil(c.ws.screen.runeTextWidth(font, text))
+	}
+
+	// QImage default device pixel ratio is 1.0,
+	// So we set the correct device pixel ratio
+	image := gui.NewQImage2(
+		core.NewQRectF4(
 			0,
-			shift,
-		),
-		c.text,
+			0,
+			c.devicePixelRatio*width,
+			c.devicePixelRatio*float64(font.lineHeight),
+		).Size().ToSize(),
+		gui.QImage__Format_ARGB32_Premultiplied,
+	)
+	image.SetDevicePixelRatio(c.devicePixelRatio)
+	image.Fill3(core.Qt__transparent)
+
+	pi := gui.NewQPainter2(image)
+	pi.SetPen2(fg.QColor())
+
+	if !isNormalWidth && font == nil && c.ws.fontwide != nil {
+		pi.SetFont(c.ws.fontwide.fontNew)
+	} else {
+		pi.SetFont(font.fontNew)
+	}
+
+	// TODO
+	// Set bold, italic styles
+
+	pi.DrawText6(
+		core.NewQRectF4(
+			0,
+			0,
+			width,
+			float64(font.lineHeight),
+		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
+	)
+
+	pi.DestroyQPainter()
+
+	return image
+}
+
+func (c *Cursor) setCharCache(text string, fg *RGBA, image *gui.QImage) {
+	c.charCache.set(
+		HlChars{
+			text:   text,
+			fg:     c.fg,
+			italic: false,
+			bold:   false,
+		},
+		image,
 	)
 }
 
@@ -276,6 +370,9 @@ func (c *Cursor) update() {
 	if !ok {
 		return
 	}
+	charCache := win.getCache()
+	c.charCache = &charCache
+	c.devicePixelRatio = win.devicePixelRatio
 
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
