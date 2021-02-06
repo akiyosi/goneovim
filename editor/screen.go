@@ -2714,26 +2714,6 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 				highlight,
 				true,
 			)
-			// if text != "" {
-			// 	imagev, err := fgCache.get(HlChars{
-			// 		text:   text,
-			// 		fg:     highlight.fg(),
-			// 		italic: highlight.italic,
-			// 		bold:   highlight.bold,
-			// 	})
-
-			// 	if err != nil {
-			// 		image = w.newTextCache(text, highlight, true)
-			// 		w.setTextCache(text, highlight, image)
-			// 	} else {
-			// 		image = imagev.(*gui.QImage)
-			// 	}
-			// 	p.DrawImage7(
-			// 		pointF,
-			// 		image,
-			// 	)
-			// }
-
 		}
 	}
 
@@ -2751,25 +2731,6 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 			line[x].highlight,
 			false,
 		)
-		// imagev, err := fgCache.get(HlChars{
-		// 	text:   line[x].char,
-		// 	fg:     line[x].highlight.fg(),
-		// 	italic: line[x].highlight.italic,
-		// 	bold:   line[x].highlight.bold,
-		// })
-		// if err != nil {
-		// 	image = w.newTextCache(line[x].char, line[x].highlight, false)
-		// 	w.setTextCache(line[x].char, line[x].highlight, image)
-		// } else {
-		// 	image = imagev.(*gui.QImage)
-		// }
-		// p.DrawImage7(
-		// 	core.NewQPointF3(
-		// 		float64(x)*wsfont.truewidth,
-		// 		float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
-		// 	),
-		// 	image,
-		// )
 	}
 }
 
