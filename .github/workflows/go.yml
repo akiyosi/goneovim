@@ -294,15 +294,16 @@ jobs:
         $data | Out-File   .\editor\screen.go -Encoding UTF8
         $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
         $data | Out-File   .\editor\screen.go -Encoding UTF8
-        $ch="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-        $rep="), int(core.Qt__AlignVCenter), text, nil,"
-        $data=Get-Content  .\editor\screen.go | % { $_ -replace [regex]::Escape($ch), $rep }
+        $ch1="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+        $rep1="), int(core.Qt__AlignVCenter), text, nil,"
+        $data=Get-Content  .\editor\screen.go | % { $_ -replace [regex]::Escape($ch1), $rep1 }
+        $data | Out-File   .\editor\screen.go -Encoding UTF8
         $data=Get-Content  .\editor\cursor.go | % { $_ -replace "DrawText6", "DrawText5" }
         $data | Out-File   .\editor\cursor.go -Encoding UTF8
-        $ch="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-        $rep="), int(core.Qt__AlignVCenter), text, nil,"
-        $data=Get-Content  .\editor\cursor.go | % { $_ -replace [regex]::Escape($ch), $rep }
-        $data | Out-File   .\editor\screen.go -Encoding UTF8
+        $ch2="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+        $rep2="), int(core.Qt__AlignVCenter), text, nil,"
+        $data=Get-Content  .\editor\cursor.go | % { $_ -replace [regex]::Escape($ch2), $rep2 }
+        $data | Out-File   .\editor\cursor.go -Encoding UTF8
         $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
         $data | Out-File   .\util\utils.go -Encoding UTF8
 
