@@ -275,7 +275,7 @@ func (c *gonvimConfig) init() {
 
 	c.Editor.SkipGlobalId = false
 	c.Editor.CachedDrawing = true
-	c.Editor.CacheSize = 320
+	c.Editor.CacheSize = 480
 
 	c.Editor.ExtCmdline = false
 	c.Editor.ExtPopupmenu = false
