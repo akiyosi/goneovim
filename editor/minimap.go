@@ -325,7 +325,9 @@ func (m *MiniMap) setColorscheme() {
 			continue
 		}
 		if strings.Contains(path, "nvim-treesitter") {
-			treesitterPath = path
+			if treesitterPath == "" || len(treesitterPath) > len(path) {
+				treesitterPath = path
+			}
 		}
 		for _, d := range lsDirs {
 			dirname := d.Name()
@@ -360,6 +362,8 @@ func (m *MiniMap) setColorscheme() {
 	m.nvim.Command(":colorscheme " + colo)
 	m.colorscheme = colo
 	m.isSetColorscheme = true
+
+	editor.putLog("detected treesitter runtime path:", treesitterPath)
 
 	// if nvim-treesitter is installed
 	// m.nvim.Command("luafile ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/lua/nvim-treesitter.lua")
