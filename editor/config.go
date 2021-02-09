@@ -304,6 +304,7 @@ func (c *gonvimConfig) init() {
 	// replace diff color drawing pattern
 	c.Editor.DiffAddPattern = 1
 	c.Editor.DiffDeletePattern = 1
+	c.Editor.DiffChangePattern = 1
 
 	// palette size
 	c.Palette.AreaRatio = 0.5
