@@ -240,7 +240,7 @@ func InitEditor(options Options, args []string) {
 
 		fontGenAsync <- font
 	}()
-	e.initFont()
+	e.setFont()
 	e.putLog("initializing font")
 
 	e.initSVGS()
@@ -546,7 +546,7 @@ func (e *Editor) setEnv() {
 	_ = os.Setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
 }
 
-func (e *Editor) initFont() {
+func (e *Editor) setFont() {
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QWidget")
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QLabel")
 }
