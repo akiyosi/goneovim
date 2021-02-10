@@ -15,7 +15,7 @@ endif
 
 debug:
 	cd cmd/goneovim; \
-	dlv debug
+	dlv debug --build-flags -race
 
 build:
 	cd cmd/goneovim; \

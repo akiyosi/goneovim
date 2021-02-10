@@ -101,6 +101,7 @@ type Workspace struct {
 	modeInfo           []map[string]interface{}
 	normalMappings     []*nvim.Mapping
 	insertMappings     []*nvim.Mapping
+	wb                 int
 	ts                 int
 	ph                 int
 	pb                 int
@@ -134,6 +135,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		foreground:    newRGBA(255, 255, 255, 1),
 		background:    newRGBA(0, 0, 0, 1),
 		special:       newRGBA(255, 255, 255, 1),
+		wb:            -1,
 	}
 	w.registerSignal()
 
@@ -639,7 +641,7 @@ func (w *Workspace) initGonvim() {
 	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"), win_getid(), bufname())
 	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid(), bufname())
-	au GonvimAu OptionSet * if &ro != 1 | silent! call rpcnotify(1, "Gui", "gonvim_optionset") | endif
+	au GonvimAu OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old) | endif
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
 	aug GonvimAuWorkspace | au! | aug END
@@ -785,6 +787,20 @@ func (w *Workspace) getBuffTS(buf nvim.Buffer) int {
 	}
 
 	return ts
+}
+
+func (w *Workspace) getWinblend() {
+	wb := 0
+	done := make(chan error, 5)
+	go func() {
+		err := w.nvim.WindowOption(nvim.Window(1000), "winblend", &wb)
+		done <- err
+	}()
+	select {
+	case <-done:
+	case <-time.After(40 * time.Millisecond):
+	}
+	w.wb = wb
 }
 
 func (w *Workspace) getBG() {
@@ -1218,6 +1234,10 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.setHighlightGroup(args)
 		case "grid_line":
 			s.gridLine(args)
+			// Get winblend only the first time.
+			if w.wb == -1 {
+				w.getWinblend()
+			}
 		case "grid_clear":
 			s.gridClear(args)
 		case "grid_destroy":
@@ -1882,7 +1902,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			w.minimap.mu.Unlock()
 		}
 	case "gonvim_optionset":
-		w.optionSet()
+		w.optionSet(updates)
 	case "gonvim_termenter":
 		w.mode = "terminal-input"
 	case "gonvim_termleave":
@@ -2219,13 +2239,24 @@ func (w *Workspace) getBufnameAndTS(idITF, nameITF interface{}) {
 	})
 }
 
-func (w *Workspace) optionSet() {
+// optionSet is
+// This function gets the value of an option that cannot be caught by the set_option event.
+func (w *Workspace) optionSet(updates []interface{}) {
+	optionName := updates[1]
+	new, err := strconv.Atoi(updates[2].(string))
+	if err != nil {
+		return
+	}
+
 	w.optionsetMutex.Lock()
-	w.getTS()
-	// w.getPumHeight()
-	w.getWinblendAll()
+	switch optionName {
+	case "tabstop":
+		w.ts = util.ReflectToInt(new)
+
+	case "winblend":
+		w.setWinblend(util.ReflectToInt(new))
+	}
 	w.optionsetMutex.Unlock()
-	// w.getFileType()
 }
 
 func (w *Workspace) getPumHeight() {
@@ -2290,7 +2321,7 @@ func (w *Workspace) getFileType(args []interface{}) {
 
 }
 
-func (w *Workspace) getWinblendAll() {
+func (w *Workspace) setWinblend(wb int) {
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -2298,16 +2329,14 @@ func (w *Workspace) getWinblendAll() {
 			return true
 		}
 
-		win.propMutex.RLock()
-		isFloatWin := win.isFloatWin
-		win.propMutex.RUnlock()
-
-		if !isFloatWin {
+		if win.grid != w.cursor.bufferGridid {
 			return true
 		}
 
-		win.getWinblend()
-		return true
+		win.paintMutex.Lock()
+		win.wb = wb
+		win.paintMutex.Unlock()
+		return false
 	})
 }
 

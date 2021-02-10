@@ -1564,6 +1564,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win.s.ws.optionsetMutex.RUnlock()
 		win.paintMutex.RLock()
 		win.ts = ts
+		win.wb = win.s.ws.wb
 		win.paintMutex.RUnlock()
 
 		// set scroll
@@ -1783,6 +1784,11 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		if s.ws.cursor.gridid != gridid {
 			if !win.isMsgGrid {
 				s.ws.cursor.bufferGridid = gridid
+
+				// Set last window winblend for new window
+				win.paintMutex.Lock()
+				win.s.ws.wb = win.wb
+				win.paintMutex.Unlock()
 			}
 			s.ws.cursor.gridid = gridid
 			s.ws.cursor.font = win.getFont()
@@ -1790,6 +1796,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 
 			// reset smooth scroll scrolling offset
 			win.scrollPixels2 = 0
+
 		}
 	}
 }
@@ -3634,7 +3641,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		win.move(x, y)
 		win.setShadow()
-		win.getWinblend()
+		// win.getWinblend()
+		win.wb = win.s.ws.wb
 		win.show()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
