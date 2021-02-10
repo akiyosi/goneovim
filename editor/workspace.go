@@ -1406,7 +1406,7 @@ func (w *Workspace) drawOtherUI() {
 
 	if w.minimap != nil {
 		if w.minimap.visible && w.minimap.widget.IsVisible() {
-			go w.updateMinimap()
+			w.updateMinimap()
 			w.minimap.mapScroll()
 		}
 	}
@@ -1742,17 +1742,31 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 func (w *Workspace) updateMinimap() {
 	var absMapTop int
 	var absMapBottom int
-	w.minimap.nvim.Eval("line('w0')", &absMapTop)
-	w.minimap.nvim.Eval("line('w$')", &absMapBottom)
+	if w.api5 {
+		absMapTop = w.minimap.viewport[0]
+		absMapBottom = w.minimap.viewport[1]
+	} else {
+		w.minimap.nvim.Eval("line('w0')", &absMapTop)
+		w.minimap.nvim.Eval("line('w$')", &absMapBottom)
+	}
 	w.viewportMutex.RLock()
-	w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", w.viewport[2], 0))
-	topLine := w.viewport[2]
+	topLine := w.viewport[0]
+	botLine := w.viewport[1]
+	currLine := w.viewport[2]
 	w.viewportMutex.RUnlock()
 	switch {
-	case topLine >= absMapBottom:
-		w.minimap.nvim.Input("<C-d>")
+	case botLine >= absMapBottom:
+		go func() {
+			w.minimap.nvim.Input(`<ScrollWheelDown>`)
+			w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
+			w.minimap.nvim.Input(`zz`)
+		}()
 	case absMapTop >= topLine:
-		w.minimap.nvim.Input("<C-u>")
+		go func() {
+			w.minimap.nvim.Input(`<ScrollWheelUp>`)
+			w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
+			w.minimap.nvim.Input(`zz`)
+		}()
 	default:
 	}
 }

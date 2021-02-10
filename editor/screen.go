@@ -660,6 +660,9 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 	if !editor.config.Editor.SmoothScroll {
 		return
 	}
+	if w.s.name == "minimap" {
+		return
+	}
 
 	snapshot := w.snapshots[1]
 	if snapshot == nil {

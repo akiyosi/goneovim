@@ -383,17 +383,8 @@ func (m *MiniMap) mapScroll() {
 	linePos := 0
 	regionHeight := 0
 
-	if m.api5 {
-		// linePos = m.ws.topLine - m.topLine
-		regionHeight = m.ws.viewport[1] - m.ws.viewport[0]
-		linePos = m.ws.viewport[0] - m.viewport[0]
-	} else {
-		absScreenTop := m.ws.viewport[0]
-		// var absMapTop int
-		// m.nvim.Eval("line('w0')", &absMapTop)
-		absMapTop := m.viewport[0]
-		linePos = absScreenTop - absMapTop
-	}
+	regionHeight = m.ws.viewport[1] - m.ws.viewport[0]
+	linePos = m.ws.viewport[0] - m.viewport[0]
 
 	win, ok := m.ws.screen.getWindow(m.ws.cursor.gridid)
 	if !ok {
