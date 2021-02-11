@@ -743,6 +743,7 @@ func (w *Workspace) getNvimOptions() {
 	w.getColorscheme()
 	w.getTS()
 	w.getBG()
+	w.getWinblend()
 	w.getKeymaps()
 }
 
@@ -1234,10 +1235,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.setHighlightGroup(args)
 		case "grid_line":
 			s.gridLine(args)
-			// Get winblend only the first time.
-			if w.wb == -1 {
-				w.getWinblend()
-			}
 		case "grid_clear":
 			s.gridClear(args)
 		case "grid_destroy":

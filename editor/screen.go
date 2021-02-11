@@ -2508,7 +2508,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 			w.SetAutoFillBackground(false)
 		}
 		// If float window winblend is set
-		if !w.isPopupmenu && w.wb > 0 {
+		if !w.isPopupmenu && w.isFloatWin && w.wb > 0 {
 			w.SetAutoFillBackground(false)
 		}
 	}
@@ -3286,7 +3286,7 @@ func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyl
 		t = int((transparent() * 255.0) * ((100.0 - float64(w.s.ws.pb)) / 100.0))
 	}
 	// if winblend > 0
-	if !w.isPopupmenu && w.wb > 0 {
+	if !w.isPopupmenu && w.isFloatWin && w.wb > 0 {
 		t = int((transparent() * 255.0) * ((100.0 - float64(w.wb)) / 100.0))
 	}
 	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
@@ -3843,7 +3843,7 @@ func (w *Window) fill() {
 	w.paintMutex.RLock()
 	wb := w.wb
 	w.paintMutex.RUnlock()
-	if !w.isPopupmenu && wb > 0 {
+	if !w.isPopupmenu && w.isFloatWin && wb > 0 {
 		return
 	}
 	if w.background != nil {
