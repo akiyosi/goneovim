@@ -1635,24 +1635,25 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		util.ReflectToInt(arg[4]) + 1,
 		util.ReflectToInt(arg[5]) + 1,
 	}
-
 	if w.viewport[0] == viewport[0] && w.oldViewport[0] != w.viewport[0] {
-		scrollvp := [5]int{
-			util.ReflectToInt(arg[2]) + 1,
-			util.ReflectToInt(arg[3]) + 1,
-			util.ReflectToInt(arg[4]) + 1,
-			util.ReflectToInt(arg[5]) + 1,
-			util.ReflectToInt(arg[0]),
+		if w.mode != "terminal-input" {
+			scrollvp := [5]int{
+				util.ReflectToInt(arg[2]) + 1,
+				util.ReflectToInt(arg[3]) + 1,
+				util.ReflectToInt(arg[4]) + 1,
+				util.ReflectToInt(arg[5]) + 1,
+				util.ReflectToInt(arg[0]),
+			}
+			w.viewportQue <- scrollvp
 		}
-		w.viewportQue <- scrollvp
 	}
 
-	if w.viewport != w.oldViewport {
+	if viewport != w.viewport {
+		w.viewportMutex.Lock()
 		w.oldViewport = w.viewport
+		w.viewport = viewport
+		w.viewportMutex.Unlock()
 	}
-	w.viewportMutex.Lock()
-	w.viewport = viewport
-	w.viewportMutex.Unlock()
 
 }
 
@@ -1729,7 +1730,6 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 		}
 		font := win.getFont()
 		win.scrollPixels2 = int(float64(diff) * v * float64(font.lineHeight))
-		// win.update()
 		win.Update2(
 			0,
 			0,
