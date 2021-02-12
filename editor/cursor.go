@@ -159,7 +159,7 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 			0,
 			0,
 			c.devicePixelRatio*width,
-			c.devicePixelRatio*float64(font.lineHeight),
+			c.devicePixelRatio*float64(font.height),
 		).Size().ToSize(),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
@@ -183,7 +183,7 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 			0,
 			0,
 			width,
-			float64(font.lineHeight),
+			float64(font.height),
 		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
 

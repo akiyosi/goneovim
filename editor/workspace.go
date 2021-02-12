@@ -139,7 +139,15 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 	w.registerSignal()
 
-	w.font = editor.font
+	if len(editor.workspaces) > 0 {
+		w.font = initFontNew(
+			editor.extFontFamily,
+			float64(editor.extFontSize),
+			0,
+		)
+	} else {
+		w.font = editor.font
+	}
 	w.font.ws = w
 
 	// Basic Workspace UI component

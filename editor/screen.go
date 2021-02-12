@@ -501,6 +501,10 @@ func (s *Screen) purgeTextCacheForWins() {
 		if win.font == nil {
 			return true
 		}
+		cache := win.fgCache
+		if cache == (Cache{}) {
+			return true
+		}
 		win.fgCache.purge()
 		return true
 	})
