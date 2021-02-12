@@ -469,7 +469,8 @@ func (s *Screen) gridFont(update interface{}) {
 	newRows := oldHeight / win.font.lineHeight
 
 	// Cache
-	if &win.fgCache == nil {
+	cache := win.fgCache
+	if cache == (Cache{}) {
 		cache := newCache()
 		win.fgCache = cache
 	} else {
