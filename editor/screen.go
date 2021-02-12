@@ -2366,14 +2366,14 @@ func (w *Window) update() {
 	}
 	font := w.getFont()
 
-	if w.grid != w.s.ws.cursor.gridid {
-		if w.queueRedrawArea[3]-w.queueRedrawArea[1] <= 0 {
-			w.redrawMutex.Unlock()
-			return
-		}
+	start := w.queueRedrawArea[1]
+	end := w.queueRedrawArea[3]
+	if w.scrollPixels[1] != 0 {
+		start = 0
+		end = w.rows
 	}
 
-	for i := w.queueRedrawArea[1]; i < w.queueRedrawArea[3]; i++ {
+	for i := start; i < end; i++ {
 		// for i := 0; i <= numOfLines; i++ {
 		if len(w.content) <= i {
 			continue
