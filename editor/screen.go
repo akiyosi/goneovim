@@ -128,6 +128,7 @@ type Window struct {
 
 	extwin                 *ExternalWin
 	extwinConnectResizable bool
+	extwinResized          bool
 
 	font         *Font
 	background   *RGBA
@@ -3502,6 +3503,7 @@ func (win *Window) getWinblend() {
 }
 
 func (s *Screen) windowFloatPosition(args []interface{}) {
+	fmt.Println("float pos", args)
 	// A workaround for the problem that the position of the float window,
 	// which is created as a tooltip suggested by LSP, is not the correct
 	// position in multigrid ui api.
@@ -3536,6 +3538,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		if !ok {
 			continue
 		}
+		fmt.Println("grid", win.grid)
 
 		win.updateMutex.Lock()
 		win.id = arg.([]interface{})[1].(nvim.Window)
@@ -3652,6 +3655,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 }
 
 func (s *Screen) windowExternalPosition(args []interface{}) {
+	fmt.Println("ext pos", args)
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		// winid := arg.([]interface{})[1].(nvim.Window)
@@ -3682,11 +3686,26 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 
 				extwin.Show()
 				win.extwin = extwin
+				win.setResizableForWxtWin()
 			}
 
 			return true
 		})
 
+	}
+}
+
+func (w *Window) setResizableForWxtWin() {
+	if !w.extwinConnectResizable {
+		w.extwin.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+			height := w.extwin.Height() - EXTWINBORDERSIZE*2
+			width := w.extwin.Width() - EXTWINBORDERSIZE*2
+			cols := int((float64(width) / w.getFont().truewidth))
+			rows := height / w.getFont().lineHeight
+			w.extwinResized = true
+			_ = w.s.ws.nvim.TryResizeUIGrid(w.grid, cols, rows)
+		})
+		w.extwinConnectResizable = true
 	}
 }
 
@@ -3802,24 +3821,11 @@ func (w *Window) setParent(a widgets.QWidget_ITF) {
 }
 
 func (w *Window) setGridGeometry(width, height int) {
-	if w.isExternal {
-		// We will resize the window based on the cols and rows of the grid for the first time only
-		if w.extwin != nil && !w.extwinConnectResizable {
-			w.extwin.Resize2(width+EXTWINBORDERSIZE*2, height+EXTWINBORDERSIZE*2)
-		}
-		// We resize the grid cols and rows according to the resizing of the external window,
-		//  except for the first time.
-		if !w.extwinConnectResizable {
-			w.extwin.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-				height := w.extwin.Height() - EXTWINBORDERSIZE*2
-				width := w.extwin.Width() - EXTWINBORDERSIZE*2
-				cols := int((float64(width) / w.getFont().truewidth))
-				rows := height / w.getFont().lineHeight
-				_ = w.s.ws.nvim.TryResizeUIGrid(w.grid, cols, rows)
-			})
-			w.extwinConnectResizable = true
-		}
+	fmt.Println(w.grid, "set geometry")
+	if w.isExternal && !w.extwinResized {
+		w.extwin.Resize2(width+EXTWINBORDERSIZE*2, height+EXTWINBORDERSIZE*2)
 	}
+	w.extwinResized = false
 
 	rect := core.NewQRect4(0, 0, width, height)
 	w.SetGeometry(rect)

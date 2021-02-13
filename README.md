@@ -70,6 +70,9 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 ### Smooth Scroll for neovim scroll commands
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-smoothscroll-2.gif)
 
+### Minimap, External Float Window
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-top.png)
+
 ### Markdown Preview
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-markdown.png)
 
