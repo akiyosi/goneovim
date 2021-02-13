@@ -1286,8 +1286,10 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		}
 	}
 
-	// Do not scroll horizontal if vertical scroll amount is greater than horizontal that
-	if (math.Abs(float64(vert))+1)*2 > math.Abs(float64(horiz))*5 {
+	if editor.config.Editor.DisableHorizontalScroll {
+		return
+	}
+	if vert == 0 {
 		return
 	}
 

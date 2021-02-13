@@ -55,6 +55,7 @@ type editorConfig struct {
 	IndentGuide              bool
 	IndentGuideIgnoreFtList  []string
 	SmoothScroll             bool
+	DisableHorizontalScroll  bool
 	DrawBorderForFloatWindow bool
 	DrawShadowForFloatWindow bool
 	DesktopNotifications     bool
@@ -285,6 +286,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.WindowSeparatorTheme = "dark"
 	c.Editor.WindowSeparatorColor = ""
 	c.Editor.WindowSeparatorGradient = false
+	c.Editor.DisableHorizontalScroll = true
 
 	switch runtime.GOOS {
 	case "windows":
