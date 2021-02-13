@@ -1708,8 +1708,8 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
-	// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
-	if win.isWheelScrolling || editor.isKeyAutoRepeating {
+	// suppress to getting snapshot
+	if editor.isKeyAutoRepeating {
 		return nil, 0, false
 	}
 
@@ -1718,6 +1718,11 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		win.snapshots[1] = win.snapshots[0]
 		win.snapshots[0] = win.Grab(win.Rect())
 		win.scrollCols = int(math.Abs(float64(diff)))
+	}
+
+	// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
+	if win.isWheelScrolling {
+		return nil, 0, false
 	}
 
 	if isGridGoto {
