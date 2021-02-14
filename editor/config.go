@@ -268,25 +268,17 @@ func newConfig(home string) (string, gonvimConfig) {
 }
 
 func (c *gonvimConfig) init() {
+	// For debug
+	c.Editor.SkipGlobalId = false
+
 	// Set default value
-	c.Editor.Width = 800
-	c.Editor.Height = 600
-	c.Editor.Transparent = 1.0
 	c.Editor.BorderlessWindow = false
 
-	c.Editor.SkipGlobalId = false
-	c.Editor.CachedDrawing = true
-	c.Editor.CacheSize = 480
+	c.Editor.Width = 800
+	c.Editor.Height = 600
+	c.Editor.Gap = 2
 
-	c.Editor.ExtCmdline = false
-	c.Editor.ExtPopupmenu = false
-	c.Editor.ExtTabline = false
-	c.Editor.ExtMessages = false
-	c.Editor.DrawWindowSeparator = false
-	c.Editor.WindowSeparatorTheme = "dark"
-	c.Editor.WindowSeparatorColor = ""
-	c.Editor.WindowSeparatorGradient = false
-	c.Editor.DisableHorizontalScroll = true
+	c.Editor.Transparent = 1.0
 
 	switch runtime.GOOS {
 	case "windows":
@@ -299,30 +291,70 @@ func (c *gonvimConfig) init() {
 	c.Editor.FontSize = 12
 	c.Editor.Linespace = 6
 
+	c.Editor.ExtCmdline = false
+	c.Editor.ExtPopupmenu = false
+	c.Editor.ExtTabline = false
+	c.Editor.ExtMessages = false
+
+	c.Editor.CachedDrawing = true
+	c.Editor.CacheSize = 480
+
+	c.Editor.DisableLigatures = false
+	c.Editor.Clipboard = true
+	c.Editor.Macmeta = true
+	c.Editor.DisableImeInNormal = false
+
+	c.Editor.DrawWindowSeparator = false
+	c.Editor.WindowSeparatorTheme = "dark"
+	c.Editor.WindowSeparatorColor = "#2222ff"
+	c.Editor.WindowSeparatorGradient = false
+
 	// Indent guide
 	c.Editor.IndentGuide = false
 	c.Editor.IndentGuideIgnoreFtList = []string{"markdown", "md", "txt", "text", "help", "json", "nerdtree"}
+
+	c.Editor.SmoothScroll = false
+	c.Editor.DisableHorizontalScroll = true
+
+	c.Editor.DrawBorderForFloatWindow = false
+	c.Editor.DrawShadowForFloatWindow = false
+
+	c.Editor.DesktopNotifications = false
+	c.Editor.ClickEffect = false
 
 	// replace diff color drawing pattern
 	c.Editor.DiffAddPattern = 1
 	c.Editor.DiffDeletePattern = 1
 	c.Editor.DiffChangePattern = 1
 
+	// ----
+
 	// palette size
 	c.Palette.AreaRatio = 0.5
 	c.Palette.MaxNumberOfResultItems = 30
 	c.Palette.Transparent = 1.0
 
+	// ----
+
 	c.Message.Transparent = 1.0
+
+	// ----
 
 	c.Statusline.Visible = false
 	c.Statusline.ModeIndicatorType = "textLabel"
-	c.Statusline.Left = []string{"mode", "filename"}
+	c.Statusline.Left = []string{"mode", "filepath", "filename"}
 	c.Statusline.Right = []string{"git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
 
+	// ----
+
 	c.Tabline.Visible = true
+	c.Tabline.ShowIcon = true
+
+	// ----
 
 	c.Lint.Visible = false
+
+	// ----
 
 	c.Popupmenu.ShowDetail = true
 	c.Popupmenu.Total = 20
@@ -330,18 +362,31 @@ func (c *gonvimConfig) init() {
 	c.Popupmenu.InfoWidth = 1
 	c.Popupmenu.DetailWidth = 250
 
-	// c.ActivityBar.Visible = true
+	// ----
 
 	c.ScrollBar.Visible = false
 
+	// ----
+
 	c.MiniMap.Width = 110
 
+	// ----
+
+	c.Markdown.Disable = false
 	c.Markdown.CodeHlStyle = "github"
 
+	// ----
+
+	c.SideBar.Visible = false
 	c.SideBar.Width = 200
 	c.SideBar.AccentColor = "#5596ea"
 
+	// ----
+
 	c.FileExplore.MaxDisplayItems = 30
 
+	// ----
+
 	c.Workspace.PathStyle = "minimum"
+	c.Workspace.RestoreSession = false
 }
