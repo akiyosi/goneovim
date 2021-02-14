@@ -739,6 +739,9 @@ func (e *Editor) copyClipBoard() {
 }
 
 func (e *Editor) workspaceNew() {
+	if len(e.workspaces) == 10 {
+		return
+	}
 	editor.isSetGuiColor = false
 	ws, err := newWorkspace("")
 	if err != nil {
