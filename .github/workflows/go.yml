@@ -36,6 +36,7 @@ jobs:
         target: desktop
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
+        mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
   
     - name: Get Qt binding for Go
       run: |
@@ -57,7 +58,7 @@ jobs:
   
     - name: Get dependencies
       run: |
-        go get -v -t -d github.com/${{ github.repository }}/editor
+        go get -v -t -d github.com/${{ github.repository }}/...
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtmoc
   
@@ -68,6 +69,7 @@ jobs:
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
+        cp -pR ../../runtime ./deploy/linux/
   
     - name: Add executable
       run: |
@@ -112,6 +114,7 @@ jobs:
         target: desktop
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
+        mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
   
     - name: Get Qt binding for Go
       run: |
@@ -128,7 +131,7 @@ jobs:
   
     - name: Get dependencies
       run: |
-        go get -v -t -d github.com/${{ github.repository }}/editor
+        go get -v -t -d github.com/${{ github.repository }}/...
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtmoc
   
@@ -139,6 +142,7 @@ jobs:
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
+        cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
   
     - name: Upload for macos
       uses: actions/upload-artifact@v1
@@ -173,7 +177,7 @@ jobs:
         curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/15/release/vs_buildtools.exe
         New-Item -Path BuildTools -ItemType Directory 
         .\vs_BuildTools.exe --quiet --wait --norestart --nocache --installPath ${{ github.workspace }}\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeOptional
-        Start-Sleep -s 720
+        Start-Sleep -s 690
 
     - name: Check MSVC 2017 Visual C++ Buildtools installation
       run : |
@@ -197,6 +201,7 @@ jobs:
         arch: 'win64_msvc2017_64'
         install-deps: 'true'
         dir: ${{ github.workspace }}
+        mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
 
     - name: Install Go
       continue-on-error: true
@@ -268,7 +273,7 @@ jobs:
     - name: Retrieving dependencies
       continue-on-error: true
       run: |
-        go get -v -d github.com/${{ github.repository }}/editor
+        go get -v -d github.com/${{ github.repository }}/...
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtmoc.exe
 
@@ -289,10 +294,16 @@ jobs:
         $data | Out-File   .\editor\screen.go -Encoding UTF8
         $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
         $data | Out-File   .\editor\screen.go -Encoding UTF8
-        $ch="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-        $rep="), int(core.Qt__AlignVCenter), text, nil,"
-        $data=Get-Content  .\editor\screen.go | % { $_ -replace [regex]::Escape($ch), $rep }
+        $ch1="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+        $rep1="), int(core.Qt__AlignVCenter), text, nil,"
+        $data=Get-Content  .\editor\screen.go | % { $_ -replace [regex]::Escape($ch1), $rep1 }
         $data | Out-File   .\editor\screen.go -Encoding UTF8
+        $data=Get-Content  .\editor\cursor.go | % { $_ -replace "DrawText6", "DrawText5" }
+        $data | Out-File   .\editor\cursor.go -Encoding UTF8
+        $ch2="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+        $rep2="), int(core.Qt__AlignVCenter), text, nil,"
+        $data=Get-Content  .\editor\cursor.go | % { $_ -replace [regex]::Escape($ch2), $rep2 }
+        $data | Out-File   .\editor\cursor.go -Encoding UTF8
         $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
         $data | Out-File   .\util\utils.go -Encoding UTF8
 
@@ -311,6 +322,7 @@ jobs:
       run: |
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtdeploy build desktop
+        Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
 
     - name: Upload for windows
       uses: actions/upload-artifact@v1

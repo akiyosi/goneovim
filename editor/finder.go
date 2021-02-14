@@ -23,13 +23,13 @@ func (f *Finder) hide() {
 
 	// win, ok := f.ws.screen.windows[f.ws.cursor.gridid]
 	// if ok && win != nil {
-	// 	f.ws.cursor.widget.SetParent(win.widget)
+	// 	f.ws.cursor.widget.SetParent(win)
 	// 	f.ws.cursor.widget.Hide()
 	// 	f.ws.cursor.widget.Show()
 	// }
 	win, ok := f.ws.screen.getWindow(f.ws.cursor.gridid)
 	if ok {
-		f.ws.cursor.widget.SetParent(win.widget)
+		f.ws.cursor.widget.SetParent(win)
 		f.ws.cursor.widget.Hide()
 		f.ws.cursor.widget.Show()
 	}
@@ -53,9 +53,12 @@ func (f *Finder) selectResult(args []interface{}) {
 func (f *Finder) showPattern(args []interface{}) {
 	palette := f.ws.fpalette
 	p := args[0].(string)
-	palette.patternText = p
-	palette.pattern.SetText(palette.patternText)
+	isResize := palette.patternText != p
+	palette.setPattern(p)
 	palette.cursorMove(util.ReflectToInt(args[1]))
+	if isResize {
+		palette.resize()
+	}
 }
 
 func (f *Finder) showResult(args []interface{}) {

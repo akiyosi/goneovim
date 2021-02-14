@@ -47,13 +47,13 @@ Development of goneovim
   * Clone this repository
 
     ```
-    go get -d github.com/akiyosi/goneovim/editor/
+    go get -d github.com/akiyosi/goneovim/...
     ```
 
   * Generate moc files
 
     ```
-	cd $GOPATH/src/github.com/akiyosi/goneovim
+    cd $GOPATH/src/github.com/akiyosi/goneovim
     $(go env GOPATH)/bin/qtmoc
     ```
 
@@ -67,7 +67,7 @@ Development of goneovim
   * Build
 
     ```
-	cd $GOPATH/src/github.com/akiyosi/goneovim/cmd/goneovim
+    cd $GOPATH/src/github.com/akiyosi/goneovim/cmd/goneovim
     $(go env GOPATH)/bin/qtdeploy build desktop
     ```
 
@@ -133,7 +133,7 @@ Development of goneovim
       echo "devel +6741b7009d" > VERSION
       curl -sL --retry 10 --retry-delay 60 https://github.com/golang/go/commit/e4535772ca3f11084ee5fa4d4bd3a542e143b80f.patch | patch -p1 -R
       curl -sL --retry 10 --retry-delay 60 https://github.com/golang/go/commit/f10815898c0732e2e6cdb697d6f95f33f8650b4e.patch | patch -p1 -R
-	  cd ..
+      cd ..
       Move-Item -Path go-root -Destination go-boot
       Move-Item -Path go-msvc -Destination go-root
       cd ${{ github.workspace }}\go-root\src
@@ -149,13 +149,13 @@ Development of goneovim
   * Clone this repository
 
     ```
-    GO111MODULE=off go get -d github.com/akiyosi/goneovim/editor/
+    GO111MODULE=off go get -d github.com/akiyosi/goneovim/...
     ```
 
   * Convert code for suit Qt 5.12
     For Qt5.12, the following code conversion is required.
 
-	```
+    ```
     $data=Get-Content  .\editor\workspace.go | % { $_ -replace "NewQVariant31", "NewQVariant33" }
     $data | Out-File   .\editor\workspace.go -Encoding UTF8
     $data=Get-Content  .\editor\popupmenu.go | % { $_ -replace "AddWidget2", "AddWidget" }
@@ -166,10 +166,16 @@ Development of goneovim
     $data | Out-File   .\editor\screen.go -Encoding UTF8
     $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
     $data | Out-File   .\editor\screen.go -Encoding UTF8
-    $ch="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-    $rep="), int(core.Qt__AlignVCenter), text, nil,"
-    $data=Get-Content  .\editor\screen.go | % { $_ -replace [regex]::Escape($ch), $rep }
+    $ch1="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+    $rep1="), int(core.Qt__AlignVCenter), text, nil,"
+    $data=Get-Content  .\editor\screen.go | % { $_ -replace [regex]::Escape($ch1), $rep1 }
     $data | Out-File   .\editor\screen.go -Encoding UTF8
+    $data=Get-Content  .\editor\cursor.go | % { $_ -replace "DrawText6", "DrawText5" }
+    $data | Out-File   .\editor\cursor.go -Encoding UTF8
+    $ch2="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+    $rep2="), int(core.Qt__AlignVCenter), text, nil,"
+    $data=Get-Content  .\editor\cursor.go | % { $_ -replace [regex]::Escape($ch2), $rep2 }
+    $data | Out-File   .\editor\cursor.go -Encoding UTF8
     $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
     $data | Out-File   .\util\utils.go -Encoding UTF8
     ```
@@ -177,14 +183,14 @@ Development of goneovim
   * Generate moc files
 
     ```
-	cd %GOPATH%/src/github.com/akiyosi/goneovim
+    cd %GOPATH%/src/github.com/akiyosi/goneovim
     %GOPATH%/bin/qtmoc.exe
     ```
 
   * Build
 
     ```
-	cd %GOPATH%/src/github.com/akiyosi/goneovim
+    cd %GOPATH%/src/github.com/akiyosi/goneovim
     %GOPATH%/bin/qtdeploy.exe build desktop
     ```
 

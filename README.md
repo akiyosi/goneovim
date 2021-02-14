@@ -1,16 +1,15 @@
-<img src="https://raw.githubusercontent.com/wiki/akiyosi/goneovim/images/GoNeovim.png" width="250" align="top" >
-
+Goneovim
 ---
 
 ![test](https://github.com/akiyosi/goneovim/workflows/test/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/goneovim)](https://goreportcard.com/report/github.com/akiyosi/goneovim)
-![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.4.9/total)
+![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.4.10/total)
 [![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
 
-*GoNeovim* is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
+Goneovim is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
 This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
 
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/screenshot-202009.png)
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-top.png)
 
 ## Features
 
@@ -21,7 +20,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Modern Text Editor Features
   - Markdown Preview
   - Minimap
-  - Smooth scroll (with MacOS touch pad)
+  - Smooth scroll (Support for both touchpad and Vim scroll command reactions.)
   - Workspace feature which manages multiple nvim
   - External File Explorer
   - Scrollbar
@@ -60,23 +59,28 @@ Or you can get the latest binary from Github Actions CI. See [Actions](https://g
 
 See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
+## Screenshots
+
+### Workspaces
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-workspaces.gif)
+
+### Smooth Scroll with touchpad
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-smoothscroll-1.gif)
+
+### Smooth Scroll for neovim scroll commands
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-smoothscroll-2.gif)
+
+### Minimap, External Float Window
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-top.png)
+
+### Markdown Preview
+![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-markdown.gif)
+
 
 ## Development
 
 See [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md)
 
-
-## ToDo
-
-* Add test
-
-* Improve Input Method Editor(IME) feature
-
-* Improve startup time
-
-* Support GPU rendering
-
-* Support neovim ui `ext_statusline`
 
 
 ## Similar projects
@@ -85,25 +89,6 @@ See [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md
 * [Gnvim](https://github.com/vhakulinen/gnvim)
 * [FVim](https://github.com/yatli/fvim)
 * [Uivonim](https://github.com/smolck/uivonim)
-
-
-## Screenshots
-
-* Workspaces, external file explorer
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/workspaces-fileexplorer.png)
-* Fuzzy Finder
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/fuzzyfinder.png)
-* Markdown preview
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/markdown-preview.png)
-* Minimap
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/minimap.png)
-* Indentguide, display ligatures(Fira Code)
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/indentguide.png)
-* Transparent app window, Transparent message window
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/transparent.png)
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/transparent-message.png)
-* Independent font settings per window
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/font-setting-per-window.png)
 
 ## Credits
 

@@ -147,7 +147,7 @@ func (m *Markdown) updatePos() {
 					int(float64(win.cols)*font.truewidth),
 					win.rows*font.lineHeight,
 				)
-				m.webview.SetParent(win.widget)
+				m.webview.SetParent(win)
 				m.show()
 			} else {
 				m.webview.Resize2(
@@ -166,17 +166,6 @@ func (m *Markdown) updatePos() {
 				}
 			}
 
-			// baseLine := 0
-			// lines := m.ws.botLine - m.ws.topLine
-			// if m.ws.curLine < m.ws.topLine + int(float64(lines)/3.0) {
-			// 	baseLine = (m.ws.topLine + m.ws.topLine)/2
-			// } else if m.ws.curLine >= m.ws.topLine + int(float64(lines)/3.0) && m.ws.curLine < m.ws.topLine + int(float64(lines*2)/3.0) {
-			// 	baseLine = m.ws.curLine
-			// } else {
-			// 	baseLine = (m.ws.curLine + m.ws.topLine)/2
-			// }
-			// position := float64(baseLine)  / float64(m.ws.maxLine)
-			// m.webpage.RunJavaScript(fmt.Sprintf("window.scrollTo(0,%f*document.body.scrollHeight)", position))
 			return false
 		}
 		return true

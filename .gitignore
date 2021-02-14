@@ -9,3 +9,4 @@ cmd/goneovim/deploy/*
 cmd/goneovim/deploy*
 cmd/goneovim/windows/*
 cmd/goneovim/rcc*
+cmd/goneovim/.nvimlog

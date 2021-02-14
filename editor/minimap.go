@@ -47,10 +47,8 @@ type MiniMap struct {
 	api5       bool
 	rows       int
 	cols       int
-	topLine    int
-	botLine    int
-	curLine    int
-	curColm    int
+
+	viewport [4]int
 }
 
 func newMiniMap() *MiniMap {
@@ -96,11 +94,11 @@ func newMiniMap() *MiniMap {
 
 	switch runtime.GOOS {
 	case "windows":
-		m.font = initFontNew("Consolas", 1.0, 0, false)
+		m.font = initFontNew("Consolas", 1.0, 0)
 	case "darwin":
-		m.font = initFontNew("Courier New", 2.0, 0, false)
+		m.font = initFontNew("Courier New", 2.0, 0)
 	default:
-		m.font = initFontNew("Monospace", 1.0, 0, false)
+		m.font = initFontNew("Monospace", 1.0, 0)
 	}
 
 	return m
@@ -151,9 +149,9 @@ func (m *MiniMap) startMinimapProc() {
 	}
 	m.uiAttached = true
 
-	neovim.Subscribe("Gui")
+	// neovim.Subscribe("Gui")
 	neovim.Command(":syntax on")
-	neovim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all")
+	neovim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all ts=4")
 }
 
 func (m *MiniMap) exit() {
@@ -212,7 +210,7 @@ func (m *MiniMap) setCurrentRegion() {
 	if !ok {
 		return
 	}
-	m.curRegion.SetParent(win.widget)
+	m.curRegion.SetParent(win)
 }
 
 func (m *MiniMap) toggle() {
@@ -227,7 +225,7 @@ func (m *MiniMap) toggle() {
 		m.visible = true
 	}
 	m.mu.Unlock()
-	m.curRegion.SetParent(win.widget)
+	m.curRegion.SetParent(win)
 	m.bufUpdate()
 	m.bufSync()
 	m.ws.updateSize()
@@ -320,10 +318,16 @@ func (m *MiniMap) setColorscheme() {
 	runtimePaths, _ := m.ws.nvim.RuntimePaths()
 	runtimeDir := ""
 	colorschemePath := ""
+	treesitterPath := ""
 	for _, path := range runtimePaths {
 		lsDirs, err := ioutil.ReadDir(path)
 		if err != nil {
 			continue
+		}
+		if strings.Contains(path, "nvim-treesitter") {
+			if treesitterPath == "" || len(treesitterPath) > len(path) {
+				treesitterPath = path
+			}
 		}
 		for _, d := range lsDirs {
 			dirname := d.Name()
@@ -358,21 +362,29 @@ func (m *MiniMap) setColorscheme() {
 	m.nvim.Command(":colorscheme " + colo)
 	m.colorscheme = colo
 	m.isSetColorscheme = true
+
+	editor.putLog("detected treesitter runtime path:", treesitterPath)
+
+	// if nvim-treesitter is installed
+	// m.nvim.Command("luafile ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/lua/nvim-treesitter.lua")
+	// m.nvim.Command("luafile ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/lua/nvim-treesitter/highlight.lua")
+	// m.nvim.Command("luafile ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/lua/nvim-treesitter/configs.lua")
+	// m.nvim.Command("source ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/plugin//nvim-treesitter.vim")
+	// m.nvim.Command("TSEnableAll highlight")
+	m.nvim.Command("luafile " + treesitterPath + "/lua/nvim-treesitter.lua")
+	m.nvim.Command("luafile " + treesitterPath + "/lua/nvim-treesitter/highlight.lua")
+	m.nvim.Command("luafile " + treesitterPath + "/lua/nvim-treesitter/configs.lua")
+	m.nvim.Command("source  " + treesitterPath + "/plugin//nvim-treesitter.vim")
+	m.nvim.Command("TSEnableAll highlight")
+
 }
 
 func (m *MiniMap) mapScroll() {
 	linePos := 0
 	regionHeight := 0
 
-	if m.api5 {
-		linePos = m.ws.topLine - m.topLine
-		regionHeight = m.ws.botLine - m.ws.topLine
-	} else {
-		absScreenTop := m.ws.curLine - m.ws.screen.cursor[0]
-		var absMapTop int
-		m.nvim.Eval("line('w0')", &absMapTop)
-		linePos = absScreenTop - absMapTop
-	}
+	regionHeight = m.ws.viewport[1] - m.ws.viewport[0]
+	linePos = m.ws.viewport[0] - m.viewport[0]
 
 	win, ok := m.ws.screen.getWindow(m.ws.cursor.gridid)
 	if !ok {
@@ -484,16 +496,12 @@ func (m *MiniMap) bufSync() {
 	)
 }
 
-func isWindowFloatForConfig(config map[string]interface{}) bool {
-	if config == nil {
+func isWindowFloatForConfig(wc *nvim.WindowConfig) bool {
+	if wc == nil {
 		return false
 	}
 
-	relative, ok := config["relative"]
-	if !ok {
-		return false
-	}
-	if relative == "" {
+	if wc.Relative == "" {
 		return false
 	}
 
@@ -525,19 +533,22 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 			// m.gridCursorGoto(args)
 		case "grid_scroll":
 			m.gridScroll(args)
-			m.mapScroll()
 
 		case "win_viewport":
 			vp := args[0].([]interface{})
-			m.topLine = util.ReflectToInt(vp[2]) + 1
-			m.botLine = util.ReflectToInt(vp[3]) + 1
-			m.curLine = util.ReflectToInt(vp[4]) + 1
-			m.curColm = util.ReflectToInt(vp[5]) + 1
+			m.viewport = [4]int{
+				util.ReflectToInt(vp[2]) + 1,
+				util.ReflectToInt(vp[3]) + 1,
+				util.ReflectToInt(vp[4]) + 1,
+				util.ReflectToInt(vp[5]) + 1,
+			}
+		case "flush":
+			m.update()
+			m.mapScroll()
 
 		default:
 		}
 	}
-	m.update()
 }
 
 func (m *MiniMap) transparent(bg *RGBA) int {
@@ -610,6 +621,7 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 		vert = event.AngleDelta().Y()
 		accel = 16
 	}
+
 	if vert == 0 && horiz == 0 {
 		return
 	}
@@ -619,7 +631,8 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 	} else if vert < 0 {
 		m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
 	}
-	m.mapScroll()
+
+	// m.mapScroll()
 
 	event.Accept()
 }
@@ -629,7 +642,8 @@ func (m *MiniMap) mouseEvent(event *gui.QMouseEvent) {
 	y := int(float64(event.Y()) / float64(font.lineHeight))
 	targetPos := 0
 	if m.api5 {
-		targetPos = m.topLine + y
+		// targetPos = m.topLine + y
+		targetPos = m.viewport[0] + y
 	} else {
 		var absMapTop int
 		m.nvim.Eval("line('w0')", &absMapTop)
@@ -658,9 +672,9 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 	}
 	wsfont := w.getFont()
 	p.SetFont(wsfont.fontNew)
+	p.SetRenderHint(gui.QPainter__Antialiasing, true)
 	line := w.content[y]
 	chars := map[*Highlight][]int{}
-	specialChars := []int{}
 
 	for x := col; x < col+cols; x++ {
 		if x >= len(line) {
@@ -675,10 +689,6 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 		if line[x].char == "" {
 			continue
 		}
-		if !line[x].normalWidth {
-			specialChars = append(specialChars, x)
-			continue
-		}
 
 		highlight := line[x].highlight
 		colorSlice, ok := chars[highlight]
@@ -688,11 +698,6 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 		colorSlice = append(colorSlice, x)
 		chars[highlight] = colorSlice
 	}
-
-	pointF := core.NewQPointF3(
-		float64(col)*wsfont.truewidth,
-		float64((y)*wsfont.lineHeight+wsfont.shift),
-	)
 
 	for highlight, colorSlice := range chars {
 		var buffer bytes.Buffer
@@ -714,23 +719,37 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 
 		text := buffer.String()
 		if text != "" {
-			fg := highlight.fg()
+			fg := highlight.fg().HSV().Colorless().RGB()
 			if fg != nil {
 				p.SetPen2(fg.QColor())
 			}
-			p.DrawText(pointF, text)
+
+			width := 0
+			for i, c := range text {
+				if string(c) == "@" {
+					width++
+				}
+				if string(c) == " " || i == len(text)-1 {
+					if width > 0 {
+						k := 0.8
+						path := gui.NewQPainterPath()
+						path.AddRoundedRect2(
+							float64(col+i-width)*wsfont.truewidth*k,
+							float64(y*wsfont.lineHeight+wsfont.shift),
+							float64(width)*wsfont.truewidth*k,
+							float64(wsfont.lineHeight)*k,
+							2,
+							2,
+							core.Qt__AbsoluteSize,
+						)
+						p.FillPath(path, gui.NewQBrush3(fg.QColor(), core.Qt__SolidPattern))
+						width = 0
+					} else {
+						continue
+					}
+				}
+			}
 		}
 
-	}
-
-	for _, x := range specialChars {
-		if line[x] == nil || line[x].char == " " {
-			continue
-		}
-		fg := line[x].highlight.fg()
-		p.SetPen2(fg.QColor())
-		pointF.SetX(float64(x) * wsfont.truewidth)
-		pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift))
-		p.DrawText(pointF, line[x].char)
 	}
 }

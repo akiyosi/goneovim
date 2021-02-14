@@ -219,31 +219,33 @@ func (rgba *RGBA) HSV() *HSV {
 
 	var h, s float64
 
-	if del == 0 {
+	if del < 0.00001 {
 		h = 0
 		s = 0
-	} else {
-		s = del / max
-
-		delR := (((max - r) / 6) + (del / 2)) / del
-		delG := (((max - g) / 6) + (del / 2)) / del
-		delB := (((max - b) / 6) + (del / 2)) / del
-
-		if r == max {
-			h = delB - delG
-		} else if g == max {
-			h = (1 / 3) + delR - delB
-		} else if b == max {
-			h = (2 / 3) + delG - delR
-		}
-
-		if h < 0 {
-			h += 1
-		}
-		if h > 1 {
-			h -= 1
-		}
+		return &HSV{h, s, v}
 	}
+	if max > 0.0 {
+		s = del / max
+	} else {
+		s = 0.0
+		h = -1.0
+		return &HSV{h, s, v}
+	}
+
+	if r >= max {
+		h = (g - b) / del
+	} else if g >= max {
+		h = 2.0 + (b-r)/del
+	} else if b >= max {
+		h = 4.0 + (r-g)/del
+	}
+	h *= 60
+
+	if h < 0 {
+		h += 360
+	}
+
+	h = h / 360.0
 
 	return &HSV{h, s, v}
 }
@@ -253,6 +255,14 @@ func (hsv *HSV) Colorfulness() *HSV {
 		H: hsv.H,
 		S: math.Sqrt(hsv.S),
 		V: math.Sqrt(hsv.V),
+	}
+}
+
+func (hsv *HSV) Colorless() *HSV {
+	return &HSV{
+		H: hsv.H,
+		S: math.Pow(hsv.S, 1.3),
+		V: math.Pow(hsv.V, 1.3),
 	}
 }
 
@@ -307,6 +317,6 @@ func (hsv *HSV) RGB() *RGBA {
 		R: int(r),
 		G: int(g),
 		B: int(b),
-		A: 255,
+		A: 1.0,
 	}
 }

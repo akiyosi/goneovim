@@ -158,14 +158,7 @@ func (s *ScrollBar) update() {
 	if !ok {
 		return
 	}
-	top := win.scrollRegion[0]
-	bot := win.scrollRegion[1]
-	if top == 0 && bot == 0 {
-		top = 0
-		bot = s.ws.rows - 1
-	}
-	font := win.getFont()
-	relativeCursorY := int(float64(s.ws.cursor.y) / float64(font.lineHeight))
+	rows := win.rows
 	if s.ws.maxLine == 0 {
 		lnITF, err := s.ws.nvimEval("line('$')")
 		if err != nil {
@@ -173,17 +166,23 @@ func (s *ScrollBar) update() {
 		} else {
 			s.ws.maxLine = util.ReflectToInt(lnITF)
 		}
-
 	}
 
-	if s.ws.maxLine > bot-top {
-		s.height = int(float64(bot-top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+	if s.ws.maxLine > rows {
+		s.height = int(float64(rows) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		thumbHeight := s.height
 		if s.height < 20 {
 			thumbHeight = 20
 		}
 		s.thumb.SetFixedHeight(thumbHeight)
-		s.pos = int(float64(s.ws.curLine-relativeCursorY) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
+		top := 0
+		if s.ws.api5 {
+			top = s.ws.viewport[0] - 1
+		} else {
+			top = s.ws.viewport[2] - s.ws.screen.cursor[0] - 1
+		}
+		editor.putLog("scrollbar: debug::", top, s.ws.maxLine)
+		s.pos = int(float64(top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		s.thumb.Move2(0, s.pos)
 		s.widget.Show()
 	} else {

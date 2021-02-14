@@ -157,7 +157,7 @@ func (m *Message) updateFont() {
 	}
 }
 
-func (m *Message) subscribe() {
+func (m *Message) connectUI() {
 	m.ws.signal.ConnectMessageSignal(func() {
 		m.update()
 	})
@@ -202,15 +202,17 @@ func (m *Message) resize() {
 	}
 
 	leftPadding := 0
-	if editor.wsSide != nil {
-		if editor.wsSide.scrollarea != nil {
-			leftPadding = editor.wsSide.scrollarea.Width()
+	if editor.side != nil {
+		if editor.side.scrollarea != nil {
+			leftPadding = editor.side.scrollarea.Width()
 		}
 	}
 
 	scrollbarwidth := 0
 	if editor.config.ScrollBar.Visible {
-		scrollbarwidth = m.ws.scrollBar.widget.Width()
+		if m.ws.scrollBar != nil {
+			scrollbarwidth = m.ws.scrollBar.widget.Width()
+		}
 	}
 
 	var x, y int
@@ -282,7 +284,9 @@ func (m *Message) msgShow(args []interface{}) {
 		lineLen := 0
 		scrollbarwidth := 0
 		if editor.config.ScrollBar.Visible {
-			scrollbarwidth = m.ws.scrollBar.widget.Width()
+			if m.ws.scrollBar != nil {
+				scrollbarwidth = m.ws.scrollBar.widget.Width()
+			}
 		}
 		maxLen := m.ws.screen.widget.Width() - scrollbarwidth - 12
 		var attrId int
