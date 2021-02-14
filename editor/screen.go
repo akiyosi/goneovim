@@ -2035,32 +2035,33 @@ func (s *Screen) gridClear(args []interface{}) {
 }
 
 func (s *Screen) gridLine(args []interface{}) {
+	var win *Window
+	var ok bool
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
+		row := util.ReflectToInt(arg.([]interface{})[1])
+		colStart := util.ReflectToInt(arg.([]interface{})[2])
+
 		if isSkipGlobalId(gridid) {
 			continue
 		}
 
-		s.updateGridContent(arg.([]interface{}))
+		if win == nil || win.grid != gridid {
+			win, ok = s.getWindow(gridid)
+			if !ok {
+				continue
+			}
+		}
+
+		win.updateGridContent(row, colStart, arg.([]interface{})[3].([]interface{}))
 	}
 }
 
-func (s *Screen) updateGridContent(arg []interface{}) {
-	gridid := util.ReflectToInt(arg[0])
-	row := util.ReflectToInt(arg[1])
-	colStart := util.ReflectToInt(arg[2])
-
-	if isSkipGlobalId(gridid) {
-		return
-	}
+func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 	if colStart < 0 {
 		return
 	}
 
-	win, ok := s.getWindow(gridid)
-	if !ok {
-		return
-	}
 	if row >= win.rows {
 		return
 	}
@@ -2071,10 +2072,10 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 	}
 
 	// We should control to draw statusline, vsplitter
-	if editor.config.Editor.DrawWindowSeparator && gridid == 1 {
+	if editor.config.Editor.DrawWindowSeparator && win.grid == 1 {
 
 		isSkipDraw := true
-		if s.name != "minimap" {
+		if win.s.name != "minimap" {
 
 			// Draw  bottom statusline
 			if row == win.rows-2 {
@@ -2086,7 +2087,7 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 			}
 
 			// // Do not Draw statusline of splitted window
-			// s.windows.Range(func(_, winITF interface{}) bool {
+			// win.s.windows.Range(func(_, winITF interface{}) bool {
 			// 	w := winITF.(*Window)
 			// 	if w == nil {
 			// 		return true
@@ -2109,7 +2110,6 @@ func (s *Screen) updateGridContent(arg []interface{}) {
 		}
 	}
 
-	cells := arg[3].([]interface{})
 	win.updateLine(colStart, row, cells)
 	win.countContent(row)
 	if !win.isShown() {
