@@ -403,12 +403,15 @@ func (w *Workspace) registerSignal() {
 			editor.close()
 			return
 		}
-		for i := 0; i <= len(editor.side.items) && i <= len(editor.workspaces); i++ {
-			if i >= index {
-				editor.side.items[i].cwdpath = editor.side.items[i+1].cwdpath
+		editor.workspaces = workspaces
+
+		items := []*WorkspaceSideItem{}
+		for i, item := range editor.side.items {
+			if i != index {
+				items = append(items, item)
 			}
 		}
-		editor.workspaces = workspaces
+
 		w.hide()
 		if editor.active == index {
 			if index > 0 {
