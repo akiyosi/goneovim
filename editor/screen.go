@@ -559,6 +559,9 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 }
 
 func (s *Screen) toolTipMove(x int, y int) {
+	if s.ws.palette == nil {
+		return
+	}
 	padding := 0
 	if s.ws.palette.widget.IsVisible() {
 		padding = s.ws.palette.padding
@@ -572,6 +575,9 @@ func (s *Screen) toolTipFont(font *Font) {
 }
 
 func (s *Screen) toolTipShow() {
+	if s.ws.palette == nil {
+		return
+	}
 	if !s.ws.palette.widget.IsVisible() {
 		win, ok := s.getWindow(s.ws.cursor.gridid)
 		if ok {

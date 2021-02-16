@@ -68,6 +68,9 @@ func sanitize(s string) string {
 }
 
 func (c *Cmdline) show(args []interface{}) {
+	if c.ws.palette == nil {
+		return
+	}
 	palette := c.ws.palette
 	arg := args[0].([]interface{})
 
@@ -131,6 +134,9 @@ func (c *Cmdline) show(args []interface{}) {
 }
 
 func (c *Cmdline) showAddition() {
+	if c.ws.palette == nil {
+		return
+	}
 	lines := append(c.getPromptLines(), c.getFunctionLines()...)
 	palette := c.ws.palette
 	for i, resultItem := range palette.resultItems {
@@ -173,10 +179,16 @@ func (c *Cmdline) getFunctionLines() []string {
 }
 
 func (c *Cmdline) cursorMove() {
+	if c.ws.palette == nil {
+		return
+	}
 	c.ws.palette.cursorMove(c.pos + len(c.content.firstc) + c.content.indent)
 }
 
 func (c *Cmdline) hide() {
+	if c.ws.palette == nil {
+		return
+	}
 	palette := c.ws.palette
 	palette.hide()
 	if c.inFunction {
@@ -221,6 +233,9 @@ func (c *Cmdline) changePos(args []interface{}) {
 }
 
 func (c *Cmdline) putChar(args []interface{}) {
+	if c.ws.palette == nil {
+		return
+	}
 	args = args[0].([]interface{})
 	ch := args[0].(string)
 	// shift := util.ReflectToInt(args[1])
@@ -231,82 +246,94 @@ func (c *Cmdline) putChar(args []interface{}) {
 	palette.setPattern(text)
 }
 
-func (c *Cmdline) wildmenuShow(args []interface{}) {
-	c.wildmenuShown = true
-	args = args[0].([]interface{})
-	c.rawItems = args[0].([]interface{})
-	palette := c.ws.palette
-	c.top = 0
-	for i := 0; i < palette.showTotal; i++ {
-		resultItem := palette.resultItems[i]
-		if i >= len(c.rawItems) {
-			resultItem.hide()
-			continue
-		}
-		text := c.rawItems[i].(string)
-		resultItem.setItem(text, "", []int{})
-		resultItem.show()
-		resultItem.setSelected(false)
-	}
+// func (c *Cmdline) wildmenuShow(args []interface{}) {
+// 	if c.ws.palette == nil {
+// 		return
+// 	}
+// 	c.wildmenuShown = true
+// 	args = args[0].([]interface{})
+// 	c.rawItems = args[0].([]interface{})
+// 	palette := c.ws.palette
+// 	c.top = 0
+// 	for i := 0; i < palette.showTotal; i++ {
+// 		resultItem := palette.resultItems[i]
+// 		if i >= len(c.rawItems) {
+// 			resultItem.hide()
+// 			continue
+// 		}
+// 		text := c.rawItems[i].(string)
+// 		resultItem.setItem(text, "", []int{})
+// 		resultItem.show()
+// 		resultItem.setSelected(false)
+// 	}
+//
+// 	total := len(c.rawItems)
+// 	if total > palette.showTotal {
+// 		height := int(float64(palette.showTotal) / float64(total) * float64(palette.itemHeight*palette.showTotal))
+// 		if height == 0 {
+// 			height = 1
+// 		}
+// 		palette.scrollBar.SetFixedHeight(height)
+// 		palette.scrollBarPos = 0
+// 		palette.scrollBar.Move2(0, palette.scrollBarPos)
+// 		palette.scrollCol.Show()
+// 	} else {
+// 		palette.scrollCol.Hide()
+// 	}
+// }
 
-	total := len(c.rawItems)
-	if total > palette.showTotal {
-		height := int(float64(palette.showTotal) / float64(total) * float64(palette.itemHeight*palette.showTotal))
-		if height == 0 {
-			height = 1
-		}
-		palette.scrollBar.SetFixedHeight(height)
-		palette.scrollBarPos = 0
-		palette.scrollBar.Move2(0, palette.scrollBarPos)
-		palette.scrollCol.Show()
-	} else {
-		palette.scrollCol.Hide()
-	}
-}
+// func (c *Cmdline) wildmenuSelect(args []interface{}) {
+// 	if c.ws.palette == nil {
+// 		return
+// 	}
+// 	selected := util.ReflectToInt(args[0].([]interface{})[0])
+// 	// fmt.Println("selected is", selected)
+// 	showTotal := c.ws.palette.showTotal
+// 	if selected == -1 && c.top > 0 {
+// 		c.wildmenuScroll(-c.top)
+// 	}
+// 	if selected-c.top >= showTotal {
+// 		c.wildmenuScroll(selected - c.top - showTotal + 1)
+// 	}
+// 	if selected >= 0 && selected-c.top < 0 {
+// 		c.wildmenuScroll(-1)
+// 	}
+// 	palette := c.ws.palette
+// 	for i := 0; i < palette.showTotal; i++ {
+// 		item := palette.resultItems[i]
+// 		item.setSelected(selected == i+c.top)
+// 	}
+// }
 
-func (c *Cmdline) wildmenuSelect(args []interface{}) {
-	selected := util.ReflectToInt(args[0].([]interface{})[0])
-	// fmt.Println("selected is", selected)
-	showTotal := c.ws.palette.showTotal
-	if selected == -1 && c.top > 0 {
-		c.wildmenuScroll(-c.top)
-	}
-	if selected-c.top >= showTotal {
-		c.wildmenuScroll(selected - c.top - showTotal + 1)
-	}
-	if selected >= 0 && selected-c.top < 0 {
-		c.wildmenuScroll(-1)
-	}
-	palette := c.ws.palette
-	for i := 0; i < palette.showTotal; i++ {
-		item := palette.resultItems[i]
-		item.setSelected(selected == i+c.top)
-	}
-}
+// func (c *Cmdline) wildmenuScroll(n int) {
+// 	if c.ws.palette == nil {
+// 		return
+// 	}
+// 	c.top += n
+// 	palette := c.ws.palette
+// 	for i := 0; i < palette.showTotal; i++ {
+// 		resultItem := palette.resultItems[i]
+// 		if i >= len(c.rawItems) {
+// 			resultItem.hide()
+// 			continue
+// 		}
+// 		text := c.rawItems[i+c.top].(string)
+// 		resultItem.setItem(text, "", []int{})
+// 		resultItem.show()
+// 		resultItem.setSelected(false)
+// 	}
+// 	palette.scrollBarPos = int((float64(c.top) / float64(len(c.rawItems))) * float64(palette.itemHeight*palette.showTotal))
+// 	palette.scrollBar.Move2(0, palette.scrollBarPos)
+// }
 
-func (c *Cmdline) wildmenuScroll(n int) {
-	c.top += n
-	palette := c.ws.palette
-	for i := 0; i < palette.showTotal; i++ {
-		resultItem := palette.resultItems[i]
-		if i >= len(c.rawItems) {
-			resultItem.hide()
-			continue
-		}
-		text := c.rawItems[i+c.top].(string)
-		resultItem.setItem(text, "", []int{})
-		resultItem.show()
-		resultItem.setSelected(false)
-	}
-	palette.scrollBarPos = int((float64(c.top) / float64(len(c.rawItems))) * float64(palette.itemHeight*palette.showTotal))
-	palette.scrollBar.Move2(0, palette.scrollBarPos)
-}
-
-func (c *Cmdline) wildmenuHide() {
-	c.wildmenuShown = false
-}
+// func (c *Cmdline) wildmenuHide() {
+// 	c.wildmenuShown = false
+// }
 
 func (c *Cmdline) cmdWildmenuShow(args []interface{}) {
+	if c.ws.palette == nil {
+		return
+	}
 	c.wildmenuShown = true
 
 	for _, arg := range args {
@@ -343,6 +370,9 @@ func (c *Cmdline) cmdWildmenuShow(args []interface{}) {
 }
 
 func (c *Cmdline) cmdWildmenuSelect(args []interface{}) {
+	if c.ws.palette == nil {
+		return
+	}
 	selected := util.ReflectToInt(args[0].([]interface{})[0])
 	// fmt.Println("selected is", selected)
 	showTotal := c.ws.palette.showTotal
@@ -363,6 +393,9 @@ func (c *Cmdline) cmdWildmenuSelect(args []interface{}) {
 }
 
 func (c *Cmdline) cmdWildmenuScroll(n int) {
+	if c.ws.palette == nil {
+		return
+	}
 	c.top += n
 	palette := c.ws.palette
 	for i := 0; i < palette.showTotal; i++ {
