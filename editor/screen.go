@@ -517,6 +517,9 @@ func (s *Screen) toolTipPos() (int, int, int, int) {
 	if s.lenWindows() == 0 {
 		return 0, 0, 0, 0
 	}
+	if ws.palette == nil {
+		return 0, 0, 0, 0
+	}
 	if ws.palette.widget.IsVisible() {
 		s.tooltip.SetParent(s.ws.palette.widget)
 		font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
