@@ -83,6 +83,11 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 
 	p := gui.NewQPainter2(c.widget)
 
+	color := c.bg
+	if color == nil {
+		color = c.ws.foreground
+	}
+
 	// Draw cursor background
 	p.FillRect4(
 		core.NewQRectF4(
@@ -91,7 +96,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 			width,
 			float64(font.lineHeight),
 		),
-		c.bg.brend(c.ws.background, c.brend).QColor(),
+		color.brend(c.ws.background, c.brend).QColor(),
 	)
 
 	if c.text == "" || c.devicePixelRatio == 0 {
