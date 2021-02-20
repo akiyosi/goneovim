@@ -3679,6 +3679,7 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 			if win.isMsgGrid {
 				return true
 			}
+
 			if win.grid == gridid && !win.isExternal {
 				win.isExternal = true
 
@@ -3694,7 +3695,12 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 
 				extwin.Show()
 				win.extwin = extwin
+				font := win.getFont()
+				width := int(math.Ceil(float64(win.cols) * font.truewidth))
+				height := win.rows * font.lineHeight
+				win.setGridGeometry(width, height)
 				win.setResizableForWxtWin()
+				win.move(win.pos[0], win.pos[1])
 			}
 
 			return true
@@ -3894,9 +3900,9 @@ func (w *Window) move(col int, row int) {
 		}
 	}
 	if w.isExternal {
-		x = EXTWINBORDERSIZE
-		y = EXTWINBORDERSIZE
-
+		w.Move2(EXTWINBORDERSIZE, EXTWINBORDERSIZE)
+		w.extwin.Move2(editor.window.Pos().X()+x, editor.window.Pos().Y()+y)
+		return
 	}
 
 	w.Move2(x, y)
