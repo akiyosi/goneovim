@@ -2391,6 +2391,7 @@ func (w *Window) update() {
 	}
 
 	for i := start; i < end; i++ {
+
 		// for i := 0; i <= numOfLines; i++ {
 		if len(w.content) <= i {
 			continue
@@ -2513,9 +2514,9 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	var bg *RGBA
 
 	// draw default background color if window is float window or msg grid
-	idDrawDefaultBg := false
+	isDrawDefaultBg := false
 	if w.isFloatWin || (w.isMsgGrid && editor.config.Message.Transparent < 1.0) {
-		idDrawDefaultBg = true
+		isDrawDefaultBg = true
 		// If popupmenu pumblend is set
 		if w.isPopupmenu && w.s.ws.pb > 0 {
 			w.SetAutoFillBackground(false)
@@ -2526,7 +2527,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 		}
 	}
 
-	// idDrawDefaultBg := true
+	// isDrawDefaultBg := true
 	// // Simply paint the color into a rectangle
 	// for x := col; x <= col+cols; x++ {
 	// 	if x >= len(line) {
@@ -2538,7 +2539,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	// 	} else {
 	// 		highlight = line[x].highlight
 	// 	}
-	// 	if !bg.equals(w.s.ws.background) || idDrawDefaultBg {
+	// 	if !bg.equals(w.s.ws.background) || isDrawDefaultBg {
 	// 		 // Set diff pattern
 	// 		 pattern, color, transparent := w.getFillpatternAndTransparent(highlight)
 	// 		 // Fill background with pattern
@@ -2577,7 +2578,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 			if width < 0 {
 				width = 0
 			}
-			if !idDrawDefaultBg && lastBg.equals(w.background) {
+			if !isDrawDefaultBg && lastBg.equals(w.background) {
 				width = 0
 			}
 			if width > 0 {
@@ -2646,7 +2647,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 				lastBg = bg
 				lastHighlight = highlight
 
-				if !lastBg.equals(bg) && x == bounds {
+				if x == bounds {
 					fillCellRect()
 				}
 			}
