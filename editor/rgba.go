@@ -24,6 +24,9 @@ type XYZ struct {
 }
 
 func (rgba *RGBA) copy() *RGBA {
+	if rgba == nil {
+		return nil
+	}
 	return &RGBA{
 		R: rgba.R,
 		G: rgba.G,
@@ -43,10 +46,16 @@ func (rgba *RGBA) equals(other *RGBA) bool {
 }
 
 func (rgba *RGBA) String() string {
+	if rgba == nil {
+		return ""
+	}
 	return fmt.Sprintf("rgba(%d, %d, %d, %f)", rgba.R, rgba.G, rgba.B, rgba.A)
 }
 
 func (rgba *RGBA) StringTransparent() string {
+	if rgba == nil {
+		return ""
+	}
 	transparent := editor.config.Editor.Transparent
 	return fmt.Sprintf("rgba(%d, %d, %d, %f)", rgba.R, rgba.G, rgba.B, transparent)
 }
@@ -58,11 +67,17 @@ func transparent() float64 {
 
 // Hex is
 func (rgba *RGBA) Hex() string {
+	if rgba == nil {
+		return ""
+	}
 	return fmt.Sprintf("#%02x%02x%02x", uint8(rgba.R), uint8(rgba.G), uint8(rgba.B))
 }
 
 // input color *RGBA, aplpha (0.0...-1.0..) int
 func (rgba *RGBA) brend(color *RGBA, alpha float64) *RGBA {
+	if rgba == nil {
+		return nil
+	}
 	return &RGBA{
 		R: int((float64(rgba.R) * (1.0 - alpha)) + (float64(color.R) * alpha)),
 		G: int((float64(rgba.G) * (1.0 - alpha)) + (float64(color.G) * alpha)),
@@ -73,6 +88,9 @@ func (rgba *RGBA) brend(color *RGBA, alpha float64) *RGBA {
 
 // QColor is
 func (rgba *RGBA) QColor() *gui.QColor {
+	if rgba == nil {
+		return nil
+	}
 	return gui.NewQColor3(rgba.R, rgba.G, rgba.B, int(rgba.A*255))
 }
 
@@ -187,6 +205,9 @@ func newRGBA(r int, g int, b int, a float64) *RGBA {
 }
 
 func (rgba *RGBA) XYZ() *XYZ {
+	if rgba == nil {
+		return nil
+	}
 	r := float64(rgba.R) / 255.0
 	g := float64(rgba.G) / 255.0
 	b := float64(rgba.B) / 255.0
@@ -207,6 +228,9 @@ func (rgba *RGBA) diff(t *RGBA) float64 {
 }
 
 func (rgba *RGBA) HSV() *HSV {
+	if rgba == nil {
+		return nil
+	}
 	r := float64(rgba.R) / 255.0
 	g := float64(rgba.G) / 255.0
 	b := float64(rgba.B) / 255.0
@@ -251,6 +275,9 @@ func (rgba *RGBA) HSV() *HSV {
 }
 
 func (hsv *HSV) Colorfulness() *HSV {
+	if hsv == nil {
+		return nil
+	}
 	return &HSV{
 		H: hsv.H,
 		S: math.Sqrt(hsv.S),
@@ -259,6 +286,9 @@ func (hsv *HSV) Colorfulness() *HSV {
 }
 
 func (hsv *HSV) Colorless() *HSV {
+	if hsv == nil {
+		return nil
+	}
 	return &HSV{
 		H: hsv.H,
 		S: math.Pow(hsv.S, 1.3),
@@ -267,6 +297,9 @@ func (hsv *HSV) Colorless() *HSV {
 }
 
 func (hsv *HSV) RGB() *RGBA {
+	if hsv == nil {
+		return nil
+	}
 	var r, g, b float64
 	if hsv.S == 0 {
 		r = hsv.V * 255
