@@ -23,6 +23,7 @@ import (
 
 const (
 	EXTWINBORDERSIZE = 5
+	EXTWINMARGINSIZE = 10
 )
 
 type gridId = int
@@ -129,6 +130,7 @@ type Window struct {
 	extwin                 *ExternalWin
 	extwinConnectResizable bool
 	extwinResized          bool
+	extwinRelativePos      [2]int
 
 	font         *Font
 	background   *RGBA
@@ -3902,11 +3904,97 @@ func (w *Window) move(col int, row int) {
 	}
 	if w.isExternal {
 		w.Move2(EXTWINBORDERSIZE, EXTWINBORDERSIZE)
-		w.extwin.Move2(editor.window.Pos().X()+x, editor.window.Pos().Y()+y)
+		w.layoutExternalWindow(x, y)
+
 		return
 	}
 
 	w.Move2(x, y)
+
+}
+
+func (w *Window) layoutExternalWindow(x, y int) {
+	font := w.s.font
+
+	// float windows width, height
+	width := int(float64(w.cols) * font.truewidth)
+	height := w.rows * font.lineHeight
+
+	// layout external windows
+	if w.pos[0] == 0 && w.pos[1] == 0 {
+		w.s.windows.Range(func(_, winITF interface{}) bool {
+			win := winITF.(*Window)
+			if win == nil {
+				return true
+			}
+			if win.grid == 1 {
+				return true
+			}
+			if win.isMsgGrid {
+				return true
+			}
+			if win.grid == w.grid {
+				return true
+			}
+			if win.isExternal {
+				if win.pos[0] <= w.pos[0] && win.pos[0]+win.cols >= w.pos[0] &&
+					win.pos[1] <= w.pos[1] && win.pos[1]+win.rows >= w.pos[1] {
+					widthRatio := float64(w.cols+win.cols) * font.truewidth / float64(editor.window.Width())
+					heightRatio := float64((w.rows+win.rows)*font.lineHeight) / float64(editor.window.Height())
+					if w.cols == win.cols {
+						y = win.rows*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+						height += win.rows*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+					} else if w.rows == win.rows {
+						x = int(float64(win.cols)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+						width += int(float64(win.cols)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+					} else {
+						if widthRatio > heightRatio {
+							y = win.rows*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+							height += win.rows*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+						} else {
+							x = int(float64(win.cols)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+							width += int(float64(win.cols)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+						}
+					}
+
+					return false
+				}
+
+			}
+
+			return true
+		})
+	}
+
+	w.extwin.Move2(editor.window.Pos().X()+x, editor.window.Pos().Y()+y)
+	w.extwinRelativePos = [2]int{editor.window.Pos().X() + x, editor.window.Pos().Y() + y}
+
+	// centering
+	var newx, newy int
+	if editor.window.Width()-width > 0 {
+		newx = int(float64(editor.window.Width()-width)/2.0) - (EXTWINMARGINSIZE / 2)
+	}
+	if editor.window.Height()-height > 0 {
+		newy = int(float64(editor.window.Height()-height)/2.0) - (EXTWINMARGINSIZE / 2)
+	}
+
+	w.s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+		if win.isMsgGrid {
+			return true
+		}
+		if win.isExternal {
+			win.extwin.Move2(win.extwinRelativePos[0]+newx, win.extwinRelativePos[1]+newy)
+		}
+
+		return true
+	})
 
 }
 
