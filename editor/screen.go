@@ -130,6 +130,7 @@ type Window struct {
 	extwin                 *ExternalWin
 	extwinConnectResizable bool
 	extwinResized          bool
+	extwinManualResized    bool
 	extwinRelativePos      [2]int
 
 	font         *Font
@@ -3702,7 +3703,7 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				width := int(math.Ceil(float64(win.cols) * font.truewidth))
 				height := win.rows * font.lineHeight
 				win.setGridGeometry(width, height)
-				win.setResizableForWxtWin()
+				win.setResizableForExtWin()
 				win.move(win.pos[0], win.pos[1])
 			}
 
@@ -3712,7 +3713,7 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 	}
 }
 
-func (w *Window) setResizableForWxtWin() {
+func (w *Window) setResizableForExtWin() {
 	if !w.extwinConnectResizable {
 		w.extwin.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 			height := w.extwin.Height() - EXTWINBORDERSIZE*2
@@ -3720,6 +3721,7 @@ func (w *Window) setResizableForWxtWin() {
 			cols := int((float64(width) / w.getFont().truewidth))
 			rows := height / w.getFont().lineHeight
 			w.extwinResized = true
+			w.extwinManualResized = true
 			_ = w.s.ws.nvim.TryResizeUIGrid(w.grid, cols, rows)
 		})
 		w.extwinConnectResizable = true
@@ -3921,7 +3923,7 @@ func (w *Window) layoutExternalWindow(x, y int) {
 	height := w.rows * font.lineHeight
 
 	// layout external windows
-	if w.pos[0] == 0 && w.pos[1] == 0 {
+	if w.pos[0] == 0 && w.pos[1] == 0 && !w.extwinManualResized {
 		w.s.windows.Range(func(_, winITF interface{}) bool {
 			win := winITF.(*Window)
 			if win == nil {
@@ -3964,37 +3966,40 @@ func (w *Window) layoutExternalWindow(x, y int) {
 
 			return true
 		})
+		w.extwinRelativePos = [2]int{editor.window.Pos().X() + x, editor.window.Pos().Y() + y}
 	}
 
 	w.extwin.Move2(editor.window.Pos().X()+x, editor.window.Pos().Y()+y)
-	w.extwinRelativePos = [2]int{editor.window.Pos().X() + x, editor.window.Pos().Y() + y}
 
 	// centering
-	var newx, newy int
-	if editor.window.Width()-width > 0 {
-		newx = int(float64(editor.window.Width()-width)/2.0) - (EXTWINMARGINSIZE / 2)
-	}
-	if editor.window.Height()-height > 0 {
-		newy = int(float64(editor.window.Height()-height)/2.0) - (EXTWINMARGINSIZE / 2)
-	}
-
-	w.s.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-		if win == nil {
-			return true
+	if w.pos[0] == 0 && w.pos[1] == 0 && !w.extwinManualResized {
+		var newx, newy int
+		if editor.window.Width()-width > 0 {
+			newx = int(float64(editor.window.Width()-width)/2.0) - (EXTWINMARGINSIZE / 2)
 		}
-		if win.grid == 1 {
-			return true
-		}
-		if win.isMsgGrid {
-			return true
-		}
-		if win.isExternal {
-			win.extwin.Move2(win.extwinRelativePos[0]+newx, win.extwinRelativePos[1]+newy)
+		if editor.window.Height()-height > 0 {
+			newy = int(float64(editor.window.Height()-height)/2.0) - (EXTWINMARGINSIZE / 2)
 		}
 
-		return true
-	})
+		w.s.windows.Range(func(_, winITF interface{}) bool {
+			win := winITF.(*Window)
+			if win == nil {
+				return true
+			}
+			if win.grid == 1 {
+				return true
+			}
+			if win.isMsgGrid {
+				return true
+			}
+			if win.isExternal && !win.extwinManualResized {
+				win.extwin.Move2(win.extwinRelativePos[0]+newx, win.extwinRelativePos[1]+newy)
+			}
+
+			return true
+		})
+
+	}
 
 }
 
