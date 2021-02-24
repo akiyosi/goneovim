@@ -150,6 +150,13 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 	w.font.ws = w
 
+	if editor.opts.Debug != "" {
+		rf := gui.NewQRawFont()
+		// db := gui.NewQFontDatabase()
+		rf = rf.FromFont(w.font.fontNew, gui.QFontDatabase__Any)
+		editor.putLog("detect font family:", rf.FamilyName())
+	}
+
 	// Basic Workspace UI component
 	// screen
 	w.screen = newScreen()

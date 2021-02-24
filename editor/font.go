@@ -96,6 +96,13 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	f.shift = int(float64(f.lineSpace)/2 + ascent)
 	f.italicWidth = italicWidth
 
+	if editor.opts.Debug != "" {
+		rf := gui.NewQRawFont()
+		// db := gui.NewQFontDatabase()
+		rf = rf.FromFont(f.fontNew, gui.QFontDatabase__Any)
+		editor.putLog("detect font family:", rf.FamilyName())
+	}
+
 	f.ws.screen.purgeTextCacheForWins()
 }
 
