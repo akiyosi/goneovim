@@ -279,11 +279,14 @@ func (c *Cursor) updateCursorShape() {
 			fg = c.ws.screen.hlAttrDef[c.currAttrId].fg()
 			bg = c.ws.screen.hlAttrDef[c.currAttrId].bg()
 		}
+		if fg == nil {
+			fg = c.ws.foreground
+		}
+		if bg == nil {
+			bg = c.ws.background
+		}
 		c.fg = fg
 		c.bg = bg
-		if c.bg == nil {
-			return
-		}
 
 		c.cursorShape = "block"
 		cursorShapeITF, ok := modeInfo["cursor_shape"]
