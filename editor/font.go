@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"fmt"
 	"math"
 	"runtime"
 
@@ -106,10 +107,16 @@ func (f *Font) putDebugLog() {
 		return
 	}
 
-	rf := gui.NewQRawFont()
+	// rf := gui.NewQRawFont()
 	// db := gui.NewQFontDatabase()
-	rf = rf.FromFont(f.fontNew, gui.QFontDatabase__Any)
-	editor.putLog("detect font family:", rf.FamilyName())
+	// rf = rf.FromFont(f.fontNew, gui.QFontDatabase__Any)
+	fi := gui.NewQFontInfo(f.fontNew)
+	editor.putLog(
+		"detect font family:",
+		fi.Family(),
+		fi.StyleName(),
+		fmt.Sprintf("%v", fi.PointSizeF()),
+	)
 }
 
 func (f *Font) changeLineSpace(lineSpace int) {

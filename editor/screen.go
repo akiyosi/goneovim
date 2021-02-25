@@ -2968,7 +2968,6 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		pi.SetFont(font.fontNew)
 	}
 
-	pi.Font().SetWeight(0)
 	if highlight.bold {
 		// pi.Font().SetBold(true)
 		pi.Font().SetWeight(font.fontNew.Weight() + 25)
