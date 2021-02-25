@@ -32,6 +32,7 @@ jobs:
       uses: jurplel/install-qt-action@v2.10.0
       with:
         version: ${{ matrix.qtversion }}
+        setup-python: false
         host: linux
         target: desktop
         dir: ${{ github.workspace }}
@@ -110,6 +111,7 @@ jobs:
       uses: jurplel/install-qt-action@v2.10.0
       with:
         version: ${{ matrix.qtversion }}
+        setup-python: false
         host: mac
         target: desktop
         dir: ${{ github.workspace }}
@@ -195,6 +197,7 @@ jobs:
       uses: jurplel/install-qt-action@v2.10.0
       with:
         version: ${{ matrix.qtversion }}
+        setup-python: false
         host: windows
         target: desktop
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
