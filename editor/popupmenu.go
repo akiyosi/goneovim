@@ -68,7 +68,7 @@ type PopupItem struct {
 func initPopupmenuNew() *PopupMenu {
 	layout := widgets.NewQHBoxLayout()
 	layout.SetContentsMargins(0, 0, 0, 0)
-	layout.SetSpacing(10)
+	layout.SetSpacing(0)
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetLayout(layout)
@@ -135,9 +135,9 @@ func initPopupmenuNew() *PopupMenu {
 
 		itemLayout.AddWidget2(iconwidget, i, 0, 0)
 		itemLayout.AddWidget2(word, i, 1, 0)
-		itemLayout.AddWidget2(digit, i, 2, core.Qt__AlignLeft)
-		itemLayout.AddWidget2(menu, i, 3, core.Qt__AlignLeft)
-		itemLayout.AddWidget2(info, i, 4, core.Qt__AlignLeft)
+		itemLayout.AddWidget2(digit, i, 2, 0)
+		itemLayout.AddWidget2(menu, i, 3, 0)
+		itemLayout.AddWidget2(info, i, 4, 0)
 
 		popupItem := &PopupItem{
 			p:          popup,
@@ -364,6 +364,8 @@ func (p *PopupMenu) setWidgetWidth() {
 	maxWordLabelLen := 0
 	menuStrLen := 0
 	infoStrLen := 0
+	margin := editor.config.Editor.Linespace/2 + 2
+
 	for _, item := range p.items {
 		if item.hidden {
 			continue
@@ -391,6 +393,7 @@ func (p *PopupMenu) setWidgetWidth() {
 		if wordLabelLen > maxWordLabelLen {
 			maxWordLabelLen = wordLabelLen
 			maxWordLabelLen += int(p.ws.font.truewidth) + 1
+			maxWordLabelLen += margin * 3
 		}
 	}
 	if isMenuHidden && isInfoHidden {
@@ -399,7 +402,6 @@ func (p *PopupMenu) setWidgetWidth() {
 		p.detailLabel.Show()
 	}
 
-	margin := editor.config.Editor.Linespace/2 + 2
 	menuWidth := 0
 	if !isMenuHidden {
 		menuWidth = int(p.ws.font.truewidth*float64(menuStrLen)) + margin*2 + 1
@@ -424,8 +426,9 @@ func (p *PopupMenu) setWidgetWidth() {
 		detailWidth = editor.config.Popupmenu.DetailWidth
 	}
 
+	baseWidth := editor.iconSize/5*2 + 5
 	p.widget.SetFixedWidth(
-		editor.iconSize*2 + maxWordLabelLen + menuWidth + margin*3 + digitLabel + infoWidth + detailWidth + 5 + margin*2 + editor.iconSize/5*4 + 10,
+		editor.iconSize + margin*2 + maxWordLabelLen + menuWidth + digitLabel + infoWidth + detailWidth + baseWidth,
 	)
 }
 
@@ -601,11 +604,15 @@ func (p *PopupItem) updateContent() {
 			p.detailText = ""
 		}
 	}
-	p.wordLabel.AdjustSize()
+	// p.kindwidget.AdjustSize()
+	margin := editor.config.Editor.Linespace/2 + 2
+	p.kindwidget.SetFixedWidth(editor.iconSize + margin*2)
+	// p.wordLabel.AdjustSize()
 	// p.menuLabel.AdjustSize()
 	// p.infoLabel.AdjustSize()
-	p.menuLabel.SetFixedWidth(editor.config.Popupmenu.MenuWidth)
-	p.infoLabel.SetFixedWidth(editor.config.Popupmenu.InfoWidth)
+	// p.digitLabel.SetFixedWidth(editor.config.Popupmenu.MenuWidth)
+	// p.menuLabel.SetFixedWidth(editor.config.Popupmenu.MenuWidth)
+	// p.infoLabel.SetFixedWidth(editor.config.Popupmenu.InfoWidth)
 }
 
 func (p *PopupItem) setSelected(selected bool) {
