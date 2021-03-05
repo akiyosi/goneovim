@@ -2399,7 +2399,7 @@ func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {
 	font := win.getFont()
 
 	isCursorBelowTheCenter := false
-	if row*font.lineHeight > w.screen.height/2 {
+	if (win.pos[1]+row)*font.lineHeight > w.screen.height/2 {
 		isCursorBelowTheCenter = true
 	}
 
