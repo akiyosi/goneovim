@@ -3521,7 +3521,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 	// which is created as a tooltip suggested by LSP, is not the correct
 	// position in multigrid ui api.
 	isExistPopupmenu := false
-	if s.ws.mode == "insert" {
+	if s.ws.mode == "insert" && !editor.config.Editor.ExtPopupmenu {
 		s.windows.Range(func(_, winITF interface{}) bool {
 			win := winITF.(*Window)
 			if win == nil {
@@ -3901,6 +3901,20 @@ func (w *Window) move(col int, row int) {
 	if w.isFloatWin {
 		if w.s.ws.drawTabline {
 			y += w.s.ws.tabline.widget.Height()
+		}
+
+		// A workarround for ext_popupmenu and displaying a LSP tooltip
+		if w.s.ws.mode == "insert" && editor.config.Editor.ExtPopupmenu {
+			if w.s.ws.popup.widget.IsVisible() {
+				w.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))
+				w.Move2(
+					w.s.ws.popup.widget.X()+w.s.ws.popup.widget.Width()+5,
+					w.s.ws.popup.widget.Y(),
+				)
+				w.Raise()
+			}
+
+			return
 		}
 	}
 	if w.isExternal {

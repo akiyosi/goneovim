@@ -68,7 +68,7 @@ type PopupItem struct {
 func initPopupmenuNew() *PopupMenu {
 	layout := widgets.NewQHBoxLayout()
 	layout.SetContentsMargins(0, 0, 0, 0)
-	layout.SetSpacing(10)
+	layout.SetSpacing(0)
 
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetLayout(layout)
@@ -135,9 +135,9 @@ func initPopupmenuNew() *PopupMenu {
 
 		itemLayout.AddWidget2(iconwidget, i, 0, 0)
 		itemLayout.AddWidget2(word, i, 1, 0)
-		itemLayout.AddWidget2(digit, i, 2, core.Qt__AlignLeft)
-		itemLayout.AddWidget2(menu, i, 3, core.Qt__AlignLeft)
-		itemLayout.AddWidget2(info, i, 4, core.Qt__AlignLeft)
+		itemLayout.AddWidget2(digit, i, 2, 0)
+		itemLayout.AddWidget2(menu, i, 3, 0)
+		itemLayout.AddWidget2(info, i, 4, 0)
 
 		popupItem := &PopupItem{
 			p:          popup,
@@ -359,9 +359,13 @@ func (p *PopupMenu) show() {
 }
 
 func (p *PopupMenu) setWidgetWidth() {
-	maxWordLabelLen := 0
 	isMenuHidden := p.hideItemIdx[0]
 	isInfoHidden := p.hideItemIdx[1]
+	maxWordLabelLen := 0
+	menuStrLen := 0
+	infoStrLen := 0
+	margin := editor.config.Editor.Linespace/2 + 2
+
 	for _, item := range p.items {
 		if item.hidden {
 			continue
@@ -370,16 +374,26 @@ func (p *PopupMenu) setWidgetWidth() {
 			item.menuLabel.Hide()
 		} else {
 			item.menuLabel.Show()
+			len := len(item.menu) + 1
+			if menuStrLen <= len {
+				menuStrLen = len
+			}
 		}
 		if isInfoHidden {
 			item.infoLabel.Hide()
 		} else {
 			item.infoLabel.Show()
+			len := len(item.info) + 1
+			if infoStrLen <= len {
+				infoStrLen = len
+			}
 		}
 
-		wordLabelLen := int(math.Ceil(p.ws.screen.runeTextWidth(p.ws.screen.font, item.wordLabel.Text())))
+		wordLabelLen := int(math.Ceil(p.ws.screen.runeTextWidth(p.ws.font, item.wordLabel.Text())))
 		if wordLabelLen > maxWordLabelLen {
 			maxWordLabelLen = wordLabelLen
+			maxWordLabelLen += int(p.ws.font.truewidth) + 1
+			maxWordLabelLen += margin * 3
 		}
 	}
 	if isMenuHidden && isInfoHidden {
@@ -390,14 +404,21 @@ func (p *PopupMenu) setWidgetWidth() {
 
 	menuWidth := 0
 	if !isMenuHidden {
-		menuWidth = editor.config.Popupmenu.MenuWidth
+		menuWidth = int(p.ws.font.truewidth*float64(menuStrLen)) + margin*2 + 1
+		if menuWidth > editor.config.Popupmenu.MenuWidth {
+			menuWidth = editor.config.Popupmenu.MenuWidth
+		}
 	}
 
-	digitLabel := p.items[0].digitLabel.Width()
+	digitLabel := p.items[0].digitLabel.Width() + margin*3
 
 	infoWidth := 0
 	if !isInfoHidden {
-		infoWidth = editor.config.Popupmenu.InfoWidth
+
+		infoWidth = int(p.ws.font.truewidth*float64(infoStrLen)) + margin*2 + 1
+		if infoWidth > editor.config.Popupmenu.InfoWidth {
+			infoWidth = editor.config.Popupmenu.InfoWidth
+		}
 	}
 
 	detailWidth := 0
@@ -405,10 +426,9 @@ func (p *PopupMenu) setWidgetWidth() {
 		detailWidth = editor.config.Popupmenu.DetailWidth
 	}
 
-	margin := editor.config.Editor.Linespace/2 + 2
-
+	baseWidth := editor.iconSize/5*2 + 5
 	p.widget.SetFixedWidth(
-		editor.iconSize*2 + maxWordLabelLen + menuWidth + digitLabel + infoWidth + detailWidth + 5 + margin*4 + editor.iconSize/5*4,
+		editor.iconSize + margin*2 + maxWordLabelLen + menuWidth + digitLabel + infoWidth + detailWidth + baseWidth,
 	)
 }
 
@@ -584,11 +604,15 @@ func (p *PopupItem) updateContent() {
 			p.detailText = ""
 		}
 	}
-	p.wordLabel.AdjustSize()
+	// p.kindwidget.AdjustSize()
+	margin := editor.config.Editor.Linespace/2 + 2
+	p.kindwidget.SetFixedWidth(editor.iconSize + margin*2)
+	// p.wordLabel.AdjustSize()
 	// p.menuLabel.AdjustSize()
 	// p.infoLabel.AdjustSize()
-	p.menuLabel.SetFixedWidth(editor.config.Popupmenu.MenuWidth)
-	p.infoLabel.SetFixedWidth(editor.config.Popupmenu.InfoWidth)
+	// p.digitLabel.SetFixedWidth(editor.config.Popupmenu.MenuWidth)
+	// p.menuLabel.SetFixedWidth(editor.config.Popupmenu.MenuWidth)
+	// p.infoLabel.SetFixedWidth(editor.config.Popupmenu.InfoWidth)
 }
 
 func (p *PopupItem) setSelected(selected bool) {
