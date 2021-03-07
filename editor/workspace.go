@@ -664,7 +664,6 @@ func (w *Workspace) initGonvim() {
 	if !editor.config.Markdown.Disable {
 		gonvimAutoCmds += `
 		aug GonvimAuMd | au! | aug END
-		au GonvimAuMd TextChanged,TextChangedI *.md call rpcnotify(0, "Gui", "gonvim_markdown_update")
 		au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
 		`
 	}
@@ -677,10 +676,10 @@ func (w *Workspace) initGonvim() {
 		`
 	}
 
-	if editor.config.ScrollBar.Visible {
+	if editor.config.ScrollBar.Visible || !editor.config.Markdown.Disable {
 		gonvimAutoCmds = gonvimAutoCmds + `
-	aug GonvimAuScrollbar | au! | aug END
-	au GonvimAuScrollbar TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_textchanged", line("$"))
+	aug GonvimAuTextChanged | au! | aug END
+	au  GonvimAuTextChanged TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_textchanged", line("$"))
 	`
 	}
 	if editor.config.Editor.Clipboard {
@@ -1764,7 +1763,7 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 			win.doErase = false
 		}
 	})
-	a.SetDuration(180)
+	a.SetDuration(190)
 	a.SetStartValue(core.NewQVariant10(1))
 	a.SetEndValue(core.NewQVariant10(0))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
@@ -1896,8 +1895,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
-	case "gonvim_textchanged":
-		w.maxLine = util.ReflectToInt(updates[1])
 	case "gonvim_workspace_new":
 		editor.workspaceNew()
 	case "gonvim_workspace_next":
@@ -1935,14 +1932,24 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			w.signal.LazyDrawSignal()
 		}
 		go w.markdown.newBuffer()
-	case "gonvim_markdown_update":
-		if editor.config.Markdown.Disable {
-			return
+	case "gonvim_textchanged":
+		if !editor.config.Markdown.Disable {
+			if w.markdown == nil {
+				w.signal.LazyDrawSignal()
+			}
+			go w.markdown.update()
 		}
-		if w.markdown == nil {
-			w.signal.LazyDrawSignal()
+		if editor.config.Editor.SmoothScroll {
+			fmt.Println("text changed!")
+			ws := editor.workspaces[editor.active]
+			win, ok := ws.screen.getWindow(ws.cursor.gridid)
+			if !ok {
+				return
+			}
+			win.snapshots[1] = win.snapshots[0]
+			win.snapshots[0] = win.Grab(win.Rect())
 		}
-		go w.markdown.update()
+		w.maxLine = util.ReflectToInt(updates[1])
 	case "gonvim_markdown_toggle":
 		if editor.config.Markdown.Disable {
 			return
