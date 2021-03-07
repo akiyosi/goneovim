@@ -13,7 +13,7 @@ else ifeq ($(shell uname), Linux)
 RUNTIME_DIR=$(DEPLOYMENT_LINUX)/
 endif
 
-.PHONY: debug build build-docker-linux build-docker-windows
+.PHONY: clean debug build build-docker-linux build-docker-windows
 
 # If the first argument is "run"...
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
@@ -22,6 +22,9 @@ ifeq (debug,$(firstword $(MAKECMDGOALS)))
   # ...and turn them into do-nothing targets
   $(eval $(DEBUG_ARGS):;@:)
 endif
+
+clean:
+	rm -fr cmd/goneovim/deploy/*
 
 debug:
 	cd cmd/goneovim; \
