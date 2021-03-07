@@ -369,6 +369,7 @@ func (m *Markdown) update() {
 	if err := markdown.Convert([]byte(content), &buff); err != nil {
 		return
 	}
+
 	m.markdownUpdates <- fmt.Sprintf(`
 			<div id="placeholder" class="markdown-body">
 			%s

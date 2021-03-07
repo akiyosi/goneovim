@@ -664,6 +664,7 @@ func (w *Workspace) initGonvim() {
 	if !editor.config.Markdown.Disable {
 		gonvimAutoCmds += `
 		aug GonvimAuMd | au! | aug END
+		au  GonvimAuMd TextChanged,TextChangedI * if &ft == "markdown" | call rpcnotify(0, "Gui", "gonvim_markdown_update") | endif
 		au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
 		`
 	}
@@ -676,7 +677,7 @@ func (w *Workspace) initGonvim() {
 		`
 	}
 
-	if editor.config.ScrollBar.Visible || !editor.config.Markdown.Disable {
+	if editor.config.ScrollBar.Visible || editor.config.Editor.SmoothScroll {
 		gonvimAutoCmds = gonvimAutoCmds + `
 	aug GonvimAuTextChanged | au! | aug END
 	au  GonvimAuTextChanged TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_textchanged", line("$"))
@@ -1924,6 +1925,14 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_winenter_filetype":
 		w.getFileType(updates)
 		w.getBufnameAndTS(updates[2], updates[3])
+	case "gonvim_markdown_update":
+		if editor.config.Markdown.Disable {
+			return
+		}
+		if w.markdown == nil {
+			w.signal.LazyDrawSignal()
+		}
+		go w.markdown.update()
 	case "gonvim_markdown_new_buffer":
 		if editor.config.Markdown.Disable {
 			return
@@ -1933,14 +1942,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		}
 		go w.markdown.newBuffer()
 	case "gonvim_textchanged":
-		if !editor.config.Markdown.Disable {
-			if w.markdown == nil {
-				w.signal.LazyDrawSignal()
-			}
-			go w.markdown.update()
-		}
 		if editor.config.Editor.SmoothScroll {
-			fmt.Println("text changed!")
 			ws := editor.workspaces[editor.active]
 			win, ok := ws.screen.getWindow(ws.cursor.gridid)
 			if !ok {
