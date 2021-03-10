@@ -3898,23 +3898,25 @@ func (w *Window) move(col int, row int) {
 	}
 	x := int(float64(col) * font.truewidth)
 	y := (row * font.lineHeight) + res
+
 	if w.isFloatWin {
 		if w.s.ws.drawTabline {
 			y += w.s.ws.tabline.widget.Height()
 		}
-
 		// A workarround for ext_popupmenu and displaying a LSP tooltip
-		if w.s.ws.mode == "insert" && editor.config.Editor.ExtPopupmenu {
-			if w.s.ws.popup.widget.IsVisible() {
-				w.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))
-				w.Move2(
-					w.s.ws.popup.widget.X()+w.s.ws.popup.widget.Width()+5,
-					w.s.ws.popup.widget.Y(),
-				)
-				w.Raise()
-			}
+		if editor.config.Editor.ExtPopupmenu {
+			if w.s.ws.mode == "insert" && w.s.ws.popup.widget.IsVisible() {
+				if w.s.ws.popup.widget.IsVisible() {
+					w.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))
+					w.Move2(
+						w.s.ws.popup.widget.X()+w.s.ws.popup.widget.Width()+5,
+						w.s.ws.popup.widget.Y(),
+					)
+					w.Raise()
+				}
 
-			return
+				return
+			}
 		}
 	}
 	if w.isExternal {
