@@ -314,24 +314,24 @@ func (p *PopupMenu) showItems(args []interface{}) {
 		p.scrollCol.Hide()
 	}
 
-	if gridid == 1 {
-		for _, item := range p.items {
-			if item.selected {
-				item.digitLabel.SetStyleSheet(fmt.Sprintf("background-color: %s; color: rgba(0,0,0,0);", editor.colors.selectedBg.StringTransparent()))
-			} else {
-				item.digitLabel.SetStyleSheet("color: rgba(0,0,0,0);")
-			}
-		}
-	} else {
-		for _, item := range p.items {
-			fg := editor.colors.inactiveFg
-			if item.selected {
-				item.digitLabel.SetStyleSheet(fmt.Sprintf("background-color: %s; color: rgba(%d,%d,%d,%f);", editor.colors.selectedBg.StringTransparent(), fg.R, fg.G, fg.B, 1.0))
-			} else {
-				item.digitLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d,%d,%d,%f);", fg.R, fg.G, fg.B, 1.0))
-			}
-		}
-	}
+	// if gridid == 1 {
+	// 	for _, item := range p.items {
+	// 		if item.selected {
+	// 			item.digitLabel.SetStyleSheet(fmt.Sprintf("background-color: %s; color: rgba(0,0,0,0);", editor.colors.selectedBg.StringTransparent()))
+	// 		} else {
+	// 			item.digitLabel.SetStyleSheet("color: rgba(0,0,0,0);")
+	// 		}
+	// 	}
+	// } else {
+	// 	for _, item := range p.items {
+	// 		fg := editor.colors.inactiveFg
+	// 		if item.selected {
+	// 			item.digitLabel.SetStyleSheet(fmt.Sprintf("background-color: %s; color: rgba(%d,%d,%d,%f);", editor.colors.selectedBg.StringTransparent(), fg.R, fg.G, fg.B, 1.0))
+	// 		} else {
+	// 			item.digitLabel.SetStyleSheet(fmt.Sprintf("color: rgba(%d,%d,%d,%f);", fg.R, fg.G, fg.B, 1.0))
+	// 		}
+	// 	}
+	// }
 
 	// p.hide()
 	p.show()
