@@ -1,0 +1,73 @@
+
+WARNING: DATA RACE
+Write at 0x00c00047b4b8 by main goroutine:
+  github.com/akiyosi/goneovim/editor.(*Workspace).getBufnameAndTS.func1()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/workspace.go:2244 +0x410
+  sync.(*Map).Range()
+      /Users/akiyoshi/.goenv/versions/1.13.12/src/sync/map.go:333 +0x470
+  github.com/akiyosi/goneovim/editor.(*Workspace).getBufnameAndTS()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/workspace.go:2222 +0x454
+  github.com/akiyosi/goneovim/editor.(*Workspace).handleRPCGui()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/workspace.go:1924 +0x3c09
+  github.com/akiyosi/goneovim/editor.(*Workspace).registerSignal.func2()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/workspace.go:366 +0x12a
+  github.com/akiyosi/goneovim/editor.callbackworkspaceSignaleef105_GuiSignal()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/moc.go:695 +0xc7
+  github.com/akiyosi/goneovim/editor._cgoexpwrap_26e701fc0672_callbackworkspaceSignaleef105_GuiSignal()
+      _cgo_gotypes.go:4763 +0x42
+  runtime.call32()
+      /Users/akiyoshi/.goenv/versions/1.13.12/src/runtime/asm_amd64.s:539 +0x3a
+  github.com/akiyosi/goneovim/editor.(*workspaceSignal).EventDefault.func1()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/moc.go:1309 +0x19c
+  github.com/akiyosi/goneovim/editor.(*workspaceSignal).EventDefault()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/moc.go:1309 +0x95
+  github.com/akiyosi/goneovim/editor.callbackworkspaceSignaleef105_Event()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/moc.go:1304 +0x1f1
+  github.com/akiyosi/goneovim/editor._cgoexpwrap_26e701fc0672_callbackworkspaceSignaleef105_Event()
+      _cgo_gotypes.go:4945 +0x5b
+  runtime.call32()
+      /Users/akiyoshi/.goenv/versions/1.13.12/src/runtime/asm_amd64.s:539 +0x3a
+  github.com/therecipe/qt/widgets.QApplication_Exec()
+      /Users/akiyoshi/go/1.13.12/src/github.com/therecipe/qt/widgets/widgets.go:9694 +0x3d
+  github.com/akiyosi/goneovim/editor.InitEditor()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/editor.go:341 +0x2a0f
+  main.main()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/cmd/goneovim/main.go:30 +0x1fc
+
+Previous read at 0x00c00047b4b8 by goroutine 55:
+  github.com/akiyosi/goneovim/editor.(*Workspace).getBufnameAndTS.func1.2()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/workspace.go:2250 +0x92
+
+Goroutine 55 (running) created at:
+  github.com/akiyosi/goneovim/editor.(*Workspace).getBufnameAndTS.func1()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/workspace.go:2249 +0x4ca
+  sync.(*Map).Range()
+      /Users/akiyoshi/.goenv/versions/1.13.12/src/sync/map.go:333 +0x470
+  github.com/akiyosi/goneovim/editor.(*Workspace).getBufnameAndTS()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/workspace.go:2222 +0x454
+  github.com/akiyosi/goneovim/editor.(*Workspace).handleRPCGui()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/workspace.go:1924 +0x3c09
+  github.com/akiyosi/goneovim/editor.(*Workspace).registerSignal.func2()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/workspace.go:366 +0x12a
+  github.com/akiyosi/goneovim/editor.callbackworkspaceSignaleef105_GuiSignal()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/moc.go:695 +0xc7
+  github.com/akiyosi/goneovim/editor._cgoexpwrap_26e701fc0672_callbackworkspaceSignaleef105_GuiSignal()
+      _cgo_gotypes.go:4763 +0x42
+  runtime.call32()
+      /Users/akiyoshi/.goenv/versions/1.13.12/src/runtime/asm_amd64.s:539 +0x3a
+  github.com/akiyosi/goneovim/editor.(*workspaceSignal).EventDefault.func1()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/moc.go:1309 +0x19c
+  github.com/akiyosi/goneovim/editor.(*workspaceSignal).EventDefault()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/moc.go:1309 +0x95
+  github.com/akiyosi/goneovim/editor.callbackworkspaceSignaleef105_Event()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/moc.go:1304 +0x1f1
+  github.com/akiyosi/goneovim/editor._cgoexpwrap_26e701fc0672_callbackworkspaceSignaleef105_Event()
+      _cgo_gotypes.go:4945 +0x5b
+  runtime.call32()
+      /Users/akiyoshi/.goenv/versions/1.13.12/src/runtime/asm_amd64.s:539 +0x3a
+  github.com/therecipe/qt/widgets.QApplication_Exec()
+      /Users/akiyoshi/go/1.13.12/src/github.com/therecipe/qt/widgets/widgets.go:9694 +0x3d
+  github.com/akiyosi/goneovim/editor.InitEditor()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/editor/editor.go:341 +0x2a0f
+  main.main()
+      /Users/akiyoshi/go/1.13.12/src/github.com/akiyosi/goneovim/cmd/goneovim/main.go:30 +0x1fc

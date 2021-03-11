@@ -777,7 +777,7 @@ func (w *Workspace) getTS() {
 	done := make(chan bool, 5)
 	ts := 8
 	go func() {
-		w.nvim.Option("ts", &ts)
+		w.nvim.Option(editor.config.Editor.OptionsToUseGuideWidth, &ts)
 		done <- true
 	}()
 	select {
@@ -791,7 +791,7 @@ func (w *Workspace) getBuffTS(buf nvim.Buffer) int {
 	done := make(chan bool, 5)
 	ts := 8
 	go func() {
-		w.nvim.BufferOption(buf, "ts", &ts)
+		w.nvim.BufferOption(buf, editor.config.Editor.OptionsToUseGuideWidth, &ts)
 		done <- true
 	}()
 	select {

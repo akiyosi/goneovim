@@ -54,6 +54,7 @@ type editorConfig struct {
 	SkipGlobalId             bool
 	IndentGuide              bool
 	IndentGuideIgnoreFtList  []string
+	OptionsToUseGuideWidth   string
 	SmoothScroll             bool
 	DisableHorizontalScroll  bool
 	DrawBorderForFloatWindow bool
@@ -312,6 +313,7 @@ func (c *gonvimConfig) init() {
 	// Indent guide
 	c.Editor.IndentGuide = false
 	c.Editor.IndentGuideIgnoreFtList = []string{"markdown", "md", "txt", "text", "help", "json", "nerdtree"}
+	c.Editor.OptionsToUseGuideWidth = "tabstop"
 
 	c.Editor.SmoothScroll = false
 	c.Editor.DisableHorizontalScroll = true
