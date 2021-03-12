@@ -1921,10 +1921,12 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.mode = "normal"
 	case "gonvim_bufenter":
 		w.maxLine = util.ReflectToInt(updates[1])
-		w.getBufnameAndTS(updates[2], updates[3])
+		w.setBuffname(updates[2], updates[3])
+		w.setBuffTS()
 	case "gonvim_winenter_filetype":
-		w.getFileType(updates)
-		w.getBufnameAndTS(updates[2], updates[3])
+		w.setFileType(updates)
+		w.setBuffname(updates[2], updates[3])
+		w.setBuffTS()
 	case "gonvim_markdown_update":
 		if editor.config.Markdown.Disable {
 			return
@@ -2212,12 +2214,8 @@ func (w *Workspace) setPumblend(arg interface{}) {
 	w.pb = pumblend
 }
 
-func (w *Workspace) getBufnameAndTS(idITF, nameITF interface{}) {
+func (w *Workspace) setBuffname(idITF, nameITF interface{}) {
 	id := (nvim.Window)(util.ReflectToInt(idITF))
-	name := nameITF.(string)
-	bufChan := make(chan nvim.Buffer, 10)
-	var buf nvim.Buffer
-	strChan := make(chan string, 10)
 
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
@@ -2235,11 +2233,17 @@ func (w *Workspace) getBufnameAndTS(idITF, nameITF interface{}) {
 			return true
 		}
 
+		name := nameITF.(string)
+		bufChan := make(chan nvim.Buffer, 10)
+		var buf nvim.Buffer
+		strChan := make(chan string, 10)
+
 		// set buffer name
 		go func() {
 			resultBuffer, _ := w.nvim.WindowBuffer(win.id)
 			bufChan <- resultBuffer
 		}()
+
 		select {
 		case buf = <-bufChan:
 		case <-time.After(40 * time.Millisecond):
@@ -2250,14 +2254,50 @@ func (w *Workspace) getBufnameAndTS(idITF, nameITF interface{}) {
 				resultStr, _ := w.nvim.BufferName(buf)
 				strChan <- resultStr
 			}()
+
 			select {
 			case name = <-strChan:
 			case <-time.After(40 * time.Millisecond):
 			}
+
+			win.bufName = name
 		}
 
-		win.bufName = name
+		return true
+	})
+}
+
+func (w *Workspace) setBuffTS() {
+	bufChan := make(chan nvim.Buffer, 10)
+	var buf nvim.Buffer
+	w.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
+		if win == nil {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+		if win.isMsgGrid {
+			return true
+		}
+		if !win.IsVisible() {
+			return true
+		}
+
+		// set buffer name
+		go func() {
+			resultBuffer, _ := w.nvim.WindowBuffer(win.id)
+			bufChan <- resultBuffer
+		}()
+		select {
+		case buf = <-bufChan:
+		case <-time.After(40 * time.Millisecond):
+		}
+
 		win.ts = w.getBuffTS(buf)
+
 		return true
 	})
 }
@@ -2273,8 +2313,8 @@ func (w *Workspace) optionSet(updates []interface{}) {
 
 	w.optionsetMutex.Lock()
 	switch optionName {
-	case "tabstop":
-		w.ts = util.ReflectToInt(new)
+	case editor.config.Editor.OptionsToUseGuideWidth:
+		w.setBuffTS()
 
 	case "winblend":
 		w.setWinblend(util.ReflectToInt(new))
@@ -2297,7 +2337,7 @@ func (w *Workspace) getPumHeight() {
 	w.ph = ph
 }
 
-func (w *Workspace) getFileType(args []interface{}) {
+func (w *Workspace) setFileType(args []interface{}) {
 	ft := args[1].(string)
 	wid := util.ReflectToInt(args[2])
 
