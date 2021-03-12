@@ -42,6 +42,7 @@ type Highlight struct {
 	bold          bool
 	underline     bool
 	undercurl     bool
+	blend         int
 	strikethrough bool
 }
 
@@ -1584,7 +1585,6 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win.s.ws.optionsetMutex.RUnlock()
 		win.paintMutex.RLock()
 		win.ts = ts
-		win.wb = win.s.ws.wb
 		win.paintMutex.RUnlock()
 
 		// set scroll
@@ -1805,10 +1805,6 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			if !win.isMsgGrid {
 				s.ws.cursor.bufferGridid = gridid
 
-				// Set last window winblend for new window
-				win.paintMutex.Lock()
-				win.s.ws.wb = win.wb
-				win.paintMutex.Unlock()
 			}
 			s.ws.cursor.gridid = gridid
 			s.ws.cursor.font = win.getFont()
@@ -1977,6 +1973,11 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	if ok {
 		rgba := calcColor(util.ReflectToInt(sp))
 		highlight.special = rgba
+	}
+
+	bl, ok := hl["blend"]
+	if ok {
+		highlight.blend = util.ReflectToInt(bl)
 	}
 
 	// TODO: brend, ok := hl["blend"]
@@ -2193,10 +2194,16 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 				}
 			}
 
+			// Detect popupmenu
 			if line[col].highlight.uiName == "Pmenu" ||
 				line[col].highlight.uiName == "PmenuSel" ||
 				line[col].highlight.uiName == "PmenuSbar" {
 				w.isPopupmenu = true
+			}
+
+			// Detect winblend
+			if line[col].highlight.blend > 0 {
+				w.wb = line[col].highlight.blend
 			}
 
 			col++
@@ -2524,6 +2531,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 		if w.isPopupmenu && w.s.ws.pb > 0 {
 			w.SetAutoFillBackground(false)
 		}
+
 		// If float window winblend is set
 		if !w.isPopupmenu && w.isFloatWin && w.wb > 0 {
 			w.SetAutoFillBackground(false)
@@ -3417,9 +3425,11 @@ func (s *Screen) windowPosition(args []interface{}) {
 			continue
 		}
 
+		win.updateMutex.Lock()
 		win.id = id
 		win.pos[0] = col
 		win.pos[1] = row
+		win.updateMutex.Unlock()
 		win.move(col, row)
 		win.show()
 
@@ -3472,48 +3482,6 @@ func (w *Window) deleteExternalWin() {
 		w.extwin.Hide()
 		w.extwin = nil
 	}
-}
-
-func (win *Window) getWinblend() {
-	if win.isMsgGrid {
-		return
-	}
-
-	win.updateMutex.RLock()
-	isPopupmenu := win.isPopupmenu
-	win.updateMutex.RUnlock()
-	if isPopupmenu {
-		return
-	}
-	// TODO
-	// We should implement winblend effect to external window
-
-	errCh := make(chan error, 60)
-	wb := 0
-	win.updateMutex.RLock()
-	id := win.id
-	win.updateMutex.RUnlock()
-	go func() {
-		err := win.s.ws.nvim.WindowOption(id, "winblend", &wb)
-		errCh <- err
-	}()
-	select {
-	case <-errCh:
-	case <-time.After(40 * time.Millisecond):
-	}
-
-	if wb > 0 {
-		win.SetAutoFillBackground(false)
-	} else {
-		win.SetAutoFillBackground(true)
-		p := gui.NewQPalette()
-		p.SetColor2(gui.QPalette__Background, win.background.QColor())
-		win.SetPalette(p)
-	}
-
-	win.paintMutex.Lock()
-	win.wb = wb
-	win.paintMutex.Unlock()
 }
 
 func (s *Screen) windowFloatPosition(args []interface{}) {
@@ -3657,8 +3625,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		win.move(x, y)
 		win.setShadow()
-		// win.getWinblend()
-		win.wb = win.s.ws.wb
 		win.show()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
@@ -3864,9 +3830,7 @@ func (w *Window) fill() {
 		return
 	}
 	// If window winblend > 0 is set
-	w.paintMutex.RLock()
 	wb := w.wb
-	w.paintMutex.RUnlock()
 	if !w.isPopupmenu && w.isFloatWin && wb > 0 {
 		return
 	}
