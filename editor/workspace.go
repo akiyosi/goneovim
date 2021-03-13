@@ -101,7 +101,6 @@ type Workspace struct {
 	modeInfo           []map[string]interface{}
 	normalMappings     []*nvim.Mapping
 	insertMappings     []*nvim.Mapping
-	wb                 int
 	ts                 int
 	ph                 int
 	pb                 int
@@ -135,7 +134,6 @@ func newWorkspace(path string) (*Workspace, error) {
 		foreground:    newRGBA(255, 255, 255, 1),
 		background:    newRGBA(0, 0, 0, 1),
 		special:       newRGBA(255, 255, 255, 1),
-		wb:            -1,
 	}
 	w.registerSignal()
 
@@ -755,7 +753,6 @@ func (w *Workspace) getNvimOptions() {
 	w.getColorscheme()
 	w.getTS()
 	w.getBG()
-	w.getWinblend()
 	w.getKeymaps()
 }
 
@@ -800,20 +797,6 @@ func (w *Workspace) getBuffTS(buf nvim.Buffer) int {
 	}
 
 	return ts
-}
-
-func (w *Workspace) getWinblend() {
-	wb := 0
-	done := make(chan error, 5)
-	go func() {
-		err := w.nvim.WindowOption(nvim.Window(1000), "winblend", &wb)
-		done <- err
-	}()
-	select {
-	case <-done:
-	case <-time.After(40 * time.Millisecond):
-	}
-	w.wb = wb
 }
 
 func (w *Workspace) getBG() {
@@ -2238,9 +2221,12 @@ func (w *Workspace) setBuffname(idITF, nameITF interface{}) {
 		var buf nvim.Buffer
 		strChan := make(chan string, 10)
 
+		win.updateMutex.RLock()
+		id := win.id
+		win.updateMutex.RUnlock()
 		// set buffer name
 		go func() {
-			resultBuffer, _ := w.nvim.WindowBuffer(win.id)
+			resultBuffer, _ := w.nvim.WindowBuffer(id)
 			bufChan <- resultBuffer
 		}()
 
@@ -2286,9 +2272,12 @@ func (w *Workspace) setBuffTS() {
 			return true
 		}
 
+		win.updateMutex.RLock()
+		id := win.id
+		win.updateMutex.RUnlock()
 		// set buffer name
 		go func() {
-			resultBuffer, _ := w.nvim.WindowBuffer(win.id)
+			resultBuffer, _ := w.nvim.WindowBuffer(id)
 			bufChan <- resultBuffer
 		}()
 		select {
@@ -2306,18 +2295,16 @@ func (w *Workspace) setBuffTS() {
 // This function gets the value of an option that cannot be caught by the set_option event.
 func (w *Workspace) optionSet(updates []interface{}) {
 	optionName := updates[1]
-	new, err := strconv.Atoi(updates[2].(string))
-	if err != nil {
-		return
-	}
+	// new, err := strconv.Atoi(updates[2].(string))
+	// if err != nil {
+	// 	return
+	// }
 
 	w.optionsetMutex.Lock()
 	switch optionName {
 	case editor.config.Editor.OptionsToUseGuideWidth:
 		w.setBuffTS()
 
-	case "winblend":
-		w.setWinblend(util.ReflectToInt(new))
 	}
 	w.optionsetMutex.Unlock()
 }
@@ -2382,25 +2369,6 @@ func (w *Workspace) setFileType(args []interface{}) {
 		return true
 	})
 
-}
-
-func (w *Workspace) setWinblend(wb int) {
-	w.screen.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-
-		if win == nil {
-			return true
-		}
-
-		if win.grid != w.cursor.bufferGridid {
-			return true
-		}
-
-		win.paintMutex.Lock()
-		win.wb = wb
-		win.paintMutex.Unlock()
-		return false
-	})
 }
 
 // InputMethodEvent is
