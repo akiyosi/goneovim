@@ -3830,8 +3830,7 @@ func (w *Window) fill() {
 		return
 	}
 	// If window winblend > 0 is set
-	wb := w.wb
-	if !w.isPopupmenu && w.isFloatWin && wb > 0 {
+	if !w.isPopupmenu && w.isFloatWin && w.wb > 0 {
 		return
 	}
 	if w.background != nil {
