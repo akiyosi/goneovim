@@ -165,6 +165,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	if editor.config.Editor.ExtTabline {
 		w.tabline = initTabline()
 		w.tabline.ws = w
+		w.tabline.font = w.font.fontNew
 	}
 
 	// cmdline

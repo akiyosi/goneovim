@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"strings"
 
@@ -120,13 +121,13 @@ func initTabline() *Tabline {
 
 	widget.SetLayout(layout)
 
-	space := int(float64(editor.config.Editor.Linespace) * 2)
+	space := editor.config.Editor.Linespace
 	tabline := &Tabline{
-		widget:        widget,
-		layout:        layout,
-		marginTop:     space/3,
-		marginBottom:  space*2/3,
-		showtabline:   2,
+		widget:       widget,
+		layout:       layout,
+		marginTop:    int(math.Ceil(float64(space) / 3.0)),
+		marginBottom: int(math.Ceil(float64(space) * 2.0 / 3.0)),
+		showtabline:  2,
 	}
 
 	tabs := []*Tab{}
@@ -228,14 +229,17 @@ func (t *Tab) updateStyle() {
 }
 
 func (t *Tabline) updateFont() {
-	size := editor.extFontSize - 1
-	if size <= 0 {
-		size = editor.extFontSize
-	}
-	if t.fontfamily == editor.extFontFamily && t.fontsize == size {
-		return
-	}
-	t.font = gui.NewQFont2(editor.extFontFamily, size, 1, false)
+	// size := editor.extFontSize - 1
+	// if size <= 0 {
+	// 	size = editor.extFontSize
+	// }
+	// if t.fontfamily == editor.extFontFamily && t.fontsize == size {
+	// 	return
+	// }
+	// t.fontfamily = editor.extFontFamily
+	// t.fontsize = editor.extFontSize
+	// t.font = gui.NewQFont2(editor.extFontFamily, size, 1, false)
+	t.font = t.ws.font.fontNew
 
 	// t.widget.SetFont(t.font)
 	for _, tab := range t.Tabs {
@@ -287,7 +291,7 @@ func (t *Tab) updateSize() {
 	if editor.config.Tabline.ShowIcon {
 		width += +editor.iconSize
 	}
-	height := int(fontmetrics.Height()*1.5) + t.t.marginTop + t.t.marginBottom + 2
+	height := int(fontmetrics.Height()*1.5) + t.t.marginTop + t.t.marginBottom + 1
 	t.widget.SetFixedSize2(width+editor.iconSize+5+10+5, height)
 }
 
