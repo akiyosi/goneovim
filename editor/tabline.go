@@ -23,7 +23,6 @@ type Tabline struct {
 	currentFileText string
 	Tabs            []*Tab
 	showtabline     int
-	marginDefault   int
 	marginTop       int
 	marginBottom    int
 	height          int
@@ -55,7 +54,6 @@ func (t *Tabline) subscribe() {
 	if !t.ws.drawTabline {
 		t.widget.Hide()
 		t.height = 0
-		t.marginDefault = 0
 		t.marginTop = 0
 		t.marginBottom = 0
 		return
@@ -81,7 +79,7 @@ func initTabline() *Tabline {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(5, 5, 5, 5)
 
-	layout := util.NewVFlowLayout(16, 10, 1, 0, 0)
+	layout := util.NewVFlowLayout(16, 5, 1, 0, 0)
 	// layout := widgets.NewQLayout2()
 	// layout.SetSpacing(0)
 	// layout.SetContentsMargins(0, 0, 0, 0)
@@ -122,15 +120,12 @@ func initTabline() *Tabline {
 
 	widget.SetLayout(layout)
 
-	marginDefault := 10
-	marginTop := int(float64(editor.extFontSize)) // No effect now
-	marginBot := int(float64(editor.extFontSize)) // No effect now
+	space := int(float64(editor.config.Editor.Linespace) * 2)
 	tabline := &Tabline{
 		widget:        widget,
 		layout:        layout,
-		marginDefault: marginDefault,
-		marginTop:     marginTop,
-		marginBottom:  marginBot,
+		marginTop:     space/3,
+		marginBottom:  space*2/3,
 		showtabline:   2,
 	}
 
@@ -155,8 +150,8 @@ func initTabline() *Tabline {
 
 func newTab() *Tab {
 	w := widgets.NewQWidget(nil, 0)
-	space := int(float64(editor.config.Editor.Linespace) * 0.3)
-	w.SetContentsMargins(5, space, 5, space+editor.iconSize*1/6)
+	// space := int(float64(editor.config.Editor.Linespace) * 0.3)
+	w.SetContentsMargins(5, 0, 5, 0)
 	l := widgets.NewQHBoxLayout()
 	l.SetContentsMargins(0, 0, 0, 0) // tab margins
 	l.SetSpacing(0)
@@ -169,6 +164,7 @@ func newTab() *Tab {
 	file := widgets.NewQLabel(nil, 0)
 	file.SetContentsMargins(0, 0, editor.iconSize/4, 0)
 	file.SetStyleSheet(" .QLabel { padding: 1px; background-color: rgba(0, 0, 0, 0); }")
+	l.SetAlignment(file, core.Qt__AlignTop)
 	closeIcon := svg.NewQSvgWidget(nil)
 	closeIcon.SetFixedWidth(editor.iconSize)
 	closeIcon.SetFixedHeight(editor.iconSize)
@@ -215,7 +211,7 @@ func (t *Tab) updateStyle() {
 	if t.active {
 		activeStyle := fmt.Sprintf(`
 		.QWidget { 
-			border-bottom: 2.0px solid %s; 
+			border-bottom: 1.0px solid %s; 
 			background-color: rgba(0, 0, 0, 0); 
 		} QWidget{ color: %s; } `, accent, warpColor(fg, -30))
 		t.widget.SetStyleSheet(activeStyle)
@@ -291,7 +287,7 @@ func (t *Tab) updateSize() {
 	if editor.config.Tabline.ShowIcon {
 		width += +editor.iconSize
 	}
-	height := int(fontmetrics.Height()) + t.t.marginTop + t.t.marginBottom
+	height := int(fontmetrics.Height()*1.5) + t.t.marginTop + t.t.marginBottom + 2
 	t.widget.SetFixedSize2(width+editor.iconSize+5+10+5, height)
 }
 
