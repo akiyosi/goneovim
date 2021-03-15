@@ -147,7 +147,6 @@ func newWorkspace(path string) (*Workspace, error) {
 		w.font = editor.font
 	}
 	w.font.ws = w
-	w.font.putDebugLog()
 
 	// Basic Workspace UI component
 	// screen
