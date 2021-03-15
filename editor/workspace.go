@@ -289,6 +289,9 @@ func (w *Workspace) lazyDrawUI() {
 	w.finder = initFinder()
 	w.finder.ws = w
 
+	// put font debug log
+	w.font.putDebugLog()
+
 	// set current working directory
 	w.setCwd(w.getCwd())
 

@@ -96,9 +96,6 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	f.ascent = ascent
 	f.shift = int(float64(f.lineSpace)/2 + ascent)
 	f.italicWidth = italicWidth
-
-	f.putDebugLog()
-
 	f.ws.screen.purgeTextCacheForWins()
 }
 
