@@ -289,9 +289,6 @@ func (w *Workspace) lazyDrawUI() {
 	w.finder = initFinder()
 	w.finder.ws = w
 
-	// put font debug log
-	w.font.putDebugLog()
-
 	// set current working directory
 	w.setCwd(w.getCwd())
 
@@ -354,6 +351,9 @@ func (w *Workspace) vimEnterProcess() {
 
 		time.Sleep(time.Millisecond * 400)
 		editor.signal.SidebarSignal()
+
+		// put font debug log
+		w.font.putDebugLog()
 
 	}()
 }
