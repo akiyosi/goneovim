@@ -3899,8 +3899,11 @@ func (w *Window) layoutExternalWindow(x, y int) {
 	// float windows width, height
 	width := int(float64(w.cols) * font.truewidth)
 	height := w.rows * font.lineHeight
+	dx := []int{}
+	dy := []int{}
 
 	// layout external windows
+	// Adjacent to each other through edges of the same length as much as possible.
 	if w.pos[0] == 0 && w.pos[1] == 0 && !w.extwinManualResized {
 		w.s.windows.Range(func(_, winITF interface{}) bool {
 			win := winITF.(*Window)
@@ -3917,33 +3920,52 @@ func (w *Window) layoutExternalWindow(x, y int) {
 				return true
 			}
 			if win.isExternal {
-				if win.pos[0] <= w.pos[0] && win.pos[0]+win.cols >= w.pos[0] &&
-					win.pos[1] <= w.pos[1] && win.pos[1]+win.rows >= w.pos[1] {
+
+				dc := 0
+				dr := 0
+				for _, e := range dx {
+					dc += e
+				}
+				for _, e := range dy {
+					dr += e
+				}
+
+				if win.pos[0] <= w.pos[0]+dc && win.pos[0]+win.cols > w.pos[0]+dc &&
+					win.pos[1] <= w.pos[1]+dr && win.pos[1]+win.rows > w.pos[1]+dr {
+
 					widthRatio := float64(w.cols+win.cols) * font.truewidth / float64(editor.window.Width())
 					heightRatio := float64((w.rows+win.rows)*font.lineHeight) / float64(editor.window.Height())
 					if w.cols == win.cols {
-						y = win.rows*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+						dy = append(dy, win.rows)
 						height += win.rows*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
 					} else if w.rows == win.rows {
-						x = int(float64(win.cols)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+						dx = append(dx, win.cols)
 						width += int(float64(win.cols)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
 					} else {
 						if widthRatio > heightRatio {
-							y = win.rows*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+							dy = append(dy, win.rows)
 							height += win.rows*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
 						} else {
-							x = int(float64(win.cols)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+							dx = append(dx, win.cols)
 							width += int(float64(win.cols)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
 						}
 					}
 
-					return false
+					return true
 				}
 
 			}
 
 			return true
 		})
+		x := 0
+		y := 0
+		for _, e := range dx {
+			x += int(float64(e)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+		}
+		for _, e := range dy {
+			y += e*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+		}
 		w.extwinRelativePos = [2]int{editor.window.Pos().X() + x, editor.window.Pos().Y() + y}
 	}
 
