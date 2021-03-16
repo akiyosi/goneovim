@@ -78,6 +78,7 @@ jobs:
         chmod u+x goneovim QtWebEngineProcess
   
     - name: Upload for linux
+      if: matrix.qtversion == '5.14.1'
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-linux-${{ matrix.qtversion }}
@@ -146,6 +147,7 @@ jobs:
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
   
     - name: Upload for macos
+      if: matrix.qtversion == '5.13.0'
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-macos-${{ matrix.qtversion }}
@@ -398,6 +400,7 @@ jobs:
         Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
 
     - name: Upload for windows
+      if: matrix.qtversion == '5.14.1'
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-win64-${{ matrix.qtversion }}
