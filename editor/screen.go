@@ -132,6 +132,8 @@ type Window struct {
 	extwinConnectResizable bool
 	extwinResized          bool
 	extwinManualResized    bool
+	extwinAutoLayoutPosX   []int
+	extwinAutoLayoutPosY   []int
 	extwinRelativePos      [2]int
 
 	font         *Font
@@ -3930,8 +3932,17 @@ func (w *Window) layoutExternalWindow(x, y int) {
 					dr += e
 				}
 
-				if win.pos[0] <= w.pos[0]+dc && win.pos[0]+win.cols > w.pos[0]+dc &&
-					win.pos[1] <= w.pos[1]+dr && win.pos[1]+win.rows > w.pos[1]+dr {
+				winx := 0
+				winy := 0
+				for _, e := range win.extwinAutoLayoutPosX {
+					winx += e
+				}
+				for _, e := range win.extwinAutoLayoutPosY {
+					winy += e
+				}
+
+				if winx <= w.pos[0]+dc && winx+win.cols > w.pos[0]+dc &&
+					winy <= w.pos[1]+dr && winy+win.rows > w.pos[1]+dr {
 
 					widthRatio := float64(w.cols+win.cols) * font.truewidth / float64(editor.window.Width())
 					heightRatio := float64((w.rows+win.rows)*font.lineHeight) / float64(editor.window.Height())
@@ -3966,6 +3977,8 @@ func (w *Window) layoutExternalWindow(x, y int) {
 		for _, e := range dy {
 			y += e*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
 		}
+		w.extwinAutoLayoutPosX = dx
+		w.extwinAutoLayoutPosY = dy
 		w.extwinRelativePos = [2]int{editor.window.Pos().X() + x, editor.window.Pos().Y() + y}
 	}
 
