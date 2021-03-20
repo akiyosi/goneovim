@@ -3657,7 +3657,6 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				extwin := createExternalWin()
 				win.SetParent(extwin)
 				extwin.ConnectKeyPressEvent(editor.keyPress)
-
 				win.background = s.ws.background.copy()
 				extwin.SetAutoFillBackground(true)
 				p := gui.NewQPalette()
@@ -3667,6 +3666,21 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				extwin.Show()
 				win.extwin = extwin
 				font := win.getFont()
+				win.extwin.ConnectMoveEvent(func(ev *gui.QMoveEvent) {
+					if win.extwin == nil {
+						return
+					}
+					if ev == nil {
+						return
+					}
+					pos := ev.Pos()
+					if pos == nil {
+						return
+					}
+					gPos := editor.window.Pos()
+					win.pos[0] = int(float64(pos.X()-gPos.X()) / font.truewidth)
+					win.pos[1] = int(float64(pos.Y()-gPos.Y()) / float64(font.lineHeight))
+				})
 				width := int(math.Ceil(float64(win.cols) * font.truewidth))
 				height := win.rows * font.lineHeight
 				win.setGridGeometry(width, height)
