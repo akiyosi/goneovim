@@ -460,7 +460,7 @@ func (e *Editor) loadFileInDarwin() {
 	if isModified == "1" {
 		goneovim.Command(fmt.Sprintf(":tabe %s", e.macAppArg))
 	} else {
-		goneovim.Command(fmt.Sprintf(":e %s", e.macAppArg))
+		goneovim.Command(fmt.Sprintf("%s %s", e.config.Editor.FileOpenCmd, e.macAppArg))
 	}
 }
 

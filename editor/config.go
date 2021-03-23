@@ -28,6 +28,7 @@ type gonvimConfig struct {
 type editorConfig struct {
 	Width                    int
 	Height                   int
+	FileOpenCmd              string
 	Gap                      int
 	FontFamily               string
 	FontSize                 int
@@ -278,6 +279,8 @@ func (c *gonvimConfig) init() {
 	c.Editor.Width = 800
 	c.Editor.Height = 600
 	c.Editor.Gap = 2
+
+	c.Editor.FileOpenCmd = ":e"
 
 	c.Editor.Transparent = 1.0
 
