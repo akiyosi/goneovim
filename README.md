@@ -20,7 +20,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Modern Text Editor Features
   - Markdown Preview
   - Minimap
-  - Smooth pixcel scroll (Support for both touchpad and Vim scroll command reactions.)
+  - Smooth pixel scroll (Support for both touchpad and Vim scroll command reactions.)
   - Workspace feature which manages multiple nvim
   - External File Explorer
   - Scrollbar
