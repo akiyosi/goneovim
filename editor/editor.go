@@ -705,7 +705,7 @@ func (e *Editor) setWindowOptions() {
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)
 	e.window.SetAcceptDrops(true)
 	if e.config.Editor.StartFullscreen || e.opts.Fullscreen {
-		e.window.ShowFullScreen()
+		e.window.WindowFullScreen()
 	} else if e.config.Editor.StartMaximizedWindow || e.opts.Maximized {
 		e.window.WindowMaximize()
 	}

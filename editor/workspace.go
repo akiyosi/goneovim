@@ -723,11 +723,9 @@ func (w *Workspace) initGonvim() {
 	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
 	`
 	}
-	if runtime.GOOS == "darwin" {
-		gonvimCommands = gonvimCommands + `
+	gonvimCommands = gonvimCommands + `
 		command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
 	`
-	}
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	w.nvim.Command(registerScripts)
 
@@ -1803,7 +1801,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		width, height := editor.setWindowSize(updates[1].(string))
 		editor.window.Resize2(width, height)
 	case "gonvim_maximize":
-		// editor.window.WindowMaximize()
+		editor.window.WindowMaximize()
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
