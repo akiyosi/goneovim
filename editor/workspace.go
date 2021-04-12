@@ -262,9 +262,9 @@ func (w *Workspace) lazyDrawUI() {
 	if !editor.config.MiniMap.Disable {
 		w.minimap = newMiniMap()
 		w.minimap.ws = w
+		w.layout2.AddWidget(w.minimap.widget, 0, 0)
 	}
 
-	w.layout2.AddWidget(w.minimap.widget, 0, 0)
 	if editor.config.ScrollBar.Visible {
 		w.layout2.AddWidget(w.scrollBar.widget, 0, 0)
 		w.scrollBar.setColor()
