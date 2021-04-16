@@ -303,7 +303,7 @@ func (w *Workspace) lazyDrawUI() {
 
 	// Asynchronously execute the process for minimap
 	go func() {
-		if !w.uiRemoteAttached && !editor.config.MiniMap.Disable {
+		if !editor.config.MiniMap.Disable {
 			w.minimap.startMinimapProc()
 			time.Sleep(time.Millisecond * 50)
 			w.minimap.mu.Lock()
@@ -669,7 +669,7 @@ func (w *Workspace) initGonvim() {
 		au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
 		`
 	}
-	if !w.uiRemoteAttached {
+	if editor.opts.Server == "" {
 		gonvimAutoCmds = gonvimAutoCmds + `
 		aug GonvimAuMinimap | au! | aug END
 		au GonvimAuMinimap BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
@@ -709,7 +709,7 @@ func (w *Workspace) initGonvim() {
 		command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
 		`
 	}
-	if !w.uiRemoteAttached {
+	if editor.opts.Server == "" {
 		if !editor.config.MiniMap.Disable {
 			gonvimCommands = gonvimCommands + `
 		command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")

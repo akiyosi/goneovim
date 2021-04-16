@@ -115,6 +115,9 @@ func (m *MiniMap) startMinimapProc() {
 		// Attaching to /path/to/nvim
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
 		neovim, err = nvim.NewChildProcess(minimapProcessArgs, childProcessCmd)
+	} else if editor.opts.Ssh != "" {
+		// Attaching remote nvim via ssh
+		neovim, err = newRemoteChildProcess()
 	} else {
 		// Attaching to nvim normally
 		neovim, err = nvim.NewChildProcess(minimapProcessArgs)
@@ -316,9 +319,9 @@ func (m *MiniMap) setColorscheme() {
 	}
 
 	runtimePaths, _ := m.ws.nvim.RuntimePaths()
-	runtimeDir := ""
 	colorschemePath := ""
 	treesitterPath := ""
+	isColorschmepathDetected := false
 	for _, path := range runtimePaths {
 		lsDirs, err := ioutil.ReadDir(path)
 		if err != nil {
@@ -329,31 +332,33 @@ func (m *MiniMap) setColorscheme() {
 				treesitterPath = path
 			}
 		}
-		for _, d := range lsDirs {
-			dirname := d.Name()
-			finfo, err := os.Stat(path + sep + dirname)
-			if err != nil {
-				continue
-			}
-			if finfo.IsDir() {
-				packDirs, _ := ioutil.ReadDir(path + sep + dirname)
-				for _, p := range packDirs {
-					plugname := p.Name()
-					if strings.Contains(plugname, colo) {
-						runtimeDir = path
-						colorschemePath = path + sep + dirname + sep + plugname
-						break
-					}
-				}
-				if colorschemePath != "" {
+		if !isColorschmepathDetected {
+			for _, d := range lsDirs {
+				dirname := d.Name()
+				finfo, err := os.Stat(path + sep + dirname)
+				if err != nil {
 					continue
+				}
+				if finfo.IsDir() {
+					packDirs, _ := ioutil.ReadDir(path + sep + dirname)
+					for _, p := range packDirs {
+						plugname := p.Name()
+						if strings.Contains(plugname, colo) {
+							colorschemePath = path + sep + dirname + sep + plugname
+							isColorschmepathDetected = true
+							break
+						}
+					}
+					if colorschemePath != "" {
+						continue
+					}
 				}
 			}
 		}
 	}
 
 	// set runtimepath
-	m.nvim.Command("set runtimepath^=" + runtimeDir)
+	m.nvim.Command("set runtimepath^=" + colorschemePath)
 
 	if m.colorscheme == colo {
 		return
@@ -366,11 +371,6 @@ func (m *MiniMap) setColorscheme() {
 	editor.putLog("detected treesitter runtime path:", treesitterPath)
 
 	// if nvim-treesitter is installed
-	// m.nvim.Command("luafile ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/lua/nvim-treesitter.lua")
-	// m.nvim.Command("luafile ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/lua/nvim-treesitter/highlight.lua")
-	// m.nvim.Command("luafile ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/lua/nvim-treesitter/configs.lua")
-	// m.nvim.Command("source ~/.local/share/nvim/site/pack/packer/start/nvim-treesitter/plugin//nvim-treesitter.vim")
-	// m.nvim.Command("TSEnableAll highlight")
 	m.nvim.Command("luafile " + treesitterPath + "/lua/nvim-treesitter.lua")
 	m.nvim.Command("luafile " + treesitterPath + "/lua/nvim-treesitter/highlight.lua")
 	m.nvim.Command("luafile " + treesitterPath + "/lua/nvim-treesitter/configs.lua")
