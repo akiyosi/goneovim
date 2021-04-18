@@ -359,6 +359,9 @@ func (m *MiniMap) setColorscheme() {
 
 	// set runtimepath
 	m.nvim.Command("set runtimepath^=" + colorschemePath)
+	editor.putLog("set rtp for minimap colorscheme settings:", colorschemePath)
+	output, _ := m.nvim.CommandOutput("echo getcompletion('', 'color')")
+	editor.putLog("available colorscheme for minimap:", output)
 
 	if m.colorscheme == colo {
 		return
