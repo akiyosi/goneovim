@@ -1830,12 +1830,12 @@ func (s *Screen) setHlAttrDef(args []interface{}) {
 	isUpdateBg := true
 	curwin, ok := s.getWindow(s.ws.cursor.gridid)
 	if ok {
-		isUpdateBg = !curwin.background.equals(editor.colors.bg)
+		isUpdateBg = !curwin.background.equals(s.ws.background)
 	}
 
 	h[0] = &Highlight{
-		foreground: editor.colors.fg,
-		background: editor.colors.bg,
+		foreground: s.ws.foreground,
+		background: s.ws.background,
 	}
 
 	for _, arg := range args {
@@ -1843,7 +1843,9 @@ func (s *Screen) setHlAttrDef(args []interface{}) {
 		h[id] = s.getHighlight(arg)
 	}
 
-	s.hlAttrDef = h
+	if s.hlAttrDef == nil {
+		s.hlAttrDef = h
+	}
 
 	// Update all cell's highlight
 	if isUpdateBg {
