@@ -343,10 +343,15 @@ func (m *MiniMap) setColorscheme() {
 					packDirs, _ := ioutil.ReadDir(path + sep + dirname)
 					for _, p := range packDirs {
 						plugname := p.Name()
-						if strings.Contains(plugname, colo) {
+						if plugname == colo || plugname == colo+".vim" {
 							colorschemePath = path + sep + dirname + sep + plugname
 							isColorschmepathDetected = true
 							break
+						}
+						if strings.Contains(plugname, colo) {
+							colorschemePath = path + sep + dirname + sep + plugname
+							isColorschmepathDetected = true
+							continue
 						}
 					}
 					if colorschemePath != "" {
