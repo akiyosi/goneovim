@@ -332,6 +332,7 @@ func (m *MiniMap) setColorscheme() {
 				treesitterPath = path
 			}
 		}
+		editor.putLog("Serrch for colorscheme of minimap:: rtp:", path)
 		if !isColorschmepathDetected {
 			for _, d := range lsDirs {
 				dirname := d.Name()
@@ -339,18 +340,31 @@ func (m *MiniMap) setColorscheme() {
 				if err != nil {
 					continue
 				}
+				editor.putLog("Serrch for colorscheme of minimap:: directory:", dirname)
 				if finfo.IsDir() {
 					packDirs, _ := ioutil.ReadDir(path + sep + dirname)
 					for _, p := range packDirs {
 						plugname := p.Name()
-						if plugname == colo || plugname == colo+".vim" {
-							colorschemePath = path + sep + dirname + sep + plugname
+						if plugname == colo+".vim" {
+							plugdirInfo, err2 := os.Stat(path + sep + dirname + sep + plugname)
+							if err2 != nil {
+								continue
+							}
+							if plugdirInfo.IsDir() {
+								colorschemePath = path + sep + dirname + sep + plugname
+							} else {
+								colorschemePath = path + sep + dirname
+								if dirname == "colors" {
+									colorschemePath = path
+								}
+							}
 							isColorschmepathDetected = true
+							editor.putLog("Serrch for colorscheme of minimap:: colorscheme path:", colorschemePath)
 							break
 						}
 						if strings.Contains(plugname, colo) {
 							colorschemePath = path + sep + dirname + sep + plugname
-							isColorschmepathDetected = true
+							editor.putLog("Serrch for colorscheme of minimap:: colorscheme path:", colorschemePath)
 							continue
 						}
 					}
