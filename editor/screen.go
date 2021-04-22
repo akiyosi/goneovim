@@ -90,12 +90,14 @@ type Window struct {
 
 	doErase bool
 
-	s             *Screen
-	content       [][]*Cell
-	lenLine       []int
-	lenContent    []int
-	lenOldContent []int
-	maxLenContent int
+	s              *Screen
+	content        [][]*Cell
+	lenLine        []int
+	lenContent     []int
+	lenOldContent  []int
+	maxLenContent  int
+	contentMask    [][]bool
+	contentMaskOld [][]bool
 
 	grid        gridId
 	isGridDirty bool
@@ -1547,12 +1549,16 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 	// make new size content
 	content := make([][]*Cell, rows)
+	contentMask := make([][]bool, rows)
+	contentMaskOld := make([][]bool, rows)
 	lenLine := make([]int, rows)
 	lenContent := make([]int, rows)
 	lenOldContent := make([]int, rows)
 
 	for i := 0; i < rows; i++ {
 		content[i] = make([]*Cell, cols)
+		contentMask[i] = make([]bool, cols)
+		contentMaskOld[i] = make([]bool, cols)
 		lenContent[i] = cols - 1
 	}
 
@@ -1569,6 +1575,8 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 					continue
 				}
 				content[i][j] = win.content[i][j]
+				contentMask[i][j] = win.contentMask[i][j]
+				contentMaskOld[i][j] = win.contentMaskOld[i][j]
 			}
 		}
 	}
@@ -1608,6 +1616,8 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win.lenContent = lenContent
 	win.lenOldContent = lenOldContent
 	win.content = content
+	win.contentMask = contentMask
+	win.contentMaskOld = contentMaskOld
 	win.cols = cols
 	win.rows = rows
 
@@ -2041,11 +2051,15 @@ func (s *Screen) gridClear(args []interface{}) {
 			continue
 		}
 		win.content = make([][]*Cell, win.rows)
+		win.contentMask = make([][]bool, win.rows)
+		win.contentMaskOld = make([][]bool, win.rows)
 		win.lenLine = make([]int, win.rows)
 		win.lenContent = make([]int, win.rows)
 
 		for i := 0; i < win.rows; i++ {
 			win.content[i] = make([]*Cell, win.cols)
+			win.contentMask[i] = make([]bool, win.cols)
+			win.contentMaskOld[i] = make([]bool, win.cols)
 			win.lenContent[i] = win.cols - 1
 		}
 		win.queueRedrawAll()
@@ -2130,6 +2144,7 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 
 	win.updateLine(colStart, row, cells)
 	win.countContent(row)
+	win.makeUpdateMask(row)
 	if !win.isShown() {
 		win.show()
 	}
@@ -2259,6 +2274,20 @@ func (w *Window) countContent(row int) {
 	w.lenContent[row] = width
 }
 
+func (w *Window) makeUpdateMask(row int) {
+	line := w.content[row]
+	for j := 0; j <= w.cols-1; j++ {
+		cell := line[j]
+		if cell == nil {
+			w.contentMask[row][j] = false
+		} else if cell.char == " " && cell.highlight.bg().equals(w.background) {
+			w.contentMask[row][j] = false
+		} else {
+			w.contentMask[row][j] = true
+		}
+	}
+}
+
 func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 	if w == nil {
 		return 0, errors.New("window is nil")
@@ -2352,6 +2381,8 @@ func (w *Window) scroll(count int) {
 			// copy(content[row], content[row+count])
 			for col := left; col <= right; col++ {
 				content[row][col] = content[row+count][col]
+				w.contentMask[row][col] = w.contentMask[row+count][col]
+				w.contentMaskOld[row][col] = w.contentMaskOld[row+count][col]
 			}
 			lenLine[row] = lenLine[row+count]
 			lenContent[row] = lenContent[row+count]
@@ -2359,6 +2390,8 @@ func (w *Window) scroll(count int) {
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
 				content[row][col] = nil
+				w.contentMask[row][col] = false
+				w.contentMaskOld[row][col] = false
 			}
 		}
 	} else {
@@ -2370,6 +2403,8 @@ func (w *Window) scroll(count int) {
 			// copy(content[row], content[row+count])
 			for col := left; col <= right; col++ {
 				content[row][col] = content[row+count][col]
+				w.contentMask[row][col] = w.contentMask[row+count][col]
+				w.contentMaskOld[row][col] = w.contentMaskOld[row+count][col]
 			}
 			lenLine[row] = lenLine[row+count]
 			lenContent[row] = lenContent[row+count]
@@ -2377,6 +2412,8 @@ func (w *Window) scroll(count int) {
 		for row := top; row < top-count; row++ {
 			for col := left; col <= right; col++ {
 				content[row][col] = nil
+				w.contentMask[row][col] = false
+				w.contentMaskOld[row][col] = false
 			}
 		}
 	}
@@ -2417,8 +2454,9 @@ func (w *Window) update() {
 		if width < w.lenOldContent[i] {
 			width = w.lenOldContent[i]
 		}
-
 		w.lenOldContent[i] = w.lenContent[i]
+
+		drawWithRectSlice := true
 
 		// If DrawIndentGuide is enabled
 		if editor.config.Editor.IndentGuide && i < w.rows-1 {
@@ -2426,32 +2464,82 @@ func (w *Window) update() {
 				width = w.lenContent[i+1]
 			}
 			// width = w.maxLenContent
+			drawWithRectSlice = false
 		}
 
 		// If screen is minimap
 		if w.s.name == "minimap" {
 			width = w.cols
+			drawWithRectSlice = false
 		}
 
 		// If scroll is smooth
 		if w.scrollPixels[1] != 0 {
 			width = w.maxLenContent
+			drawWithRectSlice = false
 		}
 		// If scroll is smooth
 		if editor.config.Editor.SmoothScroll {
 			if w.scrollPixels2 != 0 {
 				width = w.maxLenContent
+				drawWithRectSlice = false
 			}
 		}
 
 		width++
+		if !drawWithRectSlice {
+			w.Update2(
+				0,
+				i*font.lineHeight,
+				int(float64(width)*font.truewidth),
+				font.lineHeight,
+			)
+			continue
+		}
 
-		w.Update2(
-			0,
-			i*font.lineHeight,
-			int(float64(width)*font.truewidth),
-			font.lineHeight,
-		)
+		var rects []*core.QRect
+		isCreateRect := false
+		start := 0
+		for j, cm := range w.contentMask[i] {
+			mask := cm || w.contentMaskOld[i][j]
+			if mask && !isCreateRect {
+				start = j
+				isCreateRect = true
+			} else if !mask && isCreateRect {
+				rect := core.NewQRect4(
+					int(float64(start)*font.truewidth),
+					i*font.lineHeight,
+					int(float64(j-start)*font.truewidth),
+					font.lineHeight,
+				)
+				rects = append(rects, rect)
+				isCreateRect = false
+			}
+		}
+		w.contentMaskOld = w.contentMask
+
+		if len(rects) == 0 {
+			w.Update2(
+				0,
+				i*font.lineHeight,
+				int(float64(width)*font.truewidth),
+				font.lineHeight,
+			)
+		} else {
+			for _, rect := range rects {
+				// w.Update3(rect)
+				w.Update2(
+					rect.X(),
+					rect.Y(),
+					rect.Width(),
+					rect.Height(),
+				)
+			}
+		}
+
+		if !w.isMsgGrid && w.grid != 1 {
+			fmt.Println(i, "-------------------")
+		}
 	}
 
 	// reset redraw area
