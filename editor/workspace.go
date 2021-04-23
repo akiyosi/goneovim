@@ -1757,6 +1757,7 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 				win.cols*font.lineHeight,
 			)
 			win.doErase = false
+			win.fill()
 		}
 	})
 	a.SetDuration(250)

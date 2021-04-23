@@ -1321,6 +1321,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	event.Accept()
 }
 
+// screen smooth update with touchpad
 func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 	var vert, horiz int
 	font := w.getFont()
@@ -2060,6 +2061,9 @@ func (s *Screen) gridClear(args []interface{}) {
 			win.content[i] = make([]*Cell, win.cols)
 			win.contentMask[i] = make([]bool, win.cols)
 			win.contentMaskOld[i] = make([]bool, win.cols)
+			for j := 0; j < win.cols; j++ {
+				win.contentMask[i][j] = true
+			}
 			win.lenContent[i] = win.cols - 1
 		}
 		win.queueRedrawAll()
@@ -2382,7 +2386,6 @@ func (w *Window) scroll(count int) {
 			for col := left; col <= right; col++ {
 				content[row][col] = content[row+count][col]
 				w.contentMask[row][col] = w.contentMask[row+count][col]
-				w.contentMaskOld[row][col] = w.contentMaskOld[row+count][col]
 			}
 			lenLine[row] = lenLine[row+count]
 			lenContent[row] = lenContent[row+count]
@@ -2391,7 +2394,6 @@ func (w *Window) scroll(count int) {
 			for col := left; col <= right; col++ {
 				content[row][col] = nil
 				w.contentMask[row][col] = false
-				w.contentMaskOld[row][col] = false
 			}
 		}
 	} else {
@@ -2404,7 +2406,6 @@ func (w *Window) scroll(count int) {
 			for col := left; col <= right; col++ {
 				content[row][col] = content[row+count][col]
 				w.contentMask[row][col] = w.contentMask[row+count][col]
-				w.contentMaskOld[row][col] = w.contentMaskOld[row+count][col]
 			}
 			lenLine[row] = lenLine[row+count]
 			lenContent[row] = lenContent[row+count]
@@ -2413,7 +2414,6 @@ func (w *Window) scroll(count int) {
 			for col := left; col <= right; col++ {
 				content[row][col] = nil
 				w.contentMask[row][col] = false
-				w.contentMaskOld[row][col] = false
 			}
 		}
 	}
@@ -2444,7 +2444,6 @@ func (w *Window) update() {
 
 	for i := start; i < end; i++ {
 
-		// for i := 0; i <= numOfLines; i++ {
 		if len(w.content) <= i {
 			continue
 		}
@@ -2456,68 +2455,74 @@ func (w *Window) update() {
 		}
 		w.lenOldContent[i] = w.lenContent[i]
 
-		drawWithRectSlice := true
+		drawWithSingleRect := false
 
 		// If DrawIndentGuide is enabled
-		if editor.config.Editor.IndentGuide && i < w.rows-1 {
-			if width < w.lenContent[i+1] {
-				width = w.lenContent[i+1]
+		if editor.config.Editor.IndentGuide {
+			if i < w.rows-1 {
+				if width < w.lenContent[i+1] {
+					width = w.lenContent[i+1]
+				}
 			}
-			// width = w.maxLenContent
-			drawWithRectSlice = false
+			drawWithSingleRect = true
 		}
-
 		// If screen is minimap
 		if w.s.name == "minimap" {
 			width = w.cols
-			drawWithRectSlice = false
+			drawWithSingleRect = true
 		}
-
-		// If scroll is smooth
+		// If scroll is smooth with touchpad
 		if w.scrollPixels[1] != 0 {
 			width = w.maxLenContent
-			drawWithRectSlice = false
+			drawWithSingleRect = true
 		}
 		// If scroll is smooth
 		if editor.config.Editor.SmoothScroll {
 			if w.scrollPixels2 != 0 {
 				width = w.maxLenContent
-				drawWithRectSlice = false
+				drawWithSingleRect = true
 			}
 		}
-
 		width++
-		if !drawWithRectSlice {
-			w.Update2(
-				0,
-				i*font.lineHeight,
-				int(float64(width)*font.truewidth),
-				font.lineHeight,
-			)
-			continue
-		}
 
-		var rects []*core.QRect
+		// Create rectangles that require updating.
+		var rects [][4]int
 		isCreateRect := false
 		start := 0
-		for j, cm := range w.contentMask[i] {
-			mask := cm || w.contentMaskOld[i][j]
-			if mask && !isCreateRect {
-				start = j
-				isCreateRect = true
-			} else if !mask && isCreateRect {
-				rect := core.NewQRect4(
-					int(float64(start)*font.truewidth),
-					i*font.lineHeight,
-					int(float64(j-start)*font.truewidth),
-					font.lineHeight,
-				)
-				rects = append(rects, rect)
-				isCreateRect = false
+		if drawWithSingleRect {
+			rect := [4]int{
+				0,
+				i * font.lineHeight,
+				int(math.Ceil(float64(width) * font.truewidth)),
+				font.lineHeight,
+			}
+			rects = append(rects, rect)
+		} else {
+			for j, cm := range w.contentMask[i] {
+				mask := cm || w.contentMaskOld[i][j]
+				if mask && !isCreateRect {
+					start = j
+					isCreateRect = true
+				}
+				if (!mask && isCreateRect) || (j >= len(w.contentMask[i])-1 && isCreateRect) {
+					jj := j
+					if j >= len(w.contentMask[i])-1 && isCreateRect {
+						jj++
+					}
+					rect := [4]int{
+						int(float64(start) * font.truewidth),
+						i * font.lineHeight,
+						int(math.Ceil(float64(jj-start+1) * font.truewidth)),
+						font.lineHeight,
+					}
+					rects = append(rects, rect)
+					isCreateRect = false
+				}
+				w.contentMaskOld[i][j] = w.contentMask[i][j]
 			}
 		}
-		w.contentMaskOld = w.contentMask
 
+		// Request screen refresh for each rectangle region.
 		if len(rects) == 0 {
 			w.Update2(
 				0,
@@ -2527,18 +2532,13 @@ func (w *Window) update() {
 			)
 		} else {
 			for _, rect := range rects {
-				// w.Update3(rect)
 				w.Update2(
-					rect.X(),
-					rect.Y(),
-					rect.Width(),
-					rect.Height(),
+					rect[0],
+					rect[1],
+					rect[2],
+					rect[3],
 				)
 			}
-		}
-
-		if !w.isMsgGrid && w.grid != 1 {
-			fmt.Println(i, "-------------------")
 		}
 	}
 
@@ -2812,33 +2812,42 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 
 	// If config.DisableLigatures is false
 	if !editor.config.Editor.DisableLigatures {
-		pointF := core.NewQPointF3(
-			float64(col)*wsfont.truewidth,
-			float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
-		)
 
 		for highlight, colorSlice := range chars {
 			var buffer bytes.Buffer
 			slice := colorSlice[:]
+
+			pos := col
+			isIndentationWhitespace := true
 			for x := col; x <= col+cols; x++ {
 				if len(slice) == 0 {
 					break
 				}
 				index := slice[0]
+
 				if x < index {
-					buffer.WriteString(" ")
+					if isIndentationWhitespace {
+						pos++
+					} else {
+						buffer.WriteString(" ")
+					}
 					continue
 				}
+
 				if x == index {
 					buffer.WriteString(line[x].char)
 					slice = slice[1:]
+					isIndentationWhitespace = false
 				}
 			}
 
 			text := buffer.String()
 			w.drawTextInPosWithCache(
 				p,
-				pointF,
+				core.NewQPointF3(
+					float64(pos)*wsfont.truewidth,
+					float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
+				),
 				text,
 				highlight,
 				true,
@@ -2863,6 +2872,7 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
+// func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
 func (w *Window) drawTextInPosWithCache(p *gui.QPainter, point *core.QPointF, text string, highlight *Highlight, isNormalWidth bool) {
 	if text == "" {
 		return
@@ -2883,6 +2893,13 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, point *core.QPointF, te
 	} else {
 		image = imagev.(*gui.QImage)
 	}
+	// p.DrawImage9(
+	// 	x, y,
+	// 	image,
+	// 	0, 0,
+	// 	0, 0,
+	// 	core.Qt__AutoColor,
+	// )
 	p.DrawImage7(
 		point,
 		image,
@@ -3922,6 +3939,9 @@ func (w *Window) setGridGeometry(width, height int) {
 func (w *Window) fill() {
 	for i := 0; i < len(w.lenContent); i++ {
 		w.lenContent[i] = w.cols
+		for j, _ := range w.contentMask[i] {
+			w.contentMask[i][j] = true
+		}
 	}
 	if editor.config.Editor.Transparent < 1.0 {
 		return
