@@ -559,15 +559,23 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 		userhost = parts[0]
 	}
 
-	cmd := exec.CommandContext(
-		ctx,
-		command,
+	nvimargs := `"nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed `
+	for _, s := range editor.args {
+		nvimargs += s + " "
+	}
+	nvimargs += `"`
+	sshargs := []string{
 		userhost,
 		"-p", port,
 		"/bin/bash",
 		"--login",
 		"-c",
-		`"nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed"`,
+		nvimargs,
+	}
+	cmd := exec.CommandContext(
+		ctx,
+		command,
+		sshargs...,
 	)
 	util.PrepareRunProc(cmd)
 	cmd.SysProcAttr = embedProcAttr
@@ -669,7 +677,7 @@ func (w *Workspace) initGonvim() {
 		au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
 		`
 	}
-	if editor.opts.Server == "" {
+	if editor.opts.Server == "" && !editor.config.MiniMap.Disable {
 		gonvimAutoCmds = gonvimAutoCmds + `
 		aug GonvimAuMinimap | au! | aug END
 		au GonvimAuMinimap BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
