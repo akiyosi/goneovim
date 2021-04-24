@@ -2280,10 +2280,9 @@ func (w *Window) countContent(row int) {
 
 func (w *Window) makeUpdateMask(row int) {
 	line := w.content[row]
-	for j := 0; j <= w.cols-1; j++ {
-		cell := line[j]
+	for j, cell := range line {
 		if cell == nil {
-			w.contentMask[row][j] = false
+			w.contentMask[row][j] = true
 		} else if cell.char == " " && cell.highlight.bg().equals(w.background) {
 			w.contentMask[row][j] = false
 		} else {
@@ -2393,7 +2392,7 @@ func (w *Window) scroll(count int) {
 		for row := bot - count + 1; row <= bot; row++ {
 			for col := left; col <= right; col++ {
 				content[row][col] = nil
-				w.contentMask[row][col] = false
+				w.contentMask[row][col] = true
 			}
 		}
 	} else {
@@ -2413,7 +2412,7 @@ func (w *Window) scroll(count int) {
 		for row := top; row < top-count; row++ {
 			for col := left; col <= right; col++ {
 				content[row][col] = nil
-				w.contentMask[row][col] = false
+				w.contentMask[row][col] = true
 			}
 		}
 	}
@@ -2497,6 +2496,9 @@ func (w *Window) update() {
 				font.lineHeight,
 			}
 			rects = append(rects, rect)
+			for j, _ := range w.contentMask[i] {
+				w.contentMaskOld[i][j] = w.contentMask[i][j]
+			}
 		} else {
 			for j, cm := range w.contentMask[i] {
 				mask := cm || w.contentMaskOld[i][j]
