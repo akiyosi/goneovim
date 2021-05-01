@@ -2761,12 +2761,16 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
+func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
 	wsfont := w.getFont()
-	// font := p.Font()
+
+	if !editor.config.Editor.CachedDrawing {
+		p.SetFont(wsfont.fontNew)
+	}
+
 	line := w.content[y]
 	chars := map[*Highlight][]int{}
 	specialChars := []int{}
@@ -2789,17 +2793,37 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 			continue
 		}
 
+		// If the ligature setting is disabled,
+		// we will draw the characters on the screen one by one.
 		if editor.config.Editor.DisableLigatures {
-			w.drawTextInPosWithCache(
-				p,
-				core.NewQPointF3(
-					float64(x)*wsfont.truewidth,
-					float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
-				),
-				line[x].char,
-				line[x].highlight,
-				false,
-			)
+
+			// if CachedDrawing is disabled
+			if !editor.config.Editor.CachedDrawing {
+				w.drawTextInPos(
+					p,
+					core.NewQPointF3(
+						float64(x)*wsfont.truewidth,
+						float64(y*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
+					),
+					line[x].char,
+					line[x].highlight,
+					true,
+				)
+
+			// if CachedDrawing is enabled
+			} else {
+				w.drawTextInPosWithCache(
+					p,
+					core.NewQPointF3(
+						float64(x)*wsfont.truewidth,
+						float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
+					),
+					line[x].char,
+					line[x].highlight,
+					false,
+				)
+			}
+
 		} else {
 			// Prepare to draw a group of identical highlight units.
 			highlight := line[x].highlight
@@ -2812,7 +2836,8 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 		}
 	}
 
-	// If config.DisableLigatures is false
+	// This is the normal rendering process for goneovim,
+	// we draw a word snippet of the same highlight on the screen for each of the highlights.
 	if !editor.config.Editor.DisableLigatures {
 
 		for highlight, colorSlice := range chars {
@@ -2844,33 +2869,75 @@ func (w *Window) drawTextWithCache(p *gui.QPainter, y int, col int, cols int) {
 			}
 
 			text := buffer.String()
-			w.drawTextInPosWithCache(
-				p,
-				core.NewQPointF3(
-					float64(pos)*wsfont.truewidth,
-					float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
-				),
-				text,
-				highlight,
-				true,
-			)
+
+			// if CachedDrawing is disabled
+			if !editor.config.Editor.CachedDrawing {
+				w.drawTextInPos(
+					p,
+					core.NewQPointF3(
+						float64(pos)*wsfont.truewidth,
+						float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
+					),
+					text,
+					highlight,
+					true,
+				)
+
+			// if CachedDrawing is enabled
+			} else {
+				w.drawTextInPosWithCache(
+					p,
+					core.NewQPointF3(
+						float64(pos)*wsfont.truewidth,
+						float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
+					),
+					text,
+					highlight,
+					true,
+				)
+			}
 		}
 	}
 
-	for _, x := range specialChars {
-		if line[x] == nil || line[x].char == " " {
-			continue
+	if len(specialChars) >= 1 {
+		if !editor.config.Editor.CachedDrawing {
+			if w.s.ws.fontwide != nil && w.font == nil && w.s.ws.fontwide.fontNew != nil {
+				p.SetFont(w.s.ws.fontwide.fontNew)
+			}
 		}
-		w.drawTextInPosWithCache(
-			p,
-			core.NewQPointF3(
-				float64(x)*wsfont.truewidth,
-				float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
-			),
-			line[x].char,
-			line[x].highlight,
-			false,
-		)
+
+		for _, x := range specialChars {
+			if line[x] == nil || line[x].char == " " {
+				continue
+			}
+
+			// if CachedDrawing is disabled
+			if !editor.config.Editor.CachedDrawing {
+				w.drawTextInPos(
+					p, 
+					core.NewQPointF3(
+			            float64(x) * wsfont.truewidth,
+			            float64(y*wsfont.lineHeight + wsfont.shift + w.scrollPixels[1] + w.scrollPixels2),
+					),
+					line[x].char,
+					line[x].highlight,
+					false,
+				)
+
+			// if CachedDrawing is enabled
+			} else {
+				w.drawTextInPosWithCache(
+					p,
+					core.NewQPointF3(
+						float64(x)*wsfont.truewidth,
+						float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
+					),
+					line[x].char,
+					line[x].highlight,
+					false,
+				)
+			}
+		}
 	}
 }
 
@@ -2895,13 +2962,7 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, point *core.QPointF, te
 	} else {
 		image = imagev.(*gui.QImage)
 	}
-	// p.DrawImage9(
-	// 	x, y,
-	// 	image,
-	// 	0, 0,
-	// 	0, 0,
-	// 	core.Qt__AutoColor,
-	// )
+
 	p.DrawImage7(
 		point,
 		image,
@@ -3111,143 +3172,6 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	return image
 }
 
-func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
-	if y >= len(w.content) {
-		return
-	}
-	wsfont := w.getFont()
-
-	p.SetFont(wsfont.fontNew)
-
-	line := w.content[y]
-	chars := map[*Highlight][]int{}
-	specialChars := []int{}
-
-	for x := col; x <= col+cols; x++ {
-		if x >= len(line) {
-			continue
-		}
-		if line[x] == nil {
-			continue
-		}
-		if line[x].char == " " {
-			continue
-		}
-		if line[x].char == "" {
-			continue
-		}
-		if !line[x].normalWidth {
-			specialChars = append(specialChars, x)
-			continue
-		}
-
-		if editor.config.Editor.DisableLigatures {
-			w.drawTextInPos(
-				p,
-				core.NewQPointF3(
-					float64(x)*wsfont.truewidth,
-					float64(y*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
-				),
-				line[x].char,
-				line[x].highlight,
-				true)
-		} else {
-			// Prepare to draw a group of identical highlight units.
-			highlight := line[x].highlight
-			colorSlice, ok := chars[highlight]
-			if !ok {
-				colorSlice = []int{}
-			}
-			colorSlice = append(colorSlice, x)
-			chars[highlight] = colorSlice
-		}
-	}
-
-	pointF := core.NewQPointF3(
-		float64(col)*wsfont.truewidth,
-		float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
-	)
-
-	// If config.DisableLigatures is false
-	if !editor.config.Editor.DisableLigatures {
-
-		for highlight, colorSlice := range chars {
-			var buffer bytes.Buffer
-			slice := colorSlice[:]
-			for x := col; x <= col+cols; x++ {
-				if len(slice) == 0 {
-					break
-				}
-				index := slice[0]
-				if x < index {
-					buffer.WriteString(" ")
-					continue
-				}
-				if x == index {
-					buffer.WriteString(line[x].char)
-					slice = slice[1:]
-				}
-			}
-
-			text := buffer.String()
-			// if text != "" {
-			// 	fg := highlight.fg()
-			// 	if fg != nil {
-			// 		p.SetPen2(fg.QColor())
-			// 	}
-			// 	if highlight.bold {
-			// 		// font.SetBold(true)
-			// 		font.SetWeight(wsfont.fontNew.Weight() + 25)
-			// 	} else {
-			// 		// font.SetBold(false)
-			// 		font.SetWeight(wsfont.fontNew.Weight())
-			// 	}
-			// 	if highlight.italic {
-			// 		font.SetItalic(true)
-			// 	} else {
-			// 		font.SetItalic(false)
-			// 	}
-			// 	p.DrawText(pointF, text)
-			// }
-			w.drawTextInPos(p, pointF, text, highlight, true)
-		}
-	}
-
-	if len(specialChars) >= 1 {
-		if w.s.ws.fontwide != nil && w.font == nil && w.s.ws.fontwide.fontNew != nil {
-			p.SetFont(w.s.ws.fontwide.fontNew)
-			// font = p.Font()
-		}
-		for _, x := range specialChars {
-			if line[x] == nil || line[x].char == " " {
-				continue
-			}
-			pointF.SetX(float64(x) * wsfont.truewidth)
-			pointF.SetY(float64((y)*wsfont.lineHeight + wsfont.shift + w.scrollPixels[1] + w.scrollPixels2))
-
-			// p.SetPen2(fg.QColor())
-
-			// if line[x].highlight.bold {
-			// 	// font.SetBold(true)
-			// 	font.SetWeight(wsfont.fontNew.Weight() + 25)
-			// } else {
-			// 	// font.SetBold(false)
-			// 	font.SetWeight(wsfont.fontNew.Weight())
-			// }
-			// if line[x].highlight.italic {
-			// 	font.SetItalic(true)
-			// } else {
-			// 	font.SetItalic(false)
-			// }
-			// p.DrawText(pointF, line[x].char)
-			w.drawTextInPos(p, pointF, line[x].char, line[x].highlight, false)
-		}
-		if w.s.ws.fontwide != nil && w.font == nil {
-			p.SetFont(w.getFont().fontNew)
-		}
-	}
-}
-
 func (w *Window) drawTextInPos(p *gui.QPainter, point *core.QPointF, text string, highlight *Highlight, isNormalWidth bool) {
 	if text == "" {
 		return
@@ -3259,10 +3183,8 @@ func (w *Window) drawTextInPos(p *gui.QPainter, point *core.QPointF, text string
 	wsfont := w.getFont()
 
 	if highlight.bold {
-		// font.SetBold(true)
 		font.SetWeight(wsfont.fontNew.Weight() + 25)
 	} else {
-		// font.SetBold(false)
 		font.SetWeight(wsfont.fontNew.Weight())
 	}
 	if highlight.italic {
@@ -3276,12 +3198,9 @@ func (w *Window) drawTextInPos(p *gui.QPainter, point *core.QPointF, text string
 func (w *Window) drawForeground(p *gui.QPainter, y int, col int, cols int) {
 	if w.s.name == "minimap" {
 		w.drawMinimap(p, y, col, cols)
-	} else if !editor.config.Editor.CachedDrawing {
+	} else {
 		w.drawText(p, y, col, cols)
 		w.drawTextDecoration(p, y, col, cols)
-	} else {
-		w.drawTextWithCache(p, y, col, cols)
-		w.drawTextDecorationWithCache(p, y, col, cols)
 	}
 }
 
@@ -3301,115 +3220,102 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		if !line[x].highlight.underline && !line[x].highlight.undercurl && !line[x].highlight.strikethrough {
 			continue
 		}
-		pen := gui.NewQPen()
-		var color *gui.QColor
-		sp := line[x].highlight.special
-		if sp != nil {
-			color = sp.QColor()
-			pen.SetColor(color)
-		} else {
-			fg := line[x].highlight.foreground
-			color = fg.QColor()
-			pen.SetColor(color)
-		}
-		p.SetPen(pen)
-		start := float64(x) * font.truewidth
-		end := float64(x+1) * font.truewidth
 
-		space := float64(font.lineSpace) / 3.0
-		if space > font.ascent/3.0 {
-			space = font.ascent / 3.0
-		}
-		descent := float64(font.height) - font.ascent
-		weight := int(math.Ceil(float64(font.height) / 16.0))
-		if weight < 1 {
-			weight = 1
-		}
-		if line[x].highlight.strikethrough {
-			// strikeLinef := core.NewQLineF3(start, halfY, end, halfY)
-			// p.DrawLine(strikeLinef)
-			Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
-			p.FillRect5(
-				int(start),
-				int(Y),
-				int(math.Ceil(font.truewidth)),
-				weight,
-				color,
+		// if CachedDrawing is disabled
+		if !editor.config.Editor.CachedDrawing {
+			pen := gui.NewQPen()
+			var color *gui.QColor
+			sp := line[x].highlight.special
+			if sp != nil {
+				color = sp.QColor()
+				pen.SetColor(color)
+			} else {
+				fg := line[x].highlight.foreground
+				color = fg.QColor()
+				pen.SetColor(color)
+			}
+			p.SetPen(pen)
+			start := float64(x) * font.truewidth
+			end := float64(x+1) * font.truewidth
+
+			space := float64(font.lineSpace) / 3.0
+			if space > font.ascent/3.0 {
+				space = font.ascent / 3.0
+			}
+			descent := float64(font.height) - font.ascent
+			weight := int(math.Ceil(float64(font.height) / 16.0))
+			if weight < 1 {
+				weight = 1
+			}
+			if line[x].highlight.strikethrough {
+				// strikeLinef := core.NewQLineF3(start, halfY, end, halfY)
+				// p.DrawLine(strikeLinef)
+				Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
+				p.FillRect5(
+					int(start),
+					int(Y),
+					int(math.Ceil(font.truewidth)),
+					weight,
+					color,
+				)
+			}
+			if line[x].highlight.underline {
+				// linef := core.NewQLineF3(start, Y, end, Y)
+				// p.DrawLine(linef)
+				p.FillRect5(
+					int(start),
+					int(float64((y+1)*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2))-weight,
+					int(math.Ceil(font.truewidth)),
+					weight,
+					color,
+				)
+			}
+			if line[x].highlight.undercurl {
+				amplitude := descent*0.65 + float64(font.lineSpace)
+				maxAmplitude := font.ascent / 8.0
+				if amplitude >= maxAmplitude {
+					amplitude = maxAmplitude
+				}
+				freq := 1.0
+				phase := 0.0
+				Y := float64(y*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
+				Y2 := Y + amplitude*math.Sin(0)
+				point := core.NewQPointF3(start, Y2)
+				path := gui.NewQPainterPath2(point)
+				for i := int(point.X()); i <= int(end); i++ {
+					Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.truewidth+phase)
+					path.LineTo(core.NewQPointF3(float64(i), Y2))
+				}
+				p.DrawPath(path)
+			}
+
+
+		// if CachedDrawing is enabled
+		} else {
+			fgCache := w.getCache()
+			var image *gui.QImage
+			imagev, err := fgCache.get(HlDecoration{
+				fg:            line[x].highlight.fg(),
+				underline:     line[x].highlight.underline,
+				undercurl:     line[x].highlight.undercurl,
+				strikethrough: line[x].highlight.strikethrough,
+			})
+
+			if err != nil {
+				image = w.newDecorationCache(line[x].char, line[x].highlight, line[x].normalWidth)
+				w.setDecorationCache(line[x].highlight, image)
+			} else {
+				image = imagev.(*gui.QImage)
+			}
+
+			p.DrawImage7(
+				core.NewQPointF3(
+					float64(x)*font.truewidth,
+					float64(y*font.lineHeight)+float64(w.scrollPixels[1])+float64(w.scrollPixels2),
+				),
+				image,
 			)
 		}
-		if line[x].highlight.underline {
-			// linef := core.NewQLineF3(start, Y, end, Y)
-			// p.DrawLine(linef)
-			p.FillRect5(
-				int(start),
-				int(float64((y+1)*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2))-weight,
-				int(math.Ceil(font.truewidth)),
-				weight,
-				color,
-			)
-		}
-		if line[x].highlight.undercurl {
-			amplitude := descent*0.65 + float64(font.lineSpace)
-			maxAmplitude := font.ascent / 8.0
-			if amplitude >= maxAmplitude {
-				amplitude = maxAmplitude
-			}
-			freq := 1.0
-			phase := 0.0
-			Y := float64(y*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
-			Y2 := Y + amplitude*math.Sin(0)
-			point := core.NewQPointF3(start, Y2)
-			path := gui.NewQPainterPath2(point)
-			for i := int(point.X()); i <= int(end); i++ {
-				Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.truewidth+phase)
-				path.LineTo(core.NewQPointF3(float64(i), Y2))
-			}
-			p.DrawPath(path)
-		}
-	}
-}
-
-func (w *Window) drawTextDecorationWithCache(p *gui.QPainter, y int, col int, cols int) {
-	if y >= len(w.content) {
-		return
-	}
-	line := w.content[y]
-	font := w.getFont()
-	for x := col; x <= col+cols; x++ {
-		if x >= len(line) {
-			continue
-		}
-		if line[x] == nil {
-			continue
-		}
-		if !line[x].highlight.underline && !line[x].highlight.undercurl && !line[x].highlight.strikethrough {
-			continue
-		}
-
-		fgCache := w.getCache()
-		var image *gui.QImage
-		imagev, err := fgCache.get(HlDecoration{
-			fg:            line[x].highlight.fg(),
-			underline:     line[x].highlight.underline,
-			undercurl:     line[x].highlight.undercurl,
-			strikethrough: line[x].highlight.strikethrough,
-		})
-
-		if err != nil {
-			image = w.newDecorationCache(line[x].char, line[x].highlight, line[x].normalWidth)
-			w.setDecorationCache(line[x].highlight, image)
-		} else {
-			image = imagev.(*gui.QImage)
-		}
-
-		p.DrawImage7(
-			core.NewQPointF3(
-				float64(x)*font.truewidth,
-				float64(y*font.lineHeight)+float64(w.scrollPixels[1])+float64(w.scrollPixels2),
-			),
-			image,
-		)
-
 	}
 }
 
