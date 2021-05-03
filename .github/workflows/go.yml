@@ -365,8 +365,8 @@ jobs:
         $data | Out-File   .\editor\popupmenu.go -Encoding UTF8
         $data=Get-Content  .\editor\message.go | % { $_ -replace "AddWidget2", "AddWidget" }
         $data | Out-File   .\editor\message.go -Encoding UTF8
-        $data=Get-Content  .\editor\screen.go | % { $_ -replace "DrawText6", "DrawText5" }
-        $data | Out-File   .\editor\screen.go -Encoding UTF8
+        $data=Get-Content  .\editor\window.go | % { $_ -replace "DrawText6", "DrawText5" }
+        $data | Out-File   .\editor\window.go -Encoding UTF8
         $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
         $data | Out-File   .\editor\screen.go -Encoding UTF8
         $ch1="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
