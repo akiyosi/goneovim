@@ -507,13 +507,17 @@ func (e *Editor) initSysTray() {
 }
 
 func (e *Editor) setEnv() {
+	// For Linux
 	if runtime.GOOS == "linux" {
-		exe, _ := os.Executable()
-		dir, _ := filepath.Split(exe)
-		_ = os.Setenv("LD_LIBRARY_PATH", dir+"lib")
-		_ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
-		_ = os.Setenv("RESOURCE_NAME", "goneovim")
+		// // It was not a necessary process to export the following environment variables.
+		// exe, _ := os.Executable()
+		// dir, _ := filepath.Split(exe)
+		// _ = os.Setenv("LD_LIBRARY_PATH", dir+"lib")
+		// _ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
+		// _ = os.Setenv("RESOURCE_NAME", "goneovim")
 	}
+
+	// If the OS is MacOS and the application is launched from an .app
 	if runtime.GOOS == "darwin" && e.ppid == 1 {
 		shell := os.Getenv("SHELL")
 		if shell == "" {
@@ -543,7 +547,12 @@ func (e *Editor) setEnv() {
 			}
 		}
 	}
-	_ = os.Setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
+
+	// For Windows
+	// https://github.com/equalsraf/neovim-qt/issues/391
+	if runtime.GOOS == "windows" {
+		_ = os.Setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
+	}
 }
 
 func (e *Editor) setFont() {
