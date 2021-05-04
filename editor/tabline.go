@@ -136,17 +136,18 @@ func initTabline() *Tabline {
 		tab.t = tabline
 		tabs = append(tabs, tab)
 	}
-	go func() {
-		for i, tab := range tabs {
-			layout.AddWidget(tab.widget)
-			if i > 0 {
-				tab.hide()
-			}
-		}
-	}()
 	tabline.Tabs = tabs
 
 	return tabline
+}
+
+func (t *Tabline) initTab() {
+	for i, tab := range t.Tabs {
+		t.layout.AddWidget(tab.widget)
+		if i > 0 {
+			tab.hide()
+		}
+	}
 }
 
 func newTab() *Tab {
