@@ -158,6 +158,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	// cursor
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
+	w.cursor.widget.SetParent(w.screen.widget)
 
 	// If ExtFooBar is true, then we create a UI component
 	// tabline
@@ -1634,12 +1635,12 @@ func (w *Workspace) getPos() {
 
 func (w *Workspace) windowViewport(arg []interface{}) {
 	viewport := [4]int{
-		util.ReflectToInt(arg[2]) + 1,
-		util.ReflectToInt(arg[3]) + 1,
-		util.ReflectToInt(arg[4]) + 1,
-		util.ReflectToInt(arg[5]) + 1,
+		util.ReflectToInt(arg[2]) + 1, // top
+		util.ReflectToInt(arg[3]) + 1, // bottom
+		util.ReflectToInt(arg[4]) + 1, // curline
+		util.ReflectToInt(arg[5]) + 1, // curcol
 	}
-	if w.viewport[0] == viewport[0] && w.oldViewport[0] != w.viewport[0] {
+	if w.viewport[0] == viewport[0] && w.viewport[2] == viewport[2] && w.oldViewport[0] != w.viewport[0] {
 		if w.mode != "terminal-input" {
 			scrollvp := [5]int{
 				util.ReflectToInt(arg[2]) + 1,
@@ -1756,7 +1757,7 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 			win.doErase = false
 		}
 	})
-	a.SetDuration(190)
+	a.SetDuration(250)
 	a.SetStartValue(core.NewQVariant10(1))
 	a.SetEndValue(core.NewQVariant10(0))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))

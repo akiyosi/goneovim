@@ -378,6 +378,7 @@ func (c *Cursor) update() {
 	if !ok {
 		return
 	}
+
 	charCache := win.getCache()
 	c.charCache = &charCache
 	c.devicePixelRatio = win.devicePixelRatio
@@ -414,8 +415,8 @@ func (c *Cursor) update() {
 		return
 	}
 
-	x := int(float64(col) * font.truewidth)
-	y := row*font.lineHeight + int(float64(font.lineSpace)/2.0) + c.shift + win.scrollPixels[1]
+	x := int(float64(col+win.pos[0]) * font.truewidth)
+	y := (row+win.pos[1])*font.lineHeight + int(float64(font.lineSpace)/2.0) + c.shift + win.scrollPixels[1]
 	c.x = x
 	c.y = y
 	c.move()

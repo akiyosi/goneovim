@@ -284,7 +284,7 @@ func (p *Palette) cursorMove(x int) {
 	p.cursorX = pos
 	p.ws.cursor.x = p.cursorX + p.patternPadding
 	p.ws.cursor.y = p.patternPadding + p.ws.cursor.shift
-	p.ws.cursor.widget.Move2(p.ws.cursor.x, p.ws.cursor.y+p.ws.cursor.shift+1)
+	p.ws.cursor.widget.Move2(p.ws.cursor.x, p.ws.cursor.y+p.ws.cursor.shift)
 	p.ws.cursor.widget.SetParent(p.pattern)
 	p.ws.cursor.isInPalette = true
 

@@ -203,13 +203,16 @@ func (c *Cmdline) hide() {
 	// 	c.ws.cursor.widget.Hide()
 	// 	c.ws.cursor.widget.Show()
 	// }
-	win, ok := c.ws.screen.getWindow(c.ws.cursor.gridid)
-	if ok {
-		c.ws.cursor.widget.SetParent(win)
-		c.ws.cursor.isInPalette = false
-		c.ws.cursor.widget.Hide()
-		c.ws.cursor.widget.Show()
-	}
+
+	// win, ok := c.ws.screen.getWindow(c.ws.cursor.gridid)
+	// if ok {
+	// 	c.ws.cursor.widget.SetParent(win)
+	// 	c.ws.cursor.isInPalette = false
+	// 	c.ws.cursor.widget.Hide()
+	// 	c.ws.cursor.widget.Show()
+	// }
+	c.ws.cursor.widget.SetParent(c.ws.screen.widget)
+	c.ws.cursor.isInPalette = false
 
 	c.shown = false
 }

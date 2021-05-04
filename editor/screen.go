@@ -1579,7 +1579,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win.s = s
 		s.storeWindow(gridid, win)
 
-		win.setParent(s.widget)
+		win.SetParent(s.widget)
 
 		win.grid = gridid
 		win.s.ws.optionsetMutex.RLock()
@@ -1594,10 +1594,11 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 			win.ConnectWheelEvent(win.wheelEvent)
 		}
 
-		// first cursor pos at startup app
-		if gridid == 1 && s.name != "minimap" {
-			s.ws.cursor.widget.SetParent(win)
-		}
+		// // first cursor pos at startup app
+		// if gridid == 1 && s.name != "minimap" {
+		// 	s.ws.cursor.widget.SetParent(win)
+		// }
+		s.ws.cursor.widget.Raise()
 
 	}
 	winOldCols := win.cols
@@ -3799,7 +3800,7 @@ func (w *Window) raise() {
 	font := w.getFont()
 	w.s.ws.cursor.updateFont(font)
 	w.s.ws.cursor.isInPalette = false
-	w.s.ws.cursor.widget.SetParent(w)
+	// w.s.ws.cursor.widget.SetParent(w)
 	w.s.ws.cursor.widget.Hide()
 	w.s.ws.cursor.widget.Show()
 	if !w.isExternal {
@@ -3807,6 +3808,7 @@ func (w *Window) raise() {
 	} else if w.isExternal {
 		w.extwin.Raise()
 	}
+	w.s.ws.cursor.widget.Raise()
 }
 
 func (w *Window) show() {
@@ -3816,10 +3818,6 @@ func (w *Window) show() {
 
 func (w *Window) hide() {
 	w.Hide()
-}
-
-func (w *Window) setParent(a widgets.QWidget_ITF) {
-	w.SetParent(a)
 }
 
 func (w *Window) setGridGeometry(width, height int) {
