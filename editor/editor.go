@@ -110,7 +110,6 @@ type Editor struct {
 	splitter  *widgets.QSplitter
 	widget    *widgets.QWidget
 	side      *WorkspaceSide
-	sidetChan chan *widgets.QScrollArea
 
 	sysTray *widgets.QSystemTrayIcon
 
@@ -795,14 +794,16 @@ func (e *Editor) workspaceUpdate() {
 	}
 	for i, ws := range e.workspaces {
 		if i == e.active {
+			ws.hide()
 			ws.show()
 		} else {
 			ws.hide()
 		}
 	}
 	for i := 0; i < len(e.side.items) && i < len(e.workspaces); i++ {
+		// e.workspaces[i].setCwd(e.workspaces[i].cwdlabel)
 		e.side.items[i].setSideItemLabel(i)
-		e.side.items[i].setText(e.workspaces[i].cwdlabel)
+		// e.side.items[i].setText(e.workspaces[i].cwdlabel)
 		e.side.items[i].show()
 	}
 	for i := len(e.workspaces); i < len(e.side.items); i++ {

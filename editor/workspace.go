@@ -291,9 +291,6 @@ func (w *Workspace) lazyDrawUI() {
 	w.finder = initFinder()
 	w.finder.ws = w
 
-	// set current working directory
-	w.setCwd(w.getCwd())
-
 	// Add editor feature
 	go fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
 	go filer.RegisterPlugin(w.nvim)
@@ -740,11 +737,13 @@ func (w *Workspace) initGonvim() {
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	w.nvim.Command(registerScripts)
 
-	gonvimInitNotify := `
-	call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat, &ro)
-	`
-	initialNotify := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimInitNotify))
-	w.nvim.Command(initialNotify)
+	if editor.config.Statusline.Visible {
+		gonvimInitNotify := `
+		call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat, &ro)
+		`
+		initialNotify := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimInitNotify))
+		w.nvim.Command(initialNotify)
+	}
 }
 
 func (w *Workspace) loadGoneovimRuntime() {
@@ -977,10 +976,10 @@ func (w *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
 }
 
 func (w *Workspace) setCwd(cwd string) {
-	w.cwd = cwd
-	if editor.side == nil {
-		return
+	if cwd == "" {
+		cwd = w.getCwd()
 	}
+	w.cwd = cwd
 
 	var labelpath string
 	switch editor.config.Workspace.PathStyle {
@@ -995,6 +994,9 @@ func (w *Workspace) setCwd(cwd string) {
 	}
 	w.cwdlabel = labelpath
 	w.cwdBase = filepath.Base(cwd)
+	if editor.side == nil {
+		return
+	}
 	for i, ws := range editor.workspaces {
 		if i >= len(editor.side.items) {
 			return
@@ -2562,16 +2564,26 @@ func (side *WorkspaceSide) show() {
 	side.isShown = true
 
 	for i := 0; i < WORKSPACELEN; i++ {
+		if i >= len(editor.workspaces) {
+			break
+		}
 		if side.items[i] == nil {
 			continue
 		}
-		if !side.items[i].active {
-			continue
-		}
+		// if !side.items[i].active {
+		// 	continue
+		// }
 		if editor.workspaces[i] != nil {
-			editor.workspaces[i].setCwd(editor.workspaces[i].getCwd())
+			if side.items[i].label.Text() == "" {
+				editor.workspaces[i].setCwd(editor.workspaces[i].cwdlabel)
+			}
 		}
+	 	side.items[i].setSideItemLabel(i)
 		side.items[i].show()
+		editor.workspaces[i].hide()
+		if i == editor.active {
+			editor.workspaces[i].show()
+		}
 	}
 }
 
