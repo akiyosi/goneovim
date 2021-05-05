@@ -2334,18 +2334,9 @@ func (w *Window) setShadow() {
 }
 
 func (w *Window) move(col int, row int) {
-	res := 0
-	// window position is based on cols, rows of global font setting
-	// font := w.getFont()
 	font := w.s.font
-	if w.isMsgGrid {
-		res = w.s.widget.Height() - w.rows*font.lineHeight
-	}
-	if res < 0 {
-		res = 0
-	}
 	x := int(float64(col) * font.truewidth)
-	y := (row * font.lineHeight) + res
+	y := (row * font.lineHeight)
 
 	if w.isFloatWin {
 		if w.s.ws.drawTabline {
