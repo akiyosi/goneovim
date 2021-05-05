@@ -1642,8 +1642,9 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		util.ReflectToInt(arg[4]) + 1, // curline
 		util.ReflectToInt(arg[5]) + 1, // curcol
 	}
-	if w.viewport[0] == viewport[0] && w.viewport[2] == viewport[2] && w.oldViewport[0] != w.viewport[0] {
-		if w.mode != "terminal-input" {
+	if w.mode != "terminal-input" {
+		if (w.viewport[0] == viewport[0] && w.viewport[2] == viewport[2] && w.oldViewport[0] != w.viewport[0]) ||
+		(w.viewport[0] != viewport[0] && w.viewport[1] != viewport[1] && w.viewport[2] == viewport[2]) {
 			scrollvp := [5]int{
 				util.ReflectToInt(arg[2]) + 1,
 				util.ReflectToInt(arg[3]) + 1,
@@ -1673,6 +1674,9 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 	if vp[4] == 1 { // if global grid
+		return nil, 0, false
+	}
+	if w.scrollViewport[0] == vp {
 		return nil, 0, false
 	}
 
