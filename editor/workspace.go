@@ -96,7 +96,7 @@ type Workspace struct {
 	scrollViewport     [2][5]int // 1. topline, botline, curline, curcol, grid, 2. oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
 	viewportQue        chan [5]int
 	viewportMutex      sync.RWMutex
-	optionsetMutex     sync.RWMutex
+	optionsetMutex	   sync.RWMutex
 	cursorStyleEnabled bool
 	modeInfo           []map[string]interface{}
 	normalMappings     []*nvim.Mapping
@@ -1392,6 +1392,9 @@ func (w *Workspace) flush() {
 		select {
 		case viewport := <-w.viewportQue:
 			win, diff, ok := w.handleViewport(viewport)
+			if diff == 0 {
+				continue
+			}
 			if ok {
 				w.smoothScroll(win, diff)
 			}
@@ -1642,19 +1645,15 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		util.ReflectToInt(arg[4]) + 1, // curline
 		util.ReflectToInt(arg[5]) + 1, // curcol
 	}
-	if w.mode != "terminal-input" {
-		if (w.viewport[0] == viewport[0] && w.viewport[2] == viewport[2] && w.oldViewport[0] != w.viewport[0]) ||
-		(w.viewport[0] != viewport[0] && w.viewport[1] != viewport[1] && w.viewport[2] == viewport[2]) {
-			scrollvp := [5]int{
-				util.ReflectToInt(arg[2]) + 1,
-				util.ReflectToInt(arg[3]) + 1,
-				util.ReflectToInt(arg[4]) + 1,
-				util.ReflectToInt(arg[5]) + 1,
-				util.ReflectToInt(arg[0]),
-			}
-			w.viewportQue <- scrollvp
-		}
+
+	scrollvp := [5]int{
+		util.ReflectToInt(arg[2]) + 1,
+		util.ReflectToInt(arg[3]) + 1,
+		util.ReflectToInt(arg[4]) + 1,
+		util.ReflectToInt(arg[5]) + 1,
+		util.ReflectToInt(arg[0]),
 	}
+	w.viewportQue <- scrollvp
 
 	if viewport != w.viewport {
 		w.viewportMutex.Lock()
@@ -1670,13 +1669,7 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	if !ok {
 		return nil, 0, false
 	}
-	if win.isMsgGrid {
-		return nil, 0, false
-	}
-	if vp[4] == 1 { // if global grid
-		return nil, 0, false
-	}
-	if w.scrollViewport[0] == vp {
+	if win.isMsgGrid || vp[4] == 1 { // if grid is message grid or global grid
 		return nil, 0, false
 	}
 
@@ -1684,6 +1677,7 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	w.scrollViewport[1] = w.scrollViewport[0]
 	w.scrollViewport[0] = vp
 	w.viewportMutex.Unlock()
+
 	viewport := w.scrollViewport[0]
 	oldViewport := w.scrollViewport[1]
 
@@ -1702,24 +1696,22 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		}
 	}
 
-	// smooth scroll
+	// smooth scroll feature disabled
 	if !editor.config.Editor.SmoothScroll {
 		return nil, 0, false
 	}
 
-	if w.maxLine < w.rows {
-		return nil, 0, false
-	}
+	// suppress snapshot
+	// if w.maxLine < w.rows {
+	// 	return nil, 0, false
+	// }
 
-	// suppress to getting snapshot
+	// suppress snapshot
 	if editor.isKeyAutoRepeating {
 		return nil, 0, false
 	}
 
-	// get snapshot
 	if diff != 0 {
-		win.snapshots[1] = win.snapshots[0]
-		win.snapshots[0] = win.Grab(win.Rect())
 		win.scrollCols = int(math.Abs(float64(diff)))
 	}
 
@@ -1729,6 +1721,10 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	}
 
 	if isGridGoto {
+		return win, diff, false
+	}
+
+	if diff == 0 {
 		return win, diff, false
 	}
 
@@ -1762,6 +1758,9 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 			)
 			win.doErase = false
 			win.fill()
+
+			// get snapshot
+			win.snapshot = win.Grab(win.Rect())
 		}
 	})
 	a.SetDuration(250)
@@ -1891,8 +1890,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		if !ok {
 			return
 		}
-		win.snapshots[0] = nil
-		win.snapshots[1] = nil
+		win.snapshot = nil
 
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
@@ -1950,8 +1948,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			if !ok {
 				return
 			}
-			win.snapshots[1] = win.snapshots[0]
-			win.snapshots[0] = win.Grab(win.Rect())
+			win.snapshot = win.Grab(win.Rect())
 		}
 		w.maxLine = util.ReflectToInt(updates[1])
 	case "gonvim_markdown_toggle":

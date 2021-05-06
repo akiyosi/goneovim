@@ -819,8 +819,7 @@ func (e *Editor) keyRelease(event *gui.QKeyEvent) {
 	if !ok {
 		return
 	}
-	win.snapshots[1] = win.snapshots[0]
-	win.snapshots[0] = win.Grab(win.Rect())
+	win.snapshot = win.Grab(win.Rect())
 	e.isKeyAutoRepeating = false
 }
 

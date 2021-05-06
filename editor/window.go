@@ -79,7 +79,7 @@ type Window struct {
 	widgets.QWidget
 	_ float64 `property:"scrollDiff"`
 
-	snapshots [2]*gui.QPixmap
+	snapshot *gui.QPixmap
 
 	paintMutex  sync.RWMutex
 	redrawMutex sync.Mutex
@@ -252,11 +252,7 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 		return
 	}
 
-	snapshot := w.snapshots[1]
-	if snapshot == nil {
-		snapshot = w.snapshots[0]
-	}
-	if snapshot == nil || editor.isKeyAutoRepeating {
+	if w.snapshot == nil || editor.isKeyAutoRepeating {
 		return
 	}
 
@@ -272,7 +268,7 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 		p.DrawPixmap9(
 			0,
 			snapshotPos,
-			snapshot,
+			w.snapshot,
 		)
 	}
 }
