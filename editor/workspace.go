@@ -1760,7 +1760,9 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 			win.fill()
 
 			// get snapshot
-			win.snapshot = win.Grab(win.Rect())
+			if !editor.isKeyAutoRepeating {
+				win.snapshot = win.Grab(win.Rect())
+			}
 		}
 	})
 	a.SetDuration(250)
