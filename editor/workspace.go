@@ -1653,7 +1653,9 @@ func (w *Workspace) windowViewport(arg []interface{}) {
 		util.ReflectToInt(arg[5]) + 1,
 		util.ReflectToInt(arg[0]),
 	}
-	w.viewportQue <- scrollvp
+	if scrollvp[0] < scrollvp[1] {
+		w.viewportQue <- scrollvp
+	}
 
 	if viewport != w.viewport {
 		w.viewportMutex.Lock()
