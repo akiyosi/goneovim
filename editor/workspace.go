@@ -245,9 +245,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.widget.Move2(0, 0)
 	editor.putLog("assembled UI components")
 
-	go w.tabline.initTab()
-
 	go w.startNvim(path)
+
+	w.tabline.initTab()
 
 	return w, nil
 }

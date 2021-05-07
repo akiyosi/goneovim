@@ -801,12 +801,18 @@ func (e *Editor) workspaceUpdate() {
 		}
 	}
 	for i := 0; i < len(e.side.items) && i < len(e.workspaces); i++ {
+		if e.side.items[i] == nil {
+			continue
+		}
 		// e.workspaces[i].setCwd(e.workspaces[i].cwdlabel)
 		e.side.items[i].setSideItemLabel(i)
 		// e.side.items[i].setText(e.workspaces[i].cwdlabel)
 		e.side.items[i].show()
 	}
 	for i := len(e.workspaces); i < len(e.side.items); i++ {
+		if e.side.items[i] == nil {
+			continue
+		}
 		e.side.items[i].hide()
 	}
 }
