@@ -235,6 +235,9 @@ func NewVFlowLayout(spacing int, padding int, paddingTop int, rightIdex int, wid
 			}
 		}
 		for i, item := range items {
+			if len(sizes) <= i {
+				return
+			}
 			size := sizes[i]
 			width := size[0]
 			height := size[1]
