@@ -933,7 +933,7 @@ func (w *Workspace) getCwd() string {
 	}()
 	select {
 	case <-done:
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(400 * time.Millisecond):
 	}
 
 	return cwd

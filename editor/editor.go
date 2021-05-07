@@ -804,7 +804,9 @@ func (e *Editor) workspaceUpdate() {
 		if e.side.items[i] == nil {
 			continue
 		}
-		// e.workspaces[i].setCwd(e.workspaces[i].cwdlabel)
+		if e.side.items[i].label.Text() == "" {
+			e.workspaces[i].setCwd(e.workspaces[i].cwdlabel)
+		}
 		e.side.items[i].setSideItemLabel(i)
 		// e.side.items[i].setText(e.workspaces[i].cwdlabel)
 		e.side.items[i].show()
