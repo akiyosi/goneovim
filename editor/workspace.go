@@ -2008,6 +2008,7 @@ func (w *Workspace) guiFont(args string) {
 		fDialog.ConnectFontSelected(func(font *gui.QFont) {
 			fontFamily = font.Family()
 			fontHeight = font.PointSizeF()
+			editor.putLog(fmt.Sprintf("Request to change to the following font:: %s:h%f", fontFamily, fontHeight))
 			w.guiFont(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
 		})
 		fDialog.Show()
