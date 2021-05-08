@@ -1689,16 +1689,21 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	if diff == 0 {
 		diff = viewport[1] - oldViewport[1]
 	}
+
+	// TODO: Control processing of wrapped lines. 
+	//  This process is very incomplete and does not take into consideration the possibility 
+	//  of a wrapped line at any position in the buffer.
+	// if int(math.Abs(float64(diff))) >= win.rows/2 && viewport[1] < w.maxLine+2 {
+	// 	wrappedLines1 := win.rows - (viewport[1] - viewport[0] - 1)
+	// 	wrappedLines2 := win.rows - (oldViewport[1] - oldViewport[0] - 1)
+	// 	if diff < 0 {
+	// 		diff -= wrappedLines1
+	// 	} else if diff > 0 {
+	// 		diff += wrappedLines2
+	// 	}
+	// }
+
 	isGridGoto := viewport[4] != oldViewport[4]
-	if int(math.Abs(float64(diff))) >= win.rows/2 {
-		wrappedLines1 := win.rows - (viewport[1] - viewport[0] - 1)
-		wrappedLines2 := win.rows - (oldViewport[1] - oldViewport[0] - 1)
-		if diff < 0 {
-			diff -= wrappedLines1
-		} else if diff > 0 {
-			diff += wrappedLines2
-		}
-	}
 
 	// smooth scroll feature disabled
 	if !editor.config.Editor.SmoothScroll {
@@ -1769,7 +1774,7 @@ func (w *Workspace) smoothScroll(win *Window, diff int) {
 			}
 		}
 	})
-	a.SetDuration(250)
+	a.SetDuration(220)
 	a.SetStartValue(core.NewQVariant10(1))
 	a.SetEndValue(core.NewQVariant10(0))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
