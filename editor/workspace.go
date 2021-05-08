@@ -1690,9 +1690,9 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		diff = viewport[1] - oldViewport[1]
 	}
 
-	// TODO: Control processing of wrapped lines. 
-	//  This process is very incomplete and does not take into consideration the possibility 
-	//  of a wrapped line at any position in the buffer.
+	// // TODO: Control processing of wrapped lines. 
+	// //  This process is very incomplete and does not take into consideration the possibility 
+	// //  of a wrapped line at any position in the buffer.
 	// if int(math.Abs(float64(diff))) >= win.rows/2 && viewport[1] < w.maxLine+2 {
 	// 	wrappedLines1 := win.rows - (viewport[1] - viewport[0] - 1)
 	// 	wrappedLines2 := win.rows - (oldViewport[1] - oldViewport[0] - 1)
@@ -1708,6 +1708,13 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	// smooth scroll feature disabled
 	if !editor.config.Editor.SmoothScroll {
 		return nil, 0, false
+	}
+
+	if win.doGetSnapshot {
+		if !editor.isKeyAutoRepeating {
+			win.snapshot = win.Grab(win.Rect())
+		}
+		win.doGetSnapshot = false
 	}
 
 	// suppress snapshot
@@ -1959,7 +1966,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			if !ok {
 				return
 			}
-			win.snapshot = win.Grab(win.Rect())
+			win.doGetSnapshot = true
 		}
 		w.maxLine = util.ReflectToInt(updates[1])
 	case "gonvim_markdown_toggle":

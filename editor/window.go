@@ -123,6 +123,7 @@ type Window struct {
 	isWheelScrolling   bool
 	scrollPixels2      int
 	scrollCols         int
+	doGetSnapshot      bool
 
 	devicePixelRatio float64
 	fgCache          Cache
