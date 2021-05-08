@@ -13,7 +13,7 @@ else ifeq ($(shell uname), Linux)
 RUNTIME_DIR=$(DEPLOYMENT_LINUX)/
 endif
 
-.PHONY: clean debug build build-docker-linux build-docker-windows
+.PHONY: clean debug run build build-docker-linux build-docker-windows
 
 # If the first argument is "run"...
 ifeq (debug,$(firstword $(MAKECMDGOALS)))
@@ -23,25 +23,39 @@ ifeq (debug,$(firstword $(MAKECMDGOALS)))
   $(eval $(DEBUG_ARGS):;@:)
 endif
 
-clean:
-	rm -fr cmd/goneovim/deploy/*
-
-debug:
-	cd cmd/goneovim; \
-	dlv debug --build-flags -race -- $(DEBUG_ARGS)
-
-build:
-	cd cmd/goneovim; \
-	qtdeploy build desktop; \
+rebuild:
+	cd cmd/goneovim ; \
+	qtmoc ; \
+	qtdeploy build desktop ; \
 	cp -pR ../../runtime $(RUNTIME_DIR)
 
-build-docker-linux:
+build:
+	cd cmd/goneovim ; \
+	test -f ../../editor/moc.go & qtmoc ; \
+	qtdeploy build desktop ; \
+	cp -pR ../../runtime $(RUNTIME_DIR)
+
+debug:
+	cd cmd/goneovim ; \
+	test -f ../../editor/moc.go & qtmoc ; \
+	dlv debug --build-flags -race -- $(DEBUG_ARGS)
+run:
 	cd cmd/goneovim; \
-	qtdeploy -docker build linux; \
+	test -f ../../editor/moc.go & qtmoc ; \
+	go run main.go
+
+clean:
+	rm -fr cmd/goneovim/deploy/* ; \
+	rm -fr editor/*moc*
+
+
+build-docker-linux:
+	cd cmd/goneovim ; \
+	qtdeploy -docker build linux ; \
 	cp -pR ../../runtime $(DEPLOYMENT_LINUX)
 
 build-docker-windows:
-	cd cmd/goneovim; \
-	qtdeploy -docker build akiyosi/qt:windows_64_shared_msvc_512; \
+	cd cmd/goneovim ; \
+	qtdeploy -docker build akiyosi/qt:windows_64_shared_msvc_512 ; \
 	cp -pR ../../runtime $(DEPLOYMENT_WINDOWS)
 
