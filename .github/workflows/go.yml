@@ -145,6 +145,20 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
+
+    # The builds created by Github Actions are somehow duplicating QtWebEngineCore and I know that it does not work properly.
+    # This structure is deployed well in my local build environment, and I don't know why it makes such a difference,
+    # but I will manually fix the structure of the Github Actions build.
+    - name: Fix builds
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/Frameworks/QtWebEngineCore.framework
+        rm -fr Helpers QtWebEngineCore Resources
+        ln -s Versions/Current/Helpers Helpers
+        ln -s Versions/Current/Resources Resources
+        ln -s Versions/Current/QtWebEngineCore QtWebEngineCore
+        cd Versions
+        rm -fr Current
+        ln -s 5 Current
   
     - name: Upload for macos
       if: matrix.qtversion == '5.13.0'
@@ -216,8 +230,20 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/MacOS/
-        chmod u+x goneovim 
-  
+        chmod u+x goneovim
+
+    # See the comment at the line 149-151
+    - name: Fix builds
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/Frameworks/QtWebEngineCore.framework
+        rm -fr Helpers QtWebEngineCore Resources
+        ln -s Versions/Current/Helpers Helpers
+        ln -s Versions/Current/Resources Resources
+        ln -s Versions/Current/QtWebEngineCore QtWebEngineCore
+        cd Versions
+        rm -fr Current
+        ln -s 5 Current
+
     - name: Upload for macos
       uses: actions/upload-artifact@v1
       with:
