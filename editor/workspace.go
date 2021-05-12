@@ -91,6 +91,7 @@ type Workspace struct {
 	cwdBase            string
 	cwdlabel           string
 	maxLine            int
+	maxLineDelta       int
 	viewport           [4]int    // topline, botline, curline, curcol
 	oldViewport        [4]int    // topline, botline, curline, curcol
 	scrollViewport     [2][5]int // 1. topline, botline, curline, curcol, grid, 2. oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
@@ -1406,6 +1407,7 @@ func (w *Workspace) flush() {
 	w.screen.update()
 	w.cursor.update()
 	w.drawOtherUI()
+	w.maxLineDelta = 0
 }
 
 func (w *Workspace) drawOtherUI() {
@@ -1685,6 +1687,10 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	viewport := w.scrollViewport[0]
 	oldViewport := w.scrollViewport[1]
 
+	if viewport[0] == oldViewport[0] && viewport[1] != oldViewport[1] {
+		return nil, 0, false
+	}
+
 	diff := viewport[0] - oldViewport[0]
 	if diff == 0 {
 		diff = viewport[1] - oldViewport[1]
@@ -1710,6 +1716,13 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
+	// if If the maximum line is increased and there is content to be pasted into the maximum line
+	if (w.maxLine == viewport[1]-1) && w.maxLineDelta != 0 {
+		if diff != 0 {
+			win.doGetSnapshot = false
+		}
+	}
+
 	if win.doGetSnapshot {
 		if !editor.isKeyAutoRepeating {
 			win.snapshot = win.Grab(win.Rect())
@@ -1717,10 +1730,11 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		win.doGetSnapshot = false
 	}
 
-	// suppress snapshot
-	// if w.maxLine < w.rows {
-	// 	return nil, 0, false
-	// }
+	// do not scroll smoothly when the maximum line is less than buffer rows,
+	// and topline has not been changed
+	if w.maxLine-w.maxLineDelta < w.rows && viewport[0] == oldViewport[0] {
+		return nil, 0, false
+	}
 
 	// suppress snapshot
 	if editor.isKeyAutoRepeating {
@@ -1968,6 +1982,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			}
 			win.doGetSnapshot = true
 		}
+		w.maxLineDelta = util.ReflectToInt(updates[1]) - w.maxLine
 		w.maxLine = util.ReflectToInt(updates[1])
 	case "gonvim_markdown_toggle":
 		if editor.config.Markdown.Disable {
