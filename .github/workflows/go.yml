@@ -37,7 +37,6 @@ jobs:
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
         mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
-
   
     - name: Get Qt binding for Go
       run: |
@@ -72,17 +71,18 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy build desktop
         cp -pR ../../runtime ./deploy/linux/
   
-    - name: Add executable
+    - name: Fix builds
       run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
-        chmod u+x goneovim QtWebEngineProcess
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv linux Goneovim-latest-linux
+        tar -jcvf Goneovim-latest-linux.tar.bz2 Goneovim-latest-linux
   
     - name: Upload for linux
       if: matrix.qtversion == '5.14.1'
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-linux-${{ matrix.qtversion }}
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-linux.tar.bz2
   
   
   test-and-build-macos:
@@ -159,14 +159,16 @@ jobs:
         cd Versions
         rm -fr Current
         ln -s 5 Current
-  
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv darwin Goneovim-latest-macos
+        tar -jcvf Goneovim-latest-macos.tar.bz2 Goneovim-latest-macos
+
     - name: Upload for macos
       if: matrix.qtversion == '5.13.0'
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-macos-${{ matrix.qtversion }}
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin
-
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos.tar.bz2
 
   test-and-build-macos-11:
     strategy:
@@ -229,12 +231,12 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/MacOS/
-        chmod u+x goneovim
 
     # See the comment at the line 149-151
     - name: Fix builds
       run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/MacOS/
+        chmod u+x goneovim
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/Frameworks/QtWebEngineCore.framework
         rm -fr Helpers QtWebEngineCore Resources
         ln -s Versions/Current/Helpers Helpers
@@ -243,12 +245,15 @@ jobs:
         cd Versions
         rm -fr Current
         ln -s 5 Current
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv darwin Goneovim-latest-macos-bigsur
+        tar -jcvf Goneovim-latest-macos-bigsur.tar.bz2 Goneovim-latest-macos-bigsur
 
     - name: Upload for macos
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-macos-${{ matrix.qtversion }}
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos-bigsur.tar.bz2
 
 
   #test-and-build-windows:
