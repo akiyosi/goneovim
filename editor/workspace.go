@@ -248,8 +248,6 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	go w.startNvim(path)
 
-	w.tabline.initTab()
-
 	return w, nil
 }
 
@@ -328,7 +326,9 @@ func (w *Workspace) vimEnterProcess() {
 	}
 
 	// get nvim option
-	w.getNvimOptions()
+	if editor.workspaces == nil || len(editor.workspaces) == 1 {
+		w.getNvimOptions()
+	}
 
 	// connect window resize event
 	editor.widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
@@ -371,6 +371,8 @@ func (w *Workspace) registerSignal() {
 		if w.hasLazyUI {
 			return
 		}
+		w.tabline.initTab()
+		editor.workspaceUpdate()
 		w.hasLazyUI = true
 		w.lazyDrawUI()
 	})
@@ -978,7 +980,7 @@ func (w *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
 
 func (w *Workspace) setCwd(cwd string) {
 	if cwd == "" {
-		cwd = w.getCwd()
+	        cwd = w.getCwd()
 	}
 	w.cwd = cwd
 

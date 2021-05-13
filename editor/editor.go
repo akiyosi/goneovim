@@ -415,8 +415,6 @@ func (e *Editor) initWorkspaces() {
 		e.workspaces = append(e.workspaces, ws)
 	}
 
-	e.workspaceUpdate()
-
 	e.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	e.widget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
 	e.widget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
@@ -747,7 +745,7 @@ func (e *Editor) copyClipBoard() {
 }
 
 func (e *Editor) workspaceNew() {
-	if len(e.workspaces) == 10 {
+	if len(e.workspaces) == WORKSPACELEN {
 		return
 	}
 	editor.isSetGuiColor = false
@@ -760,7 +758,6 @@ func (e *Editor) workspaceNew() {
 	e.active = len(e.workspaces) - 1
 
 	e.workspaces[e.active] = ws
-	e.workspaceUpdate()
 }
 
 func (e *Editor) workspaceSwitch(index int) {
