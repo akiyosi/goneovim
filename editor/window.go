@@ -2263,15 +2263,18 @@ func (w *Window) raise() {
 	font := w.getFont()
 	w.s.ws.cursor.updateFont(font)
 	w.s.ws.cursor.isInPalette = false
-	// w.s.ws.cursor.widget.SetParent(w)
 	w.s.ws.cursor.widget.Hide()
 	w.s.ws.cursor.widget.Show()
 	if !w.isExternal {
 		editor.window.Raise()
+		w.s.ws.cursor.widget.SetParent(w.s.ws.screen.widget)
 	} else if w.isExternal {
 		w.extwin.Raise()
+		w.s.ws.cursor.widget.SetParent(w.extwin)
 	}
     w.s.ws.cursor.widget.Raise()
+    w.s.ws.cursor.widget.Hide()
+    w.s.ws.cursor.widget.Show()
 }
 
 func (w *Window) show() {

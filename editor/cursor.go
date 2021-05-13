@@ -386,6 +386,18 @@ func (c *Cursor) update() {
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
 
+	winx := win.pos[0]
+	winy := win.pos[1]
+	if win.isExternal {
+		winx = 0
+		winy = 0
+	}
+
+	winbordersize := 0
+	if win.isExternal {
+		winbordersize = EXTWINBORDERSIZE
+	}
+
 	if row >= len(win.content) ||
 		col >= len(win.content[0]) ||
 		win.content[row][col] == nil ||
@@ -423,8 +435,8 @@ func (c *Cursor) update() {
 	        res = 0
 	}
 
-	x := int(float64(col+win.pos[0]) * font.truewidth)
-	y := (row+win.pos[1])*font.lineHeight + int(float64(font.lineSpace)/2.0) + c.shift + win.scrollPixels[1] + res
+	x := int(float64(col+winx) * font.truewidth) + winbordersize
+	y := (row+winy)*font.lineHeight + int(float64(font.lineSpace)/2.0) + c.shift + win.scrollPixels[1] + res + winbordersize
 	c.x = x
 	c.y = y
 	c.move()

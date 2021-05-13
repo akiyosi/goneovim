@@ -1506,6 +1506,10 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				win.setGridGeometry(width, height)
 				win.setResizableForExtWin()
 				win.move(win.pos[0], win.pos[1])
+				win.s.ws.cursor.widget.SetParent(win.extwin)
+				win.s.ws.cursor.widget.Raise()
+    			win.s.ws.cursor.widget.Hide()
+    			win.s.ws.cursor.widget.Show()
 			}
 
 			return true
