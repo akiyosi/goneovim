@@ -52,10 +52,19 @@ jobs:
         sudo swapoff -a
         sudo rm -f /swapfile
         sudo apt clean
-  
+
+    - uses: actions/cache@v2
+      id: cache-qt-bindings
+      with:
+        path: ${{ github.workspace }}/src/github.com/therecipe/qt
+        key: ${{ matrix.qtversion }}-qt-bindings-${{ hashFiles('.src/github.com/therecipe/qt/widgets/cgo_darwin_darwin_amd64.go') }}
+        # restore-keys: |
+        #
+
     - name: Generate Qt bindings
+      if: steps.cache-qt-bindings.outputs.cache-hit != 'true'
       run: $(go env GOPATH)/bin/qtsetup -test=false
-  
+
     - name: Get dependencies
       run: |
         go get -v -t -d github.com/${{ github.repository }}/...
