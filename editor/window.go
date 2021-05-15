@@ -1929,13 +1929,19 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 
 	// QImage default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
-	image := gui.NewQImage2(
-		core.NewQRectF4(
-			0,
-			0,
-			w.devicePixelRatio*width,
-			w.devicePixelRatio*float64(font.lineHeight),
-		).Size().ToSize(),
+
+	// image := gui.NewQImage2(
+	// 	core.NewQRectF4(
+	// 		0,
+	// 		0,
+	// 		w.devicePixelRatio*width,
+	// 		w.devicePixelRatio*float64(font.lineHeight),
+	// 	).Size().ToSize(),
+	// 	gui.QImage__Format_ARGB32_Premultiplied,
+	// )
+	image := gui.NewQImage3(
+		int(w.devicePixelRatio*width),
+		int(w.devicePixelRatio*float64(font.lineHeight)),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 	image.SetDevicePixelRatio(w.devicePixelRatio)
