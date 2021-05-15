@@ -1,5 +1,7 @@
 name: test and build
 on: [push, pull_request]
+env:
+  cache-version: v1
 jobs:
   test-and-build-linux:
     strategy:
@@ -37,11 +39,15 @@ jobs:
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
         mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
-
   
     - name: Get Qt binding for Go
       run: |
         go get -v github.com/therecipe/qt/cmd/...
+
+    # - name: Remove binding repo for restoring cache
+    #   if: steps.cache-qt-bindings.outputs.cache-hit == 'true'
+    #   run: |
+    #     rm -fr ${{ github.workspace }}/src/github.com/therecipe
   
     - name: Checkout code
       uses: actions/checkout@v2
@@ -53,10 +59,17 @@ jobs:
         sudo swapoff -a
         sudo rm -f /swapfile
         sudo apt clean
-  
+
+    - uses: actions/cache@v2
+      id: cache-qt-bindings-linux
+      with:
+        path: ${{ github.workspace }}/src/github.com/therecipe
+        key: ${{ matrix.qtversion }}-qtbindings-linux-${{ env.cache-version }}
+
     - name: Generate Qt bindings
+      if: steps.cache-qt-bindings-linux.outputs.cache-hit != 'true'
       run: $(go env GOPATH)/bin/qtsetup -test=false
-  
+
     - name: Get dependencies
       run: |
         go get -v -t -d github.com/${{ github.repository }}/...
@@ -72,17 +85,18 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy build desktop
         cp -pR ../../runtime ./deploy/linux/
   
-    - name: Add executable
+    - name: Fix builds
       run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
-        chmod u+x goneovim QtWebEngineProcess
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv linux Goneovim-latest-linux
+        tar -jcvf Goneovim-latest-linux.tar.bz2 Goneovim-latest-linux
   
     - name: Upload for linux
       if: matrix.qtversion == '5.14.1'
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-linux-${{ matrix.qtversion }}
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/linux
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-linux.tar.bz2
   
   
   test-and-build-macos:
@@ -126,9 +140,16 @@ jobs:
       uses: actions/checkout@v2
       with:
         path: ./src/github.com/${{ github.repository }}
+
+    - uses: actions/cache@v2
+      id: cache-qt-bindings-macos
+      with:
+        path: ${{ github.workspace }}/src/github.com/therecipe
+        key: ${{ matrix.qtversion }}-qtbindings-macos-${{ env.cache-version }}
   
     - name: Generate Qt bindings
       continue-on-error: true
+      if: steps.cache-qt-bindings-macos.outputs.cache-hit != 'true'
       run: $(go env GOPATH)/bin/qtsetup -test=false
   
     - name: Get dependencies
@@ -159,14 +180,16 @@ jobs:
         cd Versions
         rm -fr Current
         ln -s 5 Current
-  
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv darwin Goneovim-latest-macos
+        tar -jcvf Goneovim-latest-macos.tar.bz2 Goneovim-latest-macos
+
     - name: Upload for macos
       if: matrix.qtversion == '5.13.0'
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-macos-${{ matrix.qtversion }}
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin
-
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos.tar.bz2
 
   test-and-build-macos-11:
     strategy:
@@ -210,9 +233,16 @@ jobs:
       uses: actions/checkout@v2
       with:
         path: ./src/github.com/${{ github.repository }}
-  
+
+    - uses: actions/cache@v2
+      id: cache-qt-bindings-macos-11
+      with:
+        path: ${{ github.workspace }}/src/github.com/therecipe
+        key: ${{ matrix.qtversion }}-qtbindings-macos-11-${{ env.cache-version }}
+
     - name: Generate Qt bindings
       continue-on-error: true
+      if: steps.cache-qt-bindings-macos-11.outputs.cache-hit != 'true'
       run: $(go env GOPATH)/bin/qtsetup -test=false
   
     - name: Get dependencies
@@ -229,12 +259,12 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/MacOS/
-        chmod u+x goneovim
 
     # See the comment at the line 149-151
     - name: Fix builds
       run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/MacOS/
+        chmod u+x goneovim
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/Frameworks/QtWebEngineCore.framework
         rm -fr Helpers QtWebEngineCore Resources
         ln -s Versions/Current/Helpers Helpers
@@ -243,12 +273,15 @@ jobs:
         cd Versions
         rm -fr Current
         ln -s 5 Current
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv darwin Goneovim-latest-macos-bigsur
+        tar -jcvf Goneovim-latest-macos-bigsur.tar.bz2 Goneovim-latest-macos-bigsur
 
     - name: Upload for macos
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-macos-${{ matrix.qtversion }}
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos-bigsur.tar.bz2
 
 
   #test-and-build-windows:
@@ -273,7 +306,14 @@ jobs:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
 
+    - uses: actions/cache@v2
+      id: cache-msvc2017-buildtools
+      with:
+        path: ${{ github.workspace }}\BuildTools
+        key: ${{ matrix.qtversion }}-msvc2017-buildtools-${{ env.cache-version }}
+
     - name: Intall MSVC 2017 Visual C++ Buildtools
+      if: steps.cache-msvc2017-buildtools.outputs.cache-hit != 'true'
       run : |
         curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/15/release/vs_buildtools.exe
         New-Item -Path BuildTools -ItemType Directory 
@@ -357,17 +397,35 @@ jobs:
         cd ${{ github.workspace }}\go-root\src
         .\make.bat
 
+    - uses: actions/cache@v2
+      if: matrix.qtversion == '5.12.6'
+      id: cache-qt-bindings-windows-512
+      with:
+        path: ${{ github.workspace }}\src\github.com\therecipe
+        key: ${{ matrix.qtversion }}-qtbindings-windows-512-${{ env.cache-version }}
+
+    - uses: actions/cache@v2
+      if: matrix.qtversion != '5.12.6'
+      id: cache-qt-bindings-windows-not-512
+      with:
+        path: ${{ github.workspace }}\src\github.com\therecipe
+        key: ${{ matrix.qtversion }}-qtbindings-windows-not-512-${{ env.cache-version }}
+
     - name: Generate Qt bindings for Qt 5.12.X
       env:
         QT_API: 5.12.0
-      if: matrix.qtversion == '5.12.6'
+      if: |
+        matrix.qtversion == '5.12.6' && 
+        steps.cache-qt-bindings-windows-512.outputs.cache-hit != 'true'
       run: ${{ github.workspace }}\bin\qtsetup.exe -test=false
       shell: cmd
 
     - name: Generate Qt bindings
       env:
         QT_API: 5.13.0
-      if: matrix.qtversion != '5.12.6'
+      if: |
+        matrix.qtversion != '5.12.6' &&
+        steps.cache-qt-bindings-windows-not-512.outputs.cache-hit != 'true'
       run: ${{ github.workspace }}\bin\qtsetup.exe -test=false
       shell: cmd
 
