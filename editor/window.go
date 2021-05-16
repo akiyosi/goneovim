@@ -1641,12 +1641,26 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	// we draw a word snippet of the same highlight on the screen for each of the highlights.
 	if !editor.config.Editor.DisableLigatures {
 
+		// if CachedDrawing is disabled
+		var pointf *core.QPointF
+		if !editor.config.Editor.CachedDrawing {
+			pointf = core.NewQPointF3(
+				float64(col)*wsfont.truewidth,
+				float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
+			)
+
+		// if CachedDrawing is enabled
+		} else {
+			pointf = core.NewQPointF3(
+				float64(col)*wsfont.truewidth,
+				float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
+			)
+		}
+
 		for highlight, colorSlice := range chars {
 			var buffer bytes.Buffer
 			slice := colorSlice[:]
 
-			pos := col
-			isIndentationWhitespace := true
 			for x := col; x <= col+cols; x++ {
 				if len(slice) == 0 {
 					break
@@ -1654,18 +1668,13 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				index := slice[0]
 
 				if x < index {
-					if isIndentationWhitespace {
-						pos++
-					} else {
-						buffer.WriteString(" ")
-					}
+					buffer.WriteString(" ")
 					continue
 				}
 
 				if x == index {
 					buffer.WriteString(line[x].char)
 					slice = slice[1:]
-					isIndentationWhitespace = false
 				}
 			}
 
@@ -1675,10 +1684,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			if !editor.config.Editor.CachedDrawing {
 				w.drawTextInPos(
 					p,
-					core.NewQPointF3(
-						float64(pos)*wsfont.truewidth,
-						float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
-					),
+					pointf,
 					text,
 					highlight,
 					true,
@@ -1688,10 +1694,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			} else {
 				w.drawTextInPosWithCache(
 					p,
-					core.NewQPointF3(
-						float64(pos)*wsfont.truewidth,
-						float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
-					),
+					pointf,
 					text,
 					highlight,
 					true,
