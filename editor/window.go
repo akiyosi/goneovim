@@ -1576,6 +1576,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	chars := map[*Highlight][]int{}
 	specialChars := []int{}
 
+	pointX := float64(col)*wsfont.truewidth
 	for x := col; x <= col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -1645,14 +1646,14 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		var pointf *core.QPointF
 		if !editor.config.Editor.CachedDrawing {
 			pointf = core.NewQPointF3(
-				float64(col)*wsfont.truewidth,
+				pointX,
 				float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
 			)
 
 		// if CachedDrawing is enabled
 		} else {
 			pointf = core.NewQPointF3(
-				float64(col)*wsfont.truewidth,
+				pointX,
 				float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
 			)
 		}
