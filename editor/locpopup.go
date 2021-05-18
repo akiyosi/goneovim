@@ -1,18 +1,19 @@
 package editor
-// 
+
+//
 // import (
 // 	"fmt"
 // 	"sort"
 // 	"sync"
 // 	"time"
-// 
+//
 // 	"github.com/akiyosi/goneovim/util"
 // 	"github.com/neovim/go-client/nvim"
 // 	"github.com/therecipe/qt/core"
 // 	"github.com/therecipe/qt/svg"
 // 	"github.com/therecipe/qt/widgets"
 // )
-// 
+//
 // // Locpopup is the location popup
 // type Locpopup struct {
 // 	ws     *Workspace
@@ -26,7 +27,7 @@ package editor
 // 	shown        bool
 // 	updates      chan []interface{}
 // }
-// 
+//
 // func initLocpopup() *Locpopup {
 // 	widget := widgets.NewQWidget(nil, 0)
 // 	widget.SetContentsMargins(8, 8, 8, 8)
@@ -37,25 +38,25 @@ package editor
 // 	typeLabel := svg.NewQSvgWidget(nil)
 // 	typeLabel.SetFixedSize2(editor.iconSize-1, editor.iconSize-1)
 // 	// typeLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
-// 
+//
 // 	contentLabel := widgets.NewQLabel(nil, 0)
 // 	contentLabel.SetContentsMargins(0, 0, 0, 0)
 // 	// contentLabel.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0); }")
-// 
+//
 // 	loc := &Locpopup{
 // 		widget:       widget,
 // 		typeLabel:    typeLabel,
 // 		contentLabel: contentLabel,
 // 		updates:      make(chan []interface{}, 1000),
 // 	}
-// 
+//
 // 	layout.AddWidget(loc.typeLabel, 0, 0)
 // 	layout.AddWidget(loc.contentLabel, 0, 0)
 // 	loc.widget.SetGraphicsEffect(util.DropShadow(0, 6, 30, 80))
-// 
+//
 // 	return loc
 // }
-// 
+//
 // func (l *Locpopup) setColor() {
 // 	fg := editor.colors.widgetFg.String()
 // 	bg := editor.colors.widgetBg
@@ -63,7 +64,7 @@ package editor
 // 	transparent := transparent()
 // 	l.widget.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, %f);  color: %s; }", bg.R, bg.G, bg.B, transparent, fg))
 // }
-// 
+//
 // func (l *Locpopup) subscribe() {
 // 	if !l.ws.drawLint {
 // 		return
@@ -76,11 +77,11 @@ package editor
 // 	})
 // 	l.ws.nvim.Subscribe("LocPopup")
 // }
-// 
+//
 // func (l *Locpopup) updateLocpopup() {
 // 	l.mutex.Lock()
 // 	defer l.mutex.Unlock()
-// 
+//
 // 	if !l.shown {
 // 		l.widget.Hide()
 // 		return
@@ -101,7 +102,7 @@ package editor
 // 	l.widget.Show()
 // 	l.widget.Raise()
 // }
-// 
+//
 // func (l *Locpopup) handle(args []interface{}) {
 // 	if len(args) < 1 {
 // 		return
@@ -115,27 +116,27 @@ package editor
 // 		l.update(args[1:])
 // 	}
 // }
-// 
+//
 // func (l *Locpopup) updatePos() {
 // 	l.mutex.Lock()
 // 	defer l.mutex.Unlock()
 // 	if !l.shown {
 // 		return
 // 	}
-// 
+//
 // 	col := l.ws.screen.cursor[1]
 // 	row := l.ws.screen.cursor[0]
 // 	x, y, _, _ := l.ws.getPointInWidget(col, row, l.ws.cursor.gridid)
-// 
+//
 // 	if row < 3 {
 // 		y += l.widget.Height()
 // 	} else {
 // 		y -= l.widget.Height()
 // 	}
-// 
+//
 // 	l.widget.Move2(x, y)
 // }
-// 
+//
 // func (l *Locpopup) update(args []interface{}) {
 // 	l.mutex.Lock()
 // 	shown := false
@@ -146,7 +147,7 @@ package editor
 // 		}
 // 		l.mutex.Unlock()
 // 	}()
-// 
+//
 // 	doneChannel := make(chan nvim.Buffer, 5)
 // 	var buf, buftmp nvim.Buffer
 // 	go func() {
@@ -158,7 +159,7 @@ package editor
 // 	case <-time.After(20 * time.Millisecond):
 // 		return
 // 	}
-// 
+//
 // 	buftype := new(string)
 // 	err := l.ws.nvim.BufferOption(buf, "buftype", buftype)
 // 	if err != nil {
@@ -167,7 +168,7 @@ package editor
 // 	if *buftype == "terminal" {
 // 		return
 // 	}
-// 
+//
 // 	mode := new(string)
 // 	err = l.ws.nvim.Call("mode", mode, "")
 // 	if err != nil {
@@ -176,7 +177,7 @@ package editor
 // 	if *mode != "n" {
 // 		return
 // 	}
-// 
+//
 // 	curWin, err := l.ws.nvim.CurrentWindow()
 // 	if err != nil {
 // 		return
@@ -190,7 +191,7 @@ package editor
 // 	if err != nil {
 // 		return
 // 	}
-// 
+//
 // 	errors := 0
 // 	warnings := 0
 // 	locs := []map[string]interface{}{}
@@ -224,7 +225,7 @@ package editor
 // 			break
 // 		}
 // 	}
-// 
+//
 // 	locType := loc["type"].(string)
 // 	text := loc["text"].(string)
 // 	shown = true
@@ -235,20 +236,20 @@ package editor
 // 		l.ws.signal.LocpopupSignal()
 // 	}
 // }
-// 
+//
 // // ByCol sorts locations by column
 // type ByCol []map[string]interface{}
-// 
+//
 // // Len of locations
 // func (s ByCol) Len() int {
 // 	return len(s)
 // }
-// 
+//
 // // Swap locations
 // func (s ByCol) Swap(i, j int) {
 // 	s[i], s[j] = s[j], s[i]
 // }
-// 
+//
 // // Less than
 // func (s ByCol) Less(i, j int) bool {
 // 	return util.ReflectToInt(s[i]["col"]) > util.ReflectToInt(s[j]["col"])

@@ -1,9 +1,9 @@
 package editor
 
 import (
+	"bytes"
 	"fmt"
 	"math"
-	"bytes"
 	"runtime"
 	"strconv"
 	"strings"
@@ -450,7 +450,6 @@ func (s *Screen) toolTip(text string) {
 	c.move()
 }
 
-
 func (s *Screen) bottomWindowPos() int {
 	pos := 0
 	s.windows.Range(func(_, winITF interface{}) bool {
@@ -706,7 +705,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		// if gridid == 1 && s.name != "minimap" {
 		// 	s.ws.cursor.widget.SetParent(win)
 		// }
-        s.ws.cursor.widget.Raise()
+		s.ws.cursor.widget.Raise()
 
 	}
 	winOldCols := win.cols
@@ -1508,8 +1507,8 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				win.move(win.pos[0], win.pos[1])
 				win.s.ws.cursor.widget.SetParent(win.extwin)
 				win.s.ws.cursor.widget.Raise()
-    			win.s.ws.cursor.widget.Hide()
-    			win.s.ws.cursor.widget.Show()
+				win.s.ws.cursor.widget.Hide()
+				win.s.ws.cursor.widget.Show()
 			}
 
 			return true

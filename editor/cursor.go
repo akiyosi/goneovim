@@ -429,13 +429,13 @@ func (c *Cursor) update() {
 
 	res := 0
 	if win.isMsgGrid {
-	        res = win.s.widget.Height() - win.rows*font.lineHeight
+		res = win.s.widget.Height() - win.rows*font.lineHeight
 	}
 	if res < 0 {
-	        res = 0
+		res = 0
 	}
 
-	x := int(float64(col+winx) * font.truewidth) + winbordersize
+	x := int(float64(col+winx)*font.truewidth) + winbordersize
 	y := (row+winy)*font.lineHeight + int(float64(font.lineSpace)/2.0) + c.shift + win.scrollPixels[1] + res + winbordersize
 	c.x = x
 	c.y = y

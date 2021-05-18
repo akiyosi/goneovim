@@ -1,14 +1,14 @@
 package editor
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
-	"time"
 	"math"
 	"sync"
-	"bytes"
-	"unsafe"
+	"time"
 	"unicode"
-	"errors"
+	"unsafe"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/bluele/gcache"
@@ -1576,7 +1576,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	chars := map[*Highlight][]int{}
 	specialChars := []int{}
 
-	pointX := float64(col)*wsfont.truewidth
+	pointX := float64(col) * wsfont.truewidth
 	for x := col; x <= col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -1612,7 +1612,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					true,
 				)
 
-			// if CachedDrawing is enabled
+				// if CachedDrawing is enabled
 			} else {
 				w.drawTextInPosWithCache(
 					p,
@@ -1642,16 +1642,14 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	// we draw a word snippet of the same highlight on the screen for each of the highlights.
 	if !editor.config.Editor.DisableLigatures {
 
-		// if CachedDrawing is disabled
 		var pointf *core.QPointF
+		// if CachedDrawing is disabled
 		if !editor.config.Editor.CachedDrawing {
 			pointf = core.NewQPointF3(
 				pointX,
 				float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
 			)
-
-		// if CachedDrawing is enabled
-		} else {
+		} else { // if CachedDrawing is enabled
 			pointf = core.NewQPointF3(
 				pointX,
 				float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
@@ -1690,9 +1688,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					highlight,
 					true,
 				)
-
-			// if CachedDrawing is enabled
-			} else {
+			} else { // if CachedDrawing is enabled
 				w.drawTextInPosWithCache(
 					p,
 					pointf,
@@ -1719,18 +1715,16 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			// if CachedDrawing is disabled
 			if !editor.config.Editor.CachedDrawing {
 				w.drawTextInPos(
-					p, 
+					p,
 					core.NewQPointF3(
-			            float64(x) * wsfont.truewidth,
-			            float64(y*wsfont.lineHeight + wsfont.shift + w.scrollPixels[1] + w.scrollPixels2),
+						float64(x)*wsfont.truewidth,
+						float64(y*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
 					),
 					line[x].char,
 					line[x].highlight,
 					false,
 				)
-
-			// if CachedDrawing is enabled
-			} else {
+			} else { // if CachedDrawing is enabled
 				w.drawTextInPosWithCache(
 					p,
 					core.NewQPointF3(
@@ -2099,10 +2093,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				}
 				p.DrawPath(path)
 			}
-
-
-		// if CachedDrawing is enabled
-		} else {
+		} else { // if CachedDrawing is enabled
 			fgCache := w.getCache()
 			var image *gui.QImage
 			imagev, err := fgCache.get(HlDecoration{
@@ -2282,9 +2273,9 @@ func (w *Window) raise() {
 		w.extwin.Raise()
 		w.s.ws.cursor.widget.SetParent(w.extwin)
 	}
-    w.s.ws.cursor.widget.Raise()
-    w.s.ws.cursor.widget.Hide()
-    w.s.ws.cursor.widget.Show()
+	w.s.ws.cursor.widget.Raise()
+	w.s.ws.cursor.widget.Hide()
+	w.s.ws.cursor.widget.Show()
 }
 
 func (w *Window) show() {
@@ -2347,10 +2338,10 @@ func (w *Window) move(col int, row int) {
 	font := w.s.font
 	res := 0
 	if w.isMsgGrid {
-	        res = w.s.widget.Height() - w.rows*font.lineHeight
+		res = w.s.widget.Height() - w.rows*font.lineHeight
 	}
 	if res < 0 {
-	        res = 0
+		res = 0
 	}
 	x := int(float64(col) * font.truewidth)
 	y := (row * font.lineHeight) + res

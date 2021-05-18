@@ -107,9 +107,9 @@ type Editor struct {
 	active     int
 	window     *frameless.QFramelessWindow
 	// window     *widgets.QMainWindow
-	splitter  *widgets.QSplitter
-	widget    *widgets.QWidget
-	side      *WorkspaceSide
+	splitter *widgets.QSplitter
+	widget   *widgets.QWidget
+	side     *WorkspaceSide
 
 	sysTray *widgets.QSystemTrayIcon
 

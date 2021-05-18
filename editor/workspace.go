@@ -97,7 +97,7 @@ type Workspace struct {
 	scrollViewport     [2][5]int // 1. topline, botline, curline, curcol, grid, 2. oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
 	viewportQue        chan [5]int
 	viewportMutex      sync.RWMutex
-	optionsetMutex	   sync.RWMutex
+	optionsetMutex     sync.RWMutex
 	cursorStyleEnabled bool
 	modeInfo           []map[string]interface{}
 	normalMappings     []*nvim.Mapping
@@ -980,7 +980,7 @@ func (w *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
 
 func (w *Workspace) setCwd(cwd string) {
 	if cwd == "" {
-	        cwd = w.getCwd()
+		cwd = w.getCwd()
 	}
 	w.cwd = cwd
 
@@ -1698,8 +1698,8 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		diff = viewport[1] - oldViewport[1]
 	}
 
-	// // TODO: Control processing of wrapped lines. 
-	// //  This process is very incomplete and does not take into consideration the possibility 
+	// // TODO: Control processing of wrapped lines.
+	// //  This process is very incomplete and does not take into consideration the possibility
 	// //  of a wrapped line at any position in the buffer.
 	// if int(math.Abs(float64(diff))) >= win.rows/2 && viewport[1] < w.maxLine+2 {
 	// 	wrappedLines1 := win.rows - (viewport[1] - viewport[0] - 1)
@@ -2608,7 +2608,7 @@ func (side *WorkspaceSide) show() {
 				editor.workspaces[i].setCwd(editor.workspaces[i].cwdlabel)
 			}
 		}
-	 	side.items[i].setSideItemLabel(i)
+		side.items[i].setSideItemLabel(i)
 		side.items[i].show()
 		editor.workspaces[i].hide()
 		if i == editor.active {
