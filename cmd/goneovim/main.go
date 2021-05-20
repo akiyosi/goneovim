@@ -5,6 +5,7 @@ import (
 	"os"
 
 	// "runtime/pprof"
+	// "github.com/felixge/fgprof"
 
 	"github.com/akiyosi/goneovim/editor"
 	"github.com/jessevdk/go-flags"
@@ -22,6 +23,23 @@ func main() {
 	// defer f.Close()
 	// pprof.StartCPUProfile(f)
 	// defer pprof.StopCPUProfile()
+
+	// // fgprof
+	// f, err := os.Create("cpuprofile")
+	// if err != nil {
+	// 	os.Exit(1)
+	// }
+	// fgprofStop := fgprof.Start(f, fgprof.FormatPprof)
+	// defer func() {
+	// 	err = fgprofStop()
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	err = f.Close()
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// }()
 
 	// parse args
 	options, args := parseArgs()
