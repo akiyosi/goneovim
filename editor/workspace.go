@@ -371,7 +371,9 @@ func (w *Workspace) registerSignal() {
 		if w.hasLazyUI {
 			return
 		}
-		w.tabline.initTab()
+		if editor.config.Editor.ExtTabline {
+			w.tabline.initTab()
+		}
 		editor.workspaceUpdate()
 		w.hasLazyUI = true
 		w.lazyDrawUI()
