@@ -121,7 +121,7 @@ type Window struct {
 	scrollPixels       [2]int  // for touch pad scroll
 	scrollPixels2      int     // for viewport
 	scrollPixelsDeltaY int
-	isWheelScrolling   bool
+	lastScrollphase    core.Qt__ScrollPhase
 	scrollCols         int
 	doGetSnapshot      bool
 
@@ -238,6 +238,10 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 	if dy >= float64(font.lineHeight) {
 		w.scrollPixels[1] = 0
+	}
+
+	if w.lastScrollphase == core.Qt__NoScrollPhase {
+		w.lastScrollphase = core.Qt__ScrollEnd
 	}
 
 	p.DestroyQPainter()
@@ -485,7 +489,10 @@ func (w *Window) drawIndentline(p *gui.QPainter, x int, y int, b bool) {
 	font := w.getFont()
 
 	// Set smooth scroll offset
-	scrollPixels := w.scrollPixels2
+	scrollPixels := 0
+	if w.lastScrollphase != core.Qt__NoScrollPhase {
+		scrollPixels = w.scrollPixels2
+	}
 	if editor.config.Editor.LineToScroll == 1 {
 		scrollPixels += w.scrollPixels[1]
 	}
@@ -769,8 +776,8 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		v = pixels.Y()
 		h = pixels.X()
 	}
-	isStopScroll := (event.Phase() == core.Qt__ScrollEnd)
-	w.isWheelScrolling = !isStopScroll
+	w.lastScrollphase = event.Phase()
+	isStopScroll := (w.lastScrollphase == core.Qt__ScrollEnd)
 
 	// Smooth scroll with touchpad
 	if (v == 0 || h == 0) && isStopScroll {
@@ -780,8 +787,8 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
 	} else {
 		angles := event.AngleDelta()
-		vert = -1 * angles.Y()
-		horiz = -1 * angles.X()
+		vert = angles.Y()
+		horiz = angles.X()
 		if event.Inverted() {
 			vert = -1 * vert
 		}
@@ -810,10 +817,18 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	if vert == 0 && horiz == 0 {
 		return
 	}
-	if vert > 0 {
-		vertKey = "Up"
+	if editor.config.Editor.ReversingScrollDirection {
+		if vert < 0 {
+			vertKey = "Up"
+		} else {
+			vertKey = "Down"
+		}
 	} else {
-		vertKey = "Down"
+		if vert > 0 {
+			vertKey = "Up"
+		} else {
+			vertKey = "Down"
+		}
 	}
 	if horiz > 0 {
 		horizKey = "Left"
@@ -841,10 +856,18 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 			go w.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
 		}
 	} else {
-		if vert > 0 {
-			go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
-		} else if vert < 0 {
-			go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
+		if editor.config.Editor.ReversingScrollDirection {
+			if vert > 0 {
+				go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
+			} else if vert < 0 {
+				go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
+			}
+		} else {
+			if vert > 0 {
+				go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
+			} else if vert < 0 {
+				go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
+			}
 		}
 	}
 
@@ -1443,7 +1466,10 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	}
 
 	// Set smooth scroll offset
-	scrollPixels := w.scrollPixels2
+	scrollPixels := 0
+	if w.lastScrollphase != core.Qt__NoScrollPhase {
+		scrollPixels = w.scrollPixels2
+	}
 	if editor.config.Editor.LineToScroll == 1 {
 		scrollPixels += w.scrollPixels[1]
 	}
@@ -1591,7 +1617,10 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	specialChars := []int{}
 
 	// Set smooth scroll offset
-	scrollPixels := w.scrollPixels2
+	scrollPixels := 0
+	if w.lastScrollphase != core.Qt__NoScrollPhase {
+		scrollPixels = w.scrollPixels2
+	}
 	if editor.config.Editor.LineToScroll == 1 {
 		scrollPixels += w.scrollPixels[1]
 	}
@@ -1824,7 +1853,10 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 	}
 
 	// Set smooth scroll offset
-	scrollPixels := w.scrollPixels2
+	scrollPixels := 0
+	if w.lastScrollphase != core.Qt__NoScrollPhase {
+		scrollPixels = w.scrollPixels2
+	}
 	if editor.config.Editor.LineToScroll == 1 {
 		scrollPixels += w.scrollPixels[1]
 	}
@@ -2043,7 +2075,10 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	font := w.getFont()
 
 	// Set smooth scroll offset
-	scrollPixels := w.scrollPixels2
+	scrollPixels := 0
+	if w.lastScrollphase != core.Qt__NoScrollPhase {
+		scrollPixels = w.scrollPixels2
+	}
 	if editor.config.Editor.LineToScroll == 1 {
 		scrollPixels += w.scrollPixels[1]
 	}

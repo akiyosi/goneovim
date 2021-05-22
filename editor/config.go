@@ -57,6 +57,7 @@ type editorConfig struct {
 	IndentGuideIgnoreFtList  []string
 	OptionsToUseGuideWidth   string
 	LineToScroll             int
+	ReversingScrollDirection bool
 	SmoothScroll             bool
 	DisableHorizontalScroll  bool
 	DrawBorderForFloatWindow bool

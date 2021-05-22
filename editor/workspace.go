@@ -1750,7 +1750,7 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	}
 
 	// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
-	if win.isWheelScrolling {
+	if win.lastScrollphase != core.Qt__ScrollEnd {
 		return nil, 0, false
 	}
 
