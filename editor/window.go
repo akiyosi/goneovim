@@ -776,7 +776,11 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		v = pixels.Y()
 		h = pixels.X()
 	}
-	w.lastScrollphase = event.Phase()
+	phase := event.Phase()
+	if w.lastScrollphase != phase && w.lastScrollphase != core.Qt__ScrollEnd {
+		w.doGetSnapshot = true
+	}
+	w.lastScrollphase = phase
 	isStopScroll := (w.lastScrollphase == core.Qt__ScrollEnd)
 
 	// Smooth scroll with touchpad
