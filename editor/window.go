@@ -118,10 +118,10 @@ type Window struct {
 	scrollRegion    []int
 	queueRedrawArea [4]int
 
-	scrollPixels       [2]int
+	scrollPixels       [2]int  // for touch pad scroll
+	scrollPixels2      int     // for viewport
 	scrollPixelsDeltaY int
 	isWheelScrolling   bool
-	scrollPixels2      int
 	scrollCols         int
 	doGetSnapshot      bool
 
@@ -483,8 +483,15 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 
 func (w *Window) drawIndentline(p *gui.QPainter, x int, y int, b bool) {
 	font := w.getFont()
+
+	// Set smooth scroll offset
+	scrollPixels := w.scrollPixels2
+	if editor.config.Editor.LineToScroll == 1 {
+		scrollPixels += w.scrollPixels[1]
+	}
+
 	X := float64(x) * font.truewidth
-	Y := float64(y*font.lineHeight) + float64(w.scrollPixels[1]) + float64(w.scrollPixels2)
+	Y := float64(y*font.lineHeight) + float64(scrollPixels)
 	var color *RGBA = editor.colors.indentGuide
 	var lineWeight float64 = 1
 	if b {
@@ -765,6 +772,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	isStopScroll := (event.Phase() == core.Qt__ScrollEnd)
 	w.isWheelScrolling = !isStopScroll
 
+	// Smooth scroll with touchpad
 	if (v == 0 || h == 0) && isStopScroll {
 		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
 	} else if (v != 0 || h != 0) && event.Phase() != core.Qt__NoScrollPhase {
@@ -772,8 +780,8 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
 	} else {
 		angles := event.AngleDelta()
-		vert = angles.Y()
-		horiz = angles.X()
+		vert = -1 * angles.Y()
+		horiz = -1 * angles.X()
 		if event.Inverted() {
 			vert = -1 * vert
 		}
@@ -834,9 +842,9 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		}
 	} else {
 		if vert > 0 {
-			go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", int(math.Abs(float64(vert)))))
+			go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
 		} else if vert < 0 {
-			go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", int(math.Abs(float64(vert)))))
+			go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
 		}
 	}
 
@@ -1434,6 +1442,12 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 		}
 	}
 
+	// Set smooth scroll offset
+	scrollPixels := w.scrollPixels2
+	if editor.config.Editor.LineToScroll == 1 {
+		scrollPixels += w.scrollPixels[1]
+	}
+
 	// isDrawDefaultBg := true
 	// // Simply paint the color into a rectangle
 	// for x := col; x <= col+cols; x++ {
@@ -1495,7 +1509,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 				// Fill background with pattern
 				rectF := core.NewQRectF4(
 					float64(start)*font.truewidth,
-					float64((y)*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
+					float64((y)*font.lineHeight+scrollPixels),
 					float64(width)*font.truewidth,
 					float64(font.lineHeight),
 				)
@@ -1576,6 +1590,12 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	chars := map[*Highlight][]int{}
 	specialChars := []int{}
 
+	// Set smooth scroll offset
+	scrollPixels := w.scrollPixels2
+	if editor.config.Editor.LineToScroll == 1 {
+		scrollPixels += w.scrollPixels[1]
+	}
+
 	pointX := float64(col) * wsfont.truewidth
 	for x := col; x <= col+cols; x++ {
 		if x >= len(line) {
@@ -1605,7 +1625,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					p,
 					core.NewQPointF3(
 						float64(x)*wsfont.truewidth,
-						float64(y*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
+						float64(y*wsfont.lineHeight+wsfont.shift+scrollPixels),
 					),
 					line[x].char,
 					line[x].highlight,
@@ -1618,7 +1638,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					p,
 					core.NewQPointF3(
 						float64(x)*wsfont.truewidth,
-						float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
+						float64(y*wsfont.lineHeight+scrollPixels),
 					),
 					line[x].char,
 					line[x].highlight,
@@ -1647,12 +1667,12 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		if !editor.config.Editor.CachedDrawing {
 			pointf = core.NewQPointF3(
 				pointX,
-				float64((y)*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
+				float64((y)*wsfont.lineHeight+wsfont.shift+scrollPixels),
 			)
 		} else { // if CachedDrawing is enabled
 			pointf = core.NewQPointF3(
 				pointX,
-				float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
+				float64(y*wsfont.lineHeight+scrollPixels),
 			)
 		}
 
@@ -1718,7 +1738,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					p,
 					core.NewQPointF3(
 						float64(x)*wsfont.truewidth,
-						float64(y*wsfont.lineHeight+wsfont.shift+w.scrollPixels[1]+w.scrollPixels2),
+						float64(y*wsfont.lineHeight+wsfont.shift+scrollPixels),
 					),
 					line[x].char,
 					line[x].highlight,
@@ -1729,7 +1749,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					p,
 					core.NewQPointF3(
 						float64(x)*wsfont.truewidth,
-						float64(y*wsfont.lineHeight+w.scrollPixels[1]+w.scrollPixels2),
+						float64(y*wsfont.lineHeight+scrollPixels),
 					),
 					line[x].char,
 					line[x].highlight,
@@ -1803,6 +1823,12 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		width = math.Ceil(w.s.runeTextWidth(font, char))
 	}
 
+	// Set smooth scroll offset
+	scrollPixels := w.scrollPixels2
+	if editor.config.Editor.LineToScroll == 1 {
+		scrollPixels += w.scrollPixels[1]
+	}
+
 	// QImage default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
 	image := gui.NewQImage2(
@@ -1845,7 +1871,7 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		weight = 1
 	}
 	if highlight.strikethrough {
-		Y := float64(0*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
+		Y := float64(0*font.lineHeight+scrollPixels) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
 		pi.FillRect5(
 			int(start),
 			int(Y),
@@ -1857,7 +1883,7 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 	if highlight.underline {
 		pi.FillRect5(
 			int(start),
-			int(float64((0+1)*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2))-weight,
+			int(float64((0+1)*font.lineHeight+scrollPixels))-weight,
 			int(math.Ceil(font.truewidth)),
 			weight,
 			color,
@@ -1871,7 +1897,7 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		}
 		freq := 1.0
 		phase := 0.0
-		Y := float64(0*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
+		Y := float64(0*font.lineHeight+scrollPixels) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
 		Y2 := Y + amplitude*math.Sin(0)
 		point := core.NewQPointF3(start, Y2)
 		path := gui.NewQPainterPath2(point)
@@ -2015,6 +2041,13 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	}
 	line := w.content[y]
 	font := w.getFont()
+
+	// Set smooth scroll offset
+	scrollPixels := w.scrollPixels2
+	if editor.config.Editor.LineToScroll == 1 {
+		scrollPixels += w.scrollPixels[1]
+	}
+
 	for x := col; x <= col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -2055,7 +2088,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			if line[x].highlight.strikethrough {
 				// strikeLinef := core.NewQLineF3(start, halfY, end, halfY)
 				// p.DrawLine(strikeLinef)
-				Y := float64(y*font.lineHeight+w.scrollPixels[1]) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
+				Y := float64(y*font.lineHeight+scrollPixels) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
 				p.FillRect5(
 					int(start),
 					int(Y),
@@ -2069,7 +2102,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				// p.DrawLine(linef)
 				p.FillRect5(
 					int(start),
-					int(float64((y+1)*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2))-weight,
+					int(float64((y+1)*font.lineHeight+scrollPixels))-weight,
 					int(math.Ceil(font.truewidth)),
 					weight,
 					color,
@@ -2083,7 +2116,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				}
 				freq := 1.0
 				phase := 0.0
-				Y := float64(y*font.lineHeight+w.scrollPixels[1]+w.scrollPixels2) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
+				Y := float64(y*font.lineHeight+scrollPixels) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
 				Y2 := Y + amplitude*math.Sin(0)
 				point := core.NewQPointF3(start, Y2)
 				path := gui.NewQPainterPath2(point)
@@ -2113,7 +2146,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			p.DrawImage7(
 				core.NewQPointF3(
 					float64(x)*font.truewidth,
-					float64(y*font.lineHeight)+float64(w.scrollPixels[1])+float64(w.scrollPixels2),
+					float64(y*font.lineHeight)+float64(scrollPixels),
 				),
 				image,
 			)

@@ -435,8 +435,14 @@ func (c *Cursor) update() {
 		res = 0
 	}
 
+	// Set smooth scroll offset
+	scrollPixels := 0
+	if editor.config.Editor.LineToScroll == 1 {
+		scrollPixels += win.scrollPixels[1]
+	}
+
 	x := int(float64(col+winx)*font.truewidth) + winbordersize
-	y := (row+winy)*font.lineHeight + int(float64(font.lineSpace)/2.0) + c.shift + win.scrollPixels[1] + res + winbordersize
+	y := (row+winy)*font.lineHeight + int(float64(font.lineSpace)/2.0) + c.shift + scrollPixels + res + winbordersize
 	c.x = x
 	c.y = y
 	c.move()
