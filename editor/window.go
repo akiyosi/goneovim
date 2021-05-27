@@ -118,11 +118,12 @@ type Window struct {
 	scrollRegion    []int
 	queueRedrawArea [4]int
 
-	scrollPixels       [2]int  // for touch pad scroll
-	scrollPixels2      int     // for viewport
+	scrollPixels       [2]int // for touch pad scroll
+	scrollPixels2      int    // for viewport
 	scrollPixelsDeltaY int
 	lastScrollphase    core.Qt__ScrollPhase
 	scrollCols         int
+	scrollViewport     [2][5]int // 1. topline, botline, curline, curcol, grid, 2. oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
 	doGetSnapshot      bool
 
 	devicePixelRatio float64
@@ -786,7 +787,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	// Smooth scroll with touchpad
 	if (v == 0 || h == 0) && isStopScroll {
 		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
-	} else if (v != 0 || h != 0) && event.Phase() != core.Qt__NoScrollPhase {
+	} else if (v != 0 || h != 0) && phase != core.Qt__NoScrollPhase {
 		// If Scrolling has ended, reset the displacement of the line
 		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
 	} else {
@@ -901,10 +902,8 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 	if isStopScroll {
 		w.scrollPixels[0] = 0
 		w.scrollPixels[1] = 0
-		for i := 0; i < w.rows; i++ {
-			w.lenContent[i] = w.maxLenContent
-		}
-
+		w.queueRedrawAll()
+		w.refreshUpdateArea(1)
 		w.update()
 		w.s.ws.cursor.update()
 		return 0, 0
@@ -947,6 +946,50 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 	}
 
 	return vert, horiz
+}
+
+// smoothscroll makes Neovim's scroll command behavior smooth and animated.
+func (win *Window) smoothScroll(diff int) {
+	// process smooth scroll
+	a := core.NewQPropertyAnimation2(win, core.NewQByteArray2("scrollDiff", len("scrollDiff")), win)
+	a.ConnectValueChanged(func(value *core.QVariant) {
+		ok := false
+		v := value.ToDouble(&ok)
+		if !ok {
+			return
+		}
+		font := win.getFont()
+		win.scrollPixels2 = int(float64(diff) * v * float64(font.lineHeight))
+		win.Update2(
+			0,
+			0,
+			int(float64(win.cols)*font.truewidth),
+			win.cols*font.lineHeight,
+		)
+		if win.scrollPixels2 == 0 {
+			win.doErase = true
+			win.Update2(
+				0,
+				0,
+				int(float64(win.cols)*font.truewidth),
+				win.cols*font.lineHeight,
+			)
+			win.doErase = false
+			win.fill()
+
+			// get snapshot
+			if !editor.isKeyAutoRepeating {
+				win.snapshot = win.Grab(win.Rect())
+			}
+		}
+	})
+	a.SetDuration(220)
+	a.SetStartValue(core.NewQVariant10(1))
+	a.SetEndValue(core.NewQVariant10(0))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
+	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
+	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 }
 
 func (hl *Highlight) fg() *RGBA {
@@ -2370,13 +2413,24 @@ func (w *Window) setGridGeometry(width, height int) {
 	w.fill()
 }
 
-func (w *Window) fill() {
+// refreshUpdateArea:: arg:1 => full, arg:1 => full only text
+func (w *Window) refreshUpdateArea(fullmode int) {
+	var boundary int
+	if fullmode == 0 {
+		boundary = w.cols
+	} else {
+		boundary = w.maxLenContent
+	}
 	for i := 0; i < len(w.lenContent); i++ {
-		w.lenContent[i] = w.cols
+		w.lenContent[i] = boundary
 		for j, _ := range w.contentMask[i] {
 			w.contentMask[i][j] = true
 		}
 	}
+}
+
+func (w *Window) fill() {
+	w.refreshUpdateArea(0)
 	if editor.config.Editor.Transparent < 1.0 {
 		return
 	}

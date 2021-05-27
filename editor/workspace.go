@@ -92,9 +92,8 @@ type Workspace struct {
 	cwdlabel           string
 	maxLine            int
 	maxLineDelta       int
-	viewport           [4]int    // topline, botline, curline, curcol
-	oldViewport        [4]int    // topline, botline, curline, curcol
-	scrollViewport     [2][5]int // 1. topline, botline, curline, curcol, grid, 2. oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
+	viewport           [4]int // topline, botline, curline, curcol
+	oldViewport        [4]int // topline, botline, curline, curcol
 	viewportQue        chan [5]int
 	viewportMutex      sync.RWMutex
 	optionsetMutex     sync.RWMutex
@@ -1278,7 +1277,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "msg_set_pos":
 			s.msgSetPos(args)
 		case "win_viewport":
-			w.windowViewport(args[0].([]interface{}))
+			w.windowViewport(args)
 
 		// Popupmenu Events
 		case "popupmenu_show":
@@ -1403,7 +1402,7 @@ func (w *Workspace) flush() {
 				continue
 			}
 			if ok {
-				w.smoothScroll(win, diff)
+				win.smoothScroll(diff)
 			}
 		default:
 		}
@@ -1646,32 +1645,34 @@ func (w *Workspace) getPos() {
 	w.viewportMutex.Unlock()
 }
 
-func (w *Workspace) windowViewport(arg []interface{}) {
-	viewport := [4]int{
-		util.ReflectToInt(arg[2]) + 1, // top
-		util.ReflectToInt(arg[3]) + 1, // bottom
-		util.ReflectToInt(arg[4]) + 1, // curline
-		util.ReflectToInt(arg[5]) + 1, // curcol
-	}
+func (w *Workspace) windowViewport(args []interface{}) {
+	for _, e := range args {
+		arg := e.([]interface{})
+		viewport := [4]int{
+			util.ReflectToInt(arg[2]) + 1, // top
+			util.ReflectToInt(arg[3]) + 1, // bottom
+			util.ReflectToInt(arg[4]) + 1, // curline
+			util.ReflectToInt(arg[5]) + 1, // curcol
+		}
 
-	scrollvp := [5]int{
-		util.ReflectToInt(arg[2]) + 1,
-		util.ReflectToInt(arg[3]) + 1,
-		util.ReflectToInt(arg[4]) + 1,
-		util.ReflectToInt(arg[5]) + 1,
-		util.ReflectToInt(arg[0]),
-	}
-	if scrollvp[0] < scrollvp[1] {
-		w.viewportQue <- scrollvp
-	}
+		scrollvp := [5]int{
+			util.ReflectToInt(arg[2]) + 1,
+			util.ReflectToInt(arg[3]) + 1,
+			util.ReflectToInt(arg[4]) + 1,
+			util.ReflectToInt(arg[5]) + 1,
+			util.ReflectToInt(arg[0]),
+		}
+		if scrollvp[0] < scrollvp[1] {
+			w.viewportQue <- scrollvp
+		}
 
-	if viewport != w.viewport {
-		w.viewportMutex.Lock()
-		w.oldViewport = w.viewport
-		w.viewport = viewport
-		w.viewportMutex.Unlock()
+		if viewport != w.viewport {
+			w.viewportMutex.Lock()
+			w.oldViewport = w.viewport
+			w.viewport = viewport
+			w.viewportMutex.Unlock()
+		}
 	}
-
 }
 
 func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
@@ -1683,13 +1684,10 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
-	w.viewportMutex.Lock()
-	w.scrollViewport[1] = w.scrollViewport[0]
-	w.scrollViewport[0] = vp
-	w.viewportMutex.Unlock()
-
-	viewport := w.scrollViewport[0]
-	oldViewport := w.scrollViewport[1]
+	win.scrollViewport[1] = win.scrollViewport[0]
+	win.scrollViewport[0] = vp
+	viewport := win.scrollViewport[0]
+	oldViewport := win.scrollViewport[1]
 
 	if viewport[0] == oldViewport[0] && viewport[1] != oldViewport[1] {
 		return nil, 0, false
@@ -1713,8 +1711,6 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	// 	}
 	// }
 
-	isGridGoto := viewport[4] != oldViewport[4]
-
 	// smooth scroll feature disabled
 	if !editor.config.Editor.SmoothScroll {
 		return nil, 0, false
@@ -1734,8 +1730,8 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		win.doGetSnapshot = false
 	}
 
-	// do not scroll smoothly when the maximum line is less than buffer rows,
-	// and topline has not been changed
+	// // do not scroll smoothly when the maximum line is less than buffer rows,
+	// // and topline has not been changed
 	if w.maxLine-w.maxLineDelta < w.rows && viewport[0] == oldViewport[0] {
 		return nil, 0, false
 	}
@@ -1754,58 +1750,16 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
-	if isGridGoto {
-		return win, diff, false
-	}
+	// isGridGoto := viewport[4] != oldViewport[4]
+	// if isGridGoto {
+	// 	return win, diff, false
+	// }
 
 	if diff == 0 {
 		return win, diff, false
 	}
 
 	return win, diff, true
-}
-
-func (w *Workspace) smoothScroll(win *Window, diff int) {
-	// process smooth scroll
-	a := core.NewQPropertyAnimation2(win, core.NewQByteArray2("scrollDiff", len("scrollDiff")), win)
-	a.ConnectValueChanged(func(value *core.QVariant) {
-		ok := false
-		v := value.ToDouble(&ok)
-		if !ok {
-			return
-		}
-		font := win.getFont()
-		win.scrollPixels2 = int(float64(diff) * v * float64(font.lineHeight))
-		win.Update2(
-			0,
-			0,
-			int(float64(win.cols)*font.truewidth),
-			win.cols*font.lineHeight,
-		)
-		if win.scrollPixels2 == 0 {
-			win.doErase = true
-			win.Update2(
-				0,
-				0,
-				int(float64(win.cols)*font.truewidth),
-				win.cols*font.lineHeight,
-			)
-			win.doErase = false
-			win.fill()
-
-			// get snapshot
-			if !editor.isKeyAutoRepeating {
-				win.snapshot = win.Grab(win.Rect())
-			}
-		}
-	})
-	a.SetDuration(220)
-	a.SetStartValue(core.NewQVariant10(1))
-	a.SetEndValue(core.NewQVariant10(0))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
-	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
-	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 }
 
 func (w *Workspace) updateMinimap() {
