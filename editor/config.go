@@ -11,6 +11,7 @@ import (
 
 type gonvimConfig struct {
 	Editor      editorConfig
+	Cursor      cursorConfig
 	Palette     paletteConfig
 	Message     messageConfig
 	Statusline  statusLineConfig
@@ -70,6 +71,11 @@ type editorConfig struct {
 	BorderlessWindow         bool
 	// ExtWildmenu            bool
 	// ExtMultigrid           bool
+}
+
+type cursorConfig struct {
+	SmoothMove bool
+	Duration int
 }
 
 type paletteConfig struct {
@@ -334,6 +340,8 @@ func (c *gonvimConfig) init() {
 	c.Editor.DiffAddPattern = 1
 	c.Editor.DiffDeletePattern = 1
 	c.Editor.DiffChangePattern = 1
+
+	c.Cursor.Duration = 110
 
 	// ----
 

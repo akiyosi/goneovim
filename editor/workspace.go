@@ -158,8 +158,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	// cursor
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
-	// w.cursor.widget.SetParent(w.screen.widget)
-	w.cursor.widget.SetParent(editor.widget)
+	w.cursor.SetParent(editor.widget)
 
 	// If ExtFooBar is true, then we create a UI component
 	// tabline
@@ -1167,6 +1166,7 @@ func (w *Workspace) updateSize() {
 		w.screen.height = w.height - t - s
 		w.screen.updateSize()
 	}
+	w.cursor.Resize2(w.screen.width, w.screen.height)
 	if w.palette != nil {
 		w.palette.resize()
 	}
@@ -2410,9 +2410,9 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 
 		if w.palette != nil {
 			if w.palette.widget.IsVisible() {
-				w.cursor.x = x
-				w.cursor.y = w.palette.patternPadding + w.cursor.shift
-				w.cursor.widget.Move2(w.cursor.x, w.cursor.y)
+				w.cursor.x = float64(x)
+				w.cursor.y = float64(w.palette.patternPadding + w.cursor.shift)
+				w.cursor.Move2(int(w.cursor.x), int(w.cursor.y))
 			}
 		}
 

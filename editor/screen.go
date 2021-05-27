@@ -445,9 +445,9 @@ func (s *Screen) toolTip(text string) {
 	row := s.cursor[0]
 	col := s.cursor[1]
 	c := s.ws.cursor
-	c.x = int(float64(col)*s.font.truewidth) + s.tooltip.Width()
-	c.y = row * s.font.lineHeight
-	c.move()
+	c.x = float64(col)*s.font.truewidth + float64(s.tooltip.Width())
+	c.y = float64(row * s.font.lineHeight)
+	// c.move()
 }
 
 func (s *Screen) bottomWindowPos() int {
@@ -705,7 +705,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		// if gridid == 1 && s.name != "minimap" {
 		// 	s.ws.cursor.widget.SetParent(win)
 		// }
-		s.ws.cursor.widget.Raise()
+		s.ws.cursor.Raise()
 
 	}
 	winOldCols := win.cols
@@ -1354,8 +1354,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			anchorGrid = s.ws.cursor.gridid
 		}
 
-		// win.SetParent(win.s.ws.screen.widget)
-		win.SetParent(editor.widget)
+        // win.SetParent(win.s.ws.screen.widget)
+        win.SetParent(editor.widget)
 
 		win.propMutex.Lock()
 		win.isFloatWin = true
@@ -1448,7 +1448,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.move(x, y)
 		win.setShadow()
 		win.show()
-		win.s.ws.cursor.widget.Raise()
+        win.s.ws.cursor.Raise()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
 		anchorwin.queueRedrawAll()
@@ -1507,10 +1507,10 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				win.setGridGeometry(width, height)
 				win.setResizableForExtWin()
 				win.move(win.pos[0], win.pos[1])
-				win.s.ws.cursor.widget.SetParent(win.extwin)
-				win.s.ws.cursor.widget.Raise()
-				win.s.ws.cursor.widget.Hide()
-				win.s.ws.cursor.widget.Show()
+				win.s.ws.cursor.SetParent(win.extwin)
+				win.s.ws.cursor.Raise()
+				win.s.ws.cursor.Hide()
+				win.s.ws.cursor.Show()
 			}
 
 			return true

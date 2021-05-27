@@ -29,6 +29,10 @@ rebuild:
 	qtdeploy build desktop ; \
 	cp -pR ../../runtime $(RUNTIME_DIR)
 
+moc:
+	cd cmd/goneovim ; \
+	qtmoc
+
 build:
 	cd cmd/goneovim ; \
 	test -f ../../editor/moc.go & qtmoc ; \
