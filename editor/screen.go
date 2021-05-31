@@ -1348,13 +1348,13 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
 		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
-		// focusable := arg.([]interface{})[6]
+		// focusable := (arg.([]interface{})[6]).(bool)
 
 		if isExistPopupmenu && win.id != -1 {
 			anchorGrid = s.ws.cursor.gridid
 		}
 
-		win.SetParent(editor.widget)
+		win.SetParent(win.s.ws.screen.widget)
 
 		win.propMutex.Lock()
 		win.isFloatWin = true
@@ -1447,6 +1447,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.move(x, y)
 		win.setShadow()
 		win.show()
+		win.s.ws.cursor.widget.Raise()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
 		anchorwin.queueRedrawAll()
