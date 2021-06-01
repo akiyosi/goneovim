@@ -1354,7 +1354,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			anchorGrid = s.ws.cursor.gridid
 		}
 
-		win.SetParent(win.s.ws.screen.widget)
+		// win.SetParent(win.s.ws.screen.widget)
+		win.SetParent(editor.widget)
 
 		win.propMutex.Lock()
 		win.isFloatWin = true

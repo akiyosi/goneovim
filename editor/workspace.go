@@ -158,7 +158,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	// cursor
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
-	w.cursor.widget.SetParent(w.screen.widget)
+	// w.cursor.widget.SetParent(w.screen.widget)
+	w.cursor.widget.SetParent(editor.widget)
 
 	// If ExtFooBar is true, then we create a UI component
 	// tabline
