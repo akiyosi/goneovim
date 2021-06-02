@@ -211,7 +211,7 @@ func (c *Cmdline) hide() {
 	// 	c.ws.cursor.widget.Hide()
 	// 	c.ws.cursor.widget.Show()
 	// }
-	c.ws.cursor.widget.SetParent(c.ws.screen.widget)
+	c.ws.cursor.widget.SetParent(editor.widget)
 	c.ws.cursor.isInPalette = false
 
 	c.shown = false

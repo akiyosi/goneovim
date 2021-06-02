@@ -237,10 +237,18 @@ func (c *Cursor) setBlink() {
 }
 
 func (c *Cursor) move() {
+	y := 0
+	if c.ws.tabline != nil {
+		if c.ws.tabline.widget.IsVisible() {
+			y = c.y + c.ws.tabline.widget.Height()
+		}
+	} else {
+			y = c.y
+	}
 	c.widget.Move(
 		core.NewQPoint2(
 			c.x,
-			c.y,
+			y,
 		),
 	)
 
