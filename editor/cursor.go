@@ -2,6 +2,7 @@ package editor
 
 import (
 	"math"
+	"runtime"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
@@ -172,11 +173,6 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		X = c.x
 		Y = c.y
 	}
-	if c.ws.tabline != nil {
-		if c.ws.tabline.widget.IsVisible() {
-			Y = Y + float64(c.ws.tabline.height)
-		}
-	}
 
 	// Draw cursor background
 	p.FillRect4(
@@ -343,23 +339,24 @@ func (c *Cursor) setBlink() {
 	c.timer.SetInterval(off)
 }
 
-// func (c *Cursor) move() {
-// 	c.Move(
-// 		core.NewQPoint2(
-// 			c.x,
-// 			c.y,
-// 		),
-// 	)
-// 
-// 	// if c.ws.loc != nil {
-// 	// 	c.ws.loc.updatePos()
-// 	// }
-// 
-// 	// Fix #119: Wrong candidate window position when using ibus
-// 	if runtime.GOOS == "linux" {
-// 		gui.QGuiApplication_InputMethod().Update(core.Qt__ImCursorRectangle)
-// 	}
-// }
+func (c *Cursor) move() {
+	var y float64
+	if c.ws.tabline != nil {
+		if c.ws.tabline.widget.IsVisible() {
+			y = y + float64(c.ws.tabline.height)
+		}
+	}
+	c.Move(
+		core.NewQPoint2(
+			0,
+			int(y),
+		),
+	)
+
+	// if c.ws.loc != nil {
+	// 	c.ws.loc.updatePos()
+	// }
+}
 
 func (c *Cursor) updateFont(font *Font) {
 	c.font = font
@@ -548,6 +545,7 @@ func (c *Cursor) updateContent() {
 	x := float64(col+winx)*font.truewidth + float64(winbordersize)
 	y := float64((row+winy)*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(c.shift + scrollPixels + res + winbordersize)
 
+	c.move()
 	if !(c.x == x && c.y == y) {
 		c.oldx = c.x
 		c.oldy = c.y
@@ -561,6 +559,11 @@ func (c *Cursor) updateContent() {
 func (c *Cursor) update() {
 	c.updateContent()
 	c.updateRegion()
+
+	// Fix #119: Wrong candidate window position when using ibus
+	if runtime.GOOS == "linux" {
+		gui.QGuiApplication_InputMethod().Update(core.Qt__ImCursorRectangle)
+	}
 }
 
 func(c *Cursor) updateRegion() {
