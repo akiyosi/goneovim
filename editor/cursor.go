@@ -67,7 +67,34 @@ func initCursorNew() *Cursor {
 	c.ConnectPaintEvent(c.paint)
 	c.delta = 0.1
 	c.hasSmoothMove = editor.config.Cursor.SmoothMove
-	c.ConnectWheelEvent(func(event *gui.QWheelEvent){
+	c.ConnectWheelEvent(c.wheelEvent)
+
+	return c
+}
+
+func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
+	var targetwin *Window
+	c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+		if win.isMsgGrid {
+			return true
+		}
+		if win.isFloatWin {
+			if win.Geometry().Contains(event.Pos(), true) {
+				targetwin = win
+			}
+			return false
+		}
+
+		return true
+	})
+	if targetwin == nil {
 		c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
 			win := winITF.(*Window)
 			if win == nil {
@@ -80,19 +107,20 @@ func initCursorNew() *Cursor {
 				return true
 			}
 			if win.Geometry().Contains(event.Pos(), true) {
-				win.WheelEvent(
-					// NOTE: This is not an exact implementation, as it requires 
-					// a coordinate transformation of the Pos of QwheelEvent, but
-					// in the current handling of QWheelevent, it can be substituted as is.
-					event,
-				)
+				targetwin = win
+				return false
 			}
 
 			return true
 		})
-	})
+	}
 
-	return c
+	targetwin.WheelEvent(
+		// NOTE: This is not an exact implementation, as it requires 
+		// a coordinate transformation of the Pos of QwheelEvent, but
+		// in the current handling of QWheelevent, it can be substituted as is.
+		event,
+	)
 }
 
 func (c *Cursor) paint(event *gui.QPaintEvent) {

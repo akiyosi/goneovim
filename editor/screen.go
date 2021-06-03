@@ -62,9 +62,9 @@ func newScreen() *Screen {
 	widget.ConnectDragEnterEvent(screen.dragEnterEvent)
 	widget.ConnectDragMoveEvent(screen.dragMoveEvent)
 	widget.ConnectDropEvent(screen.dropEvent)
-	widget.ConnectMousePressEvent(screen.mousePressEvent)
-	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
-	widget.ConnectMouseMoveEvent(screen.mouseEvent)
+	// widget.ConnectMousePressEvent(screen.mousePressEvent)
+	// widget.ConnectMouseReleaseEvent(screen.mouseEvent)
+	// widget.ConnectMouseMoveEvent(screen.mouseEvent)
 
 	return screen
 }
@@ -480,6 +480,8 @@ func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
 	if !editor.config.Editor.ClickEffect {
 		return
 	}
+
+	// TODO: If a float window exists, the process of selecting it is necessary.
 
 	win, ok := s.getWindow(s.ws.cursor.gridid)
 	if !ok {
