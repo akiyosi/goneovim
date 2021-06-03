@@ -79,6 +79,9 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 		if win == nil {
 			return true
 		}
+		if !win.IsVisible() {
+			return true
+		}
 		if win.grid == 1 {
 			return true
 		}
@@ -98,6 +101,9 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 		c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
 			win := winITF.(*Window)
 			if win == nil {
+				return true
+			}
+			if !win.IsVisible() {
 				return true
 			}
 			if win.grid == 1 {
