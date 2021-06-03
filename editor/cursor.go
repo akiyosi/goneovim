@@ -634,18 +634,16 @@ func(c *Cursor) animateMove() {
 		math.Atan(d/200),
 		2,
 	)
-	duration := editor.config.Cursor.Duration-int(f)
-	if duration < 0 {
-		duration = 10
-	}
+	duration := editor.config.Cursor.Duration+int(f)
 	a.SetDuration(int(duration))
 	a.SetStartValue(core.NewQVariant10(float64(0.1)))
 	a.SetEndValue(core.NewQVariant10(1))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuint))
-	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCubic))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCubic))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuint))
+	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCirc))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__Linear))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InQuart))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCubic))

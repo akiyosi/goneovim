@@ -341,7 +341,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.DiffDeletePattern = 1
 	c.Editor.DiffChangePattern = 1
 
-	c.Cursor.Duration = 110
+	c.Cursor.Duration = 80
 
 	// ----
 
