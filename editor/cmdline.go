@@ -212,7 +212,7 @@ func (c *Cmdline) hide() {
 	// 	c.ws.cursor.widget.Show()
 	// }
 	if c.ws.cursor.isInPalette {
-		c.ws.cursor.SetParent(editor.widget)
+		c.ws.cursor.SetParent(c.ws.widget)
 		c.ws.cursor.isInPalette = false
 		c.ws.cursor.x = c.ws.cursor.x + float64(c.ws.palette.widget.Pos().X())
 		c.ws.cursor.y = c.ws.cursor.y + float64(c.ws.palette.widget.Pos().Y())

@@ -405,6 +405,7 @@ func (e *Editor) initWorkspaces() {
 				break
 			}
 			e.workspaces = append(e.workspaces, ws)
+			ws.widget.SetParent(e.widget)
 		}
 	}
 	if !sessionExists {
@@ -413,6 +414,7 @@ func (e *Editor) initWorkspaces() {
 			return
 		}
 		e.workspaces = append(e.workspaces, ws)
+		ws.widget.SetParent(e.widget)
 	}
 
 	e.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)

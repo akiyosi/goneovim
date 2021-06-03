@@ -1357,7 +1357,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		}
 
         // win.SetParent(win.s.ws.screen.widget)
-        win.SetParent(editor.widget)
+        win.SetParent(win.s.ws.widget)
 
 		win.propMutex.Lock()
 		win.isFloatWin = true

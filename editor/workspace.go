@@ -148,6 +148,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 	w.font.ws = w
 
+	w.widget = widgets.NewQWidget(nil, 0)
+	w.widget.SetParent(editor.widget)
+
 	// Basic Workspace UI component
 	// screen
 	w.screen = newScreen()
@@ -158,7 +161,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	// cursor
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
-	w.cursor.SetParent(editor.widget)
+	w.cursor.SetParent(w.widget)
 	w.cursor.ConnectMousePressEvent(w.screen.mousePressEvent)
 	w.cursor.ConnectMouseReleaseEvent(w.screen.mouseEvent)
 	w.cursor.ConnectMouseMoveEvent(w.screen.mouseEvent)
@@ -180,10 +183,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	// popupmenu
 	if editor.config.Editor.ExtPopupmenu {
 		w.popup = initPopupmenuNew()
-		w.popup.widget.SetParent(editor.widget)
+		w.popup.widget.SetParent(w.widget)
 		w.popup.ws = w
 		w.popup.widget.Hide()
-		// w.signature.widget.Hide()
 	}
 
 	// messages
@@ -203,12 +205,12 @@ func newWorkspace(path string) (*Workspace, error) {
 	// if editor.config.Lint.Visible {
 	// 	w.loc = initLocpopup()
 	// 	w.loc.ws = w
-	// 	w.loc.widget.SetParent(editor.widget)
+	// 	w.loc.widget.SetParent(w.widget)
 	// 	w.loc.widget.Hide()
 	// }
 
 	// w.signature = initSignature()
-	// w.signature.widget.SetParent(editor.widget)
+	// w.signature.widget.SetParent(w.widget)
 	// w.signature.ws = w
 
 	editor.putLog("initialazed UI components")
@@ -217,7 +219,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	layout := widgets.NewQVBoxLayout()
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
-	w.widget = widgets.NewQWidget(nil, 0)
 	w.widget.SetContentsMargins(0, 0, 0, 0)
 	w.widget.SetLayout(layout)
 	w.widget.SetFocusPolicy(core.Qt__WheelFocus)
@@ -244,7 +245,6 @@ func newWorkspace(path string) (*Workspace, error) {
 		layout.AddWidget(w.statusline.widget, 0, 0)
 	}
 
-	w.widget.SetParent(editor.widget)
 	w.widget.Move2(0, 0)
 	editor.putLog("assembled UI components")
 
@@ -277,14 +277,14 @@ func (w *Workspace) lazyDrawUI() {
 	// palette
 	w.palette = initPalette()
 	w.palette.ws = w
-	w.palette.widget.SetParent(editor.window)
+	w.palette.widget.SetParent(w.widget)
 	w.palette.setColor()
 	w.palette.hide()
 
 	// palette 2
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
-	w.fpalette.widget.SetParent(editor.window)
+	w.fpalette.widget.SetParent(w.widget)
 	w.fpalette.setColor()
 	w.fpalette.hide()
 
