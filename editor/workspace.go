@@ -312,6 +312,7 @@ func (w *Workspace) lazyDrawUI() {
 				w.minimap.setCurrentRegion()
 				w.minimap.bufUpdate()
 				w.minimap.bufSync()
+				w.updateSize()
 			}
 		}
 	}()
