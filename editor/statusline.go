@@ -322,21 +322,19 @@ func initStatusline() *Statusline {
 	s.setContentsMarginsForWidgets(0, 1, 0, 1)
 	left.widget.SetLayout(leftLayout)
 
-	go func() {
-		gitLayout.AddWidget(gitIcon, 0, 0)
-		gitLayout.AddWidget(gitLabel, 0, 0)
-		fileLayout.AddWidget(fileLabel, 0, 0)
-		fileLayout.AddWidget(roIcon, 0, 0)
-		lintLayout.AddWidget(okIcon, 0, 0)
-		lintLayout.AddWidget(errorIcon, 0, 0)
-		lintLayout.AddWidget(errorLabel, 0, 0)
-		lintLayout.AddWidget(warnIcon, 0, 0)
-		lintLayout.AddWidget(warnLabel, 0, 0)
-		layout.AddWidget(leftWidget)
+	gitLayout.AddWidget(gitIcon, 0, 0)
+	gitLayout.AddWidget(gitLabel, 0, 0)
+	fileLayout.AddWidget(fileLabel, 0, 0)
+	fileLayout.AddWidget(roIcon, 0, 0)
+	lintLayout.AddWidget(okIcon, 0, 0)
+	lintLayout.AddWidget(errorIcon, 0, 0)
+	lintLayout.AddWidget(errorLabel, 0, 0)
+	lintLayout.AddWidget(warnIcon, 0, 0)
+	lintLayout.AddWidget(warnLabel, 0, 0)
+	layout.AddWidget(leftWidget)
 
-		left.setWidget()
-		s.setWidget()
-	}()
+	left.setWidget()
+	s.setWidget()
 
 	return s
 }
