@@ -825,7 +825,9 @@ func (e *Editor) keyRelease(event *gui.QKeyEvent) {
 	if !ok {
 		return
 	}
-	win.snapshot = win.Grab(win.Rect())
+	if editor.config.Editor.SmoothScroll {
+		win.snapshot = win.Grab(win.Rect())
+	}
 	e.isKeyAutoRepeating = false
 }
 

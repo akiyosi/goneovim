@@ -978,7 +978,7 @@ func (win *Window) smoothScroll(diff int) {
 			win.fill()
 
 			// get snapshot
-			if !editor.isKeyAutoRepeating {
+			if !editor.isKeyAutoRepeating && editor.config.Editor.SmoothScroll {
 				win.snapshot = win.Grab(win.Rect())
 			}
 		}
