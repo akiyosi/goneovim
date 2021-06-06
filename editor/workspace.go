@@ -774,103 +774,108 @@ func (w *Workspace) getNvimOptions() {
 }
 
 func (w *Workspace) getColorscheme() {
-	done := make(chan bool, 5)
-	colorscheme := ""
+	strChan := make(chan string, 5)
 	go func() {
+		colorscheme := ""
 		w.nvim.Var("colors_name", &colorscheme)
-		done <- true
+		strChan <- colorscheme
 	}()
 	select {
-	case <-done:
-	case <-time.After(40 * time.Millisecond):
+	case colo := <-strChan:
+		w.colorscheme = colo
+	case <-time.After(80 * time.Millisecond):
 	}
-	w.colorscheme = colorscheme
 }
 
 func (w *Workspace) getTS() {
-	done := make(chan bool, 5)
-	ts := 8
+	intChan := make(chan int, 5)
 	go func() {
+		ts := 8
 		w.nvim.Option(editor.config.Editor.OptionsToUseGuideWidth, &ts)
-		done <- true
+		intChan <- ts
 	}()
 	select {
-	case <-done:
-	case <-time.After(40 * time.Millisecond):
+	case ts := <-intChan:
+		w.ts = ts
+	case <-time.After(80 * time.Millisecond):
 	}
-	w.ts = ts
 }
 
 func (w *Workspace) getBuffTS(buf nvim.Buffer) int {
-	done := make(chan bool, 5)
-	ts := 8
+	intChan := make(chan int, 5)
 	go func() {
+		ts := 8
 		w.nvim.BufferOption(buf, editor.config.Editor.OptionsToUseGuideWidth, &ts)
-		done <- true
+		intChan <- ts
 	}()
+
+	ts := 8
 	select {
-	case <-done:
-	case <-time.After(90 * time.Millisecond):
+	case ts = <-intChan:
+	case <-time.After(80 * time.Millisecond):
 	}
 
 	return ts
 }
 
 func (w *Workspace) getBG() {
-	done := make(chan bool, 5)
-	screenbg := "dark"
+	strChan := make(chan string, 5)
 	go func() {
+		screenbg := "dark"
 		w.nvim.Option("background", &screenbg)
-		done <- true
+		strChan <- screenbg
 	}()
-	select {
-	case <-done:
-	case <-time.After(40 * time.Millisecond):
-	}
-	w.screenbg = screenbg
 
-	if w.screenbg == "light" {
-		editor.colors.bg = newRGBA(
-			editor.colors.fg.R,
-			editor.colors.fg.G,
-			editor.colors.fg.B,
-			1,
-		)
-		editor.colors.fg = newRGBA(
-			editor.colors.bg.R,
-			editor.colors.bg.G,
-			editor.colors.bg.B,
-			1,
-		)
+	select {
+	case screenbg := <-strChan:
+		w.screenbg = screenbg
+	case <-time.After(80 * time.Millisecond):
 	}
 }
 
 func (w *Workspace) getKeymaps() {
-	done := make(chan bool, 5)
 	w.escKeyInInsert = "<Esc>"
 	w.escKeyInNormal = "<Esc>"
 
-	var nmappings, imappings []*nvim.Mapping
-	var err error
+	nmapChan := make(chan []*nvim.Mapping, 5)
+	imapChan := make(chan []*nvim.Mapping, 5)
 
+	// Get user mappings
 	go func() {
-		nmappings, err = w.nvim.KeyMap("normal")
-		if err != nil {
+		var nmappings, imappings []*nvim.Mapping
+		var err1, err2 error
+		nmappings, err1 = w.nvim.KeyMap("normal")
+		if err1 != nil {
 			return
 		}
-		w.normalMappings = nmappings
-		imappings, err = w.nvim.KeyMap("insert")
-		if err != nil {
+		nmapChan <- nmappings
+		imappings, err2 = w.nvim.KeyMap("insert")
+		if err2 != nil {
 			return
 		}
-		done <- true
+		imapChan <- imappings
 	}()
-	select {
-	case <-done:
-	case <-time.After(80 * time.Millisecond):
+
+	// wait to getting user mappings
+	var ok [2]bool
+	for {
+		select {
+		case nmappings := <-nmapChan:
+			w.normalMappings = nmappings
+			ok[0] = true
+		case imappings := <-imapChan:
+			w.insertMappings = imappings
+			ok[1] = true
+		case <-time.After(160 * time.Millisecond):
+			ok[0] = true
+			ok[1] = true
+		}
+
+		if ok[0] && ok[1] {
+			break
+		}
 	}
 
-	w.insertMappings = imappings
 	altkeyCount := 0
 	metakeyCount := 0
 	for _, mapping := range w.insertMappings {
