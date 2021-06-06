@@ -1351,7 +1351,8 @@ func (w *Window) update() {
 
 	start := w.queueRedrawArea[1]
 	end := w.queueRedrawArea[3]
-	if w.scrollPixels[1] != 0 {
+	// Update all lines when using the wheel scroll or indent guide feature.
+	if w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide {
 		start = 0
 		end = w.rows
 	}
