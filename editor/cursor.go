@@ -59,7 +59,6 @@ type Cursor struct {
 
 func initCursorNew() *Cursor {
 	c := NewCursor(nil, 0)
-	// widget := widgets.NewQLabel(nil, 0)
 	c.SetContentsMargins(0, 0, 0, 0)
 	c.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	c.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")

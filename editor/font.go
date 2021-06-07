@@ -59,6 +59,7 @@ func initFontNew(family string, size float64, lineSpace int) *Font {
 	font.SetPointSizeF(size)
 	font.SetWeight(int(gui.QFont__Normal))
 
+	font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault | gui.QFont__ForceIntegerMetrics)
 	// font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
 	font.SetFixedPitch(true)
 	font.SetKerning(false)
