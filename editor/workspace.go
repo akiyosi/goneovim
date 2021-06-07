@@ -1218,7 +1218,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "mode_info_set":
 			w.modeInfoSet(args)
 			w.cursor.modeIdx = 0
-			w.cursor.update()
 		case "option_set":
 			w.setOption(update)
 		case "mode_change":
@@ -1227,7 +1226,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.modeIdx = util.ReflectToInt(arg[1])
 			if w.cursor.modeIdx != w.modeIdx {
 				w.cursor.modeIdx = w.modeIdx
-				w.cursor.update()
 			}
 			w.disableImeInNormal()
 		case "mouse_on":
@@ -1417,8 +1415,8 @@ func (w *Workspace) flush() {
 		default:
 		}
 	}
-	w.screen.update()
 	w.cursor.update()
+	w.screen.update()
 	w.drawOtherUI()
 	w.maxLineDelta = 0
 }
