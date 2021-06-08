@@ -638,7 +638,7 @@ func(c *Cursor) animateMove() {
 	d := math.Sqrt(
 			math.Pow((c.x - c.oldx),2)+math.Pow((c.y - c.oldy),2),
 	)
-	f := 25*math.Pow(
+	f := 20*math.Pow(
 		math.Atan(d/200),
 		2,
 	)
