@@ -1356,8 +1356,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			anchorGrid = s.ws.cursor.gridid
 		}
 
-        // win.SetParent(win.s.ws.screen.widget)
-        win.SetParent(win.s.ws.widget)
+		// win.SetParent(win.s.ws.screen.widget)
+		win.SetParent(win.s.ws.widget)
 
 		win.propMutex.Lock()
 		win.isFloatWin = true
@@ -1450,7 +1450,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.move(x, y)
 		win.setShadow()
 		win.show()
-        win.s.ws.cursor.Raise()
+		win.s.ws.cursor.Raise()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
 		anchorwin.queueRedrawAll()

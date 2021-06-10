@@ -11,7 +11,7 @@ import (
 )
 
 type gonvimConfig struct {
-	mu          sync.RWMutex
+	mu sync.RWMutex
 
 	Editor      editorConfig
 	Cursor      cursorConfig
@@ -78,7 +78,7 @@ type editorConfig struct {
 
 type cursorConfig struct {
 	SmoothMove bool
-	Duration int
+	Duration   int
 }
 
 type paletteConfig struct {

@@ -2384,7 +2384,7 @@ func (w *Window) raise() {
 	w.s.ws.cursor.Show()
 	if !w.isExternal {
 		editor.window.Raise()
-        w.s.ws.cursor.SetParent(w.s.ws.widget)
+		w.s.ws.cursor.SetParent(w.s.ws.widget)
 	} else if w.isExternal {
 		w.extwin.Raise()
 		w.s.ws.cursor.SetParent(w.extwin)

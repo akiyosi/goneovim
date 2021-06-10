@@ -128,7 +128,7 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	targetwin.WheelEvent(
-		// NOTE: This is not an exact implementation, as it requires 
+		// NOTE: This is not an exact implementation, as it requires
 		// a coordinate transformation of the Pos of QwheelEvent, but
 		// in the current handling of QWheelevent, it can be substituted as is.
 		event,
@@ -198,9 +198,9 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	var fx, fy float64
 	var isDraw bool
 	if c.deltax < 0 && c.deltay == 0 ||
-	c.deltax > 0 && c.deltay == 0 ||
-	c.deltax == 0 && c.deltay < 0 ||
-	c.deltax == 0 && c.deltay > 0 {
+		c.deltax > 0 && c.deltay == 0 ||
+		c.deltax == 0 && c.deltay < 0 ||
+		c.deltax == 0 && c.deltay > 0 {
 		fx = c.x
 		fy = c.y
 		isDraw = true
@@ -548,7 +548,7 @@ func (c *Cursor) updateContent() {
 	}
 
 	x := float64(col+winx)*font.truewidth + float64(winbordersize)
-	y := float64((row+winy)*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(c.shift + scrollPixels + res + winbordersize)
+	y := float64((row+winy)*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(c.shift+scrollPixels+res+winbordersize)
 
 	c.move()
 	if !(c.x == x && c.y == y) {
@@ -571,18 +571,18 @@ func (c *Cursor) update() {
 	}
 }
 
-func(c *Cursor) updateRegion() {
+func (c *Cursor) updateRegion() {
 	if !c.hasSmoothMove {
 		c.updateMinimumArea()
 	} else {
 		if /*  */ c.deltax < 0 && c.deltay == 0 {
-				c.Update2(int(math.Ceil(c.oldx+c.deltax)), 0, c.Width(), int(c.y)+c.height)
+			c.Update2(int(math.Ceil(c.oldx+c.deltax)), 0, c.Width(), int(c.y)+c.height)
 		} else if c.deltax > 0 && c.deltay == 0 {
-				c.Update2(0, 0, int(math.Ceil(c.oldx+c.deltax+float64(c.width))), int(c.y)+c.height)
+			c.Update2(0, 0, int(math.Ceil(c.oldx+c.deltax+float64(c.width))), int(c.y)+c.height)
 		} else if c.deltax == 0 && c.deltay < 0 {
-				c.Update2(0, int(math.Ceil(c.oldy+c.deltay)), int(math.Ceil(c.x+float64(c.width))), c.Height())
+			c.Update2(0, int(math.Ceil(c.oldy+c.deltay)), int(math.Ceil(c.x+float64(c.width))), c.Height())
 		} else if c.deltax == 0 && c.deltay > 0 {
-				c.Update2(0, 0, int(math.Ceil(c.oldx+float64(c.width))), int(c.oldy+c.deltay)+c.height)
+			c.Update2(0, 0, int(math.Ceil(c.oldx+float64(c.width))), int(c.oldy+c.deltay)+c.height)
 		} else {
 			if editor.isKeyAutoRepeating {
 				c.updateMinimumArea()
@@ -593,7 +593,7 @@ func(c *Cursor) updateRegion() {
 	}
 }
 
-func(c *Cursor) updateMinimumArea() {
+func (c *Cursor) updateMinimumArea() {
 	c.Update2(
 		int(math.Trunc(c.oldx)),
 		int(math.Trunc(c.oldy)),
@@ -608,7 +608,7 @@ func(c *Cursor) updateMinimumArea() {
 	)
 }
 
-func(c *Cursor) animateMove() {
+func (c *Cursor) animateMove() {
 	if !c.doAnimate {
 		return
 	}
@@ -642,13 +642,13 @@ func(c *Cursor) animateMove() {
 		c.updateRegion()
 	})
 	d := math.Sqrt(
-			math.Pow((c.x - c.oldx),2)+math.Pow((c.y - c.oldy),2),
+		math.Pow((c.x-c.oldx), 2) + math.Pow((c.y-c.oldy), 2),
 	)
-	f := 20*math.Pow(
+	f := 20 * math.Pow(
 		math.Atan(d/200),
 		2,
 	)
-	duration := editor.config.Cursor.Duration+int(f)
+	duration := editor.config.Cursor.Duration + int(f)
 	a.SetDuration(int(duration))
 	a.SetStartValue(core.NewQVariant10(float64(0.1)))
 	a.SetEndValue(core.NewQVariant10(1))
