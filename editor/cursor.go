@@ -88,6 +88,12 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 		if win.isMsgGrid {
 			return true
 		}
+		if win.isExternal {
+			if win.Geometry().Contains(event.Pos(), true) {
+				targetwin = win
+			}
+			return false
+		}
 		if win.isFloatWin {
 			if win.Geometry().Contains(event.Pos(), true) {
 				targetwin = win
