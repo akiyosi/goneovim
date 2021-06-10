@@ -741,6 +741,7 @@ func (w *Workspace) initGonvim() {
 	}
 	gonvimCommands = gonvimCommands + `
 		command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
+		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
 	`
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	w.nvim.Command(registerScripts)
@@ -1815,6 +1816,15 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.window.Resize2(width, height)
 	case "gonvim_maximize":
 		editor.window.WindowMaximize()
+	case "gonvim_smoothcursor":
+		editor.config.mu.Lock()
+		if editor.config.Cursor.SmoothMove {
+			editor.config.Cursor.SmoothMove = false
+		} else {
+			editor.config.Cursor.SmoothMove = true
+		}
+		w.cursor.hasSmoothMove = editor.config.Cursor.SmoothMove
+		editor.config.mu.Unlock()
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":

@@ -5,11 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 
 	"github.com/BurntSushi/toml"
 )
 
 type gonvimConfig struct {
+	mu          sync.RWMutex
+
 	Editor      editorConfig
 	Cursor      cursorConfig
 	Palette     paletteConfig
