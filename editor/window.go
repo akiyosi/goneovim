@@ -2380,8 +2380,6 @@ func (w *Window) raise() {
 	font := w.getFont()
 	w.s.ws.cursor.updateFont(font)
 	w.s.ws.cursor.isInPalette = false
-	w.s.ws.cursor.Hide()
-	w.s.ws.cursor.Show()
 	if !w.isExternal {
 		editor.window.Raise()
 		w.s.ws.cursor.SetParent(w.s.ws.widget)

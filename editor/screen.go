@@ -1480,6 +1480,7 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				extwin := createExternalWin()
 				win.SetParent(extwin)
 				extwin.ConnectKeyPressEvent(editor.keyPress)
+				extwin.ConnectKeyReleaseEvent(editor.keyRelease)
 				win.background = s.ws.background.copy()
 				extwin.SetAutoFillBackground(true)
 				p := gui.NewQPalette()
@@ -1509,10 +1510,7 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				win.setGridGeometry(width, height)
 				win.setResizableForExtWin()
 				win.move(win.pos[0], win.pos[1])
-				win.s.ws.cursor.SetParent(win.extwin)
-				win.s.ws.cursor.Raise()
-				win.s.ws.cursor.Hide()
-				win.s.ws.cursor.Show()
+				win.raise()
 			}
 
 			return true
