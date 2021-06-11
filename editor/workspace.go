@@ -148,6 +148,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 	w.font.ws = w
 
+	w.widget = widgets.NewQWidget(nil, 0)
+	w.widget.SetParent(editor.widget)
+
 	// Basic Workspace UI component
 	// screen
 	w.screen = newScreen()
@@ -158,8 +161,10 @@ func newWorkspace(path string) (*Workspace, error) {
 	// cursor
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
-	// w.cursor.widget.SetParent(w.screen.widget)
-	w.cursor.widget.SetParent(editor.widget)
+	w.cursor.SetParent(w.widget)
+	w.cursor.ConnectMousePressEvent(w.screen.mousePressEvent)
+	w.cursor.ConnectMouseReleaseEvent(w.screen.mouseEvent)
+	w.cursor.ConnectMouseMoveEvent(w.screen.mouseEvent)
 
 	// If ExtFooBar is true, then we create a UI component
 	// tabline
@@ -178,10 +183,9 @@ func newWorkspace(path string) (*Workspace, error) {
 	// popupmenu
 	if editor.config.Editor.ExtPopupmenu {
 		w.popup = initPopupmenuNew()
-		w.popup.widget.SetParent(editor.widget)
+		w.popup.widget.SetParent(w.widget)
 		w.popup.ws = w
 		w.popup.widget.Hide()
-		// w.signature.widget.Hide()
 	}
 
 	// messages
@@ -201,12 +205,12 @@ func newWorkspace(path string) (*Workspace, error) {
 	// if editor.config.Lint.Visible {
 	// 	w.loc = initLocpopup()
 	// 	w.loc.ws = w
-	// 	w.loc.widget.SetParent(editor.widget)
+	// 	w.loc.widget.SetParent(w.widget)
 	// 	w.loc.widget.Hide()
 	// }
 
 	// w.signature = initSignature()
-	// w.signature.widget.SetParent(editor.widget)
+	// w.signature.widget.SetParent(w.widget)
 	// w.signature.ws = w
 
 	editor.putLog("initialazed UI components")
@@ -215,7 +219,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	layout := widgets.NewQVBoxLayout()
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
-	w.widget = widgets.NewQWidget(nil, 0)
 	w.widget.SetContentsMargins(0, 0, 0, 0)
 	w.widget.SetLayout(layout)
 	w.widget.SetFocusPolicy(core.Qt__WheelFocus)
@@ -242,7 +245,6 @@ func newWorkspace(path string) (*Workspace, error) {
 		layout.AddWidget(w.statusline.widget, 0, 0)
 	}
 
-	w.widget.SetParent(editor.widget)
 	w.widget.Move2(0, 0)
 	editor.putLog("assembled UI components")
 
@@ -275,14 +277,14 @@ func (w *Workspace) lazyDrawUI() {
 	// palette
 	w.palette = initPalette()
 	w.palette.ws = w
-	w.palette.widget.SetParent(editor.window)
+	w.palette.widget.SetParent(w.widget)
 	w.palette.setColor()
 	w.palette.hide()
 
 	// palette 2
 	w.fpalette = initPalette()
 	w.fpalette.ws = w
-	w.fpalette.widget.SetParent(editor.window)
+	w.fpalette.widget.SetParent(w.widget)
 	w.fpalette.setColor()
 	w.fpalette.hide()
 
@@ -739,6 +741,7 @@ func (w *Workspace) initGonvim() {
 	}
 	gonvimCommands = gonvimCommands + `
 		command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
+		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
 	`
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	w.nvim.Command(registerScripts)
@@ -1167,6 +1170,7 @@ func (w *Workspace) updateSize() {
 		w.screen.height = w.height - t - s
 		w.screen.updateSize()
 	}
+	w.cursor.Resize2(w.screen.width, w.screen.height)
 	if w.palette != nil {
 		w.palette.resize()
 	}
@@ -1215,7 +1219,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "mode_info_set":
 			w.modeInfoSet(args)
 			w.cursor.modeIdx = 0
-			w.cursor.update()
 		case "option_set":
 			w.setOption(update)
 		case "mode_change":
@@ -1224,7 +1227,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.modeIdx = util.ReflectToInt(arg[1])
 			if w.cursor.modeIdx != w.modeIdx {
 				w.cursor.modeIdx = w.modeIdx
-				w.cursor.update()
 			}
 			w.disableImeInNormal()
 		case "mouse_on":
@@ -1414,8 +1416,8 @@ func (w *Workspace) flush() {
 		default:
 		}
 	}
-	w.screen.update()
 	w.cursor.update()
+	w.screen.update()
 	w.drawOtherUI()
 	w.maxLineDelta = 0
 }
@@ -1814,6 +1816,15 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.window.Resize2(width, height)
 	case "gonvim_maximize":
 		editor.window.WindowMaximize()
+	case "gonvim_smoothcursor":
+		editor.config.mu.Lock()
+		if editor.config.Cursor.SmoothMove {
+			editor.config.Cursor.SmoothMove = false
+		} else {
+			editor.config.Cursor.SmoothMove = true
+		}
+		w.cursor.hasSmoothMove = editor.config.Cursor.SmoothMove
+		editor.config.mu.Unlock()
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
@@ -2410,9 +2421,9 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 
 		if w.palette != nil {
 			if w.palette.widget.IsVisible() {
-				w.cursor.x = x
-				w.cursor.y = w.palette.patternPadding + w.cursor.shift
-				w.cursor.widget.Move2(w.cursor.x, w.cursor.y)
+				w.cursor.x = float64(x)
+				w.cursor.y = float64(w.palette.patternPadding + w.cursor.shift)
+				w.cursor.Move2(int(w.cursor.x), int(w.cursor.y))
 			}
 		}
 

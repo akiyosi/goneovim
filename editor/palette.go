@@ -282,10 +282,24 @@ func (p *Palette) cursorMove(x int) {
 	}
 
 	p.cursorX = pos
-	p.ws.cursor.x = p.cursorX + p.patternPadding
-	p.ws.cursor.y = p.patternPadding + p.ws.cursor.shift
-	p.ws.cursor.widget.Move2(p.ws.cursor.x, p.ws.cursor.y+p.ws.cursor.shift)
-	p.ws.cursor.widget.SetParent(p.pattern)
+
+	px := float64(p.cursorX + p.patternPadding)
+	py := float64(p.patternPadding + p.ws.cursor.shift)
+	c := p.ws.cursor
+	if !c.isInPalette {
+		c.SetParent(p.pattern)
+		c.x = c.x - float64(p.widget.Pos().X())
+		c.y = c.y - float64(p.widget.Pos().Y())
+	}
+	if !(c.x == px && c.y == py) {
+		c.oldx = c.x
+		c.oldy = c.y
+		c.x = px
+		c.y = py
+		c.doAnimate = true
+		c.animateMove()
+	}
+
 	p.ws.cursor.isInPalette = true
 
 	p.redrawAllContentInWindows()

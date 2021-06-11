@@ -29,9 +29,9 @@ func (f *Finder) hide() {
 	// }
 	win, ok := f.ws.screen.getWindow(f.ws.cursor.gridid)
 	if ok {
-		f.ws.cursor.widget.SetParent(win)
-		f.ws.cursor.widget.Hide()
-		f.ws.cursor.widget.Show()
+		f.ws.cursor.SetParent(win)
+		f.ws.cursor.Hide()
+		f.ws.cursor.Show()
 	}
 }
 
