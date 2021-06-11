@@ -89,12 +89,13 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 			return true
 		}
 		if win.isExternal {
-			if win.Geometry().Contains(event.Pos(), true) {
-				targetwin = win
+			if win.grid == c.gridid {
+				if win.Geometry().Contains(event.Pos(), true) {
+					targetwin = win
+				}
+				return false
 			}
-			return false
-		}
-		if win.isFloatWin {
+		} else if win.isFloatWin {
 			if win.Geometry().Contains(event.Pos(), true) {
 				targetwin = win
 			}
