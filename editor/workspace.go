@@ -746,6 +746,7 @@ func (w *Workspace) initGonvim() {
 	}
 	gonvimCommands = gonvimCommands + `
 		command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
+		command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
 		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
 	`
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
@@ -1830,6 +1831,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		}
 		w.cursor.hasSmoothMove = editor.config.Cursor.SmoothMove
 		editor.config.mu.Unlock()
+	case "gonvim_ligatures":
+		w.toggleLigatures()
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
@@ -2460,6 +2463,18 @@ func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {
 	y += win.pos[1] * font.lineHeight
 
 	return x, y, font.lineHeight, isCursorBelowTheCenter
+}
+
+func (w *Workspace) toggleLigatures() {
+	editor.config.mu.Lock()
+	if editor.config.Editor.DisableLigatures {
+		editor.config.Editor.DisableLigatures = false
+	} else {
+		editor.config.Editor.DisableLigatures = true
+	}
+	editor.config.mu.Unlock()
+
+	w.screen.purgeTextCacheForWins()
 }
 
 // WorkspaceSide is
