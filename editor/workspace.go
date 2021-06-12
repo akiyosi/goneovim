@@ -349,10 +349,14 @@ func (w *Workspace) vimEnterProcess() {
 
 	go func() {
 
-		time.Sleep(time.Millisecond * 500)
+		if !editor.sessionExists {
+			time.Sleep(time.Millisecond * 500)
+		}
 		w.signal.LazyDrawSignal()
 
-		time.Sleep(time.Millisecond * 400)
+		if !editor.sessionExists {
+			time.Sleep(time.Millisecond * 400)
+		}
 		editor.signal.SidebarSignal()
 
 		// put font debug log
@@ -447,6 +451,7 @@ func (w *Workspace) show() {
 	w.hidden = false
 	w.widget.Show()
 	w.widget.SetFocus2Default()
+	w.cursor.update()
 }
 
 func getResourcePath() string {

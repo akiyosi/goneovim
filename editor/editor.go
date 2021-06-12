@@ -105,6 +105,7 @@ type Editor struct {
 
 	workspaces []*Workspace
 	active     int
+	sessionExists bool
 	window     *frameless.QFramelessWindow
 	// window     *widgets.QMainWindow
 	splitter *widgets.QSplitter
@@ -391,7 +392,6 @@ func (e *Editor) newSplitter() {
 
 func (e *Editor) initWorkspaces() {
 	e.workspaces = []*Workspace{}
-	sessionExists := false
 	if e.config.Workspace.RestoreSession {
 		for i := 0; i <= WORKSPACELEN; i++ {
 			path := filepath.Join(e.configDir, "sessions", strconv.Itoa(i)+".vim")
@@ -399,7 +399,7 @@ func (e *Editor) initWorkspaces() {
 			if err != nil {
 				break
 			}
-			sessionExists = true
+			e.sessionExists = true
 			ws, err := newWorkspace(path)
 			if err != nil {
 				break
@@ -408,7 +408,7 @@ func (e *Editor) initWorkspaces() {
 			ws.widget.SetParent(e.widget)
 		}
 	}
-	if !sessionExists {
+	if !e.sessionExists {
 		ws, err := newWorkspace("")
 		if err != nil {
 			return
