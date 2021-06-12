@@ -347,12 +347,14 @@ func (w *Workspace) vimEnterProcess() {
 		go w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
 	})
 
+
 	go func() {
 
 		if !editor.sessionExists {
 			time.Sleep(time.Millisecond * 500)
 		}
 		w.signal.LazyDrawSignal()
+
 
 		if !editor.sessionExists {
 			time.Sleep(time.Millisecond * 400)
@@ -1253,6 +1255,15 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			for _, u := range update[1:] {
 				w.setColorsSet(u.([]interface{}))
 			}
+			// Show a window when connecting to the remote nvim. 
+			// The reason for handling the process here is that
+			// in some cases, VimEnter will not occur if an error occurs in the remote nvim.
+			if !editor.window.IsVisible() {
+				if editor.opts.Ssh != "" {
+					editor.window.Show()
+				}
+			}
+
 		case "hl_attr_define":
 			s.setHlAttrDef(args)
 			// if goneovim own statusline is visible
