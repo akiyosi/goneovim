@@ -1308,28 +1308,31 @@ func (s *Screen) gridDestroy(args []interface{}) {
 }
 
 func (s *Screen) windowFloatPosition(args []interface{}) {
+
 	// A workaround for the problem that the position of the float window,
 	// which is created as a tooltip suggested by LSP, is not the correct
 	// position in multigrid ui api.
 	isExistPopupmenu := false
-	if s.ws.mode == "insert" && !editor.config.Editor.ExtPopupmenu {
-		s.windows.Range(func(_, winITF interface{}) bool {
-			win := winITF.(*Window)
-			if win == nil {
-				return true
-			}
-			if win.grid == 1 {
-				return true
-			}
-			if win.isMsgGrid {
-				return true
-			}
-			if win.isPopupmenu {
-				isExistPopupmenu = true
-			}
+	if editor.config.Editor.WorkAroundNeovimIssue12985 {
+		if s.ws.mode == "insert" && !editor.config.Editor.ExtPopupmenu {
+			s.windows.Range(func(_, winITF interface{}) bool {
+				win := winITF.(*Window)
+				if win == nil {
+					return true
+				}
+				if win.grid == 1 {
+					return true
+				}
+				if win.isMsgGrid {
+					return true
+				}
+				if win.isPopupmenu {
+					isExistPopupmenu = true
+				}
 
-			return true
-		})
+				return true
+			})
+		}
 	}
 
 	for _, arg := range args {
@@ -1352,8 +1355,10 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := (arg.([]interface{})[6]).(bool)
 
-		if isExistPopupmenu && win.id != -1 {
-			anchorGrid = s.ws.cursor.gridid
+		if editor.config.Editor.WorkAroundNeovimIssue12985 {
+			if isExistPopupmenu && win.id != -1 {
+				anchorGrid = s.ws.cursor.gridid
+			}
 		}
 
 		// win.SetParent(win.s.ws.screen.widget)
@@ -1390,18 +1395,20 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		// Therefore, a hack to workaround this problem is implemented on the GUI front-end side.
 		// This workaround assumes that the anchor window for the completion window on the message window is always a global grid.
 		pumInMsgWin := false
-		if anchorwin.grid == 1 && !(s.cursor[0] == 0 && s.cursor[1] == 0) && win.id == -1 {
-			cursorgridwin, ok := s.getWindow(s.ws.cursor.gridid)
-			if !ok {
-				continue
+		if editor.config.Editor.WorkAroundNeovimIssue12985 {
+			if anchorwin.grid == 1 && !(s.cursor[0] == 0 && s.cursor[1] == 0) && win.id == -1 {
+				cursorgridwin, ok := s.getWindow(s.ws.cursor.gridid)
+				if !ok {
+					continue
+				}
+				if cursorgridwin.isMsgGrid {
+					anchorwin = cursorgridwin
+					anchorRow = cursorgridwin.pos[0]
+					anchorposx = cursorgridwin.pos[0]
+					anchorposy = cursorgridwin.pos[1]
+				}
+				pumInMsgWin = true
 			}
-			if cursorgridwin.isMsgGrid {
-				anchorwin = cursorgridwin
-				anchorRow = cursorgridwin.pos[0]
-				anchorposx = cursorgridwin.pos[0]
-				anchorposy = cursorgridwin.pos[1]
-			}
-			pumInMsgWin = true
 		}
 
 		var x, y int
@@ -1414,27 +1421,33 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			y = anchorposy + anchorRow
 		case "SW":
 			x = anchorposx + anchorCol
-			// In multigrid ui, the completion float window position information is not correct.
-			// Therefore, we implement a hack to compensate for this.
-			// ref: src/nvim/popupmenu.c:L205-, L435-
-			if win.id == -1 && !pumInMsgWin {
 
-				row := 0
-				contextLine := 0
-				if anchorwin.rows-s.cursor[0] >= 2 {
-					contextLine = 2
+			if editor.config.Editor.WorkAroundNeovimIssue12985 {
+				// In multigrid ui, the completion float window position information is not correct.
+				// Therefore, we implement a hack to compensate for this.
+				// ref: src/nvim/popupmenu.c:L205-, L435-
+				if win.id == -1 && !pumInMsgWin {
+
+					row := 0
+					contextLine := 0
+					if anchorwin.rows-s.cursor[0] >= 2 {
+						contextLine = 2
+					} else {
+						contextLine = anchorwin.rows - s.cursor[0]
+					}
+					if anchorposy+s.cursor[0] >= win.rows+contextLine {
+						row = anchorRow + win.rows
+					} else {
+						row = -anchorposy
+					}
+					y = anchorposy + row
 				} else {
-					contextLine = anchorwin.rows - s.cursor[0]
+					y = anchorposy + anchorRow - win.rows
 				}
-				if anchorposy+s.cursor[0] >= win.rows+contextLine {
-					row = anchorRow + win.rows
-				} else {
-					row = -anchorposy
-				}
-				y = anchorposy + row
 			} else {
 				y = anchorposy + anchorRow - win.rows
 			}
+
 		case "SE":
 			x = anchorposx + anchorCol - win.cols
 			y = anchorposy + anchorRow - win.rows

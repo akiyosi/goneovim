@@ -74,6 +74,8 @@ type editorConfig struct {
 	BorderlessWindow         bool
 	// ExtWildmenu            bool
 	// ExtMultigrid           bool
+
+	WorkAroundNeovimIssue12985 bool
 }
 
 type cursorConfig struct {
