@@ -1355,6 +1355,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := (arg.([]interface{})[6]).(bool)
 
+		editor.putLog("float window generated:", "anchorgrid", anchorGrid, "anchor", win.anchor, "anchorCol", anchorCol, "anchorRow", anchorRow)
+
 		if editor.config.Editor.WorkAroundNeovimIssue12985 {
 			if isExistPopupmenu && win.id != -1 {
 				anchorGrid = s.ws.cursor.gridid
