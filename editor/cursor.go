@@ -475,6 +475,7 @@ func (c *Cursor) updateCursorShape() {
 }
 
 func (c *Cursor) updateContent() {
+
 	if c.mode != c.ws.mode {
 		c.mode = c.ws.mode
 		if c.mode == "terminal-input" {
@@ -532,6 +533,7 @@ func (c *Cursor) updateContent() {
 			return
 		}
 	}
+
 	font := c.font
 	if font == nil {
 		return

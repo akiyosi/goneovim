@@ -1160,7 +1160,7 @@ func (w *Workspace) updateSize() {
 	}
 
 	if w.drawTabline && w.tabline != nil {
-		w.tabline.height = w.tabline.widget.Height()
+		w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN*2)
 	}
 	if w.drawStatusline && w.statusline != nil {
 		w.statusline.height = w.statusline.widget.Height()
@@ -1354,7 +1354,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		// Tabline Events
 		case "tabline_update":
 			if w.tabline != nil {
-				w.tabline.update(args)
+				w.tabline.handle(args)
 			}
 
 		// Cmdline Events

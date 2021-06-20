@@ -35,6 +35,10 @@ type Tabline struct {
 	color *RGBA
 }
 
+const (
+	TABLINEMARGIN = 5
+)
+
 // Tab in the tabline
 type Tab struct {
 	t         *Tabline
@@ -78,7 +82,12 @@ func (t *Tabline) setColor() {
 
 func initTabline() *Tabline {
 	widget := widgets.NewQWidget(nil, 0)
-	widget.SetContentsMargins(5, 5, 5, 5)
+	widget.SetContentsMargins(
+		TABLINEMARGIN,
+		TABLINEMARGIN,
+		TABLINEMARGIN,
+		TABLINEMARGIN,
+	)
 
 	layout := util.NewVFlowLayout(16, 5, 1, 0, 0)
 	// layout := widgets.NewQLayout2()
@@ -331,7 +340,7 @@ func (t *Tabline) updateTabs() {
 	}
 }
 
-func (t *Tabline) update(args []interface{}) {
+func (t *Tabline) handle(args []interface{}) {
 	arg := args[0].([]interface{})
 	t.CurrentID = int(arg[0].(nvim.Tabpage))
 	tabs := arg[1].([]interface{})
@@ -370,6 +379,13 @@ func (t *Tabline) update(args []interface{}) {
 		tab.show()
 	}
 
+	// Set color
+	t.setColor()
+	t.update(tabs)
+}
+
+
+func (t *Tabline) update(tabs []interface{}) {
 	lenhiddentabs := 0
 	for i := len(tabs); i < len(t.Tabs); i++ {
 		tab := t.Tabs[i]
@@ -377,12 +393,11 @@ func (t *Tabline) update(args []interface{}) {
 		tab.hide()
 		lenhiddentabs++
 	}
+
 	lenshowntabs := 24 - lenhiddentabs
-
-	// Set color
-	t.setColor()
-
 	// Support showtabline behavior in external tabline
+	height := t.Tabs[0].widget.Height() + (TABLINEMARGIN*2)
+	isChangeHeight := t.height != height
 	if t.ws.showtabline == 1 {
 		if lenshowntabs > 1 {
 			t.widget.Show()
@@ -394,15 +409,17 @@ func (t *Tabline) update(args []interface{}) {
 		}
 	} else if t.ws.showtabline == 2 {
 		t.widget.Show()
-		t.height = t.widget.Height()
+		t.height = height
 	} else {
 		t.widget.Hide()
 		t.ws.drawTabline = false
 		t.height = 0
 	}
-	if t.showtabline != t.ws.showtabline || t.ws.showtabline == 1 {
+	if t.showtabline != t.ws.showtabline || t.ws.showtabline == 1 || isChangeHeight {
 		t.ws.updateSize()
+		t.ws.cursor.update()
 		t.showtabline = t.ws.showtabline
+	} else {
 	}
 }
 
