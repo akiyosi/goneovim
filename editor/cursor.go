@@ -383,6 +383,9 @@ func (c *Cursor) updateCursorShape() {
 		}
 		var bg, fg *RGBA
 		if c.currAttrId == 0 {
+			// Cursor attribute id (defined by `hl_attr_define`).
+			// When attr_id is 0, the background and foreground
+			// colors should be swapped. (See: runtime/doc/ui.txt)
 			fg = c.ws.screen.hlAttrDef[0].background
 			bg = c.ws.screen.hlAttrDef[0].foreground
 		} else {
