@@ -156,12 +156,6 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	// 	width = width * 2
 	// }
 
-	rect := event.Rect()
-	col :=  int(float64(rect.Left()))
-	row :=  int(float64(rect.Top()))
-	cols := int(math.Ceil(float64(rect.Width())))
-	rows := int(math.Ceil(float64(rect.Height())))
-
 	p := gui.NewQPainter2(c)
 
 	color := c.bg
@@ -197,43 +191,50 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		color.brend(c.ws.background, c.brend).QColor(),
 	)
 
-	// suppress unnecessary paintevent
 	if c.text == "" || c.devicePixelRatio == 0 {
 		p.DestroyQPainter()
 		return
 	}
 
-	if c.deltax < 0 && c.deltay == 0 {
-		if !(col == int(math.Ceil(c.oldx+c.deltax)) &&
-		row == 0 &&
-		cols == c.width &&
-		rows == int(c.y)+c.height) {
-			p.DestroyQPainter()
-			return
-		}
-	} else if c.deltax > 0 && c.deltay == 0 {
-		if !(col == 0 && 
-		row == 0 &&
-		cols == int(math.Ceil(c.oldx+c.deltax+float64(c.width))) &&
-		rows == int(c.y)+c.height) {
-			p.DestroyQPainter()
-			return
-		}
-	} else if c.deltax == 0 && c.deltay < 0 {
-		if !(col == 0 &&
-		row == int(math.Ceil(c.oldy+c.deltay)) &&
-		cols == int(math.Ceil(c.x+float64(c.width))) &&
-		rows == c.height) {
-			p.DestroyQPainter()
-			return
-		}
-	} else if c.deltax == 0 && c.deltay > 0 {
-		if !(col == 0 &&
-		row == 0 &&
-		cols == int(math.Ceil(c.oldx+float64(c.width))) &&
-		rows == int(c.oldy+c.deltay)+c.height) {
-			p.DestroyQPainter()
-			return
+	// suppress unnecessary paintevent
+	if c.doAnimate {
+		rect := event.Rect()
+		col :=  int(float64(rect.Left()))
+		row :=  int(float64(rect.Top()))
+		cols := int(math.Ceil(float64(rect.Width())))
+		rows := int(math.Ceil(float64(rect.Height())))
+		if c.deltax < 0 && c.deltay == 0 {
+			if !(col == int(math.Ceil(c.oldx+c.deltax)) &&
+			row == 0 &&
+			cols == c.width &&
+			rows == int(c.y)+c.height) {
+				p.DestroyQPainter()
+				return
+			}
+		} else if c.deltax > 0 && c.deltay == 0 {
+			if !(col == 0 && 
+			row == 0 &&
+			cols == int(math.Ceil(c.oldx+c.deltax+float64(c.width))) &&
+			rows == int(c.y)+c.height) {
+				p.DestroyQPainter()
+				return
+			}
+		} else if c.deltax == 0 && c.deltay < 0 {
+			if !(col == 0 &&
+			row == int(math.Ceil(c.oldy+c.deltay)) &&
+			cols == int(math.Ceil(c.x+float64(c.width))) &&
+			rows == c.height) {
+				p.DestroyQPainter()
+				return
+			}
+		} else if c.deltax == 0 && c.deltay > 0 {
+			if !(col == 0 &&
+			row == 0 &&
+			cols == int(math.Ceil(c.oldx+float64(c.width))) &&
+			rows == int(c.oldy+c.deltay)+c.height) {
+				p.DestroyQPainter()
+				return
+			}
 		}
 	}
 
@@ -623,33 +624,13 @@ func (c *Cursor) updateRegion() {
 		c.updateMinimumArea()
 	} else {
 		if /*  */ c.deltax < 0 && c.deltay == 0 {
-			c.Update2(
-				int(math.Ceil(c.oldx+c.deltax)),
-				0,
-				c.width,
-				int(c.y)+c.height,
-			)
+			c.Update2(int(math.Ceil(c.oldx+c.deltax)), 0, c.Width(), int(c.y)+c.height)
 		} else if c.deltax > 0 && c.deltay == 0 {
-			c.Update2(
-				0,
-				0,
-				int(math.Ceil(c.oldx+c.deltax+float64(c.width))),
-				int(c.y)+c.height,
-			)
+			c.Update2(0, 0, int(math.Ceil(c.oldx+c.deltax+float64(c.width))), int(c.y)+c.height)
 		} else if c.deltax == 0 && c.deltay < 0 {
-			c.Update2(
-				0,
-				int(math.Ceil(c.oldy+c.deltay)),
-				int(math.Ceil(c.x+float64(c.width))),
-				c.height,
-			)
+			c.Update2(0, int(math.Ceil(c.oldy+c.deltay)), int(math.Ceil(c.x+float64(c.width))), c.Height())
 		} else if c.deltax == 0 && c.deltay > 0 {
-			c.Update2(
-				0,
-				0,
-				int(math.Ceil(c.oldx+float64(c.width))),
-				int(c.oldy+c.deltay)+c.height,
-			)
+			c.Update2(0, 0, int(math.Ceil(c.oldx+float64(c.width))), int(c.oldy+c.deltay)+c.height)
 		} else {
 			if editor.isKeyAutoRepeating {
 				c.updateMinimumArea()
