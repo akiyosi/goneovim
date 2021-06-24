@@ -206,7 +206,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		if c.deltax < 0 && c.deltay == 0 {
 			if !(col == int(math.Ceil(c.oldx+c.deltax)) &&
 			row == 0 &&
-			cols == c.width &&
+			cols == c.Width() &&
 			rows == int(c.y)+c.height) {
 				p.DestroyQPainter()
 				return
@@ -223,7 +223,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 			if !(col == 0 &&
 			row == int(math.Ceil(c.oldy+c.deltay)) &&
 			cols == int(math.Ceil(c.x+float64(c.width))) &&
-			rows == c.height) {
+			rows == c.Height()) {
 				p.DestroyQPainter()
 				return
 			}
