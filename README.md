@@ -54,6 +54,9 @@ Pre-built packages for Windows, MacOS, and Linux are found at the [Releases](htt
 
 Or you can get the latest binary from Github Actions CI. See [Actions](https://github.com/akiyosi/goneovim/actions) page.
 
+Mac users can install using homebrew:
+
+`brew install --cask goneovim`
 
 ## Usage
 
