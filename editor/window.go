@@ -2110,7 +2110,8 @@ func (w *Window) drawForeground(p *gui.QPainter, y int, col int, cols int) {
 	if w.s.name == "minimap" {
 		w.drawMinimap(p, y, col, cols)
 	} else {
-		w.drawText(p, y, col, cols)
+		// w.drawText(p, y, col, cols)
+		w.drawText(p, y, 0, w.cols)
 		w.drawTextDecoration(p, y, col, cols)
 	}
 }

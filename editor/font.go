@@ -28,7 +28,7 @@ type Font struct {
 func fontSizeNew(font *gui.QFont) (int, int, float64, float64, float64) {
 	fontMetrics := gui.NewQFontMetricsF(font)
 	h := fontMetrics.Height()
-	w := fontMetrics.HorizontalAdvance("w", -1)
+	truewidth := fontMetrics.HorizontalAdvance("w", -1)
 
 	// On Windows, it may take a long time (~500ms) to drawing CJK characters for qpainter.
 	// Therefore, we will run this process in concurrently in the background of attaching to neovim.
@@ -39,17 +39,17 @@ func fontSizeNew(font *gui.QFont) (int, int, float64, float64, float64) {
 	}
 
 	ascent := fontMetrics.Ascent()
-	width := int(math.Ceil(w))
+	width := int(math.Ceil(truewidth))
 	height := int(math.Ceil(h))
 	font.SetStyle(gui.QFont__StyleItalic)
 	italicFontMetrics := gui.NewQFontMetricsF(font)
 	italicWidth := italicFontMetrics.BoundingRect("w").Width()
-	if italicWidth < w {
-		italicWidth = w
+	if italicWidth <= truewidth {
+		italicWidth = truewidth * 1.5
 	}
 	font.SetStyle(gui.QFont__StyleNormal)
 
-	return width, height, w, ascent, italicWidth
+	return width, height, truewidth, ascent, italicWidth
 }
 
 func initFontNew(family string, size float64, lineSpace int) *Font {
