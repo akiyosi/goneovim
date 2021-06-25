@@ -255,6 +255,8 @@ func (t *Tabline) updateFont() {
 	for _, tab := range t.Tabs {
 		tab.file.SetFont(t.font)
 	}
+
+	t.updateSize()
 }
 
 func (t *Tab) show() {
