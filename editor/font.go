@@ -114,6 +114,7 @@ func (f *Font) putDebugLog() {
 	editor.putLog(
 		"detect font family:",
 		fi.Family(),
+		fi.PointSizeF(),
 		fi.StyleName(),
 		fmt.Sprintf("%v", fi.PointSizeF()),
 	)

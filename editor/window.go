@@ -2025,6 +2025,18 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 
 	font := w.getFont()
 
+	// Put debug log
+	if editor.opts.Debug != "" {
+		fi := gui.NewQFontInfo(font.fontNew)
+		editor.putLog(
+			"Outputs font information creating word cache:",
+			fi.Family(),
+			fi.PointSizeF(),
+			fi.StyleName(),
+			fmt.Sprintf("%v", fi.PointSizeF()),
+		)
+	}
+
 	width := float64(len(text)) * font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
