@@ -904,8 +904,9 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 
-		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
-		s.cursor[1] = util.ReflectToInt(arg.([]interface{})[2])
+		x := util.ReflectToInt(arg.([]interface{})[1])
+		y := util.ReflectToInt(arg.([]interface{})[2])
+
 		if isSkipGlobalId(gridid) {
 			continue
 		}
@@ -914,6 +915,17 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		if !ok {
 			continue
 		}
+
+		// Suppress unnecessary detours of the smooth cursor.
+		if win.isMsgGrid && x == 0 && y == 0 {
+			continue
+		}
+		if win.isMsgGrid && editor.config.Editor.ExtCmdline {
+			continue
+		}
+
+		s.cursor[0] = x
+		s.cursor[1] = y
 
 		if s.ws.cursor.gridid != gridid {
 			if !win.isMsgGrid {
