@@ -1436,28 +1436,24 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		case "SW":
 			x = anchorposx + anchorCol
 
-			if editor.config.Editor.WorkAroundNeovimIssue12985 {
-				// In multigrid ui, the completion float window position information is not correct.
-				// Therefore, we implement a hack to compensate for this.
-				// ref: src/nvim/popupmenu.c:L205-, L435-
-				if win.id == -1 && !pumInMsgWin {
+			// In multigrid ui, the completion float window position information is not correct.
+			// Therefore, we implement a hack to compensate for this.
+			// ref: src/nvim/popupmenu.c:L205-, L435-
+			if win.id == -1 && !pumInMsgWin {
 
-					row := 0
-					contextLine := 0
-					if anchorwin.rows-s.cursor[0] >= 2 {
-						contextLine = 2
-					} else {
-						contextLine = anchorwin.rows - s.cursor[0]
-					}
-					if anchorposy+s.cursor[0] >= win.rows+contextLine {
-						row = anchorRow + win.rows
-					} else {
-						row = -anchorposy
-					}
-					y = anchorposy + row
+				row := 0
+				contextLine := 0
+				if anchorwin.rows-s.cursor[0] >= 2 {
+					contextLine = 2
 				} else {
-					y = anchorposy + anchorRow - win.rows
+					contextLine = anchorwin.rows - s.cursor[0]
 				}
+				if anchorposy+s.cursor[0] >= win.rows+contextLine {
+					row = anchorRow + win.rows
+				} else {
+					row = -anchorposy
+				}
+				y = anchorposy + row
 			} else {
 				y = anchorposy + anchorRow - win.rows
 			}
