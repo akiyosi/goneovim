@@ -1325,26 +1325,24 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 	// which is created as a tooltip suggested by LSP, is not the correct
 	// position in multigrid ui api.
 	isExistPopupmenu := false
-	if editor.config.Editor.WorkAroundNeovimIssue12985 {
-		if s.ws.mode == "insert" && !editor.config.Editor.ExtPopupmenu {
-			s.windows.Range(func(_, winITF interface{}) bool {
-				win := winITF.(*Window)
-				if win == nil {
-					return true
-				}
-				if win.grid == 1 {
-					return true
-				}
-				if win.isMsgGrid {
-					return true
-				}
-				if win.isPopupmenu {
-					isExistPopupmenu = true
-				}
-
+	if s.ws.mode == "insert" {
+		s.windows.Range(func(_, winITF interface{}) bool {
+			win := winITF.(*Window)
+			if win == nil {
 				return true
-			})
-		}
+			}
+			if win.grid == 1 {
+				return true
+			}
+			if win.isMsgGrid {
+				return true
+			}
+			if win.isPopupmenu {
+				isExistPopupmenu = true
+			}
+
+			return true
+		})
 	}
 
 	for _, arg := range args {
@@ -1369,11 +1367,11 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		editor.putLog("float window generated:", "anchorgrid", anchorGrid, "anchor", win.anchor, "anchorCol", anchorCol, "anchorRow", anchorRow)
 
-		if editor.config.Editor.WorkAroundNeovimIssue12985 {
+		// if editor.config.Editor.WorkAroundNeovimIssue12985 {
 			if isExistPopupmenu && win.id != -1 {
 				anchorGrid = s.ws.cursor.gridid
 			}
-		}
+		// }
 
 		// win.SetParent(win.s.ws.screen.widget)
 		win.SetParent(win.s.ws.widget)
@@ -1436,24 +1434,28 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		case "SW":
 			x = anchorposx + anchorCol
 
-			// In multigrid ui, the completion float window position information is not correct.
-			// Therefore, we implement a hack to compensate for this.
-			// ref: src/nvim/popupmenu.c:L205-, L435-
-			if win.id == -1 && !pumInMsgWin {
+			if editor.config.Editor.WorkAroundNeovimIssue12985 {
+				// In multigrid ui, the completion float window position information is not correct.
+				// Therefore, we implement a hack to compensate for this.
+				// ref: src/nvim/popupmenu.c:L205-, L435-
+				if win.id == -1 && !pumInMsgWin {
 
-				row := 0
-				contextLine := 0
-				if anchorwin.rows-s.cursor[0] >= 2 {
-					contextLine = 2
+					row := 0
+					contextLine := 0
+					if anchorwin.rows-s.cursor[0] >= 2 {
+						contextLine = 2
+					} else {
+						contextLine = anchorwin.rows - s.cursor[0]
+					}
+					if anchorposy+s.cursor[0] >= win.rows+contextLine {
+						row = anchorRow + win.rows
+					} else {
+						row = -anchorposy
+					}
+					y = anchorposy + row
 				} else {
-					contextLine = anchorwin.rows - s.cursor[0]
+					y = anchorposy + anchorRow - win.rows
 				}
-				if anchorposy+s.cursor[0] >= win.rows+contextLine {
-					row = anchorRow + win.rows
-				} else {
-					row = -anchorposy
-				}
-				y = anchorposy + row
 			} else {
 				y = anchorposy + anchorRow - win.rows
 			}
