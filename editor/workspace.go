@@ -192,7 +192,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	if editor.config.Editor.ExtMessages {
 		w.message = initMessage()
 		w.message.ws = w
-		w.message.widget.SetParent(editor.window)
+		w.message.widget.SetParent(w.widget)
 	}
 
 	// If Statusline.Visible is true, then we create statusline UI component
