@@ -1,3 +1,4 @@
+TAG := $(shell git describe --tags --abbrev=0)
 
 # deployment directory
 DEPLOYMENT_WINDOWS:=deploy/windows
@@ -23,43 +24,62 @@ ifeq (debug,$(firstword $(MAKECMDGOALS)))
   $(eval $(DEBUG_ARGS):;@:)
 endif
 
-rebuild:
-	cd cmd/goneovim ; \
-	qtmoc ; \
-	qtdeploy build desktop ; \
-	cp -pR ../../runtime $(RUNTIME_DIR)
+all: moc build
+
+release: build-alldist-in-darwin rename archive-in-darwin
+
+build-alldist-in-darwin: moc build build-docker-linux
+
+rename:
+	@cd cmd/goneovim/deploy ; \
+	mv darwin Goneovim-$(TAG)-macos ;\
+	mv linux Goneovim-$(TAG)-linux
+
+archive-in-darwin:
+	@cd cmd/goneovim/deploy ; \
+	tar jcvf Goneovim-$(TAG)-macos.tar.bz2 Goneovim-$(TAG)-macos ;\
+	tar jcvf Goneovim-$(TAG)-linux.tar.bz2 Goneovim-$(TAG)-linux
 
 moc:
+	@export export GO111MODULE=off ; \
 	cd cmd/goneovim ; \
 	qtmoc
 
 build:
+	@export GO111MODULE=off ; \
 	cd cmd/goneovim ; \
 	test -f ../../editor/moc.go & qtmoc ; \
 	qtdeploy build desktop ; \
 	cp -pR ../../runtime $(RUNTIME_DIR)
 
 debug:
+	@export GO111MODULE=off ; \
 	cd cmd/goneovim ; \
 	test -f ../../editor/moc.go & qtmoc ; \
 	dlv debug --build-flags -race -- $(DEBUG_ARGS)
+
 run:
+	@export GO111MODULE=off ; \
 	cd cmd/goneovim; \
 	test -f ../../editor/moc.go & qtmoc ; \
 	go run main.go
 
 clean:
+	@export GO111MODULE=off ; \
 	rm -fr cmd/goneovim/deploy/* ; \
 	rm -fr editor/*moc*
 
-
 build-docker-linux:
+	@export GO111MODULE=off ; \
 	cd cmd/goneovim ; \
 	qtdeploy -docker build linux ; \
 	cp -pR ../../runtime $(DEPLOYMENT_LINUX)
 
 build-docker-windows:
+	@export GO111MODULE=off ; \
 	cd cmd/goneovim ; \
 	qtdeploy -docker build akiyosi/qt:windows_64_shared_msvc_512 ; \
 	cp -pR ../../runtime $(DEPLOYMENT_WINDOWS)
+
+release:
 
