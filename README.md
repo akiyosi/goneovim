@@ -44,7 +44,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 
 
 ## Requirements
-* Neovim v0.5.0-dev (Commit 8d23941af or later versions)
+* Neovim v0.5.0
 
 See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
