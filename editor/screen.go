@@ -951,12 +951,6 @@ func (s *Screen) setHlAttrDef(args []interface{}) {
 		h = s.hlAttrDef
 	}
 
-	isUpdateBg := true
-	curwin, ok := s.getWindow(s.ws.cursor.gridid)
-	if ok {
-		isUpdateBg = !curwin.background.equals(s.ws.background)
-	}
-
 	h[0] = &Highlight{
 		foreground: s.ws.foreground,
 		background: s.ws.background,
@@ -971,30 +965,35 @@ func (s *Screen) setHlAttrDef(args []interface{}) {
 		s.hlAttrDef = h
 	}
 
-	// Update all cell's highlight
-	if isUpdateBg {
-		s.windows.Range(func(_, winITF interface{}) bool {
-			win := winITF.(*Window)
-			if win == nil {
-				return true
-			}
-			if !win.isShown() {
-				return true
-			}
-			if win.content == nil {
-				return true
-			}
-			for _, line := range win.content {
-				for _, cell := range line {
-					if cell != nil {
-						cell.highlight = s.hlAttrDef[cell.highlight.id]
-					}
-				}
-			}
-
-			return true
-		})
-	}
+	// // Update all cell's highlight
+	// // It looks like we don't need it anymore.
+	// isUpdateBg := true
+	// curwin, ok := s.getWindow(s.ws.cursor.gridid)
+	// if ok {
+	// 	isUpdateBg = !curwin.background.equals(s.ws.background)
+	// }
+	// if isUpdateBg {
+	// 	s.windows.Range(func(_, winITF interface{}) bool {
+	// 		win := winITF.(*Window)
+	// 		if win == nil {
+	// 			return true
+	// 		}
+	// 		if !win.isShown() {
+	// 			return true
+	// 		}
+	// 		if win.content == nil {
+	// 			return true
+	// 		}
+	// 		for _, line := range win.content {
+	// 			for _, cell := range line {
+	// 				if cell != nil {
+	// 					cell.highlight = s.hlAttrDef[cell.highlight.id]
+	// 				}
+	// 			}
+	// 		}
+	// 		return true
+	// 	})
+	// }
 }
 
 func (s *Screen) setHighlightGroup(args []interface{}) {

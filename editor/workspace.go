@@ -1264,6 +1264,9 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				}
 			}
 
+			// Purge all text cache for window's
+			w.screen.purgeTextCacheForWins()
+
 		case "hl_attr_define":
 			s.setHlAttrDef(args)
 			// if goneovim own statusline is visible
