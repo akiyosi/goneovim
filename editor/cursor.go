@@ -128,12 +128,14 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 		})
 	}
 
-	targetwin.WheelEvent(
-		// NOTE: This is not an exact implementation, as it requires
-		// a coordinate transformation of the Pos of QwheelEvent, but
-		// in the current handling of QWheelevent, it can be substituted as is.
-		event,
-	)
+	if targetwin != nil {
+		targetwin.WheelEvent(
+			// NOTE: This is not an exact implementation, as it requires
+			// a coordinate transformation of the Pos of QwheelEvent, but
+			// in the current handling of QWheelevent, it can be substituted as is.
+			event,
+		)
+	}
 }
 
 func (c *Cursor) paint(event *gui.QPaintEvent) {
