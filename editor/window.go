@@ -306,7 +306,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		return
 	}
 	if w.ft == "" {
-		return
+		w.s.ws.optionsetMutex.Lock()
+		w.ft = w.s.ws.windowsFt[w.id]
+		w.s.ws.optionsetMutex.Unlock()
 	}
 	if !w.isShown() {
 		return
@@ -2408,6 +2410,13 @@ func (w *Window) raise() {
 func (w *Window) show() {
 	w.fill()
 	w.Show()
+
+	// set buffer local ts value
+	if w.s.ws.ts != w.ts {
+	    w.s.ws.optionsetMutex.Lock()
+	    w.s.ws.ts = w.ts
+	    w.s.ws.optionsetMutex.Unlock()
+	}
 }
 
 func (w *Window) hide() {

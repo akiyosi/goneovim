@@ -86,6 +86,7 @@ type Workspace struct {
 	special            *RGBA
 	mode               string
 	modeIdx            int
+	windowsFt          map[nvim.Window]string  // TODO 
 	filepath           string
 	cwd                string
 	cwdBase            string
@@ -134,6 +135,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		foreground:    newRGBA(255, 255, 255, 1),
 		background:    newRGBA(0, 0, 0, 1),
 		special:       newRGBA(255, 255, 255, 1),
+		windowsFt:     make(map[nvim.Window]string),
 	}
 	w.registerSignal()
 
@@ -1952,9 +1954,9 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.setBuffname(updates[2], updates[3])
 		w.setBuffTS()
 	case "gonvim_winenter_filetype":
-		w.setFileType(updates)
 		w.setBuffname(updates[2], updates[3])
 		w.setBuffTS()
+		w.setFileType(updates)
 	case "gonvim_markdown_update":
 		if editor.config.Markdown.Disable {
 			return
@@ -2372,7 +2374,7 @@ func (w *Workspace) getPumHeight() {
 
 func (w *Workspace) setFileType(args []interface{}) {
 	ft := args[1].(string)
-	wid := util.ReflectToInt(args[2])
+	wid := (nvim.Window)(util.ReflectToInt(args[2]))
 
 	for _, v := range editor.config.Editor.IndentGuideIgnoreFtList {
 		if v == ft {
@@ -2380,6 +2382,14 @@ func (w *Workspace) setFileType(args []interface{}) {
 		}
 	}
 
+	// NOTE: There are cases where the target grid is not yet created on the front-end side
+	//       when the FileType autocmd is fired. There may be a better way to implement this,
+	//       and it is an item for improvement in the future.
+	w.optionsetMutex.Lock()
+	w.windowsFt[wid] = ft
+	w.optionsetMutex.Unlock()
+
+	// Update ft on the window
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -2392,7 +2402,7 @@ func (w *Workspace) setFileType(args []interface{}) {
 		if win.isMsgGrid {
 			return true
 		}
-		if int(win.id) != wid {
+		if win.id != wid {
 			return true
 		}
 
