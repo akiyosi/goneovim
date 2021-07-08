@@ -257,8 +257,10 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 	if w.s.name == "minimap" {
 		return
 	}
-
 	if w.snapshot == nil || editor.isKeyAutoRepeating {
+		return
+	}
+	if w.scrollPixels2 == 0 {
 		return
 	}
 
@@ -966,7 +968,7 @@ func (win *Window) smoothScroll(diff int) {
 			0,
 			0,
 			int(float64(win.cols)*font.truewidth),
-			win.cols*font.lineHeight,
+			win.rows*font.lineHeight,
 		)
 		if win.scrollPixels2 == 0 {
 			win.doErase = true
