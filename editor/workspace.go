@@ -296,7 +296,7 @@ func (w *Workspace) lazyDrawUI() {
 
 	// Add editor feature
 	go fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
-	go filer.RegisterPlugin(w.nvim)
+	go filer.RegisterPlugin(w.nvim, editor.config.Editor.FileOpenCmd)
 
 	// markdown
 	if !editor.config.Markdown.Disable {
@@ -2764,15 +2764,16 @@ func (i *WorkspaceSideItem) fileDoubleClicked(item *widgets.QListWidgetItem) {
 	}
 	filepath := path + sep + filename
 
-	exec := ""
-	switch runtime.GOOS {
-	case "darwin":
-		exec = ":silent !open "
-	case "windows":
-		exec = ":silent !explorer "
-	case "linux":
-		exec = ":silent !xdg-open "
-	}
+	// exec := ""
+	// switch runtime.GOOS {
+	// case "darwin":
+	// 	exec = ":silent !open "
+	// case "windows":
+	// 	exec = ":silent !explorer "
+	// case "linux":
+	// 	exec = ":silent !xdg-open "
+	// }
+	exec := editor.config.Editor.FileOpenCmd + " "
 
 	execCommand := exec + filepath
 	for j, ws := range editor.workspaces {

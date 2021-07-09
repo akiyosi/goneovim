@@ -14,17 +14,19 @@ type Filer struct {
 	nvim      *nvim.Nvim
 	selectnum int
 	items     [](map[string]string)
+	openCmd   string
 }
 
 // RegisterPlugin registers this remote plugin
-func RegisterPlugin(nvim *nvim.Nvim) {
+func RegisterPlugin(nvim *nvim.Nvim, openCmd string) {
 	nvim.Subscribe("GonvimFiler")
 
-	shim := &Filer{
-		nvim: nvim,
+	f := &Filer{
+		nvim:    nvim,
+		openCmd: openCmd,
 	}
 	nvim.RegisterHandler("GonvimFiler", func(args ...interface{}) {
-		go shim.handle(args...)
+		go f.handle(args...)
 	})
 	finderFunction := `
 	aug GonvimAuFiler | au! | aug END
@@ -223,7 +225,7 @@ func (f *Filer) right() {
 
 	command := ""
 	cdCommand := ":tchdir"
-	editCommand := ":e"
+	editCommand := f.openCmd
 	switch filetype {
 	case "/":
 		command = "silent " + cdCommand + " " + filename + " | <CR><CR> | :redraw!"
