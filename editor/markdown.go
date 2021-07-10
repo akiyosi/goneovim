@@ -114,16 +114,21 @@ func newMarkdown(workspace *Workspace) *Markdown {
 func (m *Markdown) wheelEvent(event *gui.QWheelEvent) {
 	var horiz int
 
+	direction := 1
+	if editor.config.Editor.ReversingScrollDirection {
+		direction = -1
+	}
+
 	switch runtime.GOOS {
 	case "darwin":
 		pixels := event.PixelDelta()
 		if pixels != nil {
 			horiz = pixels.Y()
 		}
-		m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %v)", horiz*(-1)))
+		m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %v)", horiz*(-1)*direction))
 	default:
 		horiz = event.AngleDelta().Y()
-		m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %v)", horiz))
+		m.webpage.RunJavaScript(fmt.Sprintf("window.scrollBy(0, %v)", horiz*direction))
 	}
 
 	event.Accept()
