@@ -257,8 +257,10 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 	if w.s.name == "minimap" {
 		return
 	}
-
 	if w.snapshot == nil || editor.isKeyAutoRepeating {
+		return
+	}
+	if w.scrollPixels2 == 0 {
 		return
 	}
 
@@ -306,7 +308,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		return
 	}
 	if w.ft == "" {
-		return
+		w.s.ws.optionsetMutex.Lock()
+		w.ft = w.s.ws.windowsFt[w.id]
+		w.s.ws.optionsetMutex.Unlock()
 	}
 	if !w.isShown() {
 		return
@@ -964,7 +968,7 @@ func (win *Window) smoothScroll(diff int) {
 			0,
 			0,
 			int(float64(win.cols)*font.truewidth),
-			win.cols*font.lineHeight,
+			win.rows*font.lineHeight,
 		)
 		if win.scrollPixels2 == 0 {
 			win.doErase = true
@@ -2025,6 +2029,18 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 
 	font := w.getFont()
 
+	// Put debug log
+	if editor.opts.Debug != "" {
+		fi := gui.NewQFontInfo(font.fontNew)
+		editor.putLog(
+			"Outputs font information creating word cache:",
+			fi.Family(),
+			fi.PointSizeF(),
+			fi.StyleName(),
+			fmt.Sprintf("%v", fi.PointSizeF()),
+		)
+	}
+
 	width := float64(len(text)) * font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
@@ -2396,6 +2412,13 @@ func (w *Window) raise() {
 func (w *Window) show() {
 	w.fill()
 	w.Show()
+
+	// set buffer local ts value
+	if w.s.ws.ts != w.ts {
+	    w.s.ws.optionsetMutex.Lock()
+	    w.s.ws.ts = w.ts
+	    w.s.ws.optionsetMutex.Unlock()
+	}
 }
 
 func (w *Window) hide() {

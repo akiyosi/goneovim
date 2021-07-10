@@ -904,8 +904,9 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 
-		s.cursor[0] = util.ReflectToInt(arg.([]interface{})[1])
-		s.cursor[1] = util.ReflectToInt(arg.([]interface{})[2])
+		x := util.ReflectToInt(arg.([]interface{})[1])
+		y := util.ReflectToInt(arg.([]interface{})[2])
+
 		if isSkipGlobalId(gridid) {
 			continue
 		}
@@ -914,6 +915,17 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		if !ok {
 			continue
 		}
+
+		// Suppress unnecessary detours of the smooth cursor.
+		if win.isMsgGrid && x == 0 && y == 0 {
+			continue
+		}
+		if win.isMsgGrid && editor.config.Editor.ExtCmdline {
+			continue
+		}
+
+		s.cursor[0] = x
+		s.cursor[1] = y
 
 		if s.ws.cursor.gridid != gridid {
 			if !win.isMsgGrid {
@@ -939,12 +951,6 @@ func (s *Screen) setHlAttrDef(args []interface{}) {
 		h = s.hlAttrDef
 	}
 
-	isUpdateBg := true
-	curwin, ok := s.getWindow(s.ws.cursor.gridid)
-	if ok {
-		isUpdateBg = !curwin.background.equals(s.ws.background)
-	}
-
 	h[0] = &Highlight{
 		foreground: s.ws.foreground,
 		background: s.ws.background,
@@ -959,30 +965,35 @@ func (s *Screen) setHlAttrDef(args []interface{}) {
 		s.hlAttrDef = h
 	}
 
-	// Update all cell's highlight
-	if isUpdateBg {
-		s.windows.Range(func(_, winITF interface{}) bool {
-			win := winITF.(*Window)
-			if win == nil {
-				return true
-			}
-			if !win.isShown() {
-				return true
-			}
-			if win.content == nil {
-				return true
-			}
-			for _, line := range win.content {
-				for _, cell := range line {
-					if cell != nil {
-						cell.highlight = s.hlAttrDef[cell.highlight.id]
-					}
-				}
-			}
-
-			return true
-		})
-	}
+	// // Update all cell's highlight
+	// // It looks like we don't need it anymore.
+	// isUpdateBg := true
+	// curwin, ok := s.getWindow(s.ws.cursor.gridid)
+	// if ok {
+	// 	isUpdateBg = !curwin.background.equals(s.ws.background)
+	// }
+	// if isUpdateBg {
+	// 	s.windows.Range(func(_, winITF interface{}) bool {
+	// 		win := winITF.(*Window)
+	// 		if win == nil {
+	// 			return true
+	// 		}
+	// 		if !win.isShown() {
+	// 			return true
+	// 		}
+	// 		if win.content == nil {
+	// 			return true
+	// 		}
+	// 		for _, line := range win.content {
+	// 			for _, cell := range line {
+	// 				if cell != nil {
+	// 					cell.highlight = s.hlAttrDef[cell.highlight.id]
+	// 				}
+	// 			}
+	// 		}
+	// 		return true
+	// 	})
+	// }
 }
 
 func (s *Screen) setHighlightGroup(args []interface{}) {
@@ -1313,26 +1324,24 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 	// which is created as a tooltip suggested by LSP, is not the correct
 	// position in multigrid ui api.
 	isExistPopupmenu := false
-	if editor.config.Editor.WorkAroundNeovimIssue12985 {
-		if s.ws.mode == "insert" && !editor.config.Editor.ExtPopupmenu {
-			s.windows.Range(func(_, winITF interface{}) bool {
-				win := winITF.(*Window)
-				if win == nil {
-					return true
-				}
-				if win.grid == 1 {
-					return true
-				}
-				if win.isMsgGrid {
-					return true
-				}
-				if win.isPopupmenu {
-					isExistPopupmenu = true
-				}
-
+	if s.ws.mode == "insert" {
+		s.windows.Range(func(_, winITF interface{}) bool {
+			win := winITF.(*Window)
+			if win == nil {
 				return true
-			})
-		}
+			}
+			if win.grid == 1 {
+				return true
+			}
+			if win.isMsgGrid {
+				return true
+			}
+			if win.isPopupmenu {
+				isExistPopupmenu = true
+			}
+
+			return true
+		})
 	}
 
 	for _, arg := range args {
@@ -1357,11 +1366,11 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		editor.putLog("float window generated:", "anchorgrid", anchorGrid, "anchor", win.anchor, "anchorCol", anchorCol, "anchorRow", anchorRow)
 
-		if editor.config.Editor.WorkAroundNeovimIssue12985 {
+		// if editor.config.Editor.WorkAroundNeovimIssue12985 {
 			if isExistPopupmenu && win.id != -1 {
 				anchorGrid = s.ws.cursor.gridid
 			}
-		}
+		// }
 
 		// win.SetParent(win.s.ws.screen.widget)
 		win.SetParent(win.s.ws.widget)
