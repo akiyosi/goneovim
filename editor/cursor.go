@@ -522,12 +522,13 @@ func (c *Cursor) updateContent() {
 
 	if c.mode != c.ws.mode {
 		c.mode = c.ws.mode
-		if c.mode == "terminal-input" {
-			c.Hide()
-			return
-		} else {
-			c.Show()
-		}
+	}
+
+	if c.ws.terminalMode {
+		c.Hide()
+		return
+	} else {
+		c.Show()
 	}
 
 	win, ok := c.ws.screen.getWindow(c.gridid)

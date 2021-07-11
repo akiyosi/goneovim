@@ -86,6 +86,7 @@ type Workspace struct {
 	special            *RGBA
 	mode               string
 	modeIdx            int
+	terminalMode       bool
 	windowsFt          map[nvim.Window]string  // TODO 
 	filepath           string
 	cwd                string
@@ -1946,9 +1947,11 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_optionset":
 		w.optionSet(updates)
 	case "gonvim_termenter":
-		w.mode = "terminal-input"
+		w.terminalMode = true
+		w.cursor.update()
 	case "gonvim_termleave":
-		w.mode = "normal"
+		w.terminalMode = false
+		w.cursor.update()
 	case "gonvim_bufenter":
 		w.maxLine = util.ReflectToInt(updates[1])
 		w.setBuffname(updates[2], updates[3])
