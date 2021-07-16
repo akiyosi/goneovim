@@ -166,6 +166,10 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtmoc
 
+    - name: Pull docker image
+      run: |
+        docker pull therecipe/qt:linux_ubuntu_18_04_arm64
+
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
