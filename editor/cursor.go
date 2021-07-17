@@ -17,6 +17,7 @@ type Cursor struct {
 
 	doAnimate     bool
 	hasSmoothMove bool
+	snapshot      *gui.QPixmap
 
 	ws               *Workspace
 	mode             string
@@ -160,11 +161,6 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 
 	p := gui.NewQPainter2(c)
 
-	color := c.bg
-	if color == nil {
-		color = c.ws.foreground
-	}
-
 	var X, Y float64
 	if c.deltax != 0 || c.deltay != 0 {
 		if math.Abs(c.deltax) > 0 {
@@ -181,8 +177,20 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		X = c.x
 		Y = c.y
 	}
+	p.SetClipRect2(
+		core.NewQRect4(
+			int(X),
+			int(Y),
+			c.width,
+			c.height,
+		), core.Qt__IntersectClip,
+	)
 
 	// Draw cursor background
+	color := c.bg
+	if color == nil {
+		color = c.ws.foreground
+	}
 	p.FillRect4(
 		core.NewQRectF4(
 			X,
@@ -193,52 +201,60 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		color.brend(c.ws.background, c.brend).QColor(),
 	)
 
+	if c.snapshot != nil && (c.deltax != 0 || c.deltay != 0) {
+		p.DrawPixmap9(
+			0,
+			0,
+			c.snapshot,
+		)
+	}
+
 	if c.text == "" || c.devicePixelRatio == 0 {
 		p.DestroyQPainter()
 		return
 	}
 
-	// suppress unnecessary paintevent
-	if c.doAnimate {
-		rect := event.Rect()
-		col :=  int(float64(rect.Left()))
-		row :=  int(float64(rect.Top()))
-		cols := int(math.Ceil(float64(rect.Width())))
-		rows := int(math.Ceil(float64(rect.Height())))
-		if c.deltax < 0 && c.deltay == 0 {
-			if !(col == int(math.Ceil(c.oldx+c.deltax)) &&
-			row == 0 &&
-			cols == c.Width() &&
-			rows == int(c.y)+c.height) {
-				p.DestroyQPainter()
-				return
-			}
-		} else if c.deltax > 0 && c.deltay == 0 {
-			if !(col == 0 && 
-			row == 0 &&
-			cols == int(math.Ceil(c.oldx+c.deltax+float64(c.width))) &&
-			rows == int(c.y)+c.height) {
-				p.DestroyQPainter()
-				return
-			}
-		} else if c.deltax == 0 && c.deltay < 0 {
-			if !(col == 0 &&
-			row == int(math.Ceil(c.oldy+c.deltay)) &&
-			cols == int(math.Ceil(c.x+float64(c.width))) &&
-			rows == c.Height()) {
-				p.DestroyQPainter()
-				return
-			}
-		} else if c.deltax == 0 && c.deltay > 0 {
-			if !(col == 0 &&
-			row == 0 &&
-			cols == int(math.Ceil(c.oldx+float64(c.width))) &&
-			rows == int(c.oldy+c.deltay)+c.height) {
-				p.DestroyQPainter()
-				return
-			}
-		}
-	}
+	// // suppress unnecessary paintevent
+	// if c.doAnimate {
+	// 	rect := event.Rect()
+	// 	col :=  int(float64(rect.Left()))
+	// 	row :=  int(float64(rect.Top()))
+	// 	cols := int(math.Ceil(float64(rect.Width())))
+	// 	rows := int(math.Ceil(float64(rect.Height())))
+	// 	if c.deltax < 0 && c.deltay == 0 {
+	// 		if !(col == int(math.Ceil(c.oldx+c.deltax)) &&
+	// 		row == 0 &&
+	// 		cols == c.Width() &&
+	// 		rows == int(c.y)+c.height) {
+	// 			p.DestroyQPainter()
+	// 			return
+	// 		}
+	// 	} else if c.deltax > 0 && c.deltay == 0 {
+	// 		if !(col == 0 && 
+	// 		row == 0 &&
+	// 		cols == int(math.Ceil(c.oldx+c.deltax+float64(c.width))) &&
+	// 		rows == int(c.y)+c.height) {
+	// 			p.DestroyQPainter()
+	// 			return
+	// 		}
+	// 	} else if c.deltax == 0 && c.deltay < 0 {
+	// 		if !(col == 0 &&
+	// 		row == int(math.Ceil(c.oldy+c.deltay)) &&
+	// 		cols == int(math.Ceil(c.x+float64(c.width))) &&
+	// 		rows == c.Height()) {
+	// 			p.DestroyQPainter()
+	// 			return
+	// 		}
+	// 	} else if c.deltax == 0 && c.deltay > 0 {
+	// 		if !(col == 0 &&
+	// 		row == 0 &&
+	// 		cols == int(math.Ceil(c.oldx+float64(c.width))) &&
+	// 		rows == int(c.oldy+c.deltay)+c.height) {
+	// 			p.DestroyQPainter()
+	// 			return
+	// 		}
+	// 	}
+	// }
 
 	var fx, fy float64
 	var isDraw bool
@@ -258,6 +274,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 			isDraw = false
 		}
 	}
+
 
 	if isDraw && c.width > int(font.truewidth/2.0) {
 		// Draw cursor foreground
@@ -619,6 +636,10 @@ func (c *Cursor) update() {
 	// Fix #119: Wrong candidate window position when using ibus
 	if runtime.GOOS == "linux" {
 		gui.QGuiApplication_InputMethod().Update(core.Qt__ImCursorRectangle)
+	}
+
+	if !editor.isKeyAutoRepeating && editor.config.Cursor.SmoothMove {
+		c.snapshot = c.Grab(c.Rect())
 	}
 }
 
