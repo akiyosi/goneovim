@@ -15,9 +15,10 @@ type Cursor struct {
 	widgets.QWidget
 	_ float64 `property:"animationProp"`
 
-	doAnimate     bool
-	hasSmoothMove bool
-	snapshot      *gui.QPixmap
+	doAnimate                  bool
+	hasSmoothMove              bool
+	snapshot                   *gui.QPixmap
+	avoidedToTakeFirstSnapshot bool
 
 	ws               *Workspace
 	mode             string
@@ -639,6 +640,11 @@ func (c *Cursor) update() {
 	}
 
 	if !editor.isKeyAutoRepeating && editor.config.Cursor.SmoothMove {
+		// Avoid the error "QObject::setParent: Cannot set parent, new parent is in a different thread"
+		if !c.ws.widget.IsVisible() && !c.avoidedToTakeFirstSnapshot {
+			c.avoidedToTakeFirstSnapshot = true
+			return
+		}
 		c.snapshot = c.Grab(c.Rect())
 	}
 }
