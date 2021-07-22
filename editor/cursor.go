@@ -414,9 +414,11 @@ func (c *Cursor) move(win *Window) {
 		}
 	}
 	if win != nil {
-		if win.font != nil {
-			x = x + (float64(win.pos[0]) * win.s.font.truewidth)
-			y = y + float64(win.pos[1]*win.s.font.lineHeight)
+		if !win.isExternal {
+			if win.font != nil {
+				x = x + (float64(win.pos[0]) * win.s.font.truewidth)
+				y = y + float64(win.pos[1]*win.s.font.lineHeight)
+			}
 		}
 	}
 	c.Move(
