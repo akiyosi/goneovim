@@ -231,7 +231,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	// 			return
 	// 		}
 	// 	} else if c.deltax > 0 && c.deltay == 0 {
-	// 		if !(col == 0 && 
+	// 		if !(col == 0 &&
 	// 		row == 0 &&
 	// 		cols == int(math.Ceil(c.oldx+c.deltax+float64(c.width))) &&
 	// 		rows == int(c.y)+c.height) {
@@ -275,7 +275,6 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 			isDraw = false
 		}
 	}
-
 
 	if isDraw && c.width > int(font.truewidth/2.0) {
 		// Draw cursor foreground
@@ -416,7 +415,7 @@ func (c *Cursor) move(win *Window) {
 	}
 	if win != nil {
 		if win.font != nil {
-			x = x + (float64(win.pos[0])*win.s.font.truewidth)
+			x = x + (float64(win.pos[0]) * win.s.font.truewidth)
 			y = y + float64(win.pos[1]*win.s.font.lineHeight)
 		}
 	}

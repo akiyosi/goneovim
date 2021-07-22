@@ -87,7 +87,7 @@ type Workspace struct {
 	mode               string
 	modeIdx            int
 	terminalMode       bool
-	windowsFt          map[nvim.Window]string  // TODO 
+	windowsFt          map[nvim.Window]string // TODO
 	filepath           string
 	cwd                string
 	cwdBase            string
@@ -350,14 +350,12 @@ func (w *Workspace) vimEnterProcess() {
 		go w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
 	})
 
-
 	go func() {
 
 		if !editor.sessionExists {
 			time.Sleep(time.Millisecond * 500)
 		}
 		w.signal.LazyDrawSignal()
-
 
 		if !editor.sessionExists {
 			time.Sleep(time.Millisecond * 400)
@@ -1163,7 +1161,7 @@ func (w *Workspace) updateSize() {
 	}
 
 	if w.drawTabline && w.tabline != nil {
-		w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN*2)
+		w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
 	}
 	if w.drawStatusline && w.statusline != nil {
 		w.statusline.height = w.statusline.widget.Height()
@@ -1258,7 +1256,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			for _, u := range update[1:] {
 				w.setColorsSet(u.([]interface{}))
 			}
-			// Show a window when connecting to the remote nvim. 
+			// Show a window when connecting to the remote nvim.
 			// The reason for handling the process here is that
 			// in some cases, VimEnter will not occur if an error occurs in the remote nvim.
 			if !editor.window.IsVisible() {

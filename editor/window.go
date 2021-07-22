@@ -2415,9 +2415,9 @@ func (w *Window) show() {
 
 	// set buffer local ts value
 	if w.s.ws.ts != w.ts {
-	    w.s.ws.optionsetMutex.Lock()
-	    w.s.ws.ts = w.ts
-	    w.s.ws.optionsetMutex.Unlock()
+		w.s.ws.optionsetMutex.Lock()
+		w.s.ws.ts = w.ts
+		w.s.ws.optionsetMutex.Unlock()
 	}
 }
 

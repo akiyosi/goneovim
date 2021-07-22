@@ -103,10 +103,10 @@ type Editor struct {
 	notify            chan *Notify
 	cbChan            chan *string
 
-	workspaces []*Workspace
-	active     int
+	workspaces    []*Workspace
+	active        int
 	sessionExists bool
-	window     *frameless.QFramelessWindow
+	window        *frameless.QFramelessWindow
 	// window     *widgets.QMainWindow
 	splitter *widgets.QSplitter
 	widget   *widgets.QWidget

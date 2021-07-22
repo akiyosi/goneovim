@@ -386,7 +386,6 @@ func (t *Tabline) handle(args []interface{}) {
 	t.update(tabs)
 }
 
-
 func (t *Tabline) update(tabs []interface{}) {
 	lenhiddentabs := 0
 	for i := len(tabs); i < len(t.Tabs); i++ {
@@ -398,7 +397,7 @@ func (t *Tabline) update(tabs []interface{}) {
 
 	lenshowntabs := 24 - lenhiddentabs
 	// Support showtabline behavior in external tabline
-	height := t.Tabs[0].widget.Height() + (TABLINEMARGIN*2)
+	height := t.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
 	isChangeHeight := t.height != height
 	if t.ws.showtabline == 1 {
 		if lenshowntabs > 1 {

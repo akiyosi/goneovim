@@ -1367,9 +1367,9 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		editor.putLog("float window generated:", "anchorgrid", anchorGrid, "anchor", win.anchor, "anchorCol", anchorCol, "anchorRow", anchorRow)
 
 		// if editor.config.Editor.WorkAroundNeovimIssue12985 {
-			if isExistPopupmenu && win.id != -1 {
-				anchorGrid = s.ws.cursor.gridid
-			}
+		if isExistPopupmenu && win.id != -1 {
+			anchorGrid = s.ws.cursor.gridid
+		}
 		// }
 
 		// win.SetParent(win.s.ws.screen.widget)
