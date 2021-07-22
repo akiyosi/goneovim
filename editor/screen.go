@@ -447,7 +447,7 @@ func (s *Screen) toolTip(text string) {
 	c := s.ws.cursor
 	c.x = float64(col)*s.font.truewidth + float64(s.tooltip.Width())
 	c.y = float64(row * s.font.lineHeight)
-	c.move()
+	c.move(nil)
 }
 
 func (s *Screen) bottomWindowPos() int {

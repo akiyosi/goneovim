@@ -407,16 +407,22 @@ func (c *Cursor) setBlink() {
 	c.timer.SetInterval(off)
 }
 
-func (c *Cursor) move() {
-	var y float64
+func (c *Cursor) move(win *Window) {
+	var x, y float64
 	if c.ws.tabline != nil {
 		if c.ws.tabline.widget.IsVisible() {
 			y = y + float64(c.ws.tabline.height)
 		}
 	}
+	if win != nil {
+		if win.font != nil {
+			x = x + (float64(win.pos[0])*win.s.font.truewidth)
+			y = y + float64(win.pos[1]*win.s.font.lineHeight)
+		}
+	}
 	c.Move(
 		core.NewQPoint2(
-			0,
+			int(x),
 			int(y),
 		),
 	)
@@ -563,7 +569,7 @@ func (c *Cursor) updateContent() {
 
 	winx := win.pos[0]
 	winy := win.pos[1]
-	if win.isExternal {
+	if win.isExternal || win.font != nil {
 		winx = 0
 		winy = 0
 	}
@@ -619,7 +625,7 @@ func (c *Cursor) updateContent() {
 	x := float64(col+winx)*font.truewidth + float64(winbordersize)
 	y := float64((row+winy)*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(c.shift+scrollPixels+res+winbordersize)
 
-	c.move()
+	c.move(win)
 	if !(c.x == x && c.y == y) {
 		c.oldx = c.x
 		c.oldy = c.y
