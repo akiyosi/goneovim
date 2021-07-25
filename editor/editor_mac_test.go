@@ -64,7 +64,32 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 		{
 			`convertKey() MacOS keyboardlayout unicode hex input 4`,
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_A), core.Qt__MetaModifier|core.Qt__AltModifier|core.Qt__ShiftModifier, "", false, 1),
-			"<C-A-A>",
+			"<C-S-A-A>",
+		},
+		{
+			`convertKey() MacOS keyboardlayout ShiftModifier Letter 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_B), core.Qt__MetaModifier, "", false, 1),
+			"<C-b>",
+		},
+		{
+			`convertKey() MacOS keyboardlayout ShiftModifier Letter 2`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_B), core.Qt__MetaModifier|core.Qt__ShiftModifier, "", false, 1),
+			"<C-S-B>",
+		},
+		{
+			`convertKey() MacOS keyboardlayout Ctrl Caret Well Formed 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_6), core.Qt__MetaModifier, "", false, 1),
+			"<C-^>",
+		},
+		{
+			`convertKey() MacOS keyboardlayout Ctrl Caret Well Formed 2`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiCircum), core.Qt__MetaModifier|core.Qt__ShiftModifier, "", false, 1),
+			"<C-^>",
+		},
+		{
+			`convertKey() MacOS keyboardlayout Ctrl Caret Well Formed 3`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiCircum), core.Qt__MetaModifier|core.Qt__ShiftModifier|core.Qt__ControlModifier, "", false, 1),
+			"<C-^>",
 		},
 	}
 	e := &Editor{}

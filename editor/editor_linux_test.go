@@ -31,6 +31,31 @@ func TestLinuxEditor_convertKey(t *testing.T) {
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier|core.Qt__MetaModifier, "<", false, 1),
 			"<D-lt>",
 		},
+		{
+			`convertKey() Linux Ctrl Caret WellFormed 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_6), core.Qt__ControlModifier, string('\u001E'), false, 1),
+			"<C-^>",
+		},
+		{
+			`convertKey() Linux Ctrl Caret WellFormed 2`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiCircum), core.Qt__ShiftModifier|core.Qt__ControlModifier, string('\u001E'), false, 1),
+			"<C-^>",
+		},
+		{
+			`convertKey() Linux Ctrl Caret WellFormed 3`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiCircum), core.Qt__ShiftModifier|core.Qt__ControlModifier|core.Qt__MetaModifier, string('\u001E'), false, 1),
+			"<C-^>",
+		},
+		{
+			`convertKey() Linux ShiftModifier Letter 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_B), core.Qt__ControlModifier, string('\u0002'), false, 1),
+			"<C-b>",
+		},
+		{
+			`convertKey() Linux ShiftModifier Letter 2`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_B), core.Qt__ShiftModifier|core.Qt__ControlModifier, string('\u0002'), false, 1),
+			"<C-S-B>",
+		},
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()
