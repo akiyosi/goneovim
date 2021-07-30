@@ -875,6 +875,26 @@ func cmdModifier() core.Qt__KeyboardModifier {
 	return cmdModifier
 }
 
+func isAsciiCharRequiringAlt(key int, mod core.Qt__KeyboardModifier, c rune) bool {
+	// Ignore all key events where Alt is not pressed
+	if !(mod&core.Qt__AltModifier > 0) {
+		return false
+	}
+
+	// These low-ascii characters may require AltModifier on MacOS
+	if (c == '[' && key != int(core.Qt__Key_BracketLeft)) ||
+		(c == ']' && key != int(core.Qt__Key_BracketRight)) ||
+		(c == '{' && key != int(core.Qt__Key_BraceLeft)) ||
+		(c == '}' && key != int(core.Qt__Key_BraceRight)) ||
+		(c == '|' && key != int(core.Qt__Key_Bar)) ||
+		(c == '~' && key != int(core.Qt__Key_AsciiTilde)) ||
+		(c == '@' && key != int(core.Qt__Key_At)) {
+		return true
+	}
+
+	return false
+}
+
 func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	text := event.Text()
 	key := event.Key()
@@ -951,9 +971,8 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 
 	isCaretKey := key == int(core.Qt__Key_6) || key == int(core.Qt__Key_AsciiCircum)
 
-
 	// Normalize modifiers, CTRL+^ always sends as <C-^>
-	if isCaretKey && (mod & controlModifier() > 0) {
+	if isCaretKey && (mod&controlModifier() > 0) {
 		modNoShiftMeta := mod & ^core.Qt__ShiftModifier & ^cmdModifier()
 		return fmt.Sprintf("<%s%s>", e.modPrefix(modNoShiftMeta), "^")
 	}
@@ -962,7 +981,6 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		return fmt.Sprintf("<%s%s>", e.modPrefix(mod), "Bslash")
 	}
 
-	c := ""
 	rtext := []rune(text)
 	isGraphic := false
 	if len(rtext) > 0 {
@@ -982,14 +1000,14 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 
 		// Ignore special keys
 		if key == int(core.Qt__Key_VolumeDown) ||
-		   key == int(core.Qt__Key_VolumeMute) ||
-		   key == int(core.Qt__Key_VolumeUp) {
+			key == int(core.Qt__Key_VolumeMute) ||
+			key == int(core.Qt__Key_VolumeUp) {
 			return ""
 		}
-		
+
 		text = keyToText(key, mod)
 	}
-	c = text
+	c := text
 	if c == "" {
 		return ""
 	}
@@ -1011,6 +1029,13 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		if char.Unicode() >= 0x80 && char.IsPrint() {
 			mod &= ^core.Qt__AltModifier
 		}
+
+		// Some locales require Alt for basic low-ascii characters,
+		// remove AltModifer. Ex) German layouts use Alt for "{".
+		if isAsciiCharRequiringAlt(key, mod, []rune(c)[0]) {
+			mod &= ^core.Qt__AltModifier
+		}
+
 	}
 
 	prefix := e.modPrefix(mod)

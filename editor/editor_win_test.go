@@ -51,6 +51,46 @@ func TestWindowsEditor_convertKey(t *testing.T) {
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_B), core.Qt__ShiftModifier|core.Qt__ControlModifier, "\u0002", false, 1),
 			"<C-S-B>",
 		},
+		{
+			`convertKey() Windows German keyboardlayout 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BraceLeft), core.Qt__ControlModifiwe|core.Qt__AltModifier, "{", false, 1),
+			"{",
+		},
+		{
+			`convertKey() Windows German keyboardlayout 2`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BracketLeft), core.Qt__ControlModifiwe|core.Qt__AltModifier, "[", false, 1),
+			"[",
+		},
+		{
+			`convertKey() Windows German keyboardlayout 3`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BracketRight), core.Qt__ControlModifiwe|core.Qt__AltModifier, "]", false, 1),
+			"]",
+		},
+		{
+			`convertKey() Windows German keyboardlayout 4`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BraceRight), core.Qt__ControlModifiwe|core.Qt__AltModifier, "}", false, 1),
+			"}",
+		},
+		{
+			`convertKey() Windows German keyboardlayout 5`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_At), core.Qt__ControlModifiwe|core.Qt__AltModifier, "@", false, 1),
+			"@",
+		},
+		{
+			`convertKey() Windows German keyboardlayout 6`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Backslash), core.Qt__ControlModifiwe|core.Qt__AltModifier, "\\", false, 1),
+			"<Bslash>",
+		},
+		{
+			`convertKey() Windows German keyboardlayout 7`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiTilde), core.Qt__ControlModifiwe|core.Qt__AltModifier, "~", false, 1),
+			"~",
+		},
+		{
+			`convertKey() Windows German keyboardlayout 8`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_8), core.Qt__AltModifier, "8", false, 1),
+			"<A-8>",
+		},
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()

@@ -91,6 +91,41 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiCircum), core.Qt__MetaModifier|core.Qt__ShiftModifier|core.Qt__ControlModifier, "", false, 1),
 			"<C-^>",
 		},
+		{
+			`convertKey() MacOS German keyboardlayout 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_5), core.Qt__AltModifier, "[", false, 1),
+			"[",
+		},
+		{
+			`convertKey() MacOS German keyboardlayout 2`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_6), core.Qt__AltModifier, "]", false, 1),
+			"]",
+		},
+		{
+			`convertKey() MacOS German keyboardlayout 3`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_7), core.Qt__AltModifier, "|", false, 1),
+			"|",
+		},
+		{
+			`convertKey() MacOS German keyboardlayout 4`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_8), core.Qt__AltModifier, "{", false, 1),
+			"{",
+		},
+		{
+			`convertKey() MacOS German keyboardlayout 5`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_9), core.Qt__AltModifier, "}", false, 1),
+			"}",
+		},
+		{
+			`convertKey() MacOS German keyboardlayout 6`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_N), core.Qt__AltModifier, "~", false, 1),
+			"~",
+		},
+		{
+			`convertKey() MacOS German keyboardlayout 7`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_L), core.Qt__AltModifier, "@", false, 1),
+			"@",
+		},
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()
