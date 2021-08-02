@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
@@ -122,8 +123,6 @@ type Editor struct {
 	stopOnce sync.Once
 
 	specialKeys        map[core.Qt__Key]string
-	controlModifier    core.Qt__KeyboardModifier
-	cmdModifier        core.Qt__KeyboardModifier
 	keyControl         core.Qt__Key
 	keyCmd             core.Qt__Key
 	isKeyAutoRepeating bool
@@ -844,6 +843,58 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	}
 }
 
+func keyToText(key int, mod core.Qt__KeyboardModifier) string {
+	text := string(rune(key))
+	if !(mod&core.Qt__ShiftModifier > 0) {
+		text = strings.ToLower(text)
+	}
+
+	return text
+}
+
+func controlModifier() core.Qt__KeyboardModifier {
+	// controlModifier is
+	controlModifier := core.Qt__ControlModifier
+	if runtime.GOOS == "darwin" {
+		controlModifier = core.Qt__MetaModifier
+	}
+
+	return controlModifier
+}
+
+func cmdModifier() core.Qt__KeyboardModifier {
+	// cmdModifier is
+	cmdModifier := core.Qt__ControlModifier
+	if runtime.GOOS == "windows" {
+		cmdModifier = core.Qt__NoModifier
+	}
+	if runtime.GOOS == "linux" {
+		cmdModifier = core.Qt__MetaModifier
+	}
+
+	return cmdModifier
+}
+
+func isAsciiCharRequiringAlt(key int, mod core.Qt__KeyboardModifier, c rune) bool {
+	// Ignore all key events where Alt is not pressed
+	if !(mod&core.Qt__AltModifier > 0) {
+		return false
+	}
+
+	// These low-ascii characters may require AltModifier on MacOS
+	if (c == '[' && key != int(core.Qt__Key_BracketLeft)) ||
+		(c == ']' && key != int(core.Qt__Key_BracketRight)) ||
+		(c == '{' && key != int(core.Qt__Key_BraceLeft)) ||
+		(c == '}' && key != int(core.Qt__Key_BraceRight)) ||
+		(c == '|' && key != int(core.Qt__Key_Bar)) ||
+		(c == '~' && key != int(core.Qt__Key_AsciiTilde)) ||
+		(c == '@' && key != int(core.Qt__Key_At)) {
+		return true
+	}
+
+	return false
+}
+
 func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	text := event.Text()
 	key := event.Key()
@@ -853,9 +904,9 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	if runtime.GOOS == "darwin" {
 		if e.config.Editor.Macmeta {
 			if mod&core.Qt__AltModifier > 0 && mod&core.Qt__ShiftModifier > 0 {
-				text = string(key)
+				text = string(rune(key))
 			} else if mod&core.Qt__AltModifier > 0 && !(mod&core.Qt__ShiftModifier > 0) {
-				text = strings.ToLower(string(key))
+				text = strings.ToLower(string(rune(key)))
 			}
 		}
 	}
@@ -905,24 +956,37 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		}
 	}
 
+	specialKey, ok := e.specialKeys[core.Qt__Key(key)]
+	if ok {
+		if key == int(core.Qt__Key_Space) || key == int(core.Qt__Key_Backspace) {
+			mod &= ^core.Qt__ShiftModifier
+		}
+		return fmt.Sprintf("<%s%s>", e.modPrefix(mod), specialKey)
+	}
+
 	if text == "<" {
-		// return "<lt>"
 		modNoShift := mod & ^core.Qt__ShiftModifier
 		return fmt.Sprintf("<%s%s>", e.modPrefix(modNoShift), "lt")
 	}
 
-	specialKey, ok := e.specialKeys[core.Qt__Key(key)]
-	if ok {
-		return fmt.Sprintf("<%s%s>", e.modPrefix(mod), specialKey)
+	isCaretKey := key == int(core.Qt__Key_6) || key == int(core.Qt__Key_AsciiCircum)
+
+	// Normalize modifiers, CTRL+^ always sends as <C-^>
+	if isCaretKey && (mod&controlModifier() > 0) {
+		modNoShiftMeta := mod & ^core.Qt__ShiftModifier & ^cmdModifier()
+		return fmt.Sprintf("<%s%s>", e.modPrefix(modNoShiftMeta), "^")
 	}
 
 	if text == "\\" {
 		return fmt.Sprintf("<%s%s>", e.modPrefix(mod), "Bslash")
 	}
 
-	c := ""
-	if text == "" {
-
+	rtext := []rune(text)
+	isGraphic := false
+	if len(rtext) > 0 {
+		isGraphic = unicode.IsGraphic(rtext[0])
+	}
+	if text == "" || !isGraphic {
 		if key == int(core.Qt__Key_Alt) ||
 			key == int(core.Qt__Key_AltGr) ||
 			key == int(core.Qt__Key_CapsLock) ||
@@ -933,12 +997,17 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 			key == int(core.Qt__Key_Super_R) {
 			return ""
 		}
-		text = string(key)
-		if !(mod&core.Qt__ShiftModifier > 0) {
-			text = strings.ToLower(text)
+
+		// Ignore special keys
+		if key == int(core.Qt__Key_VolumeDown) ||
+			key == int(core.Qt__Key_VolumeMute) ||
+			key == int(core.Qt__Key_VolumeUp) {
+			return ""
 		}
+
+		text = keyToText(key, mod)
 	}
-	c = text
+	c := text
 	if c == "" {
 		return ""
 	}
@@ -946,13 +1015,13 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	char := core.NewQChar11(c)
 
 	// Remove SHIFT
-	if char.Unicode() >= 0x80 || char.IsPrint() {
+	if (char.Unicode() >= 0x80 || char.IsPrint()) && !(mod&controlModifier() > 0) && !(mod&cmdModifier() > 0) {
 		mod &= ^core.Qt__ShiftModifier
 	}
 
 	// Remove CTRL
 	if char.Unicode() < 0x20 {
-		mod &= ^e.controlModifier
+		text = keyToText(key, mod)
 	}
 
 	if runtime.GOOS == "darwin" {
@@ -960,6 +1029,13 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		if char.Unicode() >= 0x80 && char.IsPrint() {
 			mod &= ^core.Qt__AltModifier
 		}
+
+		// Some locales require Alt for basic low-ascii characters,
+		// remove AltModifer. Ex) German layouts use Alt for "{".
+		if isAsciiCharRequiringAlt(key, mod, []rune(c)[0]) {
+			mod &= ^core.Qt__AltModifier
+		}
+
 	}
 
 	prefix := e.modPrefix(mod)
@@ -973,20 +1049,20 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 func (e *Editor) modPrefix(mod core.Qt__KeyboardModifier) string {
 	prefix := ""
 	if runtime.GOOS == "windows" {
-		if mod&e.controlModifier > 0 && !(mod&core.Qt__AltModifier > 0) {
+		if mod&controlModifier() > 0 && !(mod&core.Qt__AltModifier > 0) {
 			prefix += "C-"
 		}
 		if mod&core.Qt__ShiftModifier > 0 {
 			prefix += "S-"
 		}
-		if mod&core.Qt__AltModifier > 0 && !(mod&e.controlModifier > 0) {
+		if mod&core.Qt__AltModifier > 0 && !(mod&controlModifier() > 0) {
 			prefix += e.prefixToMapMetaKey
 		}
 	} else {
-		if mod&e.cmdModifier > 0 {
+		if mod&cmdModifier() > 0 {
 			prefix += "D-"
 		}
-		if mod&e.controlModifier > 0 {
+		if mod&controlModifier() > 0 {
 			prefix += "C-"
 		}
 		if mod&core.Qt__ShiftModifier > 0 {
@@ -1047,18 +1123,12 @@ func (e *Editor) initSpecialKeys() {
 	e.specialKeys[core.Qt__Key_Space] = "Space"
 
 	if runtime.GOOS == "darwin" {
-		e.controlModifier = core.Qt__MetaModifier
-		e.cmdModifier = core.Qt__ControlModifier
 		e.keyControl = core.Qt__Key_Meta
 		e.keyCmd = core.Qt__Key_Control
 	} else if runtime.GOOS == "windows" {
-		e.controlModifier = core.Qt__ControlModifier
-		e.cmdModifier = (core.Qt__KeyboardModifier)(0)
 		e.keyControl = core.Qt__Key_Control
 		e.keyCmd = (core.Qt__Key)(0)
 	} else {
-		e.controlModifier = core.Qt__ControlModifier
-		e.cmdModifier = core.Qt__MetaModifier
 		e.keyControl = core.Qt__Key_Control
 		e.keyCmd = core.Qt__Key_Meta
 	}

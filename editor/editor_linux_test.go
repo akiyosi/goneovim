@@ -31,6 +31,66 @@ func TestLinuxEditor_convertKey(t *testing.T) {
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Less), core.Qt__ShiftModifier|core.Qt__MetaModifier, "<", false, 1),
 			"<D-lt>",
 		},
+		{
+			`convertKey() Linux Ctrl Caret WellFormed 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_6), core.Qt__ControlModifier, string('\u001E'), false, 1),
+			"<C-^>",
+		},
+		{
+			`convertKey() Linux Ctrl Caret WellFormed 2`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiCircum), core.Qt__ShiftModifier|core.Qt__ControlModifier, string('\u001E'), false, 1),
+			"<C-^>",
+		},
+		{
+			`convertKey() Linux Ctrl Caret WellFormed 3`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiCircum), core.Qt__ShiftModifier|core.Qt__ControlModifier|core.Qt__MetaModifier, string('\u001E'), false, 1),
+			"<C-^>",
+		},
+		{
+			`convertKey() Linux ShiftModifier Letter 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_B), core.Qt__ControlModifier, string('\u0002'), false, 1),
+			"<C-b>",
+		},
+		{
+			`convertKey() Linux ShiftModifier Letter 2`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_B), core.Qt__ShiftModifier|core.Qt__ControlModifier, string('\u0002'), false, 1),
+			"<C-S-B>",
+		},
+		{
+			`convertKey() Linux German keyboardlayout 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BraceLeft), core.Qt__GroupSwitchModifier, "{", false, 1),
+			"{",
+		},
+		{
+			`convertKey() Linux German keyboardlayout 2`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BracketLeft), core.Qt__GroupSwitchModifier, "[", false, 1),
+			"[",
+		},
+		{
+			`convertKey() Linux German keyboardlayout 3`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BracketRight), core.Qt__GroupSwitchModifier, "]", false, 1),
+			"]",
+		},
+		{
+			`convertKey() Linux German keyboardlayout 4`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BraceRight), core.Qt__GroupSwitchModifier, "}", false, 1),
+			"}",
+		},
+		{
+			`convertKey() Linux German keyboardlayout 5`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_At), core.Qt__GroupSwitchModifier, "@", false, 1),
+			"@",
+		},
+		{
+			`convertKey() Linux German keyboardlayout 6`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Backslash), core.Qt__GroupSwitchModifier, "\\", false, 1),
+			"<Bslash>",
+		},
+		{
+			`convertKey() Linux German keyboardlayout 7`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiTilde), core.Qt__GroupSwitchModifier, "~", false, 1),
+			"~",
+		},
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()
