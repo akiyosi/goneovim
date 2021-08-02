@@ -1,4 +1,5 @@
 TAG := $(shell git describe --tags --abbrev=0)
+VERSION := $(shell git describe --tags)
 
 # deployment directory
 DEPLOYMENT_WINDOWS:=deploy/windows
@@ -49,7 +50,7 @@ build:
 	@export GO111MODULE=off ; \
 	cd cmd/goneovim ; \
 	test -f ../../editor/moc.go & qtmoc ; \
-	qtdeploy build desktop ; \
+	qtdeploy -ldflags "-X main.version=$(VERSION)" build desktop ; \
 	cp -pR ../../runtime $(RUNTIME_DIR)
 
 debug:

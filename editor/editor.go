@@ -26,7 +26,6 @@ import (
 var editor *Editor
 
 const (
-	GONEOVIMVERSION = "v0.4.12"
 	WORKSPACELEN    = 10
 )
 
@@ -84,6 +83,7 @@ type Options struct {
 	Nvim   string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
 
 	Debug string `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]" optional:"yes" optional-value:"debug.log"`
+	Version bool `long:"version" description:"Print Goneovim version"`
 }
 
 // Editor is the editor
@@ -162,14 +162,14 @@ func (hl *Highlight) copy() Highlight {
 }
 
 // InitEditor is
-func InitEditor(options Options, args []string) {
+func InitEditor(version string, options Options, args []string) {
 
 	// startup time
 	startuptime := time.Now().UnixNano() / 1000
 
 	// create editor struct
 	editor = &Editor{
-		version:     GONEOVIMVERSION,
+		version:     version,
 		args:        args,
 		opts:        options,
 		startuptime: startuptime,

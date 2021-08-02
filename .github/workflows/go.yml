@@ -78,11 +78,16 @@ jobs:
   
     - name: Test
       run: go test github.com/${{ github.repository }}/editor
+
+    - name: Retrieve version
+      run: |
+        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+      id: version
   
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy build desktop
+        $(go env GOPATH)/bin/qtdeploy -ldflags "-X main.version=${{ steps.version.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/linux/
   
     - name: Fix builds
@@ -250,11 +255,16 @@ jobs:
   
     - name: Test
       run: go test github.com/${{ github.repository }}/editor
+
+    - name: Retrieve version
+      run: |
+        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+      id: version
   
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy build desktop
+        $(go env GOPATH)/bin/qtdeploy -ldflags "-X main.version=${{ steps.version.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
 
     # The builds created by Github Actions are somehow duplicating QtWebEngineCore and I know that it does not work properly.
@@ -341,13 +351,19 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtmoc
   
-  # - name: Test
-  #   run: go test github.com/${{ github.repository }}/editor
+    - name: Test
+      continue-on-error: true
+      run: go test github.com/${{ github.repository }}/editor
+
+    - name: Retrieve version
+      run: |
+        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+      id: version
   
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy build desktop
+        $(go env GOPATH)/bin/qtdeploy -ldflags "-X main.version=${{ steps.version.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
 
     # See the comment at the line 149-151
