@@ -38,7 +38,7 @@ jobs:
         target: desktop
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
-        mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
+        # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
   
     - name: Get Qt binding for Go
       run: |
@@ -81,6 +81,7 @@ jobs:
 
     - name: Retrieve version
       run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
       id: version
   
@@ -225,7 +226,7 @@ jobs:
         target: desktop
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
-        mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
+        # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
   
     - name: Get Qt binding for Go
       run: |
@@ -258,6 +259,7 @@ jobs:
 
     - name: Retrieve version
       run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
       id: version
   
@@ -323,7 +325,7 @@ jobs:
         target: desktop
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
-        mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
+        # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
   
     - name: Get Qt binding for Go
       run: |
@@ -357,6 +359,7 @@ jobs:
 
     - name: Retrieve version
       run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
       id: version
   
@@ -448,7 +451,7 @@ jobs:
         arch: 'win64_msvc2017_64'
         install-deps: 'true'
         dir: ${{ github.workspace }}
-        mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
+        # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
 
     - name: Install Go
       continue-on-error: true
@@ -542,8 +545,9 @@ jobs:
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtmoc.exe
 
-    # - name: Test
-    #   run: go test github.com/${{ github.repository }}/editor
+    - name: Test
+      continue-on-error: true
+      run: go test github.com\akiyosi\goneovim\editor
 
     - name: Convert to compatible sources on Qt5.12
       if: matrix.qtversion == '5.12.6'
