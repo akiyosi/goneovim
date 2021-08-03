@@ -80,15 +80,15 @@ jobs:
       run: go test github.com/${{ github.repository }}/editor
 
     - name: Retrieve version
+      id: version-linux
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
-      id: version
   
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy -ldflags "-X main.version=${{ steps.version.outputs.GONEOVIM_VERSION }}" build desktop
+        $(go env GOPATH)/bin/qtdeploy -ldflags "-X main.version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/linux/
   
     - name: Fix builds
@@ -258,15 +258,15 @@ jobs:
       run: go test github.com/${{ github.repository }}/editor
 
     - name: Retrieve version
+      id: version-macos
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
-      id: version
   
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy -ldflags "-X main.version=${{ steps.version.outputs.GONEOVIM_VERSION }}" build desktop
+        $(go env GOPATH)/bin/qtdeploy -ldflags "-X main.version=${{ steps.version-macos.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
 
     # The builds created by Github Actions are somehow duplicating QtWebEngineCore and I know that it does not work properly.
@@ -358,15 +358,15 @@ jobs:
       run: go test github.com/${{ github.repository }}/editor
 
     - name: Retrieve version
+      id: version-macos-11
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
-      id: version
   
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy -ldflags "-X main.version=${{ steps.version.outputs.GONEOVIM_VERSION }}" build desktop
+        $(go env GOPATH)/bin/qtdeploy -ldflags "-X main.version=${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
 
     # See the comment at the line 149-151
@@ -578,13 +578,19 @@ jobs:
         $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
         $data | Out-File   .\util\utils.go -Encoding UTF8
 
+    - name: Retrieve version
+      id: version-windows
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+
     - name: Build for Qt 5.12.X
       if: matrix.qtversion == '5.12.6'
       env:
         QT_API: 5.12.0
       run: |
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-        ${{ github.workspace }}\bin\qtdeploy build desktop
+        ${{ github.workspace }}\bin\qtdeploy -ldflags "-X main.version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}" build desktop
 
     - name: Build
       if: matrix.qtversion != '5.12.6'
@@ -592,7 +598,7 @@ jobs:
         QT_API: 5.13.0
       run: |
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-        ${{ github.workspace }}\bin\qtdeploy build desktop
+        ${{ github.workspace }}\bin\qtdeploy -ldflags "-X main.version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
         Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
 
     - name: Upload for windows
