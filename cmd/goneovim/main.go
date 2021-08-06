@@ -11,7 +11,6 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
-var version string
 
 func main() {
 	// // profile the application
@@ -46,12 +45,12 @@ func main() {
 	// parse args
 	options, args := parseArgs()
 	if options.Version {
-			fmt.Println(version)
+			fmt.Println(editor.Version)
 			os.Exit(0)
 	}
 
 	// start editor
-	editor.InitEditor(version, options, args)
+	editor.InitEditor(options, args)
 }
 
 // parsArgs parse args

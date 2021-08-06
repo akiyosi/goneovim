@@ -50,7 +50,7 @@ build:
 	@export GO111MODULE=off ; \
 	cd cmd/goneovim ; \
 	test -f ../../editor/moc.go & qtmoc ; \
-	qtdeploy -ldflags "-X main.version=$(VERSION)" build desktop ; \
+	qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=$(VERSION)" build desktop ; \
 	cp -pR ../../runtime $(RUNTIME_DIR)
 
 debug:

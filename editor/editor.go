@@ -23,10 +23,12 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+var Version string
+
 var editor *Editor
 
 const (
-	WORKSPACELEN    = 10
+	WORKSPACELEN = 10
 )
 
 type editorSignal struct {
@@ -82,16 +84,17 @@ type Options struct {
 	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]"`
 	Nvim   string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
 
-	Debug string `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]" optional:"yes" optional-value:"debug.log"`
-	Version bool `long:"version" description:"Print Goneovim version"`
+	Debug   string `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]" optional:"yes" optional-value:"debug.log"`
+	Version bool   `long:"version" description:"Print Goneovim version"`
 }
 
 // Editor is the editor
 type Editor struct {
-	signal  *editorSignal
 	version string
-	app     *widgets.QApplication
-	ppid    int
+
+	signal *editorSignal
+	app    *widgets.QApplication
+	ppid   int
 
 	homeDir   string
 	configDir string
@@ -162,14 +165,14 @@ func (hl *Highlight) copy() Highlight {
 }
 
 // InitEditor is
-func InitEditor(version string, options Options, args []string) {
+func InitEditor(options Options, args []string) {
 
 	// startup time
 	startuptime := time.Now().UnixNano() / 1000
 
 	// create editor struct
 	editor = &Editor{
-		version:     version,
+		version:     Version,
 		args:        args,
 		opts:        options,
 		startuptime: startuptime,
