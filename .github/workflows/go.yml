@@ -45,13 +45,14 @@ jobs:
         go get -v github.com/therecipe/qt/cmd/...
 
     # - name: Remove binding repo for restoring cache
-    #   if: steps.cache-qt-bindings.outputs.cache-hit == 'true'
+    #   if: ${{ steps.cache-qt-bindings.outputs.cache-hit }} == 'true'
     #   run: |
     #     rm -fr ${{ github.workspace }}/src/github.com/therecipe
   
     - name: Checkout code
       uses: actions/checkout@v2
       with:
+        fetch-depth: 0
         path: ./src/github.com/${{ github.repository }}
   
     - name: Free disk space
@@ -67,7 +68,7 @@ jobs:
         key: ${{ matrix.qtversion }}-qtbindings-linux-${{ env.cache-version }}
 
     - name: Generate Qt bindings
-      if: steps.cache-qt-bindings-linux.outputs.cache-hit != 'true'
+      if: ${{ steps.cache-qt-bindings-linux.outputs.cache-hit != 'true' }}
       run: $(go env GOPATH)/bin/qtsetup -test=false
 
     - name: Get dependencies
@@ -98,7 +99,7 @@ jobs:
         tar -jcvf Goneovim-latest-linux.tar.bz2 Goneovim-latest-linux
   
     - name: Upload for linux
-      if: matrix.qtversion == '5.14.1'
+      if: ${{ matrix.qtversion == '5.14.1' }}
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-linux-${{ matrix.qtversion }}
@@ -163,7 +164,7 @@ jobs:
   #       key: ${{ matrix.qtversion }}-qtbindings-linux-${{ env.cache-version }}
 
   #   - name: Generate Qt bindings
-  #     if: steps.cache-qt-bindings-linux.outputs.cache-hit != 'true'
+  #     if: ${{ steps.cache-qt-bindings-linux.outputs.cache-hit != 'true' }}
   #     run: $(go env GOPATH)/bin/qtsetup -test=false
 
   #   - name: Get dependencies
@@ -235,6 +236,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
       with:
+        fetch-depth: 0
         path: ./src/github.com/${{ github.repository }}
 
     - uses: actions/cache@v2
@@ -245,7 +247,7 @@ jobs:
   
     - name: Generate Qt bindings
       continue-on-error: true
-      if: steps.cache-qt-bindings-macos.outputs.cache-hit != 'true'
+      if: ${{ steps.cache-qt-bindings-macos.outputs.cache-hit != 'true' }}
       run: $(go env GOPATH)/bin/qtsetup -test=false
   
     - name: Get dependencies
@@ -258,10 +260,16 @@ jobs:
       run: go test github.com/${{ github.repository }}/editor
 
     - name: Retrieve version
-      id: version-macos
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        git describe --tags
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+      id: version-macos
+
+    - name: check version
+      run: |
+        echo ${{ steps.version-macos.outputs.GONEOVIM_VERSION }}
+        echo "${{ steps.version-macos.outputs.GONEOVIM_VERSION }}"
   
     - name: Build
       run: |
@@ -287,7 +295,7 @@ jobs:
         tar -jcvf Goneovim-latest-macos.tar.bz2 Goneovim-latest-macos
 
     - name: Upload for macos
-      if: matrix.qtversion == '5.13.0'
+      if: ${{ matrix.qtversion == '5.13.0' }}
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-macos-${{ matrix.qtversion }}
@@ -334,6 +342,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
       with:
+        fetch-depth: 0
         path: ./src/github.com/${{ github.repository }}
 
     - uses: actions/cache@v2
@@ -344,7 +353,7 @@ jobs:
 
     - name: Generate Qt bindings
       continue-on-error: true
-      if: steps.cache-qt-bindings-macos-11.outputs.cache-hit != 'true'
+      if: ${{ steps.cache-qt-bindings-macos-11.outputs.cache-hit != 'true' }}
       run: $(go env GOPATH)/bin/qtsetup -test=false
   
     - name: Get dependencies
@@ -422,7 +431,7 @@ jobs:
         key: ${{ matrix.qtversion }}-msvc2017-buildtools-${{ env.cache-version }}
 
     - name: Intall MSVC 2017 Visual C++ Buildtools
-      if: steps.cache-msvc2017-buildtools.outputs.cache-hit != 'true'
+      if: ${{ steps.cache-msvc2017-buildtools.outputs.cache-hit != 'true' }}
       run : |
         curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/15/release/vs_buildtools.exe
         New-Item -Path BuildTools -ItemType Directory 
@@ -467,6 +476,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
       with:
+        fetch-depth: 0
         path: .\src\github.com\${{ github.repository }}
 
     # FIXME: Should be fixed with the deprecation of set-env
@@ -507,14 +517,14 @@ jobs:
         .\make.bat
 
     - uses: actions/cache@v2
-      if: matrix.qtversion == '5.12.6'
+      if: ${{ matrix.qtversion == '5.12.6' }}
       id: cache-qt-bindings-windows-512
       with:
         path: ${{ github.workspace }}\src\github.com\therecipe
         key: ${{ matrix.qtversion }}-qtbindings-windows-512-${{ env.cache-version }}
 
     - uses: actions/cache@v2
-      if: matrix.qtversion != '5.12.6'
+      if: ${{ matrix.qtversion != '5.12.6' }}
       id: cache-qt-bindings-windows-not-512
       with:
         path: ${{ github.workspace }}\src\github.com\therecipe
@@ -523,18 +533,14 @@ jobs:
     - name: Generate Qt bindings for Qt 5.12.X
       env:
         QT_API: 5.12.0
-      if: |
-        matrix.qtversion == '5.12.6' && 
-        steps.cache-qt-bindings-windows-512.outputs.cache-hit != 'true'
+      if: ${{ matrix.qtversion == '5.12.6' && steps.cache-qt-bindings-windows-512.outputs.cache-hit != 'true' }}
       run: ${{ github.workspace }}\bin\qtsetup.exe -test=false
       shell: cmd
 
     - name: Generate Qt bindings
       env:
         QT_API: 5.13.0
-      if: |
-        matrix.qtversion != '5.12.6' &&
-        steps.cache-qt-bindings-windows-not-512.outputs.cache-hit != 'true'
+      if: ${{ matrix.qtversion != '5.12.6' && steps.cache-qt-bindings-windows-not-512.outputs.cache-hit != 'true' }}
       run: ${{ github.workspace }}\bin\qtsetup.exe -test=false
       shell: cmd
 
@@ -550,7 +556,7 @@ jobs:
       run: go test github.com\akiyosi\goneovim\editor
 
     - name: Convert to compatible sources on Qt5.12
-      if: matrix.qtversion == '5.12.6'
+      if: ${{ matrix.qtversion == '5.12.6' }}
       run: |
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}
         $data=Get-Content  .\editor\workspace.go | % { $_ -replace "NewQVariant31", "NewQVariant33" }
@@ -585,7 +591,7 @@ jobs:
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
 
     - name: Build for Qt 5.12.X
-      if: matrix.qtversion == '5.12.6'
+      if: ${{ matrix.qtversion == '5.12.6' }}
       env:
         QT_API: 5.12.0
       run: |
@@ -593,7 +599,7 @@ jobs:
         ${{ github.workspace }}\bin\qtdeploy -ldflags "-X main.version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}" build desktop
 
     - name: Build
-      if: matrix.qtversion != '5.12.6'
+      if: ${{ matrix.qtversion != '5.12.6' }}
       env:
         QT_API: 5.13.0
       run: |
@@ -602,7 +608,7 @@ jobs:
         Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
 
     - name: Upload for windows
-      if: matrix.qtversion == '5.14.1'
+      if: ${{ matrix.qtversion == '5.14.1' }}
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-win64-${{ matrix.qtversion }}
