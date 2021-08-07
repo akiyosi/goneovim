@@ -402,6 +402,98 @@ jobs:
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos-bigsur.tar.bz2
 
 
+  test-windows:
+    strategy:
+      matrix:
+        platform: [windows-latest]
+        qtversion: [5.14.1]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      GOROOT: ${{ github.workspace }}\go-root
+      QT_VERSION: ${{ matrix.qtversion }}
+      QT_DIR: ${{ github.workspace }}\Qt
+      QT_MSYS2: true
+      QT_MSYS2_DIR: D:\a\_temp\msys\msys64\
+      QT_MSVC: false
+      QT_DEBUG: false
+      GO111MODULE: off
+      CGO_CFLAGS_ALLOW: ".*" 
+      CGO_CXXFLAGS_ALLOW: ".*" 
+      CGO_LDFLAGS_ALLOW: ".*" 
+      #CGO_ENABLED: 1
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+    steps:
+
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        msystem: mingw64
+        install: mingw-w64-x86_64-toolchain
+    - shell: msys2 {0}
+      run: |
+        pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
+
+    - name: Install Go
+      continue-on-error: true
+      run: |
+        curl -sL --retry 10 --retry-delay 60 -O https://dl.google.com/go/go1.16.5.windows-amd64.zip
+        expand-archive -path go1.16.5.windows-amd64.zip -destinationpath .
+        Move-Item -Path go -Destination go-root
+
+    - name: Get Qt binding for Go
+      run: |
+        ${{ github.workspace }}\go-root\bin\go.exe get -v github.com/therecipe/qt/cmd/...
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: .\src\github.com\${{ github.repository }}
+
+    # FIXME: Should be fixed with the deprecation of set-env
+    - name: Set PATH
+      run: |
+        $env:PATH = "C:\\msys64\\usr\\bin;${{ github.workspace }}\\bin;${{ github.workspace }}\\go-root\\bin;$env:PATH"
+        echo "::set-env name=PATH::$env:PATH"
+
+    - name: Generate Qt bindings
+      env:
+        QT_API: 5.13.0
+      run: ${{ github.workspace }}\bin\qtsetup.exe -test=false
+
+    - name: Retrieving dependencies
+      continue-on-error: true
+      run: |
+        go get -v -d github.com/${{ github.repository }}/...
+        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
+        ${{ github.workspace }}\bin\qtmoc.exe
+
+    - name: Convert to compatible sources on Qt5.12
+      run: |
+        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}
+        $data=Get-content .\editor\workspace.go | select-string -pattern 'markdown' -notmatch
+        $data | Out-File  .\editor\workspace.go -Encoding UTF8
+        $data=Get-content .\editor\screen.go | select-string -pattern 'markdown' -notmatch
+        $data | Out-File  .\editor\screen.go -Encoding UTF8
+        $data=Get-content .\editor\palette.go | select-string -pattern 'markdown' -notmatch
+        $data | Out-File  .\editor\palette.go -Encoding UTF8
+        Remove-Item -Path .\editor\markdown.go
+
+    - name: Build
+      env:
+        QT_API: 5.13.0
+      run: |
+        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
+        ${{ github.workspace }}\bin\qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
+        Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
+
+    - name: Test
+      continue-on-error: true
+      run: go test github.com\akiyosi\goneovim\editor
+
+
   #test-and-build-windows:
   build-windows:
     strategy:
@@ -551,10 +643,6 @@ jobs:
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtmoc.exe
 
-    - name: Test
-      continue-on-error: true
-      run: go test github.com\akiyosi\goneovim\editor
-
     - name: Convert to compatible sources on Qt5.12
       if: ${{ matrix.qtversion == '5.12.6' }}
       run: |
@@ -583,6 +671,10 @@ jobs:
         $data | Out-File   .\editor\cursor.go -Encoding UTF8
         $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
         $data | Out-File   .\util\utils.go -Encoding UTF8
+
+    - name: Test
+      continue-on-error: true
+      run: go test github.com\akiyosi\goneovim\editor
 
     - name: Retrieve version
       id: version-windows
