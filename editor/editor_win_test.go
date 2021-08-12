@@ -39,7 +39,7 @@ func TestWindowsEditor_convertKey(t *testing.T) {
 		{
 			`convertKey() Windows Ctrl Caret WellFormed 2`,
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiCircum), core.Qt__ShiftModifier|core.Qt__ControlModifier, "\u001E", false, 1),
-			"<C-lt>",
+			"<C-^>",
 		},
 		{
 			`convertKey() Windows ShiftModifier Letter 1`,
@@ -53,37 +53,37 @@ func TestWindowsEditor_convertKey(t *testing.T) {
 		},
 		{
 			`convertKey() Windows German keyboardlayout 1`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BraceLeft), core.Qt__ControlModifiwe|core.Qt__AltModifier, "{", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BraceLeft), core.Qt__ControlModifier|core.Qt__AltModifier, "{", false, 1),
 			"{",
 		},
 		{
 			`convertKey() Windows German keyboardlayout 2`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BracketLeft), core.Qt__ControlModifiwe|core.Qt__AltModifier, "[", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BracketLeft), core.Qt__ControlModifier|core.Qt__AltModifier, "[", false, 1),
 			"[",
 		},
 		{
 			`convertKey() Windows German keyboardlayout 3`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BracketRight), core.Qt__ControlModifiwe|core.Qt__AltModifier, "]", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BracketRight), core.Qt__ControlModifier|core.Qt__AltModifier, "]", false, 1),
 			"]",
 		},
 		{
 			`convertKey() Windows German keyboardlayout 4`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BraceRight), core.Qt__ControlModifiwe|core.Qt__AltModifier, "}", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BraceRight), core.Qt__ControlModifier|core.Qt__AltModifier, "}", false, 1),
 			"}",
 		},
 		{
 			`convertKey() Windows German keyboardlayout 5`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_At), core.Qt__ControlModifiwe|core.Qt__AltModifier, "@", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_At), core.Qt__ControlModifier|core.Qt__AltModifier, "@", false, 1),
 			"@",
 		},
 		{
 			`convertKey() Windows German keyboardlayout 6`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Backslash), core.Qt__ControlModifiwe|core.Qt__AltModifier, "\\", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Backslash), core.Qt__ControlModifier|core.Qt__AltModifier, "\\", false, 1),
 			"<Bslash>",
 		},
 		{
 			`convertKey() Windows German keyboardlayout 7`,
-			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiTilde), core.Qt__ControlModifiwe|core.Qt__AltModifier, "~", false, 1),
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiTilde), core.Qt__ControlModifier|core.Qt__AltModifier, "~", false, 1),
 			"~",
 		},
 		{

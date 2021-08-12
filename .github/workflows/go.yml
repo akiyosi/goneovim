@@ -433,7 +433,7 @@ jobs:
         install: mingw-w64-x86_64-toolchain
     - shell: msys2 {0}
       run: |
-        pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
+        pacman --noconfirm -S sed git mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
 
     - name: Install Go
       continue-on-error: true
@@ -461,37 +461,40 @@ jobs:
     - name: Generate Qt bindings
       env:
         QT_API: 5.13.0
-      run: ${{ github.workspace }}\bin\qtsetup.exe -test=false
+      shell: msys2 {0}
+      run: |
+        /d/a/goneovim/goneovim/bin/qtsetup -test=false
 
     - name: Retrieving dependencies
       continue-on-error: true
       run: |
         go get -v -d github.com/${{ github.repository }}/...
-        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-        ${{ github.workspace }}\bin\qtmoc.exe
 
-    - name: Convert to compatible sources on Qt5.12
+    - name: Convert code
+      shell: msys2 {0}
       run: |
-        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}
-        $data=Get-content .\editor\workspace.go | select-string -pattern 'markdown' -notmatch
-        $data | Out-File  .\editor\workspace.go -Encoding UTF8
-        $data=Get-content .\editor\screen.go | select-string -pattern 'markdown' -notmatch
-        $data | Out-File  .\editor\screen.go -Encoding UTF8
-        $data=Get-content .\editor\palette.go | select-string -pattern 'markdown' -notmatch
-        $data | Out-File  .\editor\palette.go -Encoding UTF8
-        Remove-Item -Path .\editor\markdown.go
+        sed -i -e '/.*markdown.*/,+3d'                      /d/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/editor/screen.go
+        sed -i -e '/.*markdown.*/,+2d'                      /d/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/editor/palette.go
+        sed -i -e '/.*case "gonvim_markdown_update.*/,+15d' /d/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/editor/workspace.go
+        sed -i -e '/.*case "gonvim_markdown_toggle.*/,+23d' /d/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/editor/workspace.go
+        sed -i -e '/.*markdown.*/d'                         /d/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/editor/workspace.go
+        rm                         /d/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/editor/markdown.go
 
-    - name: Build
+    - name: Generate moc files
+      continue-on-error: true
       env:
         QT_API: 5.13.0
       run: |
+        go get -v -d github.com/${{ github.repository }}/...
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-        ${{ github.workspace }}\bin\qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
-        Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
+        ${{ github.workspace }}\bin\qtmoc.exe
 
     - name: Test
-      continue-on-error: true
-      run: go test github.com\akiyosi\goneovim\editor
+      env:
+        QT_API: 5.13.0
+      shell: msys2 {0}
+      run: |
+        go test github.com/akiyosi/goneovim/editor
 
 
   #test-and-build-windows:
