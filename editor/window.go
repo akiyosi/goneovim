@@ -1369,6 +1369,11 @@ func (w *Window) update() {
 		end = w.rows
 	}
 
+	// var region *gui.QRegion
+	region := gui.NewQRegion2(
+	    0, 0, 0, 0,
+        gui.QRegion__Rectangle,
+	)
 	for i := start; i < end; i++ {
 
 		if len(w.content) <= i {
@@ -1412,17 +1417,16 @@ func (w *Window) update() {
 		}
 		width++
 
-		// Create rectangles that require updating.
-		var rects [][4]int
+		var rects [](*core.QRect)
 		isCreateRect := false
 		start := 0
 		if drawWithSingleRect {
-			rect := [4]int{
+			rect := core.NewQRect4(
 				0,
-				i * font.lineHeight,
-				int(math.Ceil(float64(width) * font.truewidth)),
+				i*font.lineHeight,
+				int(math.Ceil(float64(width)*font.truewidth)),
 				font.lineHeight,
-			}
+			)
 			rects = append(rects, rect)
 			for j, _ := range w.contentMask[i] {
 				w.contentMaskOld[i][j] = w.contentMask[i][j]
@@ -1439,12 +1443,12 @@ func (w *Window) update() {
 					if j >= len(w.contentMask[i])-1 && isCreateRect {
 						jj++
 					}
-					rect := [4]int{
-						int(float64(start) * font.truewidth),
-						i * font.lineHeight,
-						int(math.Ceil(float64(jj-start+1) * font.truewidth)),
+					rect := core.NewQRect4(
+						int(float64(start)*font.truewidth),
+						i*font.lineHeight,
+						int(math.Ceil(float64(jj-start+1)*font.truewidth)),
 						font.lineHeight,
-					}
+					)
 					rects = append(rects, rect)
 					isCreateRect = false
 				}
@@ -1454,23 +1458,20 @@ func (w *Window) update() {
 
 		// Request screen refresh for each rectangle region.
 		if len(rects) == 0 {
-			w.Update2(
+			region = region.United2(core.NewQRect4(
 				0,
 				i*font.lineHeight,
 				int(float64(width)*font.truewidth),
 				font.lineHeight,
+			),
 			)
 		} else {
 			for _, rect := range rects {
-				w.Update2(
-					rect[0],
-					rect[1],
-					rect[2],
-					rect[3],
-				)
+				region = region.United2(rect)
 			}
 		}
 	}
+	w.Update4(region)
 
 	// reset redraw area
 	w.queueRedrawArea[0] = w.cols
