@@ -88,6 +88,7 @@ type Workspace struct {
 	modeIdx            int
 	terminalMode       bool
 	windowsFt          map[nvim.Window]string // TODO
+	windowsTs          map[nvim.Window]int    // TODO
 	filepath           string
 	cwd                string
 	cwdBase            string
@@ -137,6 +138,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		background:    newRGBA(0, 0, 0, 1),
 		special:       newRGBA(255, 255, 255, 1),
 		windowsFt:     make(map[nvim.Window]string),
+		windowsTs:     make(map[nvim.Window]int),
 	}
 	w.registerSignal()
 
@@ -678,7 +680,7 @@ func (w *Workspace) initGonvim() {
 	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
 	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"), win_getid(), bufname())
 	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid(), bufname())
-	au GonvimAu OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old) | endif
+	au GonvimAu OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
 	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
 	aug GonvimAuWorkspace | au! | aug END
@@ -1953,10 +1955,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_bufenter":
 		w.maxLine = util.ReflectToInt(updates[1])
 		w.setBuffname(updates[2], updates[3])
-		w.setBuffTS()
+		w.setBuffTS(util.ReflectToInt(updates[2]))
 	case "gonvim_winenter_filetype":
 		w.setBuffname(updates[2], updates[3])
-		w.setBuffTS()
+		w.setBuffTS(util.ReflectToInt(updates[2]))
 		w.setFileType(updates)
 	case "gonvim_markdown_update":
 		if editor.config.Markdown.Disable {
@@ -2302,9 +2304,20 @@ func (w *Workspace) setBuffname(idITF, nameITF interface{}) {
 	})
 }
 
-func (w *Workspace) setBuffTS() {
+func (w *Workspace) setBuffTS(arg int) {
 	bufChan := make(chan nvim.Buffer, 10)
 	var buf nvim.Buffer
+	wid := (nvim.Window)(arg)
+	go func() {
+		resultBuffer, _ := w.nvim.WindowBuffer(wid)
+		bufChan <- resultBuffer
+	}()
+	select {
+	case buf = <-bufChan:
+	case <-time.After(40 * time.Millisecond):
+	}
+	w.windowsTs[wid] = w.getBuffTS(buf)
+
 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -2324,6 +2337,10 @@ func (w *Workspace) setBuffTS() {
 		win.updateMutex.RLock()
 		id := win.id
 		win.updateMutex.RUnlock()
+		if id == wid {
+			win.ts = w.windowsTs[wid]
+			return true
+		}
 		// set buffer name
 		go func() {
 			resultBuffer, _ := w.nvim.WindowBuffer(id)
@@ -2344,6 +2361,7 @@ func (w *Workspace) setBuffTS() {
 // This function gets the value of an option that cannot be caught by the set_option event.
 func (w *Workspace) optionSet(updates []interface{}) {
 	optionName := updates[1]
+	wid := util.ReflectToInt(updates[4])
 	// new, err := strconv.Atoi(updates[2].(string))
 	// if err != nil {
 	// 	return
@@ -2352,7 +2370,7 @@ func (w *Workspace) optionSet(updates []interface{}) {
 	w.optionsetMutex.Lock()
 	switch optionName {
 	case editor.config.Editor.OptionsToUseGuideWidth:
-		w.setBuffTS()
+		w.setBuffTS(wid)
 
 	}
 	w.optionsetMutex.Unlock()

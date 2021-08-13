@@ -290,8 +290,13 @@ func (w *Window) getFont() *Font {
 }
 
 func (w *Window) getTS() int {
-	if w.ts <= 0 {
-		return w.s.ws.ts
+	var ts int
+	var ok bool
+	if w.id != 0 {
+		ts, ok = w.s.ws.windowsTs[w.id]
+		if ok {
+			return ts
+		}
 	}
 
 	return w.ts
@@ -299,6 +304,9 @@ func (w *Window) getTS() int {
 
 func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if w == nil {
+		return
+	}
+	if w.grid == 1 || w.isMsgGrid {
 		return
 	}
 	if w.s.name == "minimap" {
