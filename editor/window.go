@@ -199,12 +199,43 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
 
 	// Draw contents
+	surface := gui.NewQImage2(
+		core.NewQRectF4(
+			0,// w.devicePixelRatio*float64(col)*font.truewidth,
+			0,// w.devicePixelRatio*float64(row*font.lineHeight),
+			w.devicePixelRatio*float64(w.cols)*font.truewidth,
+			w.devicePixelRatio*float64(w.rows*font.lineHeight),
+		).Size().ToSize(),
+		gui.QImage__Format_ARGB32_Premultiplied,
+	)
+
+	surface.SetDevicePixelRatio(w.devicePixelRatio)
+	// surface.Fill3(core.Qt__transparent)
+	pi := gui.NewQPainter2(surface)
+
+	var wg sync.WaitGroup
+
 	for y := row; y < row+rows; y++ {
 		if y >= w.rows {
 			continue
 		}
-		w.drawBackground(p, y, col, cols)
-		w.drawForeground(p, y, col, cols)
+
+		wg.Add(1)
+		// w.drawBackground(pi, y, col, cols)
+		go w.drawForeground(&wg, pi, y, col, cols)
+	}
+	
+	if rows > 0 {
+		wg.Wait()
+		pi.DestroyQPainter()
+
+		p.DrawImage7(
+			core.NewQPointF3(
+				0,//float64(rect.Left()),
+				0,//float64(rect.Top()),
+			),
+			surface,
+		)
 	}
 
 	// Draw scroll snapshot
@@ -1369,7 +1400,6 @@ func (w *Window) update() {
 		end = w.rows
 	}
 
-	// var region *gui.QRegion
 	region := gui.NewQRegion2(
 	    0, 0, 0, 0,
         gui.QRegion__Rectangle,
@@ -1418,15 +1448,18 @@ func (w *Window) update() {
 		width++
 
 		var rects [](*core.QRect)
+        // var rects [][4]int
 		isCreateRect := false
 		start := 0
 		if drawWithSingleRect {
 			rect := core.NewQRect4(
+            // rect := [4]int{
 				0,
 				i*font.lineHeight,
 				int(math.Ceil(float64(width)*font.truewidth)),
 				font.lineHeight,
 			)
+			// }
 			rects = append(rects, rect)
 			for j, _ := range w.contentMask[i] {
 				w.contentMaskOld[i][j] = w.contentMask[i][j]
@@ -1444,11 +1477,13 @@ func (w *Window) update() {
 						jj++
 					}
 					rect := core.NewQRect4(
+                    // rect := [4]int{
 						int(float64(start)*font.truewidth),
 						i*font.lineHeight,
 						int(math.Ceil(float64(jj-start+1)*font.truewidth)),
 						font.lineHeight,
 					)
+					// }
 					rects = append(rects, rect)
 					isCreateRect = false
 				}
@@ -1459,6 +1494,7 @@ func (w *Window) update() {
 		// Request screen refresh for each rectangle region.
 		if len(rects) == 0 {
 			region = region.United2(core.NewQRect4(
+            // w.Update2(
 				0,
 				i*font.lineHeight,
 				int(float64(width)*font.truewidth),
@@ -1468,6 +1504,12 @@ func (w *Window) update() {
 		} else {
 			for _, rect := range rects {
 				region = region.United2(rect)
+				// w.Update2(
+				//         rect[0],
+				//         rect[1],
+				//         rect[2],
+				//         rect[3],
+				// )
 			}
 		}
 	}
@@ -1663,7 +1705,9 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
+func (w *Window) drawText(wg *sync.WaitGroup, p *gui.QPainter, y int, col int, cols int) {
+	defer wg.Done()
+
 	if y >= len(w.content) {
 		return
 	}
@@ -2131,13 +2175,13 @@ func (w *Window) drawTextInPos(p *gui.QPainter, point *core.QPointF, text string
 	p.DrawText(point, text)
 }
 
-func (w *Window) drawForeground(p *gui.QPainter, y int, col int, cols int) {
+func (w *Window) drawForeground(wg *sync.WaitGroup, p *gui.QPainter, y int, col int, cols int) {
 	if w.s.name == "minimap" {
-		w.drawMinimap(p, y, col, cols)
+		// w.drawMinimap(p, y, col, cols)
 	} else {
 		// w.drawText(p, y, col, cols)
-		w.drawText(p, y, 0, w.cols)
-		w.drawTextDecoration(p, y, col, cols)
+		w.drawText(wg, p, y, 0, w.cols)
+		// w.drawTextDecoration(p, y, col, cols)
 	}
 }
 
