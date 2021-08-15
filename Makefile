@@ -1,5 +1,7 @@
 TAG := $(shell git describe --tags --abbrev=0)
 VERSION := $(shell git describe --tags)
+VERSION_HASH := $(shell git rev-parse HEAD)
+
 
 # deployment directory
 DEPLOYMENT_WINDOWS:=deploy/windows
@@ -52,6 +54,10 @@ build:
 	test -f ../../editor/moc.go & qtmoc ; \
 	qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=$(VERSION)" build desktop ; \
 	cp -pR ../../runtime $(RUNTIME_DIR)
+	@if [[ $(shell uname) == 'Darwin' ]]; then \
+	  /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $(VERSION_HASH)" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist" ; \
+	  /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $(VERSION)"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist" ; \
+	fi
 
 debug:
 	@export GO111MODULE=off ; \
