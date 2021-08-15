@@ -260,11 +260,12 @@ jobs:
       run: go test github.com/${{ github.repository }}/editor
 
     - name: Retrieve version
+      id: version-macos
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         git describe --tags
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
-      id: version-macos
+        echo "::set-output name=GONEOVIM_VERSION_HASH::$(git rev-parse HEAD)"
 
     - name: check version
       run: |
@@ -276,6 +277,9 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-macos.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/
+        /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ steps.version-macos.outputs.GONEOVIM_VERSION_HASH }}" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string ${{ steps.version-macos.outputs.GONEOVIM_VERSION }}"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
 
     # The builds created by Github Actions are somehow duplicating QtWebEngineCore and I know that it does not work properly.
     # This structure is deployed well in my local build environment, and I don't know why it makes such a difference,
@@ -371,12 +375,16 @@ jobs:
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+        echo "::set-output name=GONEOVIM_VERSION_HASH::$(git rev-parse HEAD)"
   
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/
+        /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION_HASH }}" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
 
     # See the comment at the line 149-151
     - name: Fix builds
