@@ -1287,60 +1287,59 @@ func (c *Cell) isSignColumn() bool {
 }
 
 func (w *Window) scroll(count int) {
+	// scroll region
 	top := w.scrollRegion[0]
 	bot := w.scrollRegion[1]
 	left := w.scrollRegion[2]
 	right := w.scrollRegion[3]
-	content := w.content
-	lenLine := w.lenLine
-	lenContent := w.lenContent
 
-	if top == 0 && bot == 0 && left == 0 && right == 0 {
-		top = 0
-		bot = w.rows - 1
-		left = 0
-		right = w.cols - 1
+	// Define a function to shift the contents of w.content array by count.
+	scrollContentByCount := func(row, count int) {
+		// We should do 'continue' when len(content) <= row+count,
+		// and row+count <= bot, when row = (bot-count)
+		if len(w.content) <= bot { 
+			return
+		}
+    	
+		// copy(w.content[row], w.content[row+count])
+		// copy(w.contentMask[row], w.contentMask[row+count])
+		for col := left; col <= right; col++ {
+			w.content[row][col] = w.content[row+count][col]
+			w.contentMask[row][col] = w.contentMask[row+count][col]
+		}
+		w.lenLine[row] = w.lenLine[row+count]
+		w.lenContent[row] = w.lenContent[row+count]
 	}
 
+	// Define a function to clear the source area 
+	// after shifting the contents of w.content array by count.
+	clearLinesWhereContentHasPassed := func(row, count int) {
+		for col := left; col <= right; col++ {
+			w.content[row][col] = nil
+			w.contentMask[row][col] = true
+		}
+	}
+
+	// If count is bigger than 0, move a rectangle in the SR up, this can
+	// happen while scrolling down.
 	if count > 0 {
 		for row := top; row <= bot-count; row++ {
-			if len(content) <= row+count {
-				continue
-			}
-
-			// copy(content[row], content[row+count])
-			for col := left; col <= right; col++ {
-				content[row][col] = content[row+count][col]
-				w.contentMask[row][col] = w.contentMask[row+count][col]
-			}
-			lenLine[row] = lenLine[row+count]
-			lenContent[row] = lenContent[row+count]
+			scrollContentByCount(row, count)
 		}
 		for row := bot - count + 1; row <= bot; row++ {
-			for col := left; col <= right; col++ {
-				content[row][col] = nil
-				w.contentMask[row][col] = true
-			}
+			clearLinesWhereContentHasPassed(row, count)
 		}
-	} else {
+	}
+	// If count is less than zero, move a rectangle in the SR down, this can
+	// happen while scrolling up.
+	if count < 0 {
+		// for row := top-count; row >= bot; row++ {
 		for row := bot; row >= top-count; row-- {
-			if len(content) <= row {
-				continue
-			}
-
-			// copy(content[row], content[row+count])
-			for col := left; col <= right; col++ {
-				content[row][col] = content[row+count][col]
-				w.contentMask[row][col] = w.contentMask[row+count][col]
-			}
-			lenLine[row] = lenLine[row+count]
-			lenContent[row] = lenContent[row+count]
+			scrollContentByCount(row, count)
 		}
-		for row := top; row < top-count; row++ {
-			for col := left; col <= right; col++ {
-				content[row][col] = nil
-				w.contentMask[row][col] = true
-			}
+		// for row := top; row < top-count; row++ {
+		for row := top-count-1; row >= top; row-- {
+			clearLinesWhereContentHasPassed(row, count)
 		}
 	}
 
