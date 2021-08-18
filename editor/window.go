@@ -774,11 +774,15 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	var vertKey string
 	var horizKey string
 
+	editor.putLog("start wheel event")
+
 	font := w.getFont()
 
 	// Detect current mode
 	mode := w.s.ws.mode
 	isTmode := w.s.ws.terminalMode
+	editor.putLog("detect neovim mode:", mode)
+	editor.putLog("detect neovim terminal mode:", fmt.Sprintf("%v", isTmode))
 	if isTmode {
 		w.s.ws.nvim.Input(`<C-\><C-n>`)
 	} else if mode != "normal" {
@@ -870,6 +874,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	mod := event.Modifiers()
 
 	if w.s.ws.isMappingScrollKey {
+		editor.putLog("detect a mapping to <C-e>, <C-y> keys.")
 		if vert != 0 {
 			go w.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
 		}
