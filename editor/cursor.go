@@ -69,9 +69,15 @@ func initCursorNew() *Cursor {
 	c.ConnectPaintEvent(c.paint)
 	c.delta = 0.1
 	c.hasSmoothMove = editor.config.Cursor.SmoothMove
-	c.ConnectWheelEvent(c.wheelEvent)
 
 	return c
+}
+
+func (c *Cursor) setBypassScreenEvent() {
+	c.ConnectWheelEvent(c.wheelEvent)
+	c.ConnectMousePressEvent(c.ws.screen.mousePressEvent)
+	c.ConnectMouseReleaseEvent(c.ws.screen.mouseEvent)
+	c.ConnectMouseMoveEvent(c.ws.screen.mouseEvent)
 }
 
 func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {

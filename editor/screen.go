@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"math"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -58,13 +57,9 @@ func newScreen() *Screen {
 		fgCache:        newCache(),
 	}
 
-	widget.SetAcceptDrops(true)
-	widget.ConnectDragEnterEvent(screen.dragEnterEvent)
-	widget.ConnectDragMoveEvent(screen.dragMoveEvent)
-	widget.ConnectDropEvent(screen.dropEvent)
-	// widget.ConnectMousePressEvent(screen.mousePressEvent)
-	// widget.ConnectMouseReleaseEvent(screen.mouseEvent)
-	// widget.ConnectMouseMoveEvent(screen.mouseEvent)
+	widget.ConnectMousePressEvent(screen.mousePressEvent)
+	widget.ConnectMouseReleaseEvent(screen.mouseEvent)
+	widget.ConnectMouseMoveEvent(screen.mouseEvent)
 
 	return screen
 }
@@ -75,52 +70,6 @@ func (s *Screen) initInputMethodWidget() {
 	s.tooltip = tooltip
 }
 
-func (s *Screen) dragEnterEvent(e *gui.QDragEnterEvent) {
-	e.AcceptProposedAction()
-}
-
-func (s *Screen) dragMoveEvent(e *gui.QDragMoveEvent) {
-	e.AcceptProposedAction()
-}
-
-func (s *Screen) dropEvent(e *gui.QDropEvent) {
-	e.SetDropAction(core.Qt__CopyAction)
-	e.AcceptProposedAction()
-	e.SetAccepted(true)
-
-	for _, i := range strings.Split(e.MimeData().Text(), "\n") {
-		data := strings.Split(i, "://")
-		if i != "" {
-			switch data[0] {
-			case "file":
-				buf, _ := s.ws.nvim.CurrentBuffer()
-				bufName, _ := s.ws.nvim.BufferName(buf)
-				var filepath string
-				switch data[1][0] {
-				case '/':
-					if runtime.GOOS == "windows" {
-						filepath = strings.Trim(data[1], `/`)
-					} else {
-						filepath = data[1]
-					}
-				default:
-					if runtime.GOOS == "windows" {
-						filepath = fmt.Sprintf(`//%s`, data[1])
-					} else {
-						filepath = data[1]
-					}
-				}
-
-				if bufName != "" {
-					s.howToOpen(filepath)
-				} else {
-					fileOpenInBuf(filepath)
-				}
-			default:
-			}
-		}
-	}
-}
 
 func fileOpenInBuf(file string) {
 	isModified, _ := editor.workspaces[editor.active].nvim.CommandOutput("echo &modified")

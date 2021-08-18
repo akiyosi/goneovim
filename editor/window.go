@@ -778,7 +778,8 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 
 	// Detect current mode
 	mode := w.s.ws.mode
-	if mode == "terminal-input" {
+	isTmode := w.s.ws.terminalMode
+	if isTmode {
 		w.s.ws.nvim.Input(`<C-\><C-n>`)
 	} else if mode != "normal" {
 		w.s.ws.nvim.Input(w.s.ws.escKeyInInsert)

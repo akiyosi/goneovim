@@ -155,6 +155,10 @@ func newWorkspace(path string) (*Workspace, error) {
 
 	w.widget = widgets.NewQWidget(nil, 0)
 	w.widget.SetParent(editor.widget)
+	w.widget.SetAcceptDrops(true)
+	w.widget.ConnectDragEnterEvent(w.dragEnterEvent)
+	w.widget.ConnectDragMoveEvent(w.dragMoveEvent)
+	w.widget.ConnectDropEvent(w.dropEvent)
 
 	// Basic Workspace UI component
 	// screen
@@ -167,9 +171,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.cursor = initCursorNew()
 	w.cursor.ws = w
 	w.cursor.SetParent(w.widget)
-	w.cursor.ConnectMousePressEvent(w.screen.mousePressEvent)
-	w.cursor.ConnectMouseReleaseEvent(w.screen.mouseEvent)
-	w.cursor.ConnectMouseMoveEvent(w.screen.mouseEvent)
+	w.cursor.setBypassScreenEvent()
 
 	// If ExtFooBar is true, then we create a UI component
 	// tabline
@@ -2481,6 +2483,53 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 		return core.NewQVariant31(imrect)
 	}
 	return core.NewQVariant()
+}
+
+func (w *Workspace) dragEnterEvent(e *gui.QDragEnterEvent) {
+	e.AcceptProposedAction()
+}
+
+func (w *Workspace) dragMoveEvent(e *gui.QDragMoveEvent) {
+	e.AcceptProposedAction()
+}
+
+func (w *Workspace) dropEvent(e *gui.QDropEvent) {
+	e.SetDropAction(core.Qt__CopyAction)
+	e.AcceptProposedAction()
+	e.SetAccepted(true)
+
+	for _, i := range strings.Split(e.MimeData().Text(), "\n") {
+		data := strings.Split(i, "://")
+		if i != "" {
+			switch data[0] {
+			case "file":
+				buf, _ := w.nvim.CurrentBuffer()
+				bufName, _ := w.nvim.BufferName(buf)
+				var filepath string
+				switch data[1][0] {
+				case '/':
+					if runtime.GOOS == "windows" {
+						filepath = strings.Trim(data[1], `/`)
+					} else {
+						filepath = data[1]
+					}
+				default:
+					if runtime.GOOS == "windows" {
+						filepath = fmt.Sprintf(`//%s`, data[1])
+					} else {
+						filepath = data[1]
+					}
+				}
+
+				if bufName != "" {
+					w.screen.howToOpen(filepath)
+				} else {
+					fileOpenInBuf(filepath)
+				}
+			default:
+			}
+		}
+	}
 }
 
 func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {
