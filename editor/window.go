@@ -1319,7 +1319,7 @@ func (w *Window) scroll(count int) {
 
 	// Define a function to clear the source area 
 	// after shifting the contents of w.content array by count.
-	clearLinesWhereContentHasPassed := func(row, count int) {
+	clearLinesWhereContentHasPassed := func(row int) {
 		for col := left; col <= right; col++ {
 			w.content[row][col] = nil
 			w.contentMask[row][col] = true
@@ -1333,7 +1333,7 @@ func (w *Window) scroll(count int) {
 			scrollContentByCount(row, count)
 		}
 		for row := bot - count + 1; row <= bot; row++ {
-			clearLinesWhereContentHasPassed(row, count)
+			clearLinesWhereContentHasPassed(row)
 		}
 	}
 	// If count is less than zero, move a rectangle in the SR down, this can
@@ -1345,7 +1345,7 @@ func (w *Window) scroll(count int) {
 		}
 		// for row := top; row < top-count; row++ {
 		for row := top-count-1; row >= top; row-- {
-			clearLinesWhereContentHasPassed(row, count)
+			clearLinesWhereContentHasPassed(row)
 		}
 	}
 
@@ -1358,14 +1358,13 @@ func (w *Window) scroll(count int) {
 }
 
 func (w *Window) update() {
-	w.redrawMutex.Lock()
-
 	if w == nil {
-		w.redrawMutex.Unlock()
 		return
 	}
-	font := w.getFont()
 
+	w.redrawMutex.Lock()
+
+	font := w.getFont()
 	start := w.queueRedrawArea[1]
 	end := w.queueRedrawArea[3]
 	// Update all lines when using the wheel scroll or indent guide feature.
@@ -1772,7 +1771,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 		for highlight, colorSlice := range chars {
 			var buffer bytes.Buffer
-			slice := colorSlice[:]
+			slice := colorSlice
 
 			for x := col; x <= col+cols; x++ {
 				if len(slice) == 0 {

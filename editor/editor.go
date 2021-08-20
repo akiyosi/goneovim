@@ -144,10 +144,7 @@ type Editor struct {
 	extFontSize   int
 	font          *Font
 
-	lang string
-
 	startuptime int64
-	file        *os.File
 }
 
 func (hl *Highlight) copy() Highlight {
