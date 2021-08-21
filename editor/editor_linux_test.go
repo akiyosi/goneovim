@@ -91,6 +91,11 @@ func TestLinuxEditor_convertKey(t *testing.T) {
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiTilde), core.Qt__GroupSwitchModifier, "~", false, 1),
 			"~",
 		},
+		{
+			`convertKey() Linux Control+Space`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Space), core.Qt__ControlModifier, string('\u0000'), false, 1),
+			"<C-Space>",
+		},
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()
