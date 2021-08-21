@@ -412,6 +412,7 @@ func (w *Workspace) registerSignal() {
 		// }
 		workspaces := []*Workspace{}
 		index := 0
+		maxworkspaceIndex := len(editor.workspaces)-1
 		for i, ws := range editor.workspaces {
 			if ws != w {
 				workspaces = append(workspaces, ws)
@@ -426,11 +427,32 @@ func (w *Workspace) registerSignal() {
 		}
 		editor.workspaces = workspaces
 
-		items := []*WorkspaceSideItem{}
-		for i, item := range editor.side.items {
-			if i != index {
-				items = append(items, item)
+		for i := 0; i < len(editor.side.items); i++ {
+			if i >= index && i+1 < len(editor.side.items) {
+				editor.side.items[i].copy(editor.side.items[i+1])
 			}
+			if i+1 == len(editor.side.items) {
+				editor.side.items[i].label.SetText("")
+				editor.side.items[i].hidden = false
+				editor.side.items[i].active = false
+				editor.side.items[i].text = ""
+				editor.side.items[i].cwdpath = ""
+				editor.side.items[i].isContentHide = false
+
+				content := widgets.NewQListWidget(nil)
+				content.SetFocusPolicy(core.Qt__NoFocus)
+				content.SetFrameShape(widgets.QFrame__NoFrame)
+				content.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+				content.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+				content.SetIconSize(core.NewQSize2(editor.iconSize*3/4, editor.iconSize*3/4))
+				editor.side.items[i].content = content
+				editor.side.items[i].widget.Layout().AddWidget(content)
+			}
+			if i == maxworkspaceIndex {
+				editor.side.items[i].hidden = true
+				editor.side.items[i].hidden = false
+			}
+			editor.side.items[i].setSideItemLabel(i)
 		}
 
 		w.hide()
@@ -440,7 +462,21 @@ func (w *Workspace) registerSignal() {
 			}
 			editor.workspaceUpdate()
 		}
+
 	})
+}
+
+func (i *WorkspaceSideItem) copy(ii *WorkspaceSideItem) {
+	i.label.SetText(ii.label.Text())
+	i.hidden = ii.hidden
+	i.active = ii.active
+	i.text = ii.text
+	i.cwdpath = ii.cwdpath
+	i.content = ii.content
+	i.isContentHide = ii.isContentHide
+
+	i.widget.Layout().AddWidget(i.content)
+
 }
 
 func (w *Workspace) hide() {
@@ -2904,15 +2940,6 @@ func (i *WorkspaceSideItem) closeContent() {
 	i.closeIcon.Show()
 	i.isContentHide = true
 	i.content.Hide()
-}
-
-func (i *WorkspaceSideItem) setText(text string) {
-	if i.text == text {
-		return
-	}
-	i.text = text
-	i.label.SetText(text)
-	i.widget.Show()
 }
 
 func (i *WorkspaceSideItem) setSideItemLabel(n int) {
