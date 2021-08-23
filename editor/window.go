@@ -1580,44 +1580,44 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	var lastBg *RGBA
 	var lastHighlight, highlight *Highlight
 
-	for x := col; x <= col+cols; x++ {
-		fillCellRect := func() {
-			if lastHighlight == nil {
-				return
-			}
-			width = end - start + 1
-			if width < 0 {
-				width = 0
-			}
-			if !isDrawDefaultBg && lastBg.equals(w.background) {
-				width = 0
-			}
-			if width > 0 {
-				// Set diff pattern
-				pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
-
-				// Fill background with pattern
-				rectF := core.NewQRectF4(
-					float64(start)*font.truewidth,
-					float64((y)*font.lineHeight+scrollPixels),
-					float64(width)*font.truewidth,
-					float64(font.lineHeight),
-				)
-				p.FillRect(
-					rectF,
-					gui.NewQBrush3(
-						gui.NewQColor3(
-							color.R,
-							color.G,
-							color.B,
-							transparent,
-						),
-						pattern,
-					),
-				)
-				width = 0
-			}
+	fillCellRect := func() {
+		if lastHighlight == nil {
+			return
 		}
+		width = end - start + 1
+		if width < 0 {
+			width = 0
+		}
+		if !isDrawDefaultBg && lastBg.equals(w.background) {
+			width = 0
+		}
+		if width > 0 {
+			// Set diff pattern
+			pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
+
+			// Fill background with pattern
+			rectF := core.NewQRectF4(
+				float64(start)*font.truewidth,
+				float64((y)*font.lineHeight+scrollPixels),
+				float64(width)*font.truewidth,
+				float64(font.lineHeight),
+			)
+			p.FillRect(
+				rectF,
+				gui.NewQBrush3(
+					gui.NewQColor3(
+						color.R,
+						color.G,
+						color.B,
+						transparent,
+					),
+					pattern,
+				),
+			)
+			width = 0
+		}
+	}
+	for x := col; x <= col+cols; x++ {
 
 		if x >= len(line)+1 {
 			continue
