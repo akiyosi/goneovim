@@ -1293,68 +1293,115 @@ func (c *Cell) isSignColumn() bool {
 }
 
 func (w *Window) scroll(count int) {
-	// scroll region
-	top := w.scrollRegion[0]
-	bot := w.scrollRegion[1]
-	left := w.scrollRegion[2]
-	right := w.scrollRegion[3]
+	// // scroll region
+	// top := w.scrollRegion[0]
+	// bot := w.scrollRegion[1]
+	// left := w.scrollRegion[2]
+	// right := w.scrollRegion[3]
 
-	// Define a function to shift the contents of w.content array by count.
-	scrollContentByCount := func(row, count int) {
-		// We should do 'continue' when len(content) <= row+count,
-		// and row+count <= bot, when row = (bot-count)
-		if len(w.content) <= bot { 
-			return
-		}
-    	
-		// copy(w.content[row], w.content[row+count])
-		// copy(w.contentMask[row], w.contentMask[row+count])
-		for col := left; col <= right; col++ {
-			w.content[row][col] = w.content[row+count][col]
-			w.contentMask[row][col] = w.contentMask[row+count][col]
-		}
-		w.lenLine[row] = w.lenLine[row+count]
-		w.lenContent[row] = w.lenContent[row+count]
-	}
-
-	// Define a function to clear the source area 
-	// after shifting the contents of w.content array by count.
-	clearLinesWhereContentHasPassed := func(row int) {
-		for col := left; col <= right; col++ {
-			w.content[row][col] = nil
-			w.contentMask[row][col] = true
-		}
-	}
-
-	// If count is bigger than 0, move a rectangle in the SR up, this can
-	// happen while scrolling down.
-	if count > 0 {
-		for row := top; row <= bot-count; row++ {
-			scrollContentByCount(row, count)
-		}
-		for row := bot - count + 1; row <= bot; row++ {
-			clearLinesWhereContentHasPassed(row)
-		}
-	}
-	// If count is less than zero, move a rectangle in the SR down, this can
-	// happen while scrolling up.
+	c := count
 	if count < 0 {
-		// for row := top-count; row >= bot; row++ {
-		for row := bot; row >= top-count; row-- {
-			scrollContentByCount(row, count)
-		}
-		// for row := top; row < top-count; row++ {
-		for row := top-count-1; row >= top; row-- {
-			clearLinesWhereContentHasPassed(row)
-		}
+		c = c * -1
 	}
+	content := make([][]*Cell, c)
+	contentMask := make([][]bool, c)
+	lenLine := make([]int, c)
+	lenContent := make([]int, c)
+
+	for i := 0; i < c; i++ {
+		content[i] = make([]*Cell, w.cols)
+		contentMask[i] = make([]bool, w.cols)
+	}
+	// for i := 0; i < c; i++ {
+	// 	for j := 0; j < w.cols; j++ {
+	// 		contentMask[i][j] = true
+	// 	}
+	// }
+
+	if count > 0 {
+		w.content = w.content[count:]
+		w.content = append(w.content, content...)
+		w.contentMask = w.contentMask[count:]
+		w.contentMask = append(w.contentMask, contentMask...)
+
+		w.lenLine = w.lenLine[count:]
+		w.lenContent = w.lenContent[count:]
+		w.lenLine = append(w.lenLine, lenLine...)
+		w.lenContent = append(w.lenContent, lenContent...)
+	}
+	if count < 0 {
+		w.content = w.content[:w.rows+count]
+		w.content = append(content, w.content...)
+		w.contentMask = w.contentMask[:w.rows+count]
+		w.contentMask = append(contentMask, w.contentMask...)
+
+		w.lenLine = w.lenLine[:w.rows+count]
+		w.lenContent = w.lenContent[:w.rows+count]
+		w.lenLine = append(lenLine, w.lenLine...)
+		w.lenContent = append(lenContent, w.lenContent...)
+	}
+
+	// **********************
+
+	// // Define a function to shift the contents of w.content array by count.
+	// scrollContentByCount := func(row, count int) {
+	// 	// We should do 'continue' when len(content) <= row+count,
+	// 	// and row+count <= bot, when row = (bot-count)
+	// 	if len(w.content) <= bot {
+	// 		return
+	// 	}
+	//
+	// 	// copy(w.content[row], w.content[row+count])
+	// 	// copy(w.contentMask[row], w.contentMask[row+count])
+	// 	for col := left; col <= right; col++ {
+	// 		w.content[row][col] = w.content[row+count][col]
+	// 		w.contentMask[row][col] = w.contentMask[row+count][col]
+	// 	}
+	// 	w.lenLine[row] = w.lenLine[row+count]
+	// 	w.lenContent[row] = w.lenContent[row+count]
+	// }
+
+	// // Define a function to clear the source area
+	// // after shifting the contents of w.content array by count.
+	// clearLinesWhereContentHasPassed := func(row int) {
+	// 	for col := left; col <= right; col++ {
+	// 		w.content[row][col] = nil
+	// 		w.contentMask[row][col] = true
+	// 	}
+	// }
+
+	// // If count is bigger than 0, move a rectangle in the SR up, this can
+	// // happen while scrolling down.
+	// if count > 0 {
+	// 	for row := top; row <= bot-count; row++ {
+	// 		scrollContentByCount(row, count)
+	// 	}
+	// 	for row := bot - count + 1; row <= bot; row++ {
+	// 		clearLinesWhereContentHasPassed(row)
+	// 	}
+	// }
+	// // If count is less than zero, move a rectangle in the SR down, this can
+	// // happen while scrolling up.
+	// if count < 0 {
+	// 	// for row := top-count; row >= bot; row++ {
+	// 	for row := bot; row >= top-count; row-- {
+	// 		scrollContentByCount(row, count)
+	// 	}
+	// 	// for row := top; row < top-count; row++ {
+	// 	for row := top-count-1; row >= top; row-- {
+	// 		clearLinesWhereContentHasPassed(row)
+	// 	}
+	// }
+
+	// -----------------------------------------
 
 	// Suppresses flickering during smooth scrolling
 	if w.scrollPixels[1] != 0 {
 		w.scrollPixels[1] = 0
 	}
 
-	w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
+	w.queueRedraw(0, 0, w.cols, w.rows)
+	// w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
 }
 
 func (w *Window) update() {
