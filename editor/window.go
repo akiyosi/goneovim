@@ -1293,7 +1293,8 @@ func (c *Cell) isSignColumn() bool {
 }
 
 func (w *Window) scroll(count int) {
-	// // scroll region
+	// The rectangular region information (top, bot, left, right) included in the grid_scroll event
+	// seems to match the size of the grid in the multigrid mode as far as I can confirm.
 	// top := w.scrollRegion[0]
 	// bot := w.scrollRegion[1]
 	// left := w.scrollRegion[2]
@@ -1325,8 +1326,8 @@ func (w *Window) scroll(count int) {
 		w.contentMask = append(w.contentMask, contentMask...)
 
 		w.lenLine = w.lenLine[count:]
-		w.lenContent = w.lenContent[count:]
 		w.lenLine = append(w.lenLine, lenLine...)
+		w.lenContent = w.lenContent[count:]
 		w.lenContent = append(w.lenContent, lenContent...)
 	}
 	if count < 0 {
@@ -1336,8 +1337,8 @@ func (w *Window) scroll(count int) {
 		w.contentMask = append(contentMask, w.contentMask...)
 
 		w.lenLine = w.lenLine[:w.rows+count]
-		w.lenContent = w.lenContent[:w.rows+count]
 		w.lenLine = append(lenLine, w.lenLine...)
+		w.lenContent = w.lenContent[:w.rows+count]
 		w.lenContent = append(lenContent, w.lenContent...)
 	}
 
@@ -1400,8 +1401,8 @@ func (w *Window) scroll(count int) {
 		w.scrollPixels[1] = 0
 	}
 
-	w.queueRedraw(0, 0, w.cols, w.rows)
 	// w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
+	w.queueRedraw(0, 0, w.cols, w.rows)
 }
 
 func (w *Window) update() {
