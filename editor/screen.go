@@ -1129,9 +1129,9 @@ func (s *Screen) gridScroll(args []interface{}) {
 			continue
 		}
 
-		// NOTE: The rectangular region information (top, bot, left, right) included
-		// in the grid_scroll event seems to match the size of the grid as far as I can confirm.
-		// What are the cases where this does not match the size of the grid?
+		// NOTE: 
+		// The rectangular region information (top, bot, left, right) included in the grid_scroll event
+		// seems to match the size of the grid in the multigrid mode as far as I can confirm.
 		// win.scrollRegion[0] = util.ReflectToInt(arg.([]interface{})[1])     // top
 		// win.scrollRegion[1] = util.ReflectToInt(arg.([]interface{})[2]) - 1 // bot
 		// win.scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3])     // left

@@ -1482,15 +1482,28 @@ func (w *Window) update() {
 		} else {
 			for j, cm := range w.contentMask[i] {
 				mask := cm || w.contentMaskOld[i][j]
+				// Starting point for creating a rectangular area
 				if mask && !isCreateRect {
 					start = j
 					isCreateRect = true
 				}
+				// Judgment point for end of rectangular area creation
 				if (!mask && isCreateRect) || (j >= len(w.contentMask[i])-1 && isCreateRect) {
+					// If the next rectangular area will be created with only one cell separating it, merge it.
+					if j+1 <= len(w.contentMask[i])-1 {
+						if w.contentMask[i][j+1] {
+							continue
+						}
+					}
+
 					jj := j
+
+					// If it reaches the edge of the grid
 					if j >= len(w.contentMask[i])-1 && isCreateRect {
 						jj++
 					}
+
+					// create rectangular area
 					rect := [4]int{
 						int(float64(start) * font.truewidth),
 						i * font.lineHeight,

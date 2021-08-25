@@ -375,10 +375,12 @@ func (w *Workspace) vimEnterProcess() {
 func (w *Workspace) registerSignal() {
 	w.signal.ConnectRedrawSignal(func() {
 		updates := <-w.redrawUpdates
+		editor.putLog("Received redraw event from neovim")
 		w.handleRedraw(updates)
 	})
 	w.signal.ConnectGuiSignal(func() {
 		updates := <-w.guiUpdates
+		editor.putLog("Received GUI event from neovim")
 		w.handleRPCGui(updates)
 	})
 	w.signal.ConnectLazyDrawSignal(func() {
