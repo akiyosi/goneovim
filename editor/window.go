@@ -1489,12 +1489,12 @@ func (w *Window) update() {
 				}
 				// Judgment point for end of rectangular area creation
 				if (!mask && isCreateRect) || (j >= len(w.contentMask[i])-1 && isCreateRect) {
-					// If the next rectangular area will be created with only one cell separating it, merge it.
-					if j+1 <= len(w.contentMask[i])-1 {
-						if w.contentMask[i][j+1] {
-							continue
-						}
-					}
+					// // If the next rectangular area will be created with only one cell separating it, merge it.
+					// if j+1 <= len(w.contentMask[i])-1 {
+					// 	if w.contentMask[i][j+1] {
+					// 		continue
+					// 	}
+					// }
 
 					jj := j
 
