@@ -10,3 +10,5 @@ cmd/goneovim/deploy*
 cmd/goneovim/windows/*
 cmd/goneovim/rcc*
 cmd/goneovim/.nvimlog
+cmd/goneovim/__debug_bin
+cmd/goneovim/debug.log
