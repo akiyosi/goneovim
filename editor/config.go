@@ -72,8 +72,10 @@ type editorConfig struct {
 	DiffChangePattern        int
 	ClickEffect              bool
 	BorderlessWindow         bool
+	DockmenuActions          map[string]string
 	// ExtWildmenu            bool
 	// ExtMultigrid           bool
+
 
 	WorkAroundNeovimIssue12985 bool
 }
