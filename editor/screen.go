@@ -137,6 +137,19 @@ func (s *Screen) updateSize() {
 	currentCols := int(float64(s.width) / s.font.truewidth)
 	currentRows := s.height / s.font.lineHeight
 
+	// Adjust the position of the message grid.
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
+		}
+		if win.isMsgGrid {
+			win.move(win.pos[0], win.pos[1])
+		}
+
+		return true
+	})
+
 	isNeedTryResize := (currentCols != ws.cols || currentRows != ws.rows)
 	if !isNeedTryResize {
 		return
