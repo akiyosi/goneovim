@@ -837,7 +837,6 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	if event.IsAutoRepeat() {
 		e.isKeyAutoRepeating = true
 	}
-	e.putLog("key input:", input, fmt.Sprintf("%s, %d, %v", event.Text(), event.Key(), event.Modifiers()))
 	if input != "" {
 		e.workspaces[e.active].nvim.Input(input)
 	}
@@ -1041,6 +1040,10 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	prefix := e.modPrefix(mod)
 	if prefix != "" {
 		return fmt.Sprintf("<%s%s>", prefix, c)
+	}
+
+	if e.opts.Debug != "" {
+		e.putLog("key input:", c, fmt.Sprintf("%s, %d, %v", text, key, mod))
 	}
 
 	return c
