@@ -126,6 +126,11 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_L), core.Qt__AltModifier, "@", false, 1),
 			"@",
 		},
+		{
+			`convertKey() MacOS French keyboardlayout 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_L), core.Qt__AltModifier|core.Qt__ShiftModifier, "|", false, 1),
+			"|",
+		},
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()

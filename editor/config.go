@@ -318,7 +318,7 @@ func (c *gonvimConfig) init() {
 
 	c.Editor.DisableLigatures = false
 	c.Editor.Clipboard = true
-	c.Editor.Macmeta = true
+	c.Editor.Macmeta = false
 	c.Editor.DisableImeInNormal = false
 
 	c.Editor.DrawWindowSeparator = false

@@ -900,13 +900,11 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	mod := event.Modifiers()
 
 	// this is macmeta alternatively
-	if runtime.GOOS == "darwin" {
-		if e.config.Editor.Macmeta {
-			if mod&core.Qt__AltModifier > 0 && mod&core.Qt__ShiftModifier > 0 {
-				text = string(rune(key))
-			} else if mod&core.Qt__AltModifier > 0 && !(mod&core.Qt__ShiftModifier > 0) {
-				text = strings.ToLower(string(rune(key)))
-			}
+	if e.config.Editor.Macmeta {
+		if mod&core.Qt__AltModifier > 0 && mod&core.Qt__ShiftModifier > 0 {
+			text = string(rune(key))
+		} else if mod&core.Qt__AltModifier > 0 && !(mod&core.Qt__ShiftModifier > 0) {
+			text = strings.ToLower(string(rune(key)))
 		}
 	}
 
@@ -1043,7 +1041,7 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	}
 
 	if e.opts.Debug != "" {
-		e.putLog("key input:", c, fmt.Sprintf("%s, %d, %v", text, key, mod))
+		e.putLog("key input:", c, fmt.Sprintf("%s, %d, %v", event.Text(), event.Key(), event.Modifiers()))
 	}
 
 	return c
