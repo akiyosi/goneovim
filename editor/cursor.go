@@ -57,6 +57,8 @@ type Cursor struct {
 	blinkWait            int
 	blinkOn              int
 	blinkOff             int
+
+	animation *core.QPropertyAnimation
 }
 
 func initCursorNew() *Cursor {
@@ -634,8 +636,14 @@ func (c *Cursor) updateContent() {
 
 	c.move(win)
 	if !(c.x == x && c.y == y) {
-		c.oldx = c.x
-		c.oldy = c.y
+		// If the cursor has not finished its animated movement
+		if c.deltax != 0 || c.deltay != 0 {
+			c.oldx = c.oldx + c.deltax
+			c.oldy = c.oldy + c.deltay
+		} else {
+			c.oldx = c.x
+			c.oldy = c.y
+		}
 		c.x = x
 		c.y = y
 		c.doAnimate = true
@@ -663,40 +671,142 @@ func (c *Cursor) update() {
 }
 
 func (c *Cursor) updateRegion() {
-	if !c.hasSmoothMove {
-		c.updateMinimumArea()
-	} else {
-		if /*  */ c.deltax < 0 && c.deltay == 0 {
-			c.Update2(int(math.Ceil(c.oldx+c.deltax)), 0, c.Width(), int(c.y)+c.height)
-		} else if c.deltax > 0 && c.deltay == 0 {
-			c.Update2(0, 0, int(math.Ceil(c.oldx+c.deltax+float64(c.width))), int(c.y)+c.height)
-		} else if c.deltax == 0 && c.deltay < 0 {
-			c.Update2(0, int(math.Ceil(c.oldy+c.deltay)), int(math.Ceil(c.x+float64(c.width))), c.Height())
-		} else if c.deltax == 0 && c.deltay > 0 {
-			c.Update2(0, 0, int(math.Ceil(c.oldx+float64(c.width))), int(c.oldy+c.deltay)+c.height)
-		} else {
-			if editor.isKeyAutoRepeating {
-				c.updateMinimumArea()
-			} else {
-				c.Update()
-			}
-		}
-	}
+	c.updateMinimumArea()
+	// if !c.hasSmoothMove {
+	// 	c.updateMinimumArea()
+	// } else {
+	// 	if /*  */ c.deltax < 0 && c.deltay == 0 {
+	// 		c.Update2(int(math.Ceil(c.oldx+c.deltax)), 0, c.Width(), int(c.y)+c.height)
+	// 	} else if c.deltax > 0 && c.deltay == 0 {
+	// 		c.Update2(0, 0, int(math.Ceil(c.oldx+c.deltax+float64(c.width))), int(c.y)+c.height)
+	// 	} else if c.deltax == 0 && c.deltay < 0 {
+	// 		c.Update2(0, int(math.Ceil(c.oldy+c.deltay)), int(math.Ceil(c.x+float64(c.width))), c.Height())
+	// 	} else if c.deltax == 0 && c.deltay > 0 {
+	// 		c.Update2(0, 0, int(math.Ceil(c.oldx+float64(c.width))), int(c.oldy+c.deltay)+c.height)
+	// 	} else {
+	// 		if editor.isKeyAutoRepeating {
+	// 			c.updateMinimumArea()
+	// 		} else {
+	// 			c.Update()
+	// 		}
+	// 	}
+	// }
 }
 
 func (c *Cursor) updateMinimumArea() {
-	c.Update2(
-		int(math.Trunc(c.oldx)),
-		int(math.Trunc(c.oldy)),
-		int(math.Ceil(c.oldx+float64(c.width))),
-		int(math.Ceil(c.oldy+float64(c.height))),
+
+	var topleft, topright, topbottom *core.QPoint
+	var bottomright, bottomleft, bottomtop *core.QPoint
+	width := float64(c.width)
+	height := float64(c.height)
+
+	var poly *gui.QPolygon
+
+	var top, left, right, bottom float64
+	if c.oldx < c.x && c.oldy < c.y || c.oldx > c.x && c.oldy > c.y {
+		if c.oldx < c.x {
+			left = c.oldx
+			right = c.x
+		} else {
+			left = c.x
+			right = c.oldx
+		}
+		if c.oldy < c.y {
+			top = c.oldy
+			bottom = c.y
+		} else {
+			top = c.y
+			bottom = c.oldy
+		}
+
+		topleft = core.NewQPoint2(
+			int(math.Trunc(left)),
+			int(math.Trunc(top)),
+		)
+		topright = core.NewQPoint2(
+			int(math.Trunc(left+width)),
+			int(math.Trunc(top)),
+		)
+		topbottom = core.NewQPoint2(
+			int(math.Trunc(left)),
+			int(math.Trunc(top+height)),
+		)
+		bottomright = core.NewQPoint2(
+			int(math.Trunc(right+width)),
+			int(math.Trunc(bottom+height)),
+		)
+		bottomleft = core.NewQPoint2(
+			int(math.Trunc(right)),
+			int(math.Trunc(bottom+height)),
+		)
+		bottomtop = core.NewQPoint2(
+			int(math.Trunc(right+width)),
+			int(math.Trunc(bottom)),
+		)
+
+		poly = gui.NewQPolygon3(
+			[]*core.QPoint{
+				topbottom, topleft, topright,
+				bottomtop, bottomright, bottomleft,
+				topbottom,
+			},
+		)
+
+	} else {
+		if c.oldx < c.x {
+			left = c.oldx
+			right = c.x
+		} else {
+			left = c.x
+			right = c.oldx
+		}
+		if c.oldy < c.y {
+			top = c.oldy
+			bottom = c.y
+		} else {
+			top = c.y
+			bottom = c.oldy
+		}
+
+		topleft = core.NewQPoint2(
+			int(math.Trunc(right)),
+			int(math.Trunc(top)),
+		)
+		topright = core.NewQPoint2(
+			int(math.Trunc(right+width)),
+			int(math.Trunc(top)),
+		)
+		topbottom = core.NewQPoint2(
+			int(math.Trunc(right+width)),
+			int(math.Trunc(top+height)),
+		)
+		bottomright = core.NewQPoint2(
+			int(math.Trunc(left+width)),
+			int(math.Trunc(bottom+height)),
+		)
+		bottomleft = core.NewQPoint2(
+			int(math.Trunc(left)),
+			int(math.Trunc(bottom+height)),
+		)
+		bottomtop = core.NewQPoint2(
+			int(math.Trunc(left)),
+			int(math.Trunc(bottom)),
+		)
+
+		poly = gui.NewQPolygon3(
+			[]*core.QPoint{
+				topleft, topright, topbottom,
+				bottomright, bottomleft, bottomtop,
+				topleft,
+			},
+		)
+	}
+
+	rgn := gui.NewQRegion4(
+		poly,
+		core.Qt__OddEvenFill,
 	)
-	c.Update2(
-		int(math.Trunc(c.x)),
-		int(math.Trunc(c.y)),
-		int(math.Ceil(c.x+float64(c.width))),
-		int(math.Ceil(c.y+float64(c.height))),
-	)
+	c.Update4(rgn)
 }
 
 func (c *Cursor) animateMove() {
@@ -708,11 +818,8 @@ func (c *Cursor) animateMove() {
 	}
 
 	// process smooth scroll
-	a := core.NewQPropertyAnimation2(c, core.NewQByteArray2("animationProp", len("animationProp")), c)
-	a.ConnectValueChanged(func(value *core.QVariant) {
-		if editor.isKeyAutoRepeating {
-			return
-		}
+	c.animation = core.NewQPropertyAnimation2(c, core.NewQByteArray2("animationProp", len("animationProp")), c)
+	c.animation.ConnectValueChanged(func(value *core.QVariant) {
 		ok := false
 		v := value.ToDouble(&ok)
 		if !ok {
@@ -740,22 +847,23 @@ func (c *Cursor) animateMove() {
 		2,
 	)
 	duration := editor.config.Cursor.Duration + int(f)
-	a.SetDuration(int(duration))
-	a.SetStartValue(core.NewQVariant10(float64(0.1)))
-	a.SetEndValue(core.NewQVariant10(1))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuint))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCubic))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuint))
-	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCirc))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__Linear))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InQuart))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCubic))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuart))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutInQuart))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutExpo))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InCubic))
-	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
+	c.animation.SetDuration(int(duration))
+	c.animation.SetStartValue(core.NewQVariant10(float64(0.1)))
+	c.animation.SetEndValue(core.NewQVariant10(1))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuint))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCubic))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuint))
+	c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCirc))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__Linear))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InQuart))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCubic))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuart))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutInQuart))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutExpo))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
+	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InCubic))
+
+	c.animation.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 }
