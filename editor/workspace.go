@@ -2221,7 +2221,9 @@ func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.Q
 			}
 		}
 	}
-	family := parts[0]
+	// A '_' can be used in the place of a space, so you don't need to use
+	// backslashes to escape the spaces.
+	family := strings.Replace(parts[0], "_", " ", -1)
 
 	if height <= 1.0 && width <= 0 {
 		height = 12
