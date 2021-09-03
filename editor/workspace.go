@@ -793,6 +793,7 @@ func (w *Workspace) initGonvim() {
 		command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
 		command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
 		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
+		command! GonvimIndentguide call rpcnotify(0, "Gui", "gonvim_indentguide")
 	`
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	w.nvim.Command(registerScripts)
@@ -1888,6 +1889,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		}
 		w.cursor.hasSmoothMove = editor.config.Cursor.SmoothMove
 		editor.config.mu.Unlock()
+	case "gonvim_indentguide":
+		w.toggleIndentguide()
 	case "gonvim_ligatures":
 		w.toggleLigatures()
 	case "Font":
@@ -2607,6 +2610,16 @@ func (w *Workspace) toggleLigatures() {
 	editor.config.mu.Unlock()
 
 	w.screen.purgeTextCacheForWins()
+}
+
+func (w *Workspace) toggleIndentguide() {
+	editor.config.mu.Lock()
+	if editor.config.Editor.IndentGuide {
+		editor.config.Editor.IndentGuide = false
+	} else {
+		editor.config.Editor.IndentGuide = true
+	}
+	editor.config.mu.Unlock()
 }
 
 // WorkspaceSide is
