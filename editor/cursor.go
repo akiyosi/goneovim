@@ -671,30 +671,25 @@ func (c *Cursor) update() {
 }
 
 func (c *Cursor) updateRegion() {
-	c.updateMinimumArea()
-	// if !c.hasSmoothMove {
-	// 	c.updateMinimumArea()
-	// } else {
-	// 	if /*  */ c.deltax < 0 && c.deltay == 0 {
-	// 		c.Update2(int(math.Ceil(c.oldx+c.deltax)), 0, c.Width(), int(c.y)+c.height)
-	// 	} else if c.deltax > 0 && c.deltay == 0 {
-	// 		c.Update2(0, 0, int(math.Ceil(c.oldx+c.deltax+float64(c.width))), int(c.y)+c.height)
-	// 	} else if c.deltax == 0 && c.deltay < 0 {
-	// 		c.Update2(0, int(math.Ceil(c.oldy+c.deltay)), int(math.Ceil(c.x+float64(c.width))), c.Height())
-	// 	} else if c.deltax == 0 && c.deltay > 0 {
-	// 		c.Update2(0, 0, int(math.Ceil(c.oldx+float64(c.width))), int(c.oldy+c.deltay)+c.height)
-	// 	} else {
-	// 		if editor.isKeyAutoRepeating {
-	// 			c.updateMinimumArea()
-	// 		} else {
-	// 			c.Update()
-	// 		}
-	// 	}
-	// }
+	if !c.hasSmoothMove {
+		c.Update2(
+			int(math.Trunc(c.oldx)),
+			int(math.Trunc(c.oldy)),
+			int(math.Ceil(c.oldx+float64(c.width))),
+			int(math.Ceil(c.oldy+float64(c.height))),
+		)
+		c.Update2(
+			int(math.Trunc(c.x)),
+			int(math.Trunc(c.y)),
+			int(math.Ceil(c.x+float64(c.width))),
+			int(math.Ceil(c.y+float64(c.height))),
+		)
+	} else {
+		c.updateMinimumArea()
+	}
 }
 
 func (c *Cursor) updateMinimumArea() {
-
 	var topleft, topright, topbottom *core.QPoint
 	var bottomright, bottomleft, bottomtop *core.QPoint
 	width := float64(c.width)
