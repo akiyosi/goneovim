@@ -1293,108 +1293,72 @@ func (c *Cell) isSignColumn() bool {
 }
 
 func (w *Window) scroll(count int) {
-	// The rectangular region information (top, bot, left, right) included in the grid_scroll event
-	// seems to match the size of the grid in the multigrid mode as far as I can confirm.
-	// top := w.scrollRegion[0]
-	// bot := w.scrollRegion[1]
-	// left := w.scrollRegion[2]
-	// right := w.scrollRegion[3]
+	top := w.scrollRegion[0]
+	bot := w.scrollRegion[1]
+	left := w.scrollRegion[2]
+	right := w.scrollRegion[3]
 
-	c := count
-	if count < 0 {
-		c = c * -1
+	// If the rectangular area to be scrolled matches
+	// the entire area of the grid, we simply shift the content slice.
+	if top == 0 && bot == w.rows-1 {
+		c := count
+		if count < 0 {
+			c = c * -1
+		}
+
+		content := make([][]*Cell, c)
+		contentMask := make([][]bool, c)
+		lenLine := make([]int, c)
+		lenContent := make([]int, c)
+
+		for i := 0; i < c; i++ {
+			content[i] = make([]*Cell, w.cols)
+			contentMask[i] = make([]bool, w.cols)
+		}
+
+		if count > 0 {
+			w.content = w.content[count:]
+			w.content = append(w.content, content...)
+			w.contentMask = w.contentMask[count:]
+			w.contentMask = append(w.contentMask, contentMask...)
+
+			w.lenLine = w.lenLine[count:]
+			w.lenLine = append(w.lenLine, lenLine...)
+			w.lenContent = w.lenContent[count:]
+			w.lenContent = append(w.lenContent, lenContent...)
+		}
+		if count < 0 {
+			w.content = w.content[:w.rows+count]
+			w.content = append(content, w.content...)
+			w.contentMask = w.contentMask[:w.rows+count]
+			w.contentMask = append(contentMask, w.contentMask...)
+
+			w.lenLine = w.lenLine[:w.rows+count]
+			w.lenLine = append(lenLine, w.lenLine...)
+			w.lenContent = w.lenContent[:w.rows+count]
+			w.lenContent = append(lenContent, w.lenContent...)
+		}
+	} else {
+		// If the rectangular area to be scrolled does not match
+		// the entire area of the grid
+
+		if count > 0 {
+			for row := top; row <= bot-count; row++ {
+				w.scrollContentByCount(row, left, right, bot, count)
+			}
+			for row := bot - count + 1; row <= bot; row++ {
+				w.clearLinesWhereContentHasPassed(row, left, right)
+			}
+		}
+		if count < 0 {
+			for row := bot; row >= top-count; row-- {
+				w.scrollContentByCount(row, left, right, bot, count)
+			}
+			for row := top - count - 1; row >= top; row-- {
+				w.clearLinesWhereContentHasPassed(row, left, right)
+			}
+		}
 	}
-	content := make([][]*Cell, c)
-	contentMask := make([][]bool, c)
-	lenLine := make([]int, c)
-	lenContent := make([]int, c)
-
-	for i := 0; i < c; i++ {
-		content[i] = make([]*Cell, w.cols)
-		contentMask[i] = make([]bool, w.cols)
-	}
-	// for i := 0; i < c; i++ {
-	// 	for j := 0; j < w.cols; j++ {
-	// 		contentMask[i][j] = true
-	// 	}
-	// }
-
-	if count > 0 {
-		w.content = w.content[count:]
-		w.content = append(w.content, content...)
-		w.contentMask = w.contentMask[count:]
-		w.contentMask = append(w.contentMask, contentMask...)
-
-		w.lenLine = w.lenLine[count:]
-		w.lenLine = append(w.lenLine, lenLine...)
-		w.lenContent = w.lenContent[count:]
-		w.lenContent = append(w.lenContent, lenContent...)
-	}
-	if count < 0 {
-		w.content = w.content[:w.rows+count]
-		w.content = append(content, w.content...)
-		w.contentMask = w.contentMask[:w.rows+count]
-		w.contentMask = append(contentMask, w.contentMask...)
-
-		w.lenLine = w.lenLine[:w.rows+count]
-		w.lenLine = append(lenLine, w.lenLine...)
-		w.lenContent = w.lenContent[:w.rows+count]
-		w.lenContent = append(lenContent, w.lenContent...)
-	}
-
-	// **********************
-
-	// // Define a function to shift the contents of w.content array by count.
-	// scrollContentByCount := func(row, count int) {
-	// 	// We should do 'continue' when len(content) <= row+count,
-	// 	// and row+count <= bot, when row = (bot-count)
-	// 	if len(w.content) <= bot {
-	// 		return
-	// 	}
-	//
-	// 	// copy(w.content[row], w.content[row+count])
-	// 	// copy(w.contentMask[row], w.contentMask[row+count])
-	// 	for col := left; col <= right; col++ {
-	// 		w.content[row][col] = w.content[row+count][col]
-	// 		w.contentMask[row][col] = w.contentMask[row+count][col]
-	// 	}
-	// 	w.lenLine[row] = w.lenLine[row+count]
-	// 	w.lenContent[row] = w.lenContent[row+count]
-	// }
-
-	// // Define a function to clear the source area
-	// // after shifting the contents of w.content array by count.
-	// clearLinesWhereContentHasPassed := func(row int) {
-	// 	for col := left; col <= right; col++ {
-	// 		w.content[row][col] = nil
-	// 		w.contentMask[row][col] = true
-	// 	}
-	// }
-
-	// // If count is bigger than 0, move a rectangle in the SR up, this can
-	// // happen while scrolling down.
-	// if count > 0 {
-	// 	for row := top; row <= bot-count; row++ {
-	// 		scrollContentByCount(row, count)
-	// 	}
-	// 	for row := bot - count + 1; row <= bot; row++ {
-	// 		clearLinesWhereContentHasPassed(row)
-	// 	}
-	// }
-	// // If count is less than zero, move a rectangle in the SR down, this can
-	// // happen while scrolling up.
-	// if count < 0 {
-	// 	// for row := top-count; row >= bot; row++ {
-	// 	for row := bot; row >= top-count; row-- {
-	// 		scrollContentByCount(row, count)
-	// 	}
-	// 	// for row := top; row < top-count; row++ {
-	// 	for row := top-count-1; row >= top; row-- {
-	// 		clearLinesWhereContentHasPassed(row)
-	// 	}
-	// }
-
-	// -----------------------------------------
 
 	// Suppresses flickering during smooth scrolling
 	if w.scrollPixels[1] != 0 {
@@ -1402,7 +1366,32 @@ func (w *Window) scroll(count int) {
 	}
 
 	// w.queueRedraw(left, top, (right - left + 1), (bot - top + 1))
-	w.queueRedraw(0, 0, w.cols, w.rows)
+	w.queueRedraw(0, top, w.cols, bot-top+1)
+}
+
+// scrollContentByCount a function to shift the contents of w.content array by count.
+func (w *Window) scrollContentByCount(row, left, right, bot, count int) {
+	if len(w.content) <= bot {
+		return
+	}
+
+	// copy(w.content[row], w.content[row+count])
+	// copy(w.contentMask[row], w.contentMask[row+count])
+	for col := left; col <= right; col++ {
+		w.content[row][col] = w.content[row+count][col]
+		w.contentMask[row][col] = w.contentMask[row+count][col]
+	}
+	w.lenLine[row] = w.lenLine[row+count]
+	w.lenContent[row] = w.lenContent[row+count]
+}
+
+// clearLinesWhereContentHasPassed is a function to clear the source area
+// after shifting the contents of w.content array by count.
+func (w *Window) clearLinesWhereContentHasPassed(row, left, right int) {
+	for col := left; col <= right; col++ {
+		w.content[row][col] = nil
+		w.contentMask[row][col] = true
+	}
 }
 
 func (w *Window) update() {
