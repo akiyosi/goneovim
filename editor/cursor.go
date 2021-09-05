@@ -57,8 +57,6 @@ type Cursor struct {
 	blinkWait            int
 	blinkOn              int
 	blinkOff             int
-
-	animation *core.QPropertyAnimation
 }
 
 func initCursorNew() *Cursor {
@@ -813,8 +811,8 @@ func (c *Cursor) animateMove() {
 	}
 
 	// process smooth scroll
-	c.animation = core.NewQPropertyAnimation2(c, core.NewQByteArray2("animationProp", len("animationProp")), c)
-	c.animation.ConnectValueChanged(func(value *core.QVariant) {
+	a := core.NewQPropertyAnimation2(c, core.NewQByteArray2("animationProp", len("animationProp")), c)
+	a.ConnectValueChanged(func(value *core.QVariant) {
 		ok := false
 		v := value.ToDouble(&ok)
 		if !ok {
@@ -842,23 +840,23 @@ func (c *Cursor) animateMove() {
 		2,
 	)
 	duration := editor.config.Cursor.Duration + int(f)
-	c.animation.SetDuration(int(duration))
-	c.animation.SetStartValue(core.NewQVariant10(float64(0.1)))
-	c.animation.SetEndValue(core.NewQVariant10(1))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuint))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCubic))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuint))
-	c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCirc))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__Linear))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InQuart))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCubic))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuart))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutInQuart))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutExpo))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
-	// c.animation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InCubic))
+	a.SetDuration(int(duration))
+	a.SetStartValue(core.NewQVariant10(float64(0.1)))
+	a.SetEndValue(core.NewQVariant10(1))
+	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCirc))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuint))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCubic))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuint))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__Linear))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InQuart))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCubic))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuart))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutInQuart))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutExpo))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InCubic))
 
-	c.animation.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
+	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 }
