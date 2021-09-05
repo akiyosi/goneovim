@@ -414,7 +414,7 @@ func (w *Workspace) registerSignal() {
 		// }
 		workspaces := []*Workspace{}
 		index := 0
-		maxworkspaceIndex := len(editor.workspaces)-1
+		maxworkspaceIndex := len(editor.workspaces) - 1
 		for i, ws := range editor.workspaces {
 			if ws != w {
 				workspaces = append(workspaces, ws)
@@ -792,6 +792,7 @@ func (w *Workspace) initGonvim() {
 	gonvimCommands = gonvimCommands + `
 		command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
 		command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
+		command! GonvimSmoothScroll call rpcnotify(0, "Gui", "gonvim_smoothscroll")
 		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
 		command! GonvimIndentguide call rpcnotify(0, "Gui", "gonvim_indentguide")
 	`
@@ -1880,15 +1881,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.window.Resize2(width, height)
 	case "gonvim_maximize":
 		editor.window.WindowMaximize()
+	case "gonvim_smoothscroll":
+		w.toggleSmoothScroll()
 	case "gonvim_smoothcursor":
-		editor.config.mu.Lock()
-		if editor.config.Cursor.SmoothMove {
-			editor.config.Cursor.SmoothMove = false
-		} else {
-			editor.config.Cursor.SmoothMove = true
-		}
-		w.cursor.hasSmoothMove = editor.config.Cursor.SmoothMove
-		editor.config.mu.Unlock()
+		w.toggleSmoothCursor()
 	case "gonvim_indentguide":
 		w.toggleIndentguide()
 	case "gonvim_ligatures":
@@ -2598,6 +2594,27 @@ func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {
 	y += win.pos[1] * font.lineHeight
 
 	return x, y, font.lineHeight, isCursorBelowTheCenter
+}
+
+func (w *Workspace) toggleSmoothScroll() {
+	editor.config.mu.Lock()
+	if editor.config.Editor.SmoothScroll {
+		editor.config.Editor.SmoothScroll = false
+	} else {
+		editor.config.Editor.SmoothScroll = true
+	}
+	editor.config.mu.Unlock()
+}
+
+func (w *Workspace) toggleSmoothCursor() {
+	editor.config.mu.Lock()
+	if editor.config.Cursor.SmoothMove {
+		editor.config.Cursor.SmoothMove = false
+	} else {
+		editor.config.Cursor.SmoothMove = true
+	}
+	w.cursor.hasSmoothMove = editor.config.Cursor.SmoothMove
+	editor.config.mu.Unlock()
 }
 
 func (w *Workspace) toggleLigatures() {
