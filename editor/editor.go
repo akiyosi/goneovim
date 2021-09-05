@@ -336,6 +336,7 @@ func InitEditor(options Options, args []string) {
 
 	e.widget.SetFocus2()
 	e.putLog("focused UI")
+	e.addDockMenu()
 
 	widgets.QApplication_Exec()
 }
@@ -349,6 +350,45 @@ func (e *Editor) putLog(v ...interface{}) {
 		fmt.Sprintf("%07.3f", float64(time.Now().UnixNano()/1000-e.startuptime)/1000),
 		strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%s", v), "["), "]"),
 	)
+}
+
+
+// addDockMenu add the action menu for app in the Dock.
+func (e *Editor) addDockMenu() {
+	if runtime.GOOS != "darwin" {
+		return
+	}
+	appExecutable := core.QCoreApplication_ApplicationFilePath()
+
+	menu := widgets.NewQMenu(nil)
+	action1 := menu.AddAction("New Instance")
+	action1.ConnectTriggered(func(checked bool) {
+		go func() {
+			cmd := exec.Command(appExecutable)
+			cmd.Start()
+		}()
+	})
+
+	action2 := menu.AddAction("New Instance with -u NONE")
+	action2.ConnectTriggered(func(checked bool) {
+		go func() {
+			cmd := exec.Command(appExecutable, "-u", "NONE")
+			cmd.Start()
+		}()
+	})
+
+	for key, string := range e.config.Editor.DockmenuActions {
+		action := menu.AddAction(key)
+		strSlice := strings.Split(string, " ")
+		action.ConnectTriggered(func(checked bool) {
+			go func() {
+				cmd := exec.Command(appExecutable, strSlice...)
+				cmd.Start()
+			}()
+		})
+	}
+
+	menu.SetAsDockMenu()
 }
 
 // setAppDirPath
