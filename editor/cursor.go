@@ -632,12 +632,19 @@ func (c *Cursor) updateContent() {
 	x := float64(col+winx)*font.truewidth + float64(winbordersize)
 	y := float64((row+winy)*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(c.shift+scrollPixels+res+winbordersize)
 
+	isStopScroll := (win.lastScrollphase == core.Qt__ScrollEnd)
 	c.move(win)
 	if !(c.x == x && c.y == y) {
 		// If the cursor has not finished its animated movement
 		if c.deltax != 0 || c.deltay != 0 {
 			c.oldx = c.oldx + c.deltax
 			c.oldy = c.oldy + c.deltay
+
+			// Suppress cursor animation while touchpad scrolling is in progress.
+			if !isStopScroll {
+				c.oldx = x
+				c.oldy = y
+			}
 		} else {
 			c.oldx = c.x
 			c.oldy = c.y
@@ -645,6 +652,10 @@ func (c *Cursor) updateContent() {
 		c.x = x
 		c.y = y
 		c.doAnimate = true
+		// Suppress cursor animation while touchpad scrolling is in progress.
+		if !isStopScroll {
+			c.doAnimate = false
+		}
 		c.animateMove()
 	}
 }
