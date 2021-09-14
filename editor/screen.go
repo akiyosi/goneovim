@@ -33,7 +33,7 @@ type Screen struct {
 	hlAttrDef      map[int]*Highlight
 	highlightGroup map[string]int
 
-	tooltip *widgets.QLabel
+	tooltip *IMETooltip
 
 	fgCache Cache
 
@@ -65,8 +65,10 @@ func newScreen() *Screen {
 }
 
 func (s *Screen) initInputMethodWidget() {
-	tooltip := widgets.NewQLabel(s.widget, 0)
+	tooltip := NewIMETooltip(s.widget, 0)
 	tooltip.SetVisible(false)
+	tooltip.ConnectPaintEvent(tooltip.paint)
+	tooltip.s = s
 	s.tooltip = tooltip
 }
 
@@ -320,96 +322,6 @@ func (s *Screen) purgeTextCacheForWins() {
 		win.fgCache.purge()
 		return true
 	})
-}
-
-func (s *Screen) toolTipPos() (int, int, int, int) {
-	var x, y, candX, candY int
-	ws := s.ws
-	if s.lenWindows() == 0 {
-		return 0, 0, 0, 0
-	}
-	if ws.palette == nil {
-		return 0, 0, 0, 0
-	}
-	if ws.palette.widget.IsVisible() {
-		s.tooltip.SetParent(s.ws.palette.widget)
-		font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
-		s.tooltip.SetFont(font)
-		x = ws.palette.cursorX + ws.palette.patternPadding
-		candX = x + ws.palette.widget.Pos().X()
-		y = ws.palette.patternPadding + ws.palette.padding
-		candY = y + ws.palette.widget.Pos().Y()
-	} else {
-		win, ok := s.getWindow(s.ws.cursor.gridid)
-		if !ok {
-			return 0, 0, 0, 0
-		}
-		font := win.getFont()
-		s.toolTipFont(font)
-		row := s.cursor[0]
-		col := s.cursor[1]
-		x = int(float64(col) * font.truewidth)
-		y = row * font.lineHeight
-
-		candX = int(float64(col+win.pos[0]) * font.truewidth)
-		tablineMarginTop := 0
-		if ws.tabline != nil {
-			tablineMarginTop = ws.tabline.marginTop
-		}
-		tablineHeight := 0
-		if ws.tabline != nil {
-			tablineHeight = ws.tabline.height
-		}
-		tablineMarginBottom := 0
-		if ws.tabline != nil {
-			tablineMarginBottom = ws.tabline.marginBottom
-		}
-		candY = (row+win.pos[1])*font.lineHeight + tablineMarginTop + tablineHeight + tablineMarginBottom
-	}
-	return x, y, candX, candY
-}
-
-func (s *Screen) toolTipMove(x int, y int) {
-	if s.ws.palette == nil {
-		return
-	}
-	padding := 0
-	if s.ws.palette.widget.IsVisible() {
-		padding = s.ws.palette.padding
-	}
-	s.tooltip.Move(core.NewQPoint2(x+padding, y))
-}
-
-func (s *Screen) toolTipFont(font *Font) {
-	s.tooltip.SetFont(font.fontNew)
-	s.tooltip.SetContentsMargins(0, font.lineSpace/2, 0, font.lineSpace/2)
-}
-
-func (s *Screen) toolTipShow() {
-	if s.ws.palette == nil {
-		return
-	}
-	if !s.ws.palette.widget.IsVisible() {
-		win, ok := s.getWindow(s.ws.cursor.gridid)
-		if ok {
-			s.tooltip.SetParent(win)
-		}
-	}
-	s.tooltip.AdjustSize()
-	s.tooltip.Show()
-}
-
-func (s *Screen) toolTip(text string) {
-	s.tooltip.SetText(text)
-	s.tooltip.AdjustSize()
-	s.toolTipShow()
-
-	row := s.cursor[0]
-	col := s.cursor[1]
-	c := s.ws.cursor
-	c.x = float64(col)*s.font.truewidth + float64(s.tooltip.Width())
-	c.y = float64(row * s.font.lineHeight)
-	c.move(nil)
 }
 
 func (s *Screen) bottomWindowPos() int {
@@ -1546,15 +1458,15 @@ func (s *Screen) msgSetPos(args []interface{}) {
 func (s *Screen) windowClose() {
 }
 
-func (s *Screen) setColor() {
-	s.tooltip.SetStyleSheet(
-		fmt.Sprintf(
-			" * {background-color: %s; text-decoration: underline; color: %s; }",
-			editor.colors.selectedBg.String(),
-			editor.colors.fg.String(),
-		),
-	)
-}
+// func (s *Screen) setColor() {
+// 	s.tooltip.SetStyleSheet(
+// 		fmt.Sprintf(
+// 			" * {background-color: %s; text-decoration: underline; color: %s; }",
+// 			editor.colors.selectedBg.String(),
+// 			editor.colors.fg.String(),
+// 		),
+// 	)
+// }
 
 func isSkipGlobalId(id gridId) bool {
 	if editor.config.Editor.SkipGlobalId {
