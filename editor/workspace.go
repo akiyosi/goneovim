@@ -2543,38 +2543,28 @@ func (w *Workspace) dropEvent(e *gui.QDropEvent) {
 	e.AcceptProposedAction()
 	e.SetAccepted(true)
 
-	for _, i := range strings.Split(e.MimeData().Text(), "\n") {
-		data := strings.Split(i, "://")
-		if i != "" {
-			switch data[0] {
-			case "file":
-				buf, _ := w.nvim.CurrentBuffer()
-				bufName, _ := w.nvim.BufferName(buf)
-				var filepath string
-				switch data[1][0] {
-				case '/':
-					if runtime.GOOS == "windows" {
-						filepath = strings.Trim(data[1], `/`)
-					} else {
-						filepath = data[1]
-					}
-				default:
-					if runtime.GOOS == "windows" {
-						filepath = fmt.Sprintf(`//%s`, data[1])
-					} else {
-						filepath = data[1]
-					}
-				}
-
-				if bufName != "" {
-					w.screen.howToOpen(filepath)
-				} else {
-					fileOpenInBuf(filepath)
-				}
-			default:
-			}
+	w.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
 		}
-	}
+		if win.isMsgGrid {
+			win.move(win.pos[0], win.pos[1])
+		}
+		if win.isExternal {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+
+		if win.Geometry().Contains(e.Pos(), true) {
+			win.DropEvent(e)
+			return false
+		}
+
+		return true
+	})
 }
 
 func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {

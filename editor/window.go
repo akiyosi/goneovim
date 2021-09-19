@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"runtime"
 	"sync"
+	"strings"
 	"time"
 	"unicode"
 	"unsafe"
@@ -859,18 +861,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	// If the window at the mouse pointer is not the current window
-	if w.grid != w.s.ws.cursor.gridid {
-		done := make(chan bool, 2)
-		go func() {
-			_ = w.s.ws.nvim.SetCurrentWindow(w.id)
-			done <- true
-		}()
-
-		select {
-		case <-done:
-		case <-time.After(40 * time.Millisecond):
-		}
-	}
+	w.focusGrid()
 	mod := event.Modifiers()
 
 	if w.s.ws.isMappingScrollKey {
@@ -910,6 +901,22 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	event.Accept()
+}
+
+func (w *Window) focusGrid() {
+	// If the window at the mouse pointer is not the current window
+	if w.grid != w.s.ws.cursor.gridid {
+		done := make(chan bool, 2)
+		go func() {
+			_ = w.s.ws.nvim.SetCurrentWindow(w.id)
+			done <- true
+		}()
+
+		select {
+		case <-done:
+		case <-time.After(40 * time.Millisecond):
+		}
+	}
 }
 
 // screen smooth update with touchpad
@@ -2438,8 +2445,61 @@ func newWindow() *Window {
 	win.background = editor.colors.bg
 
 	win.ConnectPaintEvent(win.paint)
+	win.SetAcceptDrops(true)
+	win.ConnectDragEnterEvent(win.dragEnterEvent)
+	win.ConnectDragMoveEvent(win.dragMoveEvent)
+	win.ConnectDropEvent(win.dropEvent)
 
 	return win
+}
+
+func (w *Window) dragEnterEvent(e *gui.QDragEnterEvent) {
+	e.AcceptProposedAction()
+}
+
+func (w *Window) dragMoveEvent(e *gui.QDragMoveEvent) {
+	e.AcceptProposedAction()
+}
+
+func (w *Window) dropEvent(e *gui.QDropEvent) {
+	e.SetDropAction(core.Qt__CopyAction)
+	e.AcceptProposedAction()
+	e.SetAccepted(true)
+
+	w.focusGrid()
+
+	for _, i := range strings.Split(e.MimeData().Text(), "\n") {
+		data := strings.Split(i, "://")
+		if i != "" {
+			switch data[0] {
+			case "file":
+				buf, _ := w.s.ws.nvim.CurrentBuffer()
+				bufName, _ := w.s.ws.nvim.BufferName(buf)
+				var filepath string
+				switch data[1][0] {
+				case '/':
+					if runtime.GOOS == "windows" {
+						filepath = strings.Trim(data[1], `/`)
+					} else {
+						filepath = data[1]
+					}
+				default:
+					if runtime.GOOS == "windows" {
+						filepath = fmt.Sprintf(`//%s`, data[1])
+					} else {
+						filepath = data[1]
+					}
+				}
+
+				if bufName != "" {
+					w.s.howToOpen(filepath)
+				} else {
+					fileOpenInBuf(filepath)
+				}
+			default:
+			}
+		}
+	}
 }
 
 func (w *Window) isShown() bool {
