@@ -714,58 +714,53 @@ func (w *Workspace) attachUI(path string) error {
 }
 
 func (w *Workspace) initGonvim() {
+	// autocmds that goneovim uses
 	gonvimAutoCmds := `
-	aug GonvimAu | au! | aug END
-	au GonvimAu VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
-	au GonvimAu UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
-	au GonvimAu BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"), win_getid(), bufname())
-	au GonvimAu WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid(), bufname())
-	au GonvimAu OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
-	au GonvimAu TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
-	au GonvimAu TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
-	aug GonvimAuWorkspace | au! | aug END
-	au GonvimAuWorkspace DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", v:event)
-	aug GonvimAuFilepath | au! | aug END
-	au GonvimAuFilepath BufEnter,TabEnter,DirChanged,TermOpen,TermClose * silent call rpcnotify(0, "Gui", "gonvim_workspace_filepath", expand("%:p"))
+	aug GoneovimCore | au! | aug END
+	au GoneovimCore VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
+	au GoneovimCore UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
+	au GoneovimCore BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"), win_getid(), bufname())
+	au GoneovimCore WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid(), bufname())
+	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
+	au GoneovimCore TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
+	au GoneovimCore TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
+	aug Goneovim | au! | aug END
+	au Goneovim DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", v:event)
+	au Goneovim BufEnter,TabEnter,DirChanged,TermOpen,TermClose * silent call rpcnotify(0, "Gui", "gonvim_workspace_filepath", expand("%:p"))
 	`
 	if !editor.config.Markdown.Disable {
 		gonvimAutoCmds += `
-		aug GonvimAuMd | au! | aug END
-		au  GonvimAuMd TextChanged,TextChangedI * if &ft == "markdown" | call rpcnotify(0, "Gui", "gonvim_markdown_update") | endif
-		au GonvimAuMd BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
+		au Goneovim TextChanged,TextChangedI * if &ft == "markdown" | call rpcnotify(0, "Gui", "gonvim_markdown_update") | endif
+		au Goneovim BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
 		`
 	}
 	if editor.opts.Server == "" && !editor.config.MiniMap.Disable {
 		gonvimAutoCmds = gonvimAutoCmds + `
-		aug GonvimAuMinimap | au! | aug END
-		au GonvimAuMinimap BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
-		au GonvimAuMinimap TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_minimap_sync")
-		au GonvimAuMinimap ColorScheme * call rpcnotify(0, "Gui", "gonvim_colorscheme")
+		au Goneovim BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
+		au Goneovim TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_minimap_sync")
+		au Goneovim ColorScheme * call rpcnotify(0, "Gui", "gonvim_colorscheme")
 		`
 	}
 
 	if editor.config.ScrollBar.Visible || editor.config.Editor.SmoothScroll {
 		gonvimAutoCmds = gonvimAutoCmds + `
-	aug GonvimAuTextChanged | au! | aug END
-	au  GonvimAuTextChanged TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_textchanged", line("$"))
+	au GoneovimCore TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_textchanged", line("$"))
 	`
 	}
 	if editor.config.Editor.Clipboard {
 		gonvimAutoCmds = gonvimAutoCmds + `
-	aug GonvimAuClipboard | au! | aug END
-	au GonvimAuClipboard TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")
+	au GoneovimCore TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")
 	`
 	}
 	if editor.config.Statusline.Visible {
 		gonvimAutoCmds = gonvimAutoCmds + `
-	aug GonvimAuStatusline | au! | aug END
-	au GonvimAuStatusline BufEnter,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat, &ro)
+	au Goneovim BufEnter,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat, &ro)
 	`
 	}
-
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
 	w.nvim.Command(registerScripts)
 
+	// Definition of the commands that goneovim provides
 	gonvimCommands := fmt.Sprintf(`
 	command! -nargs=1 GonvimResize call rpcnotify(0, "Gui", "gonvim_resize", <args>)
 	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
