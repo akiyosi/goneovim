@@ -455,10 +455,6 @@ func (e *Editor) initWorkspaces() {
 		e.workspaces = append(e.workspaces, ws)
 		ws.widget.SetParent(e.widget)
 	}
-
-	e.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	e.widget.ConnectInputMethodEvent(e.workspaces[e.active].InputMethodEvent)
-	e.widget.ConnectInputMethodQuery(e.workspaces[e.active].InputMethodQuery)
 }
 
 func (e *Editor) connectAppSignals() {

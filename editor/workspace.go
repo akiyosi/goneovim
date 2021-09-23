@@ -228,7 +228,7 @@ func newWorkspace(path string) (*Workspace, error) {
 	layout.SetSpacing(0)
 	w.widget.SetContentsMargins(0, 0, 0, 0)
 	w.widget.SetLayout(layout)
-	w.widget.SetFocusPolicy(core.Qt__WheelFocus)
+	w.widget.SetFocusPolicy(core.Qt__StrongFocus)
 	w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	w.widget.ConnectInputMethodEvent(w.InputMethodEvent)
 	w.widget.ConnectInputMethodQuery(w.InputMethodQuery)
@@ -236,7 +236,6 @@ func newWorkspace(path string) (*Workspace, error) {
 	// screen widget and scrollBar widget
 	widget2 := widgets.NewQWidget(nil, 0)
 	widget2.SetContentsMargins(0, 0, 0, 0)
-	widget2.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	w.layout2 = widgets.NewQHBoxLayout()
 	w.layout2.SetContentsMargins(0, 0, 0, 0)
 	w.layout2.SetSpacing(0)
@@ -1503,8 +1502,8 @@ func (w *Workspace) drawOtherUI() {
 	}
 
 	if s.tooltip.IsVisible() {
-		x, y, _, _ := w.screen.toolTipPos()
-		w.screen.toolTipMove(x, y)
+		x, y, _, _ := w.screen.tooltip.pos()
+		w.screen.tooltip.move(x, y)
 	}
 
 	if w.minimap != nil {
@@ -1609,7 +1608,7 @@ func (w *Workspace) updateWorkspaceColor() {
 	if w.message != nil {
 		w.message.setColor()
 	}
-	w.screen.setColor()
+	// TODO w.screen.setColor()
 
 	// if w.drawTabline {
 	// 	if w.tabline != nil {
@@ -2103,7 +2102,7 @@ func (w *Workspace) guiFont(args string) {
 	if w.message != nil {
 		w.message.updateFont()
 	}
-	w.screen.toolTipFont(font)
+	w.screen.tooltip.setFont(font)
 	w.cursor.updateFont(font)
 
 	// Change external font if font setting of setting.yml is nothing
@@ -2493,7 +2492,7 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 			w.screen.tooltip.Hide()
 			w.cursor.update()
 		} else {
-			w.screen.toolTip(preeditString)
+			w.screen.tooltip.update(preeditString)
 		}
 	}
 }
@@ -2501,16 +2500,28 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 // InputMethodQuery is
 func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
 	if query == core.Qt__ImMicroFocus || query == core.Qt__ImCursorRectangle {
-		x, y, candX, candY := w.screen.toolTipPos()
-		w.screen.toolTipMove(x, y)
+		x, y, candX, candY := w.screen.tooltip.pos()
+		w.screen.tooltip.move(x, y)
 		imrect := core.NewQRect()
-		imrect.SetRect(candX, candY, 1, w.font.lineHeight)
+
+		res := 0
+		win, ok := w.screen.getWindow(w.cursor.gridid)
+		if ok {
+			if win.isMsgGrid {
+				res = win.s.widget.Height() - win.rows*w.font.lineHeight
+			}
+			if res < 0 {
+				res = 0
+			}
+		}
+		imrect.SetRect(candX, candY+res+5, 1, w.font.lineHeight)
 
 		if w.palette != nil {
 			if w.palette.widget.IsVisible() {
-				w.cursor.x = float64(x)
-				w.cursor.y = float64(w.palette.patternPadding + w.cursor.shift)
-				w.cursor.Move2(int(w.cursor.x), int(w.cursor.y))
+				// w.cursor.x = float64(x + w.screen.tooltip.Width())
+				// w.cursor.y = float64(w.palette.patternPadding + w.cursor.shift)
+				// w.cursor.Update()
+				w.cursor.Hide()
 			}
 		}
 
