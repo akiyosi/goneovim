@@ -1573,7 +1573,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 
 	// draw default background color if window is float window or msg grid
 	isDrawDefaultBg := false
-	if w.isFloatWin || (w.isMsgGrid && editor.config.Message.Transparent < 1.0) {
+	if w.isFloatWin || w.isMsgGrid {
 		isDrawDefaultBg = true
 		// If popupmenu pumblend is set
 		if w.isPopupmenu && w.s.ws.pb > 0 {
@@ -2359,8 +2359,12 @@ func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyl
 	if !w.isPopupmenu && w.isFloatWin && w.wb > 0 {
 		t = int((transparent() * 255.0) * ((100.0 - float64(w.wb)) / 100.0))
 	}
-	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
-		t = int(editor.config.Message.Transparent * 255.0)
+	if w.isMsgGrid {
+		if editor.config.Message.Transparent < 1.0 {
+			t = int(editor.config.Message.Transparent * 255.0)
+		} else {
+			t = 255
+		}
 	}
 
 	if editor.config.Editor.DiffChangePattern != 1 && hl.hlName == "DiffChange" {
