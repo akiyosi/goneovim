@@ -1571,18 +1571,34 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	line := w.content[y]
 	var bg *RGBA
 
+	// fmt.Println("win.grid", w.grid, "float", w.isFloatWin, "popup", w.isPopupmenu)
+
 	// draw default background color if window is float window or msg grid
 	isDrawDefaultBg := false
 	if w.isFloatWin || w.isMsgGrid {
-		isDrawDefaultBg = true
-		// If popupmenu pumblend is set
-		if w.isPopupmenu && w.s.ws.pb > 0 {
-			w.SetAutoFillBackground(false)
+		// If transparent is true, then we should draw every cell's background color
+		if editor.config.Editor.Transparent < 1.0 {
+			isDrawDefaultBg = true
 		}
 
-		// If float window winblend is set
-		if !w.isPopupmenu && w.isFloatWin && w.wb > 0 {
-			w.SetAutoFillBackground(false)
+		// If the window is popupmenu and  pumblend is set
+		if w.isPopupmenu {
+			if editor.config.Editor.Transparent < 1.0 {
+				w.SetAutoFillBackground(false)
+			}
+			if w.s.ws.pb > 0 {
+				w.SetAutoFillBackground(false)
+			}
+		}
+
+		// If the window is float window and winblend is set
+		if w.isFloatWin && !w.isPopupmenu {
+			if editor.config.Editor.Transparent < 1.0 {
+				w.SetAutoFillBackground(false)
+			}
+			if w.wb > 0 {
+				w.SetAutoFillBackground(false)
+			}
 		}
 	}
 
@@ -2351,13 +2367,22 @@ func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyl
 	color := hl.bg()
 	pattern := core.Qt__BrushStyle(1)
 	t := 255
+
 	// if pumblend > 0
 	if w.isPopupmenu {
-		t = int((transparent() * 255.0) * ((100.0 - float64(w.s.ws.pb)) / 100.0))
+		// t = int((transparent() * 255.0) * ((100.0 - float64(w.s.ws.pb)) / 100.0))
+		// NOTE:
+		// We do not use the editor's transparency for completion menus or float windows. 
+		// It is recommended to use pumblend or winblend to get those transparencies.
+		t = int(255 * ((100.0 - float64(w.s.ws.pb)) / 100.0))
 	}
 	// if winblend > 0
-	if !w.isPopupmenu && w.isFloatWin && w.wb > 0 {
-		t = int((transparent() * 255.0) * ((100.0 - float64(w.wb)) / 100.0))
+	if !w.isPopupmenu && w.isFloatWin {
+		// t = int((transparent() * 255.0) * ((100.0 - float64(w.wb)) / 100.0))
+		// NOTE:
+		// We do not use the editor's transparency for completion menus or float windows. 
+		// It is recommended to use pumblend or winblend to get those transparencies.
+		t = int(255 * ((100.0 - float64(w.wb)) / 100.0))
 	}
 	if w.isMsgGrid {
 		if editor.config.Message.Transparent < 1.0 {

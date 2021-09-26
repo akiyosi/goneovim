@@ -61,8 +61,7 @@ func (rgba *RGBA) StringTransparent() string {
 }
 
 func transparent() float64 {
-	t := editor.config.Editor.Transparent
-	return t * t
+	return editor.config.Editor.Transparent
 }
 
 // Hex is
