@@ -670,6 +670,9 @@ func (c *Cursor) update() {
 	}
 
 	if !editor.isKeyAutoRepeating && editor.config.Cursor.SmoothMove {
+		if !c.doAnimate {
+			return
+		}
 		// Avoid the error "QObject::setParent: Cannot set parent, new parent is in a different thread"
 		if !c.ws.widget.IsVisible() && !c.avoidedToTakeFirstSnapshot {
 			c.avoidedToTakeFirstSnapshot = true
@@ -824,6 +827,9 @@ func (c *Cursor) animateMove() {
 	// process smooth scroll
 	a := core.NewQPropertyAnimation2(c, core.NewQByteArray2("animationProp", len("animationProp")), c)
 	a.ConnectValueChanged(func(value *core.QVariant) {
+		if !c.doAnimate {
+			return
+		}
 		ok := false
 		v := value.ToDouble(&ok)
 		if !ok {
