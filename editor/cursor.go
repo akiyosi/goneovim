@@ -19,6 +19,7 @@ type Cursor struct {
 	hasSmoothMove              bool
 	snapshot                   *gui.QPixmap
 	avoidedToTakeFirstSnapshot bool
+	isStopScroll               bool
 
 	ws               *Workspace
 	mode             string
@@ -161,11 +162,6 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	// If guifontwide is set
 	shift := font.ascent
 
-	// width := font.truewidth
-	// if !c.normalWidth {
-	// 	width = width * 2
-	// }
-
 	p := gui.NewQPainter2(c)
 
 	var X, Y float64
@@ -208,6 +204,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		color.brend(c.ws.background, c.brend).QColor(),
 	)
 
+	// Draw source cell text
 	if c.snapshot != nil && (c.deltax != 0 || c.deltay != 0) {
 		p.DrawPixmap9(
 			0,
@@ -221,68 +218,8 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		return
 	}
 
-	// // suppress unnecessary paintevent
-	// if c.doAnimate {
-	// 	rect := event.Rect()
-	// 	col :=  int(float64(rect.Left()))
-	// 	row :=  int(float64(rect.Top()))
-	// 	cols := int(math.Ceil(float64(rect.Width())))
-	// 	rows := int(math.Ceil(float64(rect.Height())))
-	// 	if c.deltax < 0 && c.deltay == 0 {
-	// 		if !(col == int(math.Ceil(c.oldx+c.deltax)) &&
-	// 		row == 0 &&
-	// 		cols == c.Width() &&
-	// 		rows == int(c.y)+c.height) {
-	// 			p.DestroyQPainter()
-	// 			return
-	// 		}
-	// 	} else if c.deltax > 0 && c.deltay == 0 {
-	// 		if !(col == 0 &&
-	// 		row == 0 &&
-	// 		cols == int(math.Ceil(c.oldx+c.deltax+float64(c.width))) &&
-	// 		rows == int(c.y)+c.height) {
-	// 			p.DestroyQPainter()
-	// 			return
-	// 		}
-	// 	} else if c.deltax == 0 && c.deltay < 0 {
-	// 		if !(col == 0 &&
-	// 		row == int(math.Ceil(c.oldy+c.deltay)) &&
-	// 		cols == int(math.Ceil(c.x+float64(c.width))) &&
-	// 		rows == c.Height()) {
-	// 			p.DestroyQPainter()
-	// 			return
-	// 		}
-	// 	} else if c.deltax == 0 && c.deltay > 0 {
-	// 		if !(col == 0 &&
-	// 		row == 0 &&
-	// 		cols == int(math.Ceil(c.oldx+float64(c.width))) &&
-	// 		rows == int(c.oldy+c.deltay)+c.height) {
-	// 			p.DestroyQPainter()
-	// 			return
-	// 		}
-	// 	}
-	// }
-
-	var fx, fy float64
-	var isDraw bool
-	if c.deltax < 0 && c.deltay == 0 ||
-		c.deltax > 0 && c.deltay == 0 ||
-		c.deltax == 0 && c.deltay < 0 ||
-		c.deltax == 0 && c.deltay > 0 {
-		fx = c.x
-		fy = c.y
-		isDraw = true
-	} else {
-		fx = X
-		fy = Y
-		if c.delta > 0.95 || (c.deltax == 0 && c.deltay == 0) {
-			isDraw = true
-		} else {
-			isDraw = false
-		}
-	}
-
-	if isDraw && c.width > int(font.truewidth/2.0) {
+	// Draw target cell text
+	if c.width > int(font.truewidth/2.0) {
 		// Draw cursor foreground
 		if editor.config.Editor.CachedDrawing {
 			var image *gui.QImage
@@ -301,8 +238,8 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 			}
 			p.DrawImage7(
 				core.NewQPointF3(
-					fx,
-					fy,
+					c.x,
+					c.y,
 				),
 				image,
 			)
@@ -318,8 +255,8 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 			p.SetPen2(c.fg.QColor())
 			p.DrawText(
 				core.NewQPointF3(
-					fx,
-					fy+shift,
+					c.x,
+					c.y+shift,
 				),
 				c.text,
 			)
@@ -549,24 +486,7 @@ func (c *Cursor) updateCursorShape() {
 
 }
 
-func (c *Cursor) updateContent() {
-
-	if c.mode != c.ws.mode {
-		c.mode = c.ws.mode
-	}
-
-	if c.ws.terminalMode {
-		c.Hide()
-		return
-	} else {
-		c.Show()
-	}
-
-	win, ok := c.ws.screen.getWindow(c.gridid)
-	if !ok {
-		return
-	}
-
+func (c *Cursor) updateContent(win *Window) {
 	charCache := win.getCache()
 	c.charCache = &charCache
 	c.devicePixelRatio = win.devicePixelRatio
@@ -661,7 +581,24 @@ func (c *Cursor) updateContent() {
 }
 
 func (c *Cursor) update() {
-	c.updateContent()
+	if c.mode != c.ws.mode {
+		c.mode = c.ws.mode
+	}
+
+	if c.ws.terminalMode {
+		c.Hide()
+		return
+	} else {
+		c.Show()
+	}
+
+	win, ok := c.ws.screen.getWindow(c.gridid)
+	if !ok {
+		return
+	}
+	c.isStopScroll = (win.lastScrollphase == core.Qt__ScrollEnd)
+
+	c.updateContent(win)
 	c.updateRegion()
 
 	// Fix #119: Wrong candidate window position when using ibus
@@ -669,8 +606,11 @@ func (c *Cursor) update() {
 		gui.QGuiApplication_InputMethod().Update(core.Qt__ImCursorRectangle)
 	}
 
+}
+
+func (c *Cursor) getSnapshot() {
 	if !editor.isKeyAutoRepeating && editor.config.Cursor.SmoothMove {
-		if !c.doAnimate {
+		if !c.isStopScroll {
 			return
 		}
 		// Avoid the error "QObject::setParent: Cannot set parent, new parent is in a different thread"
@@ -683,6 +623,7 @@ func (c *Cursor) update() {
 }
 
 func (c *Cursor) updateRegion() {
+	// c.Update()
 	if !c.hasSmoothMove {
 		c.Update2(
 			int(math.Trunc(c.oldx)),
@@ -848,15 +789,12 @@ func (c *Cursor) animateMove() {
 		}
 
 		c.updateRegion()
+		if v == 1.0 {
+			c.getSnapshot()
+		}
+
 	})
-	d := math.Sqrt(
-		math.Pow((c.x-c.oldx), 2) + math.Pow((c.y-c.oldy), 2),
-	)
-	f := 20 * math.Pow(
-		math.Atan(d/200),
-		2,
-	)
-	duration := editor.config.Cursor.Duration + int(f)
+	duration := editor.config.Cursor.Duration
 	a.SetDuration(int(duration))
 	a.SetStartValue(core.NewQVariant10(float64(0.1)))
 	a.SetEndValue(core.NewQVariant10(1))
