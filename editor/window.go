@@ -1773,10 +1773,12 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			if !editor.config.Editor.CachedDrawing {
 				w.drawTextInPos(
 					p,
-					core.NewQPointF3(
-						float64(x)*wsfont.truewidth,
-						float64(y*wsfont.lineHeight+wsfont.shift+scrollPixels),
-					),
+					// core.NewQPointF3(
+					// 	float64(x)*wsfont.truewidth,
+					// 	float64(y*wsfont.lineHeight+wsfont.shift+scrollPixels),
+					// ),
+					int(float64(x)*wsfont.truewidth),
+					y*wsfont.lineHeight+wsfont.shift+scrollPixels,
 					line[x].char,
 					line[x].highlight,
 					true,
@@ -1786,10 +1788,12 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			} else {
 				w.drawTextInPosWithCache(
 					p,
-					core.NewQPointF3(
-						float64(x)*wsfont.truewidth,
-						float64(y*wsfont.lineHeight+scrollPixels),
-					),
+					// core.NewQPointF3(
+					// 	float64(x)*wsfont.truewidth,
+					// 	float64(y*wsfont.lineHeight+scrollPixels),
+					// ),
+					int(float64(x)*wsfont.truewidth),
+					y*wsfont.lineHeight+scrollPixels,
 					line[x].char,
 					line[x].highlight,
 					false,
@@ -1812,18 +1816,23 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	// we draw a word snippet of the same highlight on the screen for each of the highlights.
 	if !editor.config.Editor.DisableLigatures {
 
-		var pointf *core.QPointF
+		// var pointf *core.QPointF
+		var X, Y int
 		// if CachedDrawing is disabled
 		if !editor.config.Editor.CachedDrawing {
-			pointf = core.NewQPointF3(
-				pointX,
-				float64((y)*wsfont.lineHeight+wsfont.shift+scrollPixels),
-			)
+			// pointf = core.NewQPointF3(
+			// 	pointX,
+			// 	float64((y)*wsfont.lineHeight+wsfont.shift+scrollPixels),
+			// )
+			X = int(pointX)
+			Y = int(float64((y)*wsfont.lineHeight+wsfont.shift+scrollPixels))
 		} else { // if CachedDrawing is enabled
-			pointf = core.NewQPointF3(
-				pointX,
-				float64(y*wsfont.lineHeight+scrollPixels),
-			)
+			// pointf = core.NewQPointF3(
+			// 	pointX,
+			// 	float64(y*wsfont.lineHeight+scrollPixels),
+			// )
+			X = int(pointX)
+			Y = int(float64(y*wsfont.lineHeight+scrollPixels))
 		}
 
 		for highlight, colorSlice := range chars {
@@ -1853,7 +1862,8 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			if !editor.config.Editor.CachedDrawing {
 				w.drawTextInPos(
 					p,
-					pointf,
+					// pointf,
+					X, Y,
 					text,
 					highlight,
 					true,
@@ -1861,7 +1871,8 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			} else { // if CachedDrawing is enabled
 				w.drawTextInPosWithCache(
 					p,
-					pointf,
+					// pointf,
+					X, Y,
 					text,
 					highlight,
 					true,
@@ -1886,10 +1897,12 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			if !editor.config.Editor.CachedDrawing {
 				w.drawTextInPos(
 					p,
-					core.NewQPointF3(
-						float64(x)*wsfont.truewidth,
-						float64(y*wsfont.lineHeight+wsfont.shift+scrollPixels),
-					),
+					// core.NewQPointF3(
+					// 	float64(x)*wsfont.truewidth,
+					// 	float64(y*wsfont.lineHeight+wsfont.shift+scrollPixels),
+					// ),
+					int(float64(x)*wsfont.truewidth),
+					y*wsfont.lineHeight+wsfont.shift+scrollPixels,
 					line[x].char,
 					line[x].highlight,
 					false,
@@ -1897,10 +1910,12 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			} else { // if CachedDrawing is enabled
 				w.drawTextInPosWithCache(
 					p,
-					core.NewQPointF3(
-						float64(x)*wsfont.truewidth,
-						float64(y*wsfont.lineHeight+scrollPixels),
-					),
+					// core.NewQPointF3(
+					// 	float64(x)*wsfont.truewidth,
+					// 	float64(y*wsfont.lineHeight+scrollPixels),
+					// ),
+					int(float64(x)*wsfont.truewidth),
+					y*wsfont.lineHeight+scrollPixels,
 					line[x].char,
 					line[x].highlight,
 					false,
@@ -1910,8 +1925,8 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-// func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
-func (w *Window) drawTextInPosWithCache(p *gui.QPainter, point *core.QPointF, text string, highlight *Highlight, isNormalWidth bool) {
+func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
+// func (w *Window) drawTextInPosWithCache(p *gui.QPainter, point *core.QPointF, text string, highlight *Highlight, isNormalWidth bool) {
 	if text == "" {
 		return
 	}
@@ -1932,9 +1947,16 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, point *core.QPointF, te
 		image = imagev.(*gui.QImage)
 	}
 
-	p.DrawImage7(
-		point,
+	// p.DrawImage7(
+	// 	point,
+	// 	image,
+	// )
+    p.DrawImage9(
+		x, y,
 		image,
+		0, 0,
+		-1, -1,
+		core.Qt__AutoColor,
 	)
 }
 
@@ -2168,7 +2190,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	return image
 }
 
-func (w *Window) drawTextInPos(p *gui.QPainter, point *core.QPointF, text string, highlight *Highlight, isNormalWidth bool) {
+func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
+// func (w *Window) drawTextInPos(p *gui.QPainter, point *core.QPointF, text string, highlight *Highlight, isNormalWidth bool) {
 	if text == "" {
 		return
 	}
@@ -2188,7 +2211,8 @@ func (w *Window) drawTextInPos(p *gui.QPainter, point *core.QPointF, text string
 	} else {
 		font.SetItalic(false)
 	}
-	p.DrawText(point, text)
+	// p.DrawText(point, text)
+	p.DrawText3(x, y, text)
 }
 
 func (w *Window) drawForeground(p *gui.QPainter, y int, col int, cols int) {
