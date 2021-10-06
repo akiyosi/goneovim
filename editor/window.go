@@ -1245,7 +1245,11 @@ func (w *Window) makeUpdateMask(row int) {
 	for j, cell := range line {
 		if cell == nil {
 			w.contentMask[row][j] = true
-		} else if cell.char == " " && cell.highlight.bg().equals(w.background) {
+		} else if cell.char == " " && 
+		cell.highlight.bg().equals(w.background) &&
+		!cell.highlight.underline &&
+		!cell.highlight.undercurl &&
+		!cell.highlight.strikethrough {
 			w.contentMask[row][j] = false
 		} else {
 			w.contentMask[row][j] = true
