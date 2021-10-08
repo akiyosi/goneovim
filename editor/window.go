@@ -1606,7 +1606,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	isDrawDefaultBg := false
 	if w.isFloatWin || w.isMsgGrid {
 		// If transparent is true, then we should draw every cell's background color
-		if editor.config.Editor.Transparent < 1.0 {
+		if editor.config.Editor.Transparent < 1.0 || editor.config.Message.Transparent < 1.0 {
 			isDrawDefaultBg = true
 		}
 
