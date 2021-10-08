@@ -1023,6 +1023,7 @@ func (s *Screen) gridClear(args []interface{}) {
 func (s *Screen) gridLine(args []interface{}) {
 	var win *Window
 	var ok bool
+
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		row := util.ReflectToInt(arg.([]interface{})[1])

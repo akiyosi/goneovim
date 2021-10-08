@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"math"
 	"runtime"
-	"sync"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 	"unsafe"
@@ -67,6 +67,7 @@ type Cell struct {
 	normalWidth bool
 	char        string
 	highlight   *Highlight
+	isUpdateBg  bool
 }
 
 type IntInt [2]int
@@ -1169,16 +1170,22 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 			// If `hl_id` is not present the most recently seen `hl_id` in
 			//	the same call should be used (it is always sent for the first
 			//	cell in the event).
+			var hltmp *Highlight
 			switch col {
 			case 0:
-				line[col].highlight = w.s.hlAttrDef[hl]
+				hltmp = w.s.hlAttrDef[hl]
 			default:
 				if hl == -1 {
-					line[col].highlight = line[col-1].highlight
+					hltmp = line[col-1].highlight
 				} else {
-					line[col].highlight = w.s.hlAttrDef[hl]
+					hltmp = w.s.hlAttrDef[hl]
 				}
 			}
+
+			if line[col].highlight != nil {
+				line[col].isUpdateBg = !hltmp.bg().equals(line[col].highlight.bg())
+			}
+			line[col].highlight = hltmp
 
 			// Detect popupmenu
 			if line[col].highlight.uiName == "Pmenu" ||
@@ -1242,15 +1249,33 @@ func (w *Window) countContent(row int) {
 
 func (w *Window) makeUpdateMask(row int) {
 	line := w.content[row]
+
 	for j, cell := range line {
 		if cell == nil {
 			w.contentMask[row][j] = true
-		} else if cell.char == " " && 
-		cell.highlight.bg().equals(w.background) &&
-		!cell.highlight.underline &&
-		!cell.highlight.undercurl &&
-		!cell.highlight.strikethrough {
-			w.contentMask[row][j] = false
+			continue
+		}
+
+		// If the target cell is blank and there is no text decoration of any kind
+		if cell.char == " " &&
+			!cell.highlight.underline &&
+			!cell.highlight.undercurl &&
+			!cell.highlight.strikethrough {
+
+			// If the background color has not been updated
+			if !cell.isUpdateBg {
+				w.contentMask[row][j] = false
+				continue
+			}
+
+			// If the target cell is outside the range of neovim's update event,
+			// it will not be drawn.
+			if j < w.queueRedrawArea[0] || j > w.queueRedrawArea[2] {
+				w.contentMask[row][j] = false
+				continue
+			}
+
+			w.contentMask[row][j] = true
 		} else {
 			w.contentMask[row][j] = true
 		}
@@ -1489,12 +1514,12 @@ func (w *Window) update() {
 				}
 				// Judgment point for end of rectangular area creation
 				if (!mask && isCreateRect) || (j >= len(w.contentMask[i])-1 && isCreateRect) {
-					// // If the next rectangular area will be created with only one cell separating it, merge it.
-					// if j+1 <= len(w.contentMask[i])-1 {
-					// 	if w.contentMask[i][j+1] {
-					// 		continue
-					// 	}
-					// }
+					// If the next rectangular area will be created with only one cell separating it, merge it.
+					if j+1 <= len(w.contentMask[i])-1 {
+						if w.contentMask[i][j+1] {
+							continue
+						}
+					}
 
 					jj := j
 
@@ -1766,7 +1791,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		scrollPixels += w.scrollPixels[1]
 	}
 
-	pointX := float64(col) * wsfont.truewidth
+	// pointX := float64(col) * wsfont.truewidth
 	for x := col; x <= col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -1836,29 +1861,31 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	// we draw a word snippet of the same highlight on the screen for each of the highlights.
 	if !editor.config.Editor.DisableLigatures {
 
-		// var pointf *core.QPointF
-		var X, Y int
-		// if CachedDrawing is disabled
-		if !editor.config.Editor.CachedDrawing {
-			// pointf = core.NewQPointF3(
-			// 	pointX,
-			// 	float64((y)*wsfont.lineHeight+wsfont.shift+scrollPixels),
-			// )
-			X = int(pointX)
-			Y = int(float64((y)*wsfont.lineHeight+wsfont.shift+scrollPixels))
-		} else { // if CachedDrawing is enabled
-			// pointf = core.NewQPointF3(
-			// 	pointX,
-			// 	float64(y*wsfont.lineHeight+scrollPixels),
-			// )
-			X = int(pointX)
-			Y = int(float64(y*wsfont.lineHeight+scrollPixels))
-		}
+		//  // var pointf *core.QPointF
+		//  var X, Y int
+		//  // if CachedDrawing is disabled
+		//  if !editor.config.Editor.CachedDrawing {
+		//  	// pointf = core.NewQPointF3(
+		//  	// 	pointX,
+		//  	// 	float64((y)*wsfont.lineHeight+wsfont.shift+scrollPixels),
+		//  	// )
+		//  	X = int(pointX)
+		//  	Y = int(float64((y)*wsfont.lineHeight+wsfont.shift+scrollPixels))
+		//  } else { // if CachedDrawing is enabled
+		//  	// pointf = core.NewQPointF3(
+		//  	// 	pointX,
+		//  	// 	float64(y*wsfont.lineHeight+scrollPixels),
+		//  	// )
+		//  	X = int(pointX)
+		//  	Y = int(float64(y*wsfont.lineHeight+scrollPixels))
+		//  }
 
 		for highlight, colorSlice := range chars {
 			var buffer bytes.Buffer
 			slice := colorSlice
 
+			pos := col
+			isIndentationWhitespace := true
 			for x := col; x <= col+cols; x++ {
 				if len(slice) == 0 {
 					break
@@ -1866,13 +1893,19 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				index := slice[0]
 
 				if x < index {
-					buffer.WriteString(" ")
+					// buffer.WriteString(" ")
+					if isIndentationWhitespace {
+						pos++
+					} else {
+						buffer.WriteString(" ")
+					}
 					continue
 				}
 
 				if x == index {
 					buffer.WriteString(line[x].char)
 					slice = slice[1:]
+					isIndentationWhitespace = false
 				}
 			}
 
@@ -1883,7 +1916,8 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				w.drawTextInPos(
 					p,
 					// pointf,
-					X, Y,
+					int(float64(pos)*wsfont.truewidth),
+					y*wsfont.lineHeight+wsfont.shift+scrollPixels,
 					text,
 					highlight,
 					true,
@@ -1892,7 +1926,8 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				w.drawTextInPosWithCache(
 					p,
 					// pointf,
-					X, Y,
+					int(float64(pos)*wsfont.truewidth),
+					y*wsfont.lineHeight+scrollPixels,
 					text,
 					highlight,
 					true,
@@ -1946,7 +1981,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 }
 
 func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
-// func (w *Window) drawTextInPosWithCache(p *gui.QPainter, point *core.QPointF, text string, highlight *Highlight, isNormalWidth bool) {
 	if text == "" {
 		return
 	}
@@ -1971,7 +2005,7 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 	// 	point,
 	// 	image,
 	// )
-    p.DrawImage9(
+	p.DrawImage9(
 		x, y,
 		image,
 		0, 0,
@@ -2211,7 +2245,6 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 }
 
 func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
-// func (w *Window) drawTextInPos(p *gui.QPainter, point *core.QPointF, text string, highlight *Highlight, isNormalWidth bool) {
 	if text == "" {
 		return
 	}
@@ -2376,7 +2409,7 @@ func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyl
 	if w.isPopupmenu {
 		// t = int((transparent() * 255.0) * ((100.0 - float64(w.s.ws.pb)) / 100.0))
 		// NOTE:
-		// We do not use the editor's transparency for completion menus or float windows. 
+		// We do not use the editor's transparency for completion menus or float windows.
 		// It is recommended to use pumblend or winblend to get those transparencies.
 		t = int(255 * ((100.0 - float64(w.s.ws.pb)) / 100.0))
 	}
@@ -2384,7 +2417,7 @@ func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyl
 	if !w.isPopupmenu && w.isFloatWin {
 		// t = int((transparent() * 255.0) * ((100.0 - float64(w.wb)) / 100.0))
 		// NOTE:
-		// We do not use the editor's transparency for completion menus or float windows. 
+		// We do not use the editor's transparency for completion menus or float windows.
 		// It is recommended to use pumblend or winblend to get those transparencies.
 		t = int(255 * ((100.0 - float64(w.wb)) / 100.0))
 	}
@@ -2615,7 +2648,7 @@ func (w *Window) setGridGeometry(width, height int) {
 	w.fill()
 }
 
-// refreshUpdateArea:: arg:1 => full, arg:1 => full only text
+// refreshUpdateArea:: arg:0 => full, arg:1 => full only text
 func (w *Window) refreshUpdateArea(fullmode int) {
 	var boundary int
 	if fullmode == 0 {
