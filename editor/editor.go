@@ -84,6 +84,11 @@ type Options struct {
 	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]"`
 	Nvim   string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
 
+	Exttabline   bool `long:"exttabline" description:"Externalize the tabline"`
+	Extcmdline   bool `long:"extcmdline" description:"Externalize the cmdline"`
+	Extmessages  bool `long:"extmessages" description:"Externalize the messages. Sets --extcmdline implicitly"`
+	Extpopupmenu bool `long:"extpopupmenu" description:"Externalize the popupmenu"`
+
 	Debug   string `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]" optional:"yes" optional-value:"debug.log"`
 	Version bool   `long:"version" description:"Print Goneovim version"`
 }
@@ -207,6 +212,11 @@ func InitEditor(options Options, args []string) {
 	configDir, config := newConfig(home)
 
 	e.config = config
+	if e.opts.Exttabline { e.config.Editor.ExtTabline = true }
+	if e.opts.Extcmdline { e.config.Editor.ExtCmdline = true }
+	if e.opts.Extpopupmenu { e.config.Editor.ExtPopupmenu = true }
+	if e.opts.Extmessages { e.config.Editor.ExtMessages = true; e.config.Editor.ExtCmdline = true }
+
 	e.homeDir = home
 	e.configDir = configDir
 	e.putLog("reading config")
