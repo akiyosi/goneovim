@@ -176,11 +176,7 @@ func (s *ScrollBar) update() {
 		}
 		s.thumb.SetFixedHeight(thumbHeight)
 		top := 0
-		if s.ws.api5 {
-			top = s.ws.viewport[0] - 1
-		} else {
-			top = s.ws.viewport[2] - s.ws.screen.cursor[0] - 1
-		}
+		top = s.ws.viewport[0] - 1
 		editor.putLog("scrollbar: debug::", top, s.ws.maxLine)
 		s.pos = int(float64(top) / float64(s.ws.maxLine) * float64(s.ws.screen.widget.Height()))
 		s.thumb.Move2(0, s.pos)

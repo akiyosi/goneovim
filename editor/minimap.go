@@ -44,7 +44,6 @@ type MiniMap struct {
 
 	nvim       *nvim.Nvim
 	uiAttached bool
-	api5       bool
 	rows       int
 	cols       int
 
@@ -167,40 +166,6 @@ func (m *MiniMap) attachUIOption() map[string]interface{} {
 	o := make(map[string]interface{})
 	o["rgb"] = true
 	o["ext_linegrid"] = true
-
-	apiInfo, err := m.nvim.APIInfo()
-	if err == nil {
-		for _, item := range apiInfo {
-			i, ok := item.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			for k, v := range i {
-				if k != "ui_events" {
-					continue
-				}
-				events, ok := v.([]interface{})
-				if !ok {
-					continue
-				}
-				for _, event := range events {
-					function, ok := event.(map[string]interface{})
-					if !ok {
-						continue
-					}
-					name, ok := function["name"]
-					if !ok {
-						continue
-					}
-
-					switch name {
-					case "win_viewport":
-						m.api5 = true
-					}
-				}
-			}
-		}
-	}
 
 	return o
 }
@@ -665,14 +630,7 @@ func (m *MiniMap) mouseEvent(event *gui.QMouseEvent) {
 	font := m.font
 	y := int(float64(event.Y()) / float64(font.lineHeight))
 	targetPos := 0
-	if m.api5 {
-		// targetPos = m.topLine + y
-		targetPos = m.viewport[0] + y
-	} else {
-		var absMapTop int
-		m.nvim.Eval("line('w0')", &absMapTop)
-		targetPos = absMapTop + y
-	}
+	targetPos = m.viewport[0] + y
 	m.ws.nvim.Command(fmt.Sprintf("%d", targetPos))
 
 	mappings, err := m.ws.nvim.KeyMap("normal")

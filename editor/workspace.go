@@ -108,7 +108,6 @@ type Workspace struct {
 	ph                 int
 	pb                 int
 	showtabline        int
-	api5               bool
 
 	escKeyInNormal     string
 	escKeyInInsert     string
@@ -1162,8 +1161,6 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
 					case "tabline_update":
 						o["ext_tabline"] = editor.config.Editor.ExtTabline
-					case "win_viewport":
-						w.api5 = true
 					}
 				}
 			}
@@ -1484,10 +1481,6 @@ func (w *Workspace) flush() {
 func (w *Workspace) drawOtherUI() {
 	s := w.screen
 
-	if (w.minimap != nil && w.minimap.visible) || w.drawStatusline || editor.config.ScrollBar.Visible {
-		w.getPos()
-	}
-
 	if w.drawStatusline {
 		if w.statusline != nil {
 			w.statusline.pos.redraw(w.viewport[2], w.viewport[3])
@@ -1690,29 +1683,6 @@ func (w *Workspace) setOption(update []interface{}) {
 	}
 }
 
-func (w *Workspace) getPos() {
-	if w.api5 {
-		return
-	}
-	done := make(chan error, 20)
-	var curPos [4]int
-	go func() {
-		err := w.nvim.Eval("getpos('.')", &curPos)
-		done <- err
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(10 * time.Millisecond):
-		return
-	}
-
-	w.viewportMutex.Lock()
-	w.viewport[2] = curPos[1]
-	w.viewport[3] = curPos[2]
-	w.viewportMutex.Unlock()
-}
-
 func (w *Workspace) windowViewport(args []interface{}) {
 	for _, e := range args {
 		arg := e.([]interface{})
@@ -1831,20 +1801,15 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 }
 
 func (w *Workspace) updateMinimap() {
-	var absMapTop int
-	var absMapBottom int
-	if w.api5 {
-		absMapTop = w.minimap.viewport[0]
-		absMapBottom = w.minimap.viewport[1]
-	} else {
-		w.minimap.nvim.Eval("line('w0')", &absMapTop)
-		w.minimap.nvim.Eval("line('w$')", &absMapBottom)
-	}
+	absMapTop := w.minimap.viewport[0]
+	absMapBottom := w.minimap.viewport[1]
+
 	w.viewportMutex.RLock()
 	topLine := w.viewport[0]
 	botLine := w.viewport[1]
 	currLine := w.viewport[2]
 	w.viewportMutex.RUnlock()
+
 	switch {
 	case botLine >= absMapBottom:
 		go func() {
