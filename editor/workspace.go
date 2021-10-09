@@ -1273,14 +1273,23 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.cursor.modeIdx = w.modeIdx
 			}
 			w.disableImeInNormal()
+
+		// Not used in the current specification.
 		case "mouse_on":
 		case "mouse_off":
+
+		// Indicates to the UI that it must stop rendering the cursor. This event
+		// is misnamed and does not actually have anything to do with busyness.
 		case "busy_start":
+			w.cursor.Hide()
 		case "busy_stop":
+			w.cursor.Show()
+
 		case "suspend":
 		case "update_menu":
 		case "bell":
 		case "visual_bell":
+
 		case "flush":
 			w.flush()
 
