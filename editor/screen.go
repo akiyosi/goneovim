@@ -449,61 +449,90 @@ func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
 }
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
-	inp := s.convertMouse(event)
-	if inp == "" {
-		return
-	}
-	s.ws.nvim.Input(inp)
-}
 
-func (s *Screen) convertMouse(event *gui.QMouseEvent) string {
-	font := s.font
-	x := int(float64(event.X()) / font.truewidth)
-	y := int(float64(event.Y()) / float64(font.lineHeight))
-	pos := []int{x, y}
-
-	bt := event.Button()
-	if event.Type() == core.QEvent__MouseMove {
-		if event.Buttons()&core.Qt__LeftButton > 0 {
-			bt = core.Qt__LeftButton
-		} else if event.Buttons()&core.Qt__RightButton > 0 {
-			bt = core.Qt__RightButton
-		} else if event.Buttons()&core.Qt__MidButton > 0 {
-			bt = core.Qt__MidButton
-		} else {
-			return ""
+	var targetwin *Window
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
 		}
+		if !win.IsVisible() {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+		if win.isMsgGrid {
+			return true
+		}
+		if win.isExternal {
+			targetwin = win
+			return false
+		} else if win.isFloatWin {
+			if win.Geometry().Contains(event.Pos(), true) {
+				if targetwin != nil {
+					if targetwin.Geometry().Contains2(win.Geometry(), true) {
+						targetwin = win
+					}
+				} else {
+					targetwin = win
+				}
+			}
+		}
+
+		return true
+	})
+	if targetwin == nil {
+		s.windows.Range(func(_, winITF interface{}) bool {
+			win := winITF.(*Window)
+			if win == nil {
+				return true
+			}
+			if !win.IsVisible() {
+				return true
+			}
+			if win.grid == 1 {
+				return true
+			}
+			if win.isMsgGrid {
+				return true
+			}
+			if win.Geometry().Contains(event.Pos(), true) {
+				targetwin = win
+				return false
+			}
+
+			return true
+		})
 	}
 
-	mod := event.Modifiers()
-	buttonName := ""
-	switch bt {
-	case core.Qt__LeftButton:
-		buttonName += "Left"
-	case core.Qt__RightButton:
-		buttonName += "Right"
-	case core.Qt__MidButton:
-		buttonName += "Middle"
-	case core.Qt__NoButton:
-	default:
-		return ""
+	var localpos *core.QPointF
+	if targetwin.isExternal {
+		localpos = core.NewQPointF3(
+			event.ScreenPos().X()-float64(targetwin.extwin.Pos().X() + targetwin.Pos().X()),
+			event.ScreenPos().Y()-float64(targetwin.extwin.Pos().Y() + targetwin.Pos().Y()),
+		)
+	} else {
+		font := s.font
+		offsetX := float64(targetwin.pos[0]) * font.truewidth
+		offsetY := float64(targetwin.pos[1]) * float64(font.lineHeight)
+		localpos = core.NewQPointF3(
+			event.LocalPos().X()-offsetX,
+			event.LocalPos().Y()-offsetY,
+		)
 	}
 
-	evType := ""
-	switch event.Type() {
-	case core.QEvent__MouseButtonDblClick:
-		evType += "Mouse"
-	case core.QEvent__MouseButtonPress:
-		evType += "Mouse"
-	case core.QEvent__MouseButtonRelease:
-		evType += "Release"
-	case core.QEvent__MouseMove:
-		evType += "Drag"
-	default:
-		return ""
-	}
-
-	return fmt.Sprintf("<%s%s%s><%d,%d>", editor.modPrefix(mod), buttonName, evType, pos[0], pos[1])
+	targetwin.mouseEvent(
+		gui.NewQMouseEvent3(
+			event.Type(),
+			localpos,
+			event.WindowPos(),
+			event.ScreenPos(),
+			event.Button(),
+			event.Buttons(),
+			event.Modifiers(),
+		),
+	)
 }
 
 func (s *Screen) gridResize(args []interface{}) {
@@ -1454,7 +1483,7 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		win.move(win.pos[0], win.pos[1])
 		win.show()
 		if scrolled {
-			win.Raise() // Fix #111
+			win.raise() // Fix #111
 		}
 	}
 }

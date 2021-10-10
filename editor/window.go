@@ -2539,8 +2539,60 @@ func newWindow() *Window {
 	win.ConnectDragEnterEvent(win.dragEnterEvent)
 	win.ConnectDragMoveEvent(win.dragMoveEvent)
 	win.ConnectDropEvent(win.dropEvent)
+	win.ConnectMousePressEvent(win.mouseEvent)
 
 	return win
+}
+
+func (w *Window) mouseEvent(event *gui.QMouseEvent) {
+	// button, action, mod, grid, row, col := s.convertMouse(event)
+
+	// fmt.Println(button, action, mod, grid, row, col)
+	// s.ws.nvim.InputMouse(button, action, mod, grid, row, col)
+
+	bt := event.Button()
+	if event.Type() == core.QEvent__MouseMove {
+		if event.Buttons()&core.Qt__LeftButton > 0 {
+			bt = core.Qt__LeftButton
+		} else if event.Buttons()&core.Qt__RightButton > 0 {
+			bt = core.Qt__RightButton
+		} else if event.Buttons()&core.Qt__MidButton > 0 {
+			bt = core.Qt__MidButton
+		}
+	}
+
+	button := ""
+	switch bt {
+	case core.Qt__LeftButton:
+		button += "left"
+	case core.Qt__RightButton:
+		button += "right"
+	case core.Qt__MidButton:
+		button += "middle"
+	case core.Qt__NoButton:
+	default:
+	}
+
+	action := ""
+	switch event.Type() {
+	case core.QEvent__MouseButtonDblClick:
+		action = "press"
+	case core.QEvent__MouseButtonPress:
+		action = "press"
+	case core.QEvent__MouseButtonRelease:
+		action = "release"
+	case core.QEvent__MouseMove:
+		action = "drag"
+	default:
+	}
+
+	mod := editor.modPrefix(event.Modifiers())
+
+	font := w.getFont()
+	col := int(float64(event.X()) / font.truewidth)
+	row := int(float64(event.Y()) / float64(font.lineHeight))
+
+	w.s.ws.nvim.InputMouse(button, action, mod, w.grid, row, col)
 }
 
 func (w *Window) dragEnterEvent(e *gui.QDragEnterEvent) {
@@ -2720,7 +2772,7 @@ func (w *Window) move(col int, row int) {
 						w.s.ws.popup.widget.X()+w.s.ws.popup.widget.Width()+5,
 						w.s.ws.popup.widget.Y(),
 					)
-					w.Raise()
+					w.raise()
 				}
 
 				return

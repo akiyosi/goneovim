@@ -1280,10 +1280,12 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Indicates to the UI that it must stop rendering the cursor. This event
 		// is misnamed and does not actually have anything to do with busyness.
+		// NOTE: In goneovim, the wdiget layer of the cursor has special processing, 
+		//       so it cannot be hidden straightforwardly.
 		case "busy_start":
-			w.cursor.Hide()
+			w.cursor.isBusy = true
 		case "busy_stop":
-			w.cursor.Show()
+			w.cursor.isBusy = false
 
 		case "suspend":
 		case "update_menu":

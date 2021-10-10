@@ -58,6 +58,7 @@ type Cursor struct {
 	blinkWait            int
 	blinkOn              int
 	blinkOff             int
+	isBusy               bool
 }
 
 func initCursorNew() *Cursor {
@@ -105,10 +106,13 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 				return false
 			}
 		} else if win.isFloatWin {
-			if win.Geometry().Contains(event.Pos(), true) {
+			if targetwin != nil {
+				if targetwin.Geometry().Contains2(win.Geometry(), true) {
+					targetwin = win
+				}
+			} else {
 				targetwin = win
 			}
-			return false
 		}
 
 		return true
@@ -139,9 +143,6 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 
 	if targetwin != nil {
 		targetwin.WheelEvent(
-			// NOTE: This is not an exact implementation, as it requires
-			// a coordinate transformation of the Pos of QwheelEvent, but
-			// in the current handling of QWheelevent, it can be substituted as is.
 			event,
 		)
 	}
@@ -163,6 +164,10 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	shift := font.ascent
 
 	p := gui.NewQPainter2(c)
+	if c.isBusy {
+		p.DestroyQPainter()
+		return
+	}
 
 	var X, Y float64
 	if c.deltax != 0 || c.deltay != 0 {
@@ -585,12 +590,12 @@ func (c *Cursor) update() {
 		c.mode = c.ws.mode
 	}
 
-	if c.ws.terminalMode {
-		c.Hide()
-		return
-	} else {
-		c.Show()
-	}
+	// if c.ws.terminalMode {
+	// 	c.Hide()
+	// 	return
+	// } else {
+	// 	c.Show()
+	// }
 
 	win, ok := c.ws.screen.getWindow(c.gridid)
 	if !ok {
