@@ -451,38 +451,15 @@ func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 
 	var targetwin *Window
-	s.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-		if win == nil {
-			return true
-		}
-		if !win.IsVisible() {
-			return true
-		}
-		if win.grid == 1 {
-			return true
-		}
-		if win.isMsgGrid {
-			return true
-		}
-		if win.isExternal {
-			targetwin = win
-			return false
-		} else if win.isFloatWin {
-			if win.Geometry().Contains(event.Pos(), true) {
-				if targetwin != nil {
-					if targetwin.Geometry().Contains2(win.Geometry(), true) {
-						targetwin = win
-					}
-				} else {
-					targetwin = win
-				}
-			}
-		}
 
-		return true
-	})
-	if targetwin == nil {
+	currWin, ok := s.getWindow(s.ws.cursor.gridid)
+	if !ok {
+		return
+	}
+	if currWin.font != nil {
+		targetwin = currWin
+	} else {
+
 		s.windows.Range(func(_, winITF interface{}) bool {
 			win := winITF.(*Window)
 			if win == nil {
@@ -497,13 +474,50 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 			if win.isMsgGrid {
 				return true
 			}
-			if win.Geometry().Contains(event.Pos(), true) {
+			if win.isExternal {
 				targetwin = win
 				return false
+			} else if win.isFloatWin {
+				if win.Geometry().Contains(event.Pos(), true) {
+					if targetwin != nil {
+						if targetwin.Geometry().Contains2(win.Geometry(), true) {
+							targetwin = win
+						}
+					} else {
+						targetwin = win
+					}
+				}
 			}
 
 			return true
 		})
+		if targetwin == nil {
+			s.windows.Range(func(_, winITF interface{}) bool {
+				win := winITF.(*Window)
+				if win == nil {
+					return true
+				}
+				if !win.IsVisible() {
+					return true
+				}
+				if win.grid == 1 {
+					return true
+				}
+				if win.isMsgGrid {
+					return true
+				}
+				if win.Geometry().Contains(event.Pos(), true) {
+					targetwin = win
+					return false
+				}
+
+				return true
+			})
+		}
+	}
+
+	if targetwin == nil {
+		return
 	}
 
 	var localpos *core.QPointF
@@ -514,8 +528,11 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 		)
 	} else {
 		font := s.font
-		offsetX := float64(targetwin.pos[0]) * font.truewidth
-		offsetY := float64(targetwin.pos[1]) * float64(font.lineHeight)
+		var offsetX, offsetY float64
+		if targetwin.font == nil {
+			offsetX = float64(targetwin.pos[0]) * font.truewidth
+			offsetY = float64(targetwin.pos[1]) * float64(font.lineHeight)
+		}
 		localpos = core.NewQPointF3(
 			event.LocalPos().X()-offsetX,
 			event.LocalPos().Y()-offsetY,
