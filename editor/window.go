@@ -82,7 +82,8 @@ type Window struct {
 	widgets.QWidget
 	_ float64 `property:"scrollDiff"`
 
-	snapshot *gui.QPixmap
+	snapshot        *gui.QPixmap
+	mouseEventState core.QEvent__Type
 
 	paintMutex  sync.RWMutex
 	redrawMutex sync.Mutex
@@ -774,8 +775,7 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 
 func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	var v, h, vert, horiz int
-	var vertKey string
-	var horizKey string
+	var action string
 
 	editor.putLog("start wheel event")
 
@@ -842,33 +842,39 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	if vert == 0 && horiz == 0 {
 		return
 	}
+
 	if editor.config.Editor.ReversingScrollDirection {
 		if vert < 0 {
-			vertKey = "Up"
-		} else {
-			vertKey = "Down"
+			action = "up"
+		} else if vert > 0 {
+			action = "down"
 		}
 	} else {
 		if vert > 0 {
-			vertKey = "Up"
-		} else {
-			vertKey = "Down"
+			action = "up"
+		} else if vert < 0 {
+			action = "down"
 		}
 	}
-	if horiz > 0 {
-		horizKey = "Left"
-	} else {
-		horizKey = "Right"
+	if action == "" {
+		if horiz > 0 {
+			action = "left"
+		} else if horiz < 0 {
+			action = "right"
+		}
 	}
 
 	// If the window at the mouse pointer is not the current window
 	w.focusGrid()
-	mod := event.Modifiers()
+
+	mod := editor.modPrefix(event.Modifiers())
+	row := int(float64(event.X()) / font.truewidth)
+	col := int(float64(event.Y()) / float64(font.lineHeight))
 
 	if w.s.ws.isMappingScrollKey {
 		editor.putLog("detect a mapping to <C-e>, <C-y> keys.")
 		if vert != 0 {
-			go w.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s>", editor.modPrefix(mod), vertKey))
+			w.s.ws.nvim.InputMouse("wheel", action, mod, w.grid, row, col)
 		}
 	} else {
 		if editor.config.Editor.ReversingScrollDirection {
@@ -889,16 +895,12 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	if editor.config.Editor.DisableHorizontalScroll {
 		return
 	}
-	if vert == 0 {
+	if vert != 0 {
 		return
 	}
 
-	x := int(float64(event.X()) / font.truewidth)
-	y := int(float64(event.Y()) / float64(font.lineHeight))
-	pos := []int{x + w.pos[0], y + w.pos[1]}
-
 	if horiz != 0 {
-		w.s.ws.nvim.Input(fmt.Sprintf("<%sScrollWheel%s><%d,%d>", editor.modPrefix(mod), horizKey, pos[0], pos[1]))
+		w.s.ws.nvim.InputMouse("wheel", action, mod, w.grid, row, col)
 	}
 
 	event.Accept()
@@ -2545,11 +2547,6 @@ func newWindow() *Window {
 }
 
 func (w *Window) mouseEvent(event *gui.QMouseEvent) {
-	// button, action, mod, grid, row, col := s.convertMouse(event)
-
-	// fmt.Println(button, action, mod, grid, row, col)
-	// s.ws.nvim.InputMouse(button, action, mod, grid, row, col)
-
 	bt := event.Button()
 	if event.Type() == core.QEvent__MouseMove {
 		if event.Buttons()&core.Qt__LeftButton > 0 {

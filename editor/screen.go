@@ -456,10 +456,35 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 	if !ok {
 		return
 	}
-	if currWin.font != nil {
+
+	// If a mouse event has already occurred and the mouse is being
+	// used to drag content, the window being operated on will be the target window.
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
+		}
+		if !win.IsVisible() {
+			return true
+		}
+		if win.mouseEventState == core.QEvent__MouseButtonPress || 
+		win.mouseEventState == core.QEvent__MouseMove {
+			targetwin = win
+			return false
+		}
+
+		return true
+	})
+
+	// If there is a window that has independent font settings by GonvimGridFont
+	// and the mouse pointer is on the window, the window is used as the target window.
+	if targetwin != nil && currWin.font != nil {
 		targetwin = currWin
 	} else {
 
+		// If there is an externalized float window and
+		// the mouse pointer is in that window, 
+		// make that window the target window.
 		s.windows.Range(func(_, winITF interface{}) bool {
 			win := winITF.(*Window)
 			if win == nil {
@@ -475,22 +500,18 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 				return true
 			}
 			if win.isExternal {
-				targetwin = win
-				return false
-			} else if win.isFloatWin {
-				if win.Geometry().Contains(event.Pos(), true) {
-					if targetwin != nil {
-						if targetwin.Geometry().Contains2(win.Geometry(), true) {
-							targetwin = win
-						}
-					} else {
-						targetwin = win
-					}
+				if win.grid == s.ws.cursor.gridid {
+					targetwin = win
+					return false
 				}
 			}
 
 			return true
 		})
+
+		// If a float window exists, the float window with the smallest size 
+		// that covers the position of the mouse event that occurred
+		// is used as the target window.
 		if targetwin == nil {
 			s.windows.Range(func(_, winITF interface{}) bool {
 				win := winITF.(*Window)
@@ -506,6 +527,42 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 				if win.isMsgGrid {
 					return true
 				}
+				if win.isFloatWin && !win.isExternal {
+					if win.Geometry().Contains(event.Pos(), true) {
+						if targetwin != nil {
+							if targetwin.Geometry().Contains2(win.Geometry(), true) {
+								targetwin = win
+							}
+						} else {
+							if win.Geometry().Contains(event.Pos(), true) {
+								targetwin = win
+							}
+						}
+					}
+				}
+
+				return true
+			})
+		}
+
+		// If none of the above processes apply, 
+		// the target window is a normal window that covers the position
+		// where the mouse event occurs.
+		if targetwin == nil {
+			s.windows.Range(func(_, winITF interface{}) bool {
+				win := winITF.(*Window)
+				if win == nil {
+					return true
+				}
+				if !win.IsVisible() {
+					return true
+				}
+				if win.isMsgGrid {
+					return true
+				}
+				if win.isFloatWin || win.isExternal {
+					return true
+				}
 				if win.Geometry().Contains(event.Pos(), true) {
 					targetwin = win
 					return false
@@ -519,6 +576,18 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 	if targetwin == nil {
 		return
 	}
+
+	// Reset the mouse event state of each window.
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
+		}
+		win.mouseEventState = core.QEvent__None
+
+		return true
+	})
+	targetwin.mouseEventState = event.Type()
 
 	var localpos *core.QPointF
 	if targetwin.isExternal {

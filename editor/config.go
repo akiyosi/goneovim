@@ -335,7 +335,7 @@ func (c *gonvimConfig) init() {
 
 	c.Editor.LineToScroll = 1
 	c.Editor.SmoothScroll = false
-	c.Editor.DisableHorizontalScroll = true
+	c.Editor.DisableHorizontalScroll = false
 
 	c.Editor.DrawBorderForFloatWindow = false
 	c.Editor.DrawShadowForFloatWindow = false

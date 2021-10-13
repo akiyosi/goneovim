@@ -112,20 +112,14 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 					if win.Geometry().Contains(event.Pos(), true) {
 						targetwin = win
 					}
+					// targetwin = win
 					return false
-				}
-			} else if win.isFloatWin {
-				if targetwin != nil {
-					if targetwin.Geometry().Contains2(win.Geometry(), true) {
-						targetwin = win
-					}
-				} else {
-					targetwin = win
 				}
 			}
 
 			return true
 		})
+
 		if targetwin == nil {
 			c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
 				win := winITF.(*Window)
@@ -139,6 +133,40 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 					return true
 				}
 				if win.isMsgGrid {
+					return true
+				}
+				if win.isFloatWin && !win.isExternal {
+					if targetwin != nil {
+						if targetwin.Geometry().Contains2(win.Geometry(), true) {
+							targetwin = win
+						}
+					} else {
+						if win.Geometry().Contains(event.Pos(), true) {
+							targetwin = win
+						}
+					}
+				}
+
+				return true
+			})
+		}
+
+		if targetwin == nil {
+			c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
+				win := winITF.(*Window)
+				if win == nil {
+					return true
+				}
+				if !win.IsVisible() {
+					return true
+				}
+				if win.grid == 1 {
+					return true
+				}
+				if win.isMsgGrid {
+					return true
+				}
+				if win.isFloatWin || win.isExternal {
 					return true
 				}
 				if win.Geometry().Contains(event.Pos(), true) {
