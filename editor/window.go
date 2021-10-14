@@ -1114,6 +1114,7 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 	win.updateLine(colStart, row, cells)
 	win.countContent(row)
 	win.makeUpdateMask(row)
+
 	if !win.isShown() {
 		win.show()
 	}
@@ -1141,7 +1142,6 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 
 		var hl, repeat int
 		hl = -1
-		text := cell[0]
 		if len(cell) >= 2 {
 			hl = util.ReflectToInt(cell[1])
 		}
@@ -1166,7 +1166,7 @@ func (w *Window) updateLine(col, row int, cells []interface{}) {
 				line[col] = &Cell{}
 			}
 
-			line[col].char = text.(string)
+			line[col].char = cell[0].(string)
 			line[col].normalWidth = w.isNormalWidth(line[col].char)
 
 			// If `hl_id` is not present the most recently seen `hl_id` in
@@ -1231,7 +1231,7 @@ func (w *Window) countContent(row int) {
 		if !breakFlag[1] {
 			if cell == nil {
 				width--
-			} else if cell.char == " " && cell.highlight.bg().equals(w.background) {
+			} else if cell.char == " " && !cell.isUpdateBg {
 				width--
 			} else {
 				breakFlag[1] = true
@@ -1250,9 +1250,7 @@ func (w *Window) countContent(row int) {
 }
 
 func (w *Window) makeUpdateMask(row int) {
-	line := w.content[row]
-
-	for j, cell := range line {
+	for j, cell := range w.content[row] {
 		if cell == nil {
 			w.contentMask[row][j] = true
 			continue

@@ -1137,9 +1137,8 @@ func (s *Screen) gridLine(args []interface{}) {
 	var ok bool
 
 	for _, arg := range args {
+
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		row := util.ReflectToInt(arg.([]interface{})[1])
-		colStart := util.ReflectToInt(arg.([]interface{})[2])
 
 		if isSkipGlobalId(gridid) {
 			continue
@@ -1152,7 +1151,11 @@ func (s *Screen) gridLine(args []interface{}) {
 			}
 		}
 
-		win.updateGridContent(row, colStart, arg.([]interface{})[3].([]interface{}))
+		win.updateGridContent(
+			util.ReflectToInt(arg.([]interface{})[1]),
+			util.ReflectToInt(arg.([]interface{})[2]),
+			arg.([]interface{})[3].([]interface{}),
+		)
 	}
 }
 
