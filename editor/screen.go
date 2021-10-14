@@ -557,9 +557,6 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 				if !win.IsVisible() {
 					return true
 				}
-				if win.isMsgGrid {
-					return true
-				}
 				if win.isFloatWin || win.isExternal {
 					return true
 				}
