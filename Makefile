@@ -45,6 +45,7 @@ archive-in-darwin:
 
 moc:
 	@export export GO111MODULE=off ; \
+	rm -fr editor/moc* ; \
 	cd cmd/goneovim ; \
 	qtmoc
 
