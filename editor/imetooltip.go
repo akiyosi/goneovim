@@ -141,6 +141,9 @@ func (i *IMETooltip) show() {
 }
 
 func (i *IMETooltip) update(text string) {
+	if i.font == nil {
+		return
+	}
 	font := i.font
 	i.text = text
 	r := []rune(i.text)
