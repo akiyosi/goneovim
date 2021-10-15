@@ -519,7 +519,7 @@ jobs:
       QT_VERSION: ${{ matrix.qtversion }}
       QT_DIR: ${{ github.workspace }}\Qt
       QT_MSYS2: true
-      QT_MSYS2_DIR: D:\a\_temp\msys\msys64\
+      QT_MSYS2_DIR: D:\a\_temp\msys64\
       QT_MSVC: false
       QT_DEBUG: false
       GO111MODULE: off
