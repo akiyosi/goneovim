@@ -26,6 +26,7 @@ type Cursor struct {
 	modeIdx          int
 	x                float64
 	y                float64
+	layerPos         [2]int
 	oldx             float64
 	oldy             float64
 	delta            float64
@@ -393,26 +394,33 @@ func (c *Cursor) setBlink() {
 }
 
 func (c *Cursor) move(win *Window) {
-	var x, y float64
-	if c.ws.tabline != nil {
-		if c.ws.tabline.widget.IsVisible() {
-			y = y + float64(c.ws.tabline.height)
-		}
+	if win == nil {
+		return
 	}
-	if win != nil {
-		if !win.isExternal {
-			if win.font != nil {
-				x = x + (float64(win.pos[0]) * win.s.font.truewidth)
-				y = y + float64(win.pos[1]*win.s.font.lineHeight)
+
+	var x, y float64
+	if !win.isExternal {
+		if win.font != nil {
+			x = x + (float64(win.pos[0]) * win.s.font.truewidth)
+			y = y + float64(win.pos[1]*win.s.font.lineHeight)
+		}
+		if c.ws.tabline != nil {
+			if c.ws.tabline.widget.IsVisible() {
+				y = y + float64(c.ws.tabline.height)
 			}
 		}
 	}
-	c.Move(
-		core.NewQPoint2(
-			int(x),
-			int(y),
-		),
-	)
+
+	if c.layerPos[0] != int(x) || c.layerPos[1] != int(y) {
+		c.Move(
+			core.NewQPoint2(
+				int(x),
+				int(y),
+			),
+		)
+	}
+	c.layerPos[0] = int(x)
+	c.layerPos[1] = int(y)
 
 	// if c.ws.loc != nil {
 	// 	c.ws.loc.updatePos()
