@@ -501,6 +501,10 @@ func (w *Workspace) startNvim(path string) error {
 		// Attaching to /path/to/nvim
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
 		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd)
+	} else if editor.opts.Wsl {
+		// Attaching remote nvim via ssh
+		w.uiRemoteAttached = true
+		neovim, err = newWslProcess()
 	} else if editor.opts.Ssh != "" {
 		// Attaching remote nvim via ssh
 		w.uiRemoteAttached = true
@@ -582,7 +586,7 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 	sshargs := []string{
 		userhost,
 		"-p", port,
-		"/bin/bash",
+		"$SHELL",
 		"--login",
 		"-c",
 		nvimargs,
@@ -607,7 +611,66 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 	}
 	cmd.Start()
 
-	v, _ := nvim.New(outr, inw, inw, logf)
+	v, err := nvim.New(outr, inw, inw, logf)
+	if err != nil {
+		editor.putLog("error:", err)
+		return nil, err
+	}
+
+	return v, nil
+}
+
+func newWslProcess() (*nvim.Nvim, error) {
+	logf := log.Printf
+	command := "wsl"
+	ctx := context.Background()
+
+	nvimargs := ""
+	if editor.config.Editor.NvimInWsl == "" {
+		nvimargs = `"nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed `
+	} else {
+		nvimargs = `$SHELL -lc "`
+		nvimargs += fmt.Sprintf("%s --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed ", editor.config.Editor.NvimInWsl)
+	}
+	for _, s := range editor.args {
+		nvimargs += s + " "
+	}
+	nvimargs += `"`
+
+	wslArgs := []string{
+		"$SHELL",
+		"-lc",
+		nvimargs,
+	}
+
+	cmd := exec.CommandContext(
+		ctx,
+		command,
+		wslArgs...,
+	)
+	util.PrepareRunProc(cmd)
+	cmd.SysProcAttr = embedProcAttr
+	editor.putLog("exec command:", cmd.String())
+
+	inw, err := cmd.StdinPipe()
+	if err != nil {
+		editor.putLog("stdin pipe error:", err)
+		return nil, err
+	}
+
+	outr, err := cmd.StdoutPipe()
+	if err != nil {
+		inw.Close()
+		editor.putLog("stdin pipe error:", err)
+		return nil, err
+	}
+	cmd.Start()
+
+	v, err := nvim.New(outr, inw, inw, logf)
+	if err != nil {
+		editor.putLog("error:", err)
+		return nil, err
+	}
 
 	return v, nil
 }
