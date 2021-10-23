@@ -324,6 +324,9 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		w.ft = w.s.ws.windowsFt[w.id]
 		w.s.ws.optionsetMutex.Unlock()
 	}
+	if w.ft == "" {
+		return
+	}
 	if !w.isShown() {
 		return
 	}
