@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -2654,11 +2655,53 @@ func (w *Window) raise() {
 	if w.grid == 1 {
 		return
 	}
+
 	w.Raise()
 
-	font := w.getFont()
-	w.s.ws.cursor.updateFont(font)
+	// Float windows are displayed in front of normal windows.
+	// The order of the windows is such that the most recent one
+	// generated is placed in front.
+	// Eventually, you may need to consider the z-index.
+	var floatWins []*Window
+	if !w.isFloatWin && !w.isMsgGrid {
+		w.s.windows.Range(func(_, winITF interface{}) bool {
+			win := winITF.(*Window)
+			if win == nil {
+				return true
+			}
+			if win.grid == 1 {
+				return true
+			}
+			if win.isFloatWin {
+				floatWins = append(floatWins, win)
+			}
+
+			return true
+		})
+
+		sort.Slice(
+			floatWins,
+			func(i, j int) bool {
+				return floatWins[i].grid < floatWins[j].grid
+			},
+		)
+
+		for _, win := range floatWins {
+			win.Raise()
+		}
+	}
+
+	// handle cursor widget
+	w.setCursorParent()
+	w.s.ws.cursor.raise()
+}
+
+func (w *Window) setCursorParent() {
+	// Update cursor font
+	w.s.ws.cursor.updateFont(w.getFont())
 	w.s.ws.cursor.isInPalette = false
+
+	// for handling external window
 	if !w.isExternal {
 		editor.window.Raise()
 		w.s.ws.cursor.SetParent(w.s.ws.widget)
@@ -2666,9 +2709,6 @@ func (w *Window) raise() {
 		w.extwin.Raise()
 		w.s.ws.cursor.SetParent(w.extwin)
 	}
-	w.s.ws.cursor.Raise()
-	w.s.ws.cursor.Hide()
-	w.s.ws.cursor.Show()
 }
 
 func (w *Window) show() {
@@ -2758,9 +2798,6 @@ func (w *Window) move(col int, row int) {
 	y := (row * font.lineHeight) + res
 
 	if w.isFloatWin {
-		if w.s.ws.drawTabline {
-			y += w.s.ws.tabline.widget.Height()
-		}
 		// A workarround for ext_popupmenu and displaying a LSP tooltip
 		if editor.config.Editor.ExtPopupmenu {
 			if w.s.ws.mode == "insert" && w.s.ws.popup.widget.IsVisible() {
@@ -2785,6 +2822,7 @@ func (w *Window) move(col int, row int) {
 	}
 
 	w.Move2(x, y)
+
 
 }
 

@@ -866,3 +866,9 @@ func (c *Cursor) animateMove() {
 
 	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
 }
+
+func (c *Cursor) raise() {
+	c.Raise()
+	c.Hide()
+	c.Show()
+}
