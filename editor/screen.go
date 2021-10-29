@@ -677,6 +677,11 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win.s = s
 		s.storeWindow(gridid, win)
 
+		// Skip setting event handler if screen is minimap
+		if win.s.name != "minimap" {
+			win.ConnectMousePressEvent(win.mouseEvent)
+		}
+
 		if !win.isFloatWin {
 			win.SetParent(s.widget)
 		}

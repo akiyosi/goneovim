@@ -2543,7 +2543,6 @@ func newWindow() *Window {
 	win.ConnectDragEnterEvent(win.dragEnterEvent)
 	win.ConnectDragMoveEvent(win.dragMoveEvent)
 	win.ConnectDropEvent(win.dropEvent)
-	win.ConnectMousePressEvent(win.mouseEvent)
 
 	return win
 }
