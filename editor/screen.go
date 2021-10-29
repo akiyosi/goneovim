@@ -677,7 +677,9 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win.s = s
 		s.storeWindow(gridid, win)
 
-		win.SetParent(s.widget)
+		if !win.isFloatWin {
+			win.SetParent(s.widget)
+		}
 
 		win.grid = gridid
 		win.s.ws.optionsetMutex.RLock()
@@ -922,8 +924,8 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 
 			}
 			s.ws.cursor.gridid = gridid
-			s.ws.cursor.font = win.getFont()
-			win.raise()
+			win.setCursorParent()
+			s.ws.cursor.raise()
 
 			// reset smooth scroll scrolling offset
 			win.scrollPixels2 = 0
@@ -1267,6 +1269,7 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.pos[1] = row
 		win.updateMutex.Unlock()
 		win.move(col, row)
+		win.raise()
 		win.show()
 
 		// // for goneovim internal use
@@ -1366,9 +1369,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			anchorGrid = s.ws.cursor.gridid
 		}
 		// }
-
-		// win.SetParent(win.s.ws.screen.widget)
-		win.SetParent(win.s.ws.widget)
 
 		win.propMutex.Lock()
 		win.isFloatWin = true
