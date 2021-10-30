@@ -228,12 +228,14 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	// Draw float window border
-	if w.isFloatWin {
+	if editor.config.Editor.DrawBorderForFloatWindow {
 		w.drawFloatWindowBorder(p)
 	}
 
 	// Draw vim window separator
-	w.drawWindowSeparators(p, row, col, rows, cols)
+	if editor.config.Editor.DrawWindowSeparator {
+		w.drawWindowSeparators(p, row, col, rows, cols)
+	}
 
 	// Reset to 0 after drawing is complete.
 	// This is to suppress flickering in smooth scroll
@@ -570,7 +572,7 @@ func (w *Window) drawMsgSeparator(p *gui.QPainter) {
 }
 
 func (w *Window) drawFloatWindowBorder(p *gui.QPainter) {
-	if !editor.config.Editor.DrawBorderForFloatWindow {
+	if !w.isFloatWin {
 		return
 	}
 	var color *RGBA
@@ -633,9 +635,6 @@ func (w *Window) drawWindowSeparators(p *gui.QPainter, row, col, rows, cols int)
 		return
 	}
 	if w.grid != 1 {
-		return
-	}
-	if !editor.config.Editor.DrawWindowSeparator {
 		return
 	}
 
