@@ -237,6 +237,15 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		w.drawWindowSeparators(p, row, col, rows, cols)
 	}
 
+	// Minimap drawing process. It is not involved in the normal drawing of the window at all.
+	if w.s.name == "minimap" {
+		if w.s.ws.minimap != nil {
+			if w.s.ws.minimap.visible && w.s.ws.minimap.widget.IsVisible() {
+				w.s.ws.minimap.updateMinimap(p)
+			}
+		}
+	}
+
 	// Reset to 0 after drawing is complete.
 	// This is to suppress flickering in smooth scroll
 	dx := math.Abs(float64(w.scrollPixels[0]))
@@ -1125,7 +1134,7 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 	if win.isMsgGrid {
 		return
 	}
-	if win.grid == 1 {
+	if win.grid == 1 && win.s.name != "minimap" {
 		return
 	}
 	if win.maxLenContent < win.lenContent[row] {
@@ -1444,7 +1453,7 @@ func (w *Window) update() {
 	start := w.queueRedrawArea[1]
 	end := w.queueRedrawArea[3]
 	// Update all lines when using the wheel scroll or indent guide feature.
-	if w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide {
+	if w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide || w.s.name == "minimap" {
 		start = 0
 		end = w.rows
 	}
@@ -1475,7 +1484,7 @@ func (w *Window) update() {
 		}
 		// If screen is minimap
 		if w.s.name == "minimap" {
-			width = w.cols
+			width = w.maxLenContent
 			drawWithSingleRect = true
 		}
 		// If scroll is smooth with touchpad

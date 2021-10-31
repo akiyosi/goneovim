@@ -316,7 +316,6 @@ func (w *Workspace) lazyDrawUI() {
 			isMinimapVisible := w.minimap.visible
 			w.minimap.mu.Unlock()
 			if isMinimapVisible {
-				w.minimap.setCurrentRegion()
 				w.minimap.bufUpdate()
 				w.minimap.bufSync()
 				w.updateSize()
@@ -1512,7 +1511,7 @@ func (w *Workspace) drawOtherUI() {
 
 	if w.minimap != nil {
 		if w.minimap.visible && w.minimap.widget.IsVisible() {
-			w.updateMinimap()
+			w.scrollMinimap()
 			w.minimap.mapScroll()
 		}
 	}
@@ -1811,7 +1810,7 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	return win, diff, true
 }
 
-func (w *Workspace) updateMinimap() {
+func (w *Workspace) scrollMinimap() {
 	absMapTop := w.minimap.viewport[0]
 	absMapBottom := w.minimap.viewport[1]
 
