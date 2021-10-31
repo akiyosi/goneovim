@@ -1920,7 +1920,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			}
 		}
 	case "gonvim_minimap_toggle":
-		go w.minimap.toggle()
+		w.minimap.toggle()
 	case "gonvim_colorscheme":
 		if w.minimap != nil {
 			w.minimap.isSetColorscheme = false
