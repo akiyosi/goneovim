@@ -1821,13 +1821,13 @@ func (w *Workspace) scrollMinimap() {
 	w.viewportMutex.RUnlock()
 
 	switch {
-	case botLine >= absMapBottom:
+	case botLine > absMapBottom:
 		go func() {
 			w.minimap.nvim.Input(`<ScrollWheelDown>`)
 			w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
 			w.minimap.nvim.Input(`zz`)
 		}()
-	case absMapTop >= topLine:
+	case absMapTop > topLine:
 		go func() {
 			w.minimap.nvim.Input(`<ScrollWheelUp>`)
 			w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
