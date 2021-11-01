@@ -105,6 +105,7 @@ type Window struct {
 	isGridDirty bool
 	id          nvim.Window
 	bufName     string
+	// bufType     string
 	pos         [2]int
 	anchor      string
 	cols        int

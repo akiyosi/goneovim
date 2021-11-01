@@ -1714,11 +1714,15 @@ func (w *Workspace) windowViewport(args []interface{}) {
 			w.viewportQue <- scrollvp
 		}
 
-		if viewport != w.viewport {
-			w.viewportMutex.Lock()
-			w.oldViewport = w.viewport
-			w.viewport = viewport
-			w.viewportMutex.Unlock()
+		// Only the viewport of the buffer where the cursor is located is used internally.
+		grid := util.ReflectToInt(arg[0])
+		if grid == w.cursor.gridid {
+			if viewport != w.viewport {
+				w.viewportMutex.Lock()
+				w.oldViewport = w.viewport
+				w.viewport = viewport
+				w.viewportMutex.Unlock()
+			}
 		}
 	}
 }
@@ -2309,6 +2313,23 @@ func (w *Workspace) setBuffname(idITF, nameITF interface{}) {
 
 			win.bufName = name
 		}
+
+		// // NOTE: Getting buftype
+		// // Process to get buftype. Comment it out when the time comes to need it.
+		// errChan := make(chan error, 2)
+		// var btITF interface{}
+		// go func() {
+		// 	err := w.nvim.BufferOption(buf, "buftype", &btITF)
+		// 	errChan <- err
+		// }()
+		// var bt string
+		// select {
+		// case <-errChan:
+		// 	bt = btITF.(string)
+		// case <-time.After(40 * time.Millisecond):
+		// }
+
+		// win.bufType = bt
 
 		return true
 	})
