@@ -682,9 +682,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 			win.ConnectMousePressEvent(win.mouseEvent)
 		}
 
-		if !win.isFloatWin {
-			win.SetParent(s.widget)
-		}
+		win.SetParent(s.widget)
 
 		win.grid = gridid
 		win.s.ws.optionsetMutex.RLock()
@@ -929,6 +927,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 
 			}
 			s.ws.cursor.gridid = gridid
+			win.raise()
 			win.setCursorParent()
 			s.ws.cursor.raise()
 
@@ -1274,12 +1273,7 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.pos[1] = row
 		win.updateMutex.Unlock()
 		win.move(col, row)
-		win.raise()
 		win.show()
-
-		// // for goneovim internal use
-		// win.setBufferName()
-		// win.setFiletype()
 	}
 }
 
