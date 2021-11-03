@@ -341,6 +341,10 @@ func (s *Screen) bottomWindowPos() int {
 		if win.isFloatWin {
 			return true
 		}
+		if !win.IsVisible() {
+			return true
+		}
+
 		position := win.pos[1]*win.s.font.lineHeight + win.Rect().Bottom()
 		if pos < position {
 			pos = position
