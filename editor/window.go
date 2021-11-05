@@ -1620,27 +1620,20 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	if w.isFloatWin || w.isMsgGrid {
 		// If transparent is true, then we should draw every cell's background color
 		if editor.config.Editor.Transparent < 1.0 || editor.config.Message.Transparent < 1.0 {
+			w.SetAutoFillBackground(false)
 			isDrawDefaultBg = true
 		}
 
 		// If the window is popupmenu and  pumblend is set
-		if w.isPopupmenu {
-			if editor.config.Editor.Transparent < 1.0 {
-				w.SetAutoFillBackground(false)
-			}
-			if w.s.ws.pb > 0 {
-				w.SetAutoFillBackground(false)
-			}
+		if w.isPopupmenu && w.s.ws.pb > 0 {
+			w.SetAutoFillBackground(false)
+			isDrawDefaultBg = true
 		}
 
 		// If the window is float window and winblend is set
-		if w.isFloatWin && !w.isPopupmenu {
-			if editor.config.Editor.Transparent < 1.0 {
-				w.SetAutoFillBackground(false)
-			}
-			if w.wb > 0 {
-				w.SetAutoFillBackground(false)
-			}
+		if w.isFloatWin && !w.isPopupmenu && w.wb > 0 {
+			w.SetAutoFillBackground(false)
+			isDrawDefaultBg = true
 		}
 	}
 
