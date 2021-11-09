@@ -1462,17 +1462,18 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			y = anchorposy + anchorRow - win.rows
 		}
 
-		if x < 0 {
-			x = 0
-		}
-
+		// If the position coordinate is a negative value, it is reset to zero.
+		// I don't know if this is correct in the specification, but this is how nvim appears to work in the terminal.
+		if x < 0 { x = 0 }
+		if y < 0 { y = 0 }
 		win.pos[0] = x
 		win.pos[1] = y
 
 		win.move(x, y)
 		win.setShadow()
 		win.show()
-		win.s.ws.cursor.Raise()
+		win.setCursorParent()
+		win.s.ws.cursor.raise()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
 		anchorwin.queueRedrawAll()

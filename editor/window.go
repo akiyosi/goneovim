@@ -2822,14 +2822,7 @@ func (w *Window) move(col int, row int) {
 		return
 	}
 
-	// If the position coordinate is a negative value, it is reset to zero.
-	// I don't know if this is correct in the specification, but this is how nvim appears to work in the terminal.
-	if x < 0 { x = 0 }
-	if y < 0 { y = 0 }
-
 	w.Move2(x, y)
-
-
 }
 
 func (w *Window) layoutExternalWindow(x, y int) {

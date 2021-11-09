@@ -190,11 +190,12 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 }
 
 func (c *Cursor) paint(event *gui.QPaintEvent) {
-	font := c.font
-	if font == nil {
+	if c == nil {
 		return
 	}
-	if c == nil {
+
+	font := c.font
+	if font == nil {
 		return
 	}
 	if c.charCache == nil {
@@ -426,10 +427,6 @@ func (c *Cursor) move(win *Window) {
 	}
 	c.layerPos[0] = int(x)
 	c.layerPos[1] = int(y)
-
-	// if c.ws.loc != nil {
-	// 	c.ws.loc.updatePos()
-	// }
 }
 
 func (c *Cursor) updateFont(font *Font) {
