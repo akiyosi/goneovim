@@ -226,14 +226,17 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		X = c.x
 		Y = c.y
 	}
-	p.SetClipRect2(
-		core.NewQRect4(
-			int(X),
-			int(Y),
-			c.width,
-			c.height,
-		), core.Qt__IntersectClip,
-	)
+
+	if c.hasSmoothMove {
+		p.SetClipRect2(
+			core.NewQRect4(
+				int(X),
+				int(Y),
+				c.width,
+				c.height,
+			), core.Qt__IntersectClip,
+		)
+	}
 
 	// Draw cursor background
 	color := c.bg
