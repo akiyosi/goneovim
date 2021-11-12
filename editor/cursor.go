@@ -27,8 +27,10 @@ type Cursor struct {
 	x                float64
 	y                float64
 	layerPos         [2]int
-	oldx             float64
-	oldy             float64
+	animationStartX  float64
+	animationStartY  float64
+	xprime           float64
+	yprime           float64
 	delta            float64
 	deltax           float64
 	deltay           float64
@@ -188,11 +190,12 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 }
 
 func (c *Cursor) paint(event *gui.QPaintEvent) {
-	font := c.font
-	if font == nil {
+	if c == nil {
 		return
 	}
-	if c == nil {
+
+	font := c.font
+	if font == nil {
 		return
 	}
 	if c.charCache == nil {
@@ -211,12 +214,12 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	var X, Y float64
 	if c.deltax != 0 || c.deltay != 0 {
 		if math.Abs(c.deltax) > 0 {
-			X = c.oldx + c.deltax
+			X = c.xprime + c.deltax
 		} else {
 			X = c.x
 		}
 		if math.Abs(c.deltay) > 0 {
-			Y = c.oldy + c.deltay
+			Y = c.yprime + c.deltay
 		} else {
 			Y = c.y
 		}
@@ -224,14 +227,17 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		X = c.x
 		Y = c.y
 	}
-	p.SetClipRect2(
-		core.NewQRect4(
-			int(X),
-			int(Y),
-			c.width,
-			c.height,
-		), core.Qt__IntersectClip,
-	)
+
+	if c.hasSmoothMove {
+		p.SetClipRect2(
+			core.NewQRect4(
+				int(X),
+				int(Y),
+				c.width,
+				c.height,
+			), core.Qt__IntersectClip,
+		)
+	}
 
 	// Draw cursor background
 	color := c.bg
@@ -251,8 +257,8 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	// Draw source cell text
 	if c.snapshot != nil && (c.deltax != 0 || c.deltay != 0) {
 		p.DrawPixmap9(
-			0,
-			0,
+			int(c.animationStartX),
+			int(c.animationStartY),
 			c.snapshot,
 		)
 	}
@@ -421,10 +427,6 @@ func (c *Cursor) move(win *Window) {
 	}
 	c.layerPos[0] = int(x)
 	c.layerPos[1] = int(y)
-
-	// if c.ws.loc != nil {
-	// 	c.ws.loc.updatePos()
-	// }
 }
 
 func (c *Cursor) updateFont(font *Font) {
@@ -608,17 +610,21 @@ func (c *Cursor) updateContent(win *Window) {
 	if !(c.x == x && c.y == y) {
 		// If the cursor has not finished its animated movement
 		if c.deltax != 0 || c.deltay != 0 {
-			c.oldx = c.oldx + c.deltax
-			c.oldy = c.oldy + c.deltay
+			c.xprime = c.xprime + c.deltax
+			c.yprime = c.yprime + c.deltay
 
 			// Suppress cursor animation while touchpad scrolling is in progress.
 			if !isStopScroll {
-				c.oldx = x
-				c.oldy = y
+				c.xprime = x
+				c.yprime = y
 			}
 		} else {
-			c.oldx = c.x
-			c.oldy = c.y
+			c.xprime = c.x
+			c.yprime = c.y
+		}
+		if c.deltax == 0 && c.deltay == 0 {
+			c.animationStartX = c.x
+			c.animationStartY = c.y
 		}
 		c.x = x
 		c.y = y
@@ -669,7 +675,18 @@ func (c *Cursor) getSnapshot() {
 			c.avoidedToTakeFirstSnapshot = true
 			return
 		}
-		c.snapshot = c.Grab(c.Rect())
+		if c.deltax != 0 || c.deltay != 0 {
+			return
+		}
+		// c.snapshot = c.Grab(c.Rect())
+		c.snapshot = c.Grab(
+			core.NewQRect4(
+				int(c.x),
+				int(c.y),
+				c.width,
+				c.height,
+			),
+		)
 	}
 }
 
@@ -677,10 +694,10 @@ func (c *Cursor) updateRegion() {
 	// c.Update()
 	if !c.hasSmoothMove {
 		c.Update2(
-			int(math.Trunc(c.oldx)),
-			int(math.Trunc(c.oldy)),
-			int(math.Ceil(c.oldx+float64(c.width))),
-			int(math.Ceil(c.oldy+float64(c.height))),
+			int(math.Trunc(c.xprime)),
+			int(math.Trunc(c.yprime)),
+			int(math.Ceil(c.xprime+float64(c.width))),
+			int(math.Ceil(c.yprime+float64(c.height))),
 		)
 		c.Update2(
 			int(math.Trunc(c.x)),
@@ -702,20 +719,20 @@ func (c *Cursor) updateMinimumArea() {
 	var poly *gui.QPolygon
 
 	var top, left, right, bottom float64
-	if c.oldx < c.x && c.oldy < c.y || c.oldx > c.x && c.oldy > c.y {
-		if c.oldx < c.x {
-			left = c.oldx
+	if c.xprime < c.x && c.yprime < c.y || c.xprime > c.x && c.yprime > c.y {
+		if c.xprime < c.x {
+			left = c.xprime
 			right = c.x
 		} else {
 			left = c.x
-			right = c.oldx
+			right = c.xprime
 		}
-		if c.oldy < c.y {
-			top = c.oldy
+		if c.yprime < c.y {
+			top = c.yprime
 			bottom = c.y
 		} else {
 			top = c.y
-			bottom = c.oldy
+			bottom = c.yprime
 		}
 
 		topleft = core.NewQPoint2(
@@ -752,19 +769,19 @@ func (c *Cursor) updateMinimumArea() {
 		)
 
 	} else {
-		if c.oldx < c.x {
-			left = c.oldx
+		if c.xprime < c.x {
+			left = c.xprime
 			right = c.x
 		} else {
 			left = c.x
-			right = c.oldx
+			right = c.xprime
 		}
-		if c.oldy < c.y {
-			top = c.oldy
+		if c.yprime < c.y {
+			top = c.yprime
 			bottom = c.y
 		} else {
 			top = c.y
-			bottom = c.oldy
+			bottom = c.yprime
 		}
 
 		topleft = core.NewQPoint2(
@@ -829,8 +846,8 @@ func (c *Cursor) animateMove() {
 		}
 
 		c.delta = v
-		c.deltax = (c.x - c.oldx) * v
-		c.deltay = (c.y - c.oldy) * v
+		c.deltax = (c.x - c.xprime) * v
+		c.deltay = (c.y - c.yprime) * v
 
 		if v == 1.0 {
 			c.delta = 0.09
@@ -865,4 +882,10 @@ func (c *Cursor) animateMove() {
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InCubic))
 
 	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
+}
+
+func (c *Cursor) raise() {
+	c.Raise()
+	c.Hide()
+	c.Show()
 }

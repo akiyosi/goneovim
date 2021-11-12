@@ -29,7 +29,8 @@ type MiniMap struct {
 
 	visible bool
 
-	curRegion   *widgets.QWidget
+	curPos      int
+	curHeight   int
 	currBuf     string
 	colorscheme string
 
@@ -57,11 +58,6 @@ func newMiniMap() *MiniMap {
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	widget.SetFixedWidth(editor.config.MiniMap.Width)
 
-	curRegion := widgets.NewQWidget(nil, 0)
-	curRegion.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
-	curRegion.SetFixedWidth(editor.config.MiniMap.Width)
-	curRegion.SetFixedHeight(1)
-
 	m := &MiniMap{
 		Screen: Screen{
 			name:   "minimap",
@@ -72,7 +68,6 @@ func newMiniMap() *MiniMap {
 			highlightGroup: make(map[string]int),
 		},
 		visible:       editor.config.MiniMap.Visible,
-		curRegion:     curRegion,
 		stop:          make(chan struct{}),
 		signal:        NewMiniMapSignal(nil),
 		redrawUpdates: make(chan [][]interface{}, 1000),
@@ -170,24 +165,7 @@ func (m *MiniMap) attachUIOption() map[string]interface{} {
 	return o
 }
 
-func (m *MiniMap) setColor() {
-	c := editor.colors.fg
-	m.curRegion.SetStyleSheet(fmt.Sprintf(" * { background-color: rgba(%d, %d, %d, 0.1);}", c.R, c.G, c.B))
-}
-
-func (m *MiniMap) setCurrentRegion() {
-	win, ok := m.getWindow(1)
-	if !ok {
-		return
-	}
-	m.curRegion.SetParent(win)
-}
-
 func (m *MiniMap) toggle() {
-	win, ok := m.getWindow(1)
-	if !ok {
-		return
-	}
 	m.mu.Lock()
 	if m.visible {
 		m.visible = false
@@ -195,7 +173,6 @@ func (m *MiniMap) toggle() {
 		m.visible = true
 	}
 	m.mu.Unlock()
-	m.curRegion.SetParent(win)
 	m.bufUpdate()
 	m.bufSync()
 	m.ws.updateSize()
@@ -203,8 +180,8 @@ func (m *MiniMap) toggle() {
 
 func (m *MiniMap) updateRows() bool {
 	var ret bool
-	m.height = m.widget.Height()
 	fontHeight := m.font.lineHeight
+	m.height = m.widget.Height()
 	if fontHeight == 0 {
 		return false
 	}
@@ -369,11 +346,11 @@ func (m *MiniMap) setColorscheme() {
 }
 
 func (m *MiniMap) mapScroll() {
-	linePos := 0
+	relativeRegionPos := 0
 	regionHeight := 0
 
 	regionHeight = m.ws.viewport[1] - m.ws.viewport[0]
-	linePos = m.ws.viewport[0] - m.viewport[0]
+	relativeRegionPos = m.ws.viewport[0] - m.viewport[0]
 
 	win, ok := m.ws.screen.getWindow(m.ws.cursor.gridid)
 	if !ok {
@@ -384,16 +361,42 @@ func (m *MiniMap) mapScroll() {
 		regionHeight = win.rows
 	}
 
-	if linePos < 0 {
-		regionHeight = regionHeight + linePos
-		linePos = 0
+	if relativeRegionPos < 0 {
+		regionHeight = regionHeight + relativeRegionPos
+		relativeRegionPos = 0
 	}
 	if regionHeight < 0 {
 		regionHeight = 0
 	}
-	m.curRegion.SetFixedHeight(int(float64(regionHeight) * float64(m.font.lineHeight)))
-	pos := int(float64(m.font.lineHeight) * float64(linePos))
-	m.curRegion.Move2(0, pos)
+
+	oldPos := m.curPos
+	oldHeight := m.curHeight
+	if oldPos > 0 {
+		oldPos = oldPos - 1
+	}
+
+	m.curPos = int(float64(m.font.lineHeight) * float64(relativeRegionPos))
+	m.curHeight = int(
+		float64(regionHeight) * float64(m.font.lineHeight),
+	)
+
+	mmWin, ok := m.getWindow(1)
+	if !ok {
+		return
+	}
+
+	mmWin.refreshUpdateArea(1)
+	width := m.widget.Width()
+	mmWin.Update2(
+		0, oldPos,
+		width,
+		oldHeight,
+	)
+	mmWin.Update2(
+		0, m.curPos,
+		width,
+		m.curHeight,
+	)
 }
 
 func (m *MiniMap) bufSync() {
@@ -504,14 +507,10 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 		switch event {
 		case "grid_resize":
 			m.gridResize(args)
-		// case "default_colors_set":
-		// 	args := update[1].([]interface{})
-		// 	w.setColorsSet(args)
 		case "hl_attr_define":
 			m.setHlAttrDef(args)
 		case "hl_group_set":
 			m.setHighlightGroup(args)
-			m.setColor()
 		case "grid_line":
 			m.gridLine(args)
 		case "grid_clear":
@@ -532,8 +531,9 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 				util.ReflectToInt(vp[5]) + 1,
 			}
 		case "flush":
-			m.update()
 			m.mapScroll()
+			m.update()
+
 
 		default:
 		}
@@ -620,8 +620,6 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 	} else if vert < 0 {
 		m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
 	}
-
-	// m.mapScroll()
 
 	event.Accept()
 }
@@ -734,4 +732,26 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 		}
 
 	}
+}
+
+func (m *MiniMap) updateMinimap(p *gui.QPainter) {
+	curRegionRect := core.NewQRectF4(
+		float64(0),
+		float64(m.curPos),
+		float64(m.widget.Width()),
+		float64(m.curHeight),
+	)
+	color := editor.colors.fg
+	p.FillRect(
+		curRegionRect,
+		gui.NewQBrush3(
+			gui.NewQColor3(
+				color.R,
+				color.G,
+				color.B,
+				25,
+			),
+			1,
+		),
+	)
 }

@@ -292,8 +292,8 @@ func (p *Palette) cursorMove(x int) {
 		c.y = c.y - float64(p.widget.Pos().Y())
 	}
 	if !(c.x == px && c.y == py) {
-		c.oldx = c.x
-		c.oldy = c.y
+		c.xprime = c.x
+		c.yprime = c.y
 		c.x = px
 		c.y = py
 		c.doAnimate = true

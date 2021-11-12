@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -104,6 +105,7 @@ type Window struct {
 	isGridDirty bool
 	id          nvim.Window
 	bufName     string
+	// bufType     string
 	pos         [2]int
 	anchor      string
 	cols        int
@@ -227,12 +229,23 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	// Draw float window border
-	if w.isFloatWin {
+	if editor.config.Editor.DrawBorderForFloatWindow {
 		w.drawFloatWindowBorder(p)
 	}
 
 	// Draw vim window separator
-	w.drawWindowSeparators(p, row, col, rows, cols)
+	if editor.config.Editor.DrawWindowSeparator {
+		w.drawWindowSeparators(p, row, col, rows, cols)
+	}
+
+	// Minimap drawing process. It is not involved in the normal drawing of the window at all.
+	if w.s.name == "minimap" {
+		if w.s.ws.minimap != nil {
+			if w.s.ws.minimap.visible && w.s.ws.minimap.widget.IsVisible() {
+				w.s.ws.minimap.updateMinimap(p)
+			}
+		}
+	}
 
 	// Reset to 0 after drawing is complete.
 	// This is to suppress flickering in smooth scroll
@@ -569,7 +582,7 @@ func (w *Window) drawMsgSeparator(p *gui.QPainter) {
 }
 
 func (w *Window) drawFloatWindowBorder(p *gui.QPainter) {
-	if !editor.config.Editor.DrawBorderForFloatWindow {
+	if !w.isFloatWin {
 		return
 	}
 	var color *RGBA
@@ -632,9 +645,6 @@ func (w *Window) drawWindowSeparators(p *gui.QPainter, row, col, rows, cols int)
 		return
 	}
 	if w.grid != 1 {
-		return
-	}
-	if !editor.config.Editor.DrawWindowSeparator {
 		return
 	}
 
@@ -1125,7 +1135,7 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 	if win.isMsgGrid {
 		return
 	}
-	if win.grid == 1 {
+	if win.grid == 1 && win.s.name != "minimap" {
 		return
 	}
 	if win.maxLenContent < win.lenContent[row] {
@@ -1444,7 +1454,7 @@ func (w *Window) update() {
 	start := w.queueRedrawArea[1]
 	end := w.queueRedrawArea[3]
 	// Update all lines when using the wheel scroll or indent guide feature.
-	if w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide {
+	if w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide || w.s.name == "minimap" {
 		start = 0
 		end = w.rows
 	}
@@ -1475,7 +1485,7 @@ func (w *Window) update() {
 		}
 		// If screen is minimap
 		if w.s.name == "minimap" {
-			width = w.cols
+			width = w.maxLenContent
 			drawWithSingleRect = true
 		}
 		// If scroll is smooth with touchpad
@@ -1610,27 +1620,20 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	if w.isFloatWin || w.isMsgGrid {
 		// If transparent is true, then we should draw every cell's background color
 		if editor.config.Editor.Transparent < 1.0 || editor.config.Message.Transparent < 1.0 {
+			w.SetAutoFillBackground(false)
 			isDrawDefaultBg = true
 		}
 
 		// If the window is popupmenu and  pumblend is set
-		if w.isPopupmenu {
-			if editor.config.Editor.Transparent < 1.0 {
-				w.SetAutoFillBackground(false)
-			}
-			if w.s.ws.pb > 0 {
-				w.SetAutoFillBackground(false)
-			}
+		if w.isPopupmenu && w.s.ws.pb > 0 {
+			w.SetAutoFillBackground(false)
+			isDrawDefaultBg = true
 		}
 
 		// If the window is float window and winblend is set
-		if w.isFloatWin && !w.isPopupmenu {
-			if editor.config.Editor.Transparent < 1.0 {
-				w.SetAutoFillBackground(false)
-			}
-			if w.wb > 0 {
-				w.SetAutoFillBackground(false)
-			}
+		if w.isFloatWin && !w.isPopupmenu && w.wb > 0 {
+			w.SetAutoFillBackground(false)
+			isDrawDefaultBg = true
 		}
 	}
 
@@ -2542,7 +2545,6 @@ func newWindow() *Window {
 	win.ConnectDragEnterEvent(win.dragEnterEvent)
 	win.ConnectDragMoveEvent(win.dragMoveEvent)
 	win.ConnectDropEvent(win.dropEvent)
-	win.ConnectMousePressEvent(win.mouseEvent)
 
 	return win
 }
@@ -2654,11 +2656,53 @@ func (w *Window) raise() {
 	if w.grid == 1 {
 		return
 	}
+
 	w.Raise()
 
-	font := w.getFont()
-	w.s.ws.cursor.updateFont(font)
+	// Float windows are displayed in front of normal windows.
+	// The order of the windows is such that the most recent one
+	// generated is placed in front.
+	// Eventually, you may need to consider the z-index.
+	var floatWins []*Window
+	if !w.isFloatWin && !w.isMsgGrid {
+		w.s.windows.Range(func(_, winITF interface{}) bool {
+			win := winITF.(*Window)
+			if win == nil {
+				return true
+			}
+			if win.grid == 1 {
+				return true
+			}
+			if win.isFloatWin {
+				floatWins = append(floatWins, win)
+			}
+
+			return true
+		})
+
+		sort.Slice(
+			floatWins,
+			func(i, j int) bool {
+				return floatWins[i].grid < floatWins[j].grid
+			},
+		)
+
+		for _, win := range floatWins {
+			win.Raise()
+		}
+	}
+
+	// handle cursor widget
+	w.setCursorParent()
+	w.s.ws.cursor.raise()
+}
+
+func (w *Window) setCursorParent() {
+	// Update cursor font
+	w.s.ws.cursor.updateFont(w.getFont())
 	w.s.ws.cursor.isInPalette = false
+
+	// for handling external window
 	if !w.isExternal {
 		editor.window.Raise()
 		w.s.ws.cursor.SetParent(w.s.ws.widget)
@@ -2666,9 +2710,6 @@ func (w *Window) raise() {
 		w.extwin.Raise()
 		w.s.ws.cursor.SetParent(w.extwin)
 	}
-	w.s.ws.cursor.Raise()
-	w.s.ws.cursor.Hide()
-	w.s.ws.cursor.Show()
 }
 
 func (w *Window) show() {
@@ -2758,9 +2799,6 @@ func (w *Window) move(col int, row int) {
 	y := (row * font.lineHeight) + res
 
 	if w.isFloatWin {
-		if w.s.ws.drawTabline {
-			y += w.s.ws.tabline.widget.Height()
-		}
 		// A workarround for ext_popupmenu and displaying a LSP tooltip
 		if editor.config.Editor.ExtPopupmenu {
 			if w.s.ws.mode == "insert" && w.s.ws.popup.widget.IsVisible() {
@@ -2785,7 +2823,6 @@ func (w *Window) move(col int, row int) {
 	}
 
 	w.Move2(x, y)
-
 }
 
 func (w *Window) layoutExternalWindow(x, y int) {

@@ -196,29 +196,19 @@ func (c *Cmdline) hide() {
 	}
 	c.preContent = c.content
 	c.content = &CmdContent{}
-	// Move cursor into window
-	// win, ok := c.ws.screen.windows[c.ws.cursor.gridid]
-	// if ok && win != nil {
-	// 	c.ws.cursor.widget.SetParent(win)
-	// 	c.ws.cursor.widget.Hide()
-	// 	c.ws.cursor.widget.Show()
-	// }
+	c.shown = false
 
-	// win, ok := c.ws.screen.getWindow(c.ws.cursor.gridid)
-	// if ok {
-	// 	c.ws.cursor.widget.SetParent(win)
-	// 	c.ws.cursor.isInPalette = false
-	// 	c.ws.cursor.widget.Hide()
-	// 	c.ws.cursor.widget.Show()
-	// }
+	win, ok := c.ws.screen.getWindow(c.ws.cursor.gridid)
+	if !ok {
+		return
+	}
 	if c.ws.cursor.isInPalette {
-		c.ws.cursor.SetParent(c.ws.widget)
-		c.ws.cursor.isInPalette = false
+		win.setCursorParent()
+		c.ws.cursor.raise()
 		c.ws.cursor.x = c.ws.cursor.x + float64(c.ws.palette.widget.Pos().X())
 		c.ws.cursor.y = c.ws.cursor.y + float64(c.ws.palette.widget.Pos().Y())
 	}
 
-	c.shown = false
 }
 
 func (c *Cmdline) functionShow() {

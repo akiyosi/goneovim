@@ -1055,23 +1055,33 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		return ""
 	}
 
-	char := core.NewQChar11(c)
+	char := []rune(c)[0]
+	// char := core.NewQChar11(c)
 
 	// Remove SHIFT
-	if (char.Unicode() >= 0x80 || char.IsPrint()) && !(mod&controlModifier() > 0) && !(mod&cmdModifier() > 0) {
+	if (int(char) >= 0x80 || unicode.IsPrint(char)) && !(mod&controlModifier() > 0) && !(mod&cmdModifier() > 0) {
 		mod &= ^core.Qt__ShiftModifier
 	}
+	// if (char.Unicode() >= 0x80 || char.IsPrint()) && !(mod&controlModifier() > 0) && !(mod&cmdModifier() > 0) {
+	// 	mod &= ^core.Qt__ShiftModifier
+	// }
 
 	// Remove CTRL
-	if char.Unicode() < 0x20 {
+	if int(char) < 0x20 {
 		text = keyToText(key, mod)
 	}
+	// if char.Unicode() < 0x20 {
+	// 	text = keyToText(key, mod)
+	// }
 
 	if runtime.GOOS == "darwin" {
 		// Remove ALT/OPTION
-		if char.Unicode() >= 0x80 && char.IsPrint() {
+		if int(char) >= 0x80 && unicode.IsPrint(char) {
 			mod &= ^core.Qt__AltModifier
 		}
+		// if char.Unicode() >= 0x80 && char.IsPrint() {
+		// 	mod &= ^core.Qt__AltModifier
+		// }
 
 		// Some locales require Alt for basic low-ascii characters,
 		// remove AltModifer. Ex) German layouts use Alt for "{".

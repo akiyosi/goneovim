@@ -341,6 +341,10 @@ func (s *Screen) bottomWindowPos() int {
 		if win.isFloatWin {
 			return true
 		}
+		if !win.IsVisible() {
+			return true
+		}
+
 		position := win.pos[1]*win.s.font.lineHeight + win.Rect().Bottom()
 		if pos < position {
 			pos = position
@@ -677,6 +681,11 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win.s = s
 		s.storeWindow(gridid, win)
 
+		// Skip setting event handler if screen is minimap
+		if win.s.name != "minimap" {
+			win.ConnectMousePressEvent(win.mouseEvent)
+		}
+
 		win.SetParent(s.widget)
 
 		win.grid = gridid
@@ -922,8 +931,9 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 
 			}
 			s.ws.cursor.gridid = gridid
-			s.ws.cursor.font = win.getFont()
 			win.raise()
+			win.setCursorParent()
+			s.ws.cursor.raise()
 
 			// reset smooth scroll scrolling offset
 			win.scrollPixels2 = 0
@@ -1268,10 +1278,6 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.updateMutex.Unlock()
 		win.move(col, row)
 		win.show()
-
-		// // for goneovim internal use
-		// win.setBufferName()
-		// win.setFiletype()
 	}
 }
 
@@ -1367,9 +1373,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		}
 		// }
 
-		// win.SetParent(win.s.ws.screen.widget)
-		win.SetParent(win.s.ws.widget)
-
 		win.propMutex.Lock()
 		win.isFloatWin = true
 
@@ -1459,17 +1462,18 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			y = anchorposy + anchorRow - win.rows
 		}
 
-		if x < 0 {
-			x = 0
-		}
-
+		// If the position coordinate is a negative value, it is reset to zero.
+		// I don't know if this is correct in the specification, but this is how nvim appears to work in the terminal.
+		if x < 0 { x = 0 }
+		if y < 0 { y = 0 }
 		win.pos[0] = x
 		win.pos[1] = y
 
 		win.move(x, y)
 		win.setShadow()
 		win.show()
-		win.s.ws.cursor.Raise()
+		win.setCursorParent()
+		win.s.ws.cursor.raise()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
 		anchorwin.queueRedrawAll()
