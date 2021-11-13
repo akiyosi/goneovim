@@ -38,23 +38,23 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
   - Markdown Preview
   - Minimap
   - Smooth pixel scroll (Support for both touchpad and Vim scroll command reactions.)
+  - Animated Cursor
   - Workspace feature which manages multiple nvim
-  - External File Explorer
-  - Scrollbar
-  - Support Ligature
+  - Ligatures
   - Built-in Indent guide
-  - Support High DPI scaling
+  - Scrollbar
+  - High DPI scaling
 - Features as neovim GUI
   - Externalizable tabline, popupmenu, wildmenu, cmdline, messsages
   - Support gui option: `guifont`, `guifontwide`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
   - Support mouse
   - Support for drawing borders and shadows in a float window
   - Independent font settings per window (currently experimental)
-  - Attach feature to a remote nvim
+  - Attach/Connect feature to a remote nvim
 - Basic feature as a Text Editor
-  - Support multi byte character
+  - Multi byte character
   - Drag and Drop files
-  - Support InputMethod Editor (for east asian users)
+  - InputMethod Editor (for east asian users)
 - Miscellaneous
   - Supports application window transparency
   - Desktop Notification of the messages emitted nvim
