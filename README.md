@@ -35,7 +35,6 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Fast (faster than neovim-qt)
 - Cross-platform
 - Modern Text Editor Features
-  - Markdown Preview
   - Minimap
   - Smooth pixel scroll (Support for both touchpad and Vim scroll command reactions.)
   - Animated Cursor
@@ -94,9 +93,6 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
 ### Minimap, External Float Window
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-top.png)
-
-### Markdown Preview
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-markdown.gif)
 
 
 ## Development

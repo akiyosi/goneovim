@@ -23,7 +23,6 @@ type gonvimConfig struct {
 	Popupmenu   popupMenuConfig
 	ScrollBar   scrollBarConfig
 	MiniMap     miniMapConfig
-	Markdown    markdownConfig
 	SideBar     sideBarConfig
 	Workspace   workspaceConfig
 	FileExplore fileExploreConfig
@@ -130,12 +129,6 @@ type miniMapConfig struct {
 	Visible bool
 	Disable bool
 	Width   int
-}
-
-type markdownConfig struct {
-	Disable             bool
-	CodeHlStyle         string
-	CodeWithLineNumbers bool
 }
 
 type scrollBarConfig struct {
@@ -392,11 +385,6 @@ func (c *gonvimConfig) init() {
 	// ----
 
 	c.MiniMap.Width = 110
-
-	// ----
-
-	c.Markdown.Disable = false
-	c.Markdown.CodeHlStyle = "github"
 
 	// ----
 

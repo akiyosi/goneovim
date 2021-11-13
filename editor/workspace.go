@@ -41,8 +41,6 @@ type workspaceSignal struct {
 
 	_ func() `signal:"messageSignal"`
 
-	_ func() `signal:"markdownSignal"`
-
 	_ func() `signal:"lazyDrawSignal"`
 }
 
@@ -59,7 +57,6 @@ type Workspace struct {
 	statusline *Statusline
 	screen     *Screen
 	scrollBar  *ScrollBar
-	markdown   *Markdown
 	finder     *Finder
 	palette    *Palette
 	fpalette   *Palette
@@ -300,12 +297,6 @@ func (w *Workspace) lazyDrawUI() {
 	// Add editor feature
 	go fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
 	go filer.RegisterPlugin(w.nvim, editor.config.Editor.FileOpenCmd)
-
-	// markdown
-	if !editor.config.Markdown.Disable {
-		w.markdown = newMarkdown(w)
-		w.markdown.webview.SetParent(w.screen.widget)
-	}
 
 	// Asynchronously execute the process for minimap
 	go func() {
@@ -725,12 +716,6 @@ func (w *Workspace) initGonvim() {
 	au Goneovim DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", v:event)
 	au Goneovim BufEnter,TabEnter,DirChanged,TermOpen,TermClose * silent call rpcnotify(0, "Gui", "gonvim_workspace_filepath", expand("%:p"))
 	`
-	if !editor.config.Markdown.Disable {
-		gonvimAutoCmds += `
-		au Goneovim TextChanged,TextChangedI * if &ft == "markdown" | call rpcnotify(0, "Gui", "gonvim_markdown_update") | endif
-		au Goneovim BufEnter *.md call rpcnotify(0, "Gui", "gonvim_markdown_new_buffer")
-		`
-	}
 	if editor.opts.Server == "" && !editor.config.MiniMap.Disable {
 		gonvimAutoCmds = gonvimAutoCmds + `
 		au Goneovim BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
@@ -762,11 +747,6 @@ func (w *Workspace) initGonvim() {
 	command! -nargs=1 GonvimResize call rpcnotify(0, "Gui", "gonvim_resize", <args>)
 	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
 	command! GonvimVersion echo "%s"`, editor.version)
-	if !editor.config.Markdown.Disable {
-		gonvimCommands += `
-		command! GonvimMarkdown call rpcnotify(0, "Gui", "gonvim_markdown_toggle")
-		`
-	}
 	if editor.opts.Server == "" {
 		if !editor.config.MiniMap.Disable {
 			gonvimCommands = gonvimCommands + `
@@ -1972,22 +1952,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.setBuffname(updates[2], updates[3])
 		w.setBuffTS(util.ReflectToInt(updates[2]))
 		w.setFileType(updates)
-	case "gonvim_markdown_update":
-		if editor.config.Markdown.Disable {
-			return
-		}
-		if w.markdown == nil {
-			w.signal.LazyDrawSignal()
-		}
-		go w.markdown.update()
-	case "gonvim_markdown_new_buffer":
-		if editor.config.Markdown.Disable {
-			return
-		}
-		if w.markdown == nil {
-			w.signal.LazyDrawSignal()
-		}
-		go w.markdown.newBuffer()
 	case "gonvim_textchanged":
 		if editor.config.Editor.SmoothScroll {
 			ws := editor.workspaces[editor.active]
@@ -1999,30 +1963,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		}
 		w.maxLineDelta = util.ReflectToInt(updates[1]) - w.maxLine
 		w.maxLine = util.ReflectToInt(updates[1])
-	case "gonvim_markdown_toggle":
-		if editor.config.Markdown.Disable {
-			return
-		}
-		if w.markdown == nil {
-			w.signal.LazyDrawSignal()
-		}
-		w.markdown.toggle()
-	case "gonvim_markdown_scroll_down":
-		w.markdown.scrollDown()
-	case "gonvim_markdown_scroll_up":
-		w.markdown.scrollUp()
-	case "gonvim_markdown_scroll_top":
-		w.markdown.scrollTop()
-	case "gonvim_markdown_scroll_bottom":
-		w.markdown.scrollBottom()
-	case "gonvim_markdown_scroll_pagedown":
-		w.markdown.scrollPageDown()
-	case "gonvim_markdown_scroll_pageup":
-		w.markdown.scrollPageUp()
-	case "gonvim_markdown_scroll_halfpagedown":
-		w.markdown.scrollHalfPageDown()
-	case "gonvim_markdown_scroll_halfpageup":
-		w.markdown.scrollHalfPageUp()
+
 	default:
 		fmt.Println("unhandled Gui event", event)
 	}
