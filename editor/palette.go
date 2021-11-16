@@ -5,7 +5,6 @@ import (
 	"math"
 	"runtime"
 
-	"github.com/akiyosi/goneovim/fuzzy"
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -13,7 +12,7 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
-// Palette is the popup for fuzzy finder, cmdline etc
+// Palette is the popup for cmdline 
 type Palette struct {
 	// mu               sync.Mutex
 	// procCount        int
@@ -238,9 +237,6 @@ func (p *Palette) resizeResultItems() {
 	itemHeight := p.resultItems[0].widget.SizeHint().Height()
 	p.itemHeight = itemHeight
 	p.showTotal = int(float64(p.ws.height)/float64(itemHeight)*editor.config.Palette.AreaRatio) - 1
-	if p.ws.uiAttached {
-		fuzzy.UpdateMax(p.ws.nvim, p.showTotal)
-	}
 }
 
 func (p *Palette) show() {

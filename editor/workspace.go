@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/akiyosi/goneovim/filer"
-	"github.com/akiyosi/goneovim/fuzzy"
 	"github.com/akiyosi/goneovim/util"
 	shortpath "github.com/akiyosi/short_path"
 	"github.com/neovim/go-client/nvim"
@@ -295,7 +294,6 @@ func (w *Workspace) lazyDrawUI() {
 	w.finder.ws = w
 
 	// Add editor feature
-	go fuzzy.RegisterPlugin(w.nvim, w.uiRemoteAttached)
 	go filer.RegisterPlugin(w.nvim, editor.config.Editor.FileOpenCmd)
 
 	// Asynchronously execute the process for minimap

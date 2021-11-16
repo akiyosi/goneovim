@@ -9,7 +9,7 @@ import (
 	"github.com/akiyosi/goneovim/util"
 )
 
-// Finder is a fuzzy finder window
+// Finder is
 type Finder struct {
 	ws *Workspace
 }
