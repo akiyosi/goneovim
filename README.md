@@ -35,26 +35,25 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Fast (faster than neovim-qt)
 - Cross-platform
 - Modern Text Editor Features
-  - Markdown Preview
   - Minimap
   - Smooth pixel scroll (Support for both touchpad and Vim scroll command reactions.)
+  - Animated Cursor
   - Workspace feature which manages multiple nvim
-  - External File Explorer
-  - Scrollbar
-  - Support Ligature
+  - Ligatures
   - Built-in Indent guide
-  - Support High DPI scaling
+  - Scrollbar
+  - High DPI scaling
 - Features as neovim GUI
   - Externalizable tabline, popupmenu, wildmenu, cmdline, messsages
   - Support gui option: `guifont`, `guifontwide`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
   - Support mouse
   - Support for drawing borders and shadows in a float window
   - Independent font settings per window (currently experimental)
-  - Attach feature to a remote nvim
+  - Attach/Connect feature to a remote nvim
 - Basic feature as a Text Editor
-  - Support multi byte character
+  - Multi byte character
   - Drag and Drop files
-  - Support InputMethod Editor (for east asian users)
+  - InputMethod Editor (for east asian users)
 - Miscellaneous
   - Supports application window transparency
   - Desktop Notification of the messages emitted nvim
@@ -94,9 +93,6 @@ See [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 
 ### Minimap, External Float Window
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-top.png)
-
-### Markdown Preview
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-markdown.gif)
 
 
 ## Development
