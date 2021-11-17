@@ -569,7 +569,7 @@ jobs:
         QT_API: 5.13.0
       shell: msys2 {0}
       run: |
-        go test github.com/akiyosi/goneovim/editor
+        /d/a/goneovim/goneovim/go-root/bin/go test github.com/akiyosi/goneovim/editor
 
     - name: Retrieve version
       id: version-windows
@@ -582,6 +582,7 @@ jobs:
         QT_API: 5.13.0
       shell: msys2 {0}
       run: |
+        export PATH=$PATH:/d/a/goneovim/goneovim/go-root/bin/
         cd /d/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim
         /d/a/goneovim/goneovim/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
 
