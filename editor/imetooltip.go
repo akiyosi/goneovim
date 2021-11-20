@@ -1,67 +1,75 @@
 package editor
 
 import (
-
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
-	"github.com/therecipe/qt/widgets"
 )
 
 
 // IMETooltip is the tooltip for Input Method Editor
 type IMETooltip struct {
-	widgets.QWidget
-
-	s          *Screen
-	text       string
-	font       *Font
-	widthSlice []float64
+	Tooltip
 }
 
-func (i *IMETooltip) paint(event *gui.QPaintEvent) {
-	p := gui.NewQPainter2(i)
-	font := i.font
+func (i *IMETooltip) setQpainterFont(p *gui.QPainter) {
 	if i.s.ws.palette.widget.IsVisible() {
 		p.SetFont(
 			gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false),
 		)
 	} else {
-		p.SetFont(font.fontNew)
+		p.SetFont(i.font.fontNew)
+	}
+}
+
+func (i *IMETooltip) getNthWidthAndShift(n int) (float64, int) {
+	var width float64
+	var shift int
+	r := []rune(i.text)
+
+	if i.s.ws.palette.widget.IsVisible() {
+		fontMetrics := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+		width = fontMetrics.HorizontalAdvance(string(r[n]), -1)
+		if n == 0 { width = 0 }
+		shift = int(fontMetrics.Ascent())
+	} else {
+		width = i.widthSlice[n]
+		shift = i.font.shift
 	}
 
+	return width, shift
+}
+
+func (i *IMETooltip) drawForeground(p *gui.QPainter) {
 	p.SetPen2(i.s.ws.foreground.QColor())
+
 	if i.text != "" {
 		r := []rune(i.text)
 		var x float64
-		var shift int
 		for k := 0; k < len(r); k++ {
-			var width float64
-			fontMetrics := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
-			if i.s.ws.palette.widget.IsVisible() {
-				width = fontMetrics.HorizontalAdvance(string(r[k]), -1)
-				shift = int(fontMetrics.Ascent())
-			} else {
-				width = i.widthSlice[k]
-				shift = font.shift
-			}
+
+			width, shift := i.getNthWidthAndShift(k)
 			x += width
-			if i.s.ws.palette.widget.IsVisible() {
-				shift = int(fontMetrics.Ascent())
-			} else {
-				shift = font.shift
-			}
-			pos := core.NewQPointF3(
-				float64(x),
-				float64(shift),
+
+			p.DrawText(
+				core.NewQPointF3(
+					float64(x),
+					float64(shift),
+				),
+				string(r[k]),
 			)
-			p.DrawText(pos, string(r[k]))
 
 		}
 	}
+}
+
+func (i *IMETooltip) paint(event *gui.QPaintEvent) {
+	p := gui.NewQPainter2(i)
+
+	i.setQpainterFont(p)
+	i.drawForeground(p)
 
 	p.DestroyQPainter()
 }
-
 
 func (i *IMETooltip) pos() (int, int, int, int) {
 	var x, y, candX, candY int
@@ -74,7 +82,6 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 		return 0, 0, 0, 0
 	}
 	if ws.palette.widget.IsVisible() {
-		i.SetParent(s.ws.palette.widget)
 		// font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
 		// i.SetFont(font)
 		x = ws.palette.cursorX + ws.palette.patternPadding
@@ -122,11 +129,6 @@ func (i *IMETooltip) move(x int, y int) {
 	i.Move(core.NewQPoint2(x+padding, y))
 }
 
-func (i *IMETooltip) setFont(font *Font) {
-	i.SetFont(font.fontNew)
-	i.font = font
-}
-
 func (i *IMETooltip) show() {
 	if i.s.ws.palette == nil {
 		return
@@ -136,46 +138,51 @@ func (i *IMETooltip) show() {
 		if ok {
 			i.SetParent(win)
 		}
+	} else {
+		i.SetParent(i.s.ws.palette.widget)
 	}
+
 	i.Show()
+	i.Raise()
 }
 
-func (i *IMETooltip) update(text string) {
+
+func (i *IMETooltip) updateText(text string) {
 	if i.font == nil {
 		return
 	}
 	font := i.font
+
+	// update text in struct
 	i.text = text
+
+	// rune text
 	r := []rune(i.text)
+
+	// init slice
 	var wSlice []float64
-		wSlice = append(wSlice, 0.0)
+	wSlice = append(wSlice, 0.0)
+
+
+	var width float64
+	var fontMetrics *gui.QFontMetricsF
+	if i.s.ws.palette.widget.IsVisible() {
+		fontMetrics = gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+		width = fontMetrics.HorizontalAdvance("w", -1)
+	} else {
+		fontMetrics = font.fontMetrics
+		width = font.truewidth
+	}
+
 	for k := 0; k < len(r); k++ {
-		width := font.truewidth
+		w := width
 		for {
-			cwidth := font.fontMetrics.HorizontalAdvance(string(r[k]), -1)
-			if cwidth <= width { break }
-			width += font.truewidth
+			cwidth := fontMetrics.HorizontalAdvance(string(r[k]), -1)
+			if cwidth <= w { break }
+			w += width
 		}
-		wSlice = append(wSlice, width)
+		wSlice = append(wSlice, w)
 	}
+
 	i.widthSlice = wSlice
-	var tooltipWidth float64
-	for _, w := range i.widthSlice {
-		tooltipWidth += w
-	}
-	i.SetFixedWidth(
-		int(tooltipWidth),
-	)
-	i.Update()
-
-	s := i.s
-	row := s.cursor[0]
-	col := s.cursor[1]
-	c := s.ws.cursor
-	c.x = float64(col)*s.font.truewidth + float64(s.tooltip.Width())
-	c.y = float64(row * s.font.lineHeight)
-
-	c.move(nil)
-	i.show()
-	i.Raise()
 }

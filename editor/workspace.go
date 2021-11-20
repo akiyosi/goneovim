@@ -2427,7 +2427,9 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 			w.screen.tooltip.Hide()
 			w.cursor.update()
 		} else {
-			w.screen.tooltip.update(preeditString)
+			w.screen.tooltip.updateText(preeditString)
+			w.screen.tooltip.update()
+			w.screen.tooltip.show()
 		}
 	}
 }
