@@ -552,7 +552,7 @@ func (s *Statusline) updateFont() {
 }
 
 func (s *Statusline) subscribe() {
-	if !s.ws.drawStatusline {
+	if !s.ws.isDrawStatusline {
 		s.widget.Hide()
 		return
 	}

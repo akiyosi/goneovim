@@ -242,7 +242,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	if w.s.name == "minimap" {
 		if w.s.ws.minimap != nil {
 			if w.s.ws.minimap.visible && w.s.ws.minimap.widget.IsVisible() {
-				w.s.ws.minimap.updateMinimap(p)
+				w.s.ws.minimap.updateCurrentRegion(p)
 			}
 		}
 	}
@@ -700,8 +700,8 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 	if numOfTabs > 1 {
 		tablineNum = 1
 	}
-	drawTabline := editor.config.Tabline.Visible && editor.config.Editor.ExtTabline
-	if w.s.ws.showtabline == 2 && drawTabline && numOfTabs == 1 {
+	isDrawTabline := editor.config.Tabline.Visible && editor.config.Editor.ExtTabline
+	if w.s.ws.showtabline == 2 && isDrawTabline && numOfTabs == 1 {
 		tablineNum = -1
 	}
 	shift := font.lineHeight / 2

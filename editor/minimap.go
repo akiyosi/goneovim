@@ -629,7 +629,7 @@ func (m *MiniMap) mouseEvent(event *gui.QMouseEvent) {
 	y := int(float64(event.Y()) / float64(font.lineHeight))
 	targetPos := 0
 	targetPos = m.viewport[0] + y
-	m.ws.nvim.Command(fmt.Sprintf("%d", targetPos))
+	go m.ws.nvim.Command(fmt.Sprintf("%d", targetPos))
 
 	mappings, err := m.ws.nvim.KeyMap("normal")
 	if err != nil {
@@ -734,7 +734,7 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (m *MiniMap) updateMinimap(p *gui.QPainter) {
+func (m *MiniMap) updateCurrentRegion(p *gui.QPainter) {
 	curRegionRect := core.NewQRectF4(
 		float64(0),
 		float64(m.curPos),

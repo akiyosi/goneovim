@@ -32,8 +32,6 @@ type workspaceSignal struct {
 	_ func() `signal:"redrawSignal"`
 	_ func() `signal:"guiSignal"`
 
-	// _ func() `signal:"locpopupSignal"`
-
 	_ func() `signal:"statuslineSignal"`
 	_ func() `signal:"lintSignal"`
 	_ func() `signal:"gitSignal"`
@@ -60,7 +58,6 @@ type Workspace struct {
 	palette    *Palette
 	fpalette   *Palette
 	popup      *PopupMenu
-	// loc        *Locpopup
 	cmdline   *Cmdline
 	signature *Signature
 	message   *Message
@@ -116,8 +113,8 @@ type Workspace struct {
 	stop          chan struct{}
 	fontMutex     sync.Mutex
 
-	drawStatusline bool
-	drawTabline    bool
+	isDrawStatusline bool
+	isDrawTabline    bool
 	drawLint       bool
 }
 
@@ -202,14 +199,6 @@ func newWorkspace(path string) (*Workspace, error) {
 		w.statusline = initStatusline()
 		w.statusline.ws = w
 	}
-
-	// // Lint
-	// if editor.config.Lint.Visible {
-	// 	w.loc = initLocpopup()
-	// 	w.loc.ws = w
-	// 	w.loc.widget.SetParent(w.widget)
-	// 	w.loc.widget.Hide()
-	// }
 
 	// w.signature = initSignature()
 	// w.signature.widget.SetParent(w.widget)
@@ -649,18 +638,20 @@ func (w *Workspace) init(path string) {
 }
 
 func (w *Workspace) configure() {
-	w.drawStatusline = editor.config.Statusline.Visible
+	w.isDrawStatusline = editor.config.Statusline.Visible
 
 	if editor.config.Tabline.Visible && editor.config.Editor.ExtTabline {
-		w.drawTabline = true
+		w.isDrawTabline = true
 	} else {
-		w.drawTabline = false
+		w.isDrawTabline = false
 	}
 
 	if editor.config.Lint.Visible {
-		w.drawLint = true
+	        w.drawLint = true
+	        w.isDrawTabline = true
 	} else {
-		w.drawLint = false
+	        w.drawLint = false
+	        w.isDrawTabline = false
 	}
 }
 
@@ -1172,10 +1163,10 @@ func (w *Workspace) updateSize() {
 		}
 	}
 
-	if w.drawTabline && w.tabline != nil {
+	if w.isDrawTabline && w.tabline != nil {
 		w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
 	}
-	if w.drawStatusline && w.statusline != nil {
+	if w.isDrawStatusline && w.statusline != nil {
 		w.statusline.height = w.statusline.widget.Height()
 	}
 
@@ -1223,6 +1214,7 @@ func (e *Editor) updateNotificationPos() {
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
+	isUpdateMinimap := false
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -1271,6 +1263,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		case "flush":
 			w.flush()
+			if isUpdateMinimap { w.updateMinimap() }
 
 		// Grid Events
 		case "grid_resize":
@@ -1294,21 +1287,24 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "hl_attr_define":
 			s.setHlAttrDef(args)
 			// if goneovim own statusline is visible
-			if w.drawStatusline {
+			if w.isDrawStatusline {
 				w.statusline.getColor()
 			}
 		case "hl_group_set":
 			s.setHighlightGroup(args)
 		case "grid_line":
 			s.gridLine(args)
+			isUpdateMinimap = true
 		case "grid_clear":
 			s.gridClear(args)
 		case "grid_destroy":
 			s.gridDestroy(args)
 		case "grid_cursor_goto":
 			s.gridCursorGoto(args)
+			isUpdateMinimap = true
 		case "grid_scroll":
 			s.gridScroll(args)
+			isUpdateMinimap = true
 
 		// Multigrid Events
 		case "win_pos":
@@ -1319,12 +1315,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.windowExternalPosition(args)
 		case "win_hide":
 			s.windowHide(args)
-		case "win_scroll_over_start":
-			// old impl
-			// s.windowScrollOverStart()
-		case "win_scroll_over_reset":
-			// old impl
-			// s.windowScrollOverReset()
 		case "win_close":
 			s.windowClose()
 		case "msg_set_pos":
@@ -1462,31 +1452,37 @@ func (w *Workspace) flush() {
 	}
 	w.cursor.update()
 	w.screen.update()
-	w.drawOtherUI()
+	w.updateStatusline()
+	w.updateScrollbar()
+	w.updateIMETooltip()
 	w.maxLineDelta = 0
 }
 
-func (w *Workspace) drawOtherUI() {
-	s := w.screen
-
-	if w.drawStatusline {
+func (w *Workspace) updateStatusline() {
+	if w.isDrawStatusline {
 		if w.statusline != nil {
 			w.statusline.pos.redraw(w.viewport[2], w.viewport[3])
 			w.statusline.mode.redraw()
 		}
 	}
+}
 
+func (w *Workspace) updateScrollbar() {
 	if w.scrollBar != nil {
 		if editor.config.ScrollBar.Visible {
 			w.scrollBar.update()
 		}
 	}
+}
 
-	if s.tooltip.IsVisible() {
+func (w *Workspace) updateIMETooltip() {
+	if w.screen.tooltip.IsVisible() {
 		x, y, _, _ := w.screen.tooltip.pos()
 		w.screen.tooltip.move(x, y)
 	}
+}
 
+func (w *Workspace) updateMinimap() {
 	if w.minimap != nil {
 		if w.minimap.visible && w.minimap.widget.IsVisible() {
 			w.scrollMinimap()
@@ -1591,13 +1587,13 @@ func (w *Workspace) updateWorkspaceColor() {
 	}
 	// TODO w.screen.setColor()
 
-	// if w.drawTabline {
+	// if w.isDrawTabline {
 	// 	if w.tabline != nil {
 	// 		w.tabline.setColor()
 	// 	}
 	// }
 
-	if w.drawStatusline {
+	if w.isDrawStatusline {
 		if w.statusline != nil {
 			w.statusline.setColor()
 		}
@@ -1608,10 +1604,6 @@ func (w *Workspace) updateWorkspaceColor() {
 			w.scrollBar.setColor()
 		}
 	}
-
-	// if editor.config.Lint.Visible {
-	// 	w.loc.setColor()
-	// }
 
 	if editor.side != nil {
 		editor.side.setColor()
@@ -2518,7 +2510,7 @@ func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {
 
 	x := int(float64(col) * font.truewidth)
 	y := row * font.lineHeight
-	if w.drawTabline {
+	if w.isDrawTabline {
 		if w.tabline != nil {
 			y += w.tabline.widget.Height()
 		}

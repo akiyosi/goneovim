@@ -56,7 +56,7 @@ type Tab struct {
 }
 
 func (t *Tabline) subscribe() {
-	if !t.ws.drawTabline {
+	if !t.ws.isDrawTabline {
 		t.widget.Hide()
 		t.height = 0
 		t.marginTop = 0
@@ -402,10 +402,10 @@ func (t *Tabline) update(tabs []interface{}) {
 	if t.ws.showtabline == 1 {
 		if lenshowntabs > 1 {
 			t.widget.Show()
-			t.ws.drawTabline = true
+			t.ws.isDrawTabline = true
 		} else {
 			t.widget.Hide()
-			t.ws.drawTabline = false
+			t.ws.isDrawTabline = false
 			t.height = 0
 		}
 	} else if t.ws.showtabline == 2 {
@@ -413,7 +413,7 @@ func (t *Tabline) update(tabs []interface{}) {
 		t.height = height
 	} else {
 		t.widget.Hide()
-		t.ws.drawTabline = false
+		t.ws.isDrawTabline = false
 		t.height = 0
 	}
 	if t.showtabline != t.ws.showtabline || t.ws.showtabline == 1 || isChangeHeight {
