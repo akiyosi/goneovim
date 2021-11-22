@@ -28,8 +28,11 @@ func (i *IMETooltip) getNthWidthAndShift(n int) (float64, int) {
 
 	if i.s.ws.palette.widget.IsVisible() {
 		fontMetrics := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
-		width = fontMetrics.HorizontalAdvance(string(r[n]), -1)
-		if n == 0 { width = 0 }
+		if n == 0 {
+			width = 0
+		} else if n > 0 {
+			width = fontMetrics.HorizontalAdvance(string(r[n-1]), -1)
+		}
 		shift = int(fontMetrics.Ascent())
 	} else {
 		width = i.widthSlice[n]
@@ -163,16 +166,8 @@ func (i *IMETooltip) updateText(text string) {
 	var wSlice []float64
 	wSlice = append(wSlice, 0.0)
 
-
-	var width float64
-	var fontMetrics *gui.QFontMetricsF
-	if i.s.ws.palette.widget.IsVisible() {
-		fontMetrics = gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
-		width = fontMetrics.HorizontalAdvance("w", -1)
-	} else {
-		fontMetrics = font.fontMetrics
-		width = font.truewidth
-	}
+	fontMetrics := font.fontMetrics
+	width := font.truewidth
 
 	for k := 0; k < len(r); k++ {
 		w := width
