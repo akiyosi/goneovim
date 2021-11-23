@@ -186,11 +186,18 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	w.paintMutex.Lock()
 
 	p := gui.NewQPainter2(w)
+
+	// Erase the snapshot used in the animation scroll
 	if w.doErase {
 		p.EraseRect3(w.Rect())
 		p.DestroyQPainter()
 		return
 	}
+
+	// Set RenderHint
+	p.SetRenderHint(gui.QPainter__SmoothPixmapTransform, true)
+
+	// Set font
 	font := w.getFont()
 
 	// Set devicePixelRatio if it is not set
