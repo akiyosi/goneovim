@@ -748,6 +748,7 @@ func (w *Workspace) initGonvim() {
 	command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
 	command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
 	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
+	command! -nargs=1 GuiMacmeta call rpcnotify(0, "Gui", "gonvim_macmeta", <args>)
 	`
 	}
 	gonvimCommands = gonvimCommands + `
@@ -1881,6 +1882,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.side.items[w.getNum()].selectItem(updates[1:])
 	case "gonvim_grid_font":
 		w.screen.gridFont(updates[1])
+	case "gonvim_macmeta":
+		w.handleMacmeta(updates[1])
 	case "gonvim_minimap_update":
 		if w.minimap != nil {
 			if w.minimap.visible {
@@ -2539,6 +2542,17 @@ func (w *Workspace) toggleSmoothCursor() {
 		editor.config.Cursor.SmoothMove = true
 	}
 	w.cursor.hasSmoothMove = editor.config.Cursor.SmoothMove
+	editor.config.mu.Unlock()
+}
+
+func (w *Workspace) handleMacmeta(v interface{}) {
+	value := util.ReflectToInt(v)
+	editor.config.mu.Lock()
+	if value == 0 {
+		editor.config.Editor.Macmeta = false
+	} else {
+		editor.config.Editor.Macmeta = true
+	}
 	editor.config.mu.Unlock()
 }
 
