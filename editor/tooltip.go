@@ -1,13 +1,12 @@
 package editor
 
 import (
-
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 )
 
-// Tooltip is the tooltip 
+// Tooltip is the tooltip
 type Tooltip struct {
 	widgets.QWidget
 
@@ -27,8 +26,9 @@ func (t *Tooltip) getNthWidthAndShift(n int) (float64, int) {
 	return width, shift
 }
 
+func (t *Tooltip) drawForeground(p *gui.QPainter, f func(*gui.QPainter), g func(int) (float64, int)) {
+	f(p)
 
-func (t *Tooltip) drawForeground(p *gui.QPainter) {
 	p.SetPen2(t.s.ws.foreground.QColor())
 
 	if t.text != "" {
@@ -36,7 +36,7 @@ func (t *Tooltip) drawForeground(p *gui.QPainter) {
 		var x float64
 		for k := 0; k < len(r); k++ {
 
-			width, shift := t.getNthWidthAndShift(k)
+			width, shift := g(k)
 			x += width
 
 			p.DrawText(
@@ -58,12 +58,10 @@ func (t *Tooltip) setQpainterFont(p *gui.QPainter) {
 func (t *Tooltip) paint(event *gui.QPaintEvent) {
 	p := gui.NewQPainter2(t)
 
-	t.setQpainterFont(p)
-	t.drawForeground(p)
+	t.drawForeground(p, t.setQpainterFont, t.getNthWidthAndShift)
 
 	p.DestroyQPainter()
 }
-
 
 func (t *Tooltip) move(x int, y int) {
 	t.Move(core.NewQPoint2(x, y))
@@ -93,7 +91,9 @@ func (t *Tooltip) updateText(text string) {
 		w := font.truewidth
 		for {
 			cwidth := font.fontMetrics.HorizontalAdvance(string(r[k]), -1)
-			if cwidth <= w { break }
+			if cwidth <= w {
+				break
+			}
 			w += font.truewidth
 		}
 		wSlice = append(wSlice, w)
@@ -103,6 +103,13 @@ func (t *Tooltip) updateText(text string) {
 }
 
 func (t *Tooltip) show() {
+	if t.s != nil {
+		t.SetAutoFillBackground(true)
+		p := gui.NewQPalette()
+		p.SetColor2(gui.QPalette__Background, t.s.ws.background.QColor())
+		t.SetPalette(p)
+	}
+
 	t.Show()
 	t.Raise()
 }

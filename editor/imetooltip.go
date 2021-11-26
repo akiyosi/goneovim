@@ -5,7 +5,6 @@ import (
 	"github.com/therecipe/qt/gui"
 )
 
-
 // IMETooltip is the tooltip for Input Method Editor
 type IMETooltip struct {
 	Tooltip
@@ -42,34 +41,9 @@ func (i *IMETooltip) getNthWidthAndShift(n int) (float64, int) {
 	return width, shift
 }
 
-func (i *IMETooltip) drawForeground(p *gui.QPainter) {
-	p.SetPen2(i.s.ws.foreground.QColor())
-
-	if i.text != "" {
-		r := []rune(i.text)
-		var x float64
-		for k := 0; k < len(r); k++ {
-
-			width, shift := i.getNthWidthAndShift(k)
-			x += width
-
-			p.DrawText(
-				core.NewQPointF3(
-					float64(x),
-					float64(shift),
-				),
-				string(r[k]),
-			)
-
-		}
-	}
-}
-
 func (i *IMETooltip) paint(event *gui.QPaintEvent) {
 	p := gui.NewQPainter2(i)
-
-	i.setQpainterFont(p)
-	i.drawForeground(p)
+	i.drawForeground(p, i.setQpainterFont, i.getNthWidthAndShift)
 
 	p.DestroyQPainter()
 }
@@ -145,10 +119,14 @@ func (i *IMETooltip) show() {
 		i.SetParent(i.s.ws.palette.widget)
 	}
 
+	i.SetAutoFillBackground(true)
+	p := gui.NewQPalette()
+	p.SetColor2(gui.QPalette__Background, i.s.ws.background.QColor())
+	i.SetPalette(p)
+
 	i.Show()
 	i.Raise()
 }
-
 
 func (i *IMETooltip) updateText(text string) {
 	if i.font == nil {
@@ -165,7 +143,6 @@ func (i *IMETooltip) updateText(text string) {
 	// init slice
 	var wSlice []float64
 	wSlice = append(wSlice, 0.0)
-
 	fontMetrics := font.fontMetrics
 	width := font.truewidth
 
@@ -173,7 +150,9 @@ func (i *IMETooltip) updateText(text string) {
 		w := width
 		for {
 			cwidth := fontMetrics.HorizontalAdvance(string(r[k]), -1)
-			if cwidth <= w { break }
+			if cwidth <= w {
+				break
+			}
 			w += width
 		}
 		wSlice = append(wSlice, w)
