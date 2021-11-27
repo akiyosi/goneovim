@@ -1131,9 +1131,9 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 		}
 	}
 
-	win.updateLine(colStart, row, cells)
+	win.updateLine(row, colStart,  cells)
 	win.countContent(row)
-	win.makeUpdateMask(row)
+	win.makeUpdateMask(row, colStart,  cells)
 
 	if !win.isShown() {
 		win.show()
@@ -1150,7 +1150,7 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 	}
 }
 
-func (w *Window) updateLine(col, row int, cells []interface{}) {
+func (w *Window) updateLine(row, col int, cells []interface{}) {
 	w.updateMutex.Lock()
 	line := w.content[row]
 	colStart := col
@@ -1269,7 +1269,9 @@ func (w *Window) countContent(row int) {
 	w.lenContent[row] = width
 }
 
-func (w *Window) makeUpdateMask(row int) {
+func (w *Window) makeUpdateMask(row, col int, cells []interface{}) {
+	cols := len(cells)
+
 	for j, cell := range w.content[row] {
 		if cell == nil {
 			w.contentMask[row][j] = true
@@ -1282,10 +1284,13 @@ func (w *Window) makeUpdateMask(row int) {
 			!cell.highlight.undercurl &&
 			!cell.highlight.strikethrough {
 
-			// If the background color has not been updated
+			// If the background color has not been updated,
+			// And if the target cell is outside the range of neovim's update event
 			if !cell.isUpdateBg {
-				w.contentMask[row][j] = false
-				continue
+				if j < col || j > col+cols {
+					w.contentMask[row][j] = false
+					continue
+				}
 			}
 
 			// If the target cell is outside the range of neovim's update event,
@@ -1552,7 +1557,7 @@ func (w *Window) update() {
 					rect := [4]int{
 						int(float64(start) * font.truewidth),
 						i * font.lineHeight,
-						int(math.Ceil(float64(jj-start+1) * font.truewidth)),
+						int(math.Ceil(float64(jj-start) * font.truewidth)),
 						font.lineHeight,
 					}
 					rects = append(rects, rect)
