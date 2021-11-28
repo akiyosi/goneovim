@@ -212,8 +212,8 @@ func TestWindow_updateLine(t *testing.T) {
 				rows:    rows,
 			},
 			args{
-				col: 0,
 				row: row,
+				col: 0,
 				cells: []interface{}{
 					[]interface{}{"~", 7},
 					[]interface{}{" ", 7, 4},
@@ -237,8 +237,8 @@ func TestWindow_updateLine(t *testing.T) {
 				rows:    rows,
 			},
 			args{
-				col: 3,
 				row: row,
+				col: 3,
 				cells: []interface{}{
 					[]interface{}{"*", 6, 2},
 				},
@@ -261,8 +261,8 @@ func TestWindow_updateLine(t *testing.T) {
 				rows:    rows,
 			},
 			args{
-				col: 1,
 				row: row,
+				col: 1,
 				cells: []interface{}{
 					[]interface{}{"@", 6},
 					[]interface{}{"v"},
@@ -288,8 +288,8 @@ func TestWindow_updateLine(t *testing.T) {
 				rows:    rows,
 			},
 			args{
-				col: 0,
 				row: row,
+				col: 0,
 				cells: []interface{}{
 					[]interface{}{" ", 7, 2},
 					[]interface{}{"J"},
@@ -316,7 +316,7 @@ func TestWindow_updateLine(t *testing.T) {
 				cols:    tt.fields.cols,
 				rows:    tt.fields.rows,
 			}
-			w.updateLine(tt.args.col, tt.args.row, tt.args.cells)
+			w.updateLine(tt.args.row, tt.args.col, tt.args.cells)
 
 			got := w.content[row]
 			for i, cell := range got {
