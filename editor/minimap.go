@@ -82,11 +82,11 @@ func newMiniMap() *MiniMap {
 
 	switch runtime.GOOS {
 	case "windows":
-		m.font = initFontNew("Consolas", 1.0, 0)
+		m.font = initFontNew("Consolas", 1.0, 0, 0.0)
 	case "darwin":
-		m.font = initFontNew("Courier New", 2.0, 0)
+		m.font = initFontNew("Courier New", 2.0, 0, 0.0)
 	default:
-		m.font = initFontNew("Monospace", 1.0, 0)
+		m.font = initFontNew("Monospace", 1.0, 0, 0.0)
 	}
 
 	return m
@@ -191,7 +191,7 @@ func (m *MiniMap) updateRows() bool {
 func (m *MiniMap) updateCols() bool {
 	var ret bool
 	m.width = m.widget.Width()
-	fontWidth := m.font.truewidth
+	fontWidth := m.font.cellwidth
 	if fontWidth == 0 {
 		return false
 	}
@@ -574,7 +574,7 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 		dy := math.Abs(float64(win.scrollPixels[1]))
 
 		fontheight := float64(font.lineHeight)
-		fontwidth := font.truewidth
+		fontwidth := font.cellwidth
 
 		win.scrollPixels[0] += h
 		win.scrollPixels[1] += v
@@ -707,9 +707,9 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 						k := 0.8
 						path := gui.NewQPainterPath()
 						path.AddRoundedRect2(
-							float64(col+i-width)*wsfont.truewidth*k,
+							float64(col+i-width)*wsfont.cellwidth*k,
 							float64(y*wsfont.lineHeight+wsfont.shift),
-							float64(width)*wsfont.truewidth*k,
+							float64(width)*wsfont.cellwidth*k,
 							float64(wsfont.lineHeight)*k,
 							2,
 							2,

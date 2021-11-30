@@ -95,13 +95,13 @@ func (t *Tooltip) updateText(text string) {
 	wSlice = append(wSlice, 0.0)
 
 	for k := 0; k < len(r); k++ {
-		w := font.truewidth
+		w := font.cellwidth
 		for {
 			cwidth := font.fontMetrics.HorizontalAdvance(string(r[k]), -1)
 			if cwidth <= w {
 				break
 			}
-			w += font.truewidth
+			w += font.cellwidth
 		}
 		wSlice = append(wSlice, w)
 	}

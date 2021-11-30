@@ -193,9 +193,9 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	rect := event.Rect()
-	col := int(float64(rect.Left()) / font.truewidth)
+	col := int(float64(rect.Left()) / font.cellwidth)
 	row := int(float64(rect.Top()) / float64(font.lineHeight))
-	cols := int(math.Ceil(float64(rect.Width()) / font.truewidth))
+	cols := int(math.Ceil(float64(rect.Width()) / font.cellwidth))
 	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
 
 	// Draw contents
@@ -245,7 +245,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	// This is to suppress flickering in smooth scroll
 	dx := math.Abs(float64(w.scrollPixels[0]))
 	dy := math.Abs(float64(w.scrollPixels[1]))
-	if dx >= font.truewidth {
+	if dx >= font.cellwidth {
 		w.scrollPixels[0] = 0
 	}
 	if dy >= float64(font.lineHeight) {
@@ -524,7 +524,7 @@ func (w *Window) drawIndentline(p *gui.QPainter, x int, y int, b bool) {
 		scrollPixels += w.scrollPixels[1]
 	}
 
-	X := float64(x) * font.truewidth
+	X := float64(x) * font.cellwidth
 	Y := float64(y*font.lineHeight) + float64(scrollPixels)
 	var color *RGBA = editor.colors.indentGuide
 	var lineWeight float64 = 1
@@ -680,10 +680,10 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 	font := w.getFont()
 
 	// window position is based on cols, rows of global font setting
-	x := int(float64(w.pos[0]) * w.s.font.truewidth)
+	x := int(float64(w.pos[0]) * w.s.font.cellwidth)
 	y := w.pos[1] * w.s.font.lineHeight
 	color := editor.colors.windowSeparator
-	width := int(float64(w.cols) * font.truewidth)
+	width := int(float64(w.cols) * font.cellwidth)
 	winHeight := int((float64(w.rows) + 0.92) * float64(font.lineHeight))
 
 	// Vim uses the showtabline option to change the display state of the tabline
@@ -715,7 +715,7 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 	// Vertical
 	if y+font.lineHeight+1 < w.s.widget.Height() {
 		p.FillRect5(
-			int(float64(x+width)+font.truewidth/2),
+			int(float64(x+width)+font.cellwidth/2),
 			y-shift,
 			2,
 			winHeight,
@@ -725,16 +725,16 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 	// vertical gradient
 	if editor.config.Editor.WindowSeparatorGradient {
 		gradient := gui.NewQLinearGradient3(
-			float64(x+width)+font.truewidth/2,
+			float64(x+width)+font.cellwidth/2,
 			0,
-			float64(x+width)+font.truewidth/2-6,
+			float64(x+width)+font.cellwidth/2-6,
 			0,
 		)
 		gradient.SetColorAt(0, gui.NewQColor3(color.R, color.G, color.B, 125))
 		gradient.SetColorAt(1, gui.NewQColor3(color.R, color.G, color.B, 0))
 		brush := gui.NewQBrush10(gradient)
 		p.FillRect2(
-			int(float64(x+width)+font.truewidth/2)-6,
+			int(float64(x+width)+font.cellwidth/2)-6,
 			y-shift,
 			6,
 			winHeight,
@@ -753,9 +753,9 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 	y2 := y + height - 1 + font.lineHeight/2
 
 	p.FillRect5(
-		int(float64(x)-font.truewidth/2),
+		int(float64(x)-font.cellwidth/2),
 		y2,
-		int((float64(w.cols)+0.92)*font.truewidth),
+		int((float64(w.cols)+0.92)*font.cellwidth),
 		2,
 		color.QColor(),
 	)
@@ -771,9 +771,9 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 		hgradient.SetColorAt(1, gui.NewQColor3(color.R, color.G, color.B, 0))
 		hbrush := gui.NewQBrush10(hgradient)
 		p.FillRect2(
-			int(float64(x)-font.truewidth/2),
+			int(float64(x)-font.cellwidth/2),
 			y2-6,
-			int((float64(w.cols)+0.92)*font.truewidth),
+			int((float64(w.cols)+0.92)*font.cellwidth),
 			6,
 			hbrush,
 		)
@@ -875,7 +875,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	w.focusGrid()
 
 	mod := editor.modPrefix(event.Modifiers())
-	row := int(float64(event.X()) / font.truewidth)
+	row := int(float64(event.X()) / font.cellwidth)
 	col := int(float64(event.Y()) / float64(font.lineHeight))
 
 	if w.s.ws.isMappingScrollKey {
@@ -954,7 +954,7 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 	dx := math.Abs(float64(w.scrollPixels[0]))
 	dy := math.Abs(float64(w.scrollPixels[1]))
 
-	if dx < font.truewidth {
+	if dx < font.cellwidth {
 		w.scrollPixels[0] += h
 	}
 	if dy < float64(font.lineHeight) {
@@ -964,8 +964,8 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 	dx = math.Abs(float64(w.scrollPixels[0]))
 	dy = math.Abs(float64(w.scrollPixels[1]))
 
-	if dx >= font.truewidth {
-		horiz = int(float64(w.scrollPixels[0]) / font.truewidth)
+	if dx >= font.cellwidth {
+		horiz = int(float64(w.scrollPixels[0]) / font.cellwidth)
 	}
 	if dy >= float64(font.lineHeight) {
 		vert = int(float64(w.scrollPixels[1]) / float64(font.lineHeight))
@@ -975,7 +975,7 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 
 	// w.update()
 	// w.s.ws.cursor.update()
-	if !(dx >= font.truewidth || dy > float64(font.lineHeight)) {
+	if !(dx >= font.cellwidth || dy > float64(font.lineHeight)) {
 		w.update()
 		w.s.ws.cursor.update()
 	}
@@ -998,7 +998,7 @@ func (win *Window) smoothScroll(diff int) {
 		win.Update2(
 			0,
 			0,
-			int(float64(win.cols)*font.truewidth),
+			int(float64(win.cols)*font.cellwidth),
 			win.rows*font.lineHeight,
 		)
 		if win.scrollPixels2 == 0 {
@@ -1006,7 +1006,7 @@ func (win *Window) smoothScroll(diff int) {
 			win.Update2(
 				0,
 				0,
-				int(float64(win.cols)*font.truewidth),
+				int(float64(win.cols)*font.cellwidth),
 				win.cols*font.lineHeight,
 			)
 			win.doErase = false
@@ -1509,7 +1509,7 @@ func (w *Window) update() {
 			rect := [4]int{
 				0,
 				i * font.lineHeight,
-				int(math.Ceil(float64(width) * font.truewidth)),
+				int(math.Ceil(float64(width) * font.cellwidth)),
 				font.lineHeight,
 			}
 			rects = append(rects, rect)
@@ -1542,9 +1542,9 @@ func (w *Window) update() {
 
 					// create rectangular area
 					rect := [4]int{
-						int(float64(start) * font.truewidth),
+						int(float64(start) * font.cellwidth),
 						i * font.lineHeight,
-						int(math.Ceil(float64(jj-start) * font.truewidth)),
+						int(math.Ceil(float64(jj-start) * font.cellwidth)),
 						font.lineHeight,
 					}
 					rects = append(rects, rect)
@@ -1559,7 +1559,7 @@ func (w *Window) update() {
 			w.Update2(
 				0,
 				i*font.lineHeight,
-				int(float64(width)*font.truewidth),
+				int(float64(width)*font.cellwidth),
 				font.lineHeight,
 			)
 		} else {
@@ -1662,9 +1662,9 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	// 		 pattern, color, transparent := w.getFillpatternAndTransparent(highlight)
 	// 		 // Fill background with pattern
 	// 		 rectF := core.NewQRectF4(
-	// 				 float64(x)*font.truewidth,
+	// 				 float64(x)*font.cellwidth,
 	// 				 float64((y)*font.lineHeight),
-	// 				 font.truewidth,
+	// 				 font.cellwidth,
 	// 				 float64(font.lineHeight),
 	// 		 )
 	// 		 p.FillRect(
@@ -1704,9 +1704,9 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 
 			// Fill background with pattern
 			rectF := core.NewQRectF4(
-				float64(start)*font.truewidth,
+				float64(start)*font.cellwidth,
 				float64((y)*font.lineHeight+scrollPixels),
-				float64(width)*font.truewidth,
+				float64(width)*font.cellwidth,
 				float64(font.lineHeight),
 			)
 			p.FillRect(
@@ -1796,7 +1796,9 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		scrollPixels += w.scrollPixels[1]
 	}
 
-	// pointX := float64(col) * wsfont.truewidth
+	cellBasedDrawing := editor.config.Editor.DisableLigatures || (editor.config.Editor.Letterspace > 0)
+
+	// pointX := float64(col) * wsfont.cellwidth
 	for x := col; x <= col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -1817,17 +1819,17 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 		// If the ligature setting is disabled,
 		// we will draw the characters on the screen one by one.
-		if editor.config.Editor.DisableLigatures {
+		if cellBasedDrawing {
 
 			// if CachedDrawing is disabled
 			if !editor.config.Editor.CachedDrawing {
 				w.drawTextInPos(
 					p,
 					// core.NewQPointF3(
-					// 	float64(x)*wsfont.truewidth,
+					// 	float64(x)*wsfont.cellwidth,
 					// 	float64(y*wsfont.lineHeight+wsfont.shift+scrollPixels),
 					// ),
-					int(float64(x)*wsfont.truewidth),
+					int(float64(x)*wsfont.cellwidth),
 					y*wsfont.lineHeight+wsfont.shift+scrollPixels,
 					line[x].char,
 					line[x].highlight,
@@ -1839,10 +1841,10 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				w.drawTextInPosWithCache(
 					p,
 					// core.NewQPointF3(
-					// 	float64(x)*wsfont.truewidth,
+					// 	float64(x)*wsfont.cellwidth,
 					// 	float64(y*wsfont.lineHeight+scrollPixels),
 					// ),
-					int(float64(x)*wsfont.truewidth),
+					int(float64(x)*wsfont.cellwidth),
 					y*wsfont.lineHeight+scrollPixels,
 					line[x].char,
 					line[x].highlight,
@@ -1864,7 +1866,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 	// This is the normal rendering process for goneovim,
 	// we draw a word snippet of the same highlight on the screen for each of the highlights.
-	if !editor.config.Editor.DisableLigatures {
+	if !cellBasedDrawing {
 
 		//  // var pointf *core.QPointF
 		//  var X, Y int
@@ -1921,7 +1923,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				w.drawTextInPos(
 					p,
 					// pointf,
-					int(float64(pos)*wsfont.truewidth),
+					int(float64(pos)*wsfont.cellwidth),
 					y*wsfont.lineHeight+wsfont.shift+scrollPixels,
 					text,
 					highlight,
@@ -1931,7 +1933,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				w.drawTextInPosWithCache(
 					p,
 					// pointf,
-					int(float64(pos)*wsfont.truewidth),
+					int(float64(pos)*wsfont.cellwidth),
 					y*wsfont.lineHeight+scrollPixels,
 					text,
 					highlight,
@@ -1958,10 +1960,10 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				w.drawTextInPos(
 					p,
 					// core.NewQPointF3(
-					// 	float64(x)*wsfont.truewidth,
+					// 	float64(x)*wsfont.cellwidth,
 					// 	float64(y*wsfont.lineHeight+wsfont.shift+scrollPixels),
 					// ),
-					int(float64(x)*wsfont.truewidth),
+					int(float64(x)*wsfont.cellwidth),
 					y*wsfont.lineHeight+wsfont.shift+scrollPixels,
 					line[x].char,
 					line[x].highlight,
@@ -1971,10 +1973,10 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				w.drawTextInPosWithCache(
 					p,
 					// core.NewQPointF3(
-					// 	float64(x)*wsfont.truewidth,
+					// 	float64(x)*wsfont.cellwidth,
 					// 	float64(y*wsfont.lineHeight+scrollPixels),
 					// ),
-					int(float64(x)*wsfont.truewidth),
+					int(float64(x)*wsfont.cellwidth),
 					y*wsfont.lineHeight+scrollPixels,
 					line[x].char,
 					line[x].highlight,
@@ -2048,7 +2050,7 @@ func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalWidth bool) *gui.QImage {
 	font := w.getFont()
 
-	width := font.truewidth
+	width := font.cellwidth
 	fg := highlight.fg()
 	if !isNormalWidth {
 		width = math.Ceil(w.s.runeTextWidth(font, char))
@@ -2092,8 +2094,8 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		pen.SetColor(color)
 	}
 	pi.SetPen(pen)
-	start := float64(0) * font.truewidth
-	end := float64(width) * font.truewidth
+	start := float64(0) * font.cellwidth
+	end := float64(width) * font.cellwidth
 
 	space := float64(font.lineSpace) / 3.0
 	if space > font.ascent/3.0 {
@@ -2109,7 +2111,7 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		pi.FillRect5(
 			int(start),
 			int(Y),
-			int(math.Ceil(font.truewidth)),
+			int(math.Ceil(font.cellwidth)),
 			weight,
 			color,
 		)
@@ -2118,7 +2120,7 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		pi.FillRect5(
 			int(start),
 			int(float64((0+1)*font.lineHeight+scrollPixels))-weight,
-			int(math.Ceil(font.truewidth)),
+			int(math.Ceil(font.cellwidth)),
 			weight,
 			color,
 		)
@@ -2136,7 +2138,7 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		point := core.NewQPointF3(start, Y2)
 		path := gui.NewQPainterPath2(point)
 		for i := int(point.X()); i <= int(end); i++ {
-			Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.truewidth+phase)
+			Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.cellwidth+phase)
 			path.LineTo(core.NewQPointF3(float64(i), Y2))
 		}
 		pi.DrawPath(path)
@@ -2324,8 +2326,8 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				pen.SetColor(color)
 			}
 			p.SetPen(pen)
-			start := float64(x) * font.truewidth
-			end := float64(x+1) * font.truewidth
+			start := float64(x) * font.cellwidth
+			end := float64(x+1) * font.cellwidth
 
 			space := float64(font.lineSpace) / 3.0
 			if space > font.ascent/3.0 {
@@ -2343,7 +2345,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				p.FillRect5(
 					int(start),
 					int(Y),
-					int(math.Ceil(font.truewidth)),
+					int(math.Ceil(font.cellwidth)),
 					weight,
 					color,
 				)
@@ -2354,7 +2356,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				p.FillRect5(
 					int(start),
 					int(float64((y+1)*font.lineHeight+scrollPixels))-weight,
-					int(math.Ceil(font.truewidth)),
+					int(math.Ceil(font.cellwidth)),
 					weight,
 					color,
 				)
@@ -2372,7 +2374,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				point := core.NewQPointF3(start, Y2)
 				path := gui.NewQPainterPath2(point)
 				for i := int(point.X()); i <= int(end); i++ {
-					Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.truewidth+phase)
+					Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.cellwidth+phase)
 					path.LineTo(core.NewQPointF3(float64(i), Y2))
 				}
 				p.DrawPath(path)
@@ -2396,7 +2398,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 
 			p.DrawImage7(
 				core.NewQPointF3(
-					float64(x)*font.truewidth,
+					float64(x)*font.cellwidth,
 					float64(y*font.lineHeight)+float64(scrollPixels),
 				),
 				image,
@@ -2497,7 +2499,7 @@ func (w *Window) isNormalWidth(char string) bool {
 		return false
 	}
 
-	return w.getFont().fontMetrics.HorizontalAdvance(char, -1) == w.getFont().truewidth
+	return w.getFont().fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
 }
 
 func (w *Window) deleteExternalWin() {
@@ -2512,7 +2514,7 @@ func (w *Window) setResizableForExtWin() {
 		w.extwin.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 			height := w.extwin.Height() - EXTWINBORDERSIZE*2
 			width := w.extwin.Width() - EXTWINBORDERSIZE*2
-			cols := int((float64(width) / w.getFont().truewidth))
+			cols := int((float64(width) / w.getFont().cellwidth))
 			rows := height / w.getFont().lineHeight
 			w.extwinResized = true
 			w.extwinManualResized = true
@@ -2588,7 +2590,7 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 	mod := editor.modPrefix(event.Modifiers())
 
 	font := w.getFont()
-	col := int(float64(event.X()) / font.truewidth)
+	col := int(float64(event.X()) / font.cellwidth)
 	row := int(float64(event.Y()) / float64(font.lineHeight))
 
 	w.s.ws.nvim.InputMouse(button, action, mod, w.grid, row, col)
@@ -2794,7 +2796,7 @@ func (w *Window) move(col int, row int) {
 	if res < 0 {
 		res = 0
 	}
-	x := int(float64(col) * font.truewidth)
+	x := int(float64(col) * font.cellwidth)
 	y := (row * font.lineHeight) + res
 
 	if w.isFloatWin {
@@ -2828,7 +2830,7 @@ func (w *Window) layoutExternalWindow(x, y int) {
 	font := w.s.font
 
 	// float windows width, height
-	width := int(float64(w.cols) * font.truewidth)
+	width := int(float64(w.cols) * font.cellwidth)
 	height := w.rows * font.lineHeight
 	dx := []int{}
 	dy := []int{}
@@ -2873,21 +2875,21 @@ func (w *Window) layoutExternalWindow(x, y int) {
 				if winx <= w.pos[0]+dc && winx+win.cols > w.pos[0]+dc &&
 					winy <= w.pos[1]+dr && winy+win.rows > w.pos[1]+dr {
 
-					widthRatio := float64(w.cols+win.cols) * font.truewidth / float64(editor.window.Width())
+					widthRatio := float64(w.cols+win.cols) * font.cellwidth / float64(editor.window.Width())
 					heightRatio := float64((w.rows+win.rows)*font.lineHeight) / float64(editor.window.Height())
 					if w.cols == win.cols {
 						dy = append(dy, win.rows)
 						height += win.rows*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
 					} else if w.rows == win.rows {
 						dx = append(dx, win.cols)
-						width += int(float64(win.cols)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+						width += int(float64(win.cols)*font.cellwidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
 					} else {
 						if widthRatio > heightRatio {
 							dy = append(dy, win.rows)
 							height += win.rows*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
 						} else {
 							dx = append(dx, win.cols)
-							width += int(float64(win.cols)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+							width += int(float64(win.cols)*font.cellwidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
 						}
 					}
 
@@ -2901,7 +2903,7 @@ func (w *Window) layoutExternalWindow(x, y int) {
 		x := 0
 		y := 0
 		for _, e := range dx {
-			x += int(float64(e)*font.truewidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
+			x += int(float64(e)*font.cellwidth) + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE
 		}
 		for _, e := range dy {
 			y += e*font.lineHeight + EXTWINBORDERSIZE*2 + EXTWINMARGINSIZE

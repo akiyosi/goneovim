@@ -78,7 +78,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0)}")
-	size := int(float64(editor.workspaces[editor.active].font.width) * 1.33)
+	size := int(editor.workspaces[editor.active].font.width * 1.33)
 	label.SetFont(gui.NewQFont2(editor.extFontFamily, size, 1, false))
 	if utf8.RuneCountInString(message) > 50 {
 		label.SetWordWrap(true)

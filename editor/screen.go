@@ -129,7 +129,7 @@ func (s *Screen) updateSize() {
 		}
 	}
 	s.width = ws.width - scrollvarWidth - minimapWidth
-	currentCols := int(float64(s.width) / s.font.truewidth)
+	currentCols := int(float64(s.width) / s.font.cellwidth)
 	currentRows := s.height / s.font.lineHeight
 
 	// Adjust the position of the message grid.
@@ -263,16 +263,16 @@ func (s *Screen) gridFont(update interface{}) {
 		}
 	}
 
-	oldWidth := float64(win.cols) * win.getFont().truewidth
+	oldWidth := float64(win.cols) * win.getFont().cellwidth
 	oldHeight := win.rows * win.getFont().lineHeight
 	win.width = oldWidth
 	win.height = oldHeight
 	win.localWindows = &[4]localWindow{}
 
-	win.font = initFontNew(fontfamily, float64(height), 1)
+	win.font = initFontNew(fontfamily, float64(height), 1, 0.0)
 
 	// Calculate new cols, rows of current grid
-	newCols := int(oldWidth / win.font.truewidth)
+	newCols := int(oldWidth / win.font.cellwidth)
 	newRows := oldHeight / win.font.lineHeight
 
 	// Cache
@@ -289,7 +289,7 @@ func (s *Screen) gridFont(update interface{}) {
 	s.ws.cursor.updateFont(font)
 
 	if win.isExternal {
-		width := int(float64(newCols)*win.font.truewidth) + EXTWINBORDERSIZE*2
+		width := int(float64(newCols)*win.font.cellwidth) + EXTWINBORDERSIZE*2
 		height := newRows*win.font.lineHeight + EXTWINBORDERSIZE*2
 		win.extwin.Resize2(width, height)
 	}
@@ -593,7 +593,7 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 		font := s.font
 		var offsetX, offsetY float64
 		if targetwin.font == nil {
-			offsetX = float64(targetwin.pos[0]) * font.truewidth
+			offsetX = float64(targetwin.pos[0]) * font.cellwidth
 			offsetY = float64(targetwin.pos[1]) * float64(font.lineHeight)
 		}
 		localpos = core.NewQPointF3(
@@ -717,7 +717,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 	font := win.getFont()
 
-	width := int(math.Ceil(float64(cols) * font.truewidth))
+	width := int(math.Ceil(float64(cols) * font.cellwidth))
 	height := rows * font.lineHeight
 
 	win.setGridGeometry(width, height)
@@ -796,13 +796,13 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 				}
 				if !w.localWindows[2].isResized {
 					w.localWindows[2].isResized = true
-					w.localWindows[2].localWidth = w.width + float64(oldCols)*win.getFont().truewidth
+					w.localWindows[2].localWidth = w.width + float64(oldCols)*win.getFont().cellwidth
 				}
-				newWidth := w.localWindows[2].localWidth - (float64(win.cols) * win.getFont().truewidth)
-				newCols := int(newWidth / w.font.truewidth)
+				newWidth := w.localWindows[2].localWidth - (float64(win.cols) * win.getFont().cellwidth)
+				newCols := int(newWidth / w.font.cellwidth)
 				if newCols != w.cols {
 					_ = s.ws.nvim.TryResizeUIGrid(w.grid, newCols, w.rows)
-					w.width = float64(newCols) * w.getFont().truewidth
+					w.width = float64(newCols) * w.getFont().cellwidth
 					w.localWindows[0].isResized = false
 				}
 			}
@@ -810,11 +810,11 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			// left window is gridfont window
 			// calcurate win window posision aa w window coordinate
 			var resizeflag bool
-			winPosX := float64(win.pos[0]) * win.s.font.truewidth
-			rightWindowPos1 := float64(w.cols)*w.getFont().truewidth + float64(w.pos[0]+1-deltaCols+1)*win.s.font.truewidth
-			rightWindowPos2 := float64(w.cols-1)*w.getFont().truewidth + float64(w.pos[0]+1-deltaCols+1)*win.s.font.truewidth
-			rightWindowPos := int(float64(w.cols)*w.getFont().truewidth/win.s.font.truewidth) + w.pos[0] + 1 - deltaCols + 1
-			if win.s.font.truewidth < w.getFont().truewidth {
+			winPosX := float64(win.pos[0]) * win.s.font.cellwidth
+			rightWindowPos1 := float64(w.cols)*w.getFont().cellwidth + float64(w.pos[0]+1-deltaCols+1)*win.s.font.cellwidth
+			rightWindowPos2 := float64(w.cols-1)*w.getFont().cellwidth + float64(w.pos[0]+1-deltaCols+1)*win.s.font.cellwidth
+			rightWindowPos := int(float64(w.cols)*w.getFont().cellwidth/win.s.font.cellwidth) + w.pos[0] + 1 - deltaCols + 1
+			if win.s.font.cellwidth < w.getFont().cellwidth {
 				resizeflag = winPosX <= rightWindowPos1 && winPosX >= rightWindowPos2
 			} else {
 				resizeflag = win.pos[0] == rightWindowPos
@@ -825,13 +825,13 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 				}
 				if !w.localWindows[0].isResized {
 					w.localWindows[0].isResized = true
-					w.localWindows[0].localWidth = w.width + float64(oldCols)*win.getFont().truewidth
+					w.localWindows[0].localWidth = w.width + float64(oldCols)*win.getFont().cellwidth
 				}
-				newWidth := w.localWindows[0].localWidth - (float64(win.cols) * win.getFont().truewidth)
-				newCols := int(newWidth / w.font.truewidth)
+				newWidth := w.localWindows[0].localWidth - (float64(win.cols) * win.getFont().cellwidth)
+				newCols := int(newWidth / w.font.cellwidth)
 				if newCols != w.cols {
 					_ = s.ws.nvim.TryResizeUIGrid(w.grid, newCols, w.rows)
-					w.width = float64(newCols) * w.getFont().truewidth
+					w.width = float64(newCols) * w.getFont().cellwidth
 					w.localWindows[2].isResized = false
 				}
 			}
@@ -1229,12 +1229,12 @@ func (s *Screen) runeTextWidth(font *Font, text string) float64 {
 	}
 
 	r := buffer.String()
-	width := (font.truewidth)*float64(ascii) + (font.truewidth)*float64(cjk)*2
+	width := (font.cellwidth)*float64(ascii) + (font.cellwidth)*float64(cjk)*2
 	if r == "" {
 		width += font.fontMetrics.HorizontalAdvance(r, -1)
 	}
 	if width == 0 {
-		width = font.truewidth * 2
+		width = font.cellwidth * 2
 	}
 
 	return width
@@ -1517,10 +1517,10 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 						return
 					}
 					gPos := editor.window.Pos()
-					win.pos[0] = int(float64(pos.X()-gPos.X()) / font.truewidth)
+					win.pos[0] = int(float64(pos.X()-gPos.X()) / font.cellwidth)
 					win.pos[1] = int(float64(pos.Y()-gPos.Y()) / float64(font.lineHeight))
 				})
-				width := int(math.Ceil(float64(win.cols) * font.truewidth))
+				width := int(math.Ceil(float64(win.cols) * font.cellwidth))
 				height := win.rows * font.lineHeight
 				win.setGridGeometry(width, height)
 				win.setResizableForExtWin()

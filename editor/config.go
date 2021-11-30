@@ -43,6 +43,7 @@ type editorConfig struct {
 	DiffChangePattern          int
 	CacheSize                  int
 	Linespace                  int
+	Letterspace                float64
 	FontSize                   int
 	Gap                        int
 	Height                     int

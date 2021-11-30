@@ -384,7 +384,7 @@ func (p *PopupMenu) setWidgetWidth() {
 		wordLabelLen := int(math.Ceil(p.ws.screen.runeTextWidth(p.ws.font, item.wordLabel.Text())))
 		if wordLabelLen > maxWordLabelLen {
 			maxWordLabelLen = wordLabelLen
-			maxWordLabelLen += int(p.ws.font.truewidth) + 1
+			maxWordLabelLen += int(p.ws.font.cellwidth) + 1
 			maxWordLabelLen += margin * 3
 		}
 	}
@@ -396,7 +396,7 @@ func (p *PopupMenu) setWidgetWidth() {
 
 	menuWidth := 0
 	if !isMenuHidden {
-		menuWidth = int(p.ws.font.truewidth*float64(menuStrLen)) + margin*2 + 1
+		menuWidth = int(p.ws.font.cellwidth*float64(menuStrLen)) + margin*2 + 1
 		if menuWidth > editor.config.Popupmenu.MenuWidth {
 			menuWidth = editor.config.Popupmenu.MenuWidth
 		}
@@ -407,7 +407,7 @@ func (p *PopupMenu) setWidgetWidth() {
 	infoWidth := 0
 	if !isInfoHidden {
 
-		infoWidth = int(p.ws.font.truewidth*float64(infoStrLen)) + margin*2 + 1
+		infoWidth = int(p.ws.font.cellwidth*float64(infoStrLen)) + margin*2 + 1
 		if infoWidth > editor.config.Popupmenu.InfoWidth {
 			infoWidth = editor.config.Popupmenu.InfoWidth
 		}

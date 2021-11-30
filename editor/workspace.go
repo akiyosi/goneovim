@@ -131,6 +131,7 @@ func newWorkspace(path string) (*Workspace, error) {
 			editor.extFontFamily,
 			float64(editor.extFontSize),
 			0,
+			editor.config.Editor.Letterspace,
 		)
 	} else {
 		w.font = editor.font
@@ -728,15 +729,16 @@ func (w *Workspace) initGonvim() {
 		`
 		}
 		gonvimCommands = gonvimCommands + `
-	command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
-	command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
-	command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
-	command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
-	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
-	command! -nargs=1 GuiMacmeta call rpcnotify(0, "Gui", "gonvim_macmeta", <args>)
-	`
+		command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
+		command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
+		command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
+		command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
+		`
 	}
 	gonvimCommands = gonvimCommands + `
+		command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
+		command! -nargs=1 GonvimLetterSpacing call rpcnotify(0, "Gui", "gonvim_letter_spacing", <args>)
+		command! -nargs=1 GuiMacmeta call rpcnotify(0, "Gui", "gonvim_macmeta", <args>)
 		command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
 		command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
 		command! GonvimSmoothScroll call rpcnotify(0, "Gui", "gonvim_smoothscroll")
@@ -1854,6 +1856,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.side.items[w.getNum()].addItem(updates[1:])
 	case "filer_item_select":
 		editor.side.items[w.getNum()].selectItem(updates[1:])
+	case "gonvim_letter_spacing":
+		w.letterSpacing(updates[1])
 	case "gonvim_grid_font":
 		w.screen.gridFont(updates[1])
 	case "gonvim_macmeta":
@@ -1937,6 +1941,35 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 
 }
 
+func (w *Workspace) letterSpacing(arg interface{}) {
+	if arg == "" {
+		return
+	}
+
+	letterSpace := util.ReflectToFloat(arg)
+	editor.config.Editor.Letterspace = letterSpace
+
+	w.font.changeLetterSpace(letterSpace)
+	w.screen.font = w.font
+
+	font := w.font
+	win, ok := w.screen.getWindow(w.cursor.gridid)
+	if ok {
+		font = win.getFont()
+	}
+
+	w.updateSize()
+
+	if w.popup != nil {
+		w.popup.updateFont(font)
+	}
+	if w.message != nil {
+		w.message.updateFont()
+	}
+	w.screen.tooltip.setFont(font)
+	w.cursor.updateFont(font)
+}
+
 func (w *Workspace) guiFont(args string) {
 	if args == "" {
 		return
@@ -2018,6 +2051,7 @@ func (w *Workspace) guiFontWide(args string) {
 			editor.extFontFamily,
 			float64(editor.extFontSize),
 			editor.config.Editor.Linespace,
+			editor.config.Editor.Letterspace,
 		)
 		w.fontwide.ws = w
 		w.cursor.fontwide = w.fontwide
@@ -2482,14 +2516,14 @@ func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {
 		isCursorBelowTheCenter = true
 	}
 
-	x := int(float64(col) * font.truewidth)
+	x := int(float64(col) * font.cellwidth)
 	y := row * font.lineHeight
 	if w.isDrawTabline {
 		if w.tabline != nil {
 			y += w.tabline.widget.Height()
 		}
 	}
-	x += int(float64(win.pos[0]) * font.truewidth)
+	x += int(float64(win.pos[0]) * font.cellwidth)
 	y += win.pos[1] * font.lineHeight
 
 	return x, y, font.lineHeight, isCursorBelowTheCenter
@@ -2531,6 +2565,7 @@ func (w *Workspace) toggleLigatures() {
 	editor.config.mu.Lock()
 	if editor.config.Editor.DisableLigatures {
 		editor.config.Editor.DisableLigatures = false
+		editor.config.Editor.Letterspace = 0
 	} else {
 		editor.config.Editor.DisableLigatures = true
 	}

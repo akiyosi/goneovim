@@ -238,6 +238,7 @@ func InitEditor(options Options, args []string) {
 			editor.extFontFamily,
 			float64(editor.extFontSize),
 			0,
+			e.config.Editor.Letterspace,
 		)
 
 		fontGenAsync <- font

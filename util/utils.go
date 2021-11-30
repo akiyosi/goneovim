@@ -41,7 +41,8 @@ func ReflectToFloat(iface interface{}) float64 {
 	if ok {
 		return float64(u)
 	}
-	return 0
+
+	return float64(ReflectToInt(iface))
 }
 
 // IsZero determines if the value of interface{} is zero

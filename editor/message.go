@@ -247,7 +247,7 @@ func (m *Message) resize() {
 
 func (m *Message) resizeMessages() bool {
 	ok := true
-	width := m.ws.font.truewidth
+	width := m.ws.font.cellwidth
 	for _, item := range m.items {
 		item.widget.SetFixedSize2(m.ws.font.height*5/3, m.ws.font.height*5/3)
 		item.label.SetMinimumHeight(0)
@@ -327,7 +327,7 @@ func (m *Message) msgShow(args []interface{}) {
 				var cBuffer bytes.Buffer
 				for _, c := range msg {
 					lineLen += len(string(c))
-					msgLen := int(m.ws.font.truewidth * float64(lineLen))
+					msgLen := int(m.ws.font.cellwidth * float64(lineLen))
 					if msgLen >= maxLen {
 						cBuffer.WriteString(`<br>`)
 						lineLen = 0
