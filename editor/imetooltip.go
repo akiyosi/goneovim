@@ -11,6 +11,12 @@ type IMETooltip struct {
 }
 
 func (i *IMETooltip) setQpainterFont(p *gui.QPainter) {
+	if i.font == nil {
+		return
+	}
+	if i.font.fontNew == nil {
+		return
+	}
 	if i.s.ws.palette.widget.IsVisible() {
 		p.SetFont(
 			gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false),
@@ -21,6 +27,13 @@ func (i *IMETooltip) setQpainterFont(p *gui.QPainter) {
 }
 
 func (i *IMETooltip) getNthWidthAndShift(n int) (float64, int) {
+	if i.font == nil {
+		return 0.0, 0
+	}
+	if len(i.widthSlice) <= n {
+		return 0.0, 0
+	}
+
 	var width float64
 	var shift int
 	r := []rune(i.text)

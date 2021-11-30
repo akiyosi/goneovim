@@ -17,6 +17,13 @@ type Tooltip struct {
 }
 
 func (t *Tooltip) getNthWidthAndShift(n int) (float64, int) {
+	if t.font == nil {
+		return 0.0, 0
+	}
+	if len(t.widthSlice) <= n {
+		return 0.0, 0
+	}
+
 	var width float64
 	var shift int
 
@@ -117,6 +124,9 @@ func (t *Tooltip) show() {
 func (t *Tooltip) update() {
 	// detect width
 	var tooltipWidth float64
+	if len(t.widthSlice) == 0 {
+		return
+	}
 	for _, w := range t.widthSlice {
 		tooltipWidth += w
 	}
