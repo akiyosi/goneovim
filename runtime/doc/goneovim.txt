@@ -1,0 +1,164 @@
+*goneovim.txt*             A Neovim GUI written in Go, using a Qt binding for Go  
+
+Author: akiyosi <akiyoshimaruyama@gmail.com>
+
+================================================================================
+CONTENTS                                                       *goneovim-contents*
+
+
+Introduction			                         |goneovim-introduction|
+CLI Interface                                           |goneovim-cli-interface|
+Commands                                                     |goneovim-commands|
+Configuration                                           |goneovim-configuration|
+
+================================================================================
+INTRODUCTION                                               *goneovim-introduction*
+
+Goneovim is a Neovim GUI written in Go, using a Qt binding for Go. 
+The project forked from the original Gonvim for the purpose of maintenance 
+and enhancement.
+
+
+================================================================================
+CLI INTERFACE                                             *goneovim-cli-interface*
+
+>
+    Usage:
+      goneovim [OPTIONS]
+    
+    Application Options:
+          --fullscreen    Open the window in fullscreen on startup
+          --maximized     Maximize the window on startup
+          --geometry=     Initial window geomtry [e.g. --geometry=800x600]
+          --server=       Remote session address [e.g. --server=host:3456]
+          --ssh=          Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]
+          --nvim=         Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]
+          --exttabline    Externalize the tabline
+          --extcmdline    Externalize the cmdline
+          --extmessages   Externalize the messages. Sets --extcmdline implicitly
+          --extpopupmenu  Externalize the popupmenu
+          --debug=        Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]
+          --version       Print Goneovim version
+    
+    Help Options:
+      -h, --help          Show this help message
+<
+
+================================================================================
+COMMANDS                                                       *goneovim-commands*
+
+
+:GonvimResize {str}                                                *:GonvimResize*
+	Resize the window to the size specified in str, where str is a string
+	of width and height separated by the letter x, e.g. 800x600.
+
+
+:GonvimSidebarShow                                            *:GonvimSidebarShow*
+	Display the sidebar.
+
+
+:GonvimVersion                                                    *:GonvimVersion*
+	Displays the version number in the echo area.
+
+
+:GonvimMiniMap                                                    *:GonvimMinimap*
+        Toggles between showing and hiding the minimap.
+
+
+:GonvimWorkspaceNew                                          *:GonvimWorkspaceNew*
+	Start a new nvim instance in goneovim.
+
+
+:GonvimWorkspaceNext                                        *:GonvimWorkspaceNext*
+	Switch to a workspace with a higher number.
+
+
+:GonvimWorkspacePrevious                                *:GonvimWorkspacePrevious*
+	Switch to a workspace with one less number.
+
+
+:GonvimWorkspaceSwitch {num}                              *:GonvimWorkspaceSwitch*
+	Switches to the workspace with the specified number.
+
+
+:GonvimGridFont {str}                                            *:GonvimGridFont*
+	Specifies the font family and font size identified by the specified
+	string in the font settings of the current |window|, independent of
+	other |windows|. The string is in the form of a font family and font size
+	separated by colons, e.g. "Fira Code:h20".
+
+
+:GonvimLetterSpacing {num}                                  *:GonvimLetterSpacing*
+	Set the letterspace. Note that Ligature will be disabled when this 
+	command is executed. Also, due to the timing of the definition of this
+	command, it is not possible to include the settings in init.vim. 
+	If you want to load the settings at startup, you can enable the settings
+	in settings.toml, or if you want to put the settings in |init.vim|, 
+	you can use the following |rpcnotify|.
+>
+	:call rpcnotify(0, "Gui", "gonvim_letter_spacing", 0.5)
+<
+
+:GuiMacmeta {boolean}                                               *:GuiMacmeta*
+	Use option (alt) as meta key.  When on, option-key presses are not
+	interpreted, thus enabling bindings to <M-..>.  When off, option-key
+	presses are interpreted by the selected input method and inserted as
+	text.
+
+
+:GonvimMaximize                                                 *:GonvimMaximize*
+	Maximize the window size.
+
+
+:GonvimLigatures                                               *:GonvimLigatures*
+	Toggles the ligature settings.
+
+
+:GonvimSmoothScroll                                         *:GonvimSmoothScroll*
+	Toggles scrolling by Vim commands (e.g. <C-f>) to a mode that displays
+	a smooth animation.
+
+
+:GonvimSmoothCursor                                         *:GonvimSmoothCursor*
+	Displays smooth animation of the cursor movement.
+
+
+:GonvimIndentguide                                           *:GonvimIndentguide*
+	Toggles the display of the indentation guide.
+
+
+================================================================================
+CONFIGURATION                                             *goneovim-configuration*
+
+Goneovim’s config file is located at
+
+On MacOS or Linux:
+>
+        ~/.config/goneovim/settings.toml
+<
+
+On Windows:
+>
+        ~/.goneovim/settings.toml
+<
+
+See the following wiki for sample configuration files.
+
+https://github.com/akiyosi/goneovim/wiki/Usage#configuration
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+vim:tw=78:ts=8:ft=help:norl:

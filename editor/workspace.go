@@ -488,13 +488,18 @@ func (w *Workspace) startNvim(path string) error {
 		"set termguicolors",
 	}
 
+	// Add runtimepath
 	runtimepath := getResourcePath() + "/runtime/"
-	s := fmt.Sprintf("let &rtp.=',%s'", runtimepath)
-	if editor.config.Popupmenu.ShowDigit {
-		option = append(option, "--cmd")
-		option = append(option, s)
-	}
+	option = append(option, "--cmd")
+	option = append(option, fmt.Sprintf("let &rtp.=',%s'", runtimepath))
+
+	// Generate goneovim helpdoc tag
+	helpdocpath := getResourcePath() + "/runtime/doc"
+	option = append(option, "--cmd")
+	option = append(option, fmt.Sprintf("helptag %s", helpdocpath))
+
 	option = append(option, "--embed")
+
 	childProcessArgs := nvim.ChildProcessArgs(
 		append(option, editor.args...)...,
 	)
