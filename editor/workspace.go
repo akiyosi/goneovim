@@ -1215,7 +1215,8 @@ func (e *Editor) updateNotificationPos() {
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
-	isUpdateMinimap := false
+	shouldUpdateMinimap := false
+	shouldUpdateCursor := false
 	for _, update := range updates {
 		event := update[0].(string)
 		args := update[1:]
@@ -1243,6 +1244,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.cursor.modeIdx = w.modeIdx
 			}
 			w.disableImeInNormal()
+			shouldUpdateCursor = true
 
 		// Not used in the current specification.
 		case "mouse_on":
@@ -1254,8 +1256,10 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		//       so it cannot be hidden straightforwardly.
 		case "busy_start":
 			w.cursor.isBusy = true
+			shouldUpdateCursor = true
 		case "busy_stop":
 			w.cursor.isBusy = false
+			shouldUpdateCursor = true
 
 		case "suspend":
 		case "update_menu":
@@ -1263,8 +1267,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "visual_bell":
 
 		case "flush":
-			w.flush()
-			if isUpdateMinimap { w.updateMinimap() }
+			w.flush(shouldUpdateCursor, shouldUpdateMinimap)
 
 		// Grid Events
 		case "grid_resize":
@@ -1295,17 +1298,18 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.setHighlightGroup(args)
 		case "grid_line":
 			s.gridLine(args)
-			isUpdateMinimap = true
+			shouldUpdateMinimap = true
 		case "grid_clear":
 			s.gridClear(args)
 		case "grid_destroy":
 			s.gridDestroy(args)
 		case "grid_cursor_goto":
 			s.gridCursorGoto(args)
-			isUpdateMinimap = true
+			shouldUpdateMinimap = true
+			shouldUpdateCursor = true
 		case "grid_scroll":
 			s.gridScroll(args)
-			isUpdateMinimap = true
+			shouldUpdateMinimap = true
 
 		// Multigrid Events
 		case "win_pos":
@@ -1434,7 +1438,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	}
 }
 
-func (w *Workspace) flush() {
+func (w *Workspace) flush(shouldUpdateCursor, shouldUpdateMinimap bool) {
 	for {
 		if len(w.viewportQue) == 0 {
 			break
@@ -1451,11 +1455,12 @@ func (w *Workspace) flush() {
 		default:
 		}
 	}
-	w.cursor.update()
+	if shouldUpdateCursor { w.cursor.update() }
 	w.screen.update()
 	w.updateStatusline()
 	w.updateScrollbar()
 	w.updateIMETooltip()
+	if shouldUpdateMinimap { w.updateMinimap() }
 	w.maxLineDelta = 0
 }
 

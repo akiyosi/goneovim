@@ -642,13 +642,6 @@ func (c *Cursor) update() {
 		c.mode = c.ws.mode
 	}
 
-	// if c.ws.terminalMode {
-	// 	c.Hide()
-	// 	return
-	// } else {
-	// 	c.Show()
-	// }
-
 	win, ok := c.ws.screen.getWindow(c.gridid)
 	if !ok {
 		return
@@ -691,7 +684,12 @@ func (c *Cursor) getSnapshot() {
 }
 
 func (c *Cursor) updateRegion() {
-	// c.Update()
+	if c.font == nil { return }
+	width := int(math.Ceil(c.font.truewidth))
+	height := c.font.height
+	if c.width > width { width = c.width }
+	if c.height > height { width = c.height }
+
 	if !c.hasSmoothMove {
 		c.Update2(
 			int(math.Trunc(c.xprime)),
