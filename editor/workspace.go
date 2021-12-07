@@ -54,9 +54,7 @@ type Workspace struct {
 	statusline *Statusline
 	screen     *Screen
 	scrollBar  *ScrollBar
-	finder     *Finder
 	palette    *Palette
-	fpalette   *Palette
 	popup      *PopupMenu
 	cmdline   *Cmdline
 	signature *Signature
@@ -270,17 +268,6 @@ func (w *Workspace) lazyDrawUI() {
 	w.palette.widget.SetParent(w.widget)
 	w.palette.setColor()
 	w.palette.hide()
-
-	// palette 2
-	w.fpalette = initPalette()
-	w.fpalette.ws = w
-	w.fpalette.widget.SetParent(w.widget)
-	w.fpalette.setColor()
-	w.fpalette.hide()
-
-	// finder
-	w.finder = initFinder()
-	w.finder.ws = w
 
 	// Add editor feature
 	go filer.RegisterPlugin(w.nvim, editor.config.Editor.FileOpenCmd)
@@ -1187,9 +1174,6 @@ func (w *Workspace) updateSize() {
 	if w.palette != nil {
 		w.palette.resize()
 	}
-	if w.fpalette != nil {
-		w.fpalette.resize()
-	}
 	if w.message != nil {
 		w.message.resize()
 	}
@@ -1577,13 +1561,6 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 }
 
 func (w *Workspace) updateWorkspaceColor() {
-	// w.signature.setColor()
-	// if w.palette != nil {
-	// 	w.palette.setColor()
-	// }
-	// if w.fpalette != nil {
-	// 	w.fpalette.setColor()
-	// }
 	if w.popup != nil {
 		w.popup.setColor()
 	}
@@ -1593,11 +1570,6 @@ func (w *Workspace) updateWorkspaceColor() {
 	}
 	// TODO w.screen.setColor()
 
-	// if w.isDrawTabline {
-	// 	if w.tabline != nil {
-	// 		w.tabline.setColor()
-	// 	}
-	// }
 
 	if w.isDrawStatusline {
 		if w.statusline != nil {
@@ -1842,18 +1814,18 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.guiFont(updates[1].(string))
 	case "Linespace":
 		w.guiLinespace(updates[1])
-	case "finder_pattern":
-		w.finder.showPattern(updates[1:])
-	case "finder_pattern_pos":
-		w.finder.cursorPos(updates[1:])
-	case "finder_show_result":
-		w.finder.showResult(updates[1:])
-	case "finder_show":
-		w.finder.show()
-	case "finder_hide":
-		w.finder.hide()
-	case "finder_select":
-		w.finder.selectResult(updates[1:])
+	// case "finder_pattern":
+	// 	w.finder.showPattern(updates[1:])
+	// case "finder_pattern_pos":
+	// 	w.finder.cursorPos(updates[1:])
+	// case "finder_show_result":
+	// 	w.finder.showResult(updates[1:])
+	// case "finder_show":
+	// 	w.finder.show()
+	// case "finder_hide":
+	// 	w.finder.hide()
+	// case "finder_select":
+	// 	w.finder.selectResult(updates[1:])
 	// case "signature_show":
 	// 	w.signature.showItem(updates[1:])
 	// case "signature_pos":
@@ -2030,9 +2002,6 @@ func (w *Workspace) guiFont(args string) {
 	if editor.config.Editor.FontSize == 0 {
 		editor.extFontSize = int(fontHeight)
 	}
-
-	// w.palette.updateFont()
-	// w.fpalette.updateFont()
 
 	if w.tabline != nil {
 		w.tabline.updateFont()

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
@@ -445,6 +448,81 @@ func (f *PaletteResultItem) setItem(text string, itemType string, match []int) {
 		f.baseText = formattedText
 		f.base.SetText(f.baseText)
 	}
+}
+
+func formatText(text string, matchIndex []int, path bool) string {
+	sort.Ints(matchIndex)
+
+	color := ""
+	if editor.colors.matchFg != nil {
+		color = editor.colors.matchFg.Hex()
+	}
+
+	match := len(matchIndex) > 0
+	if !path || strings.HasPrefix(text, "term://") {
+		formattedText := ""
+		i := 0
+		for _, char := range text {
+			if color != "" && len(matchIndex) > 0 && i == matchIndex[0] {
+				formattedText += fmt.Sprintf("<font color='%s'>%s</font>", color, string(char))
+				matchIndex = matchIndex[1:]
+			} else if color != "" && match {
+				switch string(char) {
+				case " ":
+					formattedText += "&nbsp;"
+				case "\t":
+					formattedText += "&nbsp;&nbsp;&nbsp;&nbsp;"
+				case "<":
+					formattedText += "&lt;"
+				case ">":
+					formattedText += "&gt;"
+				default:
+					formattedText += string(char)
+				}
+			} else {
+				formattedText += string(char)
+			}
+			i++
+		}
+		return formattedText
+	}
+
+	dirText := ""
+	dir := filepath.Dir(text)
+	if dir == "." {
+		dir = ""
+	}
+	if dir != "" {
+		i := strings.Index(text, dir)
+		if i != -1 {
+			for j, char := range dir {
+				if color != "" && len(matchIndex) > 0 && i+j == matchIndex[0] {
+					dirText += fmt.Sprintf("<font color='%s'>%s</font>", color, string(char))
+					matchIndex = matchIndex[1:]
+				} else {
+					dirText += string(char)
+				}
+			}
+		}
+	}
+
+	baseText := ""
+	base := filepath.Base(text)
+	if base != "" {
+		i := strings.LastIndex(text, base)
+		if i != -1 {
+			for j, char := range base {
+				if color != "" && len(matchIndex) > 0 && i+j == matchIndex[0] {
+					baseText += fmt.Sprintf("<font color='%s'>%s</font>", color, string(char))
+					matchIndex = matchIndex[1:]
+				} else {
+					baseText += string(char)
+				}
+			}
+		}
+	}
+
+	return fmt.Sprintf("%s <font color='#838383'>%s</font>", baseText, dirText)
 }
 
 func (f *PaletteResultItem) updateIcon() {
