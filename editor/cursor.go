@@ -13,55 +13,52 @@ import (
 // Cursor is
 type Cursor struct {
 	widgets.QWidget
-	_ float64 `property:"animationProp"`
-
-	doAnimate                  bool
-	hasSmoothMove              bool
+	charCache                  *Cache
+	font                       *Font
+	bg                         *RGBA
+	fg                         *RGBA
 	snapshot                   *gui.QPixmap
+	fontwide                   *Font
+	ws                         *Workspace
+	timer                      *core.QTimer
+	cursorShape                string
+	text                       string
+	mode                       string
+	layerPos                   [2]int
+	delta                      float64
+	animationStartY            float64
+	xprime                     float64
+	yprime                     float64
+	animationStartX            float64
+	y                          float64
+	deltay                     float64
+	width                      int
+	height                     int
+	currAttrId                 int
+	deltax                     float64
+	gridid                     int
+	bufferGridid               int
+	shift                      int
+	modeIdx                    int
+	blinkWait                  int
+	modeInfoModeIdx            int
+	blinkOn                    int
+	blinkOff                   int
+	brend                      float64
+	_                          float64 `property:"animationProp"`
+	devicePixelRatio           float64
+	x                          float64
+	cellPercentage             int
+	isBusy                     bool
+	isInPalette                bool
+	isNeedUpdateModeInfo       bool
+	isTextDraw                 bool
+	isShut                     bool
 	avoidedToTakeFirstSnapshot bool
 	isStopScroll               bool
-
-	ws               *Workspace
-	mode             string
-	modeIdx          int
-	x                float64
-	y                float64
-	layerPos         [2]int
-	animationStartX  float64
-	animationStartY  float64
-	xprime           float64
-	yprime           float64
-	delta            float64
-	deltax           float64
-	deltay           float64
-	width            int
-	height           int
-	text             string
-	normalWidth      bool
-	gridid           int
-	bufferGridid     int
-	shift            int
-	isShut           bool
-	timer            *core.QTimer
-	isTextDraw       bool
-	fg               *RGBA
-	bg               *RGBA
-	brend            float64
-	font             *Font
-	fontwide         *Font
-	isInPalette      bool
-	charCache        *Cache
-	devicePixelRatio float64
-
-	isNeedUpdateModeInfo bool
-	modeInfoModeIdx      int
-	cursorShape          string
-	cellPercentage       int
-	currAttrId           int
-	blinkWait            int
-	blinkOn              int
-	blinkOff             int
-	isBusy               bool
+	hasSmoothMove              bool
+	doAnimate                  bool
+	normalWidth                bool
 }
 
 func initCursorNew() *Cursor {
@@ -684,11 +681,17 @@ func (c *Cursor) getSnapshot() {
 }
 
 func (c *Cursor) updateRegion() {
-	if c.font == nil { return }
+	if c.font == nil {
+		return
+	}
 	width := int(math.Ceil(c.font.truewidth))
 	height := c.font.height
-	if c.width > width { width = c.width }
-	if c.height > height { width = c.height }
+	if c.width > width {
+		width = c.width
+	}
+	if c.height > height {
+		width = c.height
+	}
 
 	if !c.hasSmoothMove {
 		c.Update2(

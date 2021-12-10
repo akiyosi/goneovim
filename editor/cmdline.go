@@ -9,24 +9,24 @@ import (
 
 // CmdContent is the content of the cmdline
 type CmdContent struct {
-	indent  int
 	firstc  string
 	prompt  string
 	content string
+	indent  int
 }
 
 // Cmdline is the cmdline
 type Cmdline struct {
-	shown         bool
 	ws            *Workspace
-	pos           int
 	content       *CmdContent
 	preContent    *CmdContent
 	function      []*CmdContent
-	inFunction    bool
 	rawItems      []interface{}
-	wildmenuShown bool
+	pos           int
 	top           int
+	shown         bool
+	inFunction    bool
+	wildmenuShown bool
 }
 
 func initCmdline() *Cmdline {

@@ -69,87 +69,71 @@ type NotifyButton struct {
 
 // Notify is
 type Notify struct {
-	level   NotifyLevel
-	period  int
 	message string
 	buttons []*NotifyButton
+	level   NotifyLevel
+	period  int
 }
 
 type Options struct {
-	Fullscreen bool   `long:"fullscreen" description:"Open the window in fullscreen on startup"`
-	Maximized  bool   `long:"maximized" description:"Maximize the window on startup"`
-	Geometry   string `long:"geometry" description:"Initial window geomtry [e.g. --geometry=800x600]"`
-
-	Server string `long:"server" description:"Remote session address [e.g. --server=host:3456]"`
-	Ssh    string `long:"ssh" description:"Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]"`
-	Nvim   string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
-
-	Exttabline   bool `long:"exttabline" description:"Externalize the tabline"`
-	Extcmdline   bool `long:"extcmdline" description:"Externalize the cmdline"`
-	Extmessages  bool `long:"extmessages" description:"Externalize the messages. Sets --extcmdline implicitly"`
-	Extpopupmenu bool `long:"extpopupmenu" description:"Externalize the popupmenu"`
-
-	Debug   string `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]" optional:"yes" optional-value:"debug.log"`
-	Version bool   `long:"version" description:"Print Goneovim version"`
+	Geometry     string `long:"geometry" description:"Initial window geomtry [e.g. --geometry=800x600]"`
+	Server       string `long:"server" description:"Remote session address [e.g. --server=host:3456]"`
+	Ssh          string `long:"ssh" description:"Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]"`
+	Nvim         string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
+	Debug        string `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]" optional:"yes" optional-value:"debug.log"`
+	Fullscreen   bool   `long:"fullscreen" description:"Open the window in fullscreen on startup"`
+	Maximized    bool   `long:"maximized" description:"Maximize the window on startup"`
+	Exttabline   bool   `long:"exttabline" description:"Externalize the tabline"`
+	Extcmdline   bool   `long:"extcmdline" description:"Externalize the cmdline"`
+	Extmessages  bool   `long:"extmessages" description:"Externalize the messages. Sets --extcmdline implicitly"`
+	Extpopupmenu bool   `long:"extpopupmenu" description:"Externalize the popupmenu"`
+	Version      bool   `long:"version" description:"Print Goneovim version"`
 }
 
 // Editor is the editor
 type Editor struct {
-	version string
-
-	signal *editorSignal
-	app    *widgets.QApplication
-	ppid   int
-
-	homeDir   string
-	configDir string
-	args      []string
-	macAppArg string
-	opts      Options
-
-	notifyStartPos    *core.QPoint
-	notificationWidth int
-	notify            chan *Notify
-	cbChan            chan *string
-
-	workspaces    []*Workspace
-	active        int
-	sessionExists bool
-	window        *frameless.QFramelessWindow
-	// window     *widgets.QMainWindow
-	splitter *widgets.QSplitter
-	widget   *widgets.QWidget
-	side     *WorkspaceSide
-
-	sysTray *widgets.QSystemTrayIcon
-
-	width    int
-	height   int
-	iconSize int
-
-	stop     chan struct{}
-	stopOnce sync.Once
-
-	specialKeys        map[core.Qt__Key]string
-	keyControl         core.Qt__Key
-	keyCmd             core.Qt__Key
-	isKeyAutoRepeating bool
-	prefixToMapMetaKey string
-	muMetaKey          sync.Mutex
-
+	stop                   chan struct{}
+	signal                 *editorSignal
+	app                    *widgets.QApplication
+	font                   *Font
+	widget                 *widgets.QWidget
+	splitter               *widgets.QSplitter
+	window                 *frameless.QFramelessWindow
+	specialKeys            map[core.Qt__Key]string
+	svgs                   map[string]*SvgXML
+	notifyStartPos         *core.QPoint
+	colors                 *ColorPalette
+	notify                 chan *Notify
+	cbChan                 chan *string
+	sysTray                *widgets.QSystemTrayIcon
+	side                   *WorkspaceSide
+	prefixToMapMetaKey     string
+	macAppArg              string
+	extFontFamily          string
+	configDir              string
+	homeDir                string
+	version                string
 	config                 gonvimConfig
+	opts                   Options
 	notifications          []*Notification
+	workspaces             []*Workspace
+	args                   []string
+	ppid                   int
+	keyControl             core.Qt__Key
+	keyCmd                 core.Qt__Key
+	width                  int
+	active                 int
+	startuptime            int64
+	iconSize               int
+	height                 int
+	extFontSize            int
+	notificationWidth      int
+	stopOnce               sync.Once
+	muMetaKey              sync.Mutex
+	isSetGuiColor          bool
 	isDisplayNotifications bool
-
-	isSetGuiColor bool
-	colors        *ColorPalette
-	svgs          map[string]*SvgXML
-
-	extFontFamily string
-	extFontSize   int
-	font          *Font
-
-	startuptime int64
+	isKeyAutoRepeating     bool
+	sessionExists          bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -212,10 +196,19 @@ func InitEditor(options Options, args []string) {
 	configDir, config := newConfig(home)
 
 	e.config = config
-	if e.opts.Exttabline { e.config.Editor.ExtTabline = true }
-	if e.opts.Extcmdline { e.config.Editor.ExtCmdline = true }
-	if e.opts.Extpopupmenu { e.config.Editor.ExtPopupmenu = true }
-	if e.opts.Extmessages { e.config.Editor.ExtMessages = true; e.config.Editor.ExtCmdline = true }
+	if e.opts.Exttabline {
+		e.config.Editor.ExtTabline = true
+	}
+	if e.opts.Extcmdline {
+		e.config.Editor.ExtCmdline = true
+	}
+	if e.opts.Extpopupmenu {
+		e.config.Editor.ExtPopupmenu = true
+	}
+	if e.opts.Extmessages {
+		e.config.Editor.ExtMessages = true
+		e.config.Editor.ExtCmdline = true
+	}
 
 	e.homeDir = home
 	e.configDir = configDir
@@ -361,7 +354,6 @@ func (e *Editor) putLog(v ...interface{}) {
 		strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%s", v), "["), "]"),
 	)
 }
-
 
 // addDockMenu add the action menu for app in the Dock.
 func (e *Editor) addDockMenu() {

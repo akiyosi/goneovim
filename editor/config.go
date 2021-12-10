@@ -11,71 +11,66 @@ import (
 )
 
 type gonvimConfig struct {
-	mu sync.RWMutex
-
 	Editor      editorConfig
-	Cursor      cursorConfig
-	Palette     paletteConfig
-	Message     messageConfig
-	Statusline  statusLineConfig
-	Tabline     tabLineConfig
-	Lint        lintConfig
-	Popupmenu   popupMenuConfig
-	ScrollBar   scrollBarConfig
-	MiniMap     miniMapConfig
 	SideBar     sideBarConfig
 	Workspace   workspaceConfig
+	Statusline  statusLineConfig
 	FileExplore fileExploreConfig
+	Popupmenu   popupMenuConfig
+	Palette     paletteConfig
+	MiniMap     miniMapConfig
+	Cursor      cursorConfig
+	Message     messageConfig
+	mu          sync.RWMutex
+	Tabline     tabLineConfig
+	ScrollBar   scrollBarConfig
+	Lint        lintConfig
 }
 
 type editorConfig struct {
-	Width                    int
-	Height                   int
-	FileOpenCmd              string
-	Gap                      int
-	FontFamily               string
-	FontSize                 int
-	Linespace                int
-	ExtCmdline               bool
-	ExtPopupmenu             bool
-	ExtTabline               bool
-	ExtMessages              bool
-	Clipboard                bool
-	CachedDrawing            bool
-	CacheSize                int
-	DisableImeInNormal       bool
-	GinitVim                 string
-	StartFullscreen          bool
-	StartMaximizedWindow     bool
-	DisableLigatures         bool
-	Macmeta                  bool
-	Transparent              float64
-	DrawBorder               bool
-	DrawWindowSeparator      bool
-	WindowSeparatorTheme     string
-	WindowSeparatorGradient  bool
-	WindowSeparatorColor     string
-	SkipGlobalId             bool
-	IndentGuide              bool
-	IndentGuideIgnoreFtList  []string
-	OptionsToUseGuideWidth   string
-	LineToScroll             int
-	ReversingScrollDirection bool
-	SmoothScroll             bool
-	DisableHorizontalScroll  bool
-	DrawBorderForFloatWindow bool
-	DrawShadowForFloatWindow bool
-	DesktopNotifications     bool
-	DiffAddPattern           int
-	DiffDeletePattern        int
-	DiffChangePattern        int
-	ClickEffect              bool
-	BorderlessWindow         bool
-	DockmenuActions          map[string]string
-	// ExtWildmenu            bool
-	// ExtMultigrid           bool
-
-
+	DockmenuActions            map[string]string
+	OptionsToUseGuideWidth     string
+	FileOpenCmd                string
+	WindowSeparatorColor       string
+	FontFamily                 string
+	GinitVim                   string
+	WindowSeparatorTheme       string
+	IndentGuideIgnoreFtList    []string
+	Transparent                float64
+	DiffDeletePattern          int
+	DiffAddPattern             int
+	LineToScroll               int
+	DiffChangePattern          int
+	CacheSize                  int
+	Linespace                  int
+	FontSize                   int
+	Gap                        int
+	Height                     int
+	Width                      int
+	DrawWindowSeparator        bool
+	Macmeta                    bool
+	DrawBorder                 bool
+	DisableLigatures           bool
+	StartMaximizedWindow       bool
+	WindowSeparatorGradient    bool
+	StartFullscreen            bool
+	SkipGlobalId               bool
+	IndentGuide                bool
+	DisableImeInNormal         bool
+	CachedDrawing              bool
+	Clipboard                  bool
+	ReversingScrollDirection   bool
+	SmoothScroll               bool
+	DisableHorizontalScroll    bool
+	DrawBorderForFloatWindow   bool
+	DrawShadowForFloatWindow   bool
+	DesktopNotifications       bool
+	ExtMessages                bool
+	ExtTabline                 bool
+	ExtPopupmenu               bool
+	ClickEffect                bool
+	BorderlessWindow           bool
+	ExtCmdline                 bool
 	WorkAroundNeovimIssue12985 bool
 }
 
@@ -95,16 +90,16 @@ type messageConfig struct {
 }
 
 type statusLineConfig struct {
-	Visible           bool
+	VisualModeColor   string
 	ModeIndicatorType string
 	NormalModeColor   string
 	CommandModeColor  string
 	InsertModeColor   string
 	ReplaceModeColor  string
-	VisualModeColor   string
 	TerminalModeColor string
 	Left              []string
 	Right             []string
+	Visible           bool
 }
 
 type tabLineConfig struct {
@@ -113,11 +108,11 @@ type tabLineConfig struct {
 }
 
 type popupMenuConfig struct {
-	ShowDetail  bool
 	Total       int
 	MenuWidth   int
 	InfoWidth   int
 	DetailWidth int
+	ShowDetail  bool
 	ShowDigit   bool
 }
 
@@ -136,15 +131,15 @@ type scrollBarConfig struct {
 }
 
 type sideBarConfig struct {
+	AccentColor string
+	Width       int
 	Visible     bool
 	DropShadow  bool
-	Width       int
-	AccentColor string
 }
 
 type workspaceConfig struct {
-	RestoreSession bool
 	PathStyle      string
+	RestoreSession bool
 }
 
 type fileExploreConfig struct {

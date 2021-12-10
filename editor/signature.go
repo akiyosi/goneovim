@@ -13,12 +13,12 @@ import (
 // Signature is
 type Signature struct {
 	ws            *Workspace
-	cusor         []int
-	comma         int
-	formattedText string
-	text          string
 	widget        *widgets.QWidget
 	label         *widgets.QLabel
+	formattedText string
+	text          string
+	cusor         []int
+	comma         int
 	height        int
 	x             int
 	y             int

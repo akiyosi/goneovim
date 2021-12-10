@@ -25,30 +25,24 @@ type miniMapSignal struct {
 
 // MiniMap is
 type MiniMap struct {
-	Screen
-
-	visible bool
-
-	curPos      int
-	curHeight   int
-	currBuf     string
-	colorscheme string
-
-	isSetColorscheme bool
-	isProcessSync    bool
-
-	mu            sync.Mutex
 	signal        *miniMapSignal
-	redrawUpdates chan [][]interface{}
-	stopOnce      sync.Once
+	nvim          *nvim.Nvim
 	stop          chan struct{}
-
-	nvim       *nvim.Nvim
-	uiAttached bool
-	rows       int
-	cols       int
-
-	viewport [4]int
+	redrawUpdates chan [][]interface{}
+	Screen
+	currBuf          string
+	colorscheme      string
+	viewport         [4]int
+	rows             int
+	curHeight        int
+	curPos           int
+	cols             int
+	stopOnce         sync.Once
+	mu               sync.Mutex
+	visible          bool
+	uiAttached       bool
+	isProcessSync    bool
+	isSetColorscheme bool
 }
 
 func newMiniMap() *MiniMap {
@@ -533,7 +527,6 @@ func (m *MiniMap) handleRedraw(updates [][]interface{}) {
 		case "flush":
 			m.mapScroll()
 			m.update()
-
 
 		default:
 		}

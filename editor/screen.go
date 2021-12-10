@@ -19,25 +19,19 @@ import (
 
 // Screen is the main editor area
 type Screen struct {
-	ws   *Workspace
-	font *Font
-
-	name    string
-	widget  *widgets.QWidget
-	windows sync.Map
-	width   int
-	height  int
-
-	cursor [2]int
-
+	fgCache        Cache
+	tooltip        *IMETooltip
+	font           *Font
 	hlAttrDef      map[int]*Highlight
+	widget         *widgets.QWidget
+	ws             *Workspace
 	highlightGroup map[string]int
-
-	tooltip *IMETooltip
-
-	fgCache Cache
-
-	resizeCount uint
+	windows        sync.Map
+	name           string
+	cursor         [2]int
+	height         int
+	width          int
+	resizeCount    uint
 }
 
 type Cache struct {
@@ -71,7 +65,6 @@ func (s *Screen) initInputMethodWidget() {
 	tooltip.s = s
 	s.tooltip = tooltip
 }
-
 
 func fileOpenInBuf(file string) {
 	isModified, _ := editor.workspaces[editor.active].nvim.CommandOutput("echo &modified")
@@ -471,8 +464,8 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 		if !win.IsVisible() {
 			return true
 		}
-		if win.mouseEventState == core.QEvent__MouseButtonPress || 
-		win.mouseEventState == core.QEvent__MouseMove {
+		if win.mouseEventState == core.QEvent__MouseButtonPress ||
+			win.mouseEventState == core.QEvent__MouseMove {
 			targetwin = win
 			return false
 		}
@@ -487,7 +480,7 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 	} else {
 
 		// If there is an externalized float window and
-		// the mouse pointer is in that window, 
+		// the mouse pointer is in that window,
 		// make that window the target window.
 		s.windows.Range(func(_, winITF interface{}) bool {
 			win := winITF.(*Window)
@@ -513,7 +506,7 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 			return true
 		})
 
-		// If a float window exists, the float window with the smallest size 
+		// If a float window exists, the float window with the smallest size
 		// that covers the position of the mouse event that occurred
 		// is used as the target window.
 		if targetwin == nil {
@@ -549,7 +542,7 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 			})
 		}
 
-		// If none of the above processes apply, 
+		// If none of the above processes apply,
 		// the target window is a normal window that covers the position
 		// where the mouse event occurs.
 		if targetwin == nil {
@@ -593,8 +586,8 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 	var localpos *core.QPointF
 	if targetwin.isExternal {
 		localpos = core.NewQPointF3(
-			event.ScreenPos().X()-float64(targetwin.extwin.Pos().X() + targetwin.Pos().X()),
-			event.ScreenPos().Y()-float64(targetwin.extwin.Pos().Y() + targetwin.Pos().Y()),
+			event.ScreenPos().X()-float64(targetwin.extwin.Pos().X()+targetwin.Pos().X()),
+			event.ScreenPos().Y()-float64(targetwin.extwin.Pos().Y()+targetwin.Pos().Y()),
 		)
 	} else {
 		font := s.font
@@ -1456,8 +1449,12 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		// If the position coordinate is a negative value, it is reset to zero.
 		// I don't know if this is correct in the specification, but this is how nvim appears to work in the terminal.
-		if x < 0 { x = 0 }
-		if y < 0 { y = 0 }
+		if x < 0 {
+			x = 0
+		}
+		if y < 0 {
+			y = 0
+		}
 		win.pos[0] = x
 		win.pos[1] = y
 

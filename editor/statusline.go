@@ -21,14 +21,11 @@ import (
 
 // Statusline is
 type Statusline struct {
-	ws     *Workspace
-	hl     *Highlight
-	widget *widgets.QWidget
-
-	height int
-
-	left *LeftStatusItem
-
+	ws         *Workspace
+	hl         *Highlight
+	widget     *widgets.QWidget
+	lint       *StatuslineLint
+	left       *LeftStatusItem
 	pos        *StatuslinePos
 	mode       *StatuslineMode
 	path       *StatuslineFilepath
@@ -37,9 +34,8 @@ type Statusline struct {
 	git        *StatuslineGit
 	encoding   *StatuslineEncoding
 	fileFormat *StatuslineFileFormat
-	lint       *StatuslineLint
-
-	updates chan []interface{}
+	updates    chan []interface{}
+	height     int
 }
 
 // LeftStatusItem is left side statusline component
@@ -50,30 +46,28 @@ type LeftStatusItem struct {
 
 // StatuslineComponent is common widget component in statusline
 type StatuslineComponent struct {
-	isInclude bool
-	hidden    bool
-	widget    *widgets.QWidget
-	icon      *svg.QSvgWidget
-	iconStr   string
-	label     *widgets.QLabel
 	fg        *RGBA
 	bg        *RGBA
+	widget    *widgets.QWidget
+	icon      *svg.QSvgWidget
+	label     *widgets.QLabel
+	iconStr   string
+	isInclude bool
+	hidden    bool
 }
 
 // StatuslineLint is
 type StatuslineLint struct {
-	s *Statusline
-	c *StatuslineComponent
-
-	errors   int
-	warnings int
-
+	s          *Statusline
+	c          *StatuslineComponent
+	errorLabel *widgets.QLabel
+	warnLabel  *widgets.QLabel
 	okIcon     *svg.QSvgWidget
 	errorIcon  *svg.QSvgWidget
 	warnIcon   *svg.QSvgWidget
 	okLabel    *widgets.QLabel
-	errorLabel *widgets.QLabel
-	warnLabel  *widgets.QLabel
+	errors     int
+	warnings   int
 }
 
 // StatuslineFilepath is
@@ -98,45 +92,44 @@ type StatuslineFile struct {
 
 // StatuslineFiletype is
 type StatuslineFiletype struct {
-	filetype string
 	c        *StatuslineComponent
+	filetype string
 }
 
 // StatuslinePos is
 type StatuslinePos struct {
+	c    *StatuslineComponent
+	text string
 	ln   int
 	col  int
-	text string
-	c    *StatuslineComponent
 }
 
 // StatuslineMode is
 type StatuslineMode struct {
 	s    *Statusline
+	c    *StatuslineComponent
 	mode string
 	text string
-
-	c *StatuslineComponent
 }
 
 // StatuslineGit is
 type StatuslineGit struct {
 	s      *Statusline
+	c      *StatuslineComponent
 	branch string
 	file   string
-	c      *StatuslineComponent
 }
 
 // StatuslineEncoding is
 type StatuslineEncoding struct {
-	encoding string
 	c        *StatuslineComponent
+	encoding string
 }
 
 // StatuslineFileFormat is
 type StatuslineFileFormat struct {
-	fileFormat string
 	c          *StatuslineComponent
+	fileFormat string
 }
 
 func initStatusline() *Statusline {

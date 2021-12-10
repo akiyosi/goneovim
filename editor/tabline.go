@@ -20,19 +20,17 @@ type Tabline struct {
 	ws              *Workspace
 	widget          *widgets.QWidget
 	layout          *widgets.QLayout
-	CurrentID       int
+	font            *gui.QFont
+	color           *RGBA
+	fontfamily      string
 	currentFileText string
 	Tabs            []*Tab
 	showtabline     int
-	marginTop       int
 	marginBottom    int
 	height          int
-
-	font       *gui.QFont
-	fontfamily string
-	fontsize   int
-
-	color *RGBA
+	CurrentID       int
+	fontsize        int
+	marginTop       int
 }
 
 const (
@@ -44,14 +42,14 @@ type Tab struct {
 	t         *Tabline
 	widget    *widgets.QWidget
 	layout    *widgets.QHBoxLayout
+	file      *widgets.QLabel
+	fileIcon  *svg.QSvgWidget
+	closeIcon *svg.QSvgWidget
+	fileText  string
+	Name      string
+	fileType  string
 	ID        int
 	active    bool
-	Name      string
-	fileIcon  *svg.QSvgWidget
-	fileType  string
-	closeIcon *svg.QSvgWidget
-	file      *widgets.QLabel
-	fileText  string
 	hidden    bool
 }
 

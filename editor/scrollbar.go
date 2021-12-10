@@ -13,15 +13,14 @@ import (
 
 // ScrollBar is
 type ScrollBar struct {
-	mu sync.Mutex
-
 	ws        *Workspace
 	widget    *widgets.QWidget
 	thumb     *widgets.QWidget
 	pos       int
 	height    int
-	isPressed bool
 	beginPosY int
+	mu        sync.Mutex
+	isPressed bool
 }
 
 func newScrollBar() *ScrollBar {

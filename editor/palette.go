@@ -3,8 +3,8 @@ package editor
 import (
 	"fmt"
 	"math"
-	"runtime"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -15,47 +15,45 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
-// Palette is the popup for cmdline 
+// Palette is the popup for cmdline
 type Palette struct {
-	// mu               sync.Mutex
-	// procCount        int
 	ws               *Workspace
-	hidden           bool
+	background       *RGBA
 	widget           *widgets.QWidget
-	padding          int
-	patternText      string
-	isHTMLText       bool
-	resultItems      []*PaletteResultItem
+	foreground       *RGBA
+	scrollCol        *widgets.QWidget
+	scrollBar        *widgets.QWidget
+	patternWidget    *widgets.QWidget
 	resultWidget     *widgets.QWidget
 	resultMainWidget *widgets.QWidget
-	itemHeight       int
-	width            int
-	cursorX          int
-	resultType       string
-	itemTypes        []string
-	max              int
-	showTotal        int
 	pattern          *widgets.QLabel
-	patternPadding   int
-	patternWidget    *widgets.QWidget
-	scrollBar        *widgets.QWidget
-	scrollBarPos     int
-	scrollCol        *widgets.QWidget
-	foreground       *RGBA
-	background       *RGBA
 	inactiveFg       *RGBA
+	resultType       string
+	patternText      string
+	itemTypes        []string
+	resultItems      []*PaletteResultItem
+	showTotal        int
+	itemHeight       int
+	patternPadding   int
+	max              int
+	scrollBarPos     int
+	width            int
+	padding          int
+	cursorX          int
+	isHTMLText       bool
+	hidden           bool
 }
 
 // PaletteResultItem is the result item
 type PaletteResultItem struct {
 	p          *Palette
-	hidden     bool
-	icon       *svg.QSvgWidget
-	iconType   string
-	iconHidden bool
-	base       *widgets.QLabel
-	baseText   string
 	widget     *widgets.QWidget
+	icon       *svg.QSvgWidget
+	base       *widgets.QLabel
+	iconType   string
+	baseText   string
+	iconHidden bool
+	hidden     bool
 	selected   bool
 }
 

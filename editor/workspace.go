@@ -43,77 +43,71 @@ type workspaceSignal struct {
 
 // Workspace is an editor workspace
 type Workspace struct {
-	widget    *widgets.QWidget
-	layout2   *widgets.QHBoxLayout
-	hasLazyUI bool
-
-	font       *Font
-	fontwide   *Font
-	cursor     *Cursor
-	tabline    *Tabline
-	statusline *Statusline
-	screen     *Screen
-	scrollBar  *ScrollBar
-	palette    *Palette
-	popup      *PopupMenu
-	cmdline   *Cmdline
-	signature *Signature
-	message   *Message
-	minimap   *MiniMap
-
-	width  int
-	height int
-	hidden bool
-
+	foreground         *RGBA
+	layout2            *widgets.QHBoxLayout
+	stop               chan struct{}
+	font               *Font
+	fontwide           *Font
+	cursor             *Cursor
+	tabline            *Tabline
+	statusline         *Statusline
+	screen             *Screen
+	scrollBar          *ScrollBar
+	palette            *Palette
+	popup              *PopupMenu
+	cmdline            *Cmdline
+	signature          *Signature
+	message            *Message
+	minimap            *MiniMap
+	guiUpdates         chan []interface{}
+	redrawUpdates      chan [][]interface{}
+	signal             *workspaceSignal
 	nvim               *nvim.Nvim
+	widget             *widgets.QWidget
+	special            *RGBA
+	viewportQue        chan [5]int
+	background         *RGBA
+	windowsFt          map[nvim.Window]string
+	windowsTs          map[nvim.Window]int
+	colorscheme        string
+	cwdlabel           string
+	escKeyInNormal     string
+	mode               string
+	cwdBase            string
+	cwd                string
+	escKeyInInsert     string
+	filepath           string
+	screenbg           string
+	normalMappings     []*nvim.Mapping
+	modeInfo           []map[string]interface{}
+	insertMappings     []*nvim.Mapping
+	viewport           [4]int
+	oldViewport        [4]int
+	height             int
+	maxLineDelta       int
+	maxLine            int
 	rows               int
 	cols               int
-	uiAttached         bool
-	uiRemoteAttached   bool
-	screenbg           string
-	colorscheme        string
-	foreground         *RGBA
-	background         *RGBA
-	special            *RGBA
-	mode               string
+	showtabline        int
+	width              int
 	modeIdx            int
-	terminalMode       bool
-	windowsFt          map[nvim.Window]string // TODO
-	windowsTs          map[nvim.Window]int    // TODO
-	filepath           string
-	cwd                string
-	cwdBase            string
-	cwdlabel           string
-	maxLine            int
-	maxLineDelta       int
-	viewport           [4]int // topline, botline, curline, curcol
-	oldViewport        [4]int // topline, botline, curline, curcol
-	viewportQue        chan [5]int
-	viewportMutex      sync.RWMutex
-	optionsetMutex     sync.RWMutex
-	cursorStyleEnabled bool
-	modeInfo           []map[string]interface{}
-	normalMappings     []*nvim.Mapping
-	insertMappings     []*nvim.Mapping
+	pb                 int
 	ts                 int
 	ph                 int
-	pb                 int
-	showtabline        int
-
-	escKeyInNormal     string
-	escKeyInInsert     string
+	optionsetMutex     sync.RWMutex
+	viewportMutex      sync.RWMutex
+	stopOnce           sync.Once
+	fontMutex          sync.Mutex
+	drawLint           bool
+	hidden             bool
+	uiAttached         bool
+	uiRemoteAttached   bool
 	isMappingScrollKey bool
-
-	signal        *workspaceSignal
-	redrawUpdates chan [][]interface{}
-	guiUpdates    chan []interface{}
-	stopOnce      sync.Once
-	stop          chan struct{}
-	fontMutex     sync.Mutex
-
-	isDrawStatusline bool
-	isDrawTabline    bool
-	drawLint       bool
+	hasLazyUI          bool
+	cursorStyleEnabled bool
+	isDrawStatusline   bool
+	isDrawTabline      bool
+	terminalMode       bool
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -639,11 +633,11 @@ func (w *Workspace) configure() {
 	}
 
 	if editor.config.Lint.Visible {
-	        w.drawLint = true
-	        w.isDrawTabline = true
+		w.drawLint = true
+		w.isDrawTabline = true
 	} else {
-	        w.drawLint = false
-	        w.isDrawTabline = false
+		w.drawLint = false
+		w.isDrawTabline = false
 	}
 }
 
@@ -1241,7 +1235,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Indicates to the UI that it must stop rendering the cursor. This event
 		// is misnamed and does not actually have anything to do with busyness.
-		// NOTE: In goneovim, the wdiget layer of the cursor has special processing, 
+		// NOTE: In goneovim, the wdiget layer of the cursor has special processing,
 		//       so it cannot be hidden straightforwardly.
 		case "busy_start":
 			w.cursor.isBusy = true
@@ -1444,12 +1438,16 @@ func (w *Workspace) flush(shouldUpdateCursor, shouldUpdateMinimap bool) {
 		default:
 		}
 	}
-	if shouldUpdateCursor { w.cursor.update() }
+	if shouldUpdateCursor {
+		w.cursor.update()
+	}
 	w.screen.update()
 	w.updateStatusline()
 	w.updateScrollbar()
 	w.updateIMETooltip()
-	if shouldUpdateMinimap { w.updateMinimap() }
+	if shouldUpdateMinimap {
+		w.updateMinimap()
+	}
 	w.maxLineDelta = 0
 }
 
@@ -1574,7 +1572,6 @@ func (w *Workspace) updateWorkspaceColor() {
 		w.message.setColor()
 	}
 	// TODO w.screen.setColor()
-
 
 	if w.isDrawStatusline {
 		if w.statusline != nil {
@@ -2559,20 +2556,18 @@ func (w *Workspace) toggleIndentguide() {
 
 // WorkspaceSide is
 type WorkspaceSide struct {
-	widget     *widgets.QWidget
-	scrollarea *widgets.QScrollArea
-	header     *widgets.QLabel
-	items      []*WorkspaceSideItem
-
+	widget       *widgets.QWidget
+	scrollarea   *widgets.QScrollArea
+	header       *widgets.QLabel
+	scrollBg     *RGBA
+	selectBg     *RGBA
+	accent       *RGBA
+	fg           *RGBA
+	sfg          *RGBA
+	scrollFg     *RGBA
+	items        []*WorkspaceSideItem
 	isShown      bool
 	isInitResize bool
-
-	fg       *RGBA
-	sfg      *RGBA
-	scrollFg *RGBA
-	scrollBg *RGBA
-	selectBg *RGBA
-	accent   *RGBA
 }
 
 func newWorkspaceSide() *WorkspaceSide {
@@ -2716,22 +2711,18 @@ func (w *Workspace) getNum() int {
 
 // WorkspaceSideItem is
 type WorkspaceSideItem struct {
-	hidden    bool
-	active    bool
-	side      *WorkspaceSide
-	openIcon  *svg.QSvgWidget
-	closeIcon *svg.QSvgWidget
-
-	widget *widgets.QWidget
-	layout *widgets.QBoxLayout
-
-	text    string
-	cwdpath string
-
-	labelWidget *widgets.QWidget
-	label       *widgets.QLabel
-
+	label         *widgets.QLabel
 	content       *widgets.QListWidget
+	side          *WorkspaceSide
+	openIcon      *svg.QSvgWidget
+	closeIcon     *svg.QSvgWidget
+	widget        *widgets.QWidget
+	layout        *widgets.QBoxLayout
+	labelWidget   *widgets.QWidget
+	text          string
+	cwdpath       string
+	hidden        bool
+	active        bool
 	isContentHide bool
 }
 

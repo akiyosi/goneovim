@@ -16,53 +16,45 @@ import (
 
 // PopupMenu is the popupmenu
 type PopupMenu struct {
-	ws              *Workspace
+	scrollCol       *widgets.QWidget
 	widget          *widgets.QWidget
-	gridid          int
+	detailLabel     *widgets.QLabel
 	itemLayout      *widgets.QGridLayout
+	scrollBar       *widgets.QWidget
+	ws              *Workspace
+	completeMode    string
 	items           []*PopupItem
 	rawItems        []interface{}
-	total           int
-	showTotal       int
 	selected        int
 	top             int
-	completeMode    string
-	scrollBar       *widgets.QWidget
+	showTotal       int
 	scrollBarPos    int
 	scrollBarHeight int
-	scrollCol       *widgets.QWidget
-	detailLabel     *widgets.QLabel
+	total           int
+	gridid          int
 	hideItemIdx     [2]bool
 }
 
 // PopupItem is
 type PopupItem struct {
-	p *PopupMenu
-
-	wordLabel   *widgets.QLabel
-	word        string
-	wordRequest string
-
-	digitLabel *widgets.QLabel
-
-	kind       string
-	kindwidget *widgets.QWidget
-	kindIcon   *svg.QSvgWidget
-
-	menuLabel   *widgets.QLabel
-	menu        string
-	menuRequest string
-
-	infoLabel   *widgets.QLabel
-	info        string
-	infoRequest string
-
+	kindIcon        *svg.QSvgWidget
+	wordLabel       *widgets.QLabel
+	infoLabel       *widgets.QLabel
+	p               *PopupMenu
+	digitLabel      *widgets.QLabel
+	menuLabel       *widgets.QLabel
+	kindwidget      *widgets.QWidget
+	menu            string
+	kind            string
+	wordRequest     string
+	menuRequest     string
+	word            string
+	info            string
+	infoRequest     string
+	detailText      string
 	selected        bool
 	selectedRequest bool
-
-	hidden bool
-
-	detailText string
+	hidden          bool
 }
 
 func initPopupmenuNew() *PopupMenu {

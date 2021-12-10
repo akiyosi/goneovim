@@ -6,11 +6,11 @@ import (
 
 // SvgXML is
 type SvgXML struct {
+	color     *RGBA
 	xml       string
 	width     int
 	height    int
 	thickness float64
-	color     *RGBA
 }
 
 // // Svg is

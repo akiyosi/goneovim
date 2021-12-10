@@ -19,29 +19,29 @@ const DummyText = "dummy text"
 // Message is
 type Message struct {
 	ws       *Workspace
-	width    int
 	widget   *widgets.QWidget
 	layout   *widgets.QGridLayout
-	items    []*MessageItem
-	expires  int
 	pos      *core.QPoint
+	items    []*MessageItem
+	width    int
+	expires  int
 	isDrag   bool
 	isExpand bool
 }
 
 // MessageItem is
 type MessageItem struct {
-	m          *Message
-	active     bool
-	kind       string
-	attrId     int
-	text       string
 	hideAt     time.Time
-	expired    bool
+	m          *Message
 	icon       *svg.QSvgWidget
 	label      *widgets.QLabel
 	widget     *widgets.QWidget
+	text       string
+	kind       string
+	attrId     int
 	textLength int
+	expired    bool
+	active     bool
 }
 
 func initMessage() *Message {

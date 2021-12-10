@@ -30,27 +30,26 @@ type gridId = int
 
 // Highlight is
 type Highlight struct {
-	id            int
+	special       *RGBA
+	foreground    *RGBA
+	background    *RGBA
 	kind          string
 	uiName        string
 	hlName        string
-	foreground    *RGBA
-	background    *RGBA
-	special       *RGBA
+	blend         int
+	id            int
 	reverse       bool
-	italic        bool
 	bold          bool
 	underline     bool
 	undercurl     bool
-	blend         int
+	italic        bool
 	strikethrough bool
 }
 
 // HlChars is used in screen cache
 type HlChars struct {
-	text string
-	fg   *RGBA
-	// bg     *RGBA
+	fg     *RGBA
+	text   string
 	italic bool
 	bold   bool
 }
@@ -65,9 +64,9 @@ type HlDecoration struct {
 
 // Cell is
 type Cell struct {
-	normalWidth bool
-	char        string
 	highlight   *Highlight
+	char        string
+	normalWidth bool
 	isUpdateBg  bool
 }
 
@@ -80,74 +79,62 @@ type ExternalWin struct {
 
 // Window is
 type Window struct {
+	fgCache Cache
 	widgets.QWidget
-	_ float64 `property:"scrollDiff"`
-
-	snapshot        *gui.QPixmap
-	mouseEventState core.QEvent__Type
-
-	paintMutex  sync.RWMutex
-	redrawMutex sync.Mutex
-	updateMutex sync.RWMutex
-
-	doErase bool
-
-	s              *Screen
-	content        [][]*Cell
-	lenLine        []int
-	lenContent     []int
-	lenOldContent  []int
-	maxLenContent  int
-	contentMask    [][]bool
-	contentMaskOld [][]bool
-
-	grid        gridId
-	isGridDirty bool
-	id          nvim.Window
-	bufName     string
-	// bufType     string
-	pos         [2]int
-	anchor      string
-	cols        int
-	rows        int
-	cwd         string
-	ts          int
-	wb          int
-	ft          string
-
-	propMutex   sync.RWMutex
-	isMsgGrid   bool
-	isFloatWin  bool
-	isExternal  bool
-	isPopupmenu bool
-
-	scrollRegion    []int
-	queueRedrawArea [4]int
-
-	scrollPixels       [2]int // for touch pad scroll
-	scrollPixels2      int    // for viewport
-	scrollPixelsDeltaY int
-	lastScrollphase    core.Qt__ScrollPhase
-	scrollCols         int
-	scrollViewport     [2][5]int // 1. topline, botline, curline, curcol, grid, 2. oldtopline, oldbotline, oldcurline, oldcurcol, oldgrid
-	doGetSnapshot      bool
-
-	devicePixelRatio float64
-	fgCache          Cache
-
+	snapshot               *gui.QPixmap
+	font                   *Font
+	localWindows           *[4]localWindow
 	extwin                 *ExternalWin
+	background             *RGBA
+	s                      *Screen
+	cwd                    string
+	ft                     string
+	anchor                 string
+	bufName                string
+	lenOldContent          []int
+	lenContent             []int
+	scrollRegion           []int
+	contentMaskOld         [][]bool
+	contentMask            [][]bool
+	content                [][]*Cell
+	extwinAutoLayoutPosY   []int
+	lenLine                []int
+	extwinAutoLayoutPosX   []int
+	scrollViewport         [2][5]int
+	queueRedrawArea        [4]int
+	extwinRelativePos      [2]int
+	pos                    [2]int
+	scrollPixels           [2]int
+	wb                     int
+	height                 int
+	grid                   gridId
+	width                  float64
+	_                      float64 `property:"scrollDiff"`
+	mouseEventState        core.QEvent__Type
+	cols                   int
+	maxLenContent          int
+	ts                     int
+	devicePixelRatio       float64
+	scrollPixels2          int
+	scrollPixelsDeltaY     int
+	id                     nvim.Window
+	scrollCols             int
+	rows                   int
+	lastScrollphase        core.Qt__ScrollPhase
+	updateMutex            sync.RWMutex
+	paintMutex             sync.RWMutex
+	propMutex              sync.RWMutex
+	redrawMutex            sync.Mutex
 	extwinConnectResizable bool
 	extwinResized          bool
 	extwinManualResized    bool
-	extwinAutoLayoutPosX   []int
-	extwinAutoLayoutPosY   []int
-	extwinRelativePos      [2]int
-
-	font         *Font
-	background   *RGBA
-	width        float64
-	height       int
-	localWindows *[4]localWindow
+	doErase                bool
+	isPopupmenu            bool
+	isExternal             bool
+	isFloatWin             bool
+	isMsgGrid              bool
+	isGridDirty            bool
+	doGetSnapshot          bool
 }
 
 type localWindow struct {
@@ -1131,9 +1118,9 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 		}
 	}
 
-	win.updateLine(row, colStart,  cells)
+	win.updateLine(row, colStart, cells)
 	win.countContent(row)
-	win.makeUpdateMask(row, colStart,  cells)
+	win.makeUpdateMask(row, colStart, cells)
 
 	if !win.isShown() {
 		win.show()
