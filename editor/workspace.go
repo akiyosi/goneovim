@@ -619,7 +619,6 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 func (w *Workspace) init(path string) {
 	w.configure()
 	w.attachUI(path)
-	w.loadGoneovimRuntime()
 	w.loadGinitVim()
 }
 
@@ -753,12 +752,6 @@ func (w *Workspace) initGonvim() {
 		`
 		initialNotify := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimInitNotify))
 		w.nvim.Command(initialNotify)
-	}
-}
-
-func (w *Workspace) loadGoneovimRuntime() {
-	if editor.config.Popupmenu.ShowDigit {
-		w.nvim.Command("runtime! plugin/showdigit.vim")
 	}
 }
 
