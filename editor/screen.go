@@ -1106,8 +1106,6 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.blend = util.ReflectToInt(bl)
 	}
 
-	// TODO: brend, ok := hl["blend"]
-
 	return &highlight
 }
 
@@ -1170,10 +1168,8 @@ func (s *Screen) gridLine(args []interface{}) {
 }
 
 func (s *Screen) gridScroll(args []interface{}) {
-	var gridid gridId
-	var rows int
 	for _, arg := range args {
-		gridid = util.ReflectToInt(arg.([]interface{})[0])
+		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		if isSkipGlobalId(gridid) {
 			continue
 		}
@@ -1188,8 +1184,9 @@ func (s *Screen) gridScroll(args []interface{}) {
 		win.scrollRegion[2] = util.ReflectToInt(arg.([]interface{})[3])     // left
 		win.scrollRegion[3] = util.ReflectToInt(arg.([]interface{})[4]) - 1 // right
 
-		rows = util.ReflectToInt(arg.([]interface{})[5])
-		win.scroll(rows)
+		win.scroll(
+			util.ReflectToInt(arg.([]interface{})[5]), // rows
+		)
 	}
 }
 
@@ -1577,17 +1574,8 @@ func (s *Screen) msgSetPos(args []interface{}) {
 }
 
 func (s *Screen) windowClose() {
+	// Close the window.
 }
-
-// func (s *Screen) setColor() {
-// 	s.tooltip.SetStyleSheet(
-// 		fmt.Sprintf(
-// 			" * {background-color: %s; text-decoration: underline; color: %s; }",
-// 			editor.colors.selectedBg.String(),
-// 			editor.colors.fg.String(),
-// 		),
-// 	)
-// }
 
 func isSkipGlobalId(id gridId) bool {
 	if editor.config.Editor.SkipGlobalId {
