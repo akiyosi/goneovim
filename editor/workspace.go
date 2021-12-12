@@ -918,14 +918,16 @@ func (w *Workspace) getKeymaps() {
 }
 
 func (w *Workspace) getNumOfTabs() int {
-	done := make(chan bool, 5)
+	done := make(chan int, 5)
 	num := 0
 	go func() {
-		w.nvim.Eval("tabpagenr('$')", &num)
-		done <- true
+		tn := 0
+		w.nvim.Eval("tabpagenr('$')", &tn)
+		done <- tn
 	}()
 	select {
-	case <-done:
+	case tn := <-done:
+		num = tn
 	case <-time.After(40 * time.Millisecond):
 	}
 
