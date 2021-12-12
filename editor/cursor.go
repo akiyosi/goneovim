@@ -266,7 +266,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	}
 
 	// Draw target cell text
-	if c.width > int(font.truewidth/2.0) {
+	if c.width > int(font.cellwidth/2.0) {
 		// Draw cursor foreground
 		if editor.config.Editor.CachedDrawing {
 			var image *gui.QImage
@@ -404,7 +404,7 @@ func (c *Cursor) move(win *Window) {
 	var x, y float64
 	if !win.isExternal {
 		if win.font != nil {
-			x = x + (float64(win.pos[0]) * win.s.font.truewidth)
+			x = x + (float64(win.pos[0]) * win.s.font.cellwidth)
 			y = y + float64(win.pos[1]*win.s.font.lineHeight)
 		}
 		if c.ws.tabline != nil {
@@ -493,7 +493,7 @@ func (c *Cursor) updateCursorShape() {
 	}
 
 	height := c.font.height
-	width := int(math.Trunc(c.font.truewidth))
+	width := int(math.Trunc(c.font.cellwidth))
 	if !c.normalWidth {
 		width = width * 2
 	}
@@ -599,7 +599,7 @@ func (c *Cursor) updateContent(win *Window) {
 		scrollPixels += win.scrollPixels[1]
 	}
 
-	x := float64(col+winx)*font.truewidth + float64(winbordersize)
+	x := float64(col+winx)*font.cellwidth + float64(winbordersize)
 	y := float64((row+winy)*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(c.shift+scrollPixels+res+winbordersize)
 
 	isStopScroll := (win.lastScrollphase == core.Qt__ScrollEnd)
@@ -684,7 +684,7 @@ func (c *Cursor) updateRegion() {
 	if c.font == nil {
 		return
 	}
-	width := int(math.Ceil(c.font.truewidth))
+	width := int(math.Ceil(c.font.cellwidth))
 	height := c.font.height
 	if c.width > width {
 		width = c.width

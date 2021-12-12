@@ -87,10 +87,10 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 		i.setFont(font)
 		row := s.cursor[0]
 		col := s.cursor[1]
-		x = int(float64(col) * font.truewidth)
+		x = int(float64(col) * font.cellwidth)
 		y = row * font.lineHeight
 
-		candX = int(float64(col+win.pos[0]) * font.truewidth)
+		candX = int(float64(col+win.pos[0]) * font.cellwidth)
 		tablineMarginTop := 0
 		if ws.tabline != nil {
 			tablineMarginTop = ws.tabline.marginTop
@@ -157,7 +157,7 @@ func (i *IMETooltip) updateText(text string) {
 	var wSlice []float64
 	wSlice = append(wSlice, 0.0)
 	fontMetrics := font.fontMetrics
-	width := font.truewidth
+	width := font.cellwidth
 
 	for k := 0; k < len(r); k++ {
 		w := width
