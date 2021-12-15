@@ -1461,7 +1461,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.move(x, y)
 		win.setShadow()
 		win.show()
-		win.setCursorParent()
 		win.s.ws.cursor.raise()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
