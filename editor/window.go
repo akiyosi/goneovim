@@ -77,6 +77,16 @@ type ExternalWin struct {
 	widgets.QDialog
 }
 
+type inputMouseEvent struct {
+	button string
+	action string
+	mod    string
+	grid   gridId
+	row    int
+	col    int
+	event *gui.QMouseEvent
+}
+
 // Window is
 type Window struct {
 	fgCache Cache
@@ -110,7 +120,7 @@ type Window struct {
 	grid                   gridId
 	width                  float64
 	_                      float64 `property:"scrollDiff"`
-	mouseEventState        core.QEvent__Type
+	lastMouseEvent         *inputMouseEvent
 	cols                   int
 	maxLenContent          int
 	ts                     int
@@ -2547,10 +2557,22 @@ func newWindow() *Window {
 	win.ConnectDragMoveEvent(win.dragMoveEvent)
 	win.ConnectDropEvent(win.dropEvent)
 
+	// win.ConnectMousePressEvent(screen.mousePressEvent)
+	win.ConnectMouseReleaseEvent(win.mouseEvent)
+	win.ConnectMouseMoveEvent(win.mouseEvent)
+
 	return win
 }
 
 func (w *Window) mouseEvent(event *gui.QMouseEvent) {
+	if w.lastMouseEvent == nil {
+		w.lastMouseEvent = &inputMouseEvent{}
+	}
+	if w.lastMouseEvent.event == event {
+		return
+	}
+	w.lastMouseEvent.event = event
+
 	bt := event.Button()
 	if event.Type() == core.QEvent__MouseMove {
 		if event.Buttons()&core.Qt__LeftButton > 0 {
@@ -2593,8 +2615,26 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 	col := int(float64(event.X()) / font.cellwidth)
 	row := int(float64(event.Y()) / float64(font.lineHeight))
 
+
+	if w.lastMouseEvent.button == button &&
+	 w.lastMouseEvent.action == action &&
+	 w.lastMouseEvent.mod == mod &&
+	 w.lastMouseEvent.grid == w.grid &&
+	 w.lastMouseEvent.row == row &&
+	 w.lastMouseEvent.col == col {
+		 return
+	}
+
+	w.lastMouseEvent.button = button
+	w.lastMouseEvent.action = action
+	w.lastMouseEvent.mod = mod
+	w.lastMouseEvent.grid = w.grid
+	w.lastMouseEvent.row = row
+	w.lastMouseEvent.col = col
+
 	w.s.ws.nvim.InputMouse(button, action, mod, w.grid, row, col)
 }
+
 
 func (w *Window) dragEnterEvent(e *gui.QDragEnterEvent) {
 	e.AcceptProposedAction()
