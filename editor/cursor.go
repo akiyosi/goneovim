@@ -492,8 +492,11 @@ func (c *Cursor) updateCursorShape() {
 		c.isNeedUpdateModeInfo = false
 	}
 
-	height := c.font.height
-	width := int(math.Trunc(c.font.cellwidth))
+	var width, height int
+	if c.font != nil {
+		height = c.font.height
+		width = int(math.Trunc(c.font.cellwidth))
+	}
 	if !c.normalWidth {
 		width = width * 2
 	}

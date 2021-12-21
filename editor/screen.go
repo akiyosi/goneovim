@@ -32,6 +32,7 @@ type Screen struct {
 	height         int
 	width          int
 	resizeCount    uint
+	isTopLevelGrid int
 }
 
 type Cache struct {
@@ -953,27 +954,36 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			}
 
 			// Fix #297
-			// When selecting content by left-clicking and dragging in an editing scene
-			// with multiple tabs, the grid_cursor_goto event to the global grid is fired.
-			// In goneovim, we don't really expect the cursor to move to the global grid,
-			// and this process, which we didn't take into account before, caused
-			// the problem #297. In other words, the stacking order of the widgets according
-			// to the grid is temporarily switched, which resets the mouse drag event and
-			// cancels the range selection operation in the process.
-			// We need to continue to monitor how common the process of moving the mouse
-			// to the global grid is in multi-grid architectures to see if this fix is correct.
-			if gridid != 1 {
-				s.ws.cursor.gridid = gridid
-				win.raise()
-				win.setCursorParent()
-				s.ws.cursor.raise()
+			if win.s.isTopLevelGrid != win.grid {
+
+				// If a mouse drag event is occurring in the previous 
+				// cursor grid, window raising will be suppressed.
+				if s.ws.cursor.gridid != 0 {
+					oldCursorWin, ok := s.getWindow(s.ws.cursor.gridid)
+					if !ok {
+						continue
+					}
+
+					if oldCursorWin.lastMouseEvent != nil && oldCursorWin.lastMouseEvent.action != "drag" {
+						win.raise()
+					}
+				} else {
+					win.raise()
+				}
 			}
+
+			// Set new cursor grid id
+			s.ws.cursor.gridid = gridid
 
 			// reset smooth scroll scrolling offset
 			win.scrollPixels2 = 0
 
 		}
 	}
+}
+
+func (s *Screen) setTopLevelGrid(n int) {
+	s.isTopLevelGrid = n
 }
 
 func (s *Screen) setHlAttrDef(args []interface{}) {

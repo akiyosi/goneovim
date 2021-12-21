@@ -2556,6 +2556,7 @@ func newWindow() *Window {
 	win.ConnectDragEnterEvent(win.dragEnterEvent)
 	win.ConnectDragMoveEvent(win.dragMoveEvent)
 	win.ConnectDropEvent(win.dropEvent)
+	win.lastMouseEvent = &inputMouseEvent{}
 
 	// win.ConnectMousePressEvent(screen.mousePressEvent)
 	win.ConnectMouseReleaseEvent(win.mouseEvent)
@@ -2699,6 +2700,7 @@ func (w *Window) raise() {
 	}
 
 	w.Raise()
+	w.s.setTopLevelGrid(w.grid)
 
 	// Float windows are displayed in front of normal windows.
 	// The order of the windows is such that the most recent one
