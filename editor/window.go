@@ -87,6 +87,11 @@ type inputMouseEvent struct {
 	event *gui.QMouseEvent
 }
 
+type zindex struct {
+	value    int
+	order    int
+}
+
 // Window is
 type Window struct {
 	fgCache Cache
@@ -130,6 +135,7 @@ type Window struct {
 	id                     nvim.Window
 	scrollCols             int
 	rows                   int
+	zindex                 *zindex
 	lastScrollphase        core.Qt__ScrollPhase
 	updateMutex            sync.RWMutex
 	paintMutex             sync.RWMutex
@@ -2550,13 +2556,14 @@ func newWindow() *Window {
 	win.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	win.scrollRegion = []int{0, 0, 0, 0}
 	win.background = editor.colors.bg
+	win.lastMouseEvent = &inputMouseEvent{}
+	win.zindex = &zindex{}
 
-	win.ConnectPaintEvent(win.paint)
 	win.SetAcceptDrops(true)
+	win.ConnectPaintEvent(win.paint)
 	win.ConnectDragEnterEvent(win.dragEnterEvent)
 	win.ConnectDragMoveEvent(win.dragMoveEvent)
 	win.ConnectDropEvent(win.dropEvent)
-	win.lastMouseEvent = &inputMouseEvent{}
 
 	// win.ConnectMousePressEvent(screen.mousePressEvent)
 	win.ConnectMouseReleaseEvent(win.mouseEvent)
@@ -2699,42 +2706,40 @@ func (w *Window) raise() {
 		return
 	}
 
-	w.Raise()
 	if !w.isFloatWin && !w.isExternal {
+		w.Raise()
 		w.s.setTopLevelGrid(w.grid)
 	}
 
-	// Float windows are displayed in front of normal windows.
-	// The order of the windows is such that the most recent one
-	// generated is placed in front.
-	// Eventually, you may need to consider the z-index.
+	// Float windows are re-stacked according to the "z-index" and generation order.
 	var floatWins []*Window
-	if !w.isFloatWin && !w.isMsgGrid {
-		w.s.windows.Range(func(_, winITF interface{}) bool {
-			win := winITF.(*Window)
-			if win == nil {
-				return true
-			}
-			if win.grid == 1 {
-				return true
-			}
-			if win.isFloatWin {
-				floatWins = append(floatWins, win)
-			}
-
+	w.s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
 			return true
-		})
-
-		sort.Slice(
-			floatWins,
-			func(i, j int) bool {
-				return floatWins[i].grid < floatWins[j].grid
-			},
-		)
-
-		for _, win := range floatWins {
-			win.Raise()
 		}
+		if win.isFloatWin {
+			floatWins = append(floatWins, win)
+		}
+
+		return true
+	})
+	sort.Slice(
+		floatWins,
+		func(i, j int) bool {
+			if floatWins[i].zindex.value < floatWins[j].zindex.value {
+				return true
+			} else if floatWins[i].zindex.value == floatWins[j].zindex.value {
+				if floatWins[i].zindex.order < floatWins[j].zindex.order {
+					return true
+				}
+
+			}
+			return false
+		},
+	)
+	for _, win := range floatWins {
+		win.Raise()
 	}
 
 	// handle cursor widget

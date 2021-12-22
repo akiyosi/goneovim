@@ -17,6 +17,8 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+var globalOrder int
+
 // Screen is the main editor area
 type Screen struct {
 	fgCache        Cache
@@ -1400,6 +1402,11 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := (arg.([]interface{})[6]).(bool)
+		if len(arg.([]interface{})) >= 8 {
+			win.zindex.value = int(util.ReflectToInt(arg.([]interface{})[7]))
+			win.zindex.order = globalOrder
+			globalOrder++
+		}
 
 		editor.putLog("float window generated:", "anchorgrid", anchorGrid, "anchor", win.anchor, "anchorCol", anchorCol, "anchorRow", anchorRow)
 
@@ -1410,7 +1417,12 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		// }
 
 		win.propMutex.Lock()
-		win.isFloatWin = true
+
+		shouldStackPerZIndex := !win.IsVisible()
+		if !win.isFloatWin {
+			win.isFloatWin = true
+			shouldStackPerZIndex = shouldStackPerZIndex || true
+		}
 
 		if win.isExternal {
 			win.deleteExternalWin()
@@ -1510,6 +1522,9 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.pos[1] = y
 
 		win.move(x, y)
+		if shouldStackPerZIndex {
+			win.raise()
+		}
 		win.setShadow()
 		win.show()
 
@@ -1614,6 +1629,8 @@ func (s *Screen) msgSetPos(args []interface{}) {
 			continue
 		}
 		win.isMsgGrid = true
+		win.isFloatWin = true
+		win.zindex.value = 200
 		win.pos[1] = row
 		win.move(win.pos[0], win.pos[1])
 		win.show()
