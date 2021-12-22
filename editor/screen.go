@@ -1512,7 +1512,10 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		win.move(x, y)
 		win.setShadow()
 		win.show()
-		win.s.ws.cursor.raise()
+
+		// Fix an issue reported in https://github.com/akiyosi/goneovim/issues/39#issuecomment-999180208
+		// When there is a float window, mouse selection is cancelled by raising related widget.
+		// win.s.ws.cursor.raise()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
 		anchorwin.queueRedrawAll()

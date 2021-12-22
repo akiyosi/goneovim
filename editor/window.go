@@ -2700,7 +2700,9 @@ func (w *Window) raise() {
 	}
 
 	w.Raise()
-	w.s.setTopLevelGrid(w.grid)
+	if !w.isFloatWin && !w.isExternal {
+		w.s.setTopLevelGrid(w.grid)
+	}
 
 	// Float windows are displayed in front of normal windows.
 	// The order of the windows is such that the most recent one
