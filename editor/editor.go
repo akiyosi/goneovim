@@ -860,18 +860,19 @@ func (e *Editor) keyRelease(event *gui.QKeyEvent) {
 	if !e.isKeyAutoRepeating {
 		return
 	}
-	ws := e.workspaces[e.active]
-	win, ok := ws.screen.getWindow(ws.cursor.gridid)
-	if !ok {
-		return
-	}
-	if editor.config.Editor.SmoothScroll {
-		win.snapshot = win.Grab(win.Rect())
-	}
+
 	e.isKeyAutoRepeating = false
 }
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
+
+	ws := e.workspaces[e.active]
+
+	// get snapshot for smooth scrolling in terminal insert mode
+	if ws.terminalMode {
+		ws.getSnapshot()
+	}
+
 	input := e.convertKey(event)
 	if event.IsAutoRepeat() {
 		e.isKeyAutoRepeating = true
