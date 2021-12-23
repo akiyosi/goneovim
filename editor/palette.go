@@ -281,7 +281,7 @@ func (p *Palette) cursorMove(x int) {
 	p.cursorX = pos
 
 	px := float64(p.cursorX + p.patternPadding)
-	py := float64(p.patternPadding + p.ws.cursor.shift)
+	py := float64(p.patternPadding + p.ws.cursor.horizontalShift)
 	c := p.ws.cursor
 	if !c.isInPalette {
 		c.SetParent(p.pattern)

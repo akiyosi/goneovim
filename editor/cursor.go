@@ -38,7 +38,7 @@ type Cursor struct {
 	deltax                     float64
 	gridid                     int
 	bufferGridid               int
-	shift                      int
+	horizontalShift            int
 	modeIdx                    int
 	blinkWait                  int
 	modeInfoModeIdx            int
@@ -229,7 +229,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 		p.SetClipRect2(
 			core.NewQRect4(
 				int(X),
-				int(Y),
+				int(Y)+c.horizontalShift,
 				c.width,
 				c.height,
 			), core.Qt__IntersectClip,
@@ -244,7 +244,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	p.FillRect4(
 		core.NewQRectF4(
 			X,
-			Y,
+			Y+float64(c.horizontalShift),
 			float64(c.width),
 			float64(c.height),
 		),
@@ -505,7 +505,7 @@ func (c *Cursor) updateCursorShape() {
 	switch c.cursorShape {
 	case "horizontal":
 		height = int(float64(height) * p)
-		c.shift = int(float64(c.font.lineHeight) * (1.0 - p))
+		c.horizontalShift = int(float64(c.font.lineHeight) * (1.0 - p))
 		if c.cellPercentage < 99 {
 			c.isTextDraw = false
 		} else {
@@ -514,10 +514,10 @@ func (c *Cursor) updateCursorShape() {
 	case "vertical":
 		c.isTextDraw = true
 		width = int(math.Ceil(float64(width) * p))
-		c.shift = 0
+		c.horizontalShift = 0
 	default:
 		c.isTextDraw = true
-		c.shift = 0
+		c.horizontalShift = 0
 	}
 
 	if width == 0 {
@@ -603,7 +603,7 @@ func (c *Cursor) updateContent(win *Window) {
 	}
 
 	x := float64(col+winx)*font.cellwidth + float64(winbordersize)
-	y := float64((row+winy)*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(c.shift+scrollPixels+res+winbordersize)
+	y := float64((row+winy)*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(scrollPixels+res+winbordersize)
 
 	isStopScroll := (win.lastScrollphase == core.Qt__ScrollEnd)
 	c.move(win)
