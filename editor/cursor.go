@@ -705,7 +705,7 @@ func (c *Cursor) updateRegion() {
 		)
 		c.Update2(
 			int(math.Trunc(c.x)),
-			int(math.Trunc(c.y)),
+			int(math.Trunc(c.y))+c.horizontalShift,
 			int(math.Ceil(c.x+float64(c.width))),
 			int(math.Ceil(c.y+float64(c.height))),
 		)
@@ -723,6 +723,27 @@ func (c *Cursor) updateMinimumArea() {
 	var poly *gui.QPolygon
 
 	var top, left, right, bottom float64
+
+	// [Make updating region]
+	//
+	//    <topleft>
+	//    xprime,yprime                        x,y                         
+	//              +---+\  <topright>           +---+\                    
+	//              |   | \                      |   | \                   
+	//              |   |  \                     |   |  \                  
+	//              |   |   \                    |   |   \                 
+	//  <topbottom> +---+    \                   +---+    \                
+	//               \        \                   \        \               
+	//                \        \                   \        \              
+	//                 \   x,y  \                   \ xprime,yprime        
+	//                  \    +---+ <bottomtop>       \    +---+            
+	//                   \   |   |                    \   |   |            
+	//                    \  |   |                     \  |   |            
+	//                     \ |   |                      \ |   |            
+	//                      \+---+                       \+---+            
+	//            <bottomleft>   <bottomright>                             
+
+	padding := 1
 	if c.xprime < c.x && c.yprime < c.y || c.xprime > c.x && c.yprime > c.y {
 		if c.xprime < c.x {
 			left = c.xprime
@@ -744,11 +765,11 @@ func (c *Cursor) updateMinimumArea() {
 			int(math.Trunc(top)),
 		)
 		topright = core.NewQPoint2(
-			int(math.Trunc(left+width)),
+			int(math.Trunc(left+width))+padding,
 			int(math.Trunc(top)),
 		)
 		topbottom = core.NewQPoint2(
-			int(math.Trunc(left)),
+			int(math.Trunc(left))-padding,
 			int(math.Trunc(top+height)),
 		)
 		bottomright = core.NewQPoint2(
@@ -756,11 +777,11 @@ func (c *Cursor) updateMinimumArea() {
 			int(math.Trunc(bottom+height)),
 		)
 		bottomleft = core.NewQPoint2(
-			int(math.Trunc(right)),
+			int(math.Trunc(right))-padding,
 			int(math.Trunc(bottom+height)),
 		)
 		bottomtop = core.NewQPoint2(
-			int(math.Trunc(right+width)),
+			int(math.Trunc(right+width))+padding,
 			int(math.Trunc(bottom)),
 		)
 
@@ -771,6 +792,23 @@ func (c *Cursor) updateMinimumArea() {
 				topbottom,
 			},
 		)
+
+	//           <topleft>
+	//                  x,y                         xprime,yprime 
+	//                   /+---+ <topright>                /+---+  
+	//                  / |   |                          / |   |  
+	//                 /  |   |                         /  |   |  
+	//                /   |   |                        /   |   |  
+	//               /    +---+ <topbottom>           /    +---+  
+	//              /        /                       /        /   
+	// <bottomtop> /        /                       /        /    
+	//    xprime,yprime    /                   x,y /        /     
+	//           +---+    /                       +---+    /      
+	//           |   |   /                        |   |   /       
+	//           |   |  /                         |   |  /        
+	//           |   | /                          |   | /         
+	//           +---+/                           +---+/          
+	// <bottomleft>   <bottomright>
 
 	} else {
 		if c.xprime < c.x {
@@ -789,7 +827,7 @@ func (c *Cursor) updateMinimumArea() {
 		}
 
 		topleft = core.NewQPoint2(
-			int(math.Trunc(right)),
+			int(math.Trunc(right))-padding,
 			int(math.Trunc(top)),
 		)
 		topright = core.NewQPoint2(
@@ -797,11 +835,11 @@ func (c *Cursor) updateMinimumArea() {
 			int(math.Trunc(top)),
 		)
 		topbottom = core.NewQPoint2(
-			int(math.Trunc(right+width)),
+			int(math.Trunc(right+width))+padding,
 			int(math.Trunc(top+height)),
 		)
 		bottomright = core.NewQPoint2(
-			int(math.Trunc(left+width)),
+			int(math.Trunc(left+width))+padding,
 			int(math.Trunc(bottom+height)),
 		)
 		bottomleft = core.NewQPoint2(
@@ -809,7 +847,7 @@ func (c *Cursor) updateMinimumArea() {
 			int(math.Trunc(bottom+height)),
 		)
 		bottomtop = core.NewQPoint2(
-			int(math.Trunc(left)),
+			int(math.Trunc(left))-padding,
 			int(math.Trunc(bottom)),
 		)
 
