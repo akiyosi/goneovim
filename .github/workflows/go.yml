@@ -17,6 +17,7 @@ jobs:
       QT_VERSION: ${{ matrix.qtversion }}
       QT_API: 5.13.0
       QT_DEBUG: false
+      QT_STATIC: true
       GO111MODULE: off
       GOPROXY: https://goproxy.io
     steps:
@@ -102,10 +103,11 @@ jobs:
       if: ${{ matrix.qtversion == '5.14.1' }}
       uses: actions/upload-artifact@v1
       with:
-        name: Goneovim-latest-linux-${{ matrix.qtversion }}
+        name: Goneovim-latest-linux
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-linux.tar.bz2
 
-  build-archlinux:
+  # build-archlinux:
+  build-windows:
     strategy:
       matrix:
         # go-version: [1.12.x, 1.13.x]
@@ -125,7 +127,7 @@ jobs:
     - name: Linux prerequisites
       run: |
         sudo apt update
-        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev
+        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev zip
 
     - name: Install Go
       uses: actions/setup-go@v1
@@ -185,22 +187,43 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
 
-    - name: Build
+    # - name: Build for linux
+    #   run: |
+    #     cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
+    #     $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" -docker build linux_arch
+
+    - name: Build for windows
       run: |
+        cd ${{ github.workspace }}/src/github.com/akiyosi
+        git clone https://github.com/akiyosi/w32.git
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" -docker build linux_arch
+        rm -fr ../../editor/moc*
+        $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" -docker build windows_64_static
+        cp -pR ../../runtime ./deploy/windows/
+
+    # - name: Archive
+    #   run: |
+    #     cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+    #     mv linux Goneovim-latest-linux
+    #     tar -jcvf Goneovim-latest-linux_archlinux.tar.bz2 Goneovim-latest-linux
 
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux Goneovim-latest-linux
-        tar -jcvf Goneovim-latest-linux_archlinux.tar.bz2 Goneovim-latest-linux
+        mv windows Goneovim-latest-windows
+        zip Goneovim-latest-windows -r Goneovim-latest-windows
 
-    - name: Upload for linux
+    # - name: Upload for linux
+    #   uses: actions/upload-artifact@v1
+    #   with:
+    #     name: Goneovim-latest-linux_archlinux
+    #     path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-linux_archlinux.tar.bz2
+
+    - name: Upload for windows
       uses: actions/upload-artifact@v1
       with:
-        name: Goneovim-latest-linux_archlinux-${{ matrix.qtversion }}
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-linux_archlinux.tar.bz2
+        name: Goneovim-latest-windows
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-windows.zip
 
   # build-linux-arm64:
   #   strategy:
@@ -292,104 +315,103 @@ jobs:
   #       name: Goneovim-latest-linux-${{ matrix.qtversion }}
   #       path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-linux-arm64.tar.bz2
 
+  # test-and-build-macos:
+  #   strategy:
+  #     matrix:
+  #       # go-version: [1.12.x, 1.13.x]
+  #       go-version: [1.16.x]
+  #       platform: [macos-latest]
+  #       qtversion: [5.13.0, 5.14.1, 5.15.1]
+  #   runs-on: ${{ matrix.platform }}
+  #   env:
+  #     GOPATH: ${{ github.workspace }}
+  #     QT_DIR: ${{ github.workspace }}/Qt
+  #     QT_VERSION: ${{ matrix.qtversion }}
+  #     QT_API: 5.13.0
+  #     QT_DEBUG: false
+  #     GO111MODULE: off
+  #     GOPROXY: https://goproxy.io
+  #   steps:
 
-  test-and-build-macos:
-    strategy:
-      matrix:
-        # go-version: [1.12.x, 1.13.x]
-        go-version: [1.16.x]
-        platform: [macos-latest]
-        qtversion: [5.13.0, 5.14.1, 5.15.1]
-    runs-on: ${{ matrix.platform }}
-    env:
-      GOPATH: ${{ github.workspace }}
-      QT_DIR: ${{ github.workspace }}/Qt
-      QT_VERSION: ${{ matrix.qtversion }}
-      QT_API: 5.13.0
-      QT_DEBUG: false
-      GO111MODULE: off
-      GOPROXY: https://goproxy.io
-    steps:
+  #   - name: Install Go
+  #     uses: actions/setup-go@v1
+  #     with:
+  #       go-version: ${{ matrix.go-version }}
 
-    - name: Install Go
-      uses: actions/setup-go@v1
-      with:
-        go-version: ${{ matrix.go-version }}
+  #   - name: Install Qt for macOS
+  #     uses: jurplel/install-qt-action@v2
+  #     with:
+  #       version: ${{ matrix.qtversion }}
+  #       host: mac
+  #       target: desktop
+  #       dir: ${{ github.workspace }}
+  #       modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
+  #       # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
 
-    - name: Install Qt for macOS
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: ${{ matrix.qtversion }}
-        host: mac
-        target: desktop
-        dir: ${{ github.workspace }}
-        modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
-        # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
+  #   - name: Get Qt binding for Go
+  #     run: |
+  #       go get -v github.com/therecipe/qt/cmd/...
 
-    - name: Get Qt binding for Go
-      run: |
-        go get -v github.com/therecipe/qt/cmd/...
+  #   - name: Checkout code
+  #     uses: actions/checkout@v2
+  #     with:
+  #       fetch-depth: 0
+  #       path: ./src/github.com/${{ github.repository }}
 
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        path: ./src/github.com/${{ github.repository }}
+  #   - uses: actions/cache@v2
+  #     id: cache-qt-bindings-macos
+  #     with:
+  #       path: ${{ github.workspace }}/src/github.com/therecipe
+  #       key: ${{ matrix.qtversion }}-qtbindings-macos-${{ env.cache-version }}
 
-    - uses: actions/cache@v2
-      id: cache-qt-bindings-macos
-      with:
-        path: ${{ github.workspace }}/src/github.com/therecipe
-        key: ${{ matrix.qtversion }}-qtbindings-macos-${{ env.cache-version }}
+  #   - name: Generate Qt bindings
+  #     continue-on-error: true
+  #     if: ${{ steps.cache-qt-bindings-macos.outputs.cache-hit != 'true' }}
+  #     run: $(go env GOPATH)/bin/qtsetup -test=false
 
-    - name: Generate Qt bindings
-      continue-on-error: true
-      if: ${{ steps.cache-qt-bindings-macos.outputs.cache-hit != 'true' }}
-      run: $(go env GOPATH)/bin/qtsetup -test=false
+  #   - name: Get dependencies
+  #     run: |
+  #       go get -v -t -d github.com/${{ github.repository }}/...
+  #       cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
+  #       $(go env GOPATH)/bin/qtmoc
 
-    - name: Get dependencies
-      run: |
-        go get -v -t -d github.com/${{ github.repository }}/...
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtmoc
+  #   - name: Test
+  #     run: go test github.com/${{ github.repository }}/editor
 
-    - name: Test
-      run: go test github.com/${{ github.repository }}/editor
+  #   - name: Retrieve version
+  #     id: version-macos
+  #     run: |
+  #       cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+  #       git describe --tags
+  #       echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+  #       echo "::set-output name=GONEOVIM_VERSION_HASH::$(git rev-parse HEAD)"
 
-    - name: Retrieve version
-      id: version-macos
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
-        git describe --tags
-        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
-        echo "::set-output name=GONEOVIM_VERSION_HASH::$(git rev-parse HEAD)"
+  #   - name: check version
+  #     run: |
+  #       echo ${{ steps.version-macos.outputs.GONEOVIM_VERSION }}
+  #       echo "${{ steps.version-macos.outputs.GONEOVIM_VERSION }}"
 
-    - name: check version
-      run: |
-        echo ${{ steps.version-macos.outputs.GONEOVIM_VERSION }}
-        echo "${{ steps.version-macos.outputs.GONEOVIM_VERSION }}"
+  #   - name: Build
+  #     run: |
+  #       cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
+  #       $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-macos.outputs.GONEOVIM_VERSION }}" build desktop
+  #       cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
+  #       cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/
+  #       /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ steps.version-macos.outputs.GONEOVIM_VERSION_HASH }}" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
+  #       /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string ${{ steps.version-macos.outputs.GONEOVIM_VERSION }}"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
 
-    - name: Build
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-macos.outputs.GONEOVIM_VERSION }}" build desktop
-        cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/
-        /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ steps.version-macos.outputs.GONEOVIM_VERSION_HASH }}" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
-        /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string ${{ steps.version-macos.outputs.GONEOVIM_VERSION }}"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
+  #   - name: Archive
+  #     run: |
+  #       cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+  #       mv darwin Goneovim-latest-macos
+  #       tar -jcvf Goneovim-latest-macos.tar.bz2 Goneovim-latest-macos
 
-    - name: Archive
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv darwin Goneovim-latest-macos
-        tar -jcvf Goneovim-latest-macos.tar.bz2 Goneovim-latest-macos
-
-    - name: Upload for macos
-      if: ${{ matrix.qtversion == '5.13.0' }}
-      uses: actions/upload-artifact@v1
-      with:
-        name: Goneovim-latest-macos-${{ matrix.qtversion }}
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos.tar.bz2
+  #   - name: Upload for macos
+  #     if: ${{ matrix.qtversion == '5.13.0' }}
+  #     uses: actions/upload-artifact@v1
+  #     with:
+  #       name: Goneovim-latest-macos-${{ matrix.qtversion }}
+  #       path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos.tar.bz2
 
   test-and-build-macos-11:
     strategy:
@@ -475,17 +497,18 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv darwin Goneovim-latest-macos-bigsur
-        tar -jcvf Goneovim-latest-macos-bigsur.tar.bz2 Goneovim-latest-macos-bigsur
+        mv darwin Goneovim-latest-macos
+        tar -jcvf Goneovim-latest-macos.tar.bz2 Goneovim-latest-macos
 
     - name: Upload for macos
       uses: actions/upload-artifact@v1
       with:
-        name: Goneovim-latest-macos-${{ matrix.qtversion }}
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos-bigsur.tar.bz2
+        name: Goneovim-latest-macos
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos.tar.bz2
 
 
-  test-and-build-windows:
+  # test-and-build-windows:
+  test-windows:
     strategy:
       matrix:
         platform: [windows-latest]
@@ -571,34 +594,34 @@ jobs:
       run: |
         /d/a/goneovim/goneovim/go-root/bin/go test github.com/akiyosi/goneovim/editor
 
-    - name: Retrieve version
-      id: version-windows
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
-        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+  # - name: Retrieve version
+  #   id: version-windows
+  #   run: |
+  #     cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+  #     echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
 
-    - name: Build
-      env:
-        QT_API: 5.13.0
-      shell: msys2 {0}
-      run: |
-        export PATH=$PATH:/d/a/goneovim/goneovim/go-root/bin/
-        cd /d/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim
-        /d/a/goneovim/goneovim/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
+  #   - name: Build
+  #     env:
+  #       QT_API: 5.13.0
+  #     shell: msys2 {0}
+  #     run: |
+  #       export PATH=$PATH:/d/a/goneovim/goneovim/go-root/bin/
+  #       cd /d/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim
+  #       /d/a/goneovim/goneovim/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
 
-    - name: Add runtime
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}\cmd\goneovim
-        Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
+  #   - name: Add runtime
+  #     run: |
+  #       cd ${{ github.workspace }}/src/github.com/${{ github.repository }}\cmd\goneovim
+  #       Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
 
-    - name: Upload for windows
-      uses: actions/upload-artifact@v1
-      with:
-        name: Goneovim-latest-win64-${{ matrix.qtversion }}
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
+  #   - name: Upload for windows
+  #     uses: actions/upload-artifact@v1
+  #     with:
+  #       name: Goneovim-latest-win64-${{ matrix.qtversion }}
+  #       path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
 
 
-  # build-windows:
+  # build-windows-msvc:
   #   strategy:
   #     matrix:
   #       platform: [windows-latest]
@@ -806,5 +829,5 @@ jobs:
   #     if: ${{ matrix.qtversion == '5.14.1' }}
   #     uses: actions/upload-artifact@v1
   #     with:
-  #       name: Goneovim-latest-win64-${{ matrix.qtversion }}
+  #       name: Goneovim-latest-win64-${{ matrix.qtversion }}-msvc
   #       path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
