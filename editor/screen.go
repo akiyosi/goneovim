@@ -665,6 +665,10 @@ func (s *Screen) gridResize(args []interface{}) {
 func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win, _ := s.getWindow(gridid)
 
+	if win != nil && win.snapshot != nil {
+		win.snapshot = nil
+	}
+
 	// make new size content
 	content := make([][]*Cell, rows)
 	contentMask := make([][]bool, rows)
