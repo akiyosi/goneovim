@@ -821,9 +821,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		h = pixels.X()
 	}
 	phase := event.Phase()
-	if w.lastScrollphase != core.Qt__ScrollEnd {
-		w.doGetSnapshot = false
-	} else {
+	if w.lastScrollphase != phase && w.lastScrollphase != core.Qt__ScrollEnd {
 		w.doGetSnapshot = true
 	}
 	w.lastScrollphase = phase
@@ -1029,6 +1027,11 @@ func (win *Window) smoothScroll(diff int) {
 			)
 			win.doErase = false
 			win.fill()
+
+			// get snapshot
+			if !editor.isKeyAutoRepeating && editor.config.Editor.SmoothScroll {
+				win.snapshot = win.Grab(win.Rect())
+			}
 		}
 	})
 	a.SetDuration(220)
@@ -2555,7 +2558,6 @@ func newWindow() *Window {
 	win.background = editor.colors.bg
 	win.lastMouseEvent = &inputMouseEvent{}
 	win.zindex = &zindex{}
-	win.doGetSnapshot = true
 
 	win.SetAcceptDrops(true)
 	win.ConnectPaintEvent(win.paint)

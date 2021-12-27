@@ -1288,7 +1288,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			shouldUpdateMinimap = true
 			shouldUpdateCursor = true
 		case "grid_scroll":
-			w.getSnapshot()
 			s.gridScroll(args)
 			shouldUpdateMinimap = true
 
@@ -1416,19 +1415,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		}
 		editor.putLog("finished", event)
-	}
-}
-
-func (w *Workspace) getSnapshot() {
-	win, ok := w.screen.getWindow(w.cursor.gridid)
-	if !ok {
-		return
-	}
-    if !editor.isKeyAutoRepeating && editor.config.Editor.SmoothScroll {
-		if !win.doGetSnapshot {
-			return
-		}
-		win.snapshot = win.Grab(win.Rect())
 	}
 }
 
@@ -1729,12 +1715,19 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
-	// if win.doGetSnapshot {
-	// 	if !editor.isKeyAutoRepeating {
-	// 		win.snapshot = win.Grab(win.Rect())
-	// 	}
-	// 	win.doGetSnapshot = false
-	// }
+	// if If the maximum line is increased and there is content to be pasted into the maximum line
+	if (w.maxLine == viewport[1]-1) && w.maxLineDelta != 0 {
+		if diff != 0 {
+			win.doGetSnapshot = false
+		}
+	}
+
+	if win.doGetSnapshot {
+		if !editor.isKeyAutoRepeating {
+			win.snapshot = win.Grab(win.Rect())
+		}
+		win.doGetSnapshot = false
+	}
 
 	// // do not scroll smoothly when the maximum line is less than buffer rows,
 	// // and topline has not been changed
@@ -1931,6 +1924,14 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.setBuffTS(util.ReflectToInt(updates[2]))
 		w.setFileType(updates)
 	case "gonvim_textchanged":
+		if editor.config.Editor.SmoothScroll {
+			ws := editor.workspaces[editor.active]
+			win, ok := ws.screen.getWindow(ws.cursor.gridid)
+			if !ok {
+				return
+			}
+			win.doGetSnapshot = true
+		}
 		w.maxLineDelta = util.ReflectToInt(updates[1]) - w.maxLine
 		w.maxLine = util.ReflectToInt(updates[1])
 
@@ -1938,6 +1939,17 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		fmt.Println("unhandled Gui event", event)
 	}
 
+}
+
+func (w *Workspace) getSnapshot() {
+	if !editor.config.Editor.SmoothScroll {
+		return
+	}
+	win, ok := w.screen.getWindow(w.cursor.gridid)
+	if !ok {
+		return
+	}
+	win.snapshot = win.Grab(win.Rect())
 }
 
 func (w *Workspace) letterSpacing(arg interface{}) {
