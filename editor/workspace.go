@@ -491,7 +491,7 @@ func (w *Workspace) startNvim(path string) error {
 	// Generate goneovim helpdoc tag
 	helpdocpath := getResourcePath() + "/runtime/doc"
 	option = append(option, "--cmd")
-	option = append(option, fmt.Sprintf("helptag %s", helpdocpath))
+	option = append(option, fmt.Sprintf(`try | helptags %s | catch /^Vim\%%((\a\+)\)\=:E/ | endtry`, helpdocpath))
 
 	option = append(option, "--embed")
 
