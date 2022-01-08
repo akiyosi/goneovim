@@ -515,7 +515,7 @@ func (w *Workspace) startNvim(path string) error {
 		neovim, err = nvim.NewChildProcess(childProcessArgs)
 	}
 	if err != nil {
-		fmt.Println(err)
+		editor.putLog(err)
 		return err
 	}
 
@@ -538,7 +538,7 @@ func (w *Workspace) startNvim(path string) error {
 	go func() {
 		err := w.nvim.Serve()
 		if err != nil {
-			fmt.Println(err)
+			editor.putLog(err)
 		}
 		w.stopOnce.Do(func() {
 			close(w.stop)
@@ -664,7 +664,7 @@ func (w *Workspace) attachUI(path string) error {
 	editor.putLog("attaching UI")
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
 	if err != nil {
-		fmt.Println(err)
+		editor.putLog(err)
 		editor.close()
 		return err
 	}
