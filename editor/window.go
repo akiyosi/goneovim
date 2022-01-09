@@ -67,7 +67,6 @@ type Cell struct {
 	highlight   *Highlight
 	char        string
 	normalWidth bool
-	isUpdateBg  bool
 }
 
 type IntInt [2]int
@@ -1195,22 +1194,16 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 			// If `hl_id` is not present the most recently seen `hl_id` in
 			//	the same call should be used (it is always sent for the first
 			//	cell in the event).
-			var hltmp *Highlight
 			switch col {
 			case 0:
-				hltmp = w.s.hlAttrDef[hl]
+				line[col].highlight = w.s.hlAttrDef[hl]
 			default:
 				if hl == -1 {
-					hltmp = line[col-1].highlight
+					line[col].highlight = line[col-1].highlight
 				} else {
-					hltmp = w.s.hlAttrDef[hl]
+					line[col].highlight = w.s.hlAttrDef[hl]
 				}
 			}
-
-			if line[col].highlight != nil {
-				line[col].isUpdateBg = !hltmp.bg().equals(line[col].highlight.bg())
-			}
-			line[col].highlight = hltmp
 
 			// Detect popupmenu
 			if line[col].highlight.uiName == "Pmenu" ||
@@ -1254,7 +1247,7 @@ func (w *Window) countContent(row int) {
 		if !breakFlag[1] {
 			if cell == nil {
 				width--
-			} else if cell.char == " " && !cell.isUpdateBg {
+			} else if cell.char == " " && cell.highlight.bg().equals(w.background) {
 				width--
 			} else {
 				breakFlag[1] = true
@@ -1273,37 +1266,20 @@ func (w *Window) countContent(row int) {
 }
 
 func (w *Window) makeUpdateMask(row, col int, cells []interface{}) {
-	cols := len(cells)
-
 	for j, cell := range w.content[row] {
 		if cell == nil {
 			w.contentMask[row][j] = true
 			continue
-		}
 
 		// If the target cell is blank and there is no text decoration of any kind
-		if cell.char == " " &&
-			!cell.highlight.underline &&
-			!cell.highlight.undercurl &&
-			!cell.highlight.strikethrough {
+		} else if cell.char == " " &&
+		cell.highlight.bg().equals(w.background) &&
+		!cell.highlight.underline &&
+		!cell.highlight.undercurl &&
+		!cell.highlight.strikethrough {
 
-			// If the background color has not been updated,
-			// And if the target cell is outside the range of neovim's update event
-			if !cell.isUpdateBg {
-				if j < col || j > col+cols {
-					w.contentMask[row][j] = false
-					continue
-				}
-			}
+			w.contentMask[row][j] = false
 
-			// If the target cell is outside the range of neovim's update event,
-			// it will not be drawn.
-			if j < w.queueRedrawArea[0] || j > w.queueRedrawArea[2] {
-				w.contentMask[row][j] = false
-				continue
-			}
-
-			w.contentMask[row][j] = true
 		} else {
 			w.contentMask[row][j] = true
 		}
@@ -1525,7 +1501,7 @@ func (w *Window) update() {
 			rect := [4]int{
 				0,
 				i * font.lineHeight,
-				int(math.Ceil(float64(width) * font.cellwidth)),
+				int(math.Ceil(float64(width) * font.cellwidth))+1,
 				font.lineHeight,
 			}
 			rects = append(rects, rect)
@@ -1557,10 +1533,11 @@ func (w *Window) update() {
 					}
 
 					// create rectangular area
+					// To avoid leaving drawing debris, update a slightly larger area.
 					rect := [4]int{
-						int(float64(start) * font.cellwidth),
+						int(float64(start) * font.cellwidth)-1, // update a slightly larger area.
 						i * font.lineHeight,
-						int(math.Ceil(float64(jj-start) * font.cellwidth)),
+						int(math.Ceil(float64(jj-start) * font.cellwidth))+2, // update a slightly larger area.
 						font.lineHeight,
 					}
 					rects = append(rects, rect)
