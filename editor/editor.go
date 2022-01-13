@@ -352,7 +352,7 @@ func (e *Editor) putLog(v ...interface{}) {
 
 	log.Println(
 		fmt.Sprintf("%07.3f", float64(time.Now().UnixNano()/1000-e.startuptime)/1000),
-		strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%s", v), "["), "]"),
+		strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%v", v), "["), "]"),
 	)
 }
 
