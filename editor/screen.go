@@ -966,12 +966,10 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 				// cursor grid, window raising will be suppressed.
 				if s.ws.cursor.gridid != 0 {
 					oldCursorWin, ok := s.getWindow(s.ws.cursor.gridid)
-					if !ok {
-						continue
-					}
-
-					if oldCursorWin.lastMouseEvent != nil && oldCursorWin.lastMouseEvent.action != "drag" {
-						win.raise()
+					if ok {
+						if oldCursorWin.lastMouseEvent != nil && oldCursorWin.lastMouseEvent.action != "drag" {
+							win.raise()
+						}
 					}
 				} else {
 					win.raise()
