@@ -1278,6 +1278,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.setHighlightGroup(args)
 		case "grid_line":
 			s.gridLine(args)
+			shouldUpdateCursor = true
 			shouldUpdateMinimap = true
 		case "grid_clear":
 			s.gridClear(args)
