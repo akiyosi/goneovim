@@ -34,7 +34,7 @@ type Screen struct {
 	height         int
 	width          int
 	resizeCount    uint
-	isTopLevelGrid int
+	topLevelGrid int
 }
 
 type Cache struct {
@@ -960,7 +960,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			}
 
 			// Fix #297
-			if win.s.isTopLevelGrid != win.grid {
+			if win.s.topLevelGrid != win.grid {
 
 				// If a mouse drag event is occurring in the previous 
 				// cursor grid, window raising will be suppressed.
@@ -987,7 +987,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 }
 
 func (s *Screen) setTopLevelGrid(n int) {
-	s.isTopLevelGrid = n
+	s.topLevelGrid = n
 }
 
 func (s *Screen) setHlAttrDef(args []interface{}) {
