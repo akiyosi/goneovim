@@ -56,7 +56,6 @@ type Workspace struct {
 	palette            *Palette
 	popup              *PopupMenu
 	cmdline            *Cmdline
-	signature          *Signature
 	message            *Message
 	minimap            *MiniMap
 	guiUpdates         chan []interface{}
@@ -192,10 +191,6 @@ func newWorkspace(path string) (*Workspace, error) {
 		w.statusline = initStatusline()
 		w.statusline.ws = w
 	}
-
-	// w.signature = initSignature()
-	// w.signature.widget.SetParent(w.widget)
-	// w.signature.ws = w
 
 	editor.putLog("initialazed UI components")
 

@@ -34,7 +34,7 @@ type Screen struct {
 	height         int
 	width          int
 	resizeCount    uint
-	topLevelGrid int
+	topLevelGrid   int
 }
 
 type Cache struct {

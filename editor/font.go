@@ -13,8 +13,6 @@ type Font struct {
 	ws                 *Workspace
 	fontNew            *gui.QFont
 	fontMetrics        *gui.QFontMetricsF
-	defaultFont        *gui.QFont
-	defaultFontMetrics *gui.QFontMetricsF
 	width              float64
 	cellwidth          float64
 	italicWidth        float64
@@ -66,12 +64,9 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 
 	width, height, ascent, italicWidth := fontSizeNew(font)
 
-	defaultFont := gui.NewQFont()
 	return &Font{
 		fontNew:            font,
 		fontMetrics:        gui.NewQFontMetricsF(font),
-		defaultFont:        defaultFont,
-		defaultFontMetrics: gui.NewQFontMetricsF(defaultFont),
 		width:              width,
 		cellwidth:          width+letterSpace,
 		letterSpace:        letterSpace,
