@@ -493,6 +493,9 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/
         /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION_HASH }}" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
         /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/Frameworks/
+        rm -fr QtQuick.framework
+        rm -fr QtVirtualKeyboard.framework
 
     - name: Archive
       run: |
