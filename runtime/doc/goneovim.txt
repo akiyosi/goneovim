@@ -117,6 +117,8 @@ COMMANDS                                                       *goneovim-command
 :GonvimSmoothScroll                                         *:GonvimSmoothScroll*
 	Toggles scrolling by Vim commands (e.g. <C-f>) to a mode that displays
 	a smooth animation.
+	Note that enabling this smooth scrolling will increase the memory
+	usage of the application.
 
 
 :GonvimSmoothCursor                                         *:GonvimSmoothCursor*
@@ -142,23 +144,289 @@ On Windows:
         ~/.goneovim/settings.toml
 <
 
-See the following wiki for sample configuration files.
+All Options are follows:
 
-https://github.com/akiyosi/goneovim/wiki/Usage#configuration
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+> 
+        ## Goneovim settings.toml
+        ## All of the following commented configuration items have default values.
+        
+        [Editor]
+        ## Makes the application window frameless.
+        # BorderlessWindow = false
+        
+        ## Editor minimum window width (>= 400)
+        # Width = 800
+        ## Editor minimum window height (>= 300)
+        # Height = 600
+        ## Create a small margin on the left and right sides of the application window.
+        # Gap = 2
+        
+        ## Specifies the command used to open the file in an external file explorer, etc. The default is ":e".
+        # FileOpenCmd = ":e"
+        
+        ## Reverses the direction of scrolling with the mouse wheel.
+        # ReversingScrollDirection = false
+        
+        ## Specifies the amount of scrolling by the mouse wheel. The default value is 1.
+        # LineToScroll = 1
+        
+        ## This option makes the whole GUI window in semi-transparent.
+        ## This setting also implicitly enables the Drawborder setting
+        # Transparent = 1.0
+        
+        ## Launch goneovim with full screen window size.
+        # StartFullscreen = false
+        
+        ## Editor external font-family, font-size, and linespace.
+        ## This is the font and linespace settings of the graphical UI as an nvim front end.
+        ## For example, linespace affects the margins of the external completion popup menu UI.
+        ## Note that the linespace setting must be the same on the Neovim side. The reason for this
+        ## is that the default value on the Neovim side is 0, which will be overwritten by the Neovim setting.
+        ## Of course, these settings can also be changed by setting the guifont and linespace on the Neovim side.
+        ## Fontfamily is
+        ## In MacOS, 
+        # FontFamily = "Monaco"
+        ## In Linux
+        # FontFamily = "Consolas"
+        ## In Windows
+        # FontFamily = "Windows"
+        ## Fontsize is
+        # FontSize = 12
+        ## linespace is
+        # Linespace = 6
+        
+        ## Neovim external UI features
+        ## The following is the default value of goneovim.
+        ## You can change the behavior of the GUI by changing the following boolean values.
+        ## If you prefer the traditional Vim UI, set it to false for all.
+        ## Also, `ExtMessages` is still experimental at this time and we don't recommend setting it to true if you want stability.
+        # ExtCmdline   = false
+        # ExtPopupmenu = false
+        # ExtTabline   = false
+        # ExtMessages  = false
+        
+        ## Goneovim has a cached rendering feature enabled to speed up the process.
+        ## If you want to disable it, set it to false
+        # CachedDrawing = true
+        ## You can specify the cache size to be used by the cache rendering feature of goneovim.
+        ## The default is 400.
+        # CacheSize = 400
+        
+        ## Disables font ligatures.
+        # DisableLigatures = true
+        
+        ## Copy yanked text to clipboard
+        # Clipboard = true
+        
+        ## This setting is equivalent to Macmeta in MacVim.
+        # Macmeta = false
+        
+        ## The input method editor will be automatically disabled when the mode is changed to normal mode.
+        ## It may be useful for users who use the input method editor (e.g. East Asian users).
+        ## DisableImeInNormal = false
+        
+        ## Draw borders on the GUI side instead of the vertical border and status line that nvim draws.
+        # DrawWindowSeparator = false
+        # WindowSeparatorTheme = "dark"
+        # WindowSeparatorColor = "#2222ff"
+        # WindowSeparatorGradient = false
+        
+        ## Draw built-in indent guide
+        ## Enabling this setting will have a slight impact on performance.
+        # IndentGuide = false
+        # IndentGuideIgnoreFtList = ["md"]
+        # OptionsToUseGuideWidth = "tabstop"
+        
+        ## Animates the scrolling behavior of Neovim when the scroll command is entered.
+        # SmoothScroll = false
+        ## Disables horizontal scrolling for smooth scrolling with the touchpad.
+        # DisableHorizontalScroll = true
+        
+        ## Draw border on a float window
+        # DrawBorderForFloatWindow = false
+        
+        ## Draw shadow under a float window
+        # DrawShadowForFloatWindow = false
+        
+        ## Enable desktop notification settings for nvim messages.
+        ## This option works only if `ExtMessages` is enabled.
+        # DesktopNotifications = false
+        
+        # Display the effect when clicked
+        # ClickEffect = false
+        
+        # Pattern that fills the diff background
+        # Change the background pattern used for diff display.
+        # This option allows you to use a visual effect pattern such as Dense, Diagonal Stripe instead of a regular solid pattern.
+        # The available patterns are all Qt brush styles. For more information, See: https://doc.qt.io/qt-5/qbrush.html#details
+        # // -- diffpattern enum --
+        # // SolidPattern             1
+        # // Dense1Pattern            2
+        # // Dense2Pattern            3
+        # // Dense3Pattern            4
+        # // Dense4Pattern            5
+        # // Dense5Pattern            6
+        # // Dense6Pattern            7
+        # // Dense7Pattern            8
+        # // HorPattern               9
+        # // VerPattern               10
+        # // CrossPattern             11
+        # // BDiagPattern             12
+        # // FDiagPattern             13
+        # // DiagCrossPattern         14
+        # // LinearGradientPattern    15
+        # // RadialGradientPattern    16
+        # // ConicalGradientPattern   17
+        # // TexturePattern           24
+        # DiffAddPattern    = 1
+        # DiffDeletePattern = 1
+        # DiffChangePattern = 1
+        
+        ## You can write a vimscript to be executed after goneovim starts,
+        ## for example to disable the vimscript that Goneovim has embedded internally.
+        ## GinitVim = '''
+        ##  let g:hoge = 'fuga'
+        ## '''
+        # Ginitvim = ""
+        
+        
+        [Cursor]
+        ## Specifies whether the smooth cursor feature is enabled or disabled by a boolean value.
+        # SmoothMove = false
+        
+        ## Specifies the duration of the animation at the smooth cursor. Default is 55ms.
+        ## Note that Goneovim uses the specified value as a base value and makes slight adjustments depending on the distance.
+        # Duration = ５５
+        
+        
+        
+        ## The palette is used as an input UI for externalized command lines and the Fuzzy-Finder feature built into Goneovim.
+        [Palette]
+        ## Specifies the proportion of the command line palette to the height of the entire window.
+        # AreaRatio = 0.5
+        ## Specifies the number of items to be displayed in the command line palette.
+        # MaxNumberOfResultItems = 30
+        ## Specifies the opacity of the command line palette.
+        # Transparent = 1.0
+        
+        
+        ## Configure externalized message UI.
+        [Message]
+        ## Specifies the opacity of the message window.
+        # Transparent = 1.0
+        
+        
+        ## The statusline configuration below relates to the display of Goenovim's own external status lines.
+        ## If you want to use neovim's status line plugin, you should disable its display.
+        # [Statusline]
+        ## Whether or not to display the external status line
+        # Visible = false
+        
+        ## Options: "textLabel" / "icon" / "background" / "none"
+        # ModeIndicatorType = "textLabel"
+        
+        ## Optional setting colors per Neovim editing modes
+        # NormalModeColor = "#3cabeb"
+        # CommandModeColor = "#5285b8"
+        # InsertModeColor = "#2abcb4"
+        # ReplaceModeColor = "#ff8c0a"
+        # VisualModeColor = "#9932cc"
+        # TerminalModeColor = "#778899"
+        
+        ## Statusline components
+        # Left = [ "mode", "filepath", "filename" ]
+        # Right = [ "message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint" ]
+        
+        
+        ## Configure externalized tabline UI.
+        [Tabline]
+        ## Whether or not to display the external tabline
+        # Visible = true
+        # ShowIcon = true
+        
+        
+        ## Configure externalized popupmenu UI.
+        [Popupmenu]
+        ## neovim's popupmenu is made up of word, menu and info parts.
+        ## Each of these parts will display the following information.
+        ##   word:   the text that will be inserted, mandatory
+        ##   menu:   extra text for the popup menu, displayed after "word"
+        ##   info:   more information about the item, can be displayed in a preview window
+        ## The following options specify whether to display a dedicated column in the popupmenu
+        ## to display the long text displayed in the `info` part.
+        # ShowDetail = true
+         
+        ## total number to display item
+        # Total = 20
+         
+        ## width of `menu` column
+        # MenuWidth = 400
+         
+        ## width of `info` column
+        # InfoWidth = 1
+         
+        ## width of `detail` column
+        # DetailWidth = 250
+         
+        ## Show digit number which can select item for popupmenu
+        # ShowDigit = true
+        
+        
+        [ScrollBar]
+        ## Specifies whether to show the external scrollbar or not.
+        # Visible = false
+        
+        
+        [MiniMap]
+        ## To view the minimap, launch an additional nvim instance;
+        ## setting Disable to true will not launch this additional nvim instance
+        ## and will completely disable the minimap feature.
+        # Disable = false
+        
+        ## Specifies whether to show the minimap or not.
+        # Visible = false
+        
+        ## Specifies the width of the minimap.
+        # Width = 100
+        
+        
+        ## Configure the markdown preview feature
+        [Markdown]
+        # Disable = false
+        
+        ## Specifying code highlighting styles
+        # CodeHlStyle = "github"
+        
+        
+        [SideBar]
+        ## Specifies whether to show the external sidebar or not.
+        # Visible = false
+        
+        ## Specify the sidebar width
+        # Width = 200
+        
+        ## Specify whether or not to draw a shadow under the sidebar.
+        # DropShadow = false
+        
+        ## Specify the color to use when selecting items in the sidebar or palette in hexadecimal format
+        # AccentColor = "#5596ea"
+        
+        
+        [FileExplore]
+        ## Specify the maximum number of items to be displayed in the file explorer.
+        # MaxDisplayItems = 30
+        
+        
+        [Workspace]
+        ## This setting sets the format of the path string of CWD in the sidebar.
+        ##  name: directoryname
+        ##  full: /path/to/directoryname
+        ##  minimum: /p/t/directoryname
+        # PathStyle = "minimum"
+        
+        ## Specifies whether the last exited session should be restored at the next startup.
+        # RestoreSession = false
+<
 
 
 vim:tw=78:ts=8:ft=help:norl:
