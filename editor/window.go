@@ -283,7 +283,10 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 	if w.s.name == "minimap" {
 		return
 	}
-	if w.snapshot == nil || editor.isKeyAutoRepeating {
+	if w.snapshot == nil {
+		return
+	}
+	if editor.isKeyAutoRepeating {
 		return
 	}
 	if w.scrollPixels2 == 0 {
