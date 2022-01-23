@@ -287,7 +287,7 @@ func (s *Screen) gridFont(update interface{}) {
 		win.fgCache.purge()
 	}
 
-	_ = s.ws.nvim.TryResizeUIGrid(s.ws.cursor.gridid, newCols, newRows)
+	_ = s.ws.nvim.TryResizeUIGrid(win.grid, newCols, newRows)
 	font := win.getFont()
 	s.ws.cursor.updateFont(font)
 
