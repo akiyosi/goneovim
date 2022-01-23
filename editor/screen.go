@@ -289,7 +289,8 @@ func (s *Screen) gridFont(update interface{}) {
 
 	_ = s.ws.nvim.TryResizeUIGrid(win.grid, newCols, newRows)
 	font := win.getFont()
-	s.ws.cursor.updateFont(font)
+	
+	s.ws.cursor.font = font
 
 	if win.isExternal {
 		width := int(float64(newCols)*win.font.cellwidth) + EXTWINBORDERSIZE*2
@@ -452,11 +453,6 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 
 	var targetwin *Window
 
-	currWin, ok := s.getWindow(s.ws.cursor.gridid)
-	if !ok {
-		return
-	}
-
 	// If a mouse event has already occurred and the mouse is being
 	// used to drag content, the window being operated on will be the target window.
 	s.windows.Range(func(_, winITF interface{}) bool {
@@ -477,11 +473,7 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 		return true
 	})
 
-	// If there is a window that has independent font settings by GonvimGridFont
-	// and the mouse pointer is on the window, the window is used as the target window.
-	if targetwin != nil && currWin.font != nil {
-		targetwin = currWin
-	} else {
+	if targetwin == nil {
 
 		// If there is an externalized float window and
 		// the mouse pointer is in that window,
@@ -622,11 +614,9 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 		)
 	} else {
 		font := s.font
-		var offsetX, offsetY float64
-		if targetwin.font == nil {
-			offsetX = float64(targetwin.pos[0]) * font.cellwidth
-			offsetY = float64(targetwin.pos[1]) * float64(font.lineHeight)
-		}
+		offsetX := float64(targetwin.pos[0]) * font.cellwidth
+		offsetY := float64(targetwin.pos[1]) * float64(font.lineHeight)
+
 		localpos = core.NewQPointF3(
 			event.LocalPos().X()-offsetX,
 			event.LocalPos().Y()-offsetY,

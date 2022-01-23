@@ -1974,7 +1974,7 @@ func (w *Workspace) letterSpacing(arg interface{}) {
 		w.message.updateFont()
 	}
 	w.screen.tooltip.setFont(font)
-	w.cursor.updateFont(font)
+	w.cursor.updateFont(nil, font)
 }
 
 func (w *Workspace) guiFont(args string) {
@@ -2030,7 +2030,7 @@ func (w *Workspace) guiFont(args string) {
 		w.message.updateFont()
 	}
 	w.screen.tooltip.setFont(font)
-	w.cursor.updateFont(font)
+	w.cursor.updateFont(nil, font)
 
 	// Change external font if font setting of setting.yml is nothing
 	if editor.config.Editor.FontFamily == "" {
@@ -2097,8 +2097,6 @@ func (w *Workspace) guiFontWide(args string) {
 	w.fontwide.change(fontFamily, fontHeight, fontWeight, fontStretch)
 
 	w.updateSize()
-	// w.cursor.updateFont(w.font)
-	// w.screen.toolTipFont(w.font)
 }
 
 func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.QFont__Weight, int) {

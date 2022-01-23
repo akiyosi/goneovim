@@ -85,14 +85,34 @@ func (c *Cursor) setBypassScreenEvent() {
 func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 	var targetwin *Window
 
-	currWin, ok := c.ws.screen.getWindow(c.gridid)
-	if !ok {
-		return
-	}
-	if currWin.font != nil {
-		targetwin = currWin
-	} else {
+	c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win == nil {
+			return true
+		}
+		if !win.IsVisible() {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+		if win.isMsgGrid {
+			return true
+		}
+		if win.isExternal {
+			if win.grid == c.gridid {
+				if win.Geometry().Contains(event.Pos(), true) {
+					targetwin = win
+				}
+				// targetwin = win
+				return false
+			}
+		}
 
+		return true
+	})
+
+	if targetwin == nil {
 		c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
 			win := winITF.(*Window)
 			if win == nil {
@@ -107,76 +127,47 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 			if win.isMsgGrid {
 				return true
 			}
-			if win.isExternal {
-				if win.grid == c.gridid {
+			if win.isFloatWin && !win.isExternal {
+				if targetwin != nil {
+					if targetwin.Geometry().Contains2(win.Geometry(), true) {
+						targetwin = win
+					}
+				} else {
 					if win.Geometry().Contains(event.Pos(), true) {
 						targetwin = win
 					}
-					// targetwin = win
-					return false
 				}
 			}
 
 			return true
 		})
+	}
 
-		if targetwin == nil {
-			c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
-				win := winITF.(*Window)
-				if win == nil {
-					return true
-				}
-				if !win.IsVisible() {
-					return true
-				}
-				if win.grid == 1 {
-					return true
-				}
-				if win.isMsgGrid {
-					return true
-				}
-				if win.isFloatWin && !win.isExternal {
-					if targetwin != nil {
-						if targetwin.Geometry().Contains2(win.Geometry(), true) {
-							targetwin = win
-						}
-					} else {
-						if win.Geometry().Contains(event.Pos(), true) {
-							targetwin = win
-						}
-					}
-				}
-
+	if targetwin == nil {
+		c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
+			win := winITF.(*Window)
+			if win == nil {
 				return true
-			})
-		}
-
-		if targetwin == nil {
-			c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
-				win := winITF.(*Window)
-				if win == nil {
-					return true
-				}
-				if !win.IsVisible() {
-					return true
-				}
-				if win.grid == 1 {
-					return true
-				}
-				if win.isMsgGrid {
-					return true
-				}
-				if win.isFloatWin || win.isExternal {
-					return true
-				}
-				if win.Geometry().Contains(event.Pos(), true) {
-					targetwin = win
-					return false
-				}
-
+			}
+			if !win.IsVisible() {
 				return true
-			})
-		}
+			}
+			if win.grid == 1 {
+				return true
+			}
+			if win.isMsgGrid {
+				return true
+			}
+			if win.isFloatWin || win.isExternal {
+				return true
+			}
+			if win.Geometry().Contains(event.Pos(), true) {
+				targetwin = win
+				return false
+			}
+
+			return true
+		})
 	}
 
 	if targetwin != nil {
@@ -403,10 +394,6 @@ func (c *Cursor) move(win *Window) {
 
 	var x, y float64
 	if !win.isExternal {
-		if win.font != nil {
-			x = x + (float64(win.pos[0]) * win.s.font.cellwidth)
-			y = y + float64(win.pos[1]*win.s.font.lineHeight)
-		}
 		if c.ws.tabline != nil {
 			if c.ws.tabline.widget.IsVisible() {
 				y = y + float64(c.ws.tabline.height)
@@ -426,8 +413,26 @@ func (c *Cursor) move(win *Window) {
 	c.layerPos[1] = int(y)
 }
 
-func (c *Cursor) updateFont(font *Font) {
-	c.font = font
+
+func (c *Cursor) updateFont(targetWin *Window, font *Font) {
+	win := targetWin
+	ok := false
+	if win == nil {
+		win, ok = c.ws.screen.getWindow(c.bufferGridid)
+		if !ok {
+			return
+		}
+	}
+
+	if win == nil {
+		return
+	}
+	if win.font == nil {
+		c.font = font
+	} else {
+		c.font = win.font
+		c.snapshot = nil
+	}
 }
 
 func (c *Cursor) updateCursorShape() {
@@ -547,13 +552,6 @@ func (c *Cursor) updateContent(win *Window) {
 	row := c.ws.screen.cursor[0]
 	col := c.ws.screen.cursor[1]
 
-	winx := win.pos[0]
-	winy := win.pos[1]
-	if win.isExternal || win.font != nil {
-		winx = 0
-		winy = 0
-	}
-
 	winbordersize := 0
 	if win.isExternal {
 		winbordersize = EXTWINBORDERSIZE
@@ -583,9 +581,24 @@ func (c *Cursor) updateContent(win *Window) {
 		}
 	}
 
+	// Get the current font applied to the cursor. 
+	// If the cursor is on a window that has its own font setting,
+	// get its own font.
 	font := c.font
 	if font == nil {
 		return
+	}
+
+	// The position of the window is represented by coordinates 
+	// based on the width and height of the guifont or
+	// the application's default font.
+	baseFont := c.ws.screen.font
+
+	winx := float64(win.pos[0])*baseFont.cellwidth
+	winy := float64(win.pos[1]*baseFont.lineHeight)
+	if win.isExternal {
+		winx = 0
+		winy = 0
 	}
 
 	res := 0
@@ -602,8 +615,8 @@ func (c *Cursor) updateContent(win *Window) {
 		scrollPixels += win.scrollPixels[1]
 	}
 
-	x := float64(col+winx)*font.cellwidth + float64(winbordersize)
-	y := float64((row+winy)*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(scrollPixels+res+winbordersize)
+	x := winx + float64(col)*font.cellwidth + float64(winbordersize)
+	y := winy + float64(row*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(scrollPixels+res+winbordersize)
 
 	isStopScroll := (win.lastScrollphase == core.Qt__ScrollEnd)
 	c.move(win)

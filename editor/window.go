@@ -2621,6 +2621,7 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 	w.lastMouseEvent.col = col
 
 	w.s.ws.nvim.InputMouse(button, action, mod, w.grid, row, col)
+	w.s.ws.cursor.updateFont(w, w.getFont())
 }
 
 
@@ -2729,7 +2730,7 @@ func (w *Window) raise() {
 
 func (w *Window) setCursorParent() {
 	// Update cursor font
-	w.s.ws.cursor.updateFont(w.getFont())
+	w.s.ws.cursor.updateFont(w, w.getFont())
 	w.s.ws.cursor.isInPalette = false
 
 	// for handling external window

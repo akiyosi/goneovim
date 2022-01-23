@@ -87,6 +87,74 @@ COMMANDS                                                       *goneovim-command
 	other |windows|. The string is in the form of a font family and font size
 	separated by colons, e.g. "Fira Code:h20".
 
+	This setting makes a window with its own font settings independent of
+	Neovim's control and under the control of Goneovim.
+	Goneovim will attempt to do the following for a window with
+	independent font settings.
+
+	For a splitted windows:
+	Goneovim will attempt to resize as much as possible within the area
+	bounded by the other windows.
+	For example, in a simple vertical split, it will adjust the number of
+	rows and columns while keeping the vertical height.
+
+	  e.g.
+	  Let X: normal window, and Y: window with its own font settings,
+	  When a window is resized vertically, the overall vertical size is kept.
+	  +--------+     +--------+    +--------+
+	  |   X    |     |   X    |    |   X    |
+	  |        |     +--------+    |        |
+	  +--------+ =>  |        | => |        |
+	  |   Y    |     |   Y    |    +--------+
+	  |        |     |        |    |   Y    |
+	  +--------+     +--------+    +--------+
+
+	  The same applies to the left/right split.
+
+	  +----+----+     +--+------+    +------+--+
+	  | Y  | X  | =>  |Y | X    | => |  Y   |X |
+	  |    |    |     |  |      |    |      |  |
+	  +----+----+     +--+------+    +------+--+
+
+	  But if you have a mix of vertical and horizontal splits, the length
+	  will only be kept in the direction of the first split.
+
+	  Let X,Z: normal window, and Y: window with its own font settings,
+	  Each shall be split as follows.
+
+	  +--------+     +--------+
+	  |   X    |     |   X    |
+	  |        |     |        |
+	  +--------+ =>  +---+----+
+	  |   Y    |     | Z | Y  |
+	  |        |     |   |    |
+	  +--------+     +---+----+
+
+	  In this case, when the window is resized, the vertical length of Y
+	  will be changed to keep the overall length, but the horizontal
+	  length will remain the same.
+
+	  +---------+                     +---------+
+	  |    X    |                     |    X    |
+	  |         |  Resize vertically  +----+----+
+	  +----+----+         =>          |    |    |
+	  |  Z | Y  |                     |  Z | Y  |
+	  |    |    |                     |    |    |
+	  +----+----+                     +----+----+
+
+	  +---------+     +---------+        +---------+
+	  |    X    |     |    X    |        |    X    |
+	  |         |     |         |        |         |
+	  |         | =>  |         |     => |         |
+	  +----+----+     +-------+----+     +--+----+-+
+	  |  Z | Y  |     |  Z    | Y  |     |Z | Y  |  
+	  +----+----+     +-------+----+     +--+----+  
+
+
+	In the case of an external window:
+	  In the external window, the number of rows and columns is controlled
+	  to fit the size of the external window.
+
 
 :GonvimLetterSpacing {num}                                  *:GonvimLetterSpacing*
 	Set the letterspace. Note that Ligature will be disabled when this 
