@@ -509,7 +509,7 @@ jobs:
       run: |
         npm install --global create-dmg
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        create-dmg darwin
+        create-dmg Goneovim-latest-macos
         ls -l
 
     - name: Upload for macos
