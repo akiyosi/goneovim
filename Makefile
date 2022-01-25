@@ -58,6 +58,9 @@ build:
 	@if [[ $(shell uname) == 'Darwin' ]]; then \
 	  /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $(VERSION_HASH)" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist" ; \
 	  /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $(VERSION)"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist" ; \
+          cd cmd/goneovim/deploy/darwin/goneovim.app/Contents/Frameworks/ ; \
+          rm -fr QtQuick.framework ; \
+          rm -fr QtVirtualKeyboard.framework ; \
 	fi
 
 debug:
