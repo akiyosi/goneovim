@@ -497,19 +497,20 @@ jobs:
         rm -fr QtQuick.framework
         rm -fr QtVirtualKeyboard.framework
 
-    - name: Install create-dmg
-      run: |
-        npm install --global create-dmg
-
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        create-dmg darwin
-        ls -l
         mv darwin Goneovim-latest-macos
         tar -jcvf Goneovim-latest-macos.tar.bz2 Goneovim-latest-macos
 
     - uses: actions/setup-node@v1
+
+    - name: Make .dmg
+      run: |
+        npm install --global create-dmg
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos
+        create-dmg goneovim.app .
+        ls -l
 
     - name: Upload for macos
       uses: actions/upload-artifact@v1
@@ -521,95 +522,95 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-macos-dmg
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim.dmg
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim.dmg
 
 
-  # # test-and-build-windows:
-  # test-windows:
-  #   strategy:
-  #     matrix:
-  #       platform: [windows-latest]
-  #       qtversion: [5.14.1]
-  #   runs-on: ${{ matrix.platform }}
-  #   env:
-  #     GOPATH: ${{ github.workspace }}
-  #     GOROOT: ${{ github.workspace }}\go-root
-  #     QT_VERSION: ${{ matrix.qtversion }}
-  #     QT_DIR: ${{ github.workspace }}\Qt
-  #     QT_MSYS2: true
-  #     QT_MSYS2_DIR: D:\a\_temp\msys64\
-  #     QT_MSVC: false
-  #     QT_DEBUG: false
-  #     GO111MODULE: off
-  #     CGO_CFLAGS_ALLOW: ".*" 
-  #     CGO_CXXFLAGS_ALLOW: ".*" 
-  #     CGO_LDFLAGS_ALLOW: ".*" 
-  #     #CGO_ENABLED: 1
-  #     ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  #   steps:
+          # # test-and-build-windows:
+          # test-windows:
+          #   strategy:
+          #     matrix:
+          #       platform: [windows-latest]
+          #       qtversion: [5.14.1]
+          #   runs-on: ${{ matrix.platform }}
+          #   env:
+          #     GOPATH: ${{ github.workspace }}
+          #     GOROOT: ${{ github.workspace }}\go-root
+          #     QT_VERSION: ${{ matrix.qtversion }}
+          #     QT_DIR: ${{ github.workspace }}\Qt
+          #     QT_MSYS2: true
+          #     QT_MSYS2_DIR: D:\a\_temp\msys64\
+          #     QT_MSVC: false
+          #     QT_DEBUG: false
+          #     GO111MODULE: off
+          #     CGO_CFLAGS_ALLOW: ".*" 
+          #     CGO_CXXFLAGS_ALLOW: ".*" 
+          #     CGO_LDFLAGS_ALLOW: ".*" 
+          #     #CGO_ENABLED: 1
+          #     ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+          #   steps:
 
-  #   - name: Setup MSYS2 and install Qt5
-  #     uses: msys2/setup-msys2@v2
-  #     with:
-  #       update: true
-  #       msystem: mingw64
-  #       install: mingw-w64-x86_64-toolchain
-  #   - shell: msys2 {0}
-  #     run: |
-  #       pacman --noconfirm -S sed git mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
+          #   - name: Setup MSYS2 and install Qt5
+          #     uses: msys2/setup-msys2@v2
+          #     with:
+          #       update: true
+          #       msystem: mingw64
+          #       install: mingw-w64-x86_64-toolchain
+          #   - shell: msys2 {0}
+          #     run: |
+          #       pacman --noconfirm -S sed git mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
 
-  #   - name: Install Go
-  #     continue-on-error: true
-  #     run: |
-  #       curl -sL --retry 10 --retry-delay 60 -O https://dl.google.com/go/go1.16.5.windows-amd64.zip
-  #       expand-archive -path go1.16.5.windows-amd64.zip -destinationpath .
-  #       Move-Item -Path go -Destination go-root
+          #   - name: Install Go
+          #     continue-on-error: true
+          #     run: |
+          #       curl -sL --retry 10 --retry-delay 60 -O https://dl.google.com/go/go1.16.5.windows-amd64.zip
+          #       expand-archive -path go1.16.5.windows-amd64.zip -destinationpath .
+          #       Move-Item -Path go -Destination go-root
 
-  #   - name: Get Qt binding for Go
-  #     run: |
-  #       ${{ github.workspace }}\go-root\bin\go.exe get -v github.com/therecipe/qt/cmd/...
+          #   - name: Get Qt binding for Go
+          #     run: |
+          #       ${{ github.workspace }}\go-root\bin\go.exe get -v github.com/therecipe/qt/cmd/...
 
-  #   - name: Checkout code
-  #     uses: actions/checkout@v2
-  #     with:
-  #       fetch-depth: 0
-  #       path: .\src\github.com\${{ github.repository }}
+          #   - name: Checkout code
+          #     uses: actions/checkout@v2
+          #     with:
+          #       fetch-depth: 0
+          #       path: .\src\github.com\${{ github.repository }}
 
-  #   # FIXME: Should be fixed with the deprecation of set-env
-  #   - name: Set PATH
-  #     run: |
-  #       $env:PATH = "C:\\msys64\\usr\\bin;${{ github.workspace }}\\bin;${{ github.workspace }}\\go-root\\bin;$env:PATH"
-  #       echo "::set-env name=PATH::$env:PATH"
+          #   # FIXME: Should be fixed with the deprecation of set-env
+          #   - name: Set PATH
+          #     run: |
+          #       $env:PATH = "C:\\msys64\\usr\\bin;${{ github.workspace }}\\bin;${{ github.workspace }}\\go-root\\bin;$env:PATH"
+          #       echo "::set-env name=PATH::$env:PATH"
 
-  #   - uses: actions/cache@v2
-  #     id: cache-qt-bindings-windows
-  #     with:
-  #       path: ${{ github.workspace }}\src\github.com\therecipe
-  #       key: ${{ matrix.qtversion }}-qtbindings-windows-${{ env.cache-version }}
+          #   - uses: actions/cache@v2
+          #     id: cache-qt-bindings-windows
+          #     with:
+          #       path: ${{ github.workspace }}\src\github.com\therecipe
+          #       key: ${{ matrix.qtversion }}-qtbindings-windows-${{ env.cache-version }}
 
-  #   - name: Generate Qt bindings
-  #     if: ${{ steps.cache-qt-bindings-windows.outputs.cache-hit != 'true' }}
-  #     env:
-  #       QT_API: 5.13.0
-  #     shell: msys2 {0}
-  #     run: |
-  #       /d/a/goneovim/goneovim/bin/qtsetup -test=false
+          #   - name: Generate Qt bindings
+          #     if: ${{ steps.cache-qt-bindings-windows.outputs.cache-hit != 'true' }}
+          #     env:
+          #       QT_API: 5.13.0
+          #     shell: msys2 {0}
+          #     run: |
+          #       /d/a/goneovim/goneovim/bin/qtsetup -test=false
 
-  #   - name: Get dependencies
-  #     continue-on-error: true
-  #     env:
-  #       QT_API: 5.13.0
-  #     run: |
-  #       go get -v -d github.com/${{ github.repository }}/...
-  #       cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-  #       ${{ github.workspace }}\bin\qtmoc.exe
+          #   - name: Get dependencies
+          #     continue-on-error: true
+          #     env:
+          #       QT_API: 5.13.0
+          #     run: |
+          #       go get -v -d github.com/${{ github.repository }}/...
+          #       cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
+          #       ${{ github.workspace }}\bin\qtmoc.exe
 
-  #   - name: Test
-  #     env:
-  #       QT_API: 5.13.0
-  #     shell: msys2 {0}
-  #     run: |
-  #       /d/a/goneovim/goneovim/go-root/bin/go test github.com/akiyosi/goneovim/editor
+          #   - name: Test
+          #     env:
+          #       QT_API: 5.13.0
+          #     shell: msys2 {0}
+          #     run: |
+          #       /d/a/goneovim/goneovim/go-root/bin/go test github.com/akiyosi/goneovim/editor
 
   # - name: Retrieve version
   #   id: version-windows
