@@ -497,20 +497,19 @@ jobs:
         rm -fr QtQuick.framework
         rm -fr QtVirtualKeyboard.framework
 
+    - name: Install create-dmg
+      run: |
+        npm install --global create-dmg
+
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        create-dmg darwin
+        ls -l
         mv darwin Goneovim-latest-macos
         tar -jcvf Goneovim-latest-macos.tar.bz2 Goneovim-latest-macos
 
     - uses: actions/setup-node@v1
-
-    - name: Make .dmg
-      run: |
-        npm install --global create-dmg
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        create-dmg Goneovim-latest-macos
-        ls -l
 
     - name: Upload for macos
       uses: actions/upload-artifact@v1
