@@ -506,6 +506,7 @@ jobs:
     - uses: actions/setup-node@v1
 
     - name: Make .dmg
+      continue-on-error: true
       run: |
         npm install --global create-dmg
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos
