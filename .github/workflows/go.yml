@@ -512,11 +512,11 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos
         create-dmg goneovim.app .
 
-    # - name: Check
-    #   continue-on-error: true
-    #   run: |
-    #     cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos
-    #     ls -l
+    - name: Check
+      continue-on-error: true
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos
+        ls -l
 
     - name: Upload for macos
       uses: actions/upload-artifact@v1
