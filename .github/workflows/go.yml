@@ -528,7 +528,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: Goneovim-latest-macos-dmg
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION_HASH }}.dmg
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}.dmg
 
 
           # # test-and-build-windows:
