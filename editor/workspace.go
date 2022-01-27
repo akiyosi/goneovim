@@ -675,8 +675,8 @@ func (w *Workspace) initGonvim() {
 	// autocmds that goneovim uses
 	gonvimAutoCmds := `
 	aug GoneovimCore | au! | aug END
-	au GoneovimCore VimEnter * call rpcnotify(1, "Gui", "gonvim_enter")
-	au GoneovimCore UIEnter * call rpcnotify(1, "Gui", "gonvim_uienter")
+	au GoneovimCore VimEnter * call rpcnotify(0, "Gui", "gonvim_enter")
+	au GoneovimCore UIEnter * call rpcnotify(0, "Gui", "gonvim_uienter")
 	au GoneovimCore BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"), win_getid(), bufname())
 	au GoneovimCore WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid(), bufname())
 	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
