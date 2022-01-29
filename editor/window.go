@@ -104,7 +104,6 @@ type Window struct {
 	cwd                    string
 	ft                     string
 	anchor                 string
-	bufName                string
 	lenOldContent          []int
 	lenContent             []int
 	scrollRegion           []int

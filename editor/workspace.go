@@ -677,8 +677,8 @@ func (w *Workspace) initGonvim() {
 	aug GoneovimCore | au! | aug END
 	au GoneovimCore VimEnter * call rpcnotify(0, "Gui", "gonvim_enter")
 	au GoneovimCore UIEnter * call rpcnotify(0, "Gui", "gonvim_uienter")
-	au GoneovimCore BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"), win_getid(), bufname())
-	au GoneovimCore WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid(), bufname())
+	au GoneovimCore BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"), win_getid())
+	au GoneovimCore WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid())
 	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
 	au GoneovimCore TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
 	au GoneovimCore TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
@@ -1913,10 +1913,10 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.cursor.update()
 	case "gonvim_bufenter":
 		w.maxLine = util.ReflectToInt(updates[1])
-		w.setBuffname(updates[2], updates[3])
+		// w.setBuffname(updates[2], updates[3])
 		w.setBuffTS(util.ReflectToInt(updates[2]))
 	case "gonvim_winenter_filetype":
-		w.setBuffname(updates[2], updates[3])
+		// w.setBuffname(updates[2], updates[3])
 		w.setBuffTS(util.ReflectToInt(updates[2]))
 		w.setFileType(updates)
 	case "gonvim_textchanged":
@@ -2206,78 +2206,78 @@ func (w *Workspace) setPumblend(arg interface{}) {
 	w.pb = pumblend
 }
 
-func (w *Workspace) setBuffname(idITF, nameITF interface{}) {
-	id := (nvim.Window)(util.ReflectToInt(idITF))
-
-	w.screen.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-
-		if win == nil {
-			return true
-		}
-		if win.grid == 1 {
-			return true
-		}
-		if win.isMsgGrid {
-			return true
-		}
-		if win.id != id && win.bufName != "" {
-			return true
-		}
-
-		name := nameITF.(string)
-		bufChan := make(chan nvim.Buffer, 10)
-		var buf nvim.Buffer
-		strChan := make(chan string, 10)
-
-		win.updateMutex.RLock()
-		id := win.id
-		win.updateMutex.RUnlock()
-		// set buffer name
-		go func() {
-			resultBuffer, _ := w.nvim.WindowBuffer(id)
-			bufChan <- resultBuffer
-		}()
-
-		select {
-		case buf = <-bufChan:
-		case <-time.After(40 * time.Millisecond):
-		}
-
-		if win.bufName == "" {
-			go func() {
-				resultStr, _ := w.nvim.BufferName(buf)
-				strChan <- resultStr
-			}()
-
-			select {
-			case name = <-strChan:
-			case <-time.After(40 * time.Millisecond):
-			}
-
-			win.bufName = name
-		}
-
-		// // NOTE: Getting buftype
-		// // Process to get buftype. Comment it out when the time comes to need it.
-		// errChan := make(chan error, 2)
-		// var btITF interface{}
-		// go func() {
-		// 	err := w.nvim.BufferOption(buf, "buftype", &btITF)
-		// 	errChan <- err
-		// }()
-		// var bt string
-		// select {
-		// case <-errChan:
-		// 	bt = btITF.(string)
-		// case <-time.After(40 * time.Millisecond):
-		// }
-
-		// win.bufType = bt
-
-		return true
-	})
-}
+// func (w *Workspace) setBuffname(idITF, nameITF interface{}) {
+// 	id := (nvim.Window)(util.ReflectToInt(idITF))
+// 
+// 	w.screen.windows.Range(func(_, winITF interface{}) bool {
+// 		win := winITF.(*Window)
+// 
+// 		if win == nil {
+// 			return true
+// 		}
+// 		if win.grid == 1 {
+// 			return true
+// 		}
+// 		if win.isMsgGrid {
+// 			return true
+// 		}
+// 		if win.id != id && win.bufName != "" {
+// 			return true
+// 		}
+// 
+// 		name := nameITF.(string)
+// 		bufChan := make(chan nvim.Buffer, 10)
+// 		var buf nvim.Buffer
+// 		strChan := make(chan string, 10)
+// 
+// 		win.updateMutex.RLock()
+// 		id := win.id
+// 		win.updateMutex.RUnlock()
+// 		// set buffer name
+// 		go func() {
+// 			resultBuffer, _ := w.nvim.WindowBuffer(id)
+// 			bufChan <- resultBuffer
+// 		}()
+// 
+// 		select {
+// 		case buf = <-bufChan:
+// 		case <-time.After(40 * time.Millisecond):
+// 		}
+// 
+// 		if win.bufName == "" {
+// 			go func() {
+// 				resultStr, _ := w.nvim.BufferName(buf)
+// 				strChan <- resultStr
+// 			}()
+// 
+// 			select {
+// 			case name = <-strChan:
+// 			case <-time.After(40 * time.Millisecond):
+// 			}
+// 
+// 			win.bufName = name
+// 		}
+// 
+// 		// // NOTE: Getting buftype
+// 		// // Process to get buftype. Comment it out when the time comes to need it.
+// 		// errChan := make(chan error, 2)
+// 		// var btITF interface{}
+// 		// go func() {
+// 		// 	err := w.nvim.BufferOption(buf, "buftype", &btITF)
+// 		// 	errChan <- err
+// 		// }()
+// 		// var bt string
+// 		// select {
+// 		// case <-errChan:
+// 		// 	bt = btITF.(string)
+// 		// case <-time.After(40 * time.Millisecond):
+// 		// }
+// 
+// 		// win.bufType = bt
+// 
+// 		return true
+// 	})
+// }
 
 func (w *Workspace) setBuffTS(arg int) {
 	bufChan := make(chan nvim.Buffer, 10)

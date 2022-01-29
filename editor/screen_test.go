@@ -109,7 +109,6 @@ func TestWindow_updateLine(t *testing.T) {
 		grid gridId
 		//	isGridDirty      bool
 		//	id               nvim.Window
-		//	bufName          string
 		//	pos              [2]int
 		//	anchor           string
 		cols int
