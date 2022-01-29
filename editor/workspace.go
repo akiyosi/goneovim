@@ -2280,6 +2280,9 @@ func (w *Workspace) setPumblend(arg interface{}) {
 // }
 
 func (w *Workspace) setBuffTS(arg int) {
+	if !editor.config.Editor.IndentGuide {
+		return
+	}
 	bufChan := make(chan nvim.Buffer, 10)
 	var buf nvim.Buffer
 	wid := (nvim.Window)(arg)
@@ -2367,6 +2370,9 @@ func (w *Workspace) getPumHeight() {
 }
 
 func (w *Workspace) setFileType(args []interface{}) {
+	if !editor.config.Editor.IndentGuide {
+		return
+	}
 	ft := args[1].(string)
 	wid := (nvim.Window)(util.ReflectToInt(args[2]))
 
@@ -2587,6 +2593,7 @@ func (w *Workspace) toggleIndentguide() {
 		editor.config.Editor.IndentGuide = true
 	}
 	editor.config.mu.Unlock()
+	go w.nvim.Command("doautocmd <nomodeline> WinEnter")
 }
 
 // WorkspaceSide is
