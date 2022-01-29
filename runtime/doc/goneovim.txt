@@ -6,7 +6,7 @@ Author: akiyosi <akiyoshimaruyama@gmail.com>
 CONTENTS                                                       *goneovim-contents*
 
 
-Introduction			                         |goneovim-introduction|
+Introduction                                             |goneovim-introduction|
 CLI Interface                                           |goneovim-cli-interface|
 Commands                                                     |goneovim-commands|
 Configuration                                           |goneovim-configuration|
@@ -27,18 +27,19 @@ CLI INTERFACE                                             *goneovim-cli-interfac
       goneovim [OPTIONS]
     
     Application Options:
-          --fullscreen    Open the window in fullscreen on startup
-          --maximized     Maximize the window on startup
           --geometry=     Initial window geomtry [e.g. --geometry=800x600]
           --server=       Remote session address [e.g. --server=host:3456]
           --ssh=          Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]
           --nvim=         Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]
+          --debug=        Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]
+          --fullscreen    Open the window in fullscreen on startup
+          --maximized     Maximize the window on startup
           --exttabline    Externalize the tabline
           --extcmdline    Externalize the cmdline
           --extmessages   Externalize the messages. Sets --extcmdline implicitly
           --extpopupmenu  Externalize the popupmenu
-          --debug=        Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]
           --version       Print Goneovim version
+          --wsl           Attach to nvim process in wsl environment
     
     Help Options:
       -h, --help          Show this help message
