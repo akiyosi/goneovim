@@ -596,8 +596,6 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 		command,
 		sshargs...,
 	)
-	util.PrepareRunProc(cmd)
-	cmd.SysProcAttr = embedProcAttr
 
 	inw, err := cmd.StdinPipe()
 	if err != nil {
@@ -649,7 +647,6 @@ func newWslProcess() (*nvim.Nvim, error) {
 		wslArgs...,
 	)
 	util.PrepareRunProc(cmd)
-	cmd.SysProcAttr = embedProcAttr
 	editor.putLog("exec command:", cmd.String())
 
 	inw, err := cmd.StdinPipe()
