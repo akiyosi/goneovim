@@ -88,6 +88,8 @@ type Options struct {
 	Extmessages  bool   `long:"extmessages" description:"Externalize the messages. Sets --extcmdline implicitly"`
 	Extpopupmenu bool   `long:"extpopupmenu" description:"Externalize the popupmenu"`
 	Version      bool   `long:"version" description:"Print Goneovim version"`
+	Wsl    bool `long:"wsl" description:"Attach to nvim process in wsl environment"`
+
 }
 
 // Editor is the editor
@@ -761,7 +763,7 @@ func (e *Editor) showWindow() {
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
 	e.window.Resize2(e.width, e.height)
-	if e.opts.Ssh == "" {
+	if e.opts.Ssh == "" || !e.opts.Wsl {
 		e.window.Show()
 	}
 }
