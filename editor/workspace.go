@@ -45,7 +45,6 @@ type workspaceSignal struct {
 type Workspace struct {
 	foreground         *RGBA
 	layout2            *widgets.QHBoxLayout
-	stop               chan struct{}
 	font               *Font
 	fontwide           *Font
 	cursor             *Cursor
@@ -112,7 +111,6 @@ type Workspace struct {
 func newWorkspace(path string) (*Workspace, error) {
 	editor.putLog("initialize workspace")
 	w := &Workspace{
-		stop:          make(chan struct{}),
 		signal:        NewWorkspaceSignal(nil),
 		redrawUpdates: make(chan [][]interface{}, 1000),
 		guiUpdates:    make(chan []interface{}, 1000),
@@ -376,7 +374,7 @@ func (w *Workspace) registerSignal() {
 		}
 
 		if len(workspaces) == 0 {
-			editor.close()
+			editor.close(w.nvim.ExitCode())
 			return
 		}
 		editor.workspaces = workspaces
@@ -539,9 +537,7 @@ func (w *Workspace) startNvim(path string) error {
 		if err != nil {
 			editor.putLog(err)
 		}
-		w.stopOnce.Do(func() {
-			close(w.stop)
-		})
+		w.nvim.Close()
 		w.signal.StopSignal()
 	}()
 
@@ -720,7 +716,7 @@ func (w *Workspace) attachUI(path string) error {
 	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
 	if err != nil {
 		editor.putLog(err)
-		editor.close()
+		editor.close(0)
 		return err
 	}
 
