@@ -2828,7 +2828,7 @@ func (w *Window) move(col int, row int) {
 	x := int(float64(col) * font.cellwidth)
 	y := (row * font.lineHeight) + res
 
-	if w.isFloatWin {
+	if w.isFloatWin && !w.isMsgGrid {
 		// A workarround for ext_popupmenu and displaying a LSP tooltip
 		if editor.config.Editor.ExtPopupmenu {
 			if w.s.ws.mode == "insert" && w.s.ws.popup.widget.IsVisible() {
@@ -2843,6 +2843,20 @@ func (w *Window) move(col int, row int) {
 
 				return
 			}
+		}
+
+		// #316
+		// Adjust the position of the floating window to the inside of the screen
+		// when it is outside of the screen.
+		width := w.Width()
+		height := w.Height()
+		screenWidth := w.s.widget.Width()
+		screenHeight := w.s.widget.Height()
+		if col != 0 && (x+width > screenWidth) {
+			x = x - (x+width-screenWidth)
+		}
+		if row != 0 && (y+height > screenHeight) {
+			y = y - (y+height-screenHeight)
 		}
 	}
 	if w.isExternal {
