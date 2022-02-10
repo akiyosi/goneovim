@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/akiyosi/goneovim/filer"
@@ -97,7 +96,6 @@ type Workspace struct {
 	viewportMutex      sync.RWMutex
 	stopOnce           sync.Once
 	fontMutex          sync.Mutex
-	drawLint           bool
 	hidden             bool
 	uiAttached         bool
 	uiRemoteAttached   bool
@@ -550,8 +548,6 @@ func (w *Workspace) startNvim(path string) error {
 	return nil
 }
 
-var embedProcAttr *syscall.SysProcAttr
-
 func newRemoteChildProcess() (*nvim.Nvim, error) {
 	logf := log.Printf
 	command := "ssh"
@@ -684,14 +680,6 @@ func (w *Workspace) configure() {
 	if editor.config.Tabline.Visible && editor.config.Editor.ExtTabline {
 		w.isDrawTabline = true
 	} else {
-		w.isDrawTabline = false
-	}
-
-	if editor.config.Lint.Visible {
-		w.drawLint = true
-		w.isDrawTabline = true
-	} else {
-		w.drawLint = false
 		w.isDrawTabline = false
 	}
 }
@@ -2268,10 +2256,10 @@ func (w *Workspace) setPumblend(arg interface{}) {
 
 // func (w *Workspace) setBuffname(idITF, nameITF interface{}) {
 // 	id := (nvim.Window)(util.ReflectToInt(idITF))
-// 
+//
 // 	w.screen.windows.Range(func(_, winITF interface{}) bool {
 // 		win := winITF.(*Window)
-// 
+//
 // 		if win == nil {
 // 			return true
 // 		}
@@ -2284,12 +2272,12 @@ func (w *Workspace) setPumblend(arg interface{}) {
 // 		if win.id != id && win.bufName != "" {
 // 			return true
 // 		}
-// 
+//
 // 		name := nameITF.(string)
 // 		bufChan := make(chan nvim.Buffer, 10)
 // 		var buf nvim.Buffer
 // 		strChan := make(chan string, 10)
-// 
+//
 // 		win.updateMutex.RLock()
 // 		id := win.id
 // 		win.updateMutex.RUnlock()
@@ -2298,26 +2286,26 @@ func (w *Workspace) setPumblend(arg interface{}) {
 // 			resultBuffer, _ := w.nvim.WindowBuffer(id)
 // 			bufChan <- resultBuffer
 // 		}()
-// 
+//
 // 		select {
 // 		case buf = <-bufChan:
 // 		case <-time.After(40 * time.Millisecond):
 // 		}
-// 
+//
 // 		if win.bufName == "" {
 // 			go func() {
 // 				resultStr, _ := w.nvim.BufferName(buf)
 // 				strChan <- resultStr
 // 			}()
-// 
+//
 // 			select {
 // 			case name = <-strChan:
 // 			case <-time.After(40 * time.Millisecond):
 // 			}
-// 
+//
 // 			win.bufName = name
 // 		}
-// 
+//
 // 		// // NOTE: Getting buftype
 // 		// // Process to get buftype. Comment it out when the time comes to need it.
 // 		// errChan := make(chan error, 2)
@@ -2332,9 +2320,9 @@ func (w *Workspace) setPumblend(arg interface{}) {
 // 		// 	bt = btITF.(string)
 // 		// case <-time.After(40 * time.Millisecond):
 // 		// }
-// 
+//
 // 		// win.bufType = bt
-// 
+//
 // 		return true
 // 	})
 // }
