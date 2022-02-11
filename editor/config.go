@@ -73,6 +73,7 @@ type editorConfig struct {
 	ExtPopupmenu               bool
 	ClickEffect                bool
 	BorderlessWindow           bool
+	RestoreWindowGeometry      bool
 	ExtCmdline                 bool
 	WorkAroundNeovimIssue12985 bool
 	NoFontMerge                bool
@@ -282,6 +283,7 @@ func (c *gonvimConfig) init() {
 
 	// Set default value
 	c.Editor.BorderlessWindow = false
+	c.Editor.RestoreWindowGeometry = false
 
 	c.Editor.Width = 800
 	c.Editor.Height = 600
