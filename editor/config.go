@@ -74,6 +74,7 @@ type editorConfig struct {
 	BorderlessWindow           bool
 	ExtCmdline                 bool
 	WorkAroundNeovimIssue12985 bool
+	NoFontMerge                bool
 }
 
 type cursorConfig struct {

@@ -10,18 +10,18 @@ import (
 
 // Font is
 type Font struct {
-	ws                 *Workspace
-	fontNew            *gui.QFont
-	fontMetrics        *gui.QFontMetricsF
-	width              float64
-	cellwidth          float64
-	italicWidth        float64
-	ascent             float64
-	height             int
-	lineHeight         int
-	lineSpace          int
-	letterSpace        float64
-	shift              int
+	ws          *Workspace
+	fontNew     *gui.QFont
+	fontMetrics *gui.QFontMetricsF
+	width       float64
+	cellwidth   float64
+	italicWidth float64
+	ascent      float64
+	height      int
+	lineHeight  int
+	lineSpace   int
+	letterSpace float64
+	shift       int
 }
 
 func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
@@ -57,25 +57,29 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 	font.SetPointSizeF(size)
 	font.SetWeight(int(gui.QFont__Normal))
 
-	font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
-	// font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
+	if editor.config.Editor.NoFontMerge {
+		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
+	} else {
+		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
+	}
+
 	font.SetFixedPitch(true)
 	font.SetKerning(false)
 
 	width, height, ascent, italicWidth := fontSizeNew(font)
 
 	return &Font{
-		fontNew:            font,
-		fontMetrics:        gui.NewQFontMetricsF(font),
-		width:              width,
-		cellwidth:          width+letterSpace,
-		letterSpace:        letterSpace,
-		height:             height,
-		lineHeight:         height + lineSpace,
-		lineSpace:          lineSpace,
-		shift:              int(float64(lineSpace)/2 + ascent),
-		ascent:             ascent,
-		italicWidth:        italicWidth,
+		fontNew:     font,
+		fontMetrics: gui.NewQFontMetricsF(font),
+		width:       width,
+		cellwidth:   width + letterSpace,
+		letterSpace: letterSpace,
+		height:      height,
+		lineHeight:  height + lineSpace,
+		lineSpace:   lineSpace,
+		shift:       int(float64(lineSpace)/2 + ascent),
+		ascent:      ascent,
+		italicWidth: italicWidth,
 	}
 }
 
@@ -127,8 +131,8 @@ func (f *Font) changeLetterSpace(letterspace float64) {
 	width, _, _, italicWidth := fontSizeNew(f.fontNew)
 
 	f.letterSpace = letterspace
-	f.cellwidth = width+letterspace
-	f.italicWidth = italicWidth+letterspace
+	f.cellwidth = width + letterspace
+	f.italicWidth = italicWidth + letterspace
 
 	f.ws.screen.purgeTextCacheForWins()
 }
