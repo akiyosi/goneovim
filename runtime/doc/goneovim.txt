@@ -64,7 +64,8 @@ COMMANDS                                                       *goneovim-command
 
 :GonvimMiniMap                                                    *:GonvimMinimap*
         Toggles between showing and hiding the minimap.
-
+	The colorscheme of minimap is detected based on the value returned by
+	"echo &colorscheme".
 
 :GonvimWorkspaceNew                                          *:GonvimWorkspaceNew*
 	Start a new nvim instance in goneovim.
