@@ -1768,7 +1768,7 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 
 	if win.doGetSnapshot {
 		if !editor.isKeyAutoRepeating {
-			win.snapshot = win.Grab(win.Rect())
+			win.grabScreenSnapshot(win.Rect())
 		}
 		win.doGetSnapshot = false
 	}
@@ -1930,7 +1930,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		if !ok {
 			return
 		}
-		win.snapshot = nil
+		win.dropScreenSnapshot()
 
 	case "gonvim_copy_clipboard":
 		go editor.copyClipBoard()
@@ -1993,7 +1993,7 @@ func (w *Workspace) getSnapshot() {
 	if !ok {
 		return
 	}
-	win.snapshot = win.Grab(win.Rect())
+	win.grabScreenSnapshot(win.Rect())
 }
 
 func (w *Workspace) letterSpacing(arg interface{}) {

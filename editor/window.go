@@ -83,12 +83,12 @@ type inputMouseEvent struct {
 	grid   gridId
 	row    int
 	col    int
-	event *gui.QMouseEvent
+	event  *gui.QMouseEvent
 }
 
 type zindex struct {
-	value    int
-	order    int
+	value int
+	order int
 }
 
 // Window is
@@ -183,8 +183,24 @@ func (c *Cache) purge() {
 	c.Purge()
 }
 
+func (w *Window) dropScreenSnapshot() {
+	w.paintMutex.Lock()
+	w.snapshot.DestroyQPixmap()
+	w.snapshot = nil
+	w.paintMutex.Unlock()
+}
+
+func (w *Window) grabScreenSnapshot(rectangle core.QRect_ITF) {
+	snapshot := w.Grab(rectangle)
+	w.paintMutex.Lock()
+	w.snapshot.DestroyQPixmap()
+	w.snapshot = snapshot
+	w.paintMutex.Unlock()
+}
+
 func (w *Window) paint(event *gui.QPaintEvent) {
 	w.paintMutex.Lock()
+	defer w.paintMutex.Unlock()
 
 	p := gui.NewQPainter2(w)
 
@@ -271,8 +287,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	p.DestroyQPainter()
-
-	w.paintMutex.Unlock()
 }
 
 func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
@@ -1031,7 +1045,7 @@ func (win *Window) smoothScroll(diff int) {
 
 			// get snapshot
 			if !editor.isKeyAutoRepeating && editor.config.Editor.SmoothScroll {
-				win.snapshot = win.Grab(win.Rect())
+				win.grabScreenSnapshot(win.Rect())
 			}
 		}
 	})
@@ -1273,12 +1287,12 @@ func (w *Window) makeUpdateMask(row, col int, cells []interface{}) {
 			w.contentMask[row][j] = true
 			continue
 
-		// If the target cell is blank and there is no text decoration of any kind
+			// If the target cell is blank and there is no text decoration of any kind
 		} else if cell.char == " " &&
-		cell.highlight.bg().equals(w.background) &&
-		!cell.highlight.underline &&
-		!cell.highlight.undercurl &&
-		!cell.highlight.strikethrough {
+			cell.highlight.bg().equals(w.background) &&
+			!cell.highlight.underline &&
+			!cell.highlight.undercurl &&
+			!cell.highlight.strikethrough {
 
 			w.contentMask[row][j] = false
 
@@ -1503,7 +1517,7 @@ func (w *Window) update() {
 			rect := [4]int{
 				0,
 				i * font.lineHeight,
-				int(math.Ceil(float64(width) * font.cellwidth))+1,
+				int(math.Ceil(float64(width)*font.cellwidth)) + 1,
 				font.lineHeight,
 			}
 			rects = append(rects, rect)
@@ -1537,9 +1551,9 @@ func (w *Window) update() {
 					// create rectangular area
 					// To avoid leaving drawing debris, update a slightly larger area.
 					rect := [4]int{
-						int(float64(start) * font.cellwidth)-1, // update a slightly larger area.
+						int(float64(start)*font.cellwidth) - 1, // update a slightly larger area.
 						i * font.lineHeight,
-						int(math.Ceil(float64(jj-start) * font.cellwidth))+2, // update a slightly larger area.
+						int(math.Ceil(float64(jj-start)*font.cellwidth)) + 2, // update a slightly larger area.
 						font.lineHeight,
 					}
 					rects = append(rects, rect)
@@ -2602,14 +2616,13 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 	col := int(float64(event.X()) / font.cellwidth)
 	row := int(float64(event.Y()) / float64(font.lineHeight))
 
-
 	if w.lastMouseEvent.button == button &&
-	 w.lastMouseEvent.action == action &&
-	 w.lastMouseEvent.mod == mod &&
-	 w.lastMouseEvent.grid == w.grid &&
-	 w.lastMouseEvent.row == row &&
-	 w.lastMouseEvent.col == col {
-		 return
+		w.lastMouseEvent.action == action &&
+		w.lastMouseEvent.mod == mod &&
+		w.lastMouseEvent.grid == w.grid &&
+		w.lastMouseEvent.row == row &&
+		w.lastMouseEvent.col == col {
+		return
 	}
 
 	w.lastMouseEvent.button = button
@@ -2622,7 +2635,6 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 	w.s.ws.nvim.InputMouse(button, action, mod, w.grid, row, col)
 	w.s.ws.cursor.updateFont(w, w.getFont())
 }
-
 
 func (w *Window) dragEnterEvent(e *gui.QDragEnterEvent) {
 	e.AcceptProposedAction()
@@ -2853,10 +2865,10 @@ func (w *Window) move(col int, row int) {
 		screenWidth := w.s.widget.Width()
 		screenHeight := w.s.widget.Height()
 		if col != 0 && (x+width > screenWidth) {
-			x = x - (x+width-screenWidth)
+			x = x - (x + width - screenWidth)
 		}
 		if row != 0 && (y+height > screenHeight) {
-			y = y - (y+height-screenHeight)
+			y = y - (y + height - screenHeight)
 		}
 	}
 	if w.isExternal {

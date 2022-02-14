@@ -88,8 +88,7 @@ type Options struct {
 	Extmessages  bool   `long:"extmessages" description:"Externalize the messages. Sets --extcmdline implicitly"`
 	Extpopupmenu bool   `long:"extpopupmenu" description:"Externalize the popupmenu"`
 	Version      bool   `long:"version" description:"Print Goneovim version"`
-	Wsl    bool `long:"wsl" description:"Attach to nvim process in wsl environment"`
-
+	Wsl          bool   `long:"wsl" description:"Attach to nvim process in wsl environment"`
 }
 
 // Editor is the editor
@@ -872,7 +871,7 @@ func (e *Editor) keyRelease(event *gui.QKeyEvent) {
 		if win.scrollPixels2 != 0 {
 			return
 		}
-		win.snapshot = win.Grab(win.Rect())
+		win.grabScreenSnapshot(win.Rect())
 	}
 
 	e.isKeyAutoRepeating = false

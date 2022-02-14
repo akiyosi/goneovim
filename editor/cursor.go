@@ -3,6 +3,7 @@ package editor
 import (
 	"math"
 	"runtime"
+	"sync"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
@@ -49,6 +50,7 @@ type Cursor struct {
 	devicePixelRatio           float64
 	x                          float64
 	cellPercentage             int
+	paintMutex                 sync.RWMutex
 	isBusy                     bool
 	isInPalette                bool
 	isNeedUpdateModeInfo       bool
@@ -243,6 +245,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	)
 
 	// Draw source cell text
+	c.paintMutex.RLock()
 	if c.snapshot != nil && (c.deltax != 0 || c.deltay != 0) {
 		p.DrawPixmap9(
 			int(c.animationStartX),
@@ -250,6 +253,7 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 			c.snapshot,
 		)
 	}
+	c.paintMutex.RUnlock()
 
 	if c.text == "" || c.devicePixelRatio == 0 {
 		p.DestroyQPainter()
@@ -413,7 +417,6 @@ func (c *Cursor) move(win *Window) {
 	c.layerPos[1] = int(y)
 }
 
-
 func (c *Cursor) updateFont(targetWin *Window, font *Font) {
 	win := targetWin
 	ok := false
@@ -431,7 +434,10 @@ func (c *Cursor) updateFont(targetWin *Window, font *Font) {
 		c.font = font
 	} else {
 		c.font = win.font
+		c.paintMutex.Lock()
+		c.snapshot.DestroyQPixmap()
 		c.snapshot = nil
+		c.paintMutex.Unlock()
 	}
 }
 
@@ -581,7 +587,7 @@ func (c *Cursor) updateContent(win *Window) {
 		}
 	}
 
-	// Get the current font applied to the cursor. 
+	// Get the current font applied to the cursor.
 	// If the cursor is on a window that has its own font setting,
 	// get its own font.
 	font := c.font
@@ -589,13 +595,13 @@ func (c *Cursor) updateContent(win *Window) {
 		return
 	}
 
-	// The position of the window is represented by coordinates 
+	// The position of the window is represented by coordinates
 	// based on the width and height of the guifont or
 	// the application's default font.
 	baseFont := c.ws.screen.font
 
-	winx := float64(win.pos[0])*baseFont.cellwidth
-	winy := float64(win.pos[1]*baseFont.lineHeight)
+	winx := float64(win.pos[0]) * baseFont.cellwidth
+	winy := float64(win.pos[1] * baseFont.lineHeight)
 	if win.isExternal {
 		winx = 0
 		winy = 0
@@ -684,8 +690,8 @@ func (c *Cursor) getSnapshot() {
 		if c.deltax != 0 || c.deltay != 0 {
 			return
 		}
-		// c.snapshot = c.Grab(c.Rect())
-		c.snapshot = c.Grab(
+
+		snapshot := c.Grab(
 			core.NewQRect4(
 				int(c.x),
 				int(c.y),
@@ -693,6 +699,10 @@ func (c *Cursor) getSnapshot() {
 				c.height,
 			),
 		)
+		c.paintMutex.Lock()
+		c.snapshot.DestroyQPixmap()
+		c.snapshot = snapshot
+		c.paintMutex.Unlock()
 	}
 }
 
@@ -740,21 +750,21 @@ func (c *Cursor) updateMinimumArea() {
 	// [Make updating region]
 	//
 	//    <topleft>
-	//    xprime,yprime                        x,y                         
-	//              +---+\  <topright>           +---+\                    
-	//              |   | \                      |   | \                   
-	//              |   |  \                     |   |  \                  
-	//              |   |   \                    |   |   \                 
-	//  <topbottom> +---+    \                   +---+    \                
-	//               \        \                   \        \               
-	//                \        \                   \        \              
-	//                 \   x,y  \                   \ xprime,yprime        
-	//                  \    +---+ <bottomtop>       \    +---+            
-	//                   \   |   |                    \   |   |            
-	//                    \  |   |                     \  |   |            
-	//                     \ |   |                      \ |   |            
-	//                      \+---+                       \+---+            
-	//            <bottomleft>   <bottomright>                             
+	//    xprime,yprime                        x,y
+	//              +---+\  <topright>           +---+\
+	//              |   | \                      |   | \
+	//              |   |  \                     |   |  \
+	//              |   |   \                    |   |   \
+	//  <topbottom> +---+    \                   +---+    \
+	//               \        \                   \        \
+	//                \        \                   \        \
+	//                 \   x,y  \                   \ xprime,yprime
+	//                  \    +---+ <bottomtop>       \    +---+
+	//                   \   |   |                    \   |   |
+	//                    \  |   |                     \  |   |
+	//                     \ |   |                      \ |   |
+	//                      \+---+                       \+---+
+	//            <bottomleft>   <bottomright>
 
 	padding := 1
 	if c.xprime < c.x && c.yprime < c.y || c.xprime > c.x && c.yprime > c.y {
@@ -807,20 +817,20 @@ func (c *Cursor) updateMinimumArea() {
 		)
 
 	//           <topleft>
-	//                  x,y                         xprime,yprime 
-	//                   /+---+ <topright>                /+---+  
-	//                  / |   |                          / |   |  
-	//                 /  |   |                         /  |   |  
-	//                /   |   |                        /   |   |  
-	//               /    +---+ <topbottom>           /    +---+  
-	//              /        /                       /        /   
-	// <bottomtop> /        /                       /        /    
-	//    xprime,yprime    /                   x,y /        /     
-	//           +---+    /                       +---+    /      
-	//           |   |   /                        |   |   /       
-	//           |   |  /                         |   |  /        
-	//           |   | /                          |   | /         
-	//           +---+/                           +---+/          
+	//                  x,y                         xprime,yprime
+	//                   /+---+ <topright>                /+---+
+	//                  / |   |                          / |   |
+	//                 /  |   |                         /  |   |
+	//                /   |   |                        /   |   |
+	//               /    +---+ <topbottom>           /    +---+
+	//              /        /                       /        /
+	// <bottomtop> /        /                       /        /
+	//    xprime,yprime    /                   x,y /        /
+	//           +---+    /                       +---+    /
+	//           |   |   /                        |   |   /
+	//           |   |  /                         |   |  /
+	//           |   | /                          |   | /
+	//           +---+/                           +---+/
 	// <bottomleft>   <bottomright>
 
 	} else {

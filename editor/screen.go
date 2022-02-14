@@ -289,7 +289,7 @@ func (s *Screen) gridFont(update interface{}) {
 
 	_ = s.ws.nvim.TryResizeUIGrid(win.grid, newCols, newRows)
 	font := win.getFont()
-	
+
 	s.ws.cursor.font = font
 
 	if win.isExternal {
@@ -656,7 +656,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win, _ := s.getWindow(gridid)
 
 	if win != nil && win.snapshot != nil {
-		win.snapshot = nil
+		win.dropScreenSnapshot()
 	}
 
 	// make new size content
@@ -952,7 +952,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			// Fix #297
 			if win.s.topLevelGrid != win.grid {
 
-				// If a mouse drag event is occurring in the previous 
+				// If a mouse drag event is occurring in the previous
 				// cursor grid, window raising will be suppressed.
 				if s.ws.cursor.gridid != 0 {
 					oldCursorWin, ok := s.getWindow(s.ws.cursor.gridid)
