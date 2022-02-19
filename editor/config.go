@@ -46,6 +46,7 @@ type editorConfig struct {
 	Linespace                  int
 	Letterspace                float64
 	FontSize                   int
+	Mergin                     int
 	Gap                        int
 	Height                     int
 	Width                      int
@@ -284,7 +285,8 @@ func (c *gonvimConfig) init() {
 
 	c.Editor.Width = 800
 	c.Editor.Height = 600
-	c.Editor.Gap = 2
+	c.Editor.Mergin = 2
+	c.Editor.Gap = 0
 
 	c.Editor.FileOpenCmd = ":e"
 
