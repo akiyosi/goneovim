@@ -133,6 +133,7 @@ type miniMapConfig struct {
 
 type scrollBarConfig struct {
 	Visible bool
+	Width   int
 }
 
 type sideBarConfig struct {
@@ -383,6 +384,7 @@ func (c *gonvimConfig) init() {
 	// ----
 
 	c.ScrollBar.Visible = false
+	c.ScrollBar.Width = 10
 
 	// ----
 

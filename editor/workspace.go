@@ -1167,16 +1167,61 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 
 func (w *Workspace) updateSize() {
 	e := editor
-	width := e.window.Geometry().Width() - e.window.BorderSize()*4 - e.window.WindowGap()*2
+
+	geometry := e.window.Geometry()
+	width := geometry.Width()
+	merginWidth := e.window.BorderSize()*4 + e.window.WindowGap()*2
+	sideWidth := 0
 	if e.side != nil {
 		if e.side.widget.IsVisible() {
-			width = width - e.splitter.Sizes()[0] - e.splitter.HandleWidth()
+			sideWidth = e.splitter.Sizes()[0] + e.splitter.HandleWidth()
 		}
 	}
-	height := e.window.Geometry().Height() - e.window.BorderSize()*4
+	width -= merginWidth + sideWidth
+
+	height := e.window.Geometry().Height()
+	merginHeight := e.window.BorderSize()*4
+	titlebarHeight := 0
 	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
-		height = height - e.window.TitleBar.Height()
+		titlebarHeight = e.window.TitleBar.Height()
 	}
+	height -= merginHeight + titlebarHeight
+
+	tablineHeight := 0
+	if w.isDrawTabline && w.tabline != nil {
+		w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
+		tablineHeight = w.tabline.height
+	}
+
+	statuslineHeight := 0
+	if w.isDrawStatusline && w.statusline != nil {
+		w.statusline.height = w.statusline.widget.Height()
+		statuslineHeight = w.statusline.height
+	}
+
+	scrollvarWidth := 0
+	if e.config.ScrollBar.Visible {
+		scrollvarWidth = e.config.ScrollBar.Width
+	}
+
+	minimapWidth := 0
+	if w.minimap != nil {
+		if w.minimap.visible {
+			minimapWidth = e.config.MiniMap.Width
+		}
+	}
+
+	screenWidth := width - scrollvarWidth - minimapWidth
+	screenHeight := height - tablineHeight - statuslineHeight
+
+
+	rw := int(screenWidth) % int(w.screen.font.cellwidth)
+	rh := screenHeight % w.screen.font.lineHeight
+	screenWidth -= rw
+	screenHeight -= rh
+	width -= rw
+	height -= rh
+
 	if width != w.width || height != w.height {
 		w.width = width
 		w.height = height
@@ -1190,23 +1235,9 @@ func (w *Workspace) updateSize() {
 		}
 	}
 
-	if w.isDrawTabline && w.tabline != nil {
-		w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
-	}
-	if w.isDrawStatusline && w.statusline != nil {
-		w.statusline.height = w.statusline.widget.Height()
-	}
-
 	if w.screen != nil {
-		t := 0
-		s := 0
-		if w.tabline != nil {
-			t = w.tabline.height
-		}
-		if w.statusline != nil {
-			s = w.statusline.height
-		}
-		w.screen.height = w.height - t - s
+		w.screen.width = screenWidth
+		w.screen.height = screenHeight
 		w.screen.updateSize()
 	}
 	if w.cursor != nil {
