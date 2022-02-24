@@ -2828,17 +2828,34 @@ func (w *Window) setShadow() {
 	w.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))
 }
 
-func (w *Window) move(col int, row int) {
+func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 	font := w.s.font
+	var anchorwin *Window
+	if len(anchorwindow) > 0 {
+		anchorwin = anchorwindow[0]
+		font = anchorwin.getFont()
+	}
+
 	res := 0
 	if w.isMsgGrid {
 		res = w.s.widget.Height() - w.rows*font.lineHeight
 	}
-	if res < 0 {
+	if res < 0 || w.isExternal {
 		res = 0
 	}
 	x := int(float64(col) * font.cellwidth)
 	y := (row * font.lineHeight) + res
+
+	// Fix https://github.com/akiyosi/goneovim/issues/316#issuecomment-1039978355
+	// Adjustment of the float window position when the repositioning process
+	// is being applied to the anchor window when it is outside the application window.
+	var anchorposx, anchorposy int
+	if len(anchorwindow) > 0 {
+		if anchorwin.grid != w.grid {
+			anchorposx = anchorwin.Pos().X()
+			anchorposy = anchorwin.Pos().Y()
+		}
+	}
 
 	if w.isFloatWin && !w.isMsgGrid {
 		// A workarround for ext_popupmenu and displaying a LSP tooltip
@@ -2860,16 +2877,7 @@ func (w *Window) move(col int, row int) {
 		// #316
 		// Adjust the position of the floating window to the inside of the screen
 		// when it is outside of the screen.
-		width := w.Width()
-		height := w.Height()
-		screenWidth := w.s.widget.Width()
-		screenHeight := w.s.widget.Height()
-		if col != 0 && (x+width > screenWidth) {
-			x = x - (x + width - screenWidth)
-		}
-		if row != 0 && (y+height > screenHeight) {
-			y = y - (y + height - screenHeight)
-		}
+		x, y = w.repositioningFloatwindow([2]int{x, y})
 	}
 	if w.isExternal {
 		w.Move2(EXTWINBORDERSIZE, EXTWINBORDERSIZE)
@@ -2878,7 +2886,38 @@ func (w *Window) move(col int, row int) {
 		return
 	}
 
-	w.Move2(x, y)
+	w.Move2(
+		anchorposx + x,
+		anchorposy + y,
+	)
+}
+
+func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int){
+
+	baseFont := w.s.ws.screen.font
+
+	var winx, winy int
+	if len(pos) > 0 {
+		winx = pos[0][0]
+		winy = pos[0][1]
+	} else {
+		winx = w.Pos().X()
+		winy = w.Pos().Y()
+	}
+
+	width := w.Width()
+	height := w.Height()
+	screenWidth :=  w.s.widget.Width()
+	screenHeight := w.s.widget.Height()
+
+	if w.pos[0] != 0 && (float64((winx+width) - screenWidth) >= baseFont.cellwidth) {
+		winx -= winx + width - screenWidth
+	}
+	if w.pos[1] != 0 && ((winy+height) - screenHeight >= baseFont.lineHeight) {
+		winy -= winy + height - screenHeight
+	}
+
+	return winx, winy
 }
 
 func (w *Window) layoutExternalWindow(x, y int) {

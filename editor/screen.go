@@ -288,9 +288,8 @@ func (s *Screen) gridFont(update interface{}) {
 	}
 
 	_ = s.ws.nvim.TryResizeUIGrid(win.grid, newCols, newRows)
-	font := win.getFont()
 
-	s.ws.cursor.font = font
+	s.ws.cursor.font = win.getFont()
 
 	if win.isExternal {
 		width := int(float64(newCols)*win.font.cellwidth) + EXTWINBORDERSIZE*2
@@ -613,9 +612,9 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 			event.ScreenPos().Y()-float64(targetwin.extwin.Pos().Y()+targetwin.Pos().Y()),
 		)
 	} else {
-		font := s.font
-		offsetX := float64(targetwin.pos[0]) * font.cellwidth
-		offsetY := float64(targetwin.pos[1]) * float64(font.lineHeight)
+		// Fixed mouse events handling in relation to #316#issuecomment-1039978355 fixes.
+		offsetX :=  float64(targetwin.Pos().X())
+		offsetY :=  float64(targetwin.Pos().Y())
 
 		localpos = core.NewQPointF3(
 			event.LocalPos().X()-offsetX,
@@ -1427,19 +1426,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			continue
 		}
 
-		anchorposx := anchorwin.pos[0]
-		anchorposy := anchorwin.pos[1]
-
-		anchorwin.propMutex.Lock()
-		anchorwinIsExternal := anchorwin.isExternal
-		anchorwin.propMutex.Unlock()
-
-		if anchorwinIsExternal {
-			win.SetParent(anchorwin)
-			anchorposx = 0
-			anchorposy = 0
-		}
-
 		// In multigrid ui, the completion float window on the message window appears to be misaligned.
 		// Therefore, a hack to workaround this problem is implemented on the GUI front-end side.
 		// This workaround assumes that the anchor window for the completion window on the message window is always a global grid.
@@ -1453,31 +1439,41 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 				if cursorgridwin.isMsgGrid {
 					anchorwin = cursorgridwin
 					anchorRow = cursorgridwin.pos[0]
-					anchorposx = cursorgridwin.pos[0]
-					anchorposy = cursorgridwin.pos[1]
-				}
+			}
 				pumInMsgWin = true
 			}
 		}
 
-		var x, y int
+		anchorposx := anchorwin.pos[0]
+		anchorposy := anchorwin.pos[1]
+
+		// anchorwin.propMutex.Lock()
+		// anchorwinIsExternal := anchorwin.isExternal
+		// anchorwin.propMutex.Unlock()
+
+		// if anchorwinIsExternal {
+		// 	win.SetParent(anchorwin)
+		// 	anchorposx = 0
+		// 	anchorposy = 0
+		// }
+
+		var col, row int
 		switch win.anchor {
 		case "NW":
-			x = anchorposx + anchorCol
-			y = anchorposy + anchorRow
+			col = anchorCol
+			row = anchorRow
 		case "NE":
-			x = anchorposx + anchorCol - win.cols
-			y = anchorposy + anchorRow
+			col = anchorCol - win.cols
+			row = anchorRow
 		case "SW":
-			x = anchorposx + anchorCol
+			col = anchorCol
 
 			if editor.config.Editor.WorkAroundNeovimIssue12985 {
 				// In multigrid ui, the completion float window position information is not correct.
 				// Therefore, we implement a hack to compensate for this.
 				// ref: src/nvim/popupmenu.c:L205-, L435-
 				if win.id == -1 && !pumInMsgWin {
-
-					row := 0
+					yy := 0
 					contextLine := 0
 					if anchorwin.rows-s.cursor[0] >= 2 {
 						contextLine = 2
@@ -1485,35 +1481,37 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 						contextLine = anchorwin.rows - s.cursor[0]
 					}
 					if anchorposy+s.cursor[0] >= win.rows+contextLine {
-						row = anchorRow + win.rows
+						yy = anchorRow + win.rows
 					} else {
-						row = -anchorposy
+						yy = -anchorposy
 					}
-					y = anchorposy + row
+					// row = anchorposy + yy
+					row = yy
 				} else {
-					y = anchorposy + anchorRow - win.rows
+					// row = anchorposy + anchorRow - win.rows
+					row = anchorRow - win.rows
 				}
 			} else {
-				y = anchorposy + anchorRow - win.rows
+				row = anchorRow - win.rows
 			}
 
 		case "SE":
-			x = anchorposx + anchorCol - win.cols
-			y = anchorposy + anchorRow - win.rows
+			col = anchorCol - win.cols
+			row = anchorRow - win.rows
 		}
 
 		// If the position coordinate is a negative value, it is reset to zero.
 		// I don't know if this is correct in the specification, but this is how nvim appears to work in the terminal.
-		if x < 0 {
-			x = 0
+		win.pos[0] = anchorposx + col
+		win.pos[1] = anchorposy + row
+		if win.pos[0] < 0 {
+			win.pos[0] = 0
 		}
-		if y < 0 {
-			y = 0
+		if win.pos[1] < 0 {
+			win.pos[1] = 0
 		}
-		win.pos[0] = x
-		win.pos[1] = y
 
-		win.move(x, y)
+		win.move(col, row, anchorwin)
 		if shouldStackPerZIndex {
 			win.raise()
 		}

@@ -590,6 +590,7 @@ func (c *Cursor) updateContent(win *Window) {
 	// Get the current font applied to the cursor.
 	// If the cursor is on a window that has its own font setting,
 	// get its own font.
+	c.font = win.getFont()
 	font := c.font
 	if font == nil {
 		return
@@ -600,8 +601,14 @@ func (c *Cursor) updateContent(win *Window) {
 	// the application's default font.
 	baseFont := c.ws.screen.font
 
-	winx := float64(win.pos[0]) * baseFont.cellwidth
-	winy := float64(win.pos[1] * baseFont.lineHeight)
+	winx := int(float64(win.pos[0]) * baseFont.cellwidth)
+	winy := int(float64(win.pos[1] * baseFont.lineHeight))
+
+	// Fix https://github.com/akiyosi/goneovim/issues/316#issuecomment-1039978355
+	if win.isFloatWin && !win.isMsgGrid {
+		winx, winy = win.repositioningFloatwindow()
+	}
+
 	if win.isExternal {
 		winx = 0
 		winy = 0
@@ -621,8 +628,8 @@ func (c *Cursor) updateContent(win *Window) {
 		scrollPixels += win.scrollPixels[1]
 	}
 
-	x := winx + float64(col)*font.cellwidth + float64(winbordersize)
-	y := winy + float64(row*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(scrollPixels+res+winbordersize)
+	x := float64(winx + int(float64(col)*font.cellwidth + float64(winbordersize)))
+	y := float64(winy + int(float64(row*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(scrollPixels+res+winbordersize)))
 
 	isStopScroll := (win.lastScrollphase == core.Qt__ScrollEnd)
 	c.move(win)

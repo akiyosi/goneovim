@@ -1209,7 +1209,10 @@ func (w *Workspace) updateSize() {
 		w.screen.height = w.height - t - s
 		w.screen.updateSize()
 	}
-	w.cursor.Resize2(w.screen.width, w.screen.height)
+	if w.cursor != nil {
+		w.cursor.Resize2(w.screen.width, w.screen.height)
+		w.cursor.update()
+	}
 	if w.palette != nil {
 		w.palette.resize()
 	}
