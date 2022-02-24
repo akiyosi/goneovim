@@ -2633,7 +2633,6 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 	w.lastMouseEvent.col = col
 
 	w.s.ws.nvim.InputMouse(button, action, mod, w.grid, row, col)
-	w.s.ws.cursor.updateFont(w, w.getFont())
 }
 
 func (w *Window) dragEnterEvent(e *gui.QDragEnterEvent) {
