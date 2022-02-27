@@ -308,17 +308,25 @@ func InitEditor(options Options, args []string) {
 		}
 	})
 
+	// When an application is closed with the Close button
 	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
-		e.app.DisconnectEvent()
+		e.putLog("The application was closed outside of Neovim's commands, such as the Close button.")
+		e.cleanup()
+		e.saveAppWindowState()
+		if runtime.GOOS == "darwin" {
+			e.app.DisconnectEvent()
+		}
 		event.Accept()
 	})
 
 	// runs goroutine to detect stop events and quit the application
 	go func() {
 		<-e.stop
+		e.putLog("The application was quitted with the exit of Neovim.")
 		if runtime.GOOS == "darwin" {
 			e.app.DisconnectEvent()
 		}
+		e.saveAppWindowState()
 		e.app.Quit()
 	}()
 
@@ -466,10 +474,6 @@ func (e *Editor) connectAppSignals() {
 	if e.app == nil {
 		return
 	}
-	e.app.ConnectAboutToQuit(func() {
-		e.cleanup()
-	})
-
 	if runtime.GOOS != "darwin" {
 		return
 	}
@@ -744,6 +748,30 @@ func (e *Editor) setWindowSize(s string) (int, int) {
 	return width, height
 }
 
+func (e *Editor) restoreWindow() (isRestoreGeometry, isRestoreState bool) {
+	if !e.config.Editor.RestoreWindowGeometry {
+		return
+	}
+
+	settings := core.NewQSettings("neovim", "goneovim", nil)
+	geometry := settings.Value("geometry", core.NewQVariant13(core.NewQByteArray()))
+	state := settings.Value("windowState", core.NewQVariant13(core.NewQByteArray()))
+
+	geometryBA := geometry.ToByteArray()
+	stateBA := state.ToByteArray()
+
+	if geometryBA.Length() != 0 {
+		e.window.RestoreGeometry(geometryBA)
+		isRestoreGeometry = true
+	}
+	if stateBA.Length() != 0 {
+		e.window.RestoreState(stateBA, 0)
+		isRestoreState = true
+	}
+
+	return
+}
+
 func (e *Editor) setWindowOptions() {
 	e.window.SetupTitle("Neovim")
 	e.window.SetMinimumSize2(400, 300)
@@ -752,17 +780,25 @@ func (e *Editor) setWindowOptions() {
 	e.window.ConnectKeyReleaseEvent(e.keyRelease)
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)
 	e.window.SetAcceptDrops(true)
-	if e.config.Editor.StartFullscreen || e.opts.Fullscreen {
-		e.window.WindowFullScreen()
-	} else if e.config.Editor.StartMaximizedWindow || e.opts.Maximized {
-		e.window.WindowMaximize()
-	}
 }
 
 func (e *Editor) showWindow() {
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
-	e.window.Resize2(e.width, e.height)
+
+	isRestoreGeometry, isRestoreState := e.restoreWindow()
+
+	if !isRestoreGeometry {
+		e.window.Resize2(e.width, e.height)
+	}
+	if !isRestoreState {
+		if e.config.Editor.StartFullscreen || e.opts.Fullscreen {
+			e.window.WindowFullScreen()
+		} else if e.config.Editor.StartMaximizedWindow || e.opts.Maximized {
+			e.window.WindowMaximize()
+		}
+	}
+
 	if e.opts.Ssh == "" || !e.opts.Wsl {
 		e.window.Show()
 	}
@@ -1202,6 +1238,12 @@ func (e *Editor) close() {
 	e.stopOnce.Do(func() {
 		close(e.stop)
 	})
+}
+
+func (e *Editor) saveAppWindowState() {
+	settings := core.NewQSettings("neovim", "goneovim", nil)
+	settings.SetValue("geometry", core.NewQVariant13(e.window.SaveGeometry()))
+	settings.SetValue("windowState", core.NewQVariant13(e.window.SaveState(0)))
 }
 
 func (e *Editor) cleanup() {
