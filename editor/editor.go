@@ -135,6 +135,7 @@ type Editor struct {
 	isDisplayNotifications bool
 	isKeyAutoRepeating     bool
 	sessionExists          bool
+	isWindowResized        bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -263,7 +264,7 @@ func InitEditor(options Options, args []string) {
 	e.putLog("start    preparing the application window.")
 	isframeless := e.config.Editor.BorderlessWindow
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	e.window.SetupBorderSize(e.config.Editor.Mergin)
+	e.window.SetupBorderSize(e.config.Editor.Margin)
 	e.window.SetupWindowGap(e.config.Editor.Gap)
 	e.showWindow()
 	e.setWindowSizeFromOpts()
@@ -490,6 +491,27 @@ func (e *Editor) connectAppSignals() {
 		}
 		return true
 	})
+}
+
+func (e *Editor) resizeMainWindow() {
+   cws := e.workspaces[e.active]
+   windowWidth, windowHeight := cws.updateSize()
+
+   if !editor.config.Editor.WindowGeometryBasedOnFontmetrics {
+	   return
+   }
+
+   // quantization of window geometry with font metrics as the smallest unit of change.
+   geometry := editor.window.Geometry()
+   width := geometry.Width()
+   height := geometry.Height()
+
+   if !(width == windowWidth && height == windowHeight) {
+		e.window.Resize2(
+			windowWidth,
+			windowHeight,
+		)
+	}
 }
 
 func (e *Editor) loadFileInDarwin() {

@@ -291,11 +291,12 @@ func (w *Workspace) vimEnterProcess() {
 	}
 
 	// connect window resize event
-	editor.widget.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		for _, ws := range editor.workspaces {
-			ws.updateSize()
-		}
+	editor.window.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		editor.resizeMainWindow()
 	})
+	if len(editor.workspaces) == 1 && runtime.GOOS == "linux" {
+		editor.resizeMainWindow()
+	}
 
 	w.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
 		go w.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
@@ -1165,27 +1166,27 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 	return o
 }
 
-func (w *Workspace) updateSize() {
+func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 	e := editor
 
 	geometry := e.window.Geometry()
 	width := geometry.Width()
-	merginWidth := e.window.BorderSize()*4 + e.window.WindowGap()*2
+	marginWidth := e.window.BorderSize()*4 + e.window.WindowGap()*2
 	sideWidth := 0
 	if e.side != nil {
 		if e.side.widget.IsVisible() {
 			sideWidth = e.splitter.Sizes()[0] + e.splitter.HandleWidth()
 		}
 	}
-	width -= merginWidth + sideWidth
+	width -= marginWidth + sideWidth
 
 	height := e.window.Geometry().Height()
-	merginHeight := e.window.BorderSize()*4
+	marginHeight := e.window.BorderSize()*4
 	titlebarHeight := 0
 	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
 		titlebarHeight = e.window.TitleBar.Height()
 	}
-	height -= merginHeight + titlebarHeight
+	height -= marginHeight + titlebarHeight
 
 	tablineHeight := 0
 	if w.isDrawTabline && w.tabline != nil {
@@ -1199,9 +1200,9 @@ func (w *Workspace) updateSize() {
 		statuslineHeight = w.statusline.height
 	}
 
-	scrollvarWidth := 0
+	scrollbarWidth := 0
 	if e.config.ScrollBar.Visible {
-		scrollvarWidth = e.config.ScrollBar.Width
+		scrollbarWidth = e.config.ScrollBar.Width
 	}
 
 	minimapWidth := 0
@@ -1211,7 +1212,7 @@ func (w *Workspace) updateSize() {
 		}
 	}
 
-	screenWidth := width - scrollvarWidth - minimapWidth
+	screenWidth := width - scrollbarWidth - minimapWidth
 	screenHeight := height - tablineHeight - statuslineHeight
 
 
@@ -1250,6 +1251,11 @@ func (w *Workspace) updateSize() {
 	if w.message != nil {
 		w.message.resize()
 	}
+
+	windowWidth = marginWidth + sideWidth + scrollbarWidth + minimapWidth + w.screen.width
+	windowHeight = marginHeight + titlebarHeight + tablineHeight + statuslineHeight + w.screen.height
+
+	return
 }
 
 func (e *Editor) updateNotificationPos() {

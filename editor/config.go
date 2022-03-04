@@ -28,55 +28,56 @@ type gonvimConfig struct {
 }
 
 type editorConfig struct {
-	DockmenuActions            map[string]string
-	OptionsToUseGuideWidth     string
-	FileOpenCmd                string
-	WindowSeparatorColor       string
-	FontFamily                 string
-	GinitVim                   string
-	WindowSeparatorTheme       string
-	NvimInWsl                  string
-	IndentGuideIgnoreFtList    []string
-	Transparent                float64
-	DiffDeletePattern          int
-	DiffAddPattern             int
-	LineToScroll               int
-	DiffChangePattern          int
-	CacheSize                  int
-	Linespace                  int
-	Letterspace                float64
-	FontSize                   int
-	Mergin                     int
-	Gap                        int
-	Height                     int
-	Width                      int
-	DrawWindowSeparator        bool
-	Macmeta                    bool
-	DrawBorder                 bool
-	DisableLigatures           bool
-	StartMaximizedWindow       bool
-	WindowSeparatorGradient    bool
-	StartFullscreen            bool
-	SkipGlobalId               bool
-	IndentGuide                bool
-	DisableImeInNormal         bool
-	CachedDrawing              bool
-	Clipboard                  bool
-	ReversingScrollDirection   bool
-	SmoothScroll               bool
-	DisableHorizontalScroll    bool
-	DrawBorderForFloatWindow   bool
-	DrawShadowForFloatWindow   bool
-	DesktopNotifications       bool
-	ExtMessages                bool
-	ExtTabline                 bool
-	ExtPopupmenu               bool
-	ClickEffect                bool
-	BorderlessWindow           bool
-	RestoreWindowGeometry      bool
-	ExtCmdline                 bool
-	WorkAroundNeovimIssue12985 bool
-	NoFontMerge                bool
+	DockmenuActions                  map[string]string
+	OptionsToUseGuideWidth           string
+	FileOpenCmd                      string
+	WindowSeparatorColor             string
+	FontFamily                       string
+	GinitVim                         string
+	WindowSeparatorTheme             string
+	NvimInWsl                        string
+	IndentGuideIgnoreFtList          []string
+	Transparent                      float64
+	DiffDeletePattern                int
+	DiffAddPattern                   int
+	LineToScroll                     int
+	DiffChangePattern                int
+	CacheSize                        int
+	Linespace                        int
+	Letterspace                      float64
+	FontSize                         int
+	Margin                           int
+	Gap                              int
+	Height                           int
+	Width                            int
+	DrawWindowSeparator              bool
+	Macmeta                          bool
+	DrawBorder                       bool
+	DisableLigatures                 bool
+	StartMaximizedWindow             bool
+	WindowSeparatorGradient          bool
+	StartFullscreen                  bool
+	SkipGlobalId                     bool
+	IndentGuide                      bool
+	DisableImeInNormal               bool
+	CachedDrawing                    bool
+	Clipboard                        bool
+	ReversingScrollDirection         bool
+	SmoothScroll                     bool
+	DisableHorizontalScroll          bool
+	DrawBorderForFloatWindow         bool
+	DrawShadowForFloatWindow         bool
+	DesktopNotifications             bool
+	ExtMessages                      bool
+	ExtTabline                       bool
+	ExtPopupmenu                     bool
+	ClickEffect                      bool
+	BorderlessWindow                 bool
+	RestoreWindowGeometry            bool
+	ExtCmdline                       bool
+	WorkAroundNeovimIssue12985       bool
+	NoFontMerge                      bool
+	WindowGeometryBasedOnFontmetrics bool
 }
 
 type cursorConfig struct {
@@ -285,10 +286,10 @@ func (c *gonvimConfig) init() {
 	// Set default value
 	c.Editor.BorderlessWindow = false
 	c.Editor.RestoreWindowGeometry = false
+	c.Editor.WindowGeometryBasedOnFontmetrics = false
 
 	c.Editor.Width = 800
 	c.Editor.Height = 600
-	c.Editor.Mergin = 2
 	c.Editor.Gap = 0
 
 	c.Editor.FileOpenCmd = ":e"
@@ -298,10 +299,13 @@ func (c *gonvimConfig) init() {
 	switch runtime.GOOS {
 	case "windows":
 		c.Editor.FontFamily = "Consolas"
+		c.Editor.Margin = 2
 	case "darwin":
 		c.Editor.FontFamily = "Monaco"
+		c.Editor.Margin = 2
 	default:
 		c.Editor.FontFamily = "Monospace"
+		c.Editor.Margin = 0
 	}
 	c.Editor.FontSize = 12
 	c.Editor.Linespace = 6

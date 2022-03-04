@@ -228,11 +228,11 @@ All Options are follows:
         # Width = 800
         ## Editor minimum window height (>= 300)
         # Height = 600
-        ## Create a small margin on the left and right sides of the application window.
-        # Gap = 2
-        
-        ## Specifies the command used to open the file in an external file explorer, etc. The default is ":e".
-        # FileOpenCmd = ":e"
+        ## Margin adds a margin between the window and the drawn content.
+        ## This value is 0 by default for Linux and 2 by default for MacOS and Windows.
+        # Margin = 0
+        ## Gap create a gap on the left and right sides of the application window.
+        # Gap = 0
         
         ## Reverses the direction of scrolling with the mouse wheel.
         # ReversingScrollDirection = false
@@ -246,13 +246,16 @@ All Options are follows:
         
         ## Launch goneovim with full screen window size.
         # StartFullscreen = false
+        ## Launch goneovim with maximized window size.
+        # StartMaximizedWindow = false
+
+        ## Enabling WindowGeometryBasedOnFontmetrics sets the minimum unit of window geometry change 
+        ## to the width and height values specified by font metrics.
+        # WindowGeometryBasedOnFontmetrics = false
         
         ## Editor external font-family, font-size, and linespace.
         ## This is the font and linespace settings of the graphical UI as an nvim front end.
         ## For example, linespace affects the margins of the external completion popup menu UI.
-        ## Note that the linespace setting must be the same on the Neovim side. The reason for this
-        ## is that the default value on the Neovim side is 0, which will be overwritten by the Neovim setting.
-        ## Of course, these settings can also be changed by setting the guifont and linespace on the Neovim side.
         ## Fontfamily is
         ## In MacOS, 
         # FontFamily = "Monaco"
@@ -262,8 +265,10 @@ All Options are follows:
         # FontFamily = "Windows"
         ## Fontsize is
         # FontSize = 12
-        ## linespace is
-        # Linespace = 6
+        ## linespace is no effect, must be set using like `set linespace=5` in Neovim configuration
+        # Linespace = 0
+        ## letterspace is
+        # Letterspace = 0
         
         ## Neovim external UI features
         ## The following is the default value of goneovim.
@@ -324,6 +329,9 @@ All Options are follows:
         
         # Display the effect when clicked
         # ClickEffect = false
+
+        ## Specifies the command used to open the file in an external file explorer, etc. The default is ":e".
+        # FileOpenCmd = ":e"
         
         # Pattern that fills the diff background
         # Change the background pattern used for diff display.
