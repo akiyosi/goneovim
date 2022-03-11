@@ -788,14 +788,23 @@ func (e *Editor) showWindow() {
 
 	isRestoreGeometry, isRestoreState := e.restoreWindow()
 
-	if !isRestoreGeometry {
-		e.window.Resize2(e.width, e.height)
-	}
-	if !isRestoreState {
-		if e.config.Editor.StartFullscreen || e.opts.Fullscreen {
+	// If command line options are given, they take priority.
+	if e.opts.Fullscreen || e.opts.Maximized {
+		if e.opts.Fullscreen {
 			e.window.WindowFullScreen()
-		} else if e.config.Editor.StartMaximizedWindow || e.opts.Maximized {
+		} else if e.opts.Maximized {
 			e.window.WindowMaximize()
+		}
+	} else {
+		if !isRestoreGeometry {
+			e.window.Resize2(e.width, e.height)
+		}
+		if !isRestoreState {
+			if e.config.Editor.StartFullscreen {
+				e.window.WindowFullScreen()
+			} else if e.config.Editor.StartMaximizedWindow {
+				e.window.WindowMaximize()
+			}
 		}
 	}
 
