@@ -1,4 +1,4 @@
-name: test and build
+name: CI
 on: [push, pull_request]
 env:
   cache-version: v1
