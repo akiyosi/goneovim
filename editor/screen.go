@@ -120,18 +120,7 @@ func (s *Screen) updateSize() {
 	defer s.ws.fontMutex.Unlock()
 
 	ws := s.ws
-	scrollvarWidth := 0
-	if editor.config.ScrollBar.Visible {
-		scrollvarWidth = 10
-	}
 
-	minimapWidth := 0
-	if s.ws.minimap != nil {
-		if s.ws.minimap.visible {
-			minimapWidth = editor.config.MiniMap.Width
-		}
-	}
-	s.width = ws.width - scrollvarWidth - minimapWidth
 	currentCols := int(float64(s.width) / s.font.cellwidth)
 	currentRows := s.height / s.font.lineHeight
 
