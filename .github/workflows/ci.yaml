@@ -445,6 +445,7 @@ jobs:
         target: desktop
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
+        setup-python: 'false'
         # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
 
     - name: Get Qt binding for Go

@@ -300,6 +300,7 @@ jobs:
         target: desktop
         dir: ${{ github.workspace }}
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
+        setup-python: 'false'
 
     - name: Get Qt binding for Go
       run: |
