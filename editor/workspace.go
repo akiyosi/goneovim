@@ -2082,7 +2082,11 @@ func (w *Workspace) guiFont(args string) {
 			fontFamily = font.Family()
 			fontHeight = font.PointSizeF()
 			editor.putLog(fmt.Sprintf("Request to change to the following font:: %s:h%f", fontFamily, fontHeight))
-			w.guiFont(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
+
+			// Fix the problem that the value of echo &guifont is set to * after setting.
+			// w.guiFont(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
+			w.nvim.Command(fmt.Sprintf("set guifont=%s:h%f", fontFamily, fontHeight))
+
 		})
 		fDialog.Show()
 		return
