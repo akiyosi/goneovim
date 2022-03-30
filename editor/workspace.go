@@ -2079,7 +2079,7 @@ func (w *Workspace) guiFont(args string) {
 		fDialog.SetOption(widgets.QFontDialog__MonospacedFonts, true)
 		fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
 		fDialog.ConnectFontSelected(func(font *gui.QFont) {
-			fontFamily = font.Family()
+			fontFamily = strings.Replace(font.Family(), " ", "_", -1)
 			fontHeight = font.PointSizeF()
 			editor.putLog(fmt.Sprintf("Request to change to the following font:: %s:h%f", fontFamily, fontHeight))
 
