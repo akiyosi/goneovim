@@ -969,27 +969,34 @@ func keyToText(key int, mod core.Qt__KeyboardModifier) string {
 	return text
 }
 
-func controlModifier() core.Qt__KeyboardModifier {
-	// controlModifier is
-	controlModifier := core.Qt__ControlModifier
+// controlModifier is
+func controlModifier() (controlModifier core.Qt__KeyboardModifier) {
+	if runtime.GOOS == "windows" {
+		controlModifier = core.Qt__ControlModifier
+	}
+	if runtime.GOOS == "linux" {
+		controlModifier = core.Qt__ControlModifier
+	}
 	if runtime.GOOS == "darwin" {
 		controlModifier = core.Qt__MetaModifier
 	}
 
-	return controlModifier
+	return
 }
 
-func cmdModifier() core.Qt__KeyboardModifier {
-	// cmdModifier is
-	cmdModifier := core.Qt__ControlModifier
+// cmdModifier is
+func cmdModifier() (cmdModifier core.Qt__KeyboardModifier) {
 	if runtime.GOOS == "windows" {
 		cmdModifier = core.Qt__NoModifier
 	}
 	if runtime.GOOS == "linux" {
 		cmdModifier = core.Qt__MetaModifier
 	}
+	if runtime.GOOS == "darwin" {
+		cmdModifier = core.Qt__ControlModifier
+	}
 
-	return cmdModifier
+	return
 }
 
 func isAsciiCharRequiringAlt(key int, mod core.Qt__KeyboardModifier, c rune) bool {
@@ -1017,6 +1024,10 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	key := event.Key()
 	mod := event.Modifiers()
 
+	if e.opts.Debug != "" {
+		e.putLog("key input:", fmt.Sprintf("%s, %d, %v", text, key, mod))
+	}
+
 	// this is macmeta alternatively
 	if e.config.Editor.Macmeta {
 		if mod&core.Qt__AltModifier > 0 && mod&core.Qt__ShiftModifier > 0 {
@@ -1029,13 +1040,13 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	if mod&core.Qt__KeypadModifier > 0 {
 		switch core.Qt__Key(key) {
 		case core.Qt__Key_Home:
-			return fmt.Sprintf("<%sHome>", e.modPrefix(mod))
+			return fmt.Sprintf("<%skHome>", e.modPrefix(mod))
 		case core.Qt__Key_End:
-			return fmt.Sprintf("<%sEnd>", e.modPrefix(mod))
+			return fmt.Sprintf("<%skEnd>", e.modPrefix(mod))
 		case core.Qt__Key_PageUp:
-			return fmt.Sprintf("<%sPageUp>", e.modPrefix(mod))
+			return fmt.Sprintf("<%skPageUp>", e.modPrefix(mod))
 		case core.Qt__Key_PageDown:
-			return fmt.Sprintf("<%sPageDown>", e.modPrefix(mod))
+			return fmt.Sprintf("<%skPageDown>", e.modPrefix(mod))
 		case core.Qt__Key_Plus:
 			return fmt.Sprintf("<%skPlus>", e.modPrefix(mod))
 		case core.Qt__Key_Minus:
@@ -1166,10 +1177,6 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	prefix := e.modPrefix(mod)
 	if prefix != "" {
 		return fmt.Sprintf("<%s%s>", prefix, c)
-	}
-
-	if e.opts.Debug != "" {
-		e.putLog("key input:", c, fmt.Sprintf("%s, %d, %v", event.Text(), event.Key(), event.Modifiers()))
 	}
 
 	return c
