@@ -1617,11 +1617,9 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
 	}
-	font := w.getFont()
+
 	line := w.content[y]
 	var bg *RGBA
-
-	// fmt.Println("win.grid", w.grid, "float", w.isFloatWin, "popup", w.isPopupmenu)
 
 	// draw default background color if window is float window or msg grid
 	isDrawDefaultBg := false
@@ -1692,47 +1690,10 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	// }
 
 	// The same color combines the rectangular areas and paints at once
-	var start, end, width int
+	var start, end int
 	var lastBg *RGBA
 	var lastHighlight, highlight *Highlight
 
-	fillCellRect := func() {
-		if lastHighlight == nil {
-			return
-		}
-		width = end - start + 1
-		if width < 0 {
-			width = 0
-		}
-		if !isDrawDefaultBg && lastBg.equals(w.background) {
-			width = 0
-		}
-		if width > 0 {
-			// Set diff pattern
-			pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
-
-			// Fill background with pattern
-			rectF := core.NewQRectF4(
-				float64(start)*font.cellwidth,
-				float64((y)*font.lineHeight+scrollPixels),
-				float64(width)*font.cellwidth,
-				float64(font.lineHeight),
-			)
-			p.FillRect(
-				rectF,
-				gui.NewQBrush3(
-					gui.NewQColor3(
-						color.R,
-						color.G,
-						color.B,
-						transparent,
-					),
-					pattern,
-				),
-			)
-			width = 0
-		}
-	}
 	for x := col; x <= col+cols; x++ {
 
 		if x >= len(line)+1 {
@@ -1762,12 +1723,13 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 			lastBg = bg
 			lastHighlight = highlight
 		}
+
 		if lastBg != nil {
 			if lastBg.equals(bg) {
 				end = x
 			}
 			if !lastBg.equals(bg) || x == bounds {
-				fillCellRect()
+				w.fillCellRect(p, lastHighlight, lastBg, y, start, end, scrollPixels, isDrawDefaultBg)
 
 				start = x
 				end = x
@@ -1775,10 +1737,51 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 				lastHighlight = highlight
 
 				if x == bounds {
-					fillCellRect()
+					w.fillCellRect(p, lastHighlight, lastBg, y, start, end, scrollPixels, isDrawDefaultBg)
 				}
 			}
 		}
+	}
+}
+
+func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg *RGBA, y, start, end, scrollPixels int, isDrawDefaultBg bool) {
+
+	if lastHighlight == nil {
+		return
+	}
+
+	width := end - start + 1
+	if width < 0 {
+		width = 0
+	}
+	if !isDrawDefaultBg && lastBg.equals(w.background) {
+		width = 0
+	}
+
+	font := w.getFont()
+	if width > 0 {
+		// Set diff pattern
+		pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
+
+		// Fill background with pattern
+		rectF := core.NewQRectF4(
+			float64(start)*font.cellwidth,
+			float64((y)*font.lineHeight+scrollPixels),
+			float64(width)*font.cellwidth,
+			float64(font.lineHeight),
+		)
+		p.FillRect(
+			rectF,
+			gui.NewQBrush3(
+				gui.NewQColor3(
+					color.R,
+					color.G,
+					color.B,
+					transparent,
+				),
+				pattern,
+			),
+		)
 	}
 }
 
