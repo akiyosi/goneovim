@@ -16,7 +16,7 @@ jobs:
   linux:
     strategy:
       matrix:
-        go-version: [1.16.x]
+        go-version: [1.17.x]
         platform: [ubuntu-latest]
         qtversion: [5.14.1]
     runs-on: ${{ matrix.platform }}
@@ -100,7 +100,7 @@ jobs:
   archlinux:
     strategy:
       matrix:
-        go-version: [1.16.x]
+        go-version: [1.17.x]
         platform: [ubuntu-latest]
         qtversion: [5.15.1]
     runs-on: ${{ matrix.platform }}
@@ -184,7 +184,7 @@ jobs:
   windows:
     strategy:
       matrix:
-        go-version: [1.16.x]
+        go-version: [1.17.x]
         platform: [ubuntu-latest]
         qtversion: [5.15.1]
     runs-on: ${{ matrix.platform }}
@@ -271,8 +271,8 @@ jobs:
   macos:
     strategy:
       matrix:
-        go-version: [1.16.x]
-        platform: [macos-10.15]
+        go-version: [1.17.x]
+        platform: [macos-11]
         qtversion: [5.15.2]
     runs-on: ${{ matrix.platform }}
     env:
@@ -284,7 +284,7 @@ jobs:
       GO111MODULE: off
       GOPROXY: https://goproxy.io
       QMAKE_APPLE_DEVICE_ARCHS: arm64
-      SDKROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk
+      # SDKROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk
     steps:
 
     - name: Install Go
