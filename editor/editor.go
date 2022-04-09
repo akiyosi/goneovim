@@ -108,6 +108,7 @@ type Editor struct {
 	cbChan                 chan *string
 	sysTray                *widgets.QSystemTrayIcon
 	side                   *WorkspaceSide
+	savedGeometry          *core.QByteArray
 	prefixToMapMetaKey     string
 	macAppArg              string
 	extFontFamily          string
@@ -494,19 +495,19 @@ func (e *Editor) connectAppSignals() {
 }
 
 func (e *Editor) resizeMainWindow() {
-   cws := e.workspaces[e.active]
-   windowWidth, windowHeight := cws.updateSize()
+	cws := e.workspaces[e.active]
+	windowWidth, windowHeight := cws.updateSize()
 
-   if !editor.config.Editor.WindowGeometryBasedOnFontmetrics {
-	   return
-   }
+	if !editor.config.Editor.WindowGeometryBasedOnFontmetrics {
+		return
+	}
 
-   // quantization of window geometry with font metrics as the smallest unit of change.
-   geometry := editor.window.Geometry()
-   width := geometry.Width()
-   height := geometry.Height()
+	// quantization of window geometry with font metrics as the smallest unit of change.
+	geometry := editor.window.Geometry()
+	width := geometry.Width()
+	height := geometry.Height()
 
-   if !(width == windowWidth && height == windowHeight) {
+	if !(width == windowWidth && height == windowHeight) {
 		e.window.Resize2(
 			windowWidth,
 			windowHeight,

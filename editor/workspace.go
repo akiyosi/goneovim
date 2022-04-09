@@ -783,7 +783,8 @@ func (w *Workspace) initGonvim() {
 		command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
 		command! -nargs=1 GonvimLetterSpacing call rpcnotify(0, "Gui", "gonvim_letter_spacing", <args>)
 		command! -nargs=1 GuiMacmeta call rpcnotify(0, "Gui", "gonvim_macmeta", <args>)
-		command! GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize")
+		command! -nargs=? GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize", <args>)
+		command! -nargs=? GonvimFullscreen call rpcnotify(0, "Gui", "gonvim_fullscreen", <args>)
 		command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
 		command! GonvimSmoothScroll call rpcnotify(0, "Gui", "gonvim_smoothscroll")
 		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
@@ -1181,7 +1182,7 @@ func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 	width -= marginWidth + sideWidth
 
 	height := e.window.Geometry().Height()
-	marginHeight := e.window.BorderSize()*4
+	marginHeight := e.window.BorderSize() * 4
 	titlebarHeight := 0
 	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
 		titlebarHeight = e.window.TitleBar.Height()
@@ -1214,7 +1215,6 @@ func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 
 	screenWidth := width - scrollbarWidth - minimapWidth
 	screenHeight := height - tablineHeight - statuslineHeight
-
 
 	rw := int(screenWidth) % int(w.screen.font.cellwidth)
 	rh := screenHeight % w.screen.font.lineHeight
@@ -1883,8 +1883,37 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
 		editor.window.Resize2(width, height)
+	case "gonvim_fullscreen":
+		arg := 1
+		if len(updates) == 2 {
+			arg = util.ReflectToInt(updates[1])
+		}
+		if arg == 0 {
+			// On MacOS, exiting from fullscreen does not work properly
+			// unless the window is fullscreened again beforehand.
+			if runtime.GOOS == "darwin" {
+				editor.window.WindowFullScreen()
+			}
+			editor.window.WindowExitFullScreen()
+			if runtime.GOOS == "darwin" && editor.savedGeometry != nil && editor.config.Editor.BorderlessWindow {
+				editor.window.RestoreGeometry(editor.savedGeometry)
+			}
+		} else {
+			if runtime.GOOS == "darwin" && editor.config.Editor.BorderlessWindow {
+				editor.savedGeometry = editor.window.SaveGeometry()
+			}
+			editor.window.WindowFullScreen()
+		}
 	case "gonvim_maximize":
-		editor.window.WindowMaximize()
+		arg := 1
+		if len(updates) == 2 {
+			arg = util.ReflectToInt(updates[1])
+		}
+		if arg == 0 {
+			editor.window.WindowExitMaximize()
+		} else {
+			editor.window.WindowMaximize()
+		}
 	case "gonvim_smoothscroll":
 		w.toggleSmoothScroll()
 	case "gonvim_smoothcursor":

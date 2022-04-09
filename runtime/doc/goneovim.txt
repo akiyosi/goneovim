@@ -176,8 +176,16 @@ COMMANDS                                                       *goneovim-command
 	text.
 
 
-:GonvimMaximize                                                 *:GonvimMaximize*
+:GonvimMaximize [0|1]                                           *:GonvimMaximize*
 	Maximize the window size.
+	If an argument is specified, a value of 0 exits maximization, and a
+	value of 1 maximizes the window.
+
+
+:GonvimFullscreen [0|1]                                       *:GonvimFullscreen*
+	 Window to full screen.
+	 If an argument is specified, a value of 0 exits full screen and a
+	 value of 1 makes the window full screen.
 
 
 :GonvimLigatures                                               *:GonvimLigatures*
