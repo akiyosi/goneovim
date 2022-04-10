@@ -1512,12 +1512,14 @@ func (w *Window) update() {
 		// Create rectangles that require updating.
 		var rects [][4]int
 		isCreateRect := false
+		extendedDrawingArea := int(font.italicWidth - font.cellwidth + 1)
+
 		start := 0
 		if drawWithSingleRect {
 			rect := [4]int{
 				0,
 				i * font.lineHeight,
-				int(math.Ceil(float64(width)*font.cellwidth)) + 1,
+				int(math.Ceil(float64(width)*font.cellwidth)) + extendedDrawingArea,
 				font.lineHeight,
 			}
 			rects = append(rects, rect)
@@ -1550,10 +1552,14 @@ func (w *Window) update() {
 
 					// create rectangular area
 					// To avoid leaving drawing debris, update a slightly larger area.
+					x := int(float64(start)*font.cellwidth) - 1
+					if x < 0 {
+						x = 0
+					}
 					rect := [4]int{
-						int(float64(start)*font.cellwidth) - 1, // update a slightly larger area.
+						x, // update a slightly larger area.
 						i * font.lineHeight,
-						int(math.Ceil(float64(jj-start)*font.cellwidth)) + 2, // update a slightly larger area.
+						int(math.Ceil(float64(jj-start)*font.cellwidth)) + extendedDrawingArea, // update a slightly larger area.
 						font.lineHeight,
 					}
 					rects = append(rects, rect)
@@ -2889,12 +2895,12 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 	}
 
 	w.Move2(
-		anchorposx + x,
-		anchorposy + y,
+		anchorposx+x,
+		anchorposy+y,
 	)
 }
 
-func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int){
+func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
 
 	baseFont := w.s.ws.screen.font
 
@@ -2909,13 +2915,13 @@ func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int){
 
 	width := w.Width()
 	height := w.Height()
-	screenWidth :=  w.s.widget.Width()
+	screenWidth := w.s.widget.Width()
 	screenHeight := w.s.widget.Height()
 
-	if w.pos[0] != 0 && (float64((winx+width) - screenWidth) >= baseFont.cellwidth) {
+	if w.pos[0] != 0 && (float64((winx+width)-screenWidth) >= baseFont.cellwidth) {
 		winx -= winx + width - screenWidth
 	}
-	if w.pos[1] != 0 && ((winy+height) - screenHeight >= baseFont.lineHeight) {
+	if w.pos[1] != 0 && ((winy+height)-screenHeight >= baseFont.lineHeight) {
 		winy -= winy + height - screenHeight
 	}
 
