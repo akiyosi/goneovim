@@ -194,6 +194,7 @@ jobs:
       QT_VERSION: ${{ matrix.qtversion }}
       QT_API: 5.13.0
       QT_DEBUG: false
+      QT_DEBUG_CONSOLE: true
       GO111MODULE: off
       GOPROXY: https://goproxy.io
     steps:
