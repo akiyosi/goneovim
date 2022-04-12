@@ -1179,7 +1179,7 @@ func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 	}
 	width -= marginWidth + sideWidth
 
-	height := e.window.Geometry().Height()
+	height := geometry.Height()
 	marginHeight := e.window.BorderSize() * 4
 	titlebarHeight := 0
 	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
@@ -1189,8 +1189,10 @@ func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 
 	tablineHeight := 0
 	if w.isDrawTabline && w.tabline != nil {
-		w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
-		tablineHeight = w.tabline.height
+		if w.tabline.showtabline != -1 {
+			w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
+			tablineHeight = w.tabline.height
+		}
 	}
 
 	statuslineHeight := 0
@@ -1252,6 +1254,79 @@ func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 
 	windowWidth = marginWidth + sideWidth + scrollbarWidth + minimapWidth + w.screen.width
 	windowHeight = marginHeight + titlebarHeight + tablineHeight + statuslineHeight + w.screen.height
+
+	return
+}
+
+func (w *Workspace) updateApplicationWindowSize(cols, rows int) {
+	e := editor
+	font := w.font
+
+	appWinWidth := int(font.cellwidth * float64(cols))
+	appWinHeight := int(float64(font.lineHeight) * float64(rows))
+
+	marginWidth := e.window.BorderSize()*4 + e.window.WindowGap()*2
+	sideWidth := 0
+	if e.side != nil {
+		if e.side.widget.IsVisible() {
+			sideWidth = e.splitter.Sizes()[0] + e.splitter.HandleWidth()
+		}
+	}
+	appWinWidth += marginWidth + sideWidth
+
+	marginHeight := e.window.BorderSize() * 4
+	titlebarHeight := 0
+	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
+		titlebarHeight = e.window.TitleBar.Height()
+	}
+	appWinHeight += marginHeight + titlebarHeight
+
+	tablineHeight := 0
+	if w.isDrawTabline && w.tabline != nil {
+		if w.tabline.showtabline != -1 {
+			w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
+			tablineHeight = w.tabline.height
+		}
+	}
+
+	statuslineHeight := 0
+	if w.isDrawStatusline && w.statusline != nil {
+		w.statusline.height = w.statusline.widget.Height()
+		statuslineHeight = w.statusline.height
+	}
+
+	scrollbarWidth := 0
+	if e.config.ScrollBar.Visible {
+		scrollbarWidth = e.config.ScrollBar.Width
+	}
+
+	minimapWidth := 0
+	if w.minimap != nil {
+		if w.minimap.visible {
+			minimapWidth = e.config.MiniMap.Width
+		}
+	}
+
+	appWinWidth += scrollbarWidth + minimapWidth
+	appWinHeight += tablineHeight + statuslineHeight
+
+	// Disable size specifications larger than the desktop screen size
+	desktopRect := e.app.Desktop().AvailableGeometry2(e.window)
+	desktopWidth := desktopRect.Width()
+	desktopHeight := desktopRect.Height()
+	if appWinWidth > desktopWidth {
+		appWinWidth = desktopWidth
+	}
+	if appWinHeight > desktopHeight {
+		appWinHeight = desktopHeight
+	}
+
+	e.putLog("update app win size::", appWinWidth, appWinHeight)
+
+	e.window.Resize2(
+		appWinWidth,
+		appWinHeight,
+	)
 
 	return
 }
@@ -1501,6 +1576,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 }
 
 func (w *Workspace) flush(shouldUpdateCursor, shouldUpdateMinimap bool) {
+	// handle viewport event for smooth scroll
 	for {
 		if len(w.viewportQue) == 0 {
 			break
@@ -1517,16 +1593,29 @@ func (w *Workspace) flush(shouldUpdateCursor, shouldUpdateMinimap bool) {
 		default:
 		}
 	}
+
+	// update cursor
 	if shouldUpdateCursor {
 		w.cursor.update()
 	}
+
+	// update screen
 	w.screen.update()
+
+	// update external statusline
 	w.updateStatusline()
+
+	// update external scrollbar
 	w.updateScrollbar()
+
+	// update IME tooltip
 	w.updateIMETooltip()
+
+	// update minimap
 	if shouldUpdateMinimap {
 		w.updateMinimap()
 	}
+
 	w.maxLineDelta = 0
 }
 

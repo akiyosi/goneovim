@@ -797,7 +797,7 @@ func (e *Editor) restoreWindow() (isRestoreGeometry, isRestoreState bool) {
 
 func (e *Editor) setWindowOptions() {
 	e.window.SetupTitle("Neovim")
-	e.window.SetMinimumSize2(400, 300)
+	e.window.SetMinimumSize2(40, 30)
 	e.initSpecialKeys()
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.ConnectKeyReleaseEvent(e.keyRelease)

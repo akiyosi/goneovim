@@ -134,7 +134,7 @@ func initTabline() *Tabline {
 		layout:       layout,
 		marginTop:    int(math.Ceil(float64(space) / 3.0)),
 		marginBottom: int(math.Ceil(float64(space) * 2.0 / 3.0)),
-		showtabline:  2,
+		showtabline:  -1, // The initial value is -1, and the correct value is retrieved by event notification from nvim.
 	}
 
 	tabs := []*Tab{}

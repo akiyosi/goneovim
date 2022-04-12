@@ -602,8 +602,8 @@ func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
 		)
 	} else {
 		// Fixed mouse events handling in relation to #316#issuecomment-1039978355 fixes.
-		offsetX :=  float64(targetwin.Pos().X())
-		offsetY :=  float64(targetwin.Pos().Y())
+		offsetX := float64(targetwin.Pos().X())
+		offsetY := float64(targetwin.Pos().Y())
 
 		localpos = core.NewQPointF3(
 			event.LocalPos().X()-offsetX,
@@ -632,11 +632,23 @@ func (s *Screen) gridResize(args []interface{}) {
 		cols = util.ReflectToInt(arg.([]interface{})[1])
 		rows = util.ReflectToInt(arg.([]interface{})[2])
 
+		// for debug
 		if isSkipGlobalId(gridid) {
 			continue
 		}
 
+		// resize neovim's window
 		s.resizeWindow(gridid, cols, rows)
+
+		// If events related to the global grid are included
+		// Determine to resize the application window
+		if gridid == 1 && s.name != "minimap" {
+			if !(s.ws.cols == cols && s.ws.rows == rows) {
+				s.ws.cols = cols
+				s.ws.rows = rows
+				s.ws.updateApplicationWindowSize(cols, rows)
+			}
+		}
 	}
 }
 
@@ -1428,7 +1440,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 				if cursorgridwin.isMsgGrid {
 					anchorwin = cursorgridwin
 					anchorRow = cursorgridwin.pos[0]
-			}
+				}
 				pumInMsgWin = true
 			}
 		}
