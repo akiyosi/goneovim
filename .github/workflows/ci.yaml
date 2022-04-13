@@ -573,7 +573,7 @@ jobs:
       id: cache-qt-bindings-windows
       with:
         path: |
-          ${{ github.workspace }}\src\github.com\therecipe
+          ${{ github.workspace }}\src\github.com\therecipe\qt\*
           !${{ github.workspace }}\src\github.com\therecipe\qt\.git
         key: ${{ matrix.qtversion }}-qtbindings-windows-${{ env.cache-version }}
 
