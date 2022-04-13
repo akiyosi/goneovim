@@ -622,19 +622,17 @@ func newWslProcess() (*nvim.Nvim, error) {
 
 	nvimargs := ""
 	if editor.config.Editor.NvimInWsl == "" {
-		nvimargs = `"nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed `
+		nvimargs = `nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed `
 	} else {
-		nvimargs = `$SHELL -lc "`
 		nvimargs += fmt.Sprintf("%s --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed ", editor.config.Editor.NvimInWsl)
 	}
 	for _, s := range editor.args {
 		nvimargs += s + " "
 	}
-	nvimargs += `"`
 
 	wslArgs := []string{
 		"$SHELL",
-		"-lc",
+		"-lic",
 		nvimargs,
 	}
 
