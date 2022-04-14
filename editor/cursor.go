@@ -73,6 +73,7 @@ func initCursorNew() *Cursor {
 	c.ConnectPaintEvent(c.paint)
 	c.delta = 0.1
 	c.hasSmoothMove = editor.config.Cursor.SmoothMove
+	c.cellPercentage = 100
 
 	return c
 }
@@ -364,7 +365,7 @@ func (c *Cursor) setCharCache(text string, fg *RGBA, image *gui.QImage) {
 	)
 }
 
-func (c *Cursor) setBlink() {
+func (c *Cursor) setBlink(isUpdateBlinkWait, isUpdateBlinkOn, isUpdateBlinkOff bool) {
 	c.timer.DisconnectTimeout()
 
 	wait := c.blinkWait
@@ -376,6 +377,9 @@ func (c *Cursor) setBlink() {
 		return
 	}
 	c.timer.ConnectTimeout(func() {
+		if editor.isKeyAutoRepeating {
+			return
+		}
 		c.brend = 0.0
 		if !c.isShut {
 			c.timer.SetInterval(off)
@@ -387,7 +391,9 @@ func (c *Cursor) setBlink() {
 		}
 		c.Update()
 	})
-	c.timer.Start(wait)
+	if isUpdateBlinkWait {
+		c.timer.Start(wait)
+	}
 	c.timer.SetInterval(off)
 }
 
@@ -445,7 +451,13 @@ func (c *Cursor) updateCursorShape() {
 	if !c.ws.cursorStyleEnabled {
 		return
 	}
+	if editor.isKeyAutoRepeating {
+		return
+	}
 
+	var cursorShape string
+	var cellPercentage, blinkWait, blinkOn, blinkOff int
+	var isUpdateBlinkWait, isUpdateBlinkOn, isUpdateBlinkOff bool
 	if c.modeInfoModeIdx != c.modeIdx || c.isNeedUpdateModeInfo {
 		c.modeInfoModeIdx = c.modeIdx
 
@@ -474,31 +486,52 @@ func (c *Cursor) updateCursorShape() {
 		c.fg = fg
 		c.bg = bg
 
-		c.cursorShape = "block"
+		// c.cursorShape = "block"
 		cursorShapeITF, ok := modeInfo["cursor_shape"]
 		if ok {
-			c.cursorShape = cursorShapeITF.(string)
+			cursorShape = cursorShapeITF.(string)
+			if c.cursorShape != cursorShape {
+				c.cursorShape = cursorShape
+			}
 		}
-		c.cellPercentage = 100
 		cellPercentageITF, ok := modeInfo["cell_percentage"]
 		if ok {
-			c.cellPercentage = util.ReflectToInt(cellPercentageITF)
+			cellPercentage = util.ReflectToInt(cellPercentageITF)
+			if c.cellPercentage != cellPercentage {
+				c.cellPercentage = cellPercentage
+			}
+		}
+		blinkWaitITF, blinkWaitOk := modeInfo["blinkwait"]
+		if blinkWaitOk {
+			blinkWait = util.ReflectToInt(blinkWaitITF)
+		}
+		blinkOnITF, blinkOnOk := modeInfo["blinkon"]
+		if blinkOnOk {
+			blinkOn = util.ReflectToInt(blinkOnITF)
+		}
+		blinkOffITF, blinkOffOk := modeInfo["blinkoff"]
+		if blinkOffOk {
+			blinkOff = util.ReflectToInt(blinkOffITF)
 		}
 
-		blinkWaitITF, ok := modeInfo["blinkwait"]
-		if ok {
-			c.blinkWait = util.ReflectToInt(blinkWaitITF)
-		}
-		blinkOnITF, ok := modeInfo["blinkon"]
-		if ok {
-			c.blinkOn = util.ReflectToInt(blinkOnITF)
-		}
-		blinkOffITF, ok := modeInfo["blinkoff"]
-		if ok {
-			c.blinkOff = util.ReflectToInt(blinkOffITF)
-		}
+		isUpdateBlinkWait = (blinkWaitOk && c.blinkWait != blinkWait)
+		isUpdateBlinkOn = (blinkOnOk && c.blinkOn != blinkOn)
+		isUpdateBlinkOff = (blinkOffOk && c.blinkOff != blinkOff)
 
-		c.setBlink()
+		if isUpdateBlinkWait {
+			c.blinkWait = blinkWait
+		}
+		if isUpdateBlinkOn {
+			c.blinkOn = blinkOn
+		}
+		if isUpdateBlinkOff {
+			c.blinkOff = blinkOff
+		}
+		c.setBlink(
+			isUpdateBlinkWait,
+			isUpdateBlinkOn,
+			isUpdateBlinkOff,
+		)
 
 		c.isNeedUpdateModeInfo = false
 	}
@@ -538,7 +571,7 @@ func (c *Cursor) updateCursorShape() {
 		height = 1
 	}
 
-	if c.blinkWait != 0 {
+	if isUpdateBlinkWait {
 		c.brend = 0.0
 		c.timer.Start(c.blinkWait)
 	}
@@ -628,8 +661,8 @@ func (c *Cursor) updateContent(win *Window) {
 		scrollPixels += win.scrollPixels[1]
 	}
 
-	x := float64(winx + int(float64(col)*font.cellwidth + float64(winbordersize)))
-	y := float64(winy + int(float64(row*font.lineHeight) + float64(font.lineSpace)/2.0 + float64(scrollPixels+res+winbordersize)))
+	x := float64(winx + int(float64(col)*font.cellwidth+float64(winbordersize)))
+	y := float64(winy + int(float64(row*font.lineHeight)+float64(font.lineSpace)/2.0+float64(scrollPixels+res+winbordersize)))
 
 	isStopScroll := (win.lastScrollphase == core.Qt__ScrollEnd)
 	c.move(win)
@@ -675,13 +708,13 @@ func (c *Cursor) update() {
 	c.isStopScroll = (win.lastScrollphase == core.Qt__ScrollEnd)
 
 	c.updateContent(win)
+
 	c.updateRegion()
 
 	// Fix #119: Wrong candidate window position when using ibus
 	if runtime.GOOS == "linux" {
 		gui.QGuiApplication_InputMethod().Update(core.Qt__ImCursorRectangle)
 	}
-
 }
 
 func (c *Cursor) getSnapshot() {
@@ -822,25 +855,25 @@ func (c *Cursor) updateMinimumArea() {
 				topbottom,
 			},
 		)
-
-	//           <topleft>
-	//                  x,y                         xprime,yprime
-	//                   /+---+ <topright>                /+---+
-	//                  / |   |                          / |   |
-	//                 /  |   |                         /  |   |
-	//                /   |   |                        /   |   |
-	//               /    +---+ <topbottom>           /    +---+
-	//              /        /                       /        /
-	// <bottomtop> /        /                       /        /
-	//    xprime,yprime    /                   x,y /        /
-	//           +---+    /                       +---+    /
-	//           |   |   /                        |   |   /
-	//           |   |  /                         |   |  /
-	//           |   | /                          |   | /
-	//           +---+/                           +---+/
-	// <bottomleft>   <bottomright>
-
 	} else {
+
+		//           <topleft>
+		//                  x,y                         xprime,yprime
+		//                   /+---+ <topright>                /+---+
+		//                  / |   |                          / |   |
+		//                 /  |   |                         /  |   |
+		//                /   |   |                        /   |   |
+		//               /    +---+ <topbottom>           /    +---+
+		//              /        /                       /        /
+		// <bottomtop> /        /                       /        /
+		//    xprime,yprime    /                   x,y /        /
+		//           +---+    /                       +---+    /
+		//           |   |   /                        |   |   /
+		//           |   |  /                         |   |  /
+		//           |   | /                          |   | /
+		//           +---+/                           +---+/
+		// <bottomleft>   <bottomright>
+
 		if c.xprime < c.x {
 			left = c.xprime
 			right = c.x
