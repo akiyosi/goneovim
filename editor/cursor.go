@@ -378,6 +378,7 @@ func (c *Cursor) setBlink(isUpdateBlinkWait, isUpdateBlinkOn, isUpdateBlinkOff b
 	}
 	c.timer.ConnectTimeout(func() {
 		if editor.isKeyAutoRepeating {
+			c.brend = 0.0
 			return
 		}
 		c.brend = 0.0
