@@ -93,7 +93,7 @@ type Options struct {
 
 // Editor is the editor
 type Editor struct {
-	stop                   chan struct{}
+	stop                   chan int
 	signal                 *editorSignal
 	app                    *widgets.QApplication
 	font                   *Font
@@ -185,7 +185,7 @@ func InitEditor(options Options, args []string) {
 	e.putLog("--- GONEOVIM STARTING ---")
 
 	e.signal = NewEditorSignal(nil)
-	e.stop = make(chan struct{})
+	e.stop = make(chan int)
 	e.notify = make(chan *Notify, 10)
 	e.cbChan = make(chan *string, 240)
 
@@ -323,13 +323,15 @@ func InitEditor(options Options, args []string) {
 
 	// runs goroutine to detect stop events and quit the application
 	go func() {
-		<-e.stop
+		ret := <-e.stop
+		close(e.stop)
 		e.putLog("The application was quitted with the exit of Neovim.")
 		if runtime.GOOS == "darwin" {
 			e.app.DisconnectEvent()
 		}
 		e.saveAppWindowState()
-		e.app.Quit()
+		// e.app.Quit()
+		os.Exit(ret)
 	}()
 
 	// launch thread to copy text to the clipboard in darwin
@@ -1273,9 +1275,9 @@ func (e *Editor) initSpecialKeys() {
 	e.prefixToMapMetaKey = "A-"
 }
 
-func (e *Editor) close() {
+func (e *Editor) close(exitcode int) {
 	e.stopOnce.Do(func() {
-		close(e.stop)
+		e.stop <- exitcode
 	})
 }
 
