@@ -1263,7 +1263,11 @@ func (w *Window) countContent(row int) {
 		if !breakFlag[1] {
 			if cell == nil {
 				width--
-			} else if cell.char == " " && cell.highlight.bg().equals(w.background) {
+			} else if cell.char == " " &&
+				cell.highlight.bg().equals(w.background) &&
+				!cell.highlight.underline &&
+				!cell.highlight.undercurl &&
+				!cell.highlight.strikethrough {
 				width--
 			} else {
 				breakFlag[1] = true
