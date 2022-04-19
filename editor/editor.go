@@ -76,19 +76,19 @@ type Notify struct {
 }
 
 type Options struct {
-	Geometry     string `long:"geometry" description:"Initial window geomtry [e.g. --geometry=800x600]"`
-	Server       string `long:"server" description:"Remote session address [e.g. --server=host:3456]"`
-	Ssh          string `long:"ssh" description:"Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]"`
-	Nvim         string `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
-	Debug        string `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]" optional:"yes" optional-value:"debug.log"`
-	Fullscreen   bool   `long:"fullscreen" description:"Open the window in fullscreen on startup"`
-	Maximized    bool   `long:"maximized" description:"Maximize the window on startup"`
-	Exttabline   bool   `long:"exttabline" description:"Externalize the tabline"`
-	Extcmdline   bool   `long:"extcmdline" description:"Externalize the cmdline"`
-	Extmessages  bool   `long:"extmessages" description:"Externalize the messages. Sets --extcmdline implicitly"`
-	Extpopupmenu bool   `long:"extpopupmenu" description:"Externalize the popupmenu"`
-	Version      bool   `long:"version" description:"Print Goneovim version"`
-	Wsl          bool   `long:"wsl" description:"Attach to nvim process in wsl environment"`
+	Geometry     string  `long:"geometry" description:"Initial window geomtry [e.g. --geometry=800x600]"`
+	Server       string  `long:"server" description:"Remote session address [e.g. --server=host:3456]"`
+	Ssh          string  `long:"ssh" description:"Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]"`
+	Nvim         string  `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
+	Debug        string  `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]" optional:"yes" optional-value:"debug.log"`
+	Fullscreen   bool    `long:"fullscreen" description:"Open the window in fullscreen on startup"`
+	Maximized    bool    `long:"maximized" description:"Maximize the window on startup"`
+	Exttabline   bool    `long:"exttabline" description:"Externalize the tabline"`
+	Extcmdline   bool    `long:"extcmdline" description:"Externalize the cmdline"`
+	Extmessages  bool    `long:"extmessages" description:"Externalize the messages. Sets --extcmdline implicitly"`
+	Extpopupmenu bool    `long:"extpopupmenu" description:"Externalize the popupmenu"`
+	Version      bool    `long:"version" description:"Print Goneovim version"`
+	Wsl          *string `long:"wsl" description:"Attach to nvim process in wsl environment with distribution(default) [e.g. --wsl=Ubuntu]" optional:"yes" optional-value:""`
 }
 
 // Editor is the editor
@@ -833,7 +833,7 @@ func (e *Editor) showWindow() {
 		}
 	}
 
-	if e.opts.Ssh == "" || !e.opts.Wsl {
+	if e.opts.Ssh == "" || e.opts.Wsl == nil {
 		e.window.Show()
 	}
 }

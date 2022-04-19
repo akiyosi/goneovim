@@ -508,7 +508,7 @@ func (w *Workspace) startNvim(path string) error {
 		// Attaching to /path/to/nvim
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
 		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd)
-	} else if editor.opts.Wsl {
+	} else if editor.opts.Wsl != nil {
 		// Attaching remote nvim via wsl
 		w.uiRemoteAttached = true
 		neovim, err = newWslProcess()
@@ -643,6 +643,9 @@ func newWslProcess() (*nvim.Nvim, error) {
 		"$SHELL",
 		"-lic",
 		nvimargs,
+	}
+	if editor.opts.Wsl != nil && *editor.opts.Wsl != "" {
+		wslArgs = append([]string{"-d", *editor.opts.Wsl}, wslArgs...)
 	}
 
 	cmd := exec.CommandContext(
