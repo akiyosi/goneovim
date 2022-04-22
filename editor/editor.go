@@ -230,7 +230,11 @@ func InitEditor(options Options, args []string) {
 	e.putLog("setting environment variable")
 
 	// set application working directory path
-	e.setAppDirPath(home)
+	// TODO: This process is problematic and needs a better way to set up CWD
+	//        * https://github.com/akiyosi/goneovim/issues/43
+	//        * https://github.com/akiyosi/goneovim/issues/337
+	//        * https://github.com/akiyosi/goneovim/issues/325
+	// e.setAppDirPath(home)
 	e.putLog("set working directory path")
 
 	e.extFontFamily = e.config.Editor.FontFamily
