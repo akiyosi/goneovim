@@ -39,7 +39,7 @@ CLI INTERFACE                                             *goneovim-cli-interfac
           --extmessages   Externalize the messages. Sets --extcmdline implicitly
           --extpopupmenu  Externalize the popupmenu
           --version       Print Goneovim version
-          --wsl           Attach to nvim process in wsl environment
+          --wsl=          Attach to nvim process in wsl environment with distribution(default) [e.g. --wsl=Ubuntu]
     
     Help Options:
       -h, --help          Show this help message
