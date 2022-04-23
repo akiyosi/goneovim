@@ -641,7 +641,7 @@ func newWslProcess() (*nvim.Nvim, error) {
 
 	wslArgs := []string{
 		"$SHELL",
-		"-lic",
+		"-lc",
 		nvimargs,
 	}
 	if editor.opts.Wsl != nil && *editor.opts.Wsl != "" {

@@ -9,6 +9,7 @@ CONTENTS                                                       *goneovim-content
 Introduction                                             |goneovim-introduction|
 CLI Interface                                           |goneovim-cli-interface|
 Commands                                                     |goneovim-commands|
+WSL integration                                                   |goneovim-wsl|
 Configuration                                           |goneovim-configuration|
 
 ================================================================================
@@ -206,6 +207,23 @@ COMMANDS                                                       *goneovim-command
 :GonvimIndentguide                                           *:GonvimIndentguide*
 	Toggles the display of the indentation guide.
 
+
+================================================================================
+WSL integration                                                     *goneovim-wsl*
+
+On Windows, goenovim can use nvim as a backend within the WSL2 environment.
+To use this feature, all that is required is that neovim can be executed on the
+shell program specified by `$SHELL` in the WSL2 environment with just the executable
+binary name "nvim". You can simply check if nvim can be run by the following 
+command at a Windows command prompt.
+>
+    wsl $SHELL -lc nvim
+<
+For example, in bash, in order to run neovim with just `nvim` command, you need
+to add the absolute path of the directory where `nvim` execution binary to the
+environment variable `$PATH` in `/etc/profile` or `~/.bash_profile`, which is configuration
+file that is read when the shell program is executed as a login shell. For more
+information about login shells, see `man bash`, etc.
 
 ================================================================================
 CONFIGURATION                                             *goneovim-configuration*
