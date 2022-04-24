@@ -13,7 +13,20 @@ on:
       - v[0-9]+.[0-9]+.[0-9]+
 
 jobs:
+  check-new-commit:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - run: >
+        test '{ "${{github.event.inputs.tag_name}}" == "nightly"
+        && 0 -lt $(git log --oneline --since "yesterday" | wc -l) }
+        || { "${{github.event.inputs.tag_name}}" != "nightly" }'
+
   linux:
+    needs: [check-new-commit]
     strategy:
       matrix:
         go-version: [1.17.x]
@@ -98,6 +111,7 @@ jobs:
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux.tar.bz2
 
   archlinux:
+    needs: [check-new-commit]
     strategy:
       matrix:
         go-version: [1.17.x]
@@ -182,6 +196,7 @@ jobs:
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-archlinux.tar.bz2
 
   windows:
+    needs: [check-new-commit]
     strategy:
       matrix:
         go-version: [1.17.x]
@@ -269,6 +284,7 @@ jobs:
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-windows.zip
 
   macos:
+    needs: [check-new-commit]
     strategy:
       matrix:
         go-version: [1.17.x]
