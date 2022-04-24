@@ -3,14 +3,16 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	// "runtime/pprof"
 	// "github.com/felixge/fgprof"
 
 	"github.com/akiyosi/goneovim/editor"
 	"github.com/jessevdk/go-flags"
+	"github.com/mattn/go-isatty"
+	"github.com/therecipe/qt/core"
 )
-
 
 func main() {
 	// // profile the application
@@ -45,12 +47,38 @@ func main() {
 	// parse args
 	options, args := parseArgs()
 	if options.Version {
-			fmt.Println(editor.Version)
-			os.Exit(0)
+		fmt.Println(editor.Version)
+		os.Exit(0)
 	}
 
+	nofork := options.Nofork
+
+	// In Windows, nofork always true
+	if runtime.GOOS == "windows" {
+		nofork = true
+	}
+	// In MacOS X do not fork when the process is not launched from a tty
+	if runtime.GOOS == "darwin" {
+		if !isatty.IsTerminal(os.Stdin.Fd()) {
+			nofork = true
+		}
+	}
 	// start editor
-	editor.InitEditor(options, args)
+	if nofork {
+		editor.InitEditor(options, args)
+	} else {
+		p := core.NewQProcess(nil)
+		var pid int64
+		if !p.StartDetached2(
+			core.NewQCoreApplication(len(os.Args), os.Args).ApplicationFilePath(),
+			append(args, []string{"--nofork"}...),
+			"",
+			pid,
+		) {
+			fmt.Println("Unable to fork into background")
+			os.Exit(-1)
+		}
+	}
 }
 
 // parsArgs parse args

@@ -89,6 +89,7 @@ type Options struct {
 	Extpopupmenu bool    `long:"extpopupmenu" description:"Externalize the popupmenu"`
 	Version      bool    `long:"version" description:"Print Goneovim version"`
 	Wsl          *string `long:"wsl" description:"Attach to nvim process in wsl environment with distribution(default) [e.g. --wsl=Ubuntu]" optional:"yes" optional-value:""`
+	Nofork       bool    `long:"nofork" description:"Run in foreground"`
 }
 
 // Editor is the editor
