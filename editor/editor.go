@@ -271,8 +271,8 @@ func InitEditor(options Options, args []string) {
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
 	e.window.SetupBorderSize(e.config.Editor.Margin)
 	e.window.SetupWindowGap(e.config.Editor.Gap)
-	e.showWindow()
 	e.setWindowSizeFromOpts()
+	e.showWindow()
 	e.setWindowOptions()
 	e.putLog("finished preparing the application window.")
 
@@ -766,12 +766,12 @@ func (e *Editor) setWindowSize(s string) (int, int) {
 	var width, height int
 	var err error
 	width, err = strconv.Atoi(strings.SplitN(s, "x", 2)[0])
-	if err != nil || width < 400 {
-		width = 400
+	if err != nil || width < 40 {
+		width = 40
 	}
 	height, err = strconv.Atoi(strings.SplitN(s, "x", 2)[1])
-	if err != nil || height < 300 {
-		height = 300
+	if err != nil || height < 30 {
+		height = 30
 	}
 
 	return width, height
