@@ -21,9 +21,9 @@ jobs:
       with:
         fetch-depth: 0
     - run: >
-        test '{ "${{github.event.inputs.tag_name}}" == "nightly"
+        test '{ "${{github.event_name}}" == "schedule"
         && 0 -lt $(git log --oneline --since "yesterday" | wc -l) }
-        || { "${{github.event.inputs.tag_name}}" != "nightly" }'
+        || { "${{github.event_name}}" != "schedule" }'
 
   linux:
     needs: [check-new-commit]
