@@ -225,6 +225,107 @@ jobs:
         name: Goneovim-latest-windows
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-windows.zip
 
+
+
+  build-windows-2:
+    strategy:
+      matrix:
+        # go-version: [1.12.x, 1.13.x]
+        go-version: [1.17.x]
+        platform: [ubuntu-latest] #, windows-latest]
+        qtversion: [5.15.1]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      QT_DIR: ${{ github.workspace }}/Qt
+      QT_VERSION: ${{ matrix.qtversion }}
+      QT_API: 5.13.0
+      QT_DEBUG: false
+      QT_DEBUG_CONSOLE: true
+      GO111MODULE: off
+      GOPROXY: https://goproxy.io
+    steps:
+    - name: Linux prerequisites
+      run: |
+        sudo apt update
+        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev zip
+
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Install Qt for linux
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: ${{ matrix.qtversion }}
+        host: linux
+        target: desktop
+        dir: ${{ github.workspace }}
+        modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
+        # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
+
+    - name: Get Qt binding for Go
+      run: |
+        go get -v github.com/therecipe/qt/cmd/...
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: ./src/github.com/${{ github.repository }}
+
+    - name: Free disk space
+      run: |
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt clean
+
+    - uses: actions/cache@v2
+      id: cache-qt-bindings-linux
+      with:
+        path: ${{ github.workspace }}/src/github.com/therecipe
+        key: ${{ matrix.qtversion }}-qtbindings-linux-${{ env.cache-version }}
+
+    - name: Generate Qt bindings
+      if: ${{ steps.cache-qt-bindings-linux.outputs.cache-hit != 'true' }}
+      run: $(go env GOPATH)/bin/qtsetup -test=false
+
+    - name: Get dependencies
+      run: |
+        go get -v -t -d github.com/${{ github.repository }}/...
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
+        $(go env GOPATH)/bin/qtmoc
+
+    - name: Retrieve version
+      id: version-linux
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+
+    - name: Build for windows
+      run: |
+        cd ${{ github.workspace }}/src/github.com/akiyosi
+        git clone https://github.com/akiyosi/w32.git
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
+        rm -fr ../../editor/moc*
+        $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" -docker build windows_64_static
+        cp -pR ../../runtime ./deploy/windows/
+
+    - name: Archive
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv windows Goneovim-latest-windows-2
+        zip Goneovim-latest-windows-2 -r Goneovim-latest-windows-2
+
+    - name: Upload for windows
+      uses: actions/upload-artifact@v1
+      with:
+        name: Goneovim-latest-windows-2
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-windows-2.zip
+
+
+
   # build-linux-arm64:
   #   strategy:
   #     matrix:
