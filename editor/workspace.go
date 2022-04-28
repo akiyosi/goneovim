@@ -795,6 +795,7 @@ func (w *Workspace) initGonvim() {
 		command! -nargs=1 GuiMacmeta call rpcnotify(0, "Gui", "gonvim_macmeta", <args>)
 		command! -nargs=? GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize", <args>)
 		command! -nargs=? GonvimFullscreen call rpcnotify(0, "Gui", "gonvim_fullscreen", <args>)
+		command! -nargs=+ GonvimWinpos call rpcnotify(0, "Gui", "gonvim_winpos", <f-args>)
 		command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
 		command! GonvimSmoothScroll call rpcnotify(0, "Gui", "gonvim_smoothscroll")
 		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
@@ -2012,6 +2013,15 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			editor.window.WindowExitMaximize()
 		} else {
 			editor.window.WindowMaximize()
+		}
+	case "gonvim_winpos":
+		if len(updates) == 3 {
+			x, ok_x := strconv.Atoi(updates[1].(string))
+			y, ok_y := strconv.Atoi(updates[2].(string))
+			if (ok_x == nil && ok_y == nil) {
+				newPos := core.NewQPoint2(x, y)
+				editor.window.Move(newPos)
+			}
 		}
 	case "gonvim_smoothscroll":
 		w.toggleSmoothScroll()

@@ -188,6 +188,9 @@ COMMANDS                                                       *goneovim-command
 	 If an argument is specified, a value of 0 exits full screen and a
 	 value of 1 makes the window full screen.
 
+:GonvimWinpos {x} {y}                                             *:GonvimWinpos*
+	Move main Goneovim window so that upper left corner is at screen 
+	coordinate x,y.
 
 :GonvimLigatures                                               *:GonvimLigatures*
 	Toggles the ligature settings.
