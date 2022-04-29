@@ -775,6 +775,7 @@ func (w *Workspace) initGonvim() {
 	gonvimCommands := fmt.Sprintf(`
 	command! -nargs=1 GonvimResize call rpcnotify(0, "Gui", "gonvim_resize", <args>)
 	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
+	command! GonvimSidebarToggle call rpcnotify(0, "Gui", "side_toggle")
 	command! GonvimVersion echo "%s"`, editor.version)
 	if editor.opts.Server == "" {
 		if !editor.config.MiniMap.Disable {
@@ -2018,7 +2019,7 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		if len(updates) == 3 {
 			x, ok_x := strconv.Atoi(updates[1].(string))
 			y, ok_y := strconv.Atoi(updates[2].(string))
-			if (ok_x == nil && ok_y == nil) {
+			if ok_x == nil && ok_y == nil {
 				newPos := core.NewQPoint2(x, y)
 				editor.window.Move(newPos)
 			}
@@ -2908,11 +2909,9 @@ func (side *WorkspaceSide) toggle() {
 		return
 	}
 	if side.isShown {
-		side.scrollarea.Hide()
-		side.isShown = false
+		side.hide()
 	} else {
-		side.scrollarea.Show()
-		side.isShown = true
+		side.show()
 	}
 }
 
