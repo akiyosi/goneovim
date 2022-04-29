@@ -18,6 +18,7 @@ import (
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -68,12 +69,19 @@ type HlDecoration struct {
 	underdashed   bool
 }
 
+// Decal is
+type Decal struct {
+	exists bool
+	markid int
+}
+
 // Cell is
 type Cell struct {
 	highlight   *Highlight
 	char        string
 	normalWidth bool
 	covered     bool
+	decal       *Decal
 }
 
 type IntInt [2]int
@@ -157,6 +165,8 @@ type Window struct {
 	isMsgGrid              bool
 	isGridDirty            bool
 	doGetSnapshot          bool
+	hasExtmarks            bool
+	guiWidgets             sync.Map
 }
 
 type localWindow struct {
@@ -266,6 +276,10 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		}
 		w.drawBackground(p, y, col, cols)
 		w.drawForeground(p, y, col, cols)
+	}
+
+	for y := row; y < row+rows; y++ {
+		w.drawExtmarks(p, y, col, cols)
 	}
 
 	// Draw scroll snapshot
@@ -1287,6 +1301,9 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 
 			line[col].char = cell[0].(string)
 			line[col].normalWidth = w.isNormalWidth(line[col].char)
+			if line[col].decal != nil {
+				line[col].decal = nil
+			}
 
 			if hl != -1 || col == 0 {
 				line[col].highlight = hlAttrDef[hl]
@@ -1557,7 +1574,7 @@ func (w *Window) update() {
 	start := w.queueRedrawArea[1]
 	end := w.queueRedrawArea[3]
 	// Update all lines when using the wheel scroll or indent guide feature.
-	if w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide || w.s.name == "minimap" {
+	if w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide || w.s.name == "minimap" || w.hasExtmarks {
 		start = 0
 		end = w.rows
 	}
@@ -1613,6 +1630,12 @@ func (w *Window) update() {
 				drawWithSingleRect = true
 			}
 		}
+		// If window has extmark
+		if w.hasExtmarks {
+			width = w.cols
+			drawWithSingleRect = true
+		}
+
 		width++
 
 		// Create rectangles that require updating.
@@ -2570,6 +2593,193 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 	}
 }
 
+func (w *Window) drawExtmarks(p *gui.QPainter, y int, col int, cols int) {
+	if y >= len(w.content) {
+		return
+	}
+	line := w.content[y]
+	font := w.getFont()
+
+	// Set smooth scroll offset
+	scrollPixels := 0
+	if w.lastScrollphase != core.Qt__NoScrollPhase {
+		scrollPixels = w.scrollPixels2
+	}
+	if editor.config.Editor.LineToScroll == 1 {
+		scrollPixels += w.scrollPixels[1]
+	}
+
+	for x := 0; x <= col+cols; x++ {
+		if x >= len(line) {
+			continue
+		}
+		if line[x] == nil {
+			continue
+		}
+		if line[x].decal == nil {
+			continue
+		}
+		if line[x].decal.exists {
+
+			w.guiWidgets.Range(func(_, resITF interface{}) bool {
+				res := resITF.(*Guiwidget)
+				if res == nil {
+					return true
+				}
+
+				if res.markID == line[x].decal.markid {
+					width := int(float64(res.width) * font.cellwidth)
+					height := res.height * font.lineHeight
+
+					if res.mime == "text/plain" {
+						res.updateText(res.text)
+						p.FillRect5(
+							int(float64(x)*font.cellwidth),
+							y*font.lineHeight+scrollPixels,
+							width,
+							height,
+							w.s.ws.background.QColor(),
+						)
+					}
+					res.drawExtmark(
+						int(float64(x)*font.cellwidth),
+						y*font.lineHeight+scrollPixels,
+						width,
+						height,
+						p,
+						res.setQpainterFont,
+						res.getNthWidthAndShift,
+						w.devicePixelRatio,
+					)
+				}
+
+				return true
+			})
+
+		}
+
+	}
+}
+
+func (g *Guiwidget) drawExtmark(x, y, width, height int, p *gui.QPainter, f func(*gui.QPainter), h func(int) (float64, int), devicePixelRatio float64) {
+	f(p)
+
+	p.SetPen2(g.s.ws.foreground.QColor())
+
+	switch g.mime {
+	case "text/plain":
+		if g.text != "" {
+			r := []rune(g.text)
+			var pos float64
+			for k := 0; k < len(r); k++ {
+
+				width, shift := h(k)
+				pos += width
+
+				p.DrawText(
+					core.NewQPointF3(
+						float64(x)+pos,
+						float64(y+shift),
+					),
+					string(r[k]),
+				)
+
+			}
+		}
+	case "image/svg":
+		g.data = core.NewQByteArray2(g.raw, len(g.raw))
+
+		if g.data == nil {
+			return
+		}
+		renderer := svg.NewQSvgRenderer3(
+			g.data,
+			nil,
+		)
+
+		image := gui.NewQImage3(
+			g.width,
+			g.height,
+			gui.QImage__Format_ARGB32_Premultiplied,
+		)
+		if image == nil {
+			return
+		}
+		image.SetDevicePixelRatio(devicePixelRatio)
+		image.Fill3(core.Qt__transparent)
+		pi := gui.NewQPainter2(image)
+
+		renderer.Render(pi)
+
+		g.drawImage(p, image, x, y, width, height)
+
+	case "image/*",
+		"image/gif",
+		"image/jpeg",
+		"image/png":
+		g.data = core.NewQByteArray2(g.raw, len(g.raw))
+
+		image := gui.NewQImage3(
+			g.width,
+			g.height,
+			gui.QImage__Format_ARGB32_Premultiplied,
+		)
+		image.SetDevicePixelRatio(devicePixelRatio)
+		// image.Fill2(g.s.ws.background.QColor())
+		if g.data == nil {
+			return
+		}
+		result := image.LoadFromData2(
+			g.data,
+			g.mime,
+		)
+		if !result {
+			return
+		}
+
+		g.drawImage(p, image, x, y, width, height)
+	default:
+	}
+}
+
+func (g *Guiwidget) drawImage(p *gui.QPainter, image *gui.QImage, x, y, width, height int) {
+	if image == nil {
+		return
+	}
+	var pixmap *gui.QPixmap
+	pixmap = pixmap.FromImage2(
+		image,
+		core.Qt__AutoColor,
+	)
+	if pixmap == nil {
+		return
+	}
+
+	pixmap = pixmap.ScaledToHeight(
+		height,
+		core.Qt__SmoothTransformation,
+	)
+
+	if pixmap == nil {
+		return
+	}
+
+	p.FillRect5(
+		x, y,
+		pixmap.Rect().Width(),
+		height,
+		g.s.ws.background.QColor(),
+	)
+
+	p.DrawPixmap7(
+		core.NewQPointF3(
+			float64(x),
+			float64(y),
+		),
+		pixmap,
+	)
+}
+
 func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyle, *RGBA, int) {
 	color := hl.bg()
 	pattern := core.Qt__BrushStyle(1)
@@ -3288,4 +3498,52 @@ func (w *Window) layoutExternalWindow(x, y int) {
 
 	}
 
+}
+
+func (w *Window) getGuiwidgetFromResID(resid int) (*Guiwidget, bool) {
+	gITF, ok := w.guiWidgets.Load(resid)
+	if !ok {
+		return nil, false
+	}
+	g := gITF.(*Guiwidget)
+	if g == nil {
+		return nil, false
+	}
+
+	return g, true
+	// for _, g := range w.guiWidgets {
+	// 	if resid == g.id {
+	// 		return g
+	// 	}
+	// }
+
+	// return nil
+}
+
+func (w *Window) getGuiwidgetFromMarkID(markid int) *Guiwidget {
+
+	// for _, g := range w.guiWidgets {
+	// 	if markid == g.markID {
+	// 		return g
+	// 	}
+	// }
+
+	var guiwidget *Guiwidget
+	w.guiWidgets.Range(func(_, gITF interface{}) bool {
+		g := gITF.(*Guiwidget)
+		if g == nil {
+			return true
+		}
+		if markid == g.markID {
+			guiwidget = g
+			return true
+		}
+		return true
+	})
+
+	return guiwidget
+}
+
+func (w *Window) storeGuiwidget(resid int, g *Guiwidget) {
+	w.guiWidgets.Store(resid, g)
 }

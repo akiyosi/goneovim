@@ -27,6 +27,8 @@ type workspaceSignal struct {
 	_ func() `signal:"stopSignal"`
 	_ func() `signal:"redrawSignal"`
 	_ func() `signal:"guiSignal"`
+	_ func() `signal:"guiwidgetputSignal"`
+	_ func() `signal:"guiwidgetviewSignal"`
 
 	_ func() `signal:"statuslineSignal"`
 	_ func() `signal:"lintSignal"`
@@ -111,6 +113,12 @@ type Workspace struct {
 	isDrawStatusline   bool
 	isDrawTabline      bool
 	isMouseEnabled     bool
+
+	guiwidgetNSID        int
+	guiwidgetputUpdates  chan []interface{}
+	guiwidgetviewUpdates chan []interface{}
+	// guiWidgets           []*Guiwidget
+	guiWidgets sync.Map
 }
 
 func newWorkspace() *Workspace {
@@ -334,8 +342,18 @@ func (ws *Workspace) registerSignal(signal *workspaceSignal, redrawUpdates chan 
 		editor.putLog("Received GUI event from neovim")
 		ws.handleGui(updates)
 	})
-	ws.signal.ConnectLazyLoadSignal(func() {
-		if ws.hasLazyUI {
+	w.signal.ConnectGuiwidgetputSignal(func() {
+		updates := <-w.guiwidgetputUpdates
+		editor.putLog("Received GUI event from neovim")
+		w.handleRPCGuiwidgetput(updates)
+	})
+	w.signal.ConnectGuiwidgetviewSignal(func() {
+		updates := <-w.guiwidgetviewUpdates
+		editor.putLog("Received GUI event from neovim")
+		w.handleRPCGuiwidgetview(updates)
+	})
+	w.signal.ConnectLazyDrawSignal(func() {
+		if w.hasLazyUI {
 			return
 		}
 		if editor.config.Editor.ExtTabline {
@@ -1196,6 +1214,9 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 		case "win_viewport":
 			ws.windowViewport(args)
 
+		case "win_extmark":
+			w.windowExtmarks(args)
+
 		// Popupmenu Events
 		case "popupmenu_show":
 			if ws.cmdline != nil {
@@ -1745,6 +1766,7 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 	switch event {
 	case "gonvim_enter":
 		editor.putLog("vim enter")
+
 	case "gonvim_uienter":
 		editor.putLog("ui enter")
 		// ws.uiEnterProcess()
@@ -2654,6 +2676,40 @@ func (ws *Workspace) toggleIndentguide() {
 	}
 	editor.config.mu.Unlock()
 	go ws.nvim.Command("doautocmd <nomodeline> WinEnter")
+}
+
+func (w *Workspace) getGuiwidgetFromResID(resid int) (*Guiwidget, bool) {
+	gITF, ok := w.guiWidgets.Load(resid)
+	if !ok {
+		return nil, false
+	}
+	g := gITF.(*Guiwidget)
+	if g == nil {
+		return nil, false
+	}
+
+	return g, true
+}
+
+func (w *Workspace) getGuiwidgetFromMarkID(markid int) *Guiwidget {
+	var guiwidget *Guiwidget
+	w.guiWidgets.Range(func(_, gITF interface{}) bool {
+		g := gITF.(*Guiwidget)
+		if g == nil {
+			return true
+		}
+		if markid == g.markID {
+			guiwidget = g
+			return true
+		}
+		return true
+	})
+
+	return guiwidget
+}
+
+func (w *Workspace) storeGuiwidget(resid int, g *Guiwidget) {
+	w.guiWidgets.Store(resid, g)
 }
 
 // WorkspaceSide is

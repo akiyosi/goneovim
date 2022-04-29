@@ -109,6 +109,12 @@ func (t *Tooltip) drawContent(p *gui.QPainter, f func(*gui.QPainter)) {
 }
 
 func (t *Tooltip) setQpainterFont(p *gui.QPainter) {
+	if p == nil {
+		return
+	}
+	if t.font == nil {
+		return
+	}
 	p.SetFont(t.font.fontNew)
 }
 
@@ -217,11 +223,20 @@ func (t *Tooltip) update() {
 		}
 	}
 
+	font := t.font
+	if font == nil {
+		font = t.s.ws.font
+	}
+
 	// update widget size
 	t.SetFixedSize2(
 		int(tooltipWidth),
 		t.font.lineHeight,
 	)
 
+	t.SetAutoFillBackground(true)
+	p := gui.NewQPalette()
+	p.SetColor2(gui.QPalette__Background, t.s.ws.background.QColor())
+	t.SetPalette(p)
 	t.Update()
 }
