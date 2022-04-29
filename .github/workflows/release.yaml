@@ -22,7 +22,7 @@ jobs:
         fetch-depth: 0
     - run: >
         test \( "${{github.event_name}}" == "schedule"
-        -a 0 -lt $(git log --oneline --since "yesterday" | wc -l) \)
+        -a 0 -lt $(git log --oneline --since "yesterday" -- . ":!.github" ":!.gitignore" ":!.golangci.yml" | wc -l) \)
         -o \( "${{github.event_name}}" != "schedule" \)
 
   linux:
