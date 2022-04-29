@@ -392,7 +392,7 @@ func (c *Cursor) setBlink(isUpdateBlinkWait, isUpdateBlinkOn, isUpdateBlinkOff b
 		}
 		c.Update()
 	})
-	if isUpdateBlinkWait {
+	if isUpdateBlinkWait && wait != 0 {
 		c.timer.Start(wait)
 	}
 	c.timer.SetInterval(off)
@@ -570,11 +570,6 @@ func (c *Cursor) updateCursorShape() {
 	}
 	if height == 0 {
 		height = 1
-	}
-
-	if isUpdateBlinkWait {
-		c.brend = 0.0
-		c.timer.Start(c.blinkWait)
 	}
 
 	if !(c.width == width && c.height == height) {
