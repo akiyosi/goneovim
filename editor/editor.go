@@ -954,6 +954,9 @@ func (e *Editor) keyRelease(event *gui.QKeyEvent) {
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	ws := e.workspaces[e.active]
+	if ws.nvim == nil {
+		return
+	}
 	if !e.isKeyAutoRepeating {
 		ws.getSnapshot()
 	}
@@ -963,7 +966,7 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 		e.isKeyAutoRepeating = true
 	}
 	if input != "" {
-		e.workspaces[e.active].nvim.Input(input)
+		ws.nvim.Input(input)
 	}
 }
 
