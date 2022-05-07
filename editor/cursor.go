@@ -86,6 +86,10 @@ func (c *Cursor) setBypassScreenEvent() {
 }
 
 func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
+	if !c.ws.isMouseEnabled {
+		return
+	}
+
 	var targetwin *Window
 
 	c.ws.screen.windows.Range(func(_, winITF interface{}) bool {

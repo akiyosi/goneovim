@@ -812,6 +812,10 @@ func (w *Window) drawWindowSeparator(p *gui.QPainter, gwinrows int) {
 }
 
 func (w *Window) wheelEvent(event *gui.QWheelEvent) {
+	if !w.s.ws.isMouseEnabled {
+		return
+	}
+
 	var v, h, vert, horiz int
 	var action string
 
