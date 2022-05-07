@@ -2587,6 +2587,10 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 	}
 	w.lastMouseEvent.event = event
 
+	if !w.s.ws.isMouseEnabled {
+		return
+	}
+
 	bt := event.Button()
 	if event.Type() == core.QEvent__MouseMove {
 		if event.Buttons()&core.Qt__LeftButton > 0 {

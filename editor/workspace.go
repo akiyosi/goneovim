@@ -105,6 +105,7 @@ type Workspace struct {
 	isDrawStatusline   bool
 	isDrawTabline      bool
 	terminalMode       bool
+	isMouseEnabled     bool
 }
 
 func newWorkspace(path string) (*Workspace, error) {
@@ -1398,7 +1399,9 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Not used in the current specification.
 		case "mouse_on":
+			w.isMouseEnabled = true
 		case "mouse_off":
+			w.isMouseEnabled = false
 
 		// Indicates to the UI that it must stop rendering the cursor. This event
 		// is misnamed and does not actually have anything to do with busyness.

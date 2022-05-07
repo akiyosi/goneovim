@@ -342,6 +342,9 @@ func (s *Screen) bottomWindowPos() int {
 }
 
 func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
+	if !s.ws.isMouseEnabled {
+		return
+	}
 	s.mouseEvent(event)
 	if !editor.config.Editor.ClickEffect {
 		return
@@ -438,6 +441,9 @@ func (s *Screen) mousePressEvent(event *gui.QMouseEvent) {
 }
 
 func (s *Screen) mouseEvent(event *gui.QMouseEvent) {
+	if !s.ws.isMouseEnabled {
+		return
+	}
 
 	var targetwin *Window
 
