@@ -2413,9 +2413,14 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	default:
 		return
 	}
-	if lineSpace < 0 {
-		return
-	}
+
+	// #330: From a rendering architecture perspective, specifying negative values
+	// may not render screen content correctly, but there is a need to set negative values,
+	// so there is no restriction on setting negative values.
+	// if lineSpace < 0 {
+	// 	return
+	// }
+
 	w.font.changeLineSpace(lineSpace)
 	w.updateSize()
 }
