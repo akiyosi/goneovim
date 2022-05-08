@@ -34,7 +34,6 @@ type Screen struct {
 	height         int
 	width          int
 	resizeCount    uint
-	topLevelGrid   int
 }
 
 type Cache struct {
@@ -949,28 +948,31 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		s.cursor[0] = x
 		s.cursor[1] = y
 
-		if s.ws.cursor.gridid != gridid {
+		if s.ws.cursor.gridid != win.grid {
 			if !win.isMsgGrid {
 				s.ws.cursor.bufferGridid = gridid
 
 			}
 
-			// Fix #297
-			if win.s.topLevelGrid != win.grid {
-
-				// If a mouse drag event is occurring in the previous
-				// cursor grid, window raising will be suppressed.
-				if s.ws.cursor.gridid != 0 {
-					oldCursorWin, ok := s.getWindow(s.ws.cursor.gridid)
-					if ok {
-						if oldCursorWin.lastMouseEvent != nil && oldCursorWin.lastMouseEvent.action != "drag" {
-							win.raise()
-						}
-					}
-				} else {
-					win.raise()
-				}
-			}
+			// It seems to be no need for this process.
+			//
+			// // Fix #297
+			// if win.s.topLevelGrid != win.grid {
+			//
+			// 	// If a mouse drag event is occurring in the previous
+			// 	// cursor grid, window raising will be suppressed.
+			// 	if s.ws.cursor.gridid != 0 {
+			// 		oldCursorWin, ok := s.getWindow(s.ws.cursor.gridid)
+			// 		if ok {
+			// 			if oldCursorWin.lastMouseEvent != nil && oldCursorWin.lastMouseEvent.action != "drag" {
+			// 				win.raise()
+			// 			}
+			// 		}
+			// 	} else {
+			// 		win.raise()
+			// 	}
+			// }
+			win.raise()
 
 			// Set new cursor grid id
 			s.ws.cursor.gridid = gridid
@@ -982,9 +984,9 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 	}
 }
 
-func (s *Screen) setTopLevelGrid(n int) {
-	s.topLevelGrid = n
-}
+// func (s *Screen) setTopLevelGrid(n int) {
+// 	s.topLevelGrid = n
+// }
 
 func (s *Screen) setHlAttrDef(args []interface{}) {
 	var h map[int]*Highlight

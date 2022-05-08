@@ -135,12 +135,20 @@ func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
 				return true
 			}
 			if win.isFloatWin && !win.isExternal {
-				if targetwin != nil {
-					if targetwin.Geometry().Contains2(win.Geometry(), true) {
-						targetwin = win
-					}
-				} else {
-					if win.Geometry().Contains(event.Pos(), true) {
+				if win.Geometry().Contains(event.Pos(), true) {
+					if targetwin != nil {
+						// We select the float window with the highest zindex
+						// among the window group containing the coordinates of the mouse pointer.
+						if win.zindex.value > targetwin.zindex.value {
+							targetwin = win
+						} else if win.zindex.value == targetwin.zindex.value {
+							// If there is a group of windows with the same zindex,
+							// we select the window with the smallest size that covers the mouse pointer coordinates.
+							if targetwin.Geometry().Contains2(win.Geometry(), true) {
+								targetwin = win
+							}
+						}
+					} else {
 						targetwin = win
 					}
 				}

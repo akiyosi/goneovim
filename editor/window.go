@@ -2718,10 +2718,10 @@ func (w *Window) raise() {
 		return
 	}
 
-	if !w.isFloatWin && !w.isExternal {
-		w.Raise()
-		w.s.setTopLevelGrid(w.grid)
-	}
+	// if !w.isFloatWin && !w.isExternal {
+	// 	w.Raise()
+	// 	w.s.setTopLevelGrid(w.grid)
+	// }
 
 	// Float windows are re-stacked according to the "z-index" and generation order.
 	var floatWins []*Window
