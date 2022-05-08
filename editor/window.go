@@ -2583,6 +2583,22 @@ func newWindow() *Window {
 }
 
 func (w *Window) mouseEvent(event *gui.QMouseEvent) {
+	defer func() {
+		editor.isWindowNowActivated = false
+		editor.isWindowNowInactivated = false
+		editor.isExtWinNowActivated = false
+		editor.isExtWinNowInactivated = false
+	}()
+	if w.isExternal {
+		if editor.isExtWinNowActivated && !editor.isWindowNowInactivated {
+			return
+		}
+	} else {
+		if editor.isWindowNowActivated && !editor.isExtWinNowInactivated {
+			return
+		}
+	}
+
 	if w.lastMouseEvent == nil {
 		w.lastMouseEvent = &inputMouseEvent{}
 	}

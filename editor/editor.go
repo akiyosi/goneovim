@@ -138,6 +138,10 @@ type Editor struct {
 	isKeyAutoRepeating     bool
 	sessionExists          bool
 	isWindowResized        bool
+	isWindowNowActivated   bool
+	isWindowNowInactivated bool
+	isExtWinNowActivated   bool
+	isExtWinNowInactivated bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -272,6 +276,7 @@ func InitEditor(options Options, args []string) {
 	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
 	e.window.SetupBorderSize(e.config.Editor.Margin)
 	e.window.SetupWindowGap(e.config.Editor.Gap)
+	e.connectWindowEvents()
 	e.setWindowSizeFromOpts()
 	e.showWindow()
 	e.setWindowOptions()
@@ -809,12 +814,31 @@ func (e *Editor) restoreWindow() (isRestoreGeometry, isRestoreState bool) {
 	return
 }
 
+func (e *Editor) connectWindowEvents() {
+	e.window.ConnectKeyPressEvent(e.keyPress)
+	e.window.ConnectKeyReleaseEvent(e.keyRelease)
+	e.window.InstallEventFilter(e.window)
+	e.window.ConnectEventFilter(func(watched *core.QObject, event *core.QEvent) bool {
+		switch event.Type() {
+		case core.QEvent__ActivationChange:
+			if e.window.IsActiveWindow() {
+				e.isWindowNowActivated = true
+				e.isWindowNowInactivated = false
+			} else if !e.window.IsActiveWindow() {
+				e.isWindowNowActivated = false
+				e.isWindowNowInactivated = true
+			}
+		default:
+		}
+
+		return e.window.QFramelessDefaultEventFilter(watched, event)
+	})
+}
+
 func (e *Editor) setWindowOptions() {
 	e.window.SetupTitle("Neovim")
 	e.window.SetMinimumSize2(40, 30)
 	e.initSpecialKeys()
-	e.window.ConnectKeyPressEvent(e.keyPress)
-	e.window.ConnectKeyReleaseEvent(e.keyRelease)
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)
 	e.window.SetAcceptDrops(true)
 }
