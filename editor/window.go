@@ -2897,7 +2897,7 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 		// #316
 		// Adjust the position of the floating window to the inside of the screen
 		// when it is outside of the screen.
-		x, y = w.repositioningFloatwindow([2]int{x, y})
+		x, y = w.repositioningFloatwindow([2]int{anchorposx + x, anchorposy + y})
 	}
 	if w.isExternal {
 		w.Move2(EXTWINBORDERSIZE, EXTWINBORDERSIZE)
@@ -2906,10 +2906,7 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 		return
 	}
 
-	w.Move2(
-		anchorposx+x,
-		anchorposy+y,
-	)
+	w.Move2(x, y)
 }
 
 func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
