@@ -2420,6 +2420,9 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	// if lineSpace < 0 {
 	// 	return
 	// }
+	if lineSpace <= -1*w.font.height {
+		return
+	}
 
 	w.font.changeLineSpace(lineSpace)
 	w.updateSize()
