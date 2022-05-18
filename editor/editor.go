@@ -318,10 +318,11 @@ func InitEditor(options Options, args []string) {
 	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
 		e.putLog("The application was closed outside of Neovim's commands, such as the Close button.")
 		e.cleanup()
-		e.saveAppWindowState()
+		e.saveSessions()
 		if runtime.GOOS == "darwin" {
 			e.app.DisconnectEvent()
 		}
+		e.saveAppWindowState()
 		event.Accept()
 	})
 
@@ -330,6 +331,7 @@ func InitEditor(options Options, args []string) {
 		ret := <-e.stop
 		close(e.stop)
 		e.putLog("The application was quitted with the exit of Neovim.")
+		e.cleanup()
 		if runtime.GOOS == "darwin" {
 			e.app.DisconnectEvent()
 		}
@@ -452,6 +454,11 @@ func (e *Editor) newSplitter() {
 
 func (e *Editor) initWorkspaces() {
 	e.workspaces = []*Workspace{}
+
+	// If ui attaching remote nvim
+	if !(editor.opts.Server == "" && editor.opts.Wsl == nil && editor.opts.Ssh == "") {
+		e.config.Workspace.RestoreSession = false
+	}
 	if e.config.Workspace.RestoreSession {
 		for i := 0; i <= WORKSPACELEN; i++ {
 			path := filepath.Join(e.configDir, "sessions", strconv.Itoa(i)+".vim")
@@ -1295,15 +1302,24 @@ func (e *Editor) saveAppWindowState() {
 }
 
 func (e *Editor) cleanup() {
+	if !e.config.Workspace.RestoreSession {
+		return
+	}
 	sessions := filepath.Join(e.configDir, "sessions")
 	os.RemoveAll(sessions)
 	os.MkdirAll(sessions, 0755)
+}
 
-	select {
-	case <-e.stop:
+func (e *Editor) saveSessions() {
+	if !e.config.Workspace.RestoreSession {
 		return
-	default:
 	}
+	ws := e.workspaces[e.active]
+	if ws.uiRemoteAttached {
+		return
+	}
+
+	sessions := filepath.Join(e.configDir, "sessions")
 
 	for i, ws := range e.workspaces {
 		sessionPath := filepath.Join(sessions, strconv.Itoa(i)+".vim")
