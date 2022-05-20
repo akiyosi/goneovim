@@ -1509,16 +1509,8 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			row = anchorRow - win.rows
 		}
 
-		// If the position coordinate is a negative value, it is reset to zero.
-		// I don't know if this is correct in the specification, but this is how nvim appears to work in the terminal.
 		win.pos[0] = anchorposx + col
 		win.pos[1] = anchorposy + row
-		if win.pos[0] < 0 {
-			win.pos[0] = 0
-		}
-		if win.pos[1] < 0 {
-			win.pos[1] = 0
-		}
 
 		win.move(col, row, anchorwin)
 		if shouldStackPerZIndex {

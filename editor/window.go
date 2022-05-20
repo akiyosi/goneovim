@@ -2927,11 +2927,19 @@ func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
 	screenWidth := w.s.widget.Width()
 	screenHeight := w.s.widget.Height()
 
-	if w.pos[0] != 0 && (float64((winx+width)-screenWidth) >= baseFont.cellwidth) {
+	if float64((winx+width)-screenWidth) >= baseFont.cellwidth {
 		winx -= winx + width - screenWidth
 	}
-	if w.pos[1] != 0 && ((winy+height)-screenHeight >= baseFont.lineHeight) {
+	if (winy+height)-screenHeight >= baseFont.lineHeight {
 		winy -= winy + height - screenHeight
+	}
+
+	// If the position coordinate is a negative value, it is reset to zero.
+	if winx < 0 {
+		winx = 0
+	}
+	if winy < 0 {
+		winy = 0
 	}
 
 	return winx, winy
