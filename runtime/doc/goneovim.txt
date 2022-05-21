@@ -22,7 +22,6 @@ and enhancement.
 
 ================================================================================
 CLI INTERFACE                                             *goneovim-cli-interface*
-
 >
     Usage:
       goneovim [OPTIONS]
@@ -41,6 +40,7 @@ CLI INTERFACE                                             *goneovim-cli-interfac
           --extpopupmenu  Externalize the popupmenu
           --version       Print Goneovim version
           --wsl=          Attach to nvim process in wsl environment with distribution(default) [e.g. --wsl=Ubuntu]
+          --nofork        Run in foreground
     
     Help Options:
       -h, --help          Show this help message
@@ -56,6 +56,10 @@ COMMANDS                                                       *goneovim-command
 
 
 :GonvimSidebarShow                                            *:GonvimSidebarShow*
+	Display the sidebar.
+
+
+:GonvimSidebarToggle                                        *:GonvimSidebarToggle*
 	Display the sidebar.
 
 
@@ -245,7 +249,8 @@ On Windows:
 
 All Options are follows:
 
-> 
+ 
+>
         ## Goneovim settings.toml
         ## All of the following commented configuration items have default values.
         
@@ -281,10 +286,13 @@ All Options are follows:
         ## Enabling WindowGeometryBasedOnFontmetrics sets the minimum unit of window geometry change 
         ## to the width and height values specified by font metrics.
         # WindowGeometryBasedOnFontmetrics = false
+
+        ## Enable the ability to remember the last window geometry that was displayed
+        ## and restore it at the next startup.
+        RestoreWindowGeometry = false
         
-        ## Editor external font-family, font-size, and linespace.
-        ## This is the font and linespace settings of the graphical UI as an nvim front end.
-        ## For example, linespace affects the margins of the external completion popup menu UI.
+        ## Editor external font-family, font-siz.
+        ## This is the font settings of the graphical UI as an nvim front end.
         ## Fontfamily is
         ## In MacOS, 
         # FontFamily = "Monaco"
@@ -294,8 +302,6 @@ All Options are follows:
         # FontFamily = "Windows"
         ## Fontsize is
         # FontSize = 12
-        ## linespace is no effect, must be set using like `set linespace=5` in Neovim configuration
-        # Linespace = 0
         ## letterspace is
         # Letterspace = 0
         
@@ -389,6 +395,12 @@ All Options are follows:
         # DiffDeletePattern = 1
         # DiffChangePattern = 1
         
+        ## Extra Dock menu option in MacOS
+        ## You can add a menu with your own command options 
+        # [Editor.DockmenuActions]
+        # hoge = "-u NONE"
+        # fuga = "-u NORC"
+
         ## You can write a vimscript to be executed after goneovim starts,
         ## for example to disable the vimscript that Goneovim has embedded internally.
         ## GinitVim = '''
@@ -404,7 +416,6 @@ All Options are follows:
         ## Specifies the duration of the animation at the smooth cursor. Default is 55ms.
         ## Note that Goneovim uses the specified value as a base value and makes slight adjustments depending on the distance.
         # Duration = ５５
-        
         
         
         ## The palette is used as an input UI for externalized command lines and the Fuzzy-Finder feature built into Goneovim.
