@@ -1555,6 +1555,23 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				extwin.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 				extwin.ConnectInputMethodEvent(s.ws.InputMethodEvent)
 				extwin.ConnectInputMethodQuery(s.ws.InputMethodQuery)
+
+				extwin.InstallEventFilter(extwin)
+				extwin.ConnectEventFilter(func(watched *core.QObject, event *core.QEvent) bool {
+					switch event.Type() {
+					case core.QEvent__ActivationChange:
+						if extwin.IsActiveWindow() {
+							editor.isExtWinNowActivated = true
+							editor.isExtWinNowInactivated = false
+						} else if !extwin.IsActiveWindow() {
+							editor.isExtWinNowActivated = false
+							editor.isExtWinNowInactivated = true
+						}
+					default:
+					}
+					return extwin.EventFilterDefault(watched, event)
+				})
+
 				win.background = s.ws.background.copy()
 				extwin.SetAutoFillBackground(true)
 				p := gui.NewQPalette()

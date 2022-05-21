@@ -285,6 +285,7 @@ func (w *Workspace) vimEnterProcess() {
 	if editor.opts.Ssh != "" {
 		editor.window.Show()
 	}
+	editor.isWindowNowActivated = false
 
 	// get nvim option
 	if editor.workspaces == nil || len(editor.workspaces) == 1 {
