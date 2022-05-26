@@ -2589,13 +2589,16 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 		editor.isExtWinNowActivated = false
 		editor.isExtWinNowInactivated = false
 	}()
-	if w.isExternal {
-		if editor.isExtWinNowActivated && !editor.isWindowNowInactivated {
-			return
-		}
-	} else {
-		if editor.isWindowNowActivated && !editor.isExtWinNowInactivated {
-			return
+
+	if editor.config.Editor.IgnoreFirstMouseClickWhenAppInactivated {
+		if w.isExternal {
+			if editor.isExtWinNowActivated && !editor.isWindowNowInactivated {
+				return
+			}
+		} else {
+			if editor.isWindowNowActivated && !editor.isExtWinNowInactivated {
+				return
+			}
 		}
 	}
 
