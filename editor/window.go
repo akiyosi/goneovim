@@ -1053,7 +1053,7 @@ func (win *Window) smoothScroll(diff int) {
 			}
 		}
 	})
-	a.SetDuration(220)
+	a.SetDuration(editor.config.Editor.SmoothScrollDuration)
 	a.SetStartValue(core.NewQVariant10(1))
 	a.SetEndValue(core.NewQVariant10(0))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))

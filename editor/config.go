@@ -50,6 +50,7 @@ type editorConfig struct {
 	Gap                                     int
 	Height                                  int
 	Width                                   int
+	SmoothScrollDuration                    int
 	DrawWindowSeparator                     bool
 	Macmeta                                 bool
 	DrawBorder                              bool
@@ -336,6 +337,7 @@ func (c *gonvimConfig) init() {
 
 	c.Editor.LineToScroll = 1
 	c.Editor.SmoothScroll = false
+	c.Editor.SmoothScrollDuration = 300
 	c.Editor.DisableHorizontalScroll = false
 
 	c.Editor.DrawBorderForFloatWindow = false

@@ -351,6 +351,8 @@ All Options are follows:
         
         ## Animates the scrolling behavior of Neovim when the scroll command is entered.
         # SmoothScroll = false
+        ## Specifies the speed of animation in smooth scrolling.
+        # SmoothScrollDuration = 300
         ## Disables horizontal scrolling for smooth scrolling with the touchpad.
         # DisableHorizontalScroll = true
         
@@ -417,7 +419,7 @@ All Options are follows:
         
         ## Specifies the duration of the animation at the smooth cursor. Default is 55ms.
         ## Note that Goneovim uses the specified value as a base value and makes slight adjustments depending on the distance.
-        # Duration = ５５
+        # Duration = 55
         
         
         ## The palette is used as an input UI for externalized command lines and the Fuzzy-Finder feature built into Goneovim.
