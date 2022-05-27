@@ -285,6 +285,8 @@ All Options are follows:
 
         ## Enabling WindowGeometryBasedOnFontmetrics sets the minimum unit of window geometry change 
         ## to the width and height values specified by font metrics.
+        ## When enabled, maximization with the GonvimMaximize command may not work well due to 
+        ## the combination of screen size and font metrics.
         # WindowGeometryBasedOnFontmetrics = false
 
         ## Enable the ability to remember the last window geometry that was displayed
