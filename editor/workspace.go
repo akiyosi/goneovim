@@ -738,7 +738,7 @@ func (w *Workspace) initGonvim() {
 	aug GoneovimCore | au! | aug END
 	au GoneovimCore VimEnter * call rpcnotify(0, "Gui", "gonvim_enter")
 	au GoneovimCore UIEnter * call rpcnotify(0, "Gui", "gonvim_uienter")
-	au GoneovimCore BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", line("$"), win_getid())
+	au GoneovimCore BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", win_getid())
 	au GoneovimCore WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid())
 	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
 	au GoneovimCore TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
@@ -755,11 +755,6 @@ func (w *Workspace) initGonvim() {
 		`
 	}
 
-	if editor.config.ScrollBar.Visible || editor.config.Editor.SmoothScroll {
-		gonvimAutoCmds = gonvimAutoCmds + `
-	au GoneovimCore TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_textchanged", line("$"))
-	`
-	}
 	if editor.config.Editor.Clipboard {
 		gonvimAutoCmds = gonvimAutoCmds + `
 	au GoneovimCore TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")
@@ -1852,6 +1847,11 @@ func (w *Workspace) windowViewport(args []interface{}) {
 			w.viewportQue <- scrollvp
 		}
 
+		maxLine := 0
+		if len(arg) >= 7 {
+			maxLine = util.ReflectToInt(arg[6])
+		}
+
 		// Only the viewport of the buffer where the cursor is located is used internally.
 		grid := util.ReflectToInt(arg[0])
 		if grid == w.cursor.gridid {
@@ -1861,6 +1861,8 @@ func (w *Workspace) windowViewport(args []interface{}) {
 				w.viewport = viewport
 				w.viewportMutex.Unlock()
 			}
+			w.maxLineDelta = maxLine - w.maxLine
+			w.maxLine = maxLine
 		}
 	}
 }
@@ -2145,9 +2147,9 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.terminalMode = false
 		w.cursor.update()
 	case "gonvim_bufenter":
-		w.maxLine = util.ReflectToInt(updates[1])
+		// w.maxLine = util.ReflectToInt(updates[1])
 		// w.setBuffname(updates[2], updates[3])
-		w.setBuffTS(util.ReflectToInt(updates[2]))
+		w.setBuffTS(util.ReflectToInt(updates[1]))
 	case "gonvim_winenter_filetype":
 		// w.setBuffname(updates[2], updates[3])
 		w.setBuffTS(util.ReflectToInt(updates[2]))
@@ -2161,8 +2163,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			}
 			win.doGetSnapshot = true
 		}
-		w.maxLineDelta = util.ReflectToInt(updates[1]) - w.maxLine
-		w.maxLine = util.ReflectToInt(updates[1])
+		// w.maxLineDelta = util.ReflectToInt(updates[1]) - w.maxLine
+		// w.maxLine = util.ReflectToInt(updates[1])
 
 	default:
 		fmt.Println("unhandled Gui event", event)
