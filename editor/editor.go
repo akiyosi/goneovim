@@ -645,6 +645,9 @@ func (e *Editor) setFont() {
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QLabel")
 }
 
+// pushNotification is
+//   level: notify level
+//   period: display period
 func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
 	a := NotifyOptions{}
 	for _, o := range opt {
