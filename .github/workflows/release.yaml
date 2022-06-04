@@ -90,6 +90,7 @@ jobs:
       id: version-linux
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        git pull
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
 
     - name: Build
@@ -175,6 +176,7 @@ jobs:
       id: version-linux
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        git pull
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
 
     - name: Build for linux
@@ -260,6 +262,7 @@ jobs:
       id: version-linux
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        git pull
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
 
     - name: Build for windows
@@ -349,6 +352,7 @@ jobs:
       id: version-macos-11
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        git pull
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
         echo "::set-output name=GONEOVIM_VERSION_HASH::$(git rev-parse HEAD)"
 
