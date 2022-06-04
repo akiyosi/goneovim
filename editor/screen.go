@@ -1456,15 +1456,15 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorposx := anchorwin.pos[0]
 		anchorposy := anchorwin.pos[1]
 
-		// anchorwin.propMutex.Lock()
-		// anchorwinIsExternal := anchorwin.isExternal
-		// anchorwin.propMutex.Unlock()
+		anchorwin.propMutex.Lock()
+		anchorwinIsExternal := anchorwin.isExternal
+		anchorwin.propMutex.Unlock()
 
-		// if anchorwinIsExternal {
-		// 	win.SetParent(anchorwin)
-		// 	anchorposx = 0
-		// 	anchorposy = 0
-		// }
+		if anchorwinIsExternal {
+			win.SetParent(anchorwin)
+			anchorposx = 0
+			anchorposy = 0
+		}
 
 		var col, row int
 		switch win.anchor {
