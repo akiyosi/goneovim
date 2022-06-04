@@ -366,6 +366,10 @@ All Options are follows:
         ## This option works only if `ExtMessages` is enabled.
         # DesktopNotifications = false
         
+	// Controls whether mouse events in Neovim are ignored when
+	// an application window is clicked while the application window is inactive.
+	IgnoreFirstMouseClickWhenAppInactivated = false
+
         # Display the effect when clicked
         # ClickEffect = false
 
