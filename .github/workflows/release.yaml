@@ -102,11 +102,18 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/linux/
 
+    - if: github.event_name == 'workflow_dispatch'
+      run: echo "ARCHIVE_NAME=goneovim-linux" >> $GITHUB_ENV
+    - if: github.event_name == 'schedule'
+      run: echo "ARCHIVE_NAME=goneovim-linux" >> $GITHUB_ENV
+    - if: github.event_name == 'push'
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}linux" >> $GITHUB_ENV
+
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-linux
-        tar -jcvf goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-linux.tar.bz2 goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-linux
+        mv linux "ARCHIVE_NAME"
+        tar -jcvf "ARCHIVE_NAME".tar.bz2 "ARCHIVE_NAME"
 
     - name: Upload
       uses: actions/upload-artifact@v1
@@ -191,11 +198,18 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" -docker build linux_arch
         cp -pR ../../runtime ./deploy/linux/
 
+    - if: github.event_name == 'workflow_dispatch'
+      run: echo "ARCHIVE_NAME=goneovim-archlinux" >> $GITHUB_ENV
+    - if: github.event_name == 'schedule'
+      run: echo "ARCHIVE_NAME=goneovim-archlinux" >> $GITHUB_ENV
+    - if: github.event_name == 'push'
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-archlinux" >> $GITHUB_ENV
+
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-archlinux
-        tar -jcvf goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-archlinux.tar.bz2 goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-archlinux
+        mv linux "ARCHIVE_NAME"
+        tar -jcvf "ARCHIVE_NAME".tar.bz2 "ARCHIVE_NAME"
 
     - name: Upload
       uses: actions/upload-artifact@v1
@@ -283,11 +297,18 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}" -docker build windows_64_static
         cp -pR ../../runtime ./deploy/windows/
 
+    - if: github.event_name == 'workflow_dispatch'
+      run: echo "ARCHIVE_NAME=goneovim-windows" >> $GITHUB_ENV
+    - if: github.event_name == 'schedule'
+      run: echo "ARCHIVE_NAME=goneovim-windows" >> $GITHUB_ENV
+    - if: github.event_name == 'push'
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-windows.outputs.GONEOVIM_VERSION }}-windows" >> $GITHUB_ENV
+
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv windows goneovim-${{ steps.version-windows.outputs.GONEOVIM_VERSION }}-windows
-        zip -r goneovim-${{ steps.version-windows.outputs.GONEOVIM_VERSION }}-windows.zip goneovim-${{ steps.version-windows.outputs.GONEOVIM_VERSION }}-windows
+        mv windows "ARCHIVE_NAME"
+        zip -r "ARCHIVE_NAME".zip "ARCHIVE_NAME"
 
     - name: Upload
       uses: actions/upload-artifact@v1
@@ -381,11 +402,18 @@ jobs:
         rm -fr QtQuick.framework
         rm -fr QtVirtualKeyboard.framework
 
+    - if: github.event_name == 'workflow_dispatch'
+      run: echo "ARCHIVE_NAME=goneovim-macos" >> $GITHUB_ENV
+    - if: github.event_name == 'schedule'
+      run: echo "ARCHIVE_NAME=goneovim-macos" >> $GITHUB_ENV
+    - if: github.event_name == 'push'
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}-macos" >> $GITHUB_ENV
+
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv darwin goneovim-${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}-macos
-        tar -jcvf goneovim-${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}-macos.tar.bz2 goneovim-${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}-macos
+        mv darwin "ARCHIVE_NAME"
+        tar -jcvf "ARCHIVE_NAME".tar.bz2 "ARCHIVE_NAME"
 
     - name: Upload
       uses: actions/upload-artifact@v1
