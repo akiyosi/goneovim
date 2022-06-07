@@ -12,10 +12,10 @@ Development of goneovim
   
 
   * Export Environment variables
-  
+
     We should export the following environment variables:
-    
-    
+
+
     | environment variable name | value |
     | ------------- | ----- |
     | QT_API        | The version of the Qt API to generate. This project now uses `5.13.0` |
@@ -23,7 +23,7 @@ Development of goneovim
     | QT_DIR        | The directory path where qt is installed |
 
     e.g.
-    
+
     ```
     export QT_DIR=/path/to/Qt
     export QT_VERSION=5.14.2
@@ -72,7 +72,76 @@ Development of goneovim
     ```
 
 
-## For Windows
+## For Windows (MSYS2)
+
+See also: https://github.com/therecipe/qt/wiki/Installation-on-Windows#msys2-version-without-android-support
+
+  * Install MSYS2
+
+  * Install Qt5 on MSYS2
+
+    ```
+    pacman --noconfirm -S sed git mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
+    ```
+
+  * Export Environment variables
+
+    We should export the following environment variables:
+
+
+    | environment variable name | value |
+    | ------------- | ----- |
+    | QT_MSYS2           | true            |
+    | QT_MSYS2_DIR       | {Path to MSYS2} |
+    | QT_MSYS2_ARCH      | amd64           |
+    | QT_DEBUG           | false           |
+    | GO111MODULE        | off             |
+    | CGO_CFLAGS_ALLOW   | ".*"            |
+    | CGO_CXXFLAGS_ALLOW | ".*"            |
+    | CGO_LDFLAGS_ALLOW  | ".*"            |
+
+
+  * Install Go
+
+  * Get Go binding for Qt in cmd.exe
+
+    ```
+    go.exe get -v github.com/therecipe/qt/cmd/...
+    ```
+
+  * Setup Go binding in MSYS2 shell
+
+    ```
+    $(go env GOPATH)/bin/qtsetup -test=false
+    ```
+
+  * Clone this repository in cmd.exe
+
+    ```
+    go.exe get -d github.com/akiyosi/goneovim/...
+    ```
+
+  * Generate moc files in MSYS2 shell
+
+    ```
+    $(go env GOPATH)/bin/qtmoc
+    ```
+
+  * Test in cmd.exe
+
+    ```
+    go.exe test github.com/akiyosi/goneovim/editor
+    ```
+
+  * Build in MSYS2 shell
+
+    ```
+    cd $GOPATH/src/github.com/akiyosi/goneovim/cmd/goneovim
+    $(go env GOPATH)/bin/qtdeploy build desktop
+    ```
+
+
+## For Windows (MSVC)
 
   In this section, we will assume you are working on your home directory; `%USERPROFILE%`
 
@@ -150,34 +219,6 @@ Development of goneovim
 
     ```
     GO111MODULE=off go get -d github.com/akiyosi/goneovim/...
-    ```
-
-  * Convert code for suit Qt 5.12
-    For Qt5.12, the following code conversion is required.
-
-    ```
-    $data=Get-Content  .\editor\workspace.go | % { $_ -replace "NewQVariant31", "NewQVariant33" }
-    $data | Out-File   .\editor\workspace.go -Encoding UTF8
-    $data=Get-Content  .\editor\popupmenu.go | % { $_ -replace "AddWidget2", "AddWidget" }
-    $data | Out-File   .\editor\popupmenu.go -Encoding UTF8
-    $data=Get-Content  .\editor\message.go | % { $_ -replace "AddWidget2", "AddWidget" }
-    $data | Out-File   .\editor\message.go -Encoding UTF8
-    $data=Get-Content  .\editor\screen.go | % { $_ -replace "DrawText6", "DrawText5" }
-    $data | Out-File   .\editor\screen.go -Encoding UTF8
-    $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
-    $data | Out-File   .\editor\screen.go -Encoding UTF8
-    $ch1="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-    $rep1="), int(core.Qt__AlignVCenter), text, nil,"
-    $data=Get-Content  .\editor\screen.go | % { $_ -replace [regex]::Escape($ch1), $rep1 }
-    $data | Out-File   .\editor\screen.go -Encoding UTF8
-    $data=Get-Content  .\editor\cursor.go | % { $_ -replace "DrawText6", "DrawText5" }
-    $data | Out-File   .\editor\cursor.go -Encoding UTF8
-    $ch2="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-    $rep2="), int(core.Qt__AlignVCenter), text, nil,"
-    $data=Get-Content  .\editor\cursor.go | % { $_ -replace [regex]::Escape($ch2), $rep2 }
-    $data | Out-File   .\editor\cursor.go -Encoding UTF8
-    $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
-    $data | Out-File   .\util\utils.go -Encoding UTF8
     ```
 
   * Generate moc files
