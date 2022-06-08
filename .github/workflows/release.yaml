@@ -112,14 +112,14 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux "ARCHIVE_NAME"
-        tar -jcvf "ARCHIVE_NAME".tar.bz2 "ARCHIVE_NAME"
+        mv linux "$ARCHIVE_NAME"
+        tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 
     - name: Upload
       uses: actions/upload-artifact@v1
       with:
         name: goneovim-linux
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-linux.tar.bz2
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
 
   archlinux:
     needs: [check-new-commit]
@@ -208,14 +208,14 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux "ARCHIVE_NAME"
-        tar -jcvf "ARCHIVE_NAME".tar.bz2 "ARCHIVE_NAME"
+        mv linux "$ARCHIVE_NAME"
+        tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 
     - name: Upload
       uses: actions/upload-artifact@v1
       with:
         name: goneovim-archlinux
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-archlinux.tar.bz2
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
 
   windows:
     needs: [check-new-commit]
@@ -307,14 +307,14 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv windows "ARCHIVE_NAME"
-        zip -r "ARCHIVE_NAME".zip "ARCHIVE_NAME"
+        mv windows "$ARCHIVE_NAME"
+        zip -r "$ARCHIVE_NAME".zip "$ARCHIVE_NAME"
 
     - name: Upload
       uses: actions/upload-artifact@v1
       with:
         name: goneovim-windows
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-${{ steps.version-windows.outputs.GONEOVIM_VERSION }}-windows.zip
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.zip
 
   macos:
     needs: [check-new-commit]
@@ -412,14 +412,14 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv darwin "ARCHIVE_NAME"
-        tar -jcvf "ARCHIVE_NAME".tar.bz2 "ARCHIVE_NAME"
+        mv darwin "$ARCHIVE_NAME"
+        tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 
     - name: Upload
       uses: actions/upload-artifact@v1
       with:
         name: goneovim-macos
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}-macos.tar.bz2
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
 
   publish:
     needs: [linux, archlinux, windows, macos]
