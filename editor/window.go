@@ -610,6 +610,9 @@ func (w *Window) drawFloatWindowBorder(p *gui.QPainter) {
 	if !w.isFloatWin {
 		return
 	}
+	if !w.isExternal {
+		return
+	}
 	var color *RGBA
 	highNo, ok := w.s.highlightGroup["GoneovimFloatWindowBorder"]
 	if !ok {
