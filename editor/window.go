@@ -2127,8 +2127,12 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 	end := float64(width) * font.cellwidth
 
 	space := float64(font.lineSpace) / 3.0
-	if space > font.ascent/3.0 {
+	if math.Abs(space) > font.ascent/3.0 {
 		space = font.ascent / 3.0
+	}
+	space2 := float64(font.lineSpace)
+	if space2 < -1 {
+		space2 = float64(font.lineSpace) / 2.0
 	}
 	descent := float64(font.height) - font.ascent
 	weight := int(math.Ceil(float64(font.height) / 16.0))
@@ -2136,7 +2140,7 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		weight = 1
 	}
 	if highlight.strikethrough {
-		Y := float64(0*font.lineHeight+scrollPixels) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
+		Y := float64(0*font.lineHeight+scrollPixels) + float64(font.ascent)*0.65 + float64(space2/2)
 		pi.FillRect5(
 			int(start),
 			int(Y),
@@ -2155,14 +2159,14 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		)
 	}
 	if highlight.undercurl {
-		amplitude := descent*0.65 + float64(font.lineSpace)
+		amplitude := descent*0.65 + float64(space2)
 		maxAmplitude := font.ascent / 8.0
 		if amplitude >= maxAmplitude {
 			amplitude = maxAmplitude
 		}
 		freq := 1.0
 		phase := 0.0
-		Y := float64(0*font.lineHeight+scrollPixels) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
+		Y := float64(0*font.lineHeight+scrollPixels) + float64(font.ascent+descent*0.3) + float64(space2/2) + space
 		Y2 := Y + amplitude*math.Sin(0)
 		point := core.NewQPointF3(start, Y2)
 		path := gui.NewQPainterPath2(point)

@@ -291,10 +291,14 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 			} else {
 				image = imagev.(*gui.QImage)
 			}
+			yy := c.y
+			if c.font.lineSpace < 0 {
+				yy += float64(font.lineSpace) / 2.0
+			}
 			p.DrawImage7(
 				core.NewQPointF3(
 					c.x,
-					c.y,
+					yy,
 				),
 				image,
 			)
@@ -308,10 +312,15 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 				p.SetFont(font.fontNew)
 			}
 			p.SetPen2(c.fg.QColor())
+
+			yy := c.y + shift
+			if c.font.lineSpace < 0 {
+				yy += float64(font.lineSpace) / 2.0
+			}
 			p.DrawText(
 				core.NewQPointF3(
 					c.x,
-					c.y+shift,
+					yy,
 				),
 				c.text,
 			)
@@ -552,6 +561,9 @@ func (c *Cursor) updateCursorShape() {
 	var width, height int
 	if c.font != nil {
 		height = c.font.height
+		if c.font.lineSpace < 0 {
+			height += c.font.lineSpace
+		}
 		width = int(math.Trunc(c.font.cellwidth))
 	}
 	if !c.normalWidth {
@@ -670,7 +682,10 @@ func (c *Cursor) updateContent(win *Window) {
 	}
 
 	x := float64(winx + int(float64(col)*font.cellwidth+float64(winbordersize)))
-	y := float64(winy + int(float64(row*font.lineHeight)+float64(font.lineSpace)/2.0+float64(scrollPixels+res+winbordersize)))
+	y := float64(winy + int(float64(row*font.lineHeight)+float64(scrollPixels+res+winbordersize)))
+	if font.lineSpace > 0 {
+		y += float64(font.lineSpace) / 2.0
+	}
 
 	isStopScroll := (win.lastScrollphase == core.Qt__ScrollEnd)
 	c.move(win)
@@ -760,6 +775,9 @@ func (c *Cursor) updateRegion() {
 	}
 	width := int(math.Ceil(c.font.cellwidth))
 	height := c.font.height
+	if c.font.lineSpace < 0 {
+		height += c.font.lineSpace
+	}
 	if c.width > width {
 		width = c.width
 	}
