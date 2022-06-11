@@ -21,20 +21,21 @@ var globalOrder int
 
 // Screen is the main editor area
 type Screen struct {
-	fgCache        Cache
-	tooltip        *IMETooltip
-	font           *Font
-	hlAttrDef      map[int]*Highlight
-	widget         *widgets.QWidget
-	ws             *Workspace
-	highlightGroup map[string]int
-	windows        sync.Map
-	name           string
-	cursor         [2]int
-	height         int
-	width          int
-	resizeCount    uint
-	topLevelGrid   int
+	fgCache          Cache
+	tooltip          *IMETooltip
+	font             *Font
+	hlAttrDef        map[int]*Highlight
+	widget           *widgets.QWidget
+	ws               *Workspace
+	highlightGroup   map[string]int
+	windows          sync.Map
+	name             string
+	cursor           [2]int
+	height           int
+	width            int
+	resizeCount      uint
+	topLevelGrid     int
+	lastGridLineGrid int
 }
 
 type Cache struct {
@@ -1210,6 +1211,8 @@ func (s *Screen) gridLine(args []interface{}) {
 			util.ReflectToInt(arg.([]interface{})[2]),
 			arg.([]interface{})[3].([]interface{}),
 		)
+
+		s.lastGridLineGrid = win.grid
 	}
 }
 

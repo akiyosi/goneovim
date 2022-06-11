@@ -1132,21 +1132,6 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 				isSkipDraw = false
 			}
 
-			// // Do not Draw statusline of splitted window
-			// win.s.windows.Range(func(_, winITF interface{}) bool {
-			// 	w := winITF.(*Window)
-			// 	if w == nil {
-			// 		return true
-			// 	}
-			// 	if !w.isShown() {
-			// 		return true
-			// 	}
-			// 	if row == w.pos[1]-1 {
-			// 		isDraw = true
-			// 		return false
-			// 	}
-			// 	return true
-			// })
 		} else {
 			isSkipDraw = false
 		}
@@ -1162,6 +1147,19 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 
 	if !win.isShown() {
 		win.show()
+	}
+
+	// Related to #364, it seems that in a UI consisting of multiple float windows,
+	// there are cases where the grid in which the grid_line event is emitted
+	// must be considered in the z-order of the UI.
+	if win.isFloatWin && !win.isMsgGrid {
+		if !editor.isExtWinNowInactivated && !editor.isWindowNowInactivated {
+			if win.s.lastGridLineGrid != win.grid {
+				win.zindex.order = globalOrder
+				globalOrder++
+				win.raise()
+			}
+		}
 	}
 
 	if win.isMsgGrid {
