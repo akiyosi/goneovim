@@ -160,17 +160,13 @@ func newConfig(home string) (string, gonvimConfig) {
 
 	// detect config dir
 	var configDir string
-	if runtime.GOOS != "windows" {
-		xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
-		if xdgConfigHome != "" {
-			configDir = filepath.Join(xdgConfigHome, "goneovim")
-		} else {
-			configDir = filepath.Join(home, ".config", "goneovim")
-		}
-		if !isFileExist(configDir) {
-			configDir = filepath.Join(home, ".goneovim")
-		}
+	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
+	if xdgConfigHome != "" {
+		configDir = filepath.Join(xdgConfigHome, "goneovim")
 	} else {
+		configDir = filepath.Join(home, ".config", "goneovim")
+	}
+	if !isFileExist(configDir) {
 		configDir = filepath.Join(home, ".goneovim")
 	}
 
