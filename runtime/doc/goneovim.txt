@@ -8,6 +8,7 @@ CONTENTS                                                       *goneovim-content
 
 Introduction                                             |goneovim-introduction|
 CLI Interface                                           |goneovim-cli-interface|
+Goneovim as a Neovim GUI                              |goneovim-as-a-neovim-gui|
 Commands                                                     |goneovim-commands|
 WSL integration                                                   |goneovim-wsl|
 Configuration                                           |goneovim-configuration|
@@ -44,7 +45,79 @@ CLI INTERFACE                                             *goneovim-cli-interfac
     
     Help Options:
       -h, --help          Show this help message
+
 <
+================================================================================
+Goneovim as a Neovim GUI                                *goneovim-as-a-neovim-gui*
+
+'guifont' gfn'		string	(default is the value set in settings.toml)
+			global
+	This is a list of fonts which will be used for Goneovim. In its simplest
+	form the value is just one font name.  When the font cannot be found you
+	will get an error message.  To try other font names a list can be 
+	specified, font names separated with commas. The first valid font is 
+	used.
+
+	Spaces after a comma are ignored.  To include a comma in a font name
+	precede it with a backslash.  Setting an option requires an extra
+	backslash before a space and a backslash.  See also
+	|option-backslash|.  For example: >
+	    :set guifont=Monaco:h20,JetBrainsMonoNL\ Nerd\ Font\ Mono:h14
+<
+	will make Vim try to use the font "Monaco" first, and if it fails it
+	will try to use "JetBrainsMonoNL Nerd Font Mono".
+
+        The following form will bring up a font requester, where you can pick
+	the font you want: >
+	    :set guifont=*
+<
+	- A '_' can be used in the place of a space, so you don't need to use
+	  backslashes to escape the spaces.
+	- Examples: >
+	    :set guifont=Hack:h12:w5:b
+	    :set guifont=Hack:h7:w4
+<
+	- takes these options in the font name:
+		hXX - height is XX (points, can be floating-point)
+		wXX - width is XX (points, can be floating-point)
+
+		t        - thin
+		el       - extra light
+		l        - light
+		n        - normal
+		db, sb   - demi bold
+		b        - bold
+		eb       - extra bold
+
+	  Use a ':' to separate the options.  For example: >
+	    :set guifont=JetBrainsMonoNL_Nerd_Font_Mono:h14:t
+<
+
+
+'linespace' 'lsp'	number	(default 0)
+			global
+			{only in the GUI}
+	Number of pixel lines inserted between characters.  Useful if the font
+	uses the full character cell height, making lines touch each other.
+	When non-zero there is room for underlining.
+	With some fonts there can be too much room between lines (to have
+	space for ascents and descents).  Then it makes sense to set
+	'linespace' to a negative value.
+
+
+'lines'			number
+			global
+	Number of lines of the Goneovim window.
+	Setting this option will cause the window size to be changed. Minimum 
+	value is 2, maximum value is 1000.
+
+
+'columns' 'co'		number
+			global
+	Number of columns of the screen based of the Goneovim Window. 
+	setting this option will cause the window size to be changed.
+	Minimum value is 12, maximum value is 10000.
+
 
 ================================================================================
 COMMANDS                                                       *goneovim-commands*
