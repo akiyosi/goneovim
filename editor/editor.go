@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -96,6 +97,7 @@ type Options struct {
 type Editor struct {
 	stop                   chan int
 	signal                 *editorSignal
+	ctx                    context.Context
 	app                    *widgets.QApplication
 	font                   *Font
 	widget                 *widgets.QWidget
@@ -193,6 +195,8 @@ func InitEditor(options Options, args []string) {
 	e.stop = make(chan int)
 	e.notify = make(chan *Notify, 10)
 	e.cbChan = make(chan *string, 240)
+
+	ctx, cancel := context.WithCancel(context.Background())
 
 	// detect home dir
 	home, err := homedir.Dir()
@@ -342,24 +346,25 @@ func InitEditor(options Options, args []string) {
 			e.app.DisconnectEvent()
 		}
 		e.saveAppWindowState()
-		// e.app.Quit()
+		cancel()
+
 		os.Exit(ret)
 	}()
 
 	// launch thread to copy text to the clipboard in darwin
 	if runtime.GOOS == "darwin" {
 		if e.config.Editor.Clipboard {
-			go func() {
+			go func(c context.Context) {
 				for {
 					select {
-					case <-e.stop:
+					case <-c.Done():
 						return
 					default:
 						text := <-e.cbChan
 						e.app.Clipboard().SetText(*text, gui.QClipboard__Clipboard)
 					}
 				}
-			}()
+			}(ctx)
 		}
 	}
 	e.putLog("done connecting UI siganal")
@@ -1330,6 +1335,8 @@ func (e *Editor) saveAppWindowState() {
 }
 
 func (e *Editor) cleanup() {
+	// TODO We need to kill the minimap nvim process explicitly?
+
 	if !e.config.Workspace.RestoreSession {
 		return
 	}
