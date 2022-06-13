@@ -49,6 +49,8 @@ jobs:
     #   run: |
     #     rm -fr ${{ github.workspace }}/src/github.com/therecipe
 
+    - uses: rui314/setup-mold@v1
+
     - name: Checkout code
       uses: actions/checkout@v2
       with:
@@ -151,6 +153,8 @@ jobs:
     #   if: ${{ steps.cache-qt-bindings.outputs.cache-hit }} == 'true'
     #   run: |
     #     rm -fr ${{ github.workspace }}/src/github.com/therecipe
+
+    - uses: rui314/setup-mold@v1
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -268,6 +272,8 @@ jobs:
     - name: Get Qt binding for Go
       run: |
         go get -v github.com/therecipe/qt/cmd/...
+
+    - uses: rui314/setup-mold@v1
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -553,6 +559,8 @@ jobs:
       run: |
         go get -v github.com/therecipe/qt/cmd/...
 
+    - uses: rui314/setup-mold@v1
+
     - name: Checkout code
       uses: actions/checkout@v2
       with:
@@ -656,6 +664,8 @@ jobs:
     - name: Get Qt binding for Go
       run: |
         ${{ github.workspace }}\go-root\bin\go.exe get -v github.com/therecipe/qt/cmd/...
+
+    - uses: rui314/setup-mold@v1
 
     - name: Checkout code
       uses: actions/checkout@v2
