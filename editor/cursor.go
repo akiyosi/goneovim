@@ -38,6 +38,7 @@ type Cursor struct {
 	currAttrId                 int
 	deltax                     float64
 	gridid                     int
+	prevGridid                 int
 	bufferGridid               int
 	horizontalShift            int
 	modeIdx                    int
@@ -63,8 +64,10 @@ type Cursor struct {
 	normalWidth                bool
 }
 
-func initCursorNew() *Cursor {
-	c := NewCursor(nil, 0)
+func initCursorNew(wid *widgets.QWidget) *Cursor {
+	c := NewCursor(wid, 0)
+	wid.StackUnder(c)
+
 	c.SetContentsMargins(0, 0, 0, 0)
 	c.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	c.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")

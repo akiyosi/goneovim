@@ -151,9 +151,8 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.screen.initInputMethodWidget()
 
 	// cursor
-	w.cursor = initCursorNew()
+	w.cursor = initCursorNew(w.widget)
 	w.cursor.ws = w
-	w.cursor.SetParent(w.widget)
 	w.cursor.setBypassScreenEvent()
 
 	// If ExtFooBar is true, then we create a UI component

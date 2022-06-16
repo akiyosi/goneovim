@@ -2563,9 +2563,12 @@ func (w *Window) getCache() Cache {
 	return w.s.fgCache
 }
 
-func newWindow() *Window {
+func newWindow(cursor *Cursor) *Window {
 	// widget := widgets.NewQWidget(nil, 0)
 	win := NewWindow(nil, 0)
+	cursor.StackUnder(win)
+	cursor.raise()
+
 	win.SetContentsMargins(0, 0, 0, 0)
 	win.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	win.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
@@ -2780,21 +2783,43 @@ func (w *Window) raise() {
 
 	// handle cursor widget
 	w.setCursorParent()
-	w.s.ws.cursor.raise()
 }
 
 func (w *Window) setCursorParent() {
 	// Update cursor font
 	w.s.ws.cursor.updateFont(w, w.getFont())
-	w.s.ws.cursor.isInPalette = false
+	defer func() {
+		w.s.ws.cursor.isInPalette = false
+	}()
+
+	// ws := editor.workspaces[editor.active]
+	prevCursorWin, ok := w.s.ws.screen.getWindow(w.s.ws.cursor.prevGridid)
 
 	// for handling external window
 	if !w.isExternal {
 		editor.window.Raise()
 		w.s.ws.cursor.SetParent(w.s.ws.widget)
+
+		if ok {
+			if prevCursorWin.isExternal {
+				w.s.ws.cursor.raise()
+			}
+		}
+		if w.s.ws.cursor.isInPalette {
+			w.s.ws.cursor.raise()
+		}
 	} else if w.isExternal {
 		w.extwin.Raise()
 		w.s.ws.cursor.SetParent(w.extwin)
+
+		if ok {
+			if !prevCursorWin.isExternal {
+				w.s.ws.cursor.raise()
+			}
+		}
+		if w.s.ws.cursor.isInPalette {
+			w.s.ws.cursor.raise()
+		}
 	}
 }
 

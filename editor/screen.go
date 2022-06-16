@@ -701,7 +701,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	}
 
 	if win == nil {
-		win = newWindow()
+		win = newWindow(s.ws.cursor)
 
 		win.s = s
 		s.storeWindow(gridid, win)
@@ -950,33 +950,21 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 		s.cursor[0] = x
 		s.cursor[1] = y
 
+		if !win.isMsgGrid {
+			s.ws.cursor.prevGridid = s.ws.cursor.bufferGridid
+		}
 		if s.ws.cursor.gridid != win.grid {
 			if !win.isMsgGrid {
 				s.ws.cursor.bufferGridid = gridid
-
-				// Fix #297
-				if win.s.topLevelGrid != win.grid {
-
-					// If a mouse drag event is occurring in the previous
-					// cursor grid, window raising will be suppressed.
-					// It is need when showmode is set
-					if s.ws.cursor.gridid != 0 {
-						oldCursorWin, ok := s.getWindow(s.ws.cursor.gridid)
-						if ok {
-							if oldCursorWin.lastMouseEvent != nil && oldCursorWin.lastMouseEvent.action != "drag" {
-								win.raise()
-							} else if oldCursorWin.isExternal && !win.isExternal {
-								win.raise()
-							}
-						}
-					} else {
-						win.raise()
-					}
-				}
 			}
 
 			// Set new cursor grid id
 			s.ws.cursor.gridid = gridid
+			if s.ws.cursor.prevGridid == 0 {
+				s.ws.cursor.prevGridid = gridid
+			}
+
+			win.raise()
 
 			// reset smooth scroll scrolling offset
 			win.scrollPixels2 = 0
