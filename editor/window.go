@@ -1117,30 +1117,6 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 		win.scrollPixels[1] = 0
 	}
 
-	// We should control to draw statusline, vsplitter
-	if editor.config.Editor.DrawWindowSeparator && win.grid == 1 {
-
-		isSkipDraw := true
-		if win.s.name != "minimap" {
-
-			// Draw  bottom statusline
-			if row == win.rows-2 {
-				isSkipDraw = false
-			}
-			// Draw tabline
-			if row == 0 {
-				isSkipDraw = false
-			}
-
-		} else {
-			isSkipDraw = false
-		}
-
-		if isSkipDraw {
-			return
-		}
-	}
-
 	win.updateLine(row, colStart, cells)
 	win.countContent(row)
 	win.makeUpdateMask(row, colStart, cells)
@@ -2969,6 +2945,10 @@ func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
 	} else {
 		winx = w.Pos().X()
 		winy = w.Pos().Y()
+	}
+
+	if w.isMsgGrid {
+		return winx, winy
 	}
 
 	width := w.Width()

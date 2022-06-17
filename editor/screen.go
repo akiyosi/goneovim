@@ -662,6 +662,12 @@ func (s *Screen) gridResize(args []interface{}) {
 func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win, _ := s.getWindow(gridid)
 
+	if win != nil {
+		if win.cols == cols && win.rows == rows {
+			return
+		}
+	}
+
 	if win != nil && win.snapshot != nil {
 		win.dropScreenSnapshot()
 	}
@@ -754,9 +760,8 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 	win.setGridGeometry(width, height)
 
-	win.move(win.pos[0], win.pos[1])
-
-	win.show()
+	// win.move(win.pos[0], win.pos[1])
+	// win.show()
 
 	win.queueRedrawAll()
 }
@@ -1290,10 +1295,14 @@ func (s *Screen) windowPosition(args []interface{}) {
 		id := arg.([]interface{})[1].(nvim.Window)
 		row := util.ReflectToInt(arg.([]interface{})[2])
 		col := util.ReflectToInt(arg.([]interface{})[3])
+		cols := util.ReflectToInt(arg.([]interface{})[4])
+		rows := util.ReflectToInt(arg.([]interface{})[5])
 
 		if isSkipGlobalId(gridid) {
 			continue
 		}
+
+		s.resizeWindow(gridid, cols, rows)
 
 		win, ok := s.getWindow(gridid)
 		if !ok {
