@@ -619,6 +619,13 @@ func (c *Cursor) updateContent(win *Window) {
 		winbordersize = EXTWINBORDERSIZE
 	}
 
+	if row < 0 {
+		row = 0
+	}
+	if col < 0 {
+		col = 0
+	}
+
 	if row >= len(win.content) ||
 		col >= len(win.content[0]) ||
 		win.content[row][col] == nil ||
