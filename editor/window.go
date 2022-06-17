@@ -1119,7 +1119,6 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 
 	win.updateLine(row, colStart, cells)
 	win.countContent(row)
-	win.makeUpdateMask(row, colStart, cells)
 
 	if !win.isShown() {
 		win.show()
@@ -1183,6 +1182,7 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 
 			if line[col] == nil {
 				line[col] = &Cell{}
+				w.contentMask[row][col] = true
 			}
 
 			line[col].char = cell[0].(string)
@@ -1200,6 +1200,17 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 				} else {
 					line[col].highlight = w.s.hlAttrDef[hl]
 				}
+			}
+
+			// Update contentmask for screen update
+			if line[col].char == " " &&
+				line[col].highlight.bg().equals(w.background) &&
+				!line[col].highlight.underline &&
+				!line[col].highlight.undercurl &&
+				!line[col].highlight.strikethrough {
+				w.contentMask[row][col] = false
+			} else {
+				w.contentMask[row][col] = true
 			}
 
 			// Detect popupmenu
@@ -1266,26 +1277,26 @@ func (w *Window) countContent(row int) {
 	w.lenContent[row] = width
 }
 
-func (w *Window) makeUpdateMask(row, col int, cells []interface{}) {
-	for j, cell := range w.content[row] {
-		if cell == nil {
-			w.contentMask[row][j] = true
-			continue
-
-			// If the target cell is blank and there is no text decoration of any kind
-		} else if cell.char == " " &&
-			cell.highlight.bg().equals(w.background) &&
-			!cell.highlight.underline &&
-			!cell.highlight.undercurl &&
-			!cell.highlight.strikethrough {
-
-			w.contentMask[row][j] = false
-
-		} else {
-			w.contentMask[row][j] = true
-		}
-	}
-}
+// func (w *Window) makeUpdateMask(row, col int, cells []interface{}) {
+// 	for j, cell := range w.content[row] {
+// 		if cell == nil {
+// 			w.contentMask[row][j] = true
+// 			continue
+//
+// 			// If the target cell is blank and there is no text decoration of any kind
+// 		} else if cell.char == " " &&
+// 			cell.highlight.bg().equals(w.background) &&
+// 			!cell.highlight.underline &&
+// 			!cell.highlight.undercurl &&
+// 			!cell.highlight.strikethrough {
+//
+// 			w.contentMask[row][j] = false
+//
+// 		} else {
+// 			w.contentMask[row][j] = true
+// 		}
+// 	}
+// }
 
 func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 	if w == nil {
