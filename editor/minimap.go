@@ -143,7 +143,7 @@ func (m *MiniMap) startMinimapProc() {
 	// neovim.Subscribe("Gui")
 	go func() {
 		neovim.Command(":syntax on")
-		neovim.Command(":set nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all ts=4")
+		neovim.Command(":set ro nobackup noswapfile mouse=nv laststatus=0 noruler nowrap noshowmode virtualedit+=all ts=4")
 	}()
 }
 
