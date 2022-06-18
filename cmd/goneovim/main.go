@@ -69,9 +69,10 @@ func main() {
 	} else {
 		p := core.NewQProcess(nil)
 		var pid int64
+		goneovim := core.NewQCoreApplication(len(os.Args), os.Args)
 		if !p.StartDetached2(
-			core.NewQCoreApplication(len(os.Args), os.Args).ApplicationFilePath(),
-			append(args, []string{"--nofork"}...),
+			goneovim.ApplicationFilePath(),
+			append([]string{"--nofork"}, goneovim.Arguments()[1:]...),
 			"",
 			pid,
 		) {
