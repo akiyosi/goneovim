@@ -101,8 +101,9 @@ func TestWindow_updateLine(t *testing.T) {
 		//	rwMutex          sync.RWMutex
 		//	paintMutex       sync.Mutex
 		//	redrawMutex      sync.Mutex
-		s       *Screen
-		content [][]*Cell
+		s           *Screen
+		content     [][]*Cell
+		contentMask [][]bool
 		//	lenLine          []int
 		//	lenContent       []int
 		//	lenOldContent    []int
@@ -189,8 +190,10 @@ func TestWindow_updateLine(t *testing.T) {
 
 	// Init grid content
 	content := make([][]*Cell, rows)
+	contentMask := make([][]bool, rows)
 	for i := 0; i < rows; i++ {
 		content[i] = make([]*Cell, cols)
+		contentMask[i] = make([]bool, cols)
 	}
 
 	// Def tests
@@ -204,11 +207,12 @@ func TestWindow_updateLine(t *testing.T) {
 		{
 			"test_updateline() 1",
 			fields{
-				s:       &Screen{hlAttrDef: hldef},
-				content: content,
-				grid:    gridid,
-				cols:    cols,
-				rows:    rows,
+				s:           &Screen{hlAttrDef: hldef},
+				content:     content,
+				contentMask: contentMask,
+				grid:        gridid,
+				cols:        cols,
+				rows:        rows,
 			},
 			args{
 				row: row,
@@ -229,11 +233,12 @@ func TestWindow_updateLine(t *testing.T) {
 		{
 			"test_updateline() 2",
 			fields{
-				s:       &Screen{hlAttrDef: hldef},
-				content: content,
-				grid:    6,
-				cols:    cols,
-				rows:    rows,
+				s:           &Screen{hlAttrDef: hldef},
+				content:     content,
+				contentMask: contentMask,
+				grid:        6,
+				cols:        cols,
+				rows:        rows,
 			},
 			args{
 				row: row,
@@ -253,11 +258,12 @@ func TestWindow_updateLine(t *testing.T) {
 		{
 			"test_updateline() 3",
 			fields{
-				s:       &Screen{hlAttrDef: hldef},
-				content: content,
-				grid:    6,
-				cols:    cols,
-				rows:    rows,
+				s:           &Screen{hlAttrDef: hldef},
+				content:     content,
+				contentMask: contentMask,
+				grid:        6,
+				cols:        cols,
+				rows:        rows,
 			},
 			args{
 				row: row,
@@ -280,11 +286,12 @@ func TestWindow_updateLine(t *testing.T) {
 		{
 			"test_updateline() 4",
 			fields{
-				s:       &Screen{hlAttrDef: hldef},
-				content: content,
-				grid:    6,
-				cols:    cols,
-				rows:    rows,
+				s:           &Screen{hlAttrDef: hldef},
+				content:     content,
+				contentMask: contentMask,
+				grid:        6,
+				cols:        cols,
+				rows:        rows,
 			},
 			args{
 				row: row,
@@ -309,11 +316,12 @@ func TestWindow_updateLine(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			w := &Window{
-				s:       tt.fields.s,
-				content: tt.fields.content,
-				grid:    tt.fields.grid,
-				cols:    tt.fields.cols,
-				rows:    tt.fields.rows,
+				s:           tt.fields.s,
+				content:     tt.fields.content,
+				contentMask: tt.fields.contentMask,
+				grid:        tt.fields.grid,
+				cols:        tt.fields.cols,
+				rows:        tt.fields.rows,
 			}
 			w.updateLine(tt.args.row, tt.args.col, tt.args.cells)
 
