@@ -23,9 +23,9 @@ type Cursor struct {
 	ws                         *Workspace
 	timer                      *core.QTimer
 	cursorShape                string
-	text                       string
+	desttext                   string
+	sourcetext                 string
 	mode                       string
-	layerPos                   [2]int
 	delta                      float64
 	animationStartY            float64
 	xprime                     float64
@@ -64,139 +64,34 @@ type Cursor struct {
 	normalWidth                bool
 }
 
-func initCursorNew(wid *widgets.QWidget) *Cursor {
-	c := NewCursor(wid, 0)
-	wid.StackUnder(c)
+func initCursorNew() *Cursor {
+	c := NewCursor(nil, 0)
 
 	c.SetContentsMargins(0, 0, 0, 0)
 	c.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	c.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	c.timer = core.NewQTimer(nil)
 	c.isNeedUpdateModeInfo = true
-	c.ConnectPaintEvent(c.paint)
+	c.ConnectPaintEvent(c.paintEvent)
 	c.delta = 0.1
 	c.hasSmoothMove = editor.config.Cursor.SmoothMove
 	c.cellPercentage = 100
+	c.SetFocusPolicy(core.Qt__NoFocus)
+	c.ConnectWheelEvent(c.wheelEvent)
 
 	return c
 }
 
-func (c *Cursor) setBypassScreenEvent() {
-	c.ConnectWheelEvent(c.wheelEvent)
-	c.ConnectMousePressEvent(c.ws.screen.mousePressEvent)
-	c.ConnectMouseReleaseEvent(c.ws.screen.mouseEvent)
-	c.ConnectMouseMoveEvent(c.ws.screen.mouseEvent)
-}
-
-func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
-	if !c.ws.isMouseEnabled {
+func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
+	if c == nil {
 		return
 	}
 
-	var targetwin *Window
-
-	c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-		if win == nil {
-			return true
-		}
-		if !win.IsVisible() {
-			return true
-		}
-		if win.grid == 1 {
-			return true
-		}
-		if win.isMsgGrid {
-			return true
-		}
-		if win.isExternal {
-			if win.grid == c.gridid {
-				if win.Geometry().Contains(event.Pos(), true) {
-					targetwin = win
-				}
-				// targetwin = win
-				return false
-			}
-		}
-
-		return true
-	})
-
-	if targetwin == nil {
-		c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
-			win := winITF.(*Window)
-			if win == nil {
-				return true
-			}
-			if !win.IsVisible() {
-				return true
-			}
-			if win.grid == 1 {
-				return true
-			}
-			if win.isMsgGrid {
-				return true
-			}
-			if win.isFloatWin && !win.isExternal {
-				if win.Geometry().Contains(event.Pos(), true) {
-					if targetwin != nil {
-						// We select the float window with the highest zindex
-						// among the window group containing the coordinates of the mouse pointer.
-						if win.zindex.value > targetwin.zindex.value {
-							targetwin = win
-						} else if win.zindex.value == targetwin.zindex.value {
-							// If there is a group of windows with the same zindex,
-							// we select the window with the smallest size that covers the mouse pointer coordinates.
-							if targetwin.Geometry().Contains2(win.Geometry(), true) {
-								targetwin = win
-							}
-						}
-					} else {
-						targetwin = win
-					}
-				}
-			}
-
-			return true
-		})
+	if c.charCache == nil {
+		return
 	}
 
-	if targetwin == nil {
-		c.ws.screen.windows.Range(func(_, winITF interface{}) bool {
-			win := winITF.(*Window)
-			if win == nil {
-				return true
-			}
-			if !win.IsVisible() {
-				return true
-			}
-			if win.grid == 1 {
-				return true
-			}
-			if win.isMsgGrid {
-				return true
-			}
-			if win.isFloatWin || win.isExternal {
-				return true
-			}
-			if win.Geometry().Contains(event.Pos(), true) {
-				targetwin = win
-				return false
-			}
-
-			return true
-		})
-	}
-
-	if targetwin != nil {
-		targetwin.WheelEvent(
-			event,
-		)
-	}
-}
-
-func (c *Cursor) paint(event *gui.QPaintEvent) {
-	if c == nil {
+	if c.isBusy {
 		return
 	}
 
@@ -204,47 +99,46 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	if font == nil {
 		return
 	}
-	if c.charCache == nil {
-		return
-	}
-
-	// If guifontwide is set
-	shift := font.ascent
 
 	p := gui.NewQPainter2(c)
-	if c.isBusy {
+
+	c.drawBackground(p)
+
+	if c.sourcetext == "" || c.devicePixelRatio == 0 || c.width < int(font.cellwidth/2.0) {
 		p.DestroyQPainter()
 		return
 	}
 
-	var X, Y float64
-	if c.deltax != 0 || c.deltay != 0 {
-		if math.Abs(c.deltax) > 0 {
-			X = c.xprime + c.deltax
-		} else {
-			X = c.x
-		}
-		if math.Abs(c.deltay) > 0 {
-			Y = c.yprime + c.deltay
-		} else {
-			Y = c.y
-		}
-	} else {
-		X = c.x
-		Y = c.y
+	// Paint source cell text
+	c.paintMutex.RLock()
+	X, Y := c.getDrawingPos(c.x, c.y, c.xprime, c.yprime, c.deltax, c.deltay)
+
+	if (c.deltax != 0 || c.deltay != 0) && c.delta < 1.0 {
+		c.drawForeground(p, X, Y, c.animationStartX, c.animationStartY, c.sourcetext)
+	}
+	c.paintMutex.RUnlock()
+
+	if c.desttext == "" {
+		p.DestroyQPainter()
+		return
 	}
 
-	if c.hasSmoothMove {
-		p.SetClipRect2(
-			core.NewQRect4(
-				int(X),
-				int(Y)+c.horizontalShift,
-				c.width,
-				c.height,
-			), core.Qt__IntersectClip,
-		)
-	}
+	// Paint destination text
+	X2, Y2 := c.getDrawingPos(c.x, c.y, 0, 0, 0, 0)
+	c.drawForeground(p, X, Y, X2, Y2, c.desttext)
 
+	p.DestroyQPainter()
+}
+
+func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
+	win, ok := c.ws.screen.getWindow(c.gridid)
+	if !ok {
+		return
+	}
+	win.WheelEvent(event)
+}
+
+func (c *Cursor) drawBackground(p *gui.QPainter) {
 	// Draw cursor background
 	color := c.bg
 	if color == nil {
@@ -252,85 +146,71 @@ func (c *Cursor) paint(event *gui.QPaintEvent) {
 	}
 	p.FillRect4(
 		core.NewQRectF4(
-			X,
-			Y+float64(c.horizontalShift),
+			0,
+			0,
 			float64(c.width),
 			float64(c.height),
 		),
 		color.brend(c.ws.background, c.brend).QColor(),
 	)
+}
 
-	// Draw source cell text
-	c.paintMutex.RLock()
-	if c.snapshot != nil && (c.deltax != 0 || c.deltay != 0) {
-		p.DrawPixmap9(
-			int(c.animationStartX),
-			int(c.animationStartY),
-			c.snapshot,
-		)
-	}
-	c.paintMutex.RUnlock()
-
-	if c.text == "" || c.devicePixelRatio == 0 {
-		p.DestroyQPainter()
+func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text string) {
+	font := c.font
+	if font == nil {
 		return
 	}
+	shift := font.ascent
 
-	// Draw target cell text
-	if c.width > int(font.cellwidth/2.0) {
-		// Draw cursor foreground
-		if editor.config.Editor.CachedDrawing {
-			var image *gui.QImage
-			charCache := *c.charCache
-			imagev, err := charCache.get(HlChars{
-				text:   c.text,
-				fg:     c.fg,
-				italic: false,
-				bold:   false,
-			})
-			if err != nil {
-				image = c.newCharCache(c.text, c.fg, c.normalWidth)
-				c.setCharCache(c.text, c.fg, image)
-			} else {
-				image = imagev.(*gui.QImage)
-			}
-			yy := c.y
-			if c.font.lineSpace < 0 {
-				yy += float64(font.lineSpace) / 2.0
-			}
-			p.DrawImage7(
-				core.NewQPointF3(
-					c.x,
-					yy,
-				),
-				image,
-			)
+	// Paint target cell text
+	if editor.config.Editor.CachedDrawing {
+		var image *gui.QImage
+		charCache := *c.charCache
+		imagev, err := charCache.get(HlChars{
+			text:   text,
+			fg:     c.fg,
+			italic: false,
+			bold:   false,
+		})
+		if err != nil {
+			image = c.newCharCache(text, c.fg, c.normalWidth)
+			c.setCharCache(text, c.fg, image)
 		} else {
-			if !c.normalWidth && c.fontwide != nil {
-				p.SetFont(c.fontwide.fontNew)
-				if c.fontwide.lineHeight > font.lineHeight {
-					shift = shift + c.fontwide.ascent - font.ascent
-				}
-			} else {
-				p.SetFont(font.fontNew)
-			}
-			p.SetPen2(c.fg.QColor())
-
-			yy := c.y + shift
-			if c.font.lineSpace < 0 {
-				yy += float64(font.lineSpace) / 2.0
-			}
-			p.DrawText(
-				core.NewQPointF3(
-					c.x,
-					yy,
-				),
-				c.text,
-			)
+			image = imagev.(*gui.QImage)
 		}
-	}
+		yy := dy - sy - float64(c.horizontalShift)
+		if c.font.lineSpace < 0 {
+			yy += float64(font.lineSpace) / 2.0
+		}
+		p.DrawImage9(
+			int(dx-sx),
+			int(yy),
+			image,
+			0, 0,
+			-1, -1,
+			core.Qt__AutoColor,
+		)
+	} else {
+		if !c.normalWidth && c.fontwide != nil {
+			p.SetFont(c.fontwide.fontNew)
+			if c.fontwide.lineHeight > font.lineHeight {
+				shift += c.fontwide.ascent - font.ascent
+			}
+		} else {
+			p.SetFont(font.fontNew)
+		}
+		p.SetPen2(c.fg.QColor())
 
-	p.DestroyQPainter()
+		yy := dy - sy + shift - float64(c.horizontalShift)
+		if c.font.lineSpace < 0 {
+			yy += float64(font.lineSpace) / 2.0
+		}
+		p.DrawText3(
+			int(dx-sx),
+			int(yy),
+			text,
+		)
+	}
 }
 
 func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QImage {
@@ -397,7 +277,7 @@ func (c *Cursor) setBlink(isUpdateBlinkWait, isUpdateBlinkOn, isUpdateBlinkOff b
 	off := c.blinkOff
 	if wait == 0 || on == 0 || off == 0 {
 		c.brend = 0.0
-		c.Update()
+		c.paint()
 		return
 	}
 	c.timer.ConnectTimeout(func() {
@@ -414,7 +294,7 @@ func (c *Cursor) setBlink(isUpdateBlinkWait, isUpdateBlinkOn, isUpdateBlinkOff b
 			c.timer.SetInterval(on)
 			c.isShut = false
 		}
-		c.Update()
+		c.paint()
 	})
 	if isUpdateBlinkWait && wait != 0 {
 		c.timer.Start(wait)
@@ -422,30 +302,35 @@ func (c *Cursor) setBlink(isUpdateBlinkWait, isUpdateBlinkOn, isUpdateBlinkOff b
 	c.timer.SetInterval(off)
 }
 
-func (c *Cursor) move(win *Window) {
-	if win == nil {
-		return
-	}
-
-	var x, y float64
-	if !win.isExternal {
-		if c.ws.tabline != nil {
-			if c.ws.tabline.widget.IsVisible() {
-				y = y + float64(c.ws.tabline.height)
-			}
+func (c *Cursor) getDrawingPos(x, y, xprime, yprime, deltax, deltay float64) (float64, float64) {
+	var X, Y float64
+	if deltax != 0 || deltay != 0 {
+		if math.Abs(deltax) > 0 {
+			X = xprime + deltax
+		} else {
+			X = x
 		}
+		if math.Abs(deltay) > 0 {
+			Y = yprime + deltay
+		} else {
+			Y = y
+		}
+	} else {
+		X = x
+		Y = y
 	}
+	Y += float64(c.horizontalShift)
 
-	if c.layerPos[0] != int(x) || c.layerPos[1] != int(y) {
-		c.Move(
-			core.NewQPoint2(
-				int(x),
-				int(y),
-			),
-		)
-	}
-	c.layerPos[0] = int(x)
-	c.layerPos[1] = int(y)
+	return X, Y
+}
+
+func (c *Cursor) move() {
+	X, Y := c.getDrawingPos(c.x, c.y, c.xprime, c.yprime, c.deltax, c.deltay)
+
+	c.Move2(
+		int(X),
+		int(Y),
+	)
 }
 
 func (c *Cursor) updateFont(targetWin *Window, font *Font) {
@@ -602,22 +487,13 @@ func (c *Cursor) updateCursorShape() {
 	if !(c.width == width && c.height == height) {
 		c.width = width
 		c.height = height
+		c.resize(c.width, c.height)
 	}
-
 }
 
-func (c *Cursor) updateContent(win *Window) {
-	charCache := win.getCache()
-	c.charCache = &charCache
-	c.devicePixelRatio = win.devicePixelRatio
-
-	row := c.ws.screen.cursor[0]
-	col := c.ws.screen.cursor[1]
-
-	winbordersize := 0
-	if win.isExternal {
-		winbordersize = EXTWINBORDERSIZE
-	}
+func (c *Cursor) getRowAndColFromScreen() (row, col int) {
+	row = c.ws.screen.cursor[0]
+	col = c.ws.screen.cursor[1]
 
 	if row < 0 {
 		row = 0
@@ -626,30 +502,10 @@ func (c *Cursor) updateContent(win *Window) {
 		col = 0
 	}
 
-	if row >= len(win.content) ||
-		col >= len(win.content[0]) ||
-		win.content[row][col] == nil ||
-		win.content[row][col].char == "" {
-		c.text = ""
-		c.normalWidth = true
-	} else {
-		c.text = win.content[row][col].char
-		c.normalWidth = win.content[row][col].normalWidth
-	}
-	if c.ws.palette != nil {
-		if c.isInPalette {
-			c.text = ""
-		}
-	}
+	return
+}
 
-	c.updateCursorShape()
-
-	if c.ws.palette != nil {
-		if c.ws.palette.widget.IsVisible() {
-			return
-		}
-	}
-
+func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 	// Get the current font applied to the cursor.
 	// If the cursor is on a window that has its own font setting,
 	// get its own font.
@@ -673,16 +529,8 @@ func (c *Cursor) updateContent(win *Window) {
 	}
 
 	if win.isExternal {
-		winx = 0
-		winy = 0
-	}
-
-	res := 0
-	if win.isMsgGrid {
-		res = win.s.widget.Height() - win.rows*font.lineHeight
-	}
-	if res < 0 {
-		res = 0
+		winx = EXTWINBORDERSIZE
+		winy = EXTWINBORDERSIZE
 	}
 
 	// Set smooth scroll offset
@@ -691,41 +539,66 @@ func (c *Cursor) updateContent(win *Window) {
 		scrollPixels += win.scrollPixels[1]
 	}
 
-	x := float64(winx + int(float64(col)*font.cellwidth+float64(winbordersize)))
-	y := float64(winy + int(float64(row*font.lineHeight)+float64(scrollPixels+res+winbordersize)))
+	x := float64(winx + int(float64(col)*font.cellwidth))
+	y := float64(winy + int(float64(row*font.lineHeight)+float64(scrollPixels)))
 	if font.lineSpace > 0 {
 		y += float64(font.lineSpace) / 2.0
 	}
 
-	isStopScroll := (win.lastScrollphase == core.Qt__ScrollEnd)
-	c.move(win)
-	if !(c.x == x && c.y == y) {
-		// If the cursor has not finished its animated movement
-		if c.deltax != 0 || c.deltay != 0 {
-			c.xprime = c.xprime + c.deltax
-			c.yprime = c.yprime + c.deltay
+	if c.x == x && c.y == y {
+		return
+	}
 
-			// Suppress cursor animation while touchpad scrolling is in progress.
-			if !isStopScroll {
-				c.xprime = x
-				c.yprime = y
-			}
-		} else {
-			c.xprime = c.x
-			c.yprime = c.y
-		}
-		if c.deltax == 0 && c.deltay == 0 {
-			c.animationStartX = c.x
-			c.animationStartY = c.y
-		}
-		c.x = x
-		c.y = y
-		c.doAnimate = true
+	c.isStopScroll = (win.lastScrollphase == core.Qt__ScrollEnd)
+
+	// If the cursor has not finished its animated movement
+	if c.deltax != 0 || c.deltay != 0 {
+		c.xprime = c.xprime + c.deltax
+		c.yprime = c.yprime + c.deltay
+
 		// Suppress cursor animation while touchpad scrolling is in progress.
-		if !isStopScroll {
-			c.doAnimate = false
+		if !c.isStopScroll {
+			c.xprime = x
+			c.yprime = y
 		}
-		c.animateMove()
+	} else {
+		c.xprime = c.x
+		c.yprime = c.y
+	}
+	if c.deltax == 0 && c.deltay == 0 {
+		c.animationStartX = c.x
+		c.animationStartY = c.y
+	}
+	c.x = x
+	c.y = y
+
+	c.doAnimate = true
+	// Suppress cursor animation while touchpad scrolling is in progress.
+	if !c.isStopScroll {
+		c.doAnimate = false
+	}
+
+	c.animateMove()
+}
+
+func (c *Cursor) updateCursorText(row, col int, win *Window) {
+	if row >= len(win.content) ||
+		col >= len(win.content[0]) ||
+		win.content[row][col] == nil ||
+		win.content[row][col].char == "" {
+		c.desttext = ""
+		c.normalWidth = true
+	} else {
+		if c.deltax == 0 && c.deltay == 0 {
+			c.sourcetext = c.desttext
+		}
+		c.desttext = win.content[row][col].char
+		c.normalWidth = win.content[row][col].normalWidth
+	}
+	if c.ws.palette != nil {
+		if c.isInPalette {
+			c.desttext = ""
+		}
 	}
 }
 
@@ -734,20 +607,77 @@ func (c *Cursor) update() {
 		c.mode = c.ws.mode
 	}
 
+	// get current window
 	win, ok := c.ws.screen.getWindow(c.gridid)
 	if !ok {
 		return
 	}
-	c.isStopScroll = (win.lastScrollphase == core.Qt__ScrollEnd)
 
-	c.updateContent(win)
+	// Set Window-specific properties
+	charCache := win.getCache()
+	c.charCache = &charCache
+	c.devicePixelRatio = win.devicePixelRatio
 
-	c.updateRegion()
+	// Get row, col from screen
+	row, col := c.getRowAndColFromScreen()
+
+	// update cursor text
+	c.updateCursorText(row, col, win)
+
+	// update cursor shape
+	c.updateCursorShape()
+
+	// if ext_cmdline is true
+	if c.ws.palette != nil {
+		if c.ws.palette.widget.IsVisible() {
+			c.redraw()
+			return
+		}
+	}
+
+	// update cursor pos on window
+	c.updateCursorPos(row, col, win)
+
+	// redraw cursor widget
+	c.redraw()
+}
+
+func (c *Cursor) setColor() {
+	color := c.bg
+	if color == nil {
+		color = c.ws.foreground
+	}
+	if color != nil {
+		return
+	}
+
+	c.SetAutoFillBackground(true)
+	p := gui.NewQPalette()
+	p.SetColor2(gui.QPalette__Background, color.QColor())
+	c.SetPalette(p)
+}
+
+func (c *Cursor) redraw() {
+	c.move()
+	c.paint()
 
 	// Fix #119: Wrong candidate window position when using ibus
 	if runtime.GOOS == "linux" {
 		gui.QGuiApplication_InputMethod().Update(core.Qt__ImCursorRectangle)
 	}
+}
+
+// paint() is to request update cursor widget.
+// NOTE: This function execution may not be necessary.
+//       This is because move() is performed in the redraw() of the cursor,
+//       and it seems that paintEvent is fired inside
+//       the cursor widget in conjunction with this move processing.
+func (c *Cursor) paint() {
+	if editor.isKeyAutoRepeating {
+		return
+	}
+
+	c.Update()
 }
 
 func (c *Cursor) getSnapshot() {
@@ -766,8 +696,8 @@ func (c *Cursor) getSnapshot() {
 
 		snapshot := c.Grab(
 			core.NewQRect4(
-				int(c.x),
-				int(c.y),
+				0,
+				0,
 				c.width,
 				c.height,
 			),
@@ -777,193 +707,6 @@ func (c *Cursor) getSnapshot() {
 		c.snapshot = snapshot
 		c.paintMutex.Unlock()
 	}
-}
-
-func (c *Cursor) updateRegion() {
-	if c.font == nil {
-		return
-	}
-	width := int(math.Ceil(c.font.cellwidth))
-	height := c.font.height
-	if c.font.lineSpace < 0 {
-		height += c.font.lineSpace
-	}
-	if c.width > width {
-		width = c.width
-	}
-	if c.height > height {
-		width = c.height
-	}
-
-	if !c.hasSmoothMove {
-		c.Update2(
-			int(math.Trunc(c.xprime)),
-			int(math.Trunc(c.yprime)),
-			int(math.Ceil(c.xprime+float64(c.width))),
-			int(math.Ceil(c.yprime+float64(c.height))),
-		)
-		c.Update2(
-			int(math.Trunc(c.x)),
-			int(math.Trunc(c.y))+c.horizontalShift,
-			int(math.Ceil(c.x+float64(c.width))),
-			int(math.Ceil(c.y+float64(c.height))),
-		)
-	} else {
-		c.updateMinimumArea()
-	}
-}
-
-func (c *Cursor) updateMinimumArea() {
-	var topleft, topright, topbottom *core.QPoint
-	var bottomright, bottomleft, bottomtop *core.QPoint
-	width := float64(c.width)
-	height := float64(c.height)
-
-	var poly *gui.QPolygon
-
-	var top, left, right, bottom float64
-
-	// [Make updating region]
-	//
-	//    <topleft>
-	//    xprime,yprime                        x,y
-	//              +---+\  <topright>           +---+\
-	//              |   | \                      |   | \
-	//              |   |  \                     |   |  \
-	//              |   |   \                    |   |   \
-	//  <topbottom> +---+    \                   +---+    \
-	//               \        \                   \        \
-	//                \        \                   \        \
-	//                 \   x,y  \                   \ xprime,yprime
-	//                  \    +---+ <bottomtop>       \    +---+
-	//                   \   |   |                    \   |   |
-	//                    \  |   |                     \  |   |
-	//                     \ |   |                      \ |   |
-	//                      \+---+                       \+---+
-	//            <bottomleft>   <bottomright>
-
-	padding := 1
-	if c.xprime < c.x && c.yprime < c.y || c.xprime > c.x && c.yprime > c.y {
-		if c.xprime < c.x {
-			left = c.xprime
-			right = c.x
-		} else {
-			left = c.x
-			right = c.xprime
-		}
-		if c.yprime < c.y {
-			top = c.yprime
-			bottom = c.y
-		} else {
-			top = c.y
-			bottom = c.yprime
-		}
-
-		topleft = core.NewQPoint2(
-			int(math.Trunc(left)),
-			int(math.Trunc(top)),
-		)
-		topright = core.NewQPoint2(
-			int(math.Trunc(left+width))+padding,
-			int(math.Trunc(top)),
-		)
-		topbottom = core.NewQPoint2(
-			int(math.Trunc(left))-padding,
-			int(math.Trunc(top+height)),
-		)
-		bottomright = core.NewQPoint2(
-			int(math.Trunc(right+width)),
-			int(math.Trunc(bottom+height)),
-		)
-		bottomleft = core.NewQPoint2(
-			int(math.Trunc(right))-padding,
-			int(math.Trunc(bottom+height)),
-		)
-		bottomtop = core.NewQPoint2(
-			int(math.Trunc(right+width))+padding,
-			int(math.Trunc(bottom)),
-		)
-
-		poly = gui.NewQPolygon3(
-			[]*core.QPoint{
-				topbottom, topleft, topright,
-				bottomtop, bottomright, bottomleft,
-				topbottom,
-			},
-		)
-	} else {
-
-		//           <topleft>
-		//                  x,y                         xprime,yprime
-		//                   /+---+ <topright>                /+---+
-		//                  / |   |                          / |   |
-		//                 /  |   |                         /  |   |
-		//                /   |   |                        /   |   |
-		//               /    +---+ <topbottom>           /    +---+
-		//              /        /                       /        /
-		// <bottomtop> /        /                       /        /
-		//    xprime,yprime    /                   x,y /        /
-		//           +---+    /                       +---+    /
-		//           |   |   /                        |   |   /
-		//           |   |  /                         |   |  /
-		//           |   | /                          |   | /
-		//           +---+/                           +---+/
-		// <bottomleft>   <bottomright>
-
-		if c.xprime < c.x {
-			left = c.xprime
-			right = c.x
-		} else {
-			left = c.x
-			right = c.xprime
-		}
-		if c.yprime < c.y {
-			top = c.yprime
-			bottom = c.y
-		} else {
-			top = c.y
-			bottom = c.yprime
-		}
-
-		topleft = core.NewQPoint2(
-			int(math.Trunc(right))-padding,
-			int(math.Trunc(top)),
-		)
-		topright = core.NewQPoint2(
-			int(math.Trunc(right+width)),
-			int(math.Trunc(top)),
-		)
-		topbottom = core.NewQPoint2(
-			int(math.Trunc(right+width))+padding,
-			int(math.Trunc(top+height)),
-		)
-		bottomright = core.NewQPoint2(
-			int(math.Trunc(left+width))+padding,
-			int(math.Trunc(bottom+height)),
-		)
-		bottomleft = core.NewQPoint2(
-			int(math.Trunc(left)),
-			int(math.Trunc(bottom+height)),
-		)
-		bottomtop = core.NewQPoint2(
-			int(math.Trunc(left))-padding,
-			int(math.Trunc(bottom)),
-		)
-
-		poly = gui.NewQPolygon3(
-			[]*core.QPoint{
-				topleft, topright, topbottom,
-				bottomright, bottomleft, bottomtop,
-				topleft,
-			},
-		)
-	}
-
-	rgn := gui.NewQRegion4(
-		poly,
-		core.Qt__OddEvenFill,
-	)
-	c.Update4(rgn)
 }
 
 func (c *Cursor) animateMove() {
@@ -997,11 +740,8 @@ func (c *Cursor) animateMove() {
 			c.doAnimate = false
 		}
 
-		c.updateRegion()
-		if v == 1.0 {
-			c.getSnapshot()
-		}
-
+		c.paint()
+		c.move()
 	})
 	duration := editor.config.Cursor.Duration
 	a.SetDuration(int(duration))
@@ -1023,6 +763,10 @@ func (c *Cursor) animateMove() {
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InCubic))
 
 	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
+}
+
+func (c *Cursor) resize(width, height int) {
+	c.Resize2(width, height)
 }
 
 func (c *Cursor) raise() {

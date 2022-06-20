@@ -714,7 +714,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	}
 
 	if win == nil {
-		win = newWindow(s.ws.cursor)
+		win = newWindow()
 
 		win.s = s
 		s.storeWindow(gridid, win)
@@ -743,7 +743,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		// if gridid == 1 && s.name != "minimap" {
 		// 	s.ws.cursor.widget.SetParent(win)
 		// }
-		s.ws.cursor.Raise()
+		s.ws.cursor.raise()
 
 	}
 	winOldCols := win.cols
@@ -1562,6 +1562,8 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				extwin.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 				extwin.ConnectInputMethodEvent(s.ws.InputMethodEvent)
 				extwin.ConnectInputMethodQuery(s.ws.InputMethodQuery)
+				extwin.ConnectMousePressEvent(win.mouseEvent)
+				extwin.ConnectMouseReleaseEvent(win.mouseEvent)
 
 				extwin.InstallEventFilter(extwin)
 				extwin.ConnectEventFilter(func(watched *core.QObject, event *core.QEvent) bool {

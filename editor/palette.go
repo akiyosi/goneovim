@@ -298,6 +298,7 @@ func (p *Palette) cursorMove(x int) {
 	}
 
 	p.ws.cursor.isInPalette = true
+	p.ws.cursor.update()
 
 	p.redrawAllContentInWindows()
 }
