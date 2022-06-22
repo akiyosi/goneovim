@@ -647,6 +647,13 @@ func (s *Screen) gridResize(args []interface{}) {
 		// resize neovim's window
 		s.resizeWindow(gridid, cols, rows)
 
+		win, ok := s.getWindow(gridid)
+		if !ok {
+			continue
+		}
+		win.move(win.pos[0], win.pos[1])
+		win.show()
+
 		// If events related to the global grid are included
 		// Determine to resize the application window
 		if gridid == 1 && s.name != "minimap" {
