@@ -2769,10 +2769,10 @@ func (w *Window) raise() {
 	}
 
 	// handle cursor widget
-	w.setCursorParent()
+	w.setUIParent()
 }
 
-func (w *Window) setCursorParent() {
+func (w *Window) setUIParent() {
 	// Update cursor font
 	w.s.ws.cursor.updateFont(w, w.getFont())
 	defer func() {
@@ -2786,6 +2786,12 @@ func (w *Window) setCursorParent() {
 	if !w.isExternal {
 		editor.window.Raise()
 		w.s.ws.cursor.SetParent(w.s.widget)
+		if editor.config.Editor.ExtCmdline {
+			if w.s.ws.palette != nil {
+				w.s.ws.palette.setParent(w)
+				w.s.ws.palette.resize()
+			}
+		}
 
 		// if ok {
 		// 	if prevCursorWin.isExternal {
@@ -2798,6 +2804,12 @@ func (w *Window) setCursorParent() {
 	} else if w.isExternal {
 		w.extwin.Raise()
 		w.s.ws.cursor.SetParent(w.extwin)
+		if editor.config.Editor.ExtCmdline {
+			if w.s.ws.palette != nil {
+				w.s.ws.palette.setParent(w)
+				w.s.ws.palette.resize()
+			}
+		}
 
 		// if ok {
 		// 	if !prevCursorWin.isExternal {

@@ -164,6 +164,15 @@ func initPalette() *Palette {
 	return palette
 }
 
+func (p *Palette) setParent(win *Window) {
+	if win.isExternal {
+		p.widget.SetParent(win.extwin)
+	} else {
+		p.widget.SetParent(p.ws.widget)
+	}
+
+}
+
 func (p *Palette) setColor() {
 	if p.foreground.equals(editor.colors.widgetFg) && p.background.equals(editor.colors.widgetBg) && p.inactiveFg.equals(editor.colors.inactiveFg) {
 		return
@@ -196,7 +205,13 @@ func (p *Palette) setColor() {
 }
 
 func (p *Palette) resize() {
-	eWidth := editor.window.Width() - 10
+	parentWidget := p.widget.ParentWidget()
+	eWidth := 0
+	if parentWidget == nil {
+		eWidth = editor.window.Width()
+	} else {
+		eWidth = parentWidget.Width()
+	}
 	width := int(math.Trunc(float64(eWidth) * 0.7))
 	cursorBoundary := p.padding*4 + p.textLength() + p.patternPadding
 	if cursorBoundary > width {
@@ -249,8 +264,8 @@ func (p *Palette) show() {
 	p.hidden = false
 	p.widget.Raise()
 	p.widget.SetWindowOpacity(1.0)
-	p.widget.Show()
 	p.resize()
+	p.widget.Show()
 }
 
 func (p *Palette) hide() {

@@ -203,7 +203,7 @@ func (c *Cmdline) hide() {
 		return
 	}
 	if c.ws.cursor.isInPalette {
-		win.setCursorParent()
+		win.setUIParent()
 		c.ws.cursor.raise()
 		c.ws.cursor.x = c.ws.cursor.x + float64(c.ws.palette.widget.Pos().X())
 		c.ws.cursor.y = c.ws.cursor.y + float64(c.ws.palette.widget.Pos().Y())
