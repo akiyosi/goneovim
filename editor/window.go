@@ -2550,11 +2550,11 @@ func (w *Window) getCache() Cache {
 	return w.s.fgCache
 }
 
-func newWindow(cursor *Cursor) *Window {
+func newWindow() *Window {
 	// widget := widgets.NewQWidget(nil, 0)
 	win := NewWindow(nil, 0)
-	cursor.StackUnder(win)
-	cursor.raise()
+	// cursor.StackUnder(win)
+	// cursor.raise()
 
 	win.SetContentsMargins(0, 0, 0, 0)
 	win.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
@@ -2779,35 +2779,37 @@ func (w *Window) setCursorParent() {
 		w.s.ws.cursor.isInPalette = false
 	}()
 
-	// ws := editor.workspaces[editor.active]
-	prevCursorWin, ok := w.s.ws.screen.getWindow(w.s.ws.cursor.prevGridid)
+	// // ws := editor.workspaces[editor.active]
+	// prevCursorWin, ok := w.s.ws.screen.getWindow(w.s.ws.cursor.prevGridid)
 
 	// for handling external window
 	if !w.isExternal {
 		editor.window.Raise()
-		w.s.ws.cursor.SetParent(w.s.ws.widget)
+		w.s.ws.cursor.SetParent(w.s.widget)
 
-		if ok {
-			if prevCursorWin.isExternal {
-				w.s.ws.cursor.raise()
-			}
-		}
-		if w.s.ws.cursor.isInPalette {
-			w.s.ws.cursor.raise()
-		}
+		// if ok {
+		// 	if prevCursorWin.isExternal {
+		// 		w.s.ws.cursor.raise()
+		// 	}
+		// }
+		// if w.s.ws.cursor.isInPalette {
+		// 	w.s.ws.cursor.raise()
+		// }
 	} else if w.isExternal {
 		w.extwin.Raise()
 		w.s.ws.cursor.SetParent(w.extwin)
 
-		if ok {
-			if !prevCursorWin.isExternal {
-				w.s.ws.cursor.raise()
-			}
-		}
-		if w.s.ws.cursor.isInPalette {
-			w.s.ws.cursor.raise()
-		}
+		// if ok {
+		// 	if !prevCursorWin.isExternal {
+		// 		w.s.ws.cursor.raise()
+		// 	}
+		// }
+		// if w.s.ws.cursor.isInPalette {
+		// 	w.s.ws.cursor.raise()
+		// }
 	}
+
+	w.s.ws.cursor.raise()
 }
 
 func (w *Window) show() {

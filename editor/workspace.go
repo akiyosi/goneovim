@@ -151,9 +151,10 @@ func newWorkspace(path string) (*Workspace, error) {
 	w.screen.initInputMethodWidget()
 
 	// cursor
-	w.cursor = initCursorNew(w.widget)
+	w.cursor = initCursorNew()
+	w.cursor.SetParent(w.widget)
 	w.cursor.ws = w
-	w.cursor.setBypassScreenEvent()
+	// w.cursor.setBypassScreenEvent()
 
 	// If ExtFooBar is true, then we create a UI component
 	// tabline
@@ -1254,7 +1255,7 @@ func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 		w.screen.updateSize()
 	}
 	if w.cursor != nil {
-		w.cursor.Resize2(w.screen.width, w.screen.height)
+		w.cursor.resize(w.cursor.width, w.cursor.height)
 		w.cursor.update()
 	}
 	if w.palette != nil {
@@ -1753,7 +1754,12 @@ func (w *Workspace) updateWorkspaceColor() {
 	if w.message != nil {
 		w.message.setColor()
 	}
-	// TODO w.screen.setColor()
+
+	// w.screen.setColor()
+
+	if w.cursor != nil {
+		w.cursor.setColor()
+	}
 
 	if w.isDrawStatusline {
 		if w.statusline != nil {
