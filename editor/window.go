@@ -1426,6 +1426,9 @@ func (w *Window) scrollContentByCount(row, left, right, bot, count int) {
 	if len(w.content) <= bot {
 		return
 	}
+	if len(w.content[row]) <= right {
+		return
+	}
 
 	// copy(w.content[row], w.content[row+count])
 	// copy(w.contentMask[row], w.contentMask[row+count])
@@ -1440,6 +1443,12 @@ func (w *Window) scrollContentByCount(row, left, right, bot, count int) {
 // clearLinesWhereContentHasPassed is a function to clear the source area
 // after shifting the contents of w.content array by count.
 func (w *Window) clearLinesWhereContentHasPassed(row, left, right int) {
+	if len(w.content) <= row {
+		return
+	}
+	if len(w.content[row]) <= right {
+		return
+	}
 	for col := left; col <= right; col++ {
 		w.content[row][col] = nil
 		w.contentMask[row][col] = true
@@ -1835,36 +1844,14 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		// we will draw the characters on the screen one by one.
 		if cellBasedDrawing {
 
-			// if CachedDrawing is disabled
-			if !editor.config.Editor.CachedDrawing {
-				w.drawTextInPos(
-					p,
-					// core.NewQPointF3(
-					// 	float64(x)*wsfont.cellwidth,
-					// 	float64(y*wsfont.lineHeight+wsfont.shift+scrollPixels),
-					// ),
-					int(float64(x)*wsfont.cellwidth),
-					y*wsfont.lineHeight+wsfont.shift+scrollPixels,
-					line[x].char,
-					line[x].highlight,
-					true,
-				)
-
-				// if CachedDrawing is enabled
-			} else {
-				w.drawTextInPosWithCache(
-					p,
-					// core.NewQPointF3(
-					// 	float64(x)*wsfont.cellwidth,
-					// 	float64(y*wsfont.lineHeight+scrollPixels),
-					// ),
-					int(float64(x)*wsfont.cellwidth),
-					y*wsfont.lineHeight+scrollPixels,
-					line[x].char,
-					line[x].highlight,
-					false,
-				)
-			}
+			w.drawTextInPos(
+				p,
+				int(float64(x)*wsfont.cellwidth),
+				y*wsfont.lineHeight+scrollPixels,
+				line[x].char,
+				line[x].highlight,
+				false,
+			)
 
 		} else {
 			// Prepare to draw a group of identical highlight units.
@@ -1881,79 +1868,85 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	// This is the normal rendering process for goneovim,
 	// we draw a word snippet of the same highlight on the screen for each of the highlights.
 	if !cellBasedDrawing {
-
-		//  // var pointf *core.QPointF
-		//  var X, Y int
-		//  // if CachedDrawing is disabled
-		//  if !editor.config.Editor.CachedDrawing {
-		//  	// pointf = core.NewQPointF3(
-		//  	// 	pointX,
-		//  	// 	float64((y)*wsfont.lineHeight+wsfont.shift+scrollPixels),
-		//  	// )
-		//  	X = int(pointX)
-		//  	Y = int(float64((y)*wsfont.lineHeight+wsfont.shift+scrollPixels))
-		//  } else { // if CachedDrawing is enabled
-		//  	// pointf = core.NewQPointF3(
-		//  	// 	pointX,
-		//  	// 	float64(y*wsfont.lineHeight+scrollPixels),
-		//  	// )
-		//  	X = int(pointX)
-		//  	Y = int(float64(y*wsfont.lineHeight+scrollPixels))
-		//  }
-
 		for highlight, colorSlice := range chars {
 			var buffer bytes.Buffer
 			slice := colorSlice
 
+			isIndentationWhiteSpace := true
 			pos := col
-			isIndentationWhitespace := true
 			for x := col; x <= col+cols; x++ {
-				if len(slice) == 0 {
-					break
-				}
+
+				isDrawWord := false
 				index := slice[0]
 
-				if x < index {
-					// buffer.WriteString(" ")
-					if isIndentationWhitespace {
-						pos++
-					} else {
-						buffer.WriteString(" ")
+				if len(slice) != 0 {
+
+					// e.g. when the contents of the line is;
+					//    [ 'a', 'b', ' ', 'c', ' ', ' ', 'd', 'e', 'f' ]
+					//
+					// then, the slice is [ 1,2,4,7,8,9 ]
+					// the following process is
+					//  * If a word is separated by a single space, it is treated as a single word.
+					//  * If there are more than two continuous spaces, each word separated by a space
+					//    is treated as an independent word.
+					//
+					//  therefore, the above example will treet that;
+					//  "ab c" and "def"
+
+					if x != index {
+						if isIndentationWhiteSpace {
+							continue
+						} else {
+							if len(slice) > 1 {
+								if x+1 == index {
+									if buffer.Len() > 0 {
+										pos++
+										buffer.WriteString(" ")
+									}
+								} else {
+									isDrawWord = true
+								}
+							} else {
+								isDrawWord = true
+							}
+						}
 					}
-					continue
+
+					if x == index {
+						pos++
+						buffer.WriteString(line[x].char)
+						slice = slice[1:]
+						isIndentationWhiteSpace = false
+
+					}
 				}
 
-				if x == index {
-					buffer.WriteString(line[x].char)
-					slice = slice[1:]
-					isIndentationWhitespace = false
+				if isDrawWord || len(slice) == 0 {
+					if len(slice) == 0 {
+						x++
+					}
+
+					if buffer.Len() != 0 {
+						w.drawTextInPos(
+							p,
+							int(float64(x-pos)*wsfont.cellwidth),
+							y*wsfont.lineHeight+scrollPixels,
+							buffer.String(),
+							highlight,
+							true,
+						)
+
+						buffer.Reset()
+						isDrawWord = false
+						pos = 0
+					}
+
+					if len(slice) == 0 {
+						break
+					}
 				}
 			}
 
-			text := buffer.String()
-
-			// if CachedDrawing is disabled
-			if !editor.config.Editor.CachedDrawing {
-				w.drawTextInPos(
-					p,
-					// pointf,
-					int(float64(pos)*wsfont.cellwidth),
-					y*wsfont.lineHeight+wsfont.shift+scrollPixels,
-					text,
-					highlight,
-					true,
-				)
-			} else { // if CachedDrawing is enabled
-				w.drawTextInPosWithCache(
-					p,
-					// pointf,
-					int(float64(pos)*wsfont.cellwidth),
-					y*wsfont.lineHeight+scrollPixels,
-					text,
-					highlight,
-					true,
-				)
-			}
 		}
 	}
 
@@ -1968,37 +1961,65 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			if line[x] == nil || line[x].char == " " {
 				continue
 			}
+			w.drawTextInPos(
+				p,
+				int(float64(x)*wsfont.cellwidth),
+				y*wsfont.lineHeight+scrollPixels,
+				line[x].char,
+				line[x].highlight,
+				false,
+			)
 
-			// if CachedDrawing is disabled
-			if !editor.config.Editor.CachedDrawing {
-				w.drawTextInPos(
-					p,
-					// core.NewQPointF3(
-					// 	float64(x)*wsfont.cellwidth,
-					// 	float64(y*wsfont.lineHeight+wsfont.shift+scrollPixels),
-					// ),
-					int(float64(x)*wsfont.cellwidth),
-					y*wsfont.lineHeight+wsfont.shift+scrollPixels,
-					line[x].char,
-					line[x].highlight,
-					false,
-				)
-			} else { // if CachedDrawing is enabled
-				w.drawTextInPosWithCache(
-					p,
-					// core.NewQPointF3(
-					// 	float64(x)*wsfont.cellwidth,
-					// 	float64(y*wsfont.lineHeight+scrollPixels),
-					// ),
-					int(float64(x)*wsfont.cellwidth),
-					y*wsfont.lineHeight+scrollPixels,
-					line[x].char,
-					line[x].highlight,
-					false,
-				)
-			}
 		}
 	}
+}
+
+func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
+	wsfont := w.getFont()
+	// if CachedDrawing is disabled
+	if !editor.config.Editor.CachedDrawing {
+		w.drawTextInPosWithNoCache(
+			p,
+			x,
+			y+wsfont.shift,
+			text,
+			highlight,
+			isNormalWidth,
+		)
+	} else { // if CachedDrawing is enabled
+		w.drawTextInPosWithCache(
+			p,
+			x,
+			y,
+			text,
+			highlight,
+			isNormalWidth,
+		)
+	}
+}
+
+func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
+	if text == "" {
+		return
+	}
+
+	font := p.Font()
+	fg := highlight.fg()
+	p.SetPen2(fg.QColor())
+	wsfont := w.getFont()
+
+	if highlight.bold {
+		font.SetWeight(wsfont.fontNew.Weight() + 25)
+	} else {
+		font.SetWeight(wsfont.fontNew.Weight())
+	}
+	if highlight.italic {
+		font.SetItalic(true)
+	} else {
+		font.SetItalic(false)
+	}
+	// p.DrawText(point, text)
+	p.DrawText3(x, y, text)
 }
 
 func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
@@ -2267,30 +2288,6 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	editor.putLog("finished creating word cache:", text)
 
 	return image
-}
-
-func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
-	if text == "" {
-		return
-	}
-
-	font := p.Font()
-	fg := highlight.fg()
-	p.SetPen2(fg.QColor())
-	wsfont := w.getFont()
-
-	if highlight.bold {
-		font.SetWeight(wsfont.fontNew.Weight() + 25)
-	} else {
-		font.SetWeight(wsfont.fontNew.Weight())
-	}
-	if highlight.italic {
-		font.SetItalic(true)
-	} else {
-		font.SetItalic(false)
-	}
-	// p.DrawText(point, text)
-	p.DrawText3(x, y, text)
 }
 
 func (w *Window) drawForeground(p *gui.QPainter, y int, col int, cols int) {
