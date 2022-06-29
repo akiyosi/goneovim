@@ -137,6 +137,7 @@ type miniMapConfig struct {
 type scrollBarConfig struct {
 	Visible bool
 	Width   int
+	Color   string
 }
 
 type sideBarConfig struct {

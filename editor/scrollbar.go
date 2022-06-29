@@ -13,6 +13,7 @@ import (
 
 // ScrollBar is
 type ScrollBar struct {
+	fg        *RGBA
 	ws        *Workspace
 	widget    *widgets.QWidget
 	thumb     *widgets.QWidget
@@ -46,12 +47,16 @@ func newScrollBar() *ScrollBar {
 }
 
 func (s *ScrollBar) thumbEnter(e *core.QEvent) {
-	color := editor.config.SideBar.AccentColor
+	shift := -40
+	if s.ws.screenbg == "light" {
+		shift = 40
+	}
+	color := warpColor(s.fg, shift)
 	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", color))
 }
 
 func (s *ScrollBar) thumbLeave(e *core.QEvent) {
-	color := editor.colors.scrollBarFg.String()
+	color := s.fg
 	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", color))
 }
 
@@ -147,8 +152,11 @@ func (s *ScrollBar) scroll(v, h int) {
 }
 
 func (s *ScrollBar) setColor() {
-	fg := editor.colors.scrollBarFg.String()
-	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", fg))
+	s.fg = editor.colors.scrollBarFg
+	if editor.config.ScrollBar.Color != "" {
+		s.fg = hexToRGBA(editor.config.ScrollBar.Color)
+	}
+	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", s.fg.String()))
 	s.widget.SetStyleSheet(" * { background: rgba(0, 0, 0, 0);}")
 }
 
