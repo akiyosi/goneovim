@@ -408,7 +408,18 @@ All Options are follows:
         
         ## The input method editor will be automatically disabled when the mode is changed to normal mode.
         ## It may be useful for users who use the input method editor (e.g. East Asian users).
-        ## DisableImeInNormal = false
+        ## This option is depricated. Use `ModeEnablingIME`
+        # DisableImeInNormal = false
+
+        ## This option specifies a list of modes in which the IME is to be enabled, and goneovim will enable
+        ## the IME only in those modes.
+        ## It may be useful for users who use the input method editor (e.g. East Asian users).
+        ## e.g. 
+        ## ModeEnablingIME = ["insert", "cmdline_normal"]
+        ## The available mode strings:
+        ##   "normal", "insert", "replace", "visual", "visual_select",
+        ##    "cmdline_normal", "cmdline_insert", "cmdline_replace", etc.
+        # ModeEnablingIME = []
         
         ## Draw borders on the GUI side instead of the vertical border and status line that nvim draws.
         # DrawWindowSeparator = false
@@ -439,9 +450,9 @@ All Options are follows:
         ## This option works only if `ExtMessages` is enabled.
         # DesktopNotifications = false
         
-	// Controls whether mouse events in Neovim are ignored when
-	// an application window is clicked while the application window is inactive.
-	IgnoreFirstMouseClickWhenAppInactivated = false
+        ## Controls whether mouse events in Neovim are ignored when
+        ## an application window is clicked while the application window is inactive.
+        # IgnoreFirstMouseClickWhenAppInactivated = false
 
         # Display the effect when clicked
         # ClickEffect = false

@@ -1393,6 +1393,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.cursor.modeIdx = w.modeIdx
 			}
 			w.disableImeInNormal()
+			w.modeEnablingIME()
 			shouldUpdateCursor = true
 
 		// Not used in the current specification.
@@ -1679,6 +1680,23 @@ func (w *Workspace) disableImeInNormal() {
 		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	default:
+	}
+}
+
+func (w *Workspace) modeEnablingIME() {
+	if len(editor.config.Editor.ModeEnablingIME) == 0 {
+		return
+	}
+	doEnable := false
+	for _, mode := range editor.config.Editor.ModeEnablingIME {
+		if w.mode == mode {
+			doEnable = true
+		}
+	}
+	if doEnable {
+		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	} else {
 		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
 		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
 	}

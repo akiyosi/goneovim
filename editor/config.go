@@ -36,6 +36,7 @@ type editorConfig struct {
 	GinitVim                                string
 	WindowSeparatorTheme                    string
 	NvimInWsl                               string
+	ModeEnablingIME                         []string
 	IndentGuideIgnoreFtList                 []string
 	Transparent                             float64
 	DiffDeletePattern                       int
