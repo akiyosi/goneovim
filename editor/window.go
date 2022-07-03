@@ -101,6 +101,7 @@ type Window struct {
 	extwin                 *ExternalWin
 	background             *RGBA
 	s                      *Screen
+	anchorwin              *Window
 	cwd                    string
 	ft                     string
 	anchor                 string
@@ -1217,7 +1218,10 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 			if line[col].highlight.uiName == "Pmenu" ||
 				line[col].highlight.uiName == "PmenuSel" ||
 				line[col].highlight.uiName == "PmenuSbar" {
-				w.isPopupmenu = true
+				if !w.isPopupmenu {
+					w.isPopupmenu = true
+					w.move(w.pos[0], w.pos[1], w.anchorwin)
+				}
 			}
 
 			// Detect winblend
@@ -2957,7 +2961,6 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 }
 
 func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
-
 	baseFont := w.s.ws.screen.font
 
 	var winx, winy int
@@ -2981,7 +2984,7 @@ func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
 	if float64((winx+width)-screenWidth) >= baseFont.cellwidth {
 		winx -= winx + width - screenWidth
 	}
-	if (winy+height)-screenHeight >= baseFont.lineHeight {
+	if (winy+height)-screenHeight >= baseFont.lineHeight && !w.isPopupmenu {
 		winy -= winy + height - screenHeight
 	}
 
@@ -2989,7 +2992,7 @@ func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
 	if winx < 0 {
 		winx = 0
 	}
-	if winy < 0 {
+	if winy < 0 && !w.isPopupmenu {
 		winy = 0
 	}
 

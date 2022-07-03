@@ -1441,6 +1441,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		if !ok {
 			continue
 		}
+		win.anchorwin = anchorwin
 
 		// In multigrid ui, the completion float window on the message window appears to be misaligned.
 		// Therefore, a hack to workaround this problem is implemented on the GUI front-end side.
@@ -1473,13 +1474,16 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			anchorposy = 0
 		}
 
+		wincols := int(float64(win.cols) * win.getFont().cellwidth / anchorwin.getFont().cellwidth)
+		winrows := int(math.Ceil(float64(win.rows*win.getFont().lineHeight) / float64(anchorwin.getFont().lineHeight)))
+
 		var col, row int
 		switch win.anchor {
 		case "NW":
 			col = anchorCol
 			row = anchorRow
 		case "NE":
-			col = anchorCol - win.cols
+			col = anchorCol - wincols
 			row = anchorRow
 		case "SW":
 			col = anchorCol
@@ -1497,18 +1501,16 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 						contextLine = anchorwin.rows - s.cursor[0]
 					}
 					if anchorposy+s.cursor[0] >= win.rows+contextLine {
-						yy = anchorRow + win.rows
+						yy = anchorRow + winrows
 					} else {
 						yy = -anchorposy
 					}
-					// row = anchorposy + yy
 					row = yy
 				} else {
-					// row = anchorposy + anchorRow - win.rows
-					row = anchorRow - win.rows
+					row = anchorRow - winrows
 				}
 			} else {
-				row = anchorRow - win.rows
+				row = anchorRow - winrows
 			}
 
 		case "SE":
