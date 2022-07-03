@@ -21,6 +21,7 @@ type PopupMenu struct {
 	detailLabel     *widgets.QLabel
 	itemLayout      *widgets.QGridLayout
 	scrollBar       *widgets.QWidget
+	font            *Font
 	ws              *Workspace
 	completeMode    string
 	items           []*PopupItem
@@ -33,6 +34,9 @@ type PopupMenu struct {
 	total           int
 	gridid          int
 	hideItemIdx     [2]bool
+	row             int
+	col             int
+	itemNum         int
 }
 
 // PopupItem is
@@ -108,6 +112,7 @@ func initPopupmenuNew() *PopupMenu {
 		iconwidget.SetLayout(iconlayout)
 		kindIcon := svg.NewQSvgWidget(nil)
 		kindIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
+		kindIcon.SetContentsMargins(0, 0, 0, 0)
 		iconlayout.AddWidget(kindIcon, 0, 0)
 		iconwidget.SetContentsMargins(margin, margin, margin, margin)
 
@@ -226,8 +231,11 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.selected = selected
 	p.top = 0
 	p.gridid = gridid
+	p.row = row
+	p.col = col
 
-	x, y, lineHeight, isCursorBelowTheCenter := p.ws.getPointInWidget(col, row, gridid)
+	x, y, font, isCursorBelowTheCenter := p.ws.getPointInWidget(col, row, gridid)
+	p.font = font
 
 	// Detect vim complete mode
 	completeMode, err := p.detectVimCompleteMode()
@@ -238,7 +246,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	p.detailLabel.SetText("")
 
 	popupItems := p.items
-	itemHeight := (lineHeight) + (editor.config.Editor.Linespace + 4)
+	itemHeight := (font.lineHeight) + (editor.config.Editor.Linespace + 4)
 
 	// Calc the maximum completion items
 	//   where,
@@ -246,9 +254,9 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	//     `p.ws.screen.height` is the entire screen height
 	heightLeft := 0
 	if isCursorBelowTheCenter {
-		heightLeft = row * lineHeight
+		heightLeft = row * font.lineHeight
 	} else {
-		heightLeft = p.ws.screen.height - (row+1)*lineHeight
+		heightLeft = p.ws.screen.height - (row+1)*font.lineHeight
 	}
 	total := heightLeft / itemHeight
 	if total < p.total {
@@ -286,6 +294,7 @@ func (p *PopupMenu) showItems(args []interface{}) {
 
 		itemNum++
 	}
+	p.itemNum = itemNum
 
 	switch maxItemLen {
 	case 3:
@@ -328,9 +337,9 @@ func (p *PopupMenu) showItems(args []interface{}) {
 	// p.hide()
 	p.show()
 
-	p.setWidgetWidth()
+	p.setWidgetSize()
 
-	p.moveWidget(x, y, lineHeight, isCursorBelowTheCenter, itemNum)
+	p.moveWidget(x, y, font, isCursorBelowTheCenter)
 
 }
 
@@ -350,13 +359,14 @@ func (p *PopupMenu) show() {
 	p.widget.Show()
 }
 
-func (p *PopupMenu) setWidgetWidth() {
+func (p *PopupMenu) setWidgetSize() {
 	isMenuHidden := p.hideItemIdx[0]
 	isInfoHidden := p.hideItemIdx[1]
 	maxWordLabelLen := 0
 	menuStrLen := 0
 	infoStrLen := 0
 	margin := editor.config.Editor.Linespace/2 + 2
+	lineHeight := p.font.lineHeight
 
 	for _, item := range p.items {
 		if item.hidden {
@@ -419,26 +429,32 @@ func (p *PopupMenu) setWidgetWidth() {
 	}
 
 	baseWidth := editor.iconSize/5*2 + 5
-	p.widget.SetFixedWidth(
-		editor.iconSize + margin*2 + maxWordLabelLen + menuWidth + digitLabel + infoWidth + detailWidth + baseWidth,
+
+	width := editor.iconSize + margin*2 + maxWordLabelLen + menuWidth + digitLabel + infoWidth + detailWidth + baseWidth
+	height := p.itemNum*(lineHeight+editor.config.Editor.Linespace+2) + 2 + editor.iconSize*2/5
+	p.widget.SetFixedSize2(width, height)
+
+	p.ws.nvim.SetPumBounds(
+		float64(width),
+		float64(height),
+		float64(p.row),
+		float64(p.col),
 	)
 }
 
-func (p *PopupMenu) moveWidget(x int, y int, lineHeight int, isCursorBelowTheCenter bool, itemNum int) {
+func (p *PopupMenu) moveWidget(x int, y int, font *Font, isCursorBelowTheCenter bool) {
 	popupWidth := p.widget.Width()
+	popupHeight := p.widget.Height()
 
 	// x, y, lineHeight, isCursorBelowTheCenter := p.ws.getPointInWidget(col, row, gridid)
-	y += lineHeight
+	y += font.lineHeight
 
 	if x+popupWidth >= p.ws.screen.widget.Width() {
 		x = p.ws.screen.widget.Width() - popupWidth - 5
 	}
 
-	popupHeight := itemNum*(lineHeight+editor.config.Editor.Linespace+2) + 2 + editor.iconSize*2/5
-	p.widget.SetFixedHeight(popupHeight)
-
 	if isCursorBelowTheCenter {
-		y = y - (lineHeight + popupHeight)
+		y = y - (font.lineHeight + popupHeight)
 		p.widget.SetGraphicsEffect(util.DropShadow(-2, -6, 40, 200))
 	}
 
@@ -513,7 +529,7 @@ func (p *PopupMenu) scroll(n int) {
 	// p.hide()
 	// p.show()
 
-	p.setWidgetWidth()
+	p.setWidgetSize()
 }
 
 func (p *PopupItem) setDigit(num int, gridid int) {

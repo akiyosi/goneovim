@@ -2767,10 +2767,10 @@ func (w *Workspace) dropEvent(e *gui.QDropEvent) {
 	})
 }
 
-func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {
+func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, *Font, bool) {
 	win, ok := w.screen.getWindow(grid)
 	if !ok {
-		return 0, 0, w.font.lineHeight, false
+		return 0, 0, w.font, false
 	}
 	font := win.getFont()
 
@@ -2789,7 +2789,7 @@ func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, int, bool) {
 	x += int(float64(win.pos[0]) * font.cellwidth)
 	y += win.pos[1] * font.lineHeight
 
-	return x, y, font.lineHeight, isCursorBelowTheCenter
+	return x, y, font, isCursorBelowTheCenter
 }
 
 func (w *Workspace) toggleSmoothScroll() {
