@@ -63,6 +63,10 @@ func main() {
 			nofork = true
 		}
 	}
+	// If ssh option specified
+	if options.Ssh != "" {
+		nofork = true
+	}
 	// start editor
 	if nofork {
 		editor.InitEditor(options, args)
