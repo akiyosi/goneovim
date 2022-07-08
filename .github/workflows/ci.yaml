@@ -606,7 +606,7 @@ jobs:
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        mold -run $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}" build desktop
+        /usr/local/bin/mold -run $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/
         /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION_HASH }}" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
