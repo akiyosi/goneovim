@@ -310,14 +310,8 @@ CONFIGURATION                                             *goneovim-configuratio
 
 Goneovim’s config file is located at
 
-On MacOS or Linux:
 >
-        ~/.config/goneovim/settings.toml
-<
-
-On Windows:
->
-        ~/.goneovim/settings.toml
+        $XDG_CONFIG_HOME/goneovim/settings.toml
 <
 
 All Options are follows:
