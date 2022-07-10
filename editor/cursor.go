@@ -3,7 +3,6 @@ package editor
 import (
 	"math"
 	"runtime"
-	"sync"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
@@ -14,54 +13,51 @@ import (
 // Cursor is
 type Cursor struct {
 	widgets.QWidget
-	charCache                  *Cache
-	font                       *Font
-	bg                         *RGBA
-	fg                         *RGBA
-	snapshot                   *gui.QPixmap
-	fontwide                   *Font
-	ws                         *Workspace
-	timer                      *core.QTimer
-	cursorShape                string
-	desttext                   string
-	sourcetext                 string
-	mode                       string
-	delta                      float64
-	animationStartY            float64
-	xprime                     float64
-	yprime                     float64
-	animationStartX            float64
-	y                          float64
-	deltay                     float64
-	width                      int
-	height                     int
-	currAttrId                 int
-	deltax                     float64
-	gridid                     int
-	prevGridid                 int
-	bufferGridid               int
-	horizontalShift            int
-	modeIdx                    int
-	blinkWait                  int
-	modeInfoModeIdx            int
-	blinkOn                    int
-	blinkOff                   int
-	brend                      float64
-	_                          float64 `property:"animationProp"`
-	devicePixelRatio           float64
-	x                          float64
-	cellPercentage             int
-	paintMutex                 sync.RWMutex
-	isBusy                     bool
-	isInPalette                bool
-	isNeedUpdateModeInfo       bool
-	isTextDraw                 bool
-	isShut                     bool
-	avoidedToTakeFirstSnapshot bool
-	isStopScroll               bool
-	hasSmoothMove              bool
-	doAnimate                  bool
-	normalWidth                bool
+	charCache            *Cache
+	font                 *Font
+	bg                   *RGBA
+	fg                   *RGBA
+	fontwide             *Font
+	ws                   *Workspace
+	timer                *core.QTimer
+	cursorShape          string
+	desttext             string
+	sourcetext           string
+	mode                 string
+	delta                float64
+	animationStartY      float64
+	xprime               float64
+	yprime               float64
+	animationStartX      float64
+	y                    float64
+	deltay               float64
+	width                int
+	height               int
+	currAttrId           int
+	deltax               float64
+	gridid               int
+	prevGridid           int
+	bufferGridid         int
+	horizontalShift      int
+	modeIdx              int
+	blinkWait            int
+	modeInfoModeIdx      int
+	blinkOn              int
+	blinkOff             int
+	brend                float64
+	_                    float64 `property:"animationProp"`
+	devicePixelRatio     float64
+	x                    float64
+	cellPercentage       int
+	isBusy               bool
+	isInPalette          bool
+	isNeedUpdateModeInfo bool
+	isTextDraw           bool
+	isShut               bool
+	isStopScroll         bool
+	hasSmoothMove        bool
+	doAnimate            bool
+	normalWidth          bool
 }
 
 func initCursorNew() *Cursor {
@@ -73,7 +69,6 @@ func initCursorNew() *Cursor {
 	c.timer = core.NewQTimer(nil)
 	c.isNeedUpdateModeInfo = true
 	c.ConnectPaintEvent(c.paintEvent)
-	c.delta = 0.1
 	c.hasSmoothMove = editor.config.Cursor.SmoothMove
 	c.cellPercentage = 100
 	c.SetFocusPolicy(core.Qt__NoFocus)
@@ -110,13 +105,11 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 	}
 
 	// Paint source cell text
-	c.paintMutex.RLock()
 	X, Y := c.getDrawingPos(c.x, c.y, c.xprime, c.yprime, c.deltax, c.deltay)
 
 	if (c.deltax != 0 || c.deltay != 0) && c.delta < 1.0 {
 		c.drawForeground(p, X, Y, c.animationStartX, c.animationStartY, c.sourcetext)
 	}
-	c.paintMutex.RUnlock()
 
 	if c.desttext == "" {
 		p.DestroyQPainter()
@@ -144,12 +137,12 @@ func (c *Cursor) drawBackground(p *gui.QPainter) {
 	if color == nil {
 		color = c.ws.foreground
 	}
-	p.FillRect4(
-		core.NewQRectF4(
+	p.FillRect6(
+		core.NewQRect4(
 			0,
 			0,
-			float64(c.width),
-			float64(c.height),
+			c.width,
+			c.height,
 		),
 		color.brend(c.ws.background, c.brend).QColor(),
 	)
@@ -350,10 +343,6 @@ func (c *Cursor) updateFont(targetWin *Window, font *Font) {
 		c.font = font
 	} else {
 		c.font = win.font
-		c.paintMutex.Lock()
-		c.snapshot.DestroyQPixmap()
-		c.snapshot = nil
-		c.paintMutex.Unlock()
 	}
 }
 
@@ -561,14 +550,15 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 			c.xprime = x
 			c.yprime = y
 		}
+
+		c.animationStartX = c.xprime
+		c.animationStartY = c.yprime
+
 	} else {
 		c.xprime = c.x
 		c.yprime = c.y
 	}
-	if c.deltax == 0 && c.deltay == 0 {
-		c.animationStartX = c.x
-		c.animationStartY = c.y
-	}
+
 	c.x = x
 	c.y = y
 
@@ -680,35 +670,6 @@ func (c *Cursor) paint() {
 	c.Update()
 }
 
-func (c *Cursor) getSnapshot() {
-	if !editor.isKeyAutoRepeating && editor.config.Cursor.SmoothMove {
-		if !c.isStopScroll {
-			return
-		}
-		// Avoid the error "QObject::setParent: Cannot set parent, new parent is in a different thread"
-		if !c.ws.widget.IsVisible() && !c.avoidedToTakeFirstSnapshot {
-			c.avoidedToTakeFirstSnapshot = true
-			return
-		}
-		if c.deltax != 0 || c.deltay != 0 {
-			return
-		}
-
-		snapshot := c.Grab(
-			core.NewQRect4(
-				0,
-				0,
-				c.width,
-				c.height,
-			),
-		)
-		c.paintMutex.Lock()
-		c.snapshot.DestroyQPixmap()
-		c.snapshot = snapshot
-		c.paintMutex.Unlock()
-	}
-}
-
 func (c *Cursor) animateMove() {
 	if !c.doAnimate {
 		return
@@ -721,6 +682,11 @@ func (c *Cursor) animateMove() {
 	a := core.NewQPropertyAnimation2(c, core.NewQByteArray2("animationProp", len("animationProp")), c)
 	a.ConnectValueChanged(func(value *core.QVariant) {
 		if !c.doAnimate {
+			c.delta = 0
+			c.deltax = 0
+			c.deltay = 0
+			c.move()
+			c.paint()
 			return
 		}
 		ok := false
@@ -734,18 +700,18 @@ func (c *Cursor) animateMove() {
 		c.deltay = (c.y - c.yprime) * v
 
 		if v == 1.0 {
-			c.delta = 0.09
+			c.delta = 0
 			c.deltax = 0
 			c.deltay = 0
 			c.doAnimate = false
 		}
 
-		c.paint()
 		c.move()
+		c.paint()
 	})
 	duration := editor.config.Cursor.Duration
 	a.SetDuration(int(duration))
-	a.SetStartValue(core.NewQVariant10(float64(0.1)))
+	a.SetStartValue(core.NewQVariant10(float64(0.01)))
 	a.SetEndValue(core.NewQVariant10(1))
 	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCirc))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
