@@ -526,6 +526,11 @@ func (e *Editor) resizeMainWindow() {
 		return
 	}
 
+	if e.window.WindowState() == core.Qt__WindowFullScreen ||
+		e.window.WindowState() == core.Qt__WindowMaximized {
+		return
+	}
+
 	// quantization of window geometry with font metrics as the smallest unit of change.
 	geometry := editor.window.Geometry()
 	width := geometry.Width()
@@ -854,6 +859,10 @@ func (e *Editor) setWindowOptions() {
 func (e *Editor) showWindow() {
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
+	if e.config.Editor.HideTitlebar {
+		e.window.IsTitlebarHidden = true
+		e.window.TitleBar.Hide()
+	}
 
 	isRestoreGeometry, isRestoreState := e.restoreWindow()
 

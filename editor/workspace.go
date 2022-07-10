@@ -300,6 +300,12 @@ func (w *Workspace) vimEnterProcess() {
 		editor.resizeMainWindow()
 	}
 
+	// Explicitly perform font-metrics-based geometry application during the initial
+	// application display.
+	if len(editor.workspaces) == 1 && editor.config.Editor.WindowGeometryBasedOnFontmetrics {
+		editor.resizeMainWindow()
+	}
+
 	w.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
 		go w.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
 	})
@@ -1196,7 +1202,9 @@ func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 	marginHeight := e.window.BorderSize() * 4
 	titlebarHeight := 0
 	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
-		titlebarHeight = e.window.TitleBar.Height()
+		if !e.config.Editor.HideTitlebar {
+			titlebarHeight = e.window.TitleBar.Height()
+		}
 	}
 	height -= marginHeight + titlebarHeight
 
@@ -1275,6 +1283,11 @@ func (w *Workspace) updateApplicationWindowSize(cols, rows int) {
 	e := editor
 	font := w.font
 
+	if e.window.WindowState() == core.Qt__WindowFullScreen ||
+		e.window.WindowState() == core.Qt__WindowMaximized {
+		return
+	}
+
 	appWinWidth := int(font.cellwidth * float64(cols))
 	appWinHeight := int(float64(font.lineHeight) * float64(rows))
 
@@ -1290,7 +1303,9 @@ func (w *Workspace) updateApplicationWindowSize(cols, rows int) {
 	marginHeight := e.window.BorderSize() * 4
 	titlebarHeight := 0
 	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
-		titlebarHeight = e.window.TitleBar.Height()
+		if !e.config.Editor.HideTitlebar {
+			titlebarHeight = e.window.TitleBar.Height()
+		}
 	}
 	appWinHeight += marginHeight + titlebarHeight
 

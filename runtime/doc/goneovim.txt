@@ -324,6 +324,10 @@ All Options are follows:
         [Editor]
         ## Makes the application window frameless.
         # BorderlessWindow = false
+
+        ## Controls whether the title bar is displayed when the borderless 
+	## window setting is enabled.
+	# HideTitlebar = false
         
         ## Editor minimum window width (>= 400)
         # Width = 800
