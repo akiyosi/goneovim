@@ -1402,13 +1402,13 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			w.setOption(update)
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
+			w.modeEnablingIME(arg[0].(string))
 			w.mode = arg[0].(string)
 			w.modeIdx = util.ReflectToInt(arg[1])
 			if w.cursor.modeIdx != w.modeIdx {
 				w.cursor.modeIdx = w.modeIdx
 			}
 			w.disableImeInNormal()
-			w.modeEnablingIME()
 			shouldUpdateCursor = true
 
 		// Not used in the current specification.
@@ -1698,13 +1698,16 @@ func (w *Workspace) disableImeInNormal() {
 	}
 }
 
-func (w *Workspace) modeEnablingIME() {
+func (w *Workspace) modeEnablingIME(mode string) {
 	if len(editor.config.Editor.ModeEnablingIME) == 0 {
 		return
 	}
+	if w.mode == mode {
+		return
+	}
 	doEnable := false
-	for _, mode := range editor.config.Editor.ModeEnablingIME {
-		if w.mode == mode {
+	for _, m := range editor.config.Editor.ModeEnablingIME {
+		if mode == m {
 			doEnable = true
 		}
 	}
