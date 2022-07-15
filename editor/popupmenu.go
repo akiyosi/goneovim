@@ -434,9 +434,12 @@ func (p *PopupMenu) setWidgetSize() {
 	height := p.itemNum*(lineHeight+editor.config.Editor.Linespace+2) + 2 + editor.iconSize*2/5
 	p.widget.SetFixedSize2(width, height)
 
+	cols := float64(width) / p.ws.font.cellwidth
+	rows := float64(height) / float64(p.ws.font.lineHeight)
+
 	p.ws.nvim.SetPumBounds(
-		float64(width),
-		float64(height),
+		cols,
+		rows,
 		float64(p.row),
 		float64(p.col),
 	)
