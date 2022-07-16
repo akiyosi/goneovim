@@ -224,10 +224,19 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	rect := event.Rect()
-	col := int(float64(rect.Left()) / font.cellwidth)
-	row := int(float64(rect.Top()) / float64(font.lineHeight))
+
+	col := int(math.Trunc(float64(rect.Left()) / font.cellwidth))
+	row := int(math.Trunc(float64(rect.Top()) / float64(font.lineHeight)))
+
 	cols := int(math.Ceil(float64(rect.Width()) / font.cellwidth))
+	if rect.Width()%int(math.Trunc(font.cellwidth)) > 0 || rect.Left()%int(math.Trunc(font.cellwidth)) > 0 {
+		cols++
+	}
+
 	rows := int(math.Ceil(float64(rect.Height()) / float64(font.lineHeight)))
+	if rect.Height()%font.lineHeight > 0 || rect.Top()%font.lineHeight > 0 {
+		rows++
+	}
 
 	// Draw contents
 	for y := row; y < row+rows; y++ {
