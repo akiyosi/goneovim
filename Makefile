@@ -80,16 +80,16 @@ clean:
 	rm -fr cmd/goneovim/deploy/* ; \
 	rm -fr editor/*moc*
 
-build-docker-linux:
+build-linux:
 	@export GO111MODULE=off ; \
 	cd cmd/goneovim ; \
 	qtdeploy -docker build linux ; \
 	cp -pR ../../runtime $(DEPLOYMENT_LINUX)
 
-build-docker-windows:
+build-windows:
 	@export GO111MODULE=off ; \
 	cd cmd/goneovim ; \
-	qtdeploy -docker build akiyosi/qt:windows_64_shared_msvc_512 ; \
+	qtdeploy -docker build windows_64_static ; \
 	cp -pR ../../runtime $(DEPLOYMENT_WINDOWS)
 
 release:
