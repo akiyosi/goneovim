@@ -162,8 +162,9 @@ func (p *PopupMenu) updateFont(font *Font) {
 		popupItem.digitLabel.SetFont(font.fontNew)
 		popupItem.menuLabel.SetFont(font.fontNew)
 		popupItem.infoLabel.SetFont(font.fontNew)
-		popupItem.kindIcon.SetFixedSize2(font.lineHeight, font.lineHeight)
-		popupItem.kindwidget.SetFixedWidth(font.lineHeight + editor.config.Editor.Linespace*2)
+		popupItem.kindIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
+		margin := editor.config.Editor.Linespace/2 + 2
+		popupItem.kindwidget.SetFixedWidth(editor.iconSize + margin*2)
 	}
 }
 

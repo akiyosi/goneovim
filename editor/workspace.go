@@ -2303,6 +2303,8 @@ func (w *Workspace) guiFont(args string) {
 
 	w.updateSize()
 
+	editor.iconSize = int(float64(fontHeight) * 11 / 9)
+
 	if w.popup != nil {
 		w.popup.updateFont(font)
 	}
