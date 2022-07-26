@@ -2263,20 +2263,23 @@ func (w *Workspace) guiFont(args string) {
 	var fontStretch int
 
 	if args == "*" {
-		fDialog := widgets.NewQFontDialog(nil)
-		fDialog.SetOption(widgets.QFontDialog__MonospacedFonts, true)
-		fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
-		fDialog.ConnectFontSelected(func(font *gui.QFont) {
-			fontFamily = strings.Replace(font.Family(), " ", "_", -1)
-			fontHeight = font.PointSizeF()
-			editor.putLog(fmt.Sprintf("Request to change to the following font:: %s:h%f", fontFamily, fontHeight))
+		if w.font.ui == nil {
+			fDialog := widgets.NewQFontDialog(nil)
+			fDialog.SetOption(widgets.QFontDialog__MonospacedFonts, true)
+			fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
+			fDialog.ConnectFontSelected(func(font *gui.QFont) {
+				fontFamily = strings.Replace(font.Family(), " ", "_", -1)
+				fontHeight = font.PointSizeF()
+				editor.putLog(fmt.Sprintf("Request to change to the following font:: %s:h%f", fontFamily, fontHeight))
 
-			// Fix the problem that the value of echo &guifont is set to * after setting.
-			// w.guiFont(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
-			w.nvim.Command(fmt.Sprintf("set guifont=%s:h%f", fontFamily, fontHeight))
+				// Fix the problem that the value of echo &guifont is set to * after setting.
+				// w.guiFont(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
+				w.nvim.Command(fmt.Sprintf("set guifont=%s:h%f", fontFamily, fontHeight))
 
-		})
-		fDialog.Show()
+			})
+			w.font.ui = fDialog
+		}
+		w.font.ui.Show()
 		return
 	}
 

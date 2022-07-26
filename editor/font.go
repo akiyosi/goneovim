@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/widgets"
 )
 
 // Font is
@@ -22,6 +23,7 @@ type Font struct {
 	lineSpace   int
 	letterSpace float64
 	shift       int
+	ui          *widgets.QFontDialog
 }
 
 func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {

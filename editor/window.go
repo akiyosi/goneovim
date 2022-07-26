@@ -2794,7 +2794,16 @@ func (w *Window) setUIParent() {
 
 	// for handling external window
 	if !w.isExternal {
-		editor.window.Raise()
+
+		// Suppress window activation when font selection dialog is displayed
+		if w.s.ws.font != nil {
+			if w.s.ws.font.ui != nil {
+				if !w.s.ws.font.ui.IsVisible() {
+					editor.window.Raise()
+				}
+			}
+		}
+
 		w.s.ws.cursor.SetParent(w.s.widget)
 		if editor.config.Editor.ExtCmdline {
 			if w.s.ws.palette != nil {
