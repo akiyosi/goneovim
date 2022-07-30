@@ -107,7 +107,7 @@ jobs:
     - if: github.event_name == 'schedule'
       run: echo "ARCHIVE_NAME=goneovim-linux" >> $GITHUB_ENV
     - if: github.event_name == 'push'
-      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}linux" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-linux" >> $GITHUB_ENV
 
     - name: Archive
       run: |
