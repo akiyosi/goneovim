@@ -651,7 +651,7 @@ func (s *Screen) gridResize(args []interface{}) {
 		if !ok {
 			continue
 		}
-		win.move(win.pos[0], win.pos[1])
+		win.move(win.pos[0], win.pos[1], win.anchorwin)
 		win.show()
 
 		// If events related to the global grid are included
@@ -1305,6 +1305,8 @@ func (s *Screen) windowPosition(args []interface{}) {
 		cols := util.ReflectToInt(arg.([]interface{})[4])
 		rows := util.ReflectToInt(arg.([]interface{})[5])
 
+		// fmt.Println("win_pos::", "grid:", gridid, col, row)
+
 		if isSkipGlobalId(gridid) {
 			continue
 		}
@@ -1384,11 +1386,14 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
 		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
 		// focusable := (arg.([]interface{})[6]).(bool)
+
 		if len(arg.([]interface{})) >= 8 {
 			win.zindex.value = int(util.ReflectToInt(arg.([]interface{})[7]))
 			win.zindex.order = globalOrder
 			globalOrder++
 		}
+
+		// fmt.Println("win_float_pos::", "grid:", win.grid, "anchorgrid:", anchorGrid, win.anchor, anchorCol, anchorRow, win.zindex.value)
 
 		editor.putLog("float window generated:", "anchorgrid", anchorGrid, "anchor", win.anchor, "anchorCol", anchorCol, "anchorRow", anchorRow)
 
@@ -1410,6 +1415,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		if !ok {
 			continue
 		}
+
 		win.anchorwin = anchorwin
 
 		// In multigrid ui, the completion float window on the message window seems to be misaligned.
@@ -1424,14 +1430,14 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 				}
 				if cursorgridwin.isMsgGrid {
 					anchorwin = cursorgridwin
+					// No need to consider float window-on-float window because of message grid
 					anchorRow = cursorgridwin.pos[0]
 				}
 				pumInMsgWin = true
 			}
 		}
 
-		anchorposx := anchorwin.pos[0]
-		anchorposy := anchorwin.pos[1]
+		_, anchorposy := anchorwin.position()
 
 		anchorwin.propMutex.Lock()
 		anchorwinIsExternal := anchorwin.isExternal
@@ -1439,7 +1445,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		if anchorwinIsExternal {
 			win.SetParent(anchorwin)
-			anchorposx = 0
 			anchorposy = 0
 		}
 
@@ -1487,13 +1492,14 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			row = anchorRow - win.rows
 		}
 
-		win.pos[0] = anchorposx + col
-		win.pos[1] = anchorposy + row
+		win.pos[0] = col
+		win.pos[1] = row
 
 		win.move(col, row, anchorwin)
 		if shouldStackPerZIndex {
 			win.raise()
 		}
+
 		win.setShadow()
 		win.show()
 

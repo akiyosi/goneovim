@@ -90,7 +90,8 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 		x = int(float64(col) * font.cellwidth)
 		y = row * font.lineHeight
 
-		candX = int(float64(col+win.pos[0]) * font.cellwidth)
+		posx, posy := win.position()
+		candX = int(float64(col+posx) * font.cellwidth)
 		tablineMarginTop := 0
 		if ws.tabline != nil {
 			tablineMarginTop = ws.tabline.marginTop
@@ -103,7 +104,7 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 		if ws.tabline != nil {
 			tablineMarginBottom = ws.tabline.marginBottom
 		}
-		candY = (row+win.pos[1])*font.lineHeight + tablineMarginTop + tablineHeight + tablineMarginBottom
+		candY = (row+posy)*font.lineHeight + tablineMarginTop + tablineHeight + tablineMarginBottom
 	}
 	return x, y, candX, candY
 }

@@ -1229,6 +1229,7 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 				line[col].highlight.uiName == "PmenuSbar" {
 				if !w.isPopupmenu {
 					w.isPopupmenu = true
+					fmt.Println("anchorwin", w.anchorwin)
 					w.move(w.pos[0], w.pos[1], w.anchorwin)
 				}
 			}
@@ -2917,12 +2918,22 @@ func (w *Window) setShadow() {
 	w.SetGraphicsEffect(util.DropShadow(0, 25, 125, 110))
 }
 
+func (w *Window) position() (int, int) {
+	pos := w.Pos()
+	posx := int(float64(pos.X()) / w.s.font.cellwidth)
+	posy := int(float64(pos.Y()) / float64(w.s.font.lineHeight))
+
+	return posx, posy
+}
+
 func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 	font := w.s.font
 	var anchorwin *Window
 	if len(anchorwindow) > 0 {
 		anchorwin = anchorwindow[0]
-		font = anchorwin.getFont()
+		if anchorwin != nil {
+			font = anchorwin.getFont()
+		}
 	}
 
 	res := 0
@@ -2939,7 +2950,7 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 	// Adjustment of the float window position when the repositioning process
 	// is being applied to the anchor window when it is outside the application window.
 	var anchorposx, anchorposy int
-	if len(anchorwindow) > 0 {
+	if anchorwin != nil {
 		if anchorwin.grid != w.grid {
 			anchorposx = anchorwin.Pos().X()
 			anchorposy = anchorwin.Pos().Y()
