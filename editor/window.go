@@ -1229,7 +1229,6 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 				line[col].highlight.uiName == "PmenuSbar" {
 				if !w.isPopupmenu {
 					w.isPopupmenu = true
-					fmt.Println("anchorwin", w.anchorwin)
 					w.move(w.pos[0], w.pos[1], w.anchorwin)
 				}
 			}
