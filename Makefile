@@ -83,7 +83,7 @@ clean:
 build-linux:
 	@export GO111MODULE=off ; \
 	cd cmd/goneovim ; \
-	qtdeploy -docker build linux ; \
+	qtdeploy -docker build linux_static ; \
 	cp -pR ../../runtime $(DEPLOYMENT_LINUX)
 
 build-windows:

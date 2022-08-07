@@ -41,6 +41,7 @@ jobs:
       QT_DEBUG: false
       GO111MODULE: off
       GOPROXY: https://goproxy.io
+      QT_STATIC: true
     steps:
     - name: Linux prerequisites 
       run: |

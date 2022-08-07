@@ -1,7 +1,10 @@
 name: CI
+
 on: [push, pull_request]
+
 env:
   cache-version: v1
+
 jobs:
   test-and-build-linux:
     strategy:
@@ -19,6 +22,7 @@ jobs:
       QT_DEBUG: false
       GO111MODULE: off
       GOPROXY: https://goproxy.io
+      QT_STATIC: true
     steps:
     - name: Linux prerequisites 
       run: |
