@@ -13,6 +13,7 @@ on:
       - v[0-9]+.[0-9]+.[0-9]+
 
 jobs:
+
   check-new-commit:
     runs-on: ubuntu-20.04
     steps:
@@ -100,7 +101,7 @@ jobs:
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" build desktop
+        $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" -docker build linux_static
         cp -pR ../../runtime ./deploy/linux/
 
     - if: github.event_name == 'workflow_dispatch'
@@ -120,102 +121,6 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: goneovim-linux
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
-
-  archlinux:
-    needs: [check-new-commit]
-    strategy:
-      matrix:
-        go-version: [1.17.x]
-        platform: [ubuntu-latest]
-        qtversion: [5.15.1]
-    runs-on: ${{ matrix.platform }}
-    env:
-      GOPATH: ${{ github.workspace }}
-      QT_DIR: ${{ github.workspace }}/Qt
-      QT_VERSION: ${{ matrix.qtversion }}
-      QT_API: 5.13.0
-      QT_DEBUG: false
-      GO111MODULE: off
-      GOPROXY: https://goproxy.io
-    steps:
-    - name: Linux prerequisites
-      run: |
-        sudo apt update
-        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev zip
-
-    - name: Install Go
-      uses: actions/setup-go@v1
-      with:
-        go-version: ${{ matrix.go-version }}
-
-    - name: Install Qt for linux
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: ${{ matrix.qtversion }}
-        host: linux
-        target: desktop
-        dir: ${{ github.workspace }}
-        modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
-
-    - name: Get Qt binding for Go
-      run: |
-        go get -v github.com/therecipe/qt/cmd/...
-
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        path: ./src/github.com/${{ github.repository }}
-
-    - name: Retrieve version
-      id: version-linux
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
-        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
-
-    - name: test version
-      run: |
-        echo ${{ steps.version-linux.outputs.GONEOVIM_VERSION }}
-
-    - name: Free disk space
-      run: |
-        sudo swapoff -a
-        sudo rm -f /swapfile
-        sudo apt clean
-
-    - name: Generate Qt bindings
-      run: $(go env GOPATH)/bin/qtsetup -test=false
-
-    - name: Get dependencies
-      run: |
-        go get -v -t -d github.com/${{ github.repository }}/...
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtmoc
-
-    - name: Build for linux
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" -docker build linux_arch
-        cp -pR ../../runtime ./deploy/linux/
-
-    - if: github.event_name == 'workflow_dispatch'
-      run: echo "ARCHIVE_NAME=goneovim-archlinux" >> $GITHUB_ENV
-    - if: github.event_name == 'schedule'
-      run: echo "ARCHIVE_NAME=goneovim-archlinux" >> $GITHUB_ENV
-    - if: github.event_name == 'push'
-      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-archlinux" >> $GITHUB_ENV
-
-    - name: Archive
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux "$ARCHIVE_NAME"
-        tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
-
-    - name: Upload
-      uses: actions/upload-artifact@v1
-      with:
-        name: goneovim-archlinux
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
 
   windows:
@@ -423,7 +328,7 @@ jobs:
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
 
   publish:
-    needs: [linux, archlinux, windows, macos]
+    needs: [linux, windows, macos]
     runs-on: ubuntu-20.04
     permissions:
       contents: write
