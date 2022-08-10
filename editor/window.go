@@ -839,11 +839,13 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	// Detect current mode
 	mode := w.s.ws.mode
 	isTmode := w.s.ws.terminalMode
+	isCursorOnWin := w.isEventEmmitOnCursorGrid()
+
 	editor.putLog("detect neovim mode:", mode)
 	editor.putLog("detect neovim terminal mode:", fmt.Sprintf("%v", isTmode))
 	if isTmode {
 		w.s.ws.nvim.Input(`<C-\><C-n>`)
-	} else if mode != "normal" {
+	} else if mode != "normal" && isCursorOnWin {
 		w.s.ws.nvim.Input(w.s.ws.escKeyInInsert)
 	}
 
@@ -852,6 +854,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		v = pixels.Y()
 		h = pixels.X()
 	}
+
 	phase := event.Phase()
 	if w.lastScrollphase != phase && w.lastScrollphase != core.Qt__ScrollEnd {
 		w.doGetSnapshot = true
@@ -859,42 +862,47 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	w.lastScrollphase = phase
 	isStopScroll := (w.lastScrollphase == core.Qt__ScrollEnd)
 
-	// Smooth scroll with touchpad
-	if (v == 0 || h == 0) && isStopScroll {
-		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
-	} else if (v != 0 || h != 0) && phase != core.Qt__NoScrollPhase {
-		// If Scrolling has ended, reset the displacement of the line
-		vert, horiz = w.smoothUpdate(v, h, isStopScroll)
-	} else {
-		angles := event.AngleDelta()
-		vert = angles.Y()
-		horiz = angles.X()
-		if event.Inverted() {
-			vert = -1 * vert
-		}
-		// Scroll per 1 line
-		if math.Abs(float64(vert)) > 1 {
-			vert = vert / int(math.Abs(float64(vert)))
-		}
-		if math.Abs(float64(horiz)) > 1 {
-			horiz = horiz / int(math.Abs(float64(horiz)))
-		}
-	}
-
-	// Scroll acceleration
 	accel := 1
-	if math.Abs(float64(v)) > float64(font.lineHeight) {
-		accel = int(math.Abs(float64(v)) * 2.5 / float64(font.lineHeight))
-		if accel > 6 {
-			accel = 6
+	if isCursorOnWin {
+		// Smooth scroll with touchpad
+		if (v == 0 || h == 0) && isStopScroll {
+			vert, horiz = w.smoothUpdate(v, h, isStopScroll)
+		} else if (v != 0 || h != 0) && phase != core.Qt__NoScrollPhase {
+			// If Scrolling has ended, reset the displacement of the line
+			vert, horiz = w.smoothUpdate(v, h, isStopScroll)
+		} else {
+			angles := event.AngleDelta()
+			vert = angles.Y()
+			horiz = angles.X()
+			if event.Inverted() {
+				vert = -1 * vert
+			}
+			// Scroll per 1 line
+			if math.Abs(float64(vert)) > 1 {
+				vert = vert / int(math.Abs(float64(vert)))
+			}
+			if math.Abs(float64(horiz)) > 1 {
+				horiz = horiz / int(math.Abs(float64(horiz)))
+			}
 		}
-	}
-	if accel == 0 {
-		accel = 1
-	}
-	vert = vert * int(math.Sqrt(float64(accel)))
 
-	if vert == 0 && horiz == 0 {
+		// Scroll acceleration
+		if math.Abs(float64(v)) > float64(font.lineHeight) {
+			accel = int(math.Abs(float64(v)) * 2.5 / float64(font.lineHeight))
+			if accel > 6 {
+				accel = 6
+			}
+		}
+		if accel == 0 {
+			accel = 1
+		}
+		vert = vert * int(math.Sqrt(float64(accel)))
+	} else {
+		vert = pixels.Y()
+		horiz = pixels.X()
+	}
+
+	if vert == 0 && horiz == 0 && isCursorOnWin {
 		return
 	}
 
@@ -919,14 +927,11 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		}
 	}
 
-	// If the window at the mouse pointer is not the current window
-	w.focusGrid()
-
 	mod := editor.modPrefix(event.Modifiers())
 	row := int(float64(event.X()) / font.cellwidth)
 	col := int(float64(event.Y()) / float64(font.lineHeight))
 
-	if w.s.ws.isMappingScrollKey {
+	if w.s.ws.isMappingScrollKey || !isCursorOnWin {
 		editor.putLog("detect a mapping to <C-e>, <C-y> keys.")
 		if vert != 0 {
 			w.s.ws.nvim.InputMouse("wheel", action, mod, w.grid, row, col)
@@ -955,10 +960,14 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	if horiz != 0 {
-		w.s.ws.nvim.InputMouse("wheel", action, mod, w.grid, row, col)
+		go w.s.ws.nvim.InputMouse("wheel", action, mod, w.grid, row, col)
 	}
 
 	event.Accept()
+}
+
+func (w *Window) isEventEmmitOnCursorGrid() bool {
+	return w.grid == w.s.ws.cursor.gridid
 }
 
 func (w *Window) focusGrid() {
