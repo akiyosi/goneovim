@@ -372,6 +372,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create $TAG_NAME $PRERELEASE --title "$SUBJECT" --target $GITHUB_SHA /home/runner/work/goneovim/goneovim/goneovim-macos/* /home/runner/work/goneovim/goneovim/goneovim-linux/* /home/runner/work/goneovim/goneovim/goneovim-archlinux/* /home/runner/work/goneovim/goneovim/goneovim-windows/*
+          gh release create $TAG_NAME $PRERELEASE --title "$SUBJECT" --target $GITHUB_SHA /home/runner/work/goneovim/goneovim/goneovim-macos/* /home/runner/work/goneovim/goneovim/goneovim-linux/* /home/runner/work/goneovim/goneovim/goneovim-windows/*
 
 
