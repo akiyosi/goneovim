@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 env:
-  cache-version: v1
+  cache-version: v3
 
 jobs:
 
@@ -104,15 +104,15 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux Goneovim-latest-linux
-        tar -jcvf Goneovim-latest-linux.tar.bz2 Goneovim-latest-linux
+        mv linux goneovim-linux
+        tar -jcvf goneovim-linux.tar.bz2 goneovim-linux
 
     - name: Upload for linux
       if: ${{ matrix.qtversion == '5.14.1' }}
       uses: actions/upload-artifact@v1
       with:
-        name: Goneovim-latest-linux
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-linux.tar.bz2
+        name: goneovim-linux
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux.tar.bz2
 
 
 #################################################################
@@ -207,14 +207,14 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv darwin Goneovim-latest-macos
-        tar -jcvf Goneovim-latest-macos.tar.bz2 Goneovim-latest-macos
+        mv darwin goneovim-macos
+        tar -jcvf goneovim-macos.tar.bz2 goneovim-macos
 
     - name: Upload for macos
       uses: actions/upload-artifact@v1
       with:
-        name: Goneovim-latest-macos
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/Goneovim-latest-macos.tar.bz2
+        name: goneovim-macos
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-macos.tar.bz2
 
 
 #################################################################
@@ -354,14 +354,14 @@ jobs:
         pacman -Scc
         pacman -Sc
 
-    - name: Patch qt5
-      shell: msys2 {0}
-      run: | 
-        curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt5-patched-qtbug-71737/qt-5.15.5_patched-qtbug71737.zip
-        unzip qt-5.15.5_patched-qtbug71737.zip
-        cp -fpR qt5/* /mingw64/qt5-static/
-        rm -fr qt5
-        rm qt-5.15.5_patched-qtbug71737.zip
+    # - name: Patch qt5
+    #   shell: msys2 {0}
+    #   run: | 
+    #     curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt5-patched-qtbug-71737/qt-5.15.5_patched-qtbug71737.zip
+    #     unzip qt-5.15.5_patched-qtbug71737.zip
+    #     cp -fpR qt5/* /mingw64/qt5-static/
+    #     rm -fr qt5
+    #     rm qt-5.15.5_patched-qtbug71737.zip
 
     - name: Get Qt binding for Go
       run: |
