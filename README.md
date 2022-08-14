@@ -88,7 +88,6 @@ Mac users can install using homebrew:
 
 `brew install --cask goneovim`
 
-It is recommended that archlinux users use `Goneovim-v{version}-linux_archlinux.tar.bz2`.
 
 ## Usage
 
