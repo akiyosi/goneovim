@@ -219,8 +219,15 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	font := w.getFont()
 
 	// Set devicePixelRatio if it is not set
-	if w.devicePixelRatio == 0 {
-		w.devicePixelRatio = float64(p.PaintEngine().PaintDevice().DevicePixelRatio())
+	devicePixelRatio := float64(p.PaintEngine().PaintDevice().DevicePixelRatio())
+	if w.devicePixelRatio != devicePixelRatio {
+		if w.devicePixelRatio != 0 {
+			w.s.purgeTextCacheForWins()
+		}
+		editor.putLog(
+			fmt.Sprintf("screen device pixel ratio is %f", devicePixelRatio),
+		)
+		w.devicePixelRatio = devicePixelRatio
 	}
 
 	rect := event.Rect()
