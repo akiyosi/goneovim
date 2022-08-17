@@ -55,7 +55,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Install Qt for linux
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
         version: ${{ matrix.qtversion }}
         host: linux
@@ -151,7 +151,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Install Qt for linux
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
         version: ${{ matrix.qtversion }}
         host: linux
@@ -248,7 +248,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Install Qt for macOS
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
         version: ${{ matrix.qtversion }}
         host: mac
