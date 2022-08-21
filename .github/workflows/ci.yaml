@@ -483,6 +483,7 @@ jobs:
       QT_DIR: ${{ github.workspace }}\Qt
       QT_MSVC: true
       QT_DEBUG: false
+      QT_STATIC: true
       GO111MODULE: off
       #CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
