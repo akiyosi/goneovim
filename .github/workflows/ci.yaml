@@ -531,7 +531,7 @@ jobs:
       continue-on-error: true
       run: |
         dir ${{ github.workspace }}\Qt
-        dir ${{ github.workspace }}\Qt\5.14.1
+        dir ${{ github.workspace }}\Qt\5.14.1\msvc2017_64
 
     - name: Install Go
       continue-on-error: true
