@@ -498,7 +498,7 @@ jobs:
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtnetworkauth qtwebglplugin qtscript'
         arch: 'win64_msvc2017_64'
         install-deps: 'true'
-        dir: C:\Qt
+        dir: C:\
         # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
 
     - name: Check dir
