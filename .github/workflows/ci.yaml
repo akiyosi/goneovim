@@ -489,6 +489,24 @@ jobs:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
 
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ matrix.qtversion }}
+        host: windows
+        target: desktop
+        modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtnetworkauth qtwebglplugin qtscript'
+        arch: 'win64_msvc2017_64'
+        install-deps: 'true'
+        dir: C:\Qt
+        # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
+
+    - name: Check dir
+      continue-on-error: true
+      run: |
+        dir C:\Qt
+        dir C:\Qt\5.14.1\msvc2017_64
+
     - uses: actions/cache@v2
       id: cache-msvc2017-buildtools
       with:
@@ -514,24 +532,6 @@ jobs:
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin\Hostx64
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64
-
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: ${{ matrix.qtversion }}
-        host: windows
-        target: desktop
-        modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtnetworkauth qtwebglplugin qtscript'
-        arch: 'win64_msvc2017_64'
-        install-deps: 'true'
-        dir: C:\Qt
-        # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
-
-    - name: Check dir
-      continue-on-error: true
-      run: |
-        dir ${{ github.workspace }}\Qt
-        dir ${{ github.workspace }}\Qt\5.14.1\msvc2017_64
 
     - name: Replace qt5 
       run: | 
