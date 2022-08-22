@@ -535,11 +535,11 @@ jobs:
 
     - name: Replace qt5 
       run: | 
-        curl -sL --retry 10 --retry-delay 60 -O https://github.com/ashutosh108/qt-static-msvc/releases/download/build-2020-11-29/qt5.15-static-msvc2017-minimal.zip
-        7z x qt5.15-static-msvc2017-minimal.zip
+        curl -sL --retry 10 --retry-delay 60 -O https://github.com/qzhsjz/Qt5-MSVC-StaticLib/releases/download/5.15.0/Qt5.15.0_MSVC2019_AMD64_MT.7z
+        7z x Qt5.15.0_MSVC2019_AMD64_MT.7z
         dir .
         move ${{ github.workspace }}\Qt\5.14.1\msvc2017_64 ${{ github.workspace }}\Qt\5.14.1\msvc2017_64.mv
-        Copy-Item .\5.15-static-msvc -destination ${{ github.workspace }}\Qt\5.14.1\msvc2017_64 -recurse
+        Copy-Item .\msvc2019_64_static -destination ${{ github.workspace }}\Qt\5.14.1\msvc2017_64 -recurse
 
     - name: Install Go
       continue-on-error: true
