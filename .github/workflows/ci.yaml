@@ -539,7 +539,7 @@ jobs:
         cd C:\qt-static
         curl -sL --retry 10 --retry-delay 60 -O https://github.com/qzhsjz/Qt5-MSVC-StaticLib/releases/download/5.15.0/Qt5.15.0_MSVC2019_AMD64_MT.7z
         7z x Qt5.15.0_MSVC2019_AMD64_MT.7z
-        del /Q Qt5.15.0_MSVC2019_AMD64_MT.7z
+        del Qt5.15.0_MSVC2019_AMD64_MT.7z
         dir .
         rmdir ${{ github.workspace }}\Qt\5.14.1\msvc2017_64
         Copy-Item .\msvc2019_64_static -destination ${{ github.workspace }}\Qt\5.14.1\msvc2017_64 -recurse
