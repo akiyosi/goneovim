@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 env:
-  cache-version: v4
+  cache-version: v5
 
 jobs:
 
@@ -532,6 +532,15 @@ jobs:
       run: |
         dir ${{ github.workspace }}\Qt
         dir ${{ github.workspace }}\Qt\5.14.1\msvc2017_64
+
+    - name: Replace qt5 
+      shell: msys2 {0}
+      run: | 
+        curl -sL --retry 10 --retry-delay 60 -O https://github.com/ashutosh108/qt-static-msvc/releases/download/build-2020-11-29/qt5.15-static-msvc2017-minimal.zip
+        7z x qt5.15-static-msvc2017-minimal.zip
+        dir .
+        move ${{ github.workspace }}\Qt\5.14.1\msvc2017_64 ${{ github.workspace }}\Qt\5.14.1\msvc2017_64.mv
+        Copy-Item .\5.15-static-msvc -destination ${{ github.workspace }}\Qt\5.14.1\msvc2017_64 -recurse
 
     - name: Install Go
       continue-on-error: true
