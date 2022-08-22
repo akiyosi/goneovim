@@ -480,7 +480,7 @@ jobs:
       GOROOT_FINAL: ${{ github.workspace }}\go-boot
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
       QT_VERSION: ${{ matrix.qtversion }}
-      QT_DIR: ${{ github.workspace }}\Qt
+      QT_DIR: C:\Qt
       QT_MSVC: true
       QT_DEBUG: false
       QT_STATIC: true
@@ -524,7 +524,7 @@ jobs:
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtnetworkauth qtwebglplugin qtscript'
         arch: 'win64_msvc2017_64'
         install-deps: 'true'
-        dir: ${{ github.workspace }}
+        dir: C:\Qt
         # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
 
     - name: Check dir
@@ -540,8 +540,8 @@ jobs:
         curl -sL --retry 10 --retry-delay 60 -O https://github.com/qzhsjz/Qt5-MSVC-StaticLib/releases/download/5.15.0/Qt5.15.0_MSVC2019_AMD64_MT.7z
         7z x Qt5.15.0_MSVC2019_AMD64_MT.7z
         del Qt5.15.0_MSVC2019_AMD64_MT.7z
-        Remove-Item -Path ${{ github.workspace }}\Qt\5.14.1\msvc2017_64 -Force -Recurse
-        Copy-Item .\msvc2019_64_static -destination ${{ github.workspace }}\Qt\5.14.1\msvc2017_64 -recurse
+        Remove-Item -Path C:\Qt\5.14.1\msvc2017_64 -Force -Recurse
+        Copy-Item .\msvc2019_64_static -destination C:\Qt\5.14.1\msvc2017_64 -recurse
         Remove-Item -Path C:\qt-static\msvc2019_64_static -Force -Recurse
 
     - name: Install Go
