@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 env:
-  cache-version: v3
+  cache-version: v4
 
 jobs:
 
