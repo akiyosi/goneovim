@@ -541,7 +541,9 @@ jobs:
         7z x Qt5.15.0_MSVC2019_AMD64_MT.7z
         del Qt5.15.0_MSVC2019_AMD64_MT.7z
         dir .
-        rmdir ${{ github.workspace }}\Qt\5.14.1\msvc2017_64
+        cd ${{ github.workspace }}\Qt\5.14.1\
+        rmdir msvc2017_64
+        cd C:\qt-static
         Copy-Item .\msvc2019_64_static -destination ${{ github.workspace }}\Qt\5.14.1\msvc2017_64 -recurse
 
     - name: Install Go
