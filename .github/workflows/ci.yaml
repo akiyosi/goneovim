@@ -537,12 +537,12 @@ jobs:
       run: | 
         mkdir C:\qt-static
         cd C:\qt-static
-        curl -sL --retry 10 --retry-delay 60 -O https://github.com/qzhsjz/Qt5-MSVC-StaticLib/releases/download/5.15.0/Qt5.15.0_MSVC2019_AMD64_MT.7z
-        7z x Qt5.15.0_MSVC2019_AMD64_MT.7z
-        del Qt5.15.0_MSVC2019_AMD64_MT.7z
+        curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/suites/7959756882/artifacts/340154672
+        7z x qt5_static_binaries_win.zip
+        del qt5_static_binaries_win.zip
         Remove-Item -Path C:\Qt\5.14.1\msvc2017_64 -Force -Recurse
-        Copy-Item .\msvc2019_64_static -destination C:\Qt\5.14.1\msvc2017_64 -recurse
-        Remove-Item -Path C:\qt-static\msvc2019_64_static -Force -Recurse
+        Copy-Item .\Qt5_binaries -destination C:\Qt\5.14.1\msvc2017_64 -recurse
+        Remove-Item -Path C:\qt-static\Qt5_binaries -Force -Recurse
 
     - name: Install Go
       continue-on-error: true
