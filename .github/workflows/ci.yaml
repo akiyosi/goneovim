@@ -537,7 +537,7 @@ jobs:
       run: | 
         mkdir C:\qt-static
         cd C:\qt-static
-        curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/suites/7959756882/artifacts/340154672
+        curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/qt5_static_binaries_win.zip
         7z x qt5_static_binaries_win.zip
         del qt5_static_binaries_win.zip
         Remove-Item -Path C:\Qt\5.14.1\msvc2017_64 -Force -Recurse
