@@ -542,8 +542,8 @@ jobs:
         7z x qt5_static_binaries_win.zip
         del qt5_static_binaries_win.zip
         Remove-Item -Path C:\Qt\5.14.1\msvc2017_64 -Force -Recurse
-        Copy-Item .\Qt5_binaries -destination C:\Qt\5.14.1\msvc2017_64 -recurse
-        Remove-Item -Path C:\qt-static\Qt5_binaries -Force -Recurse
+        Copy-Item .\qt5-bin -destination C:\Qt\5.14.1\msvc2017_64 -recurse
+        Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
 
     - name: Install Go
       continue-on-error: true
