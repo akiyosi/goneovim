@@ -1627,6 +1627,7 @@ func (w *Workspace) flush(shouldUpdateCursor, shouldUpdateMinimap bool) {
 		}
 	}
 
+	shouldUpdateCursor = true
 	// update cursor
 	if shouldUpdateCursor {
 		w.cursor.update()
