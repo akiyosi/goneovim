@@ -485,7 +485,7 @@ jobs:
       QT_DEBUG: false
       QT_STATIC: true
       CGO_CXXFLAGS: "-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -permissive- -Zc:__cplusplus -Zc:externConstexpr -utf-8 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458"
-      CGO_CPPFLAGS: "-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -permissive- -Zc:__cplusplus -Zc:externConstexpr -utf-8 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458"
+      CGO_LDFLAGS: "-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -permissive- -Zc:__cplusplus -Zc:externConstexpr -utf-8 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458"
       GO111MODULE: off
       #CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
