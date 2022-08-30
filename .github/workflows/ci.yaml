@@ -484,7 +484,6 @@ jobs:
       QT_MSVC: true
       QT_DEBUG: false
       QT_STATIC: true
-      CGO_CXXFLAGS: "-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -permissive- -Zc:__cplusplus -Zc:externConstexpr -utf-8 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458"
       GO111MODULE: off
       #CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
@@ -665,7 +664,7 @@ jobs:
         QT_API: 5.13.0
       run: |
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-        ${{ github.workspace }}\bin\qtdeploy -ldflags "-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -permissive- -Zc:__cplusplus -Zc:externConstexpr -utf-8 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 -X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
+        ${{ github.workspace }}\bin\qtdeploy -ldflags "-Zc:__cplusplus -X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
         Copy-Item ..\..\runtime -destination .\deploy\windows\ -recurse
 
     - name: Upload for windows
