@@ -531,8 +531,8 @@ jobs:
       run: |
         ${{ github.workspace }}\go-root\bin\go.exe get -v -tags=no_env github.com/therecipe/qt/cmd/...
         echo ${WIN_SED_PATH}
-        ${WIN_SED_PATH} '9,14d' ${{ github.workspace }}\src\github.com\therecipe\qt\core\core.cpp
-        ${WIN_SED_PATH} '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
+        %WIN_SED_PATH% '9,14d' ${{ github.workspace }}\src\github.com\therecipe\qt\core\core.cpp
+        %WIN_SED_PATH% '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
 
     - uses: actions/cache@v2
       id: cache-msvc2017-buildtools
