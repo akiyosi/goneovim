@@ -527,7 +527,7 @@ jobs:
 
     - name: Get Qt binding for Go
       env: 
-        WIN_SED_PATH: 'C:\Program Files\Git\usr\bin\sed.exe'
+        WIN_SED_PATH: '"C:\Program Files\Git\usr\bin\sed.exe"'
       run: |
         ${{ github.workspace }}\go-root\bin\go.exe get -v -tags=no_env github.com/therecipe/qt/cmd/...
         echo ${WIN_SED_PATH}
