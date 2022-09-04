@@ -471,7 +471,7 @@ jobs:
     strategy:
       matrix:
         platform: [windows-latest]
-        qtversion: [5.15.2]
+        qtversion: [5.14.1]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -506,8 +506,8 @@ jobs:
       continue-on-error: true
       run: |
         dir C:\Qt
-        dir C:\Qt\5.15.2\
-        dir C:\Qt\5.15.2\msvc2017_64
+        dir C:\Qt\5.14.1\
+        dir C:\Qt\5.14.1\msvc2017_64
 
     # - name: Replace qt5 
     #   run: | 
