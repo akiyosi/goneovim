@@ -555,10 +555,10 @@ jobs:
         dir ${{ github.workspace }}\BuildTools\VC
         dir ${{ github.workspace }}\BuildTools\VC\Tools
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin\Hostx64
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.29.30133
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.29.30133\bin
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.29.30133\bin\Hostx64
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64
 
 
     - name: Checkout code
@@ -571,7 +571,7 @@ jobs:
     - name: Set PATH
       run: |
         $env:PATH = "${{ github.workspace }}\\go-root\\bin;$env:PATH"
-        $env:PATH = "${{ github.workspace }}\\BuildTools\\VC\\Tools\\MSVC\\14.16.27023\\bin\\Hostx64\\x64;$env:PATH"
+        $env:PATH = "${{ github.workspace }}\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\Hostx64\\x64;$env:PATH"
         echo "::set-env name=PATH::$env:PATH"
 
     - name: Enable experimental Go features Step.1
