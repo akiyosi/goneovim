@@ -506,7 +506,7 @@ jobs:
       run: |
         dir C:\Qt
         dir C:\Qt\5.15.2\
-        dir C:\Qt\5.15.2\msvc2017_64
+        dir C:\Qt\5.15.2\msvc2019_64
 
     # - name: Replace qt5 
     #   run: | 
