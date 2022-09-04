@@ -508,17 +508,17 @@ jobs:
         dir C:\Qt\5.15.2\
         dir C:\Qt\5.15.2\msvc2017_64
 
-    - name: Replace qt5 
-      run: | 
-        mkdir C:\qt-static
-        cd C:\qt-static
-        curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/qt5_static_binaries_win.zip
-        7z x qt5_static_binaries_win.zip
-        del qt5_static_binaries_win.zip
-        dir C:\Qt\5.15.2\
-        Remove-Item -Path C:\Qt\5.15.2\msvc2019_64 -Force -Recurse
-        Copy-Item .\qt5-bin -destination C:\Qt\5.15.2\msvc2019_64 -recurse
-        Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
+    # - name: Replace qt5 
+    #   run: | 
+    #     mkdir C:\qt-static
+    #     cd C:\qt-static
+    #     curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/qt5_static_binaries_win.zip
+    #     7z x qt5_static_binaries_win.zip
+    #     del qt5_static_binaries_win.zip
+    #     dir C:\Qt\5.15.2\
+    #     Remove-Item -Path C:\Qt\5.15.2\msvc2019_64 -Force -Recurse
+    #     Copy-Item .\qt5-bin -destination C:\Qt\5.15.2\msvc2019_64 -recurse
+    #     Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
 
     - name: Install Go
       continue-on-error: true
