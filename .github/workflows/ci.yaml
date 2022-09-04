@@ -484,7 +484,7 @@ jobs:
       QT_MSVC: true
       QT_DEBUG: false
       QT_STATIC: true
-      #QT_QMAKE_DIR: C:\Qt\5.15.2\msvc2019_64\bin\
+      #QT_QMAKE_DIR: C:\Qt\5.15.2\msvc2017_64\bin\
       GO111MODULE: off
       #CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
@@ -497,7 +497,7 @@ jobs:
         host: windows
         target: desktop
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtnetworkauth qtwebglplugin qtscript'
-        arch: 'win64_msvc2019_64'
+        arch: 'win64_msvc2017_64'
         install-deps: 'true'
         dir: C:\
         # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
@@ -507,7 +507,7 @@ jobs:
       run: |
         dir C:\Qt
         dir C:\Qt\5.15.2\
-        dir C:\Qt\5.15.2\msvc2019_64
+        dir C:\Qt\5.15.2\msvc2017_64
 
     # - name: Replace qt5 
     #   run: | 
@@ -517,8 +517,8 @@ jobs:
     #     7z x qt5_static_binaries_win.zip
     #     del qt5_static_binaries_win.zip
     #     dir C:\Qt\5.15.2\
-    #     Remove-Item -Path C:\Qt\5.15.2\msvc2019_64 -Force -Recurse
-    #     Copy-Item .\qt5-bin -destination C:\Qt\5.15.2\msvc2019_64 -recurse
+    #     Remove-Item -Path C:\Qt\5.15.2\msvc2017_64 -Force -Recurse
+    #     Copy-Item .\qt5-bin -destination C:\Qt\5.15.2\msvc2017_64 -recurse
     #     Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
 
     - name: Install Go
@@ -535,19 +535,21 @@ jobs:
         ${{ github.workspace }}\go-root\bin\go.exe get -v -tags=no_env github.com/therecipe/qt/cmd/...
 
     - uses: actions/cache@v2
-      id: cache-msvc2019-buildtools
+      id: cache-msvc2017-buildtools
       with:
         path: ${{ github.workspace }}\BuildTools
-        key: ${{ matrix.qtversion }}-msvc2019-buildtools-${{ env.cache-version }}
+        key: ${{ matrix.qtversion }}-msvc2017-buildtools-${{ env.cache-version }}
 
     - name: Intall MSVC 2019 Visual C++ Buildtools
-      if: ${{ steps.cache-msvc2019-buildtools.outputs.cache-hit != 'true' }}
+      if: ${{ steps.cache-msvc2017-buildtools.outputs.cache-hit != 'true' }}
       run : |
         curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/17/release/vs_buildtools.exe
         New-Item -Path BuildTools -ItemType Directory 
         .\vs_BuildTools.exe --quiet --wait --norestart --nocache --installPath ${{ github.workspace }}\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeOptional
         Start-Sleep -s 690
 
+    # vs2017 => 14.16.27023
+    # vs2019 => 14.29.30133
     - name: Check MSVC 2019 Visual C++ Buildtools installation
       run : |
         dir ${{ github.workspace }}\
@@ -555,10 +557,10 @@ jobs:
         dir ${{ github.workspace }}\BuildTools\VC
         dir ${{ github.workspace }}\BuildTools\VC\Tools
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.29.30133
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.29.30133\bin
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.29.30133\bin\Hostx64
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin\Hostx64
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64
 
 
     - name: Checkout code
@@ -571,7 +573,7 @@ jobs:
     - name: Set PATH
       run: |
         $env:PATH = "${{ github.workspace }}\\go-root\\bin;$env:PATH"
-        $env:PATH = "${{ github.workspace }}\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\Hostx64\\x64;$env:PATH"
+        $env:PATH = "${{ github.workspace }}\\BuildTools\\VC\\Tools\\MSVC\\14.16.27023\\bin\\Hostx64\\x64;$env:PATH"
         echo "::set-env name=PATH::$env:PATH"
 
     - name: Enable experimental Go features Step.1
