@@ -487,6 +487,8 @@ jobs:
       GOROOT_BOOTSTRAP: ${{ github.workspace }}\go-boot
       GOROOT_FINAL: ${{ github.workspace }}\go-boot
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
+      MSVCDIR: 14.16.27023
+      #MSVCDIR: 14.29.30133
       QT_VERSION: ${{ matrix.qtversion }}
       QT_DIR: C:\Qt
       QT_MSVC: true
@@ -513,7 +515,7 @@ jobs:
       continue-on-error: true
       run: |
         dir C:\Qt
-        dir C:\Qt\5.14.1\msvc2017_64
+        dir C:\Qt\${{ matrix.qtversion }}\msvc2017_64
 
     - uses: actions/cache@v2
       id: cache-msvc2017-buildtools
@@ -536,10 +538,10 @@ jobs:
         dir ${{ github.workspace }}\BuildTools\VC
         dir ${{ github.workspace }}\BuildTools\VC\Tools
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin\Hostx64
-        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin\Hostx64
+        dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin\Hostx64\x64
 
     # - name: Replace qt5 
     #   run: | 
@@ -548,8 +550,8 @@ jobs:
     #     curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/qt5_static_binaries_win.zip
     #     7z x qt5_static_binaries_win.zip
     #     del qt5_static_binaries_win.zip
-    #     Remove-Item -Path C:\Qt\5.14.1\msvc2017_64 -Force -Recurse
-    #     Copy-Item .\qt5-bin -destination C:\Qt\5.14.1\msvc2017_64 -recurse
+    #     Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\msvc2017_64 -Force -Recurse
+    #     Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\msvc2017_64 -recurse
     #     Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
 
     - name: Install Go
@@ -573,7 +575,7 @@ jobs:
     - name: Set PATH
       run: |
         $env:PATH = "${{ github.workspace }}\\go-root\\bin;$env:PATH"
-        $env:PATH = "${{ github.workspace }}\\BuildTools\\VC\\Tools\\MSVC\\14.16.27023\\bin\\Hostx64\\x64;$env:PATH"
+        $env:PATH = "${{ github.workspace }}\\BuildTools\\VC\\Tools\\MSVC\\${{ env.MSVCDIR }}\\bin\\Hostx64\\x64;$env:PATH"
         echo "::set-env name=PATH::$env:PATH"
 
     - name: Enable experimental Go features Step.1
