@@ -479,7 +479,8 @@ jobs:
     strategy:
       matrix:
         platform: [windows-latest]
-        qtversion: [5.15.2]
+        qtversion: [5.14.1]
+        #qtversion: [5.15.2]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -487,14 +488,14 @@ jobs:
       GOROOT_BOOTSTRAP: ${{ github.workspace }}\go-boot
       GOROOT_FINAL: ${{ github.workspace }}\go-boot
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
-      #MSVCDIR: 14.16.27023
-      MSVCDIR: 14.29.30133
+      MSVCDIR: 14.16.27023
+      #MSVCDIR: 14.29.30133
       QT_VERSION: ${{ matrix.qtversion }}
       QT_DIR: C:\Qt
       QT_MSVC: true
       QT_DEBUG: false
       QT_STATIC: true
-      QT_QMAKE_DIR: C:\Qt\${{ matrix.qtversion }}\msvc2019_64\bin\
+      #QT_QMAKE_DIR: C:\Qt\${{ matrix.qtversion }}\msvc2019_64\bin\
       GO111MODULE: off
       #CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
@@ -507,7 +508,8 @@ jobs:
         host: windows
         target: desktop
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtnetworkauth qtwebglplugin qtscript'
-        arch: 'win64_msvc2019_64'
+        arch: 'win64_msvc2017_64'
+        #arch: 'win64_msvc2019_64'
         install-deps: 'true'
         dir: C:\
         # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
@@ -516,18 +518,18 @@ jobs:
       continue-on-error: true
       run: |
         dir C:\Qt
-        dir C:\Qt\${{ matrix.qtversion }}\msvc2019_64
+        dir C:\Qt\${{ matrix.qtversion }}\msvc2017_64
 
     - uses: actions/cache@v2
-      id: cache-msvc2019-buildtools
+      id: cache-msvc2017-buildtools
       with:
         path: ${{ github.workspace }}\BuildTools
-        key: ${{ matrix.qtversion }}-msvc2019-buildtools-${{ env.cache-version }}
+        key: ${{ matrix.qtversion }}-msvc2017-buildtools-${{ env.cache-version }}
 
     - name: Intall MSVC 2017 Visual C++ Buildtools
-      if: ${{ steps.cache-msvc2019-buildtools.outputs.cache-hit != 'true' }}
+      if: ${{ steps.cache-msvc2017-buildtools.outputs.cache-hit != 'true' }}
       run : |
-        curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/17/release/vs_buildtools.exe
+        curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/15/release/vs_buildtools.exe
         New-Item -Path BuildTools -ItemType Directory 
         .\vs_BuildTools.exe --quiet --wait --norestart --nocache --installPath ${{ github.workspace }}\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeOptional
         Start-Sleep -s 690
