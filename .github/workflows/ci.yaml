@@ -494,6 +494,7 @@ jobs:
       QT_MSVC: true
       QT_DEBUG: false
       QT_STATIC: true
+      QT_QMAKE_DIR: C:\Qt\${{ matrix.qtversion }}\msvc2019_64\bin\
       GO111MODULE: off
       #CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
