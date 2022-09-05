@@ -506,7 +506,7 @@ jobs:
         host: windows
         target: desktop
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtnetworkauth qtwebglplugin qtscript'
-        arch: 'win64_msvc2017_64'
+        arch: 'win64_msvc2019_64'
         install-deps: 'true'
         dir: C:\
         # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
@@ -515,16 +515,16 @@ jobs:
       continue-on-error: true
       run: |
         dir C:\Qt
-        dir C:\Qt\${{ matrix.qtversion }}\msvc2017_64
+        dir C:\Qt\${{ matrix.qtversion }}\msvc2019_64
 
     - uses: actions/cache@v2
-      id: cache-msvc2017-buildtools
+      id: cache-msvc2019-buildtools
       with:
         path: ${{ github.workspace }}\BuildTools
-        key: ${{ matrix.qtversion }}-msvc2017-buildtools-${{ env.cache-version }}
+        key: ${{ matrix.qtversion }}-msvc2019-buildtools-${{ env.cache-version }}
 
     - name: Intall MSVC 2017 Visual C++ Buildtools
-      if: ${{ steps.cache-msvc2017-buildtools.outputs.cache-hit != 'true' }}
+      if: ${{ steps.cache-msvc2019-buildtools.outputs.cache-hit != 'true' }}
       run : |
         curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/15/release/vs_buildtools.exe
         New-Item -Path BuildTools -ItemType Directory 
@@ -543,16 +543,16 @@ jobs:
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin\Hostx64
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin\Hostx64\x64
 
-    # - name: Replace qt5 
-    #   run: | 
-    #     mkdir C:\qt-static
-    #     cd C:\qt-static
-    #     curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/qt5_static_binaries_win.zip
-    #     7z x qt5_static_binaries_win.zip
-    #     del qt5_static_binaries_win.zip
-    #     Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\msvc2017_64 -Force -Recurse
-    #     Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\msvc2017_64 -recurse
-    #     Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
+    - name: Replace qt5 
+      run: | 
+        mkdir C:\qt-static
+        cd C:\qt-static
+        curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/qt5_static_binaries_win.zip
+        7z x qt5_static_binaries_win.zip
+        del qt5_static_binaries_win.zip
+        Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\msvc2019_64 -Force -Recurse
+        Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\msvc2019_64 -recurse
+        Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
 
     - name: Install Go
       continue-on-error: true
