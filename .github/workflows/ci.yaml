@@ -518,6 +518,7 @@ jobs:
       continue-on-error: true
       run: |
         dir C:\Qt
+        dir C:\Qt\${{ matrix.qtversion }}
         dir C:\Qt\${{ matrix.qtversion }}\msvc2017_64
 
     - uses: actions/cache@v2
