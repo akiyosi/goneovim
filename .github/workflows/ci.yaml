@@ -479,8 +479,8 @@ jobs:
     strategy:
       matrix:
         platform: [windows-latest]
-        qtversion: [5.14.1]
-        #qtversion: [5.15.2]
+        #qtversion: [5.14.1]
+        qtversion: [5.15.2]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -488,12 +488,12 @@ jobs:
       GOROOT_BOOTSTRAP: ${{ github.workspace }}\go-boot
       GOROOT_FINAL: ${{ github.workspace }}\go-boot
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
-      MSVCDIR: 14.16.27023
-      #MSVCDIR: 14.29.30133
-      VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
-      #VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
-      QTARCH: msvc2017_64
-      #QTARCH: msvc2019_64
+      #MSVCDIR: 14.16.27023
+      MSVCDIR: 14.29.30133
+      #VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
+      VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
+      #QTARCH: msvc2017_64
+      QTARCH: msvc2019_64
       QT_VERSION: ${{ matrix.qtversion }}
       QT_DIR: C:\Qt
       QT_MSVC: true
