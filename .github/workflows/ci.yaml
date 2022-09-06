@@ -624,8 +624,16 @@ jobs:
       env:
         QT_API: 5.13.0
       if: ${{ steps.cache-qt-bindings-windows.outputs.cache-hit != 'true' }}
-      run: ${{ github.workspace }}\bin\qtsetup.exe -test=false
       shell: cmd
+      run: |
+        ${{ github.workspace }}\bin\qtsetup.exe prep windows
+        ${{ github.workspace }}\bin\qtsetup.exe check windows
+        ${{ github.workspace }}\bin\qtsetup.exe generate windows
+        sed -i '9,14d' ${{ github.workspace }}\src\github.com\therecipe\qt\core\core.cpp
+        sed -i '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
+        ${{ github.workspace }}\bin\qtsetup.exe install windows
+  
+  #     ${{ github.workspace }}\bin\qtsetup.exe -test=false
 
     - name: Retrieving dependencies
       continue-on-error: true
