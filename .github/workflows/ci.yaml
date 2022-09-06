@@ -637,6 +637,9 @@ jobs:
     - name: Generate Qt bindings
       env:
         QT_API: 5.13.0
+        Qt5_Dir: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\
+        QT_PLUGIN_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\plugin
+        QML2_IMPORT_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\qml
       #if: ${{ steps.cache-qt-bindings-windows.outputs.cache-hit != 'true' }}
       shell: cmd
       run: |
