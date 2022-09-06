@@ -593,7 +593,7 @@ jobs:
     - name: Set PATH
       run: |
         $env:PATH = "${{ github.workspace }}\\go-root\\bin;$env:PATH"
-        $env:PATH = "${{ github.workspace }}\\BuildTools\\VC\\Tools\\MSVC\\${{ env.MSVCDIR }}\\bin\\Hostx64\\x64;$env:PATH"
+        $env:PATH = "C:\\Qt\\${{ matrix.qtversion }}\\msvc2017_64\\bin;${{ github.workspace }}\\BuildTools\\VC\\Tools\\MSVC\\${{ env.MSVCDIR }}\\bin\\Hostx64\\x64;$env:PATH"
         echo "::set-env name=PATH::$env:PATH"
 
     - name: Enable experimental Go features Step.1
