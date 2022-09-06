@@ -489,8 +489,8 @@ jobs:
       GOROOT_FINAL: ${{ github.workspace }}\go-boot
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
       MSVCDIR: 14.16.27023
-      VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
-      #VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
+      #VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
+      VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
       #QTARCH: msvc2017_64
       QTARCH: msvc2019_64
       QT_VERSION: ${{ matrix.qtversion }}
