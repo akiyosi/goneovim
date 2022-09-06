@@ -488,10 +488,9 @@ jobs:
       GOROOT_BOOTSTRAP: ${{ github.workspace }}\go-boot
       GOROOT_FINAL: ${{ github.workspace }}\go-boot
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
-      #MSVCDIR: 14.16.27023
-      MSVCDIR: 14.29.30133
-      #VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
-      VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
+      MSVCDIR: 14.16.27023
+      VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
+      #VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
       #QTARCH: msvc2017_64
       QTARCH: msvc2019_64
       QT_VERSION: ${{ matrix.qtversion }}
@@ -499,7 +498,7 @@ jobs:
       QT_MSVC: true
       QT_DEBUG: false
       QT_STATIC: true
-      QT_QMAKE_DIR: C:\Qt\${{ matrix.qtversion }}\msvc2019_64\bin\
+      #QT_QMAKE_DIR: C:\Qt\${{ matrix.qtversion }}\msvc2019_64\bin\
       GO111MODULE: off
       #CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
@@ -537,7 +536,7 @@ jobs:
         curl -sL --retry 10 --retry-delay 60 -O ${{ env.VSBUILDTOOLS_URL }}
         New-Item -Path BuildTools -ItemType Directory 
         .\vs_BuildTools.exe --quiet --wait --norestart --nocache --installPath ${{ github.workspace }}\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeOptional
-        Start-Sleep -s 790
+        Start-Sleep -s 690
 
     - name: Check MSVC Visual C++ Buildtools installation
       run: |
@@ -550,6 +549,14 @@ jobs:
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin\Hostx64
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin\Hostx64\x64
+
+    - name: Arrange directory name 
+      run: | 
+        Remove-Item -Path ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }} -Force -Recurse
+        cd ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\
+        Move-Item -Path 14.29.30133 -Destination ${{ env.MSVCDIR }}
+        cd C:\Qt\${{ matrix.qtversion }}
+        Move-Item -Path ${{ env.QTARCH }} -Destination msvc2017_64
 
     # - name: Replace qt5 
     #   run: | 
