@@ -532,15 +532,15 @@ jobs:
     #     key: ${{ matrix.qtversion }}-msvc-buildtools-${{ env.cache-version }}
 
     - name: Intall MSVC Visual C++ Buildtools
-      if: ${{ steps.cache-msvc-buildtools.outputs.cache-hit != 'true' }}
-      run : |
-        curl -sL --retry 10 --retry-delay 60 -O ${{ env VSBUILDTOOLS_URL }}
+      #if: ${{ steps.cache-msvc-buildtools.outputs.cache-hit != 'true' }}
+      run: |
+        curl -sL --retry 10 --retry-delay 60 -O ${{ env.VSBUILDTOOLS_URL }}
         New-Item -Path BuildTools -ItemType Directory 
         .\vs_BuildTools.exe --quiet --wait --norestart --nocache --installPath ${{ github.workspace }}\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeOptional
         Start-Sleep -s 690
 
     - name: Check MSVC Visual C++ Buildtools installation
-      run : |
+      run: |
         dir ${{ github.workspace }}\
         dir ${{ github.workspace }}\BuildTools
         dir ${{ github.workspace }}\BuildTools\VC
@@ -627,7 +627,7 @@ jobs:
     - name: Generate Qt bindings
       env:
         QT_API: 5.13.0
-      if: ${{ steps.cache-qt-bindings-windows.outputs.cache-hit != 'true' }}
+      #if: ${{ steps.cache-qt-bindings-windows.outputs.cache-hit != 'true' }}
       shell: cmd
       run: |
         ${{ github.workspace }}\bin\qtsetup.exe prep windows
