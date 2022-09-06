@@ -561,16 +561,16 @@ jobs:
     #    cd C:\Qt\${{ matrix.qtversion }}
     #    Move-Item -Path ${{ env.QTARCH }} -Destination msvc2017_64
 
-    # - name: Replace qt5 
-    #   run: | 
-    #     mkdir C:\qt-static
-    #     cd C:\qt-static
-    #     curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/qt5_static_binaries_win.zip
-    #     7z x qt5_static_binaries_win.zip
-    #     del qt5_static_binaries_win.zip
-    #     Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -Force -Recurse
-    #     Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -recurse
-    #     Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
+    - name: Replace qt5 
+      run: | 
+        mkdir C:\qt-static
+        cd C:\qt-static
+        curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/qt5_static_binaries_win.zip
+        7z x qt5_static_binaries_win.zip
+        del qt5_static_binaries_win.zip
+        Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -Force -Recurse
+        Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -recurse
+        Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
 
     - name: Install Go
       continue-on-error: true
