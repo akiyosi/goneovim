@@ -479,8 +479,8 @@ jobs:
     strategy:
       matrix:
         platform: [windows-latest]
-        #qtversion: [5.14.1]
-        qtversion: [5.15.2]
+        qtversion: [5.14.1]
+        #qtversion: [5.15.2]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -489,18 +489,18 @@ jobs:
       GOROOT_FINAL: ${{ github.workspace }}\go-boot
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
       MSVCDIR: 14.16.27023
-      #VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
-      VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
-      #QTARCH: msvc2017_64
-      QTARCH: msvc2019_64
+      VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
+      #VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
+      QTARCH: msvc2017_64
+      #QTARCH: msvc2019_64
       QT_VERSION: ${{ matrix.qtversion }}
       QT_DIR: C:\Qt
       QT_MSVC: true
       QT_DEBUG: false
       QT_STATIC: true
-      Qt5_Dir: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\
-      QT_PLUGIN_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\plugin
-      QML2_IMPORT_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\qml
+      #Qt5_Dir: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\
+      #QT_PLUGIN_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\plugin
+      #QML2_IMPORT_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\qml
       #QT_QMAKE_DIR: C:\Qt\${{ matrix.qtversion }}\msvc2019_64\bin\
       GO111MODULE: off
       #CGO_ENABLED: 1
@@ -539,7 +539,7 @@ jobs:
         curl -sL --retry 10 --retry-delay 60 -O ${{ env.VSBUILDTOOLS_URL }}
         New-Item -Path BuildTools -ItemType Directory 
         .\vs_BuildTools.exe --quiet --wait --norestart --nocache --installPath ${{ github.workspace }}\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeOptional
-        Start-Sleep -s 690
+        Start-Sleep -s 660
 
     - name: Check MSVC Visual C++ Buildtools installation
       run: |
@@ -553,13 +553,13 @@ jobs:
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin\Hostx64
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin\Hostx64\x64
 
-    - name: Arrange directory name 
-      run: | 
-        Remove-Item -Path ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }} -Force -Recurse
-        cd ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\
-        Move-Item -Path 14.29.30133 -Destination ${{ env.MSVCDIR }}
-        cd C:\Qt\${{ matrix.qtversion }}
-        Move-Item -Path ${{ env.QTARCH }} -Destination msvc2017_64
+    #- name: Arrange directory name 
+    #  run: | 
+    #    Remove-Item -Path ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }} -Force -Recurse
+    #    cd ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\
+    #    Move-Item -Path 14.29.30133 -Destination ${{ env.MSVCDIR }}
+    #    cd C:\Qt\${{ matrix.qtversion }}
+    #    Move-Item -Path ${{ env.QTARCH }} -Destination msvc2017_64
 
     # - name: Replace qt5 
     #   run: | 
@@ -637,9 +637,6 @@ jobs:
     - name: Generate Qt bindings
       env:
         QT_API: 5.13.0
-        Qt5_Dir: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\
-        QT_PLUGIN_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\plugin
-        QML2_IMPORT_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\qml
       #if: ${{ steps.cache-qt-bindings-windows.outputs.cache-hit != 'true' }}
       shell: cmd
       run: |
