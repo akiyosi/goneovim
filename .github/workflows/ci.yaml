@@ -490,6 +490,10 @@ jobs:
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
       MSVCDIR: 14.16.27023
       #MSVCDIR: 14.29.30133
+      VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
+      #VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
+      QTARCH: msvc2017_64
+      #QTARCH: msvc2019_64
       QT_VERSION: ${{ matrix.qtversion }}
       QT_DIR: C:\Qt
       QT_MSVC: true
@@ -508,7 +512,7 @@ jobs:
         host: windows
         target: desktop
         modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtnetworkauth qtwebglplugin qtscript'
-        arch: 'win64_msvc2017_64'
+        arch: 'win64_${{ env.QTARCH }}'
         #arch: 'win64_msvc2019_64'
         install-deps: 'true'
         dir: C:\
@@ -519,23 +523,23 @@ jobs:
       run: |
         dir C:\Qt
         dir C:\Qt\${{ matrix.qtversion }}
-        dir C:\Qt\${{ matrix.qtversion }}\msvc2017_64
+        dir C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }}
 
-    - uses: actions/cache@v2
-      id: cache-msvc2017-buildtools
-      with:
-        path: ${{ github.workspace }}\BuildTools
-        key: ${{ matrix.qtversion }}-msvc2017-buildtools-${{ env.cache-version }}
+    # - uses: actions/cache@v2
+    #   id: cache-msvc-buildtools
+    #   with:
+    #     path: ${{ github.workspace }}\BuildTools
+    #     key: ${{ matrix.qtversion }}-msvc-buildtools-${{ env.cache-version }}
 
-    - name: Intall MSVC 2017 Visual C++ Buildtools
-      if: ${{ steps.cache-msvc2017-buildtools.outputs.cache-hit != 'true' }}
+    - name: Intall MSVC Visual C++ Buildtools
+      if: ${{ steps.cache-msvc-buildtools.outputs.cache-hit != 'true' }}
       run : |
-        curl -sL --retry 10 --retry-delay 60 -O https://aka.ms/vs/15/release/vs_buildtools.exe
+        curl -sL --retry 10 --retry-delay 60 -O ${{ env VSBUILDTOOLS_URL }}
         New-Item -Path BuildTools -ItemType Directory 
         .\vs_BuildTools.exe --quiet --wait --norestart --nocache --installPath ${{ github.workspace }}\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeOptional
         Start-Sleep -s 690
 
-    - name: Check MSVC 2017 Visual C++ Buildtools installation
+    - name: Check MSVC Visual C++ Buildtools installation
       run : |
         dir ${{ github.workspace }}\
         dir ${{ github.workspace }}\BuildTools
@@ -554,8 +558,8 @@ jobs:
     #     curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/qt5_static_binaries_win.zip
     #     7z x qt5_static_binaries_win.zip
     #     del qt5_static_binaries_win.zip
-    #     Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\msvc2019_64 -Force -Recurse
-    #     Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\msvc2019_64 -recurse
+    #     Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -Force -Recurse
+    #     Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -recurse
     #     Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
 
     - name: Install Go
@@ -612,13 +616,13 @@ jobs:
         cd ${{ github.workspace }}\go-root\src
         .\make.bat
 
-    - uses: actions/cache@v2
-      id: cache-qt-bindings-windows
-      with:
-        path: |
-          ${{ github.workspace }}\src\github.com\therecipe\qt\*
-          !${{ github.workspace }}\src\github.com\therecipe\qt\.git
-        key: ${{ matrix.qtversion }}-qtbindings-windows-${{ env.cache-version }}
+    # - uses: actions/cache@v2
+    #   id: cache-qt-bindings-windows
+    #   with:
+    #     path: |
+    #       ${{ github.workspace }}\src\github.com\therecipe\qt\*
+    #       !${{ github.workspace }}\src\github.com\therecipe\qt\.git
+    #     key: ${{ matrix.qtversion }}-qtbindings-windows-${{ env.cache-version }}
 
     - name: Generate Qt bindings
       env:
@@ -629,10 +633,10 @@ jobs:
         ${{ github.workspace }}\bin\qtsetup.exe prep windows
         ${{ github.workspace }}\bin\qtsetup.exe check windows
         ${{ github.workspace }}\bin\qtsetup.exe generate windows
+        sed -i '9,14d' ${{ github.workspace }}\src\github.com\therecipe\qt\core\core.cpp
+        sed -i '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
         ${{ github.workspace }}\bin\qtsetup.exe install windows
   
-  #     sed -i '9,14d' ${{ github.workspace }}\src\github.com\therecipe\qt\core\core.cpp
-  #     sed -i '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
   #     ${{ github.workspace }}\bin\qtsetup.exe -test=false
 
     - name: Retrieving dependencies
