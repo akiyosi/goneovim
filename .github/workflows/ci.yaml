@@ -488,6 +488,7 @@ jobs:
       GOROOT_BOOTSTRAP: ${{ github.workspace }}\go-boot
       GOROOT_FINAL: ${{ github.workspace }}\go-boot
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
+      INCLUDE: C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }}\include
       MSVCDIR: 14.16.27023
       VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
       #VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
@@ -571,6 +572,7 @@ jobs:
         Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -Force -Recurse
         Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -recurse
         Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
+        dir C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }}\include
 
     - name: Install Go
       continue-on-error: true
