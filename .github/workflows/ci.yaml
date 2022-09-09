@@ -653,68 +653,74 @@ jobs:
   
   #     ${{ github.workspace }}\bin\qtsetup.exe -test=false
 
-    - name: "[DEBUG] Check dir"
-      run: |
-        dir ${{ github.workspace }}\src\github.com\therecipe\qt\core\
-
-    - name: Retrieving dependencies
-      continue-on-error: true
-      run: |
-        go get -v -d github.com/${{ github.repository }}/...
-        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-        ${{ github.workspace }}\bin\qtmoc.exe
-
-    # - name: Convert to compatible sources on Qt5.12
-    #   if: ${{ matrix.qtversion == '5.12.6' }}
-    #   run: |
-    #     cd ${{ github.workspace }}\src\github.com\${{ github.repository }}
-    #     $data=Get-Content  .\editor\workspace.go | % { $_ -replace "NewQVariant31", "NewQVariant33" }
-    #     $data | Out-File   .\editor\workspace.go -Encoding UTF8
-    #     $data=Get-Content  .\editor\popupmenu.go | % { $_ -replace "AddWidget2", "AddWidget" }
-    #     $data | Out-File   .\editor\popupmenu.go -Encoding UTF8
-    #     $data=Get-Content  .\editor\message.go | % { $_ -replace "AddWidget2", "AddWidget" }
-    #     $data | Out-File   .\editor\message.go -Encoding UTF8
-    #     $data=Get-Content  .\editor\window.go | % { $_ -replace "DrawText6", "DrawText5" }
-    #     $data | Out-File   .\editor\window.go -Encoding UTF8
-    #     $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
-    #     $data | Out-File   .\editor\screen.go -Encoding UTF8
-    #     $ch1="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-    #     $rep1="), int(core.Qt__AlignVCenter), text, nil,"
-    #     $data=Get-Content  .\editor\window.go | % { $_ -replace [regex]::Escape($ch1), $rep1 }
-    #     $data | Out-File   .\editor\window.go -Encoding UTF8
-    #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace "DrawText6", "DrawText5" }
-    #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
-    #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace "NewQVariant10", "NewQVariant12" }
-    #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
-    #     $ch2="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-    #     $rep2="), int(core.Qt__AlignVCenter), text, nil,"
-    #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace [regex]::Escape($ch2), $rep2 }
-    #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
-    #     $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
-    #     $data | Out-File   .\util\utils.go -Encoding UTF8
-
-    - name: Test
-      continue-on-error: true
-      run: go test github.com\akiyosi\goneovim\editor
-
-    - name: Retrieve version
-      id: version-windows
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
-        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
-
-    - name: Build
-      env:
-        QT_API: 5.13.0
-      run: |
-        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-        ${{ github.workspace }}\bin\qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
-
-    - name: Upload for windows
+    - name: "[Debug] Upload Moc file"
       uses: actions/upload-artifact@v1
       with:
-        name: goneovim-windows-msvc
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
+        name: core-moc
+        path: ${{ github.workspace }}\src\github.com\therecipe\qt\core
+
+    #      - name: "[DEBUG] Check dir"
+    #        run: |
+    #          dir ${{ github.workspace }}\src\github.com\therecipe\qt\core\
+
+    #      - name: Retrieving dependencies
+    #        continue-on-error: true
+    #        run: |
+    #          go get -v -d github.com/${{ github.repository }}/...
+    #          cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
+    #          ${{ github.workspace }}\bin\qtmoc.exe
+
+    #      # - name: Convert to compatible sources on Qt5.12
+    #      #   if: ${{ matrix.qtversion == '5.12.6' }}
+    #      #   run: |
+    #      #     cd ${{ github.workspace }}\src\github.com\${{ github.repository }}
+    #      #     $data=Get-Content  .\editor\workspace.go | % { $_ -replace "NewQVariant31", "NewQVariant33" }
+    #      #     $data | Out-File   .\editor\workspace.go -Encoding UTF8
+    #      #     $data=Get-Content  .\editor\popupmenu.go | % { $_ -replace "AddWidget2", "AddWidget" }
+    #      #     $data | Out-File   .\editor\popupmenu.go -Encoding UTF8
+    #      #     $data=Get-Content  .\editor\message.go | % { $_ -replace "AddWidget2", "AddWidget" }
+    #      #     $data | Out-File   .\editor\message.go -Encoding UTF8
+    #      #     $data=Get-Content  .\editor\window.go | % { $_ -replace "DrawText6", "DrawText5" }
+    #      #     $data | Out-File   .\editor\window.go -Encoding UTF8
+    #      #     $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
+    #      #     $data | Out-File   .\editor\screen.go -Encoding UTF8
+    #      #     $ch1="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+    #      #     $rep1="), int(core.Qt__AlignVCenter), text, nil,"
+    #      #     $data=Get-Content  .\editor\window.go | % { $_ -replace [regex]::Escape($ch1), $rep1 }
+    #      #     $data | Out-File   .\editor\window.go -Encoding UTF8
+    #      #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace "DrawText6", "DrawText5" }
+    #      #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
+    #      #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace "NewQVariant10", "NewQVariant12" }
+    #      #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
+    #      #     $ch2="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+    #      #     $rep2="), int(core.Qt__AlignVCenter), text, nil,"
+    #      #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace [regex]::Escape($ch2), $rep2 }
+    #      #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
+    #      #     $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
+    #      #     $data | Out-File   .\util\utils.go -Encoding UTF8
+
+    #      - name: Test
+    #        continue-on-error: true
+    #        run: go test github.com\akiyosi\goneovim\editor
+
+    #      - name: Retrieve version
+    #        id: version-windows
+    #        run: |
+    #          cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+    #          echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+
+    #      - name: Build
+    #        env:
+    #          QT_API: 5.13.0
+    #        run: |
+    #          cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
+    #          ${{ github.workspace }}\bin\qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
+
+    #      - name: Upload for windows
+    #        uses: actions/upload-artifact@v1
+    #        with:
+    #          name: goneovim-windows-msvc
+    #          path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
 
 
 
