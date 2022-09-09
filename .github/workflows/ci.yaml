@@ -497,7 +497,7 @@ jobs:
       QT_DIR: C:\Qt
       QT_MSVC: true
       QT_DEBUG: false
-      QT_STATIC: true
+      #QT_STATIC: true
       #INCLUDE: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\include
       #Qt5_Dir: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\
       #QT_PLUGIN_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\plugin
@@ -572,7 +572,6 @@ jobs:
         Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -Force -Recurse
         Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -recurse
         Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
-        dir C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }}\include
 
     - name: Install Go
       continue-on-error: true
@@ -637,6 +636,7 @@ jobs:
     #     key: ${{ matrix.qtversion }}-qtbindings-windows-${{ env.cache-version }}
 
     - name: Generate Qt bindings
+      continue-on-error: true
       env:
         QT_API: 5.13.0
       #if: ${{ steps.cache-qt-bindings-windows.outputs.cache-hit != 'true' }}
@@ -645,11 +645,16 @@ jobs:
         ${{ github.workspace }}\bin\qtsetup.exe prep windows
         ${{ github.workspace }}\bin\qtsetup.exe check windows
         ${{ github.workspace }}\bin\qtsetup.exe generate windows
+        dir ${{ github.workspace }}\src\github.com\therecipe\qt\core\
         sed -i '9,14d' ${{ github.workspace }}\src\github.com\therecipe\qt\core\core.cpp
         sed -i '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
         ${{ github.workspace }}\bin\qtsetup.exe install windows
   
   #     ${{ github.workspace }}\bin\qtsetup.exe -test=false
+
+    - name: "[DEBUG] Check dir"
+      run: |
+        dir ${{ github.workspace }}\src\github.com\therecipe\qt\core\
 
     - name: Retrieving dependencies
       continue-on-error: true
