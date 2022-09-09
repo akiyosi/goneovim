@@ -506,7 +506,7 @@ jobs:
       GO111MODULE: off
       #CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-      QT5BIN: qt5_static_binaries_win
+      QT5BIN: qt5_shared_binaries_win
     steps:
 
     - name: Install Qt
