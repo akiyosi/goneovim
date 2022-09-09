@@ -498,7 +498,7 @@ jobs:
       QT_MSVC: true
       QT_DEBUG: false
       QT_STATIC: true
-      INCLUDE: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\include
+      #INCLUDE: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\include
       #Qt5_Dir: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\
       #QT_PLUGIN_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\plugin
       #QML2_IMPORT_PATH: C:\Qt\${{ matrix.qtversion }}\msvc2017_64\qml
