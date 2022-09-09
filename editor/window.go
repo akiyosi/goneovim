@@ -2600,6 +2600,26 @@ func newWindow() *Window {
 	win.ConnectMouseReleaseEvent(win.mouseEvent)
 	win.ConnectMouseMoveEvent(win.mouseEvent)
 
+	// HideMouseWhenTyping process
+	if editor.config.Editor.HideMouseWhenTyping {
+		win.InstallEventFilter(win)
+		win.SetMouseTracking(true)
+	}
+	win.ConnectEventFilter(func(watched *core.QObject, event *core.QEvent) bool {
+		switch event.Type() {
+		case core.QEvent__MouseMove:
+			if editor.isHideMouse && editor.config.Editor.HideMouseWhenTyping {
+				ac := gui.NewQCursor2(core.Qt__ArrowCursor)
+				gui.QGuiApplication_SetOverrideCursor(ac)
+				gui.QGuiApplication_ChangeOverrideCursor(ac)
+				editor.isHideMouse = false
+			}
+		default:
+		}
+
+		return win.EventFilterDefault(watched, event)
+	})
+
 	return win
 }
 
