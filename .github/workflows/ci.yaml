@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 env:
-  cache-version: v3
+  cache-version: v4
 
 jobs:
 
@@ -17,7 +17,8 @@ jobs:
         # go-version: [1.12.x, 1.13.x]
         go-version: [1.17.x]
         platform: [ubuntu-latest] #, windows-latest]
-        qtversion: [5.13.0, 5.14.1, 5.15.1]
+        #qtversion: [5.13.0, 5.14.1, 5.15.1]
+        qtversion: [5.15.1]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -52,6 +53,8 @@ jobs:
     - name: Get Qt binding for Go
       run: |
         go get -v github.com/therecipe/qt/cmd/...
+        cd ${{ github.workspace }}/src/golang.org/x/sys/
+        git checkout 2771309
 
     # - name: Remove binding repo for restoring cache
     #   if: ${{ steps.cache-qt-bindings.outputs.cache-hit }} == 'true'
@@ -98,6 +101,11 @@ jobs:
     - name: Build
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
+        $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" build desktop
+
+    - name: Build with docker
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" -docker build linux_static
         cp -pR ../../runtime ./deploy/linux/
 
@@ -108,7 +116,6 @@ jobs:
         tar -jcvf goneovim-linux.tar.bz2 goneovim-linux
 
     - name: Upload for linux
-      if: ${{ matrix.qtversion == '5.14.1' }}
       uses: actions/upload-artifact@v1
       with:
         name: goneovim-linux
