@@ -3,139 +3,76 @@ Development of goneovim
 Note that the information on this page is not updated frequently. If you want reliable build instructions, the CI scripts in Github Actions could be helpful.
 See https://github.com/akiyosi/goneovim/blob/master/.github/workflows/ci.yaml
 
-## For Linux or MacOS
+## For Linux, MacOS, Windows(MSYS2)
   * Install Qt
+    
+    - Linux
+      - Install the Qt5 dev packages through your systems package manager and export **QT_PKG_CONFIG=true**. (You will need to install the `html/doc` packages containing the `*.index` files as well.)
+        - Debian/Ubuntu (apt-get): `sudo apt-get --no-install-recommends install libqt*5-dev qt*5-dev qml-module-qtquick-* qt*5-doc-html`
+        - Fedora/RHEL/CentOS (yum): `sudo yum install qt5-* qt5-*-doc`
+        - openSUSE (zypper): `sudo zypper install --no-recommends libqt5-qt*-devel`
+        - Arch Linux (pacman): `sudo pacman -S --needed qt5`
+    
+    - MacOS
+      - Install the Qt5 packages through HomeBrew and export **QT_HOMEBREW=true**
+
+        ```
+        brew install qt5
+        ```
+
+    - Windows(MSYS2)
+      - Install MSYS2
+      - Install Qt5 on MSYS2 and export the following environment variables
+
+        ```
+        pacman --noconfirm -S sed git unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
+        ```
+
+        | environment variable name | value |
+        | ------------------ | --------------- |
+        | QT_MSYS2           | true            |
+        | QT_MSYS2_DIR       | {Path to MSYS2} |
+        | QT_MSYS2_STATIC    | true            |
+        | QT_MSYS2_ARCH      | amd64           |
   
-    - Qt installation on Linux
-      - [https://download.qt.io/official_releases/online_installers/qt-unified-linux-x64-online.run](https://download.qt.io/official_releases/online_installers/qt-unified-linux-x64-online.run)
-  
-    - Qt installation on MacOS
-      - [https://download.qt.io/official_releases/online_installers/qt-unified-mac-x64-online.dmg](https://download.qt.io/official_releases/online_installers/qt-unified-mac-x64-online.dmg)
-  
 
-  * Export Environment variables
-
-    We should export the following environment variables:
-
-
-    | environment variable name | value |
-    | ------------- | ----- |
-    | QT_API        | The version of the Qt API to generate. This project now uses `5.13.0` |
-    | QT_VERSION    | The version of Qt you installed |
-    | QT_DIR        | The directory path where qt is installed |
-
-    e.g.
-
-    ```
-    export QT_DIR=/path/to/Qt
-    export QT_VERSION=5.15.2
-    export QT_API=5.13.0
-    ```
+  * Export Environment variables **QT_API=5.13.0**
 
   * Install Go
 
-  * Get Go binding for Qt
-
+  * Checkout this repogitory and cd
+    
     ```
-    export GO111MODULE=off; go get -v github.com/therecipe/qt/cmd/...
-    ```
-
-  * Setup Go binding
-
-    ```
-    $(go env GOPATH)/bin/qtsetup -test=false
+    git clone https://github.com/akiyosi/goneovim.git
+    cd goneovim
     ```
 
-  * Clone this repository
+
+  * Setup Qt binding
 
     ```
-    go get -d github.com/akiyosi/goneovim/...
+    make qt_bindings
     ```
 
-  * Generate moc files
 
+  * Get Dependent Libraries
+    
     ```
-    cd $GOPATH/src/github.com/akiyosi/goneovim
-    $(go env GOPATH)/bin/qtmoc
+    make deps
     ```
 
   * Test
-    
-    ```
-    go test github.com/akiyosi/goneovim/editor
 
+    ```
+    make test
     ```
 
   * Build
 
     ```
-    cd $GOPATH/src/github.com/akiyosi/goneovim/cmd/goneovim
-    $(go env GOPATH)/bin/qtdeploy build desktop
+    make app
     ```
 
-
-## For Windows (MSYS2)
-
-See also: https://github.com/therecipe/qt/wiki/Installation-on-Windows#msys2-version-without-android-support
-
-  * Install MSYS2
-
-  * Install Qt5 on MSYS2
-
-    ```
-    pacman --noconfirm -S sed git unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
-    ```
-
-  * Export Environment variables
-
-    We should export the following environment variables:
-
-
-    | environment variable name | value |
-    | ------------- | ----- |
-    | QT_MSYS2           | true            |
-    | QT_MSYS2_DIR       | {Path to MSYS2} |
-    | QT_MSYS2_STATIC    | true            |
-    | QT_MSYS2_ARCH      | amd64           |
-    | QT_DEBUG           | false           |
-    | GO111MODULE        | off             |
-    | CGO_CFLAGS_ALLOW   | ".*"            |
-    | CGO_CXXFLAGS_ALLOW | ".*"            |
-    | CGO_LDFLAGS_ALLOW  | ".*"            |
-
-
-  * Install Go
-
-  * Get Go binding for Qt in cmd.exe
-
-    ```
-    go.exe get -v github.com/therecipe/qt/cmd/...
-    ```
-
-  * Setup Go binding in MSYS2 shell
-
-    ```
-    $(go env GOPATH)/bin/qtsetup -test=false
-    ```
-
-  * Clone this repository in cmd.exe
-
-    ```
-    go.exe get -d github.com/akiyosi/goneovim/...
-    ```
-
-  * Generate moc files in MSYS2 shell
-
-    ```
-    $(go env GOPATH)/bin/qtmoc
-    ```
-
-  * Build in MSYS2 shell
-
-    ```
-    cd $GOPATH/src/github.com/akiyosi/goneovim/cmd/goneovim
-    $(go env GOPATH)/bin/qtdeploy build desktop
-    ```
 
 
 ## For Windows (MSVC)
