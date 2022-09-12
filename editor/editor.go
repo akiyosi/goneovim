@@ -37,6 +37,7 @@ type editorSignal struct {
 	core.QObject
 	_ func() `signal:"notifySignal"`
 	_ func() `signal:"sidebarSignal"`
+	_ func() `signal:"geometrySignal"`
 }
 
 // ColorPalette is
@@ -112,6 +113,7 @@ type Editor struct {
 	fontCh                 chan *Font
 	cbChan                 chan *string
 	chUiPrepared           chan bool
+	geometryUpdateTimer    *time.Timer
 	sysTray                *widgets.QSystemTrayIcon
 	side                   *WorkspaceSide
 	savedGeometry          *core.QByteArray
@@ -130,6 +132,7 @@ type Editor struct {
 	ppid                   int
 	keyControl             core.Qt__Key
 	keyCmd                 core.Qt__Key
+	windowSize             [2]int
 	width                  int
 	active                 int
 	startuptime            int64
@@ -151,6 +154,7 @@ type Editor struct {
 	isHideMouse            bool
 	isBindNvimSizeToAppwin bool
 	isUiPrepared           bool
+	isWindowMaximizing     bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -571,6 +575,11 @@ func (e *Editor) connectAppSignals() {
 		editor.window.SetupTitle(editor.window.TitleStringLabel.Text())
 	})
 
+	go e.toEmmitGeometrySignal()
+	go e.signal.ConnectGeometrySignal(func() {
+		e.AdjustSizeBasedOnFontmetrics(e.windowSize[0], e.windowSize[1])
+	})
+
 	// When an application is closed with the Close button
 	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
 		e.putLog("The application was closed outside of Neovim's commands, such as the Close button.")
@@ -600,16 +609,50 @@ func (e *Editor) connectAppSignals() {
 	e.putLog("done connecting UI siganal")
 }
 
+func (e *Editor) toEmmitGeometrySignal() {
+	for {
+		time.Sleep(100 * time.Millisecond)
+		if e.geometryUpdateTimer == nil {
+			continue
+		}
+		select {
+		case <-e.geometryUpdateTimer.C:
+			e.signal.GeometrySignal()
+		default:
+			continue
+		}
+		// wait
+		// e.geometryUpdates <- true
+		// editor.signal.GeometrySignal()
+
+	}
+}
+
 func (e *Editor) resizeMainWindow() {
 	cws := e.workspaces[e.active]
 	windowWidth, windowHeight, _, _ := cws.updateSize()
+	e.windowSize = [2]int{windowWidth, windowHeight}
 
 	if !editor.config.Editor.WindowGeometryBasedOnFontmetrics {
 		return
 	}
 
-	if e.window.WindowState() == core.Qt__WindowFullScreen ||
-		e.window.WindowState() == core.Qt__WindowMaximized {
+	if e.geometryUpdateTimer == nil {
+		e.geometryUpdateTimer = time.NewTimer(200 * time.Millisecond)
+	} else {
+		if !e.geometryUpdateTimer.Stop() {
+			select {
+			case <-e.geometryUpdateTimer.C:
+			default:
+			}
+		}
+		e.geometryUpdateTimer.Reset(200 * time.Millisecond)
+	}
+
+}
+
+func (e *Editor) AdjustSizeBasedOnFontmetrics(windowWidth, windowHeight int) {
+	if e.window.WindowState() == core.Qt__WindowFullScreen || e.isWindowMaximizing {
 		return
 	}
 
@@ -939,6 +982,18 @@ func (e *Editor) connectWindowEvents() {
 			} else if !e.window.IsActiveWindow() {
 				e.isWindowNowActivated = false
 				e.isWindowNowInactivated = true
+			}
+		case core.QEvent__WindowStateChange:
+			if e.window.WindowState() == core.Qt__WindowMaximized {
+				if !e.isWindowMaximizing {
+					e.isWindowMaximizing = true
+
+					if editor.config.Editor.WindowGeometryBasedOnFontmetrics {
+						go e.window.WindowMaximize()
+					}
+				}
+			} else {
+				e.isWindowMaximizing = false
 			}
 		default:
 		}
