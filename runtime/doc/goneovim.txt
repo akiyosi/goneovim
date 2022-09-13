@@ -418,6 +418,11 @@ All Options are follows:
         ##   "normal", "insert", "replace", "visual", "visual_select",
         ##    "cmdline_normal", "cmdline_insert", "cmdline_replace", etc.
         # ModeEnablingIME = []
+	
+
+        ## This option allows you to hide the mouse cursor in the gooneovim window 
+	## when you type a key, and to redisplay it when you move the mouse cursor again. 
+	# HideMouseWhenTyping = false
         
         ## Draw borders on the GUI side instead of the vertical border and status line that nvim draws.
         # DrawWindowSeparator = false

@@ -82,6 +82,7 @@ type editorConfig struct {
 	WindowGeometryBasedOnFontmetrics        bool
 	IgnoreFirstMouseClickWhenAppInactivated bool
 	HideTitlebar                            bool
+	HideMouseWhenTyping                     bool
 }
 
 type cursorConfig struct {

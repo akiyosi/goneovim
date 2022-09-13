@@ -2919,6 +2919,26 @@ func newWorkspaceSide() *WorkspaceSide {
 	widget.SetLayout(layout)
 	widget.SetSizePolicy2(widgets.QSizePolicy__Expanding, widgets.QSizePolicy__Expanding)
 
+	// HideMouseWhenTyping process
+	if editor.config.Editor.HideMouseWhenTyping {
+		widget.InstallEventFilter(widget)
+		widget.SetMouseTracking(true)
+	}
+	widget.ConnectEventFilter(func(watched *core.QObject, event *core.QEvent) bool {
+		switch event.Type() {
+		case core.QEvent__MouseMove:
+			if editor.isHideMouse && editor.config.Editor.HideMouseWhenTyping {
+				ac := gui.NewQCursor2(core.Qt__ArrowCursor)
+				gui.QGuiApplication_SetOverrideCursor(ac)
+				gui.QGuiApplication_ChangeOverrideCursor(ac)
+				editor.isHideMouse = false
+			}
+		default:
+		}
+
+		return widget.EventFilterDefault(watched, event)
+	})
+
 	side := &WorkspaceSide{
 		widget: widget,
 		header: header,

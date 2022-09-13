@@ -144,6 +144,7 @@ type Editor struct {
 	isWindowNowInactivated bool
 	isExtWinNowActivated   bool
 	isExtWinNowInactivated bool
+	isHideMouse            bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -1008,6 +1009,12 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	}
 	if !e.isKeyAutoRepeating {
 		ws.getSnapshot()
+	}
+	if !e.isHideMouse && e.config.Editor.HideMouseWhenTyping {
+		bc := gui.NewQCursor2(core.Qt__BlankCursor)
+		gui.QGuiApplication_SetOverrideCursor(bc)
+		gui.QGuiApplication_ChangeOverrideCursor(bc)
+		e.isHideMouse = true
 	}
 
 	input := e.convertKey(event)
