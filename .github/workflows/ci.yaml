@@ -513,6 +513,11 @@ jobs:
       QT5BIN: qt5_static_binaries_win
     steps:
 
+    - name: Check dir
+      continue-on-error: true
+      run: |
+        go version
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
