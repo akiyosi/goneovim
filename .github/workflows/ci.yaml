@@ -586,7 +586,12 @@ jobs:
         Move-Item -Path go -Destination go-root
 
     - name: Get Qt binding for Go
+      continue-on-error: true
       run: |
+        cd /home/runner/work/goneovim/goneovim/src/golang.org/x/
+        git checkout golang.org/x/sys
+        cd sys
+        git checkout 2771309
         ${{ github.workspace }}\go-root\bin\go.exe get -v -tags=no_env github.com/therecipe/qt/cmd/...
 
     - name: Checkout code
