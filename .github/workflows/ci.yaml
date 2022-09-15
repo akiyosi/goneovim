@@ -591,7 +591,7 @@ jobs:
         mkdir /home/runner/work/goneovim/goneovim/src/golang.org
         mkdir /home/runner/work/goneovim/goneovim/src/golang.org/x
         cd /home/runner/work/goneovim/goneovim/src/golang.org/x/
-        git checkout golang.org/x/sys
+        git clone https://github.com/golang/sys.git
         cd sys
         git checkout 2771309
         ${{ github.workspace }}\go-root\bin\go.exe get -v -tags=no_env github.com/therecipe/qt/cmd/...
