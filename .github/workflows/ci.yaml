@@ -588,6 +588,8 @@ jobs:
     - name: Get Qt binding for Go
       continue-on-error: true
       run: |
+        mkdir /home/runner/work/goneovim/goneovim/src/golang.org
+        mkdir /home/runner/work/goneovim/goneovim/src/golang.org/x
         cd /home/runner/work/goneovim/goneovim/src/golang.org/x/
         git checkout golang.org/x/sys
         cd sys
