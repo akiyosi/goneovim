@@ -591,6 +591,8 @@ jobs:
         Move-Item -Path go -Destination go-1.18
 
     - name: Get Qt binding for Go
+      env: |
+        GOROOT: ${{ github.workspace }}\go-1.18
       continue-on-error: true
       run: |
         ${{ github.workspace }}\go-1.18\bin\go.exe get -v -tags=no_env github.com/therecipe/qt/cmd/...
