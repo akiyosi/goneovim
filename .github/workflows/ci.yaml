@@ -577,7 +577,8 @@ jobs:
       run: | 
         mkdir C:\qt-static
         cd C:\qt-static
-        curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/${{ env.QT5BIN }}
+        #curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/${{ env.QT5BIN }}
+        curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/martinrotter/qt-minimalistic-builds/releases/download/5.15.3/qt-5.15.3-static-msvc2019-x86_64.7z
         7z x ${{ env.QT5BIN }}
         del ${{ env.QT5BIN }}
         Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -Force -Recurse
