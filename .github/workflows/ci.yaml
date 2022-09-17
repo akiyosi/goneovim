@@ -510,7 +510,7 @@ jobs:
       #CGO_MSCXXFLAGS_ALLOW: -nologo -Zc:wchar_t -FS -Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -O2 -MD -W3 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 -wd4577 -wd4467 -wd4716 -EHsc -D_ALLOW_KEYWORD_MACROS -DUNICODE -D_UNICODE -DWIN32 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -DWIN64 -DNDEBUG -DQT_NO_DEBUG -DQT_SVG_LIB -DQT_MULTIMEDIAWIDGETS_LIB -DQT_DESIGNER_LIB -DQT_UIPLUGIN_LIB -DQT_QUICKWIDGETS_LIB -DQT_WIDGETS_LIB -DQT_MULTIMEDIA_LIB -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_REMOTEOBJECTS_LIB -DQT_NETWORK_LIB -DQT_DBUS_LIB -DQT_XML_LIB -DQT_SCRIPT_LIB -DQT_CORE_LIB -I../../qt -I. -IC:/Qt/5.14.1/msvc2017_64/include -IC:/Qt/5.14.1/msvc2017_64/include/QtSvg -IC:/Qt/5.14.1/msvc2017_64/include/QtMultimediaWidgets -IC:/Qt/5.14.1/msvc2017_64/include/QtDesigner -IC:/Qt/5.14.1/msvc2017_64/include/QtUiPlugin -IC:/Qt/5.14.1/msvc2017_64/include/QtQuickWidgets -IC:/Qt/5.14.1/msvc2017_64/include/QtWidgets -IC:/Qt/5.14.1/msvc2017_64/include/QtMultimedia -IC:/Qt/5.14.1/msvc2017_64/include/QtQuick -IC:/Qt/5.14.1/msvc2017_64/include/QtGui -IC:/Qt/5.14.1/msvc2017_64/include/QtQmlModels -IC:/Qt/5.14.1/msvc2017_64/include/QtQml -IC:/Qt/5.14.1/msvc2017_64/include/QtRemoteObjects -IC:/Qt/5.14.1/msvc2017_64/include/QtNetwork -IC:/Qt/5.14.1/msvc2017_64/include/QtDBus -IC:/Qt/5.14.1/msvc2017_64/include/QtXml -IC:/Qt/5.14.1/msvc2017_64/include/QtScript -IC:/Qt/5.14.1/msvc2017_64/include/QtCore -Irelease -IC:/Qt/5.14.1/msvc2017_64/mkspecs/win32-msvc
       #CGO_MSLDFLAGS_ALLOW: /NOLOGO /DYNAMICBASE /NXCOMPAT /OPT:REF /INCREMENTAL:NO /SUBSYSTEM:CONSOLE C:/Qt/5.14.1/msvc2017_64/lib/Qt5Svg.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5MultimediaWidgets.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Designer.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5QuickWidgets.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Widgets.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Multimedia.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Quick.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Gui.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5QmlModels.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Qml.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5RemoteObjects.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Network.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5DBus.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Xml.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Script.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Core.lib  glu32.lib opengl32.lib gdi32.lib user32.lib "notelemetry.obj"
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-      QT5BIN: qt5_static_binaries_win.zip
+      #QT5BIN: qt5_static_binaries_win.zip
     steps:
 
     - name: Check dir
@@ -572,16 +572,16 @@ jobs:
     #    cd C:\Qt\${{ matrix.qtversion }}
     #    Move-Item -Path ${{ env.QTARCH }} -Destination msvc2017_64
 
-    - name: Replace qt5 
-      run: | 
-        mkdir C:\qt-static
-        cd C:\qt-static
-        curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/${{ env.QT5BIN }}
-        7z x ${{ env.QT5BIN }}
-        del ${{ env.QT5BIN }}
-        Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -Force -Recurse
-        Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -recurse
-        Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
+    #- name: Replace qt5 
+    #  run: | 
+    #    mkdir C:\qt-static
+    #    cd C:\qt-static
+    #    curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/${{ env.QT5BIN }}
+    #    7z x ${{ env.QT5BIN }}
+    #    del ${{ env.QT5BIN }}
+    #    Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -Force -Recurse
+    #    Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -recurse
+    #    Remove-Item -Path C:\qt-static\qt5-bin -Force -Recurse
 
     - name: Install Go 1.18
       continue-on-error: true
@@ -670,86 +670,86 @@ jobs:
         ${{ github.workspace }}\bin\qtsetup.exe prep windows
         ${{ github.workspace }}\bin\qtsetup.exe check windows
         ${{ github.workspace }}\bin\qtsetup.exe generate windows
-        dir ${{ github.workspace }}\src\github.com\therecipe\qt\core\
-        sed -i '9,14d' ${{ github.workspace }}\src\github.com\therecipe\qt\core\core.cpp
-        #sed -i '7i #cgo MSLDFLAGS: C:/Qt/5.14.1/msvc2017_64/lib/Qt5Svg.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5MultimediaWidgets.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Designer.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5QuickWidgets.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Widgets.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Multimedia.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Quick.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Gui.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5QmlModels.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Qml.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5RemoteObjects.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Network.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5DBus.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Xml.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Script.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Core.lib  glu32.lib opengl32.lib gdi32.lib user32.lib' ${{ github.workspace }}\src\github.com\therecipe\qt\core\cgo_windows_windows_amd64.go
-        #sed -i '7i #cgo MSLDFLAGS: /NOLOGO /DYNAMICBASE /NXCOMPAT /OPT:REF /INCREMENTAL:NO /SUBSYSTEM:CONSOLE' ${{ github.workspace }}\src\github.com\therecipe\qt\core\cgo_windows_windows_amd64.go
-        sed -i '7i #cgo MSCXXFLAGS: -I../../qt -I. -IC:/Qt/5.14.1/msvc2017_64/include -IC:/Qt/5.14.1/msvc2017_64/include/QtSvg -IC:/Qt/5.14.1/msvc2017_64/include/QtMultimediaWidgets -IC:/Qt/5.14.1/msvc2017_64/include/QtDesigner -IC:/Qt/5.14.1/msvc2017_64/include/QtUiPlugin -IC:/Qt/5.14.1/msvc2017_64/include/QtQuickWidgets -IC:/Qt/5.14.1/msvc2017_64/include/QtWidgets -IC:/Qt/5.14.1/msvc2017_64/include/QtMultimedia -IC:/Qt/5.14.1/msvc2017_64/include/QtQuick -IC:/Qt/5.14.1/msvc2017_64/include/QtGui -IC:/Qt/5.14.1/msvc2017_64/include/QtQmlModels -IC:/Qt/5.14.1/msvc2017_64/include/QtQml -IC:/Qt/5.14.1/msvc2017_64/include/QtRemoteObjects -IC:/Qt/5.14.1/msvc2017_64/include/QtNetwork -IC:/Qt/5.14.1/msvc2017_64/include/QtDBus -IC:/Qt/5.14.1/msvc2017_64/include/QtXml -IC:/Qt/5.14.1/msvc2017_64/include/QtScript -IC:/Qt/5.14.1/msvc2017_64/include/QtCore -Irelease -IC:/Qt/5.14.1/msvc2017_64/mkspecs/win32-msvc' ${{ github.workspace }}\src\github.com\therecipe\qt\core\cgo_windows_windows_amd64.go
-        sed -i '7i #cgo MSCXXFLAGS: -nologo -Zc:wchar_t -FS -Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -O2 -MT -W3 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 -wd4577 -wd4467 -wd4716 -EHsc -D_ALLOW_KEYWORD_MACROS -DUNICODE -D_UNICODE -DWIN32 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -DWIN64 -DNDEBUG -DQT_NO_DEBUG -DQT_SVG_LIB -DQT_MULTIMEDIAWIDGETS_LIB -DQT_DESIGNER_LIB -DQT_UIPLUGIN_LIB -DQT_QUICKWIDGETS_LIB -DQT_WIDGETS_LIB -DQT_MULTIMEDIA_LIB -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_REMOTEOBJECTS_LIB -DQT_NETWORK_LIB -DQT_DBUS_LIB -DQT_XML_LIB -DQT_SCRIPT_LIB -DQT_CORE_LIB'  ${{ github.workspace }}\src\github.com\therecipe\qt\core\cgo_windows_windows_amd64.go
-        sed -i '7i #cgo MSCFLAGS: -nologo -Zc:wchar_t -FS -Zc:strictStrings -O2 -MT -W3 -w44456 -w44457 -w44458 -D_ALLOW_KEYWORD_MACROS -DUNICODE -D_UNICODE -DWIN32 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -DWIN64 -DNDEBUG -DQT_NO_DEBUG -DQT_SVG_LIB -DQT_MULTIMEDIAWIDGETS_LIB -DQT_DESIGNER_LIB -DQT_UIPLUGIN_LIB -DQT_QUICKWIDGETS_LIB -DQT_WIDGETS_LIB -DQT_MULTIMEDIA_LIB -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_REMOTEOBJECTS_LIB -DQT_NETWORK_LIB -DQT_DBUS_LIB -DQT_XML_LIB -DQT_SCRIPT_LIB -DQT_CORE_LIB' ${{ github.workspace }}\src\github.com\therecipe\qt\core\cgo_windows_windows_amd64.go
-        sed -i '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
+        #dir ${{ github.workspace }}\src\github.com\therecipe\qt\core\
+        #sed -i '9,14d' ${{ github.workspace }}\src\github.com\therecipe\qt\core\core.cpp
+        ##sed -i '7i #cgo MSLDFLAGS: C:/Qt/5.14.1/msvc2017_64/lib/Qt5Svg.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5MultimediaWidgets.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Designer.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5QuickWidgets.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Widgets.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Multimedia.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Quick.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Gui.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5QmlModels.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Qml.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5RemoteObjects.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Network.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5DBus.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Xml.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Script.lib C:/Qt/5.14.1/msvc2017_64/lib/Qt5Core.lib  glu32.lib opengl32.lib gdi32.lib user32.lib' ${{ github.workspace }}\src\github.com\therecipe\qt\core\cgo_windows_windows_amd64.go
+        ##sed -i '7i #cgo MSLDFLAGS: /NOLOGO /DYNAMICBASE /NXCOMPAT /OPT:REF /INCREMENTAL:NO /SUBSYSTEM:CONSOLE' ${{ github.workspace }}\src\github.com\therecipe\qt\core\cgo_windows_windows_amd64.go
+        #sed -i '7i #cgo MSCXXFLAGS: -I../../qt -I. -IC:/Qt/5.14.1/msvc2017_64/include -IC:/Qt/5.14.1/msvc2017_64/include/QtSvg -IC:/Qt/5.14.1/msvc2017_64/include/QtMultimediaWidgets -IC:/Qt/5.14.1/msvc2017_64/include/QtDesigner -IC:/Qt/5.14.1/msvc2017_64/include/QtUiPlugin -IC:/Qt/5.14.1/msvc2017_64/include/QtQuickWidgets -IC:/Qt/5.14.1/msvc2017_64/include/QtWidgets -IC:/Qt/5.14.1/msvc2017_64/include/QtMultimedia -IC:/Qt/5.14.1/msvc2017_64/include/QtQuick -IC:/Qt/5.14.1/msvc2017_64/include/QtGui -IC:/Qt/5.14.1/msvc2017_64/include/QtQmlModels -IC:/Qt/5.14.1/msvc2017_64/include/QtQml -IC:/Qt/5.14.1/msvc2017_64/include/QtRemoteObjects -IC:/Qt/5.14.1/msvc2017_64/include/QtNetwork -IC:/Qt/5.14.1/msvc2017_64/include/QtDBus -IC:/Qt/5.14.1/msvc2017_64/include/QtXml -IC:/Qt/5.14.1/msvc2017_64/include/QtScript -IC:/Qt/5.14.1/msvc2017_64/include/QtCore -Irelease -IC:/Qt/5.14.1/msvc2017_64/mkspecs/win32-msvc' ${{ github.workspace }}\src\github.com\therecipe\qt\core\cgo_windows_windows_amd64.go
+        #sed -i '7i #cgo MSCXXFLAGS: -nologo -Zc:wchar_t -FS -Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -O2 -MT -W3 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 -wd4577 -wd4467 -wd4716 -EHsc -D_ALLOW_KEYWORD_MACROS -DUNICODE -D_UNICODE -DWIN32 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -DWIN64 -DNDEBUG -DQT_NO_DEBUG -DQT_SVG_LIB -DQT_MULTIMEDIAWIDGETS_LIB -DQT_DESIGNER_LIB -DQT_UIPLUGIN_LIB -DQT_QUICKWIDGETS_LIB -DQT_WIDGETS_LIB -DQT_MULTIMEDIA_LIB -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_REMOTEOBJECTS_LIB -DQT_NETWORK_LIB -DQT_DBUS_LIB -DQT_XML_LIB -DQT_SCRIPT_LIB -DQT_CORE_LIB'  ${{ github.workspace }}\src\github.com\therecipe\qt\core\cgo_windows_windows_amd64.go
+        #sed -i '7i #cgo MSCFLAGS: -nologo -Zc:wchar_t -FS -Zc:strictStrings -O2 -MT -W3 -w44456 -w44457 -w44458 -D_ALLOW_KEYWORD_MACROS -DUNICODE -D_UNICODE -DWIN32 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -DWIN64 -DNDEBUG -DQT_NO_DEBUG -DQT_SVG_LIB -DQT_MULTIMEDIAWIDGETS_LIB -DQT_DESIGNER_LIB -DQT_UIPLUGIN_LIB -DQT_QUICKWIDGETS_LIB -DQT_WIDGETS_LIB -DQT_MULTIMEDIA_LIB -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_REMOTEOBJECTS_LIB -DQT_NETWORK_LIB -DQT_DBUS_LIB -DQT_XML_LIB -DQT_SCRIPT_LIB -DQT_CORE_LIB' ${{ github.workspace }}\src\github.com\therecipe\qt\core\cgo_windows_windows_amd64.go
+        #sed -i '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
         ${{ github.workspace }}\bin\qtsetup.exe install windows
   
   #     ${{ github.workspace }}\bin\qtsetup.exe -test=false
 
-    - name: "[Debug] Upload Moc file"
+    #- name: "[Debug] Upload Moc file"
+    #  uses: actions/upload-artifact@v1
+    #  with:
+    #    name: core-moc
+    #    path: ${{ github.workspace }}\src\github.com\therecipe\qt\core
+
+    #- name: "[DEBUG] Check dir"
+    #  run: |
+    #    dir ${{ github.workspace }}\src\github.com\therecipe\qt\core\
+
+    - name: Retrieving dependencies
+      continue-on-error: true
+      run: |
+        go get -v -d github.com/${{ github.repository }}/...
+        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
+        ${{ github.workspace }}\bin\qtmoc.exe
+
+    # - name: Convert to compatible sources on Qt5.12
+    #   if: ${{ matrix.qtversion == '5.12.6' }}
+    #   run: |
+    #     cd ${{ github.workspace }}\src\github.com\${{ github.repository }}
+    #     $data=Get-Content  .\editor\workspace.go | % { $_ -replace "NewQVariant31", "NewQVariant33" }
+    #     $data | Out-File   .\editor\workspace.go -Encoding UTF8
+    #     $data=Get-Content  .\editor\popupmenu.go | % { $_ -replace "AddWidget2", "AddWidget" }
+    #     $data | Out-File   .\editor\popupmenu.go -Encoding UTF8
+    #     $data=Get-Content  .\editor\message.go | % { $_ -replace "AddWidget2", "AddWidget" }
+    #     $data | Out-File   .\editor\message.go -Encoding UTF8
+    #     $data=Get-Content  .\editor\window.go | % { $_ -replace "DrawText6", "DrawText5" }
+    #     $data | Out-File   .\editor\window.go -Encoding UTF8
+    #     $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
+    #     $data | Out-File   .\editor\screen.go -Encoding UTF8
+    #     $ch1="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+    #     $rep1="), int(core.Qt__AlignVCenter), text, nil,"
+    #     $data=Get-Content  .\editor\window.go | % { $_ -replace [regex]::Escape($ch1), $rep1 }
+    #     $data | Out-File   .\editor\window.go -Encoding UTF8
+    #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace "DrawText6", "DrawText5" }
+    #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
+    #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace "NewQVariant10", "NewQVariant12" }
+    #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
+    #     $ch2="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
+    #     $rep2="), int(core.Qt__AlignVCenter), text, nil,"
+    #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace [regex]::Escape($ch2), $rep2 }
+    #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
+    #     $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
+    #     $data | Out-File   .\util\utils.go -Encoding UTF8
+
+    - name: Test
+      continue-on-error: true
+      run: go test github.com\akiyosi\goneovim\editor
+
+    - name: Retrieve version
+      id: version-windows
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+
+    - name: Build
+      env:
+        QT_API: 5.13.0
+      run: |
+        cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
+        ${{ github.workspace }}\bin\qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
+
+    - name: Upload for windows
       uses: actions/upload-artifact@v1
       with:
-        name: core-moc
-        path: ${{ github.workspace }}\src\github.com\therecipe\qt\core
-
-    #      - name: "[DEBUG] Check dir"
-    #        run: |
-    #          dir ${{ github.workspace }}\src\github.com\therecipe\qt\core\
-
-    #      - name: Retrieving dependencies
-    #        continue-on-error: true
-    #        run: |
-    #          go get -v -d github.com/${{ github.repository }}/...
-    #          cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-    #          ${{ github.workspace }}\bin\qtmoc.exe
-
-    #      # - name: Convert to compatible sources on Qt5.12
-    #      #   if: ${{ matrix.qtversion == '5.12.6' }}
-    #      #   run: |
-    #      #     cd ${{ github.workspace }}\src\github.com\${{ github.repository }}
-    #      #     $data=Get-Content  .\editor\workspace.go | % { $_ -replace "NewQVariant31", "NewQVariant33" }
-    #      #     $data | Out-File   .\editor\workspace.go -Encoding UTF8
-    #      #     $data=Get-Content  .\editor\popupmenu.go | % { $_ -replace "AddWidget2", "AddWidget" }
-    #      #     $data | Out-File   .\editor\popupmenu.go -Encoding UTF8
-    #      #     $data=Get-Content  .\editor\message.go | % { $_ -replace "AddWidget2", "AddWidget" }
-    #      #     $data | Out-File   .\editor\message.go -Encoding UTF8
-    #      #     $data=Get-Content  .\editor\window.go | % { $_ -replace "DrawText6", "DrawText5" }
-    #      #     $data | Out-File   .\editor\window.go -Encoding UTF8
-    #      #     $data=Get-Content  .\editor\screen.go | % { $_ -replace "NewQVariant5", "NewQVariant2" }
-    #      #     $data | Out-File   .\editor\screen.go -Encoding UTF8
-    #      #     $ch1="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-    #      #     $rep1="), int(core.Qt__AlignVCenter), text, nil,"
-    #      #     $data=Get-Content  .\editor\window.go | % { $_ -replace [regex]::Escape($ch1), $rep1 }
-    #      #     $data | Out-File   .\editor\window.go -Encoding UTF8
-    #      #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace "DrawText6", "DrawText5" }
-    #      #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
-    #      #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace "NewQVariant10", "NewQVariant12" }
-    #      #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
-    #      #     $ch2="), text, gui.NewQTextOption2(core.Qt__AlignVCenter),"
-    #      #     $rep2="), int(core.Qt__AlignVCenter), text, nil,"
-    #      #     $data=Get-Content  .\editor\cursor.go | % { $_ -replace [regex]::Escape($ch2), $rep2 }
-    #      #     $data | Out-File   .\editor\cursor.go -Encoding UTF8
-    #      #     $data=Get-Content  .\util\utils.go | % { $_ -replace "SetOffset2", "SetOffset3" }
-    #      #     $data | Out-File   .\util\utils.go -Encoding UTF8
-
-    #      - name: Test
-    #        continue-on-error: true
-    #        run: go test github.com\akiyosi\goneovim\editor
-
-    #      - name: Retrieve version
-    #        id: version-windows
-    #        run: |
-    #          cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
-    #          echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
-
-    #      - name: Build
-    #        env:
-    #          QT_API: 5.13.0
-    #        run: |
-    #          cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
-    #          ${{ github.workspace }}\bin\qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
-
-    #      - name: Upload for windows
-    #        uses: actions/upload-artifact@v1
-    #        with:
-    #          name: goneovim-windows-msvc
-    #          path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
+        name: goneovim-windows-msvc
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
 
 
 
