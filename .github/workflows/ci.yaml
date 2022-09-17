@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         # go-version: [1.12.x, 1.13.x]
-        go-version: [1.17.x]
+        go-version: [1.18.x]
         platform: [ubuntu-latest] #, windows-latest]
         #qtversion: [5.13.0, 5.14.1, 5.15.1]
         qtversion: [5.15.1]
@@ -129,7 +129,7 @@ jobs:
   test-and-build-macos-11:
     strategy:
       matrix:
-        go-version: [1.17.x]
+        go-version: [1.18.x]
         platform: [macos-11]
         qtversion: [5.15.2]
     runs-on: ${{ matrix.platform }}
@@ -264,8 +264,8 @@ jobs:
     - name: Install Go
       continue-on-error: true
       run: |
-        curl -sL --retry 10 --retry-delay 60 -O https://dl.google.com/go/go1.16.5.windows-amd64.zip
-        expand-archive -path go1.16.5.windows-amd64.zip -destinationpath .
+        curl -sL --retry 10 --retry-delay 60 -O https://dl.google.com/go/go1.18.5.windows-amd64.zip
+        expand-archive -path go1.18.5.windows-amd64.zip -destinationpath .
         Move-Item -Path go -Destination go-root
 
     - name: Get Qt binding for Go
@@ -345,8 +345,8 @@ jobs:
     - name: Install Go
       continue-on-error: true
       run: |
-        curl -sL --retry 10 --retry-delay 60 -O https://dl.google.com/go/go1.16.5.windows-amd64.zip
-        expand-archive -path go1.16.5.windows-amd64.zip -destinationpath .
+        curl -sL --retry 10 --retry-delay 60 -O https://dl.google.com/go/go1.18.5.windows-amd64.zip
+        expand-archive -path go1.18.5.windows-amd64.zip -destinationpath .
         Move-Item -Path go -Destination C:\go-root
 
     - name: Setup MSYS2 and install Qt5
