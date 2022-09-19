@@ -403,6 +403,12 @@ jobs:
       run: |
         go get -v -d github.com/akiyosi/goneovim/...
 
+    - name: Retrieve version
+      id: version-linux
+      run: |
+        cd C:\src\github.com\akiyosi\goneovim
+        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"  
+
     - name: Generate moc
       shell: msys2 {0}
       run: |
@@ -416,7 +422,8 @@ jobs:
       run: |
         export PATH=$PATH:/c/bin:/c/go-root/bin:/d/a/_temp/msys64/usr/bin
         cd /c/src/github.com/akiyosi/goneovim/cmd/goneovim
-        /c/bin/qtdeploy build desktop
+        /c/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" build desktop
+        cp -pR ../../runtime ./deploy/windows/
 
     # https://github.com/therecipe/qt/issues/657
     # - name: Test
@@ -648,6 +655,7 @@ jobs:
       run: |
         cd ${{ github.workspace }}\src\github.com\${{ github.repository }}\cmd\goneovim
         ${{ github.workspace }}\bin\qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}"  build desktop
+        cp -pR ../../runtime ./deploy/windows/
 
     - name: Upload for windows
       uses: actions/upload-artifact@v1
