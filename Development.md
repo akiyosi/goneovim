@@ -1,5 +1,7 @@
 Development of goneovim
 =======================
+Note that the information on this page is not updated frequently. If you want reliable build instructions, the CI scripts in Github Actions could be helpful.
+See https://github.com/akiyosi/goneovim/blob/master/.github/workflows/ci.yaml
 
 ## For Linux or MacOS
   * Install Qt
