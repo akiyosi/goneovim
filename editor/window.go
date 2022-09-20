@@ -1500,6 +1500,12 @@ func (w *Window) update() {
 		end = w.rows
 	}
 
+	// Mitigate #389
+	if runtime.GOOS == "windows" {
+		start = 0
+		end = w.rows
+	}
+
 	for i := start; i < end; i++ {
 
 		if len(w.content) <= i {
