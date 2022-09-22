@@ -404,10 +404,10 @@ jobs:
         go get -v -d github.com/akiyosi/goneovim/...
 
     - name: Retrieve version
-      id: version-linux
+      id: version-windows
       run: |
         cd C:\src\github.com\akiyosi\goneovim
-        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"  
+        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
 
     - name: Generate moc
       shell: msys2 {0}
@@ -422,7 +422,7 @@ jobs:
       run: |
         export PATH=$PATH:/c/bin:/c/go-root/bin:/d/a/_temp/msys64/usr/bin
         cd /c/src/github.com/akiyosi/goneovim/cmd/goneovim
-        /c/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" build desktop
+        /c/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-windows.outputs.GONEOVIM_VERSION }}" build desktop
         cp -pR ../../runtime ./deploy/windows/
 
     # https://github.com/therecipe/qt/issues/657
@@ -448,6 +448,7 @@ jobs:
 
 
 
+
   test-and-build-windows-msvc:
     strategy:
       matrix:
@@ -462,19 +463,18 @@ jobs:
       GOVSVARSPATH: ${{ github.workspace }}\BuildTools\VC\Auxiliary\Build\vcvars64.bat
       MSVCDIR: 14.16.27023
       VSBUILDTOOLS_URL: https://aka.ms/vs/15/release/vs_buildtools.exe
+      #VSBUILDTOOLS_URL: https://aka.ms/vs/17/release/vs_buildtools.exe
       QTARCH: msvc2017_64
+      #QTARCH: msvc2019_64
       QT_VERSION: ${{ matrix.qtversion }}
       QT_DIR: C:\Qt
       QT_MSVC: true
       QT_DEBUG: false
       GO111MODULE: off
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+      #QT5BIN: qt5_static_binaries_win.zip
+      QT5BIN: qt5_shared_binaries_win.zip
     steps:
-
-    - name: Check dir
-      continue-on-error: true
-      run: |
-        go version
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
@@ -520,6 +520,17 @@ jobs:
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin\Hostx64
         dir ${{ github.workspace }}\BuildTools\VC\Tools\MSVC\${{ env.MSVCDIR }}\bin\Hostx64\x64
+
+    - name: Replace qt5 
+      run: | 
+        mkdir C:\qt-dl
+        cd C:\qt-dl
+        curl -sL --retry 10 --retry-delay 60 -O -L https://github.com/akiyosi/github-actions-playground/releases/download/qt5-static-msvc/${{ env.QT5BIN }}
+        7z x ${{ env.QT5BIN }}
+        del ${{ env.QT5BIN }}
+        Remove-Item -Path C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -Force -Recurse
+        Copy-Item .\qt5-bin -destination C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }} -recurse
+        Remove-Item -Path C:\qt-dl\qt5-bin -Force -Recurse
 
     - name: Install Go 1.18 for "go get"
       continue-on-error: true
@@ -594,6 +605,7 @@ jobs:
     #     key: ${{ matrix.qtversion }}-qtbindings-windows-${{ env.cache-version }}
 
     - name: Generate Qt bindings
+      continue-on-error: true
       env:
         QT_API: 5.13.0
       shell: cmd
@@ -601,6 +613,8 @@ jobs:
         ${{ github.workspace }}\bin\qtsetup.exe prep windows
         ${{ github.workspace }}\bin\qtsetup.exe check windows
         ${{ github.workspace }}\bin\qtsetup.exe generate windows
+        sed -i '9,14d' ${{ github.workspace }}\src\github.com\therecipe\qt\core\core.cpp
+        sed -i '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
         ${{ github.workspace }}\bin\qtsetup.exe install windows
   
     - name: Retrieving dependencies
