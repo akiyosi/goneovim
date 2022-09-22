@@ -613,7 +613,6 @@ jobs:
     #     key: ${{ matrix.qtversion }}-qtbindings-windows-${{ env.cache-version }}
 
     - name: Generate Qt bindings
-      continue-on-error: true
       env:
         QT_API: 5.13.0
       shell: cmd
@@ -621,7 +620,6 @@ jobs:
         ${{ github.workspace }}\bin\qtsetup.exe prep windows
         ${{ github.workspace }}\bin\qtsetup.exe check windows
         ${{ github.workspace }}\bin\qtsetup.exe generate windows
-        dir ${{ github.workspace }}\src\github.com\therecipe\qt\core\
         sed -i '9,14d' ${{ github.workspace }}\src\github.com\therecipe\qt\core\core.cpp
         sed -i '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
         ${{ github.workspace }}\bin\qtsetup.exe install windows
