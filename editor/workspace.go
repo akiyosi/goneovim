@@ -560,7 +560,7 @@ func (w *Workspace) startNvim(path string) error {
 		// w.stopOnce.Do(func() {
 		// 	close(w.stop)
 		// })
-		w.nvim.Close()
+		// w.nvim.Close()
 		w.signal.StopSignal()
 	}()
 
