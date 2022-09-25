@@ -29,6 +29,7 @@ type gonvimConfig struct {
 
 type editorConfig struct {
 	DockmenuActions                         map[string]string
+	MouseScrollingUnit                      string
 	OptionsToUseGuideWidth                  string
 	FileOpenCmd                             string
 	WindowSeparatorColor                    string
@@ -302,12 +303,15 @@ func (c *gonvimConfig) init() {
 	case "windows":
 		c.Editor.FontFamily = "Consolas"
 		c.Editor.Margin = 2
+		c.Editor.MouseScrollingUnit = "line"
 	case "darwin":
 		c.Editor.FontFamily = "Monaco"
 		c.Editor.Margin = 2
+		c.Editor.MouseScrollingUnit = "smart"
 	default:
 		c.Editor.FontFamily = "Monospace"
 		c.Editor.Margin = 0
+		c.Editor.MouseScrollingUnit = "line"
 	}
 	c.Editor.FontSize = 12
 	c.Editor.Linespace = 6

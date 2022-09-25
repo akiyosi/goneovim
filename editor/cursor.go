@@ -54,7 +54,7 @@ type Cursor struct {
 	isNeedUpdateModeInfo bool
 	isTextDraw           bool
 	isShut               bool
-	isStopScroll         bool
+	emitScrollEnd        bool
 	hasSmoothMove        bool
 	doAnimate            bool
 	normalWidth          bool
@@ -523,13 +523,16 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 	}
 
 	// Set smooth scroll offset
-	scrollPixels := 0
+	var horScrollPixels, verScrollPixels int
 	if editor.config.Editor.LineToScroll == 1 {
-		scrollPixels += win.scrollPixels[1]
+		verScrollPixels += win.scrollPixels[1]
+	}
+	if c.ws.mouseScroll != "" {
+		horScrollPixels += win.scrollPixels[0]
 	}
 
-	x := float64(winx + int(float64(col)*font.cellwidth))
-	y := float64(winy + int(float64(row*font.lineHeight)+float64(scrollPixels)))
+	x := float64(winx + int(float64(col)*font.cellwidth) + horScrollPixels)
+	y := float64(winy + int(float64(row*font.lineHeight)+float64(verScrollPixels)))
 	if font.lineSpace > 0 {
 		y += float64(font.lineSpace) / 2.0
 	}
@@ -538,7 +541,7 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 		return
 	}
 
-	c.isStopScroll = (win.lastScrollphase == core.Qt__ScrollEnd)
+	c.emitScrollEnd = (win.lastScrollphase == core.Qt__ScrollEnd)
 
 	// If the cursor has not finished its animated movement
 	if c.deltax != 0 || c.deltay != 0 {
@@ -546,7 +549,7 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 		c.yprime = c.yprime + c.deltay
 
 		// Suppress cursor animation while touchpad scrolling is in progress.
-		if !c.isStopScroll {
+		if !c.emitScrollEnd {
 			c.xprime = x
 			c.yprime = y
 		}
@@ -564,7 +567,7 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 
 	c.doAnimate = true
 	// Suppress cursor animation while touchpad scrolling is in progress.
-	if !c.isStopScroll {
+	if !c.emitScrollEnd {
 		c.doAnimate = false
 	}
 

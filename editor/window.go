@@ -292,10 +292,13 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	// This is to suppress flickering in smooth scroll
 	dx := math.Abs(float64(w.scrollPixels[0]))
 	dy := math.Abs(float64(w.scrollPixels[1]))
-	if dx >= font.cellwidth {
+	horizontalScrollAmount := font.cellwidth
+	verticalScrollAmount := float64(font.lineHeight)
+
+	if dx >= horizontalScrollAmount {
 		w.scrollPixels[0] = 0
 	}
-	if dy >= float64(font.lineHeight) {
+	if dy >= verticalScrollAmount {
 		w.scrollPixels[1] = 0
 	}
 
@@ -419,10 +422,10 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 			if c == nil {
 				continue
 			}
-			if c.isSignColumn() {
+			if c.highlight.isSignColumn() {
 				res++
 			}
-			if c.char != " " && !c.isSignColumn() {
+			if c.char != " " && !c.highlight.isSignColumn() {
 				break
 			}
 			// yylen, _ := w.countHeadSpaceOfLine(y)
@@ -564,16 +567,20 @@ func (w *Window) drawIndentline(p *gui.QPainter, x int, y int, b bool) {
 	font := w.getFont()
 
 	// Set smooth scroll offset
-	scrollPixels := 0
+	var horScrollPixels, verScrollPixels int
 	if w.lastScrollphase != core.Qt__NoScrollPhase {
-		scrollPixels = w.scrollPixels2
+		verScrollPixels = w.scrollPixels2
 	}
 	if editor.config.Editor.LineToScroll == 1 {
-		scrollPixels += w.scrollPixels[1]
+		verScrollPixels += w.scrollPixels[1]
 	}
 
-	X := float64(x) * font.cellwidth
-	Y := float64(y*font.lineHeight) + float64(scrollPixels)
+	if w.s.ws.mouseScroll != "" {
+		horScrollPixels += w.scrollPixels[0]
+	}
+
+	X := float64(x)*font.cellwidth + float64(horScrollPixels)
+	Y := float64(y*font.lineHeight) + float64(verScrollPixels)
 	var color *RGBA = editor.colors.indentGuide
 	var lineWeight float64 = 1
 	if b {
@@ -847,10 +854,14 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	mode := w.s.ws.mode
 	isTmode := w.s.ws.terminalMode
 	isCursorOnWin := w.isEventEmmitOnCursorGrid()
+	mouseScroll := w.s.ws.mouseScroll
+	if mouseScroll == "" {
+		mouseScroll = "ver:2,hor:1"
+	}
 
 	editor.putLog("detect neovim mode:", mode)
 	editor.putLog("detect neovim terminal mode:", fmt.Sprintf("%v", isTmode))
-	if isTmode {
+	if isTmode && w.s.ws.mouseScroll == "" {
 		w.s.ws.nvim.Input(`<C-\><C-n>`)
 	} else if mode != "normal" && isCursorOnWin {
 		w.s.ws.nvim.Input(w.s.ws.escKeyInInsert)
@@ -867,49 +878,68 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		w.doGetSnapshot = true
 	}
 	w.lastScrollphase = phase
-	isStopScroll := (w.lastScrollphase == core.Qt__ScrollEnd)
+	emitScrollEnd := (w.lastScrollphase == core.Qt__ScrollEnd)
 
-	accel := 1
-	if isCursorOnWin {
-		// Smooth scroll with touchpad
-		if (v == 0 || h == 0) && isStopScroll {
-			vert, horiz = w.smoothUpdate(v, h, isStopScroll)
-		} else if (v != 0 || h != 0) && phase != core.Qt__NoScrollPhase {
-			// If Scrolling has ended, reset the displacement of the line
-			vert, horiz = w.smoothUpdate(v, h, isStopScroll)
-		} else {
-			angles := event.AngleDelta()
-			vert = angles.Y()
-			horiz = angles.X()
-			if event.Inverted() {
-				vert = -1 * vert
-			}
-			// Scroll per 1 line
-			if math.Abs(float64(vert)) > 1 {
-				vert = vert / int(math.Abs(float64(vert)))
-			}
-			if math.Abs(float64(horiz)) > 1 {
-				horiz = horiz / int(math.Abs(float64(horiz)))
-			}
+	// handle MouseScrollingUnit configuration item
+	// if value is "line":
+	doAngleScroll := false
+	if editor.config.Editor.MouseScrollingUnit == "line" {
+		doAngleScroll = true
+	}
+	// if value is "smart":
+	if editor.config.Editor.MouseScrollingUnit == "smart" {
+		if w.s.ws.mouseScrollTemp != "ver:1,hor:1" {
+			w.applyTemporaryMousescroll("ver:1,hor:1")
 		}
 
-		// Scroll acceleration
 		if math.Abs(float64(v)) > float64(font.lineHeight) {
-			accel = int(math.Abs(float64(v)) * 2.5 / float64(font.lineHeight))
-			if accel > 6 {
-				accel = 6
+			doAngleScroll = true
+			w.applyTemporaryMousescroll(w.s.ws.mouseScroll)
+
+		} else {
+			doAngleScroll = false
+			if w.s.ws.mouseScrollTemp != "ver:1,hor:1" {
+				w.applyTemporaryMousescroll("ver:1,hor:1")
 			}
 		}
-		if accel == 0 {
-			accel = 1
+		if emitScrollEnd {
+			w.applyTemporaryMousescroll(w.s.ws.mouseScroll)
 		}
-		vert = vert * int(math.Sqrt(float64(accel)))
+	}
+	// if value is "pixel":
+	if editor.config.Editor.MouseScrollingUnit == "pixel" {
+		w.applyTemporaryMousescroll("ver:1,hor:1")
+		if emitScrollEnd {
+			w.applyTemporaryMousescroll(w.s.ws.mouseScroll)
+		}
+	}
+
+	if (v == 0 || h == 0) && emitScrollEnd && !doAngleScroll {
+		vert, horiz = w.smoothUpdate(v, h, emitScrollEnd)
+	} else if (v != 0 || h != 0) && phase != core.Qt__NoScrollPhase && !doAngleScroll {
+		// If Scrolling has ended, reset the displacement of the line
+		vert, horiz = w.smoothUpdate(v, h, emitScrollEnd)
 	} else {
-		vert = pixels.Y()
-		horiz = pixels.X()
+		angles := event.AngleDelta()
+		vert = angles.Y()
+		horiz = angles.X()
+		// Scroll per 1 line
+		if vert < 0 {
+			vert = -1
+		} else if vert > 0 {
+			vert = 1
+		}
+		if horiz < 0 {
+			horiz = -1
+		} else if horiz > 0 {
+			horiz = 1
+		}
 	}
 
 	if vert == 0 && horiz == 0 && isCursorOnWin {
+		return
+	}
+	if vert == 0 && horiz == 0 {
 		return
 	}
 
@@ -926,43 +956,54 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 			action = "down"
 		}
 	}
-	if action == "" {
-		if horiz > 0 {
-			action = "left"
-		} else if horiz < 0 {
-			action = "right"
-		}
-	}
 
 	mod := editor.modPrefix(event.Modifiers())
 	row := int(float64(event.X()) / font.cellwidth)
 	col := int(float64(event.Y()) / float64(font.lineHeight))
 
-	if w.s.ws.isMappingScrollKey || !isCursorOnWin {
-		editor.putLog("detect a mapping to <C-e>, <C-y> keys.")
+	if w.s.ws.isMappingScrollKey || !isCursorOnWin || w.s.ws.mouseScroll != "" {
 		if vert != 0 {
 			w.s.ws.nvim.InputMouse("wheel", action, mod, w.grid, row, col)
 		}
 	} else {
+		verAmount := editor.config.Editor.LineToScroll * int(math.Abs(float64(vert)))
+		scrollUpKey := "<C-y>"
+		scrollDownKey := "<C-e>"
+		var scrollKey string
 		if editor.config.Editor.ReversingScrollDirection {
 			if vert > 0 {
-				go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
+				scrollKey = fmt.Sprintf("%v%s", verAmount, scrollDownKey)
 			} else if vert < 0 {
-				go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
+				scrollKey = fmt.Sprintf("%v%s", verAmount, scrollUpKey)
 			}
 		} else {
 			if vert > 0 {
-				go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-y>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
+				scrollKey = fmt.Sprintf("%v%s", verAmount, scrollUpKey)
 			} else if vert < 0 {
-				go w.s.ws.nvim.Input(fmt.Sprintf("%v<C-e>", editor.config.Editor.LineToScroll*int(math.Abs(float64(vert)))))
+				scrollKey = fmt.Sprintf("%v%s", verAmount, scrollDownKey)
 			}
 		}
+
+		go w.s.ws.nvim.Input(scrollKey)
 	}
 
 	if editor.config.Editor.DisableHorizontalScroll {
 		return
 	}
-	if vert != 0 {
+
+	// if vert != 0 {
+	// 	return
+	// }
+
+	if isTmode {
+		return
+	}
+
+	if horiz > 0 {
+		action = "left"
+	} else if horiz < 0 {
+		action = "right"
+	} else {
 		return
 	}
 
@@ -971,6 +1012,21 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	event.Accept()
+}
+
+func (w *Window) applyTemporaryMousescroll(ms string) {
+	cmd := "set mousescroll=" + ms
+	var result bool
+	resultCh := make(chan bool, 5)
+	go func() {
+		w.s.ws.nvim.Exec(cmd, result)
+		resultCh <- result
+	}()
+	select {
+	case <-resultCh:
+		w.s.ws.mouseScrollTemp = ms
+	case <-time.After(40 * time.Millisecond):
+	}
 }
 
 func (w *Window) isEventEmmitOnCursorGrid() bool {
@@ -994,11 +1050,11 @@ func (w *Window) focusGrid() {
 }
 
 // screen smooth update with touchpad
-func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
+func (w *Window) smoothUpdate(v, h int, emitScrollEnd bool) (int, int) {
 	var vert, horiz int
 	font := w.getFont()
 
-	if isStopScroll {
+	if emitScrollEnd {
 		w.scrollPixels[0] = 0
 		w.scrollPixels[1] = 0
 		w.queueRedrawAll()
@@ -1011,35 +1067,37 @@ func (w *Window) smoothUpdate(v, h int, isStopScroll bool) (int, int) {
 	if h < 0 && w.scrollPixels[0] > 0 {
 		w.scrollPixels[0] = 0
 	}
-	// if v < 0 && w.scrollPixels[1] > 0 {
-	// 	w.scrollPixels[1] = 0
-	// }
+	if v < 0 && w.scrollPixels[1] > 0 {
+		w.scrollPixels[1] = 0
+	}
 
 	dx := math.Abs(float64(w.scrollPixels[0]))
 	dy := math.Abs(float64(w.scrollPixels[1]))
+	horizontalScrollAmount := font.cellwidth
+	verticalScrollAmount := float64(font.lineHeight)
 
-	if dx < font.cellwidth {
+	if dx < horizontalScrollAmount {
 		w.scrollPixels[0] += h
 	}
-	if dy < float64(font.lineHeight) {
+	if dy < verticalScrollAmount {
 		w.scrollPixels[1] += v
 	}
 
 	dx = math.Abs(float64(w.scrollPixels[0]))
 	dy = math.Abs(float64(w.scrollPixels[1]))
 
-	if dx >= font.cellwidth {
-		horiz = int(float64(w.scrollPixels[0]) / font.cellwidth)
+	if dx >= horizontalScrollAmount {
+		horiz = int(float64(w.scrollPixels[0]) / horizontalScrollAmount)
 	}
-	if dy >= float64(font.lineHeight) {
-		vert = int(float64(w.scrollPixels[1]) / float64(font.lineHeight))
+	if dy >= verticalScrollAmount {
+		vert = int(float64(w.scrollPixels[1]) / verticalScrollAmount)
 		// NOTE: Reset to 0 after paint event is complete.
 		//       This is to suppress flickering.
 	}
 
 	// w.update()
 	// w.s.ws.cursor.update()
-	if !(dx >= font.cellwidth || dy > float64(font.lineHeight)) {
+	if !(dx >= horizontalScrollAmount || dy > verticalScrollAmount) {
 		w.update()
 		w.s.ws.cursor.update()
 	}
@@ -1139,6 +1197,9 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 	}
 
 	// Suppresses flickering during smooth scrolling
+	if win.scrollPixels[0] != 0 {
+		win.scrollPixels[0] = 0
+	}
 	if win.scrollPixels[1] != 0 {
 		win.scrollPixels[1] = 0
 	}
@@ -1341,7 +1402,7 @@ func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 			continue
 		}
 
-		if c.char != " " && !c.isSignColumn() {
+		if c.char != " " && !c.highlight.isSignColumn() {
 			break
 		} else {
 			count++
@@ -1350,8 +1411,8 @@ func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 	return count, nil
 }
 
-func (c *Cell) isSignColumn() bool {
-	switch c.highlight.hlName {
+func (h *Highlight) isSignColumn() bool {
+	switch h.hlName {
 	case "SignColumn",
 		"FoldColumn",
 		"LineNr",
@@ -1442,6 +1503,9 @@ func (w *Window) scroll(count int) {
 	}
 
 	// Suppresses flickering during smooth scrolling
+	if w.scrollPixels[0] != 0 {
+		w.scrollPixels[0] = 0
+	}
 	if w.scrollPixels[1] != 0 {
 		w.scrollPixels[1] = 0
 	}
@@ -1495,7 +1559,7 @@ func (w *Window) update() {
 	start := w.queueRedrawArea[1]
 	end := w.queueRedrawArea[3]
 	// Update all lines when using the wheel scroll or indent guide feature.
-	if w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide || w.s.name == "minimap" {
+	if w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide || w.s.name == "minimap" {
 		start = 0
 		end = w.rows
 	}
@@ -1536,6 +1600,10 @@ func (w *Window) update() {
 			drawWithSingleRect = true
 		}
 		// If scroll is smooth with touchpad
+		if w.scrollPixels[0] != 0 {
+			width = w.cols
+			drawWithSingleRect = true
+		}
 		if w.scrollPixels[1] != 0 {
 			width = w.maxLenContent
 			drawWithSingleRect = true
@@ -1690,12 +1758,15 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	}
 
 	// Set smooth scroll offset
-	scrollPixels := 0
+	var horScrollPixels, verScrollPixels int
 	if w.lastScrollphase != core.Qt__NoScrollPhase {
-		scrollPixels = w.scrollPixels2
+		verScrollPixels = w.scrollPixels2
 	}
 	if editor.config.Editor.LineToScroll == 1 {
-		scrollPixels += w.scrollPixels[1]
+		verScrollPixels += w.scrollPixels[1]
+	}
+	if w.s.ws.mouseScroll != "" {
+		horScrollPixels += w.scrollPixels[0]
 	}
 
 	// isDrawDefaultBg := true
@@ -1775,7 +1846,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 				end = x
 			}
 			if !lastBg.equals(bg) || x == bounds {
-				w.fillCellRect(p, lastHighlight, lastBg, y, start, end, scrollPixels, isDrawDefaultBg)
+				w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
 
 				start = x
 				end = x
@@ -1783,14 +1854,14 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 				lastHighlight = highlight
 
 				if x == bounds {
-					w.fillCellRect(p, lastHighlight, lastBg, y, start, end, scrollPixels, isDrawDefaultBg)
+					w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
 				}
 			}
 		}
 	}
 }
 
-func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg *RGBA, y, start, end, scrollPixels int, isDrawDefaultBg bool) {
+func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg *RGBA, y, start, end, horScrollPixels, verScrollPixels int, isDrawDefaultBg bool) {
 
 	if lastHighlight == nil {
 		return
@@ -1804,6 +1875,10 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 		width = 0
 	}
 
+	if lastHighlight.isSignColumn() {
+		horScrollPixels = 0
+	}
+
 	font := w.getFont()
 	if width > 0 {
 		// Set diff pattern
@@ -1811,8 +1886,8 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 
 		// Fill background with pattern
 		rectF := core.NewQRectF4(
-			float64(start)*font.cellwidth,
-			float64((y)*font.lineHeight+scrollPixels),
+			float64(start)*font.cellwidth+float64(horScrollPixels),
+			float64((y)*font.lineHeight+verScrollPixels),
 			float64(width)*font.cellwidth,
 			float64(font.lineHeight),
 		)
@@ -1845,15 +1920,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	chars := map[*Highlight][]int{}
 	specialChars := []int{}
 
-	// Set smooth scroll offset
-	scrollPixels := 0
-	if w.lastScrollphase != core.Qt__NoScrollPhase {
-		scrollPixels = w.scrollPixels2
-	}
-	if editor.config.Editor.LineToScroll == 1 {
-		scrollPixels += w.scrollPixels[1]
-	}
-
 	cellBasedDrawing := editor.config.Editor.DisableLigatures || (editor.config.Editor.Letterspace > 0)
 
 	// pointX := float64(col) * wsfont.cellwidth
@@ -1882,7 +1948,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			w.drawTextInPos(
 				p,
 				int(float64(x)*wsfont.cellwidth),
-				y*wsfont.lineHeight+scrollPixels,
+				y*wsfont.lineHeight,
 				line[x].char,
 				line[x].highlight,
 				false,
@@ -1965,7 +2031,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 						w.drawTextInPos(
 							p,
 							int(float64(x-pos)*wsfont.cellwidth),
-							y*wsfont.lineHeight+scrollPixels,
+							y*wsfont.lineHeight,
 							buffer.String(),
 							highlight,
 							true,
@@ -1999,7 +2065,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			w.drawTextInPos(
 				p,
 				int(float64(x)*wsfont.cellwidth),
-				y*wsfont.lineHeight+scrollPixels,
+				y*wsfont.lineHeight,
 				line[x].char,
 				line[x].highlight,
 				false,
@@ -2010,13 +2076,30 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 }
 
 func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
+
+	// Set smooth scroll offset
+	var horScrollPixels, verScrollPixels int
+	if w.s.ws.mouseScroll != "" {
+		horScrollPixels += w.scrollPixels[0]
+	}
+	if w.lastScrollphase != core.Qt__NoScrollPhase {
+		verScrollPixels = w.scrollPixels2
+	}
+	if editor.config.Editor.LineToScroll == 1 {
+		verScrollPixels += w.scrollPixels[1]
+	}
+
+	if highlight.isSignColumn() {
+		horScrollPixels = 0
+	}
+
 	wsfont := w.getFont()
 	// if CachedDrawing is disabled
 	if !editor.config.Editor.CachedDrawing {
 		w.drawTextInPosWithNoCache(
 			p,
-			x,
-			y+wsfont.shift,
+			x+horScrollPixels,
+			y+wsfont.shift+verScrollPixels,
 			text,
 			highlight,
 			isNormalWidth,
@@ -2024,8 +2107,8 @@ func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight
 	} else { // if CachedDrawing is enabled
 		w.drawTextInPosWithCache(
 			p,
-			x,
-			y,
+			x+horScrollPixels,
+			y+verScrollPixels,
 			text,
 			highlight,
 			isNormalWidth,
@@ -2127,12 +2210,15 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 	}
 
 	// Set smooth scroll offset
-	scrollPixels := 0
+	var horScrollPixels, verScrollPixels int
+	if w.s.ws.mouseScroll != "" {
+		horScrollPixels += w.scrollPixels[0]
+	}
 	if w.lastScrollphase != core.Qt__NoScrollPhase {
-		scrollPixels = w.scrollPixels2
+		verScrollPixels = w.scrollPixels2
 	}
 	if editor.config.Editor.LineToScroll == 1 {
-		scrollPixels += w.scrollPixels[1]
+		verScrollPixels += w.scrollPixels[1]
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -2181,9 +2267,9 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		weight = 1
 	}
 	if highlight.strikethrough {
-		Y := float64(0*font.lineHeight+scrollPixels) + float64(font.ascent)*0.65 + float64(space2/2)
+		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent)*0.65 + float64(space2/2)
 		pi.FillRect5(
-			int(start),
+			int(start)+horScrollPixels,
 			int(Y),
 			int(math.Ceil(font.cellwidth)),
 			weight,
@@ -2192,8 +2278,8 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 	}
 	if highlight.underline {
 		pi.FillRect5(
-			int(start),
-			int(float64((0+1)*font.lineHeight+scrollPixels))-weight,
+			int(start)+horScrollPixels,
+			int(float64((0+1)*font.lineHeight+verScrollPixels))-weight,
 			int(math.Ceil(font.cellwidth)),
 			weight,
 			color,
@@ -2207,9 +2293,9 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		}
 		freq := 1.0
 		phase := 0.0
-		Y := float64(0*font.lineHeight+scrollPixels) + float64(font.ascent+descent*0.3) + float64(space2/2) + space
+		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent+descent*0.3) + float64(space2/2) + space
 		Y2 := Y + amplitude*math.Sin(0)
-		point := core.NewQPointF3(start, Y2)
+		point := core.NewQPointF3(start+float64(horScrollPixels), Y2)
 		path := gui.NewQPainterPath2(point)
 		for i := int(point.X()); i <= int(end); i++ {
 			Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.cellwidth+phase)
@@ -2343,12 +2429,15 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	font := w.getFont()
 
 	// Set smooth scroll offset
-	scrollPixels := 0
+	var horScrollPixels, verScrollPixels int
+	if w.s.ws.mouseScroll != "" {
+		horScrollPixels += w.scrollPixels[0]
+	}
 	if w.lastScrollphase != core.Qt__NoScrollPhase {
-		scrollPixels = w.scrollPixels2
+		verScrollPixels = w.scrollPixels2
 	}
 	if editor.config.Editor.LineToScroll == 1 {
-		scrollPixels += w.scrollPixels[1]
+		verScrollPixels += w.scrollPixels[1]
 	}
 
 	for x := col; x <= col+cols; x++ {
@@ -2391,9 +2480,9 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			if line[x].highlight.strikethrough {
 				// strikeLinef := core.NewQLineF3(start, halfY, end, halfY)
 				// p.DrawLine(strikeLinef)
-				Y := float64(y*font.lineHeight+scrollPixels) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
+				Y := float64(y*font.lineHeight+verScrollPixels) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
 				p.FillRect5(
-					int(start),
+					int(start)+horScrollPixels,
 					int(Y),
 					int(math.Ceil(font.cellwidth)),
 					weight,
@@ -2404,8 +2493,8 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				// linef := core.NewQLineF3(start, Y, end, Y)
 				// p.DrawLine(linef)
 				p.FillRect5(
-					int(start),
-					int(float64((y+1)*font.lineHeight+scrollPixels))-weight,
+					int(start)+horScrollPixels,
+					int(float64((y+1)*font.lineHeight+verScrollPixels))-weight,
 					int(math.Ceil(font.cellwidth)),
 					weight,
 					color,
@@ -2419,9 +2508,9 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				}
 				freq := 1.0
 				phase := 0.0
-				Y := float64(y*font.lineHeight+scrollPixels) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
+				Y := float64(y*font.lineHeight+verScrollPixels) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
 				Y2 := Y + amplitude*math.Sin(0)
-				point := core.NewQPointF3(start, Y2)
+				point := core.NewQPointF3(start+float64(horScrollPixels), Y2)
 				path := gui.NewQPainterPath2(point)
 				for i := int(point.X()); i <= int(end); i++ {
 					Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.cellwidth+phase)
@@ -2448,8 +2537,8 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 
 			p.DrawImage7(
 				core.NewQPointF3(
-					float64(x)*font.cellwidth,
-					float64(y*font.lineHeight)+float64(scrollPixels),
+					float64(x)*font.cellwidth+float64(horScrollPixels),
+					float64(y*font.lineHeight)+float64(verScrollPixels),
 				),
 				image,
 			)

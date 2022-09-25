@@ -76,6 +76,8 @@ type Workspace struct {
 	escKeyInInsert     string
 	filepath           string
 	screenbg           string
+	mouseScroll        string
+	mouseScrollTemp    string
 	normalMappings     []*nvim.Mapping
 	modeInfo           []map[string]interface{}
 	insertMappings     []*nvim.Mapping
@@ -806,6 +808,7 @@ func (w *Workspace) initGonvim() {
 		command! GonvimSmoothScroll call rpcnotify(0, "Gui", "gonvim_smoothscroll")
 		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
 		command! GonvimIndentguide call rpcnotify(0, "Gui", "gonvim_indentguide")
+		command! -nargs=? GonvimMousescrollUnit call rpcnotify(0, "Gui", "gonvim_mousescroll_unit", <args>)
 	`
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	w.nvim.Command(registerScripts)
@@ -834,6 +837,21 @@ func (w *Workspace) getNvimOptions() {
 	w.getTS()
 	w.getBG()
 	w.getKeymaps()
+	w.getMousescroll()
+}
+
+func (w *Workspace) getMousescroll() {
+	msChan := make(chan string, 5)
+	go func() {
+		mousescroll := ""
+		w.nvim.Option("mousescroll", &mousescroll)
+		msChan <- mousescroll
+	}()
+
+	select {
+	case w.mouseScroll = <-msChan:
+	case <-time.After(40 * time.Millisecond):
+	}
 }
 
 func (w *Workspace) getColorscheme() {
@@ -2083,6 +2101,8 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		w.toggleIndentguide()
 	case "gonvim_ligatures":
 		w.toggleLigatures()
+	case "gonvim_mousescroll_unit":
+		w.setMousescrollUnit(updates[1].(string))
 	case "Font":
 		w.guiFont(updates[1].(string))
 	case "Linespace":
@@ -2224,6 +2244,14 @@ func (w *Workspace) getSnapshot() {
 		return
 	}
 	win.grabScreenSnapshot(win.Rect())
+}
+
+func (w *Workspace) setMousescrollUnit(ms string) {
+	if !(ms == "line" || ms == "smart" || ms == "pixel") {
+		editor.config.Editor.MouseScrollingUnit = "line"
+		return
+	}
+	editor.config.Editor.MouseScrollingUnit = ms
 }
 
 func (w *Workspace) letterSpacing(arg interface{}) {
