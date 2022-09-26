@@ -288,6 +288,14 @@ COMMANDS                                                       *goneovim-command
 	Toggles the display of the indentation guide.
 
 
+:GonvimMousescrollUnit                                   *:GonvimMousescrollUnit*
+	Sets the mode of mouse scrolling. 
+	"line" scrolls in lines.
+	"pixel" scrolls in pixels.
+	"smart" scrolls in pixels when the amount of scrolling is small, and
+	        scrolls in lines when the amount of scrolling is large.
+
+
 ================================================================================
 WSL integration                                                     *goneovim-wsl*
 
@@ -344,6 +352,14 @@ All Options are follows:
         
         ## Specifies the amount of scrolling by the mouse wheel. The default value is 1.
         # LineToScroll = 1
+
+        ## MouseScrollingUnit sets the mode of mouse scrolling. 
+	## "line" scrolls in lines.
+	## "pixel" scrolls in pixels.
+	## "smart" scrolls in pixels when the amount of scrolling is small, and
+	##         scrolls in lines when the amount of scrolling is large.
+	## The default value is "smart" on macos, and "line" on other operating systems.
+	# MouseScrollingUnit = "line"
         
         ## This option makes the whole GUI window in semi-transparent.
         ## This setting also implicitly enables the Drawborder setting

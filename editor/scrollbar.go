@@ -121,12 +121,12 @@ func (s *ScrollBar) scroll(v, h int) {
 
 	font := win.getFont()
 
-	isStopScroll := !s.isPressed
+	emitScrollEnd := !s.isPressed
 
 	if int(math.Abs(float64(v))) >= font.lineHeight {
 		vert = v / font.lineHeight
 	} else {
-		vert, _ = win.smoothUpdate(v, h, isStopScroll)
+		vert, _ = win.smoothUpdate(v, h, emitScrollEnd)
 	}
 
 	if vert == 0 {
