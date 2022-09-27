@@ -2849,10 +2849,20 @@ func (w *Window) dropEvent(e *gui.QDropEvent) {
 					}
 				}
 
-				if bufName != "" {
-					w.s.howToOpen(filepath)
+				// if message grid is active and drop the file in message area,
+				// then, we put the filepath string into message area.
+				if w.isMsgGrid && w.s.ws.cursor.gridid == w.grid {
+					w.s.ws.nvim.FeedKeys(
+						filepath,
+						"t",
+						false,
+					)
 				} else {
-					fileOpenInBuf(filepath)
+					if bufName != "" {
+						w.s.howToOpen(filepath)
+					} else {
+						fileOpenInBuf(filepath)
+					}
 				}
 			default:
 			}
