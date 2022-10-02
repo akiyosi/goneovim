@@ -283,7 +283,7 @@ func (w *Workspace) lazyDrawUI() {
 	editor.putLog("Finished preparing the deferred drawing UI.")
 }
 
-func (w *Workspace) vimEnterProcess() {
+func (w *Workspace) uiEnterProcess() {
 	// Show window if connect remote nvim via ssh
 	if editor.opts.Ssh != "" {
 		editor.window.Show()
@@ -1451,14 +1451,6 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			for _, u := range update[1:] {
 				w.setColorsSet(u.([]interface{}))
 			}
-			// Show a window when connecting to the remote nvim.
-			// The reason for handling the process here is that
-			// in some cases, VimEnter will not occur if an error occurs in the remote nvim.
-			if !editor.window.IsVisible() {
-				if editor.opts.Ssh != "" {
-					editor.window.Show()
-				}
-			}
 
 			// Purge all text cache for window's
 			w.screen.purgeTextCacheForWins()
@@ -2035,9 +2027,9 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 	switch event {
 	case "gonvim_enter":
 		editor.putLog("vim enter")
-		w.vimEnterProcess()
 	case "gonvim_uienter":
 		editor.putLog("ui enter")
+		w.uiEnterProcess()
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
 		editor.window.Resize2(width, height)
