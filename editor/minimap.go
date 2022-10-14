@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/neovim/go-client/nvim"
@@ -247,7 +248,16 @@ func (m *MiniMap) setColorscheme() {
 	if m.isSetColorscheme {
 		return
 	}
-	colo, _ := m.ws.nvim.CommandOutput("colo")
+	coloChan := make(chan string, 5)
+	go func() {
+		colo, _ := m.ws.nvim.CommandOutput("colo")
+		coloChan <- colo
+	}()
+	colo := ""
+	select {
+	case colo = <-coloChan:
+	case <-time.After(40 * time.Millisecond):
+	}
 
 	sep := "/"
 	switch runtime.GOOS {
@@ -256,7 +266,17 @@ func (m *MiniMap) setColorscheme() {
 	default:
 	}
 
-	runtimePaths, _ := m.ws.nvim.RuntimePaths()
+	rtpChan := make(chan []string, 5)
+	go func() {
+		runtimePaths, _ := m.ws.nvim.RuntimePaths()
+		rtpChan <- runtimePaths
+	}()
+	var runtimePaths []string
+	select {
+	case runtimePaths = <-rtpChan:
+	case <-time.After(40 * time.Millisecond):
+	}
+
 	colorschemePath := ""
 	treesitterPath := ""
 	isColorschmepathDetected := false
