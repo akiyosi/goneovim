@@ -936,7 +936,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		}
 	}
 
-	if vert == 0 && horiz == 0 && isCursorOnWin {
+	if vert == 0 && horiz == 0 && isCursorOnWin && w.s.ws.mouseScroll == "" {
 		return
 	}
 	if vert == 0 && horiz == 0 {
