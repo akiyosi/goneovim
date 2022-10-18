@@ -28,7 +28,7 @@ See https://github.com/akiyosi/goneovim/blob/master/.github/workflows/ci.yaml
 
     ```
     export QT_DIR=/path/to/Qt
-    export QT_VERSION=5.14.2
+    export QT_VERSION=5.15.2
     export QT_API=5.13.0
     ```
 
@@ -83,7 +83,7 @@ See also: https://github.com/therecipe/qt/wiki/Installation-on-Windows#msys2-ver
   * Install Qt5 on MSYS2
 
     ```
-    pacman --noconfirm -S sed git mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
+    pacman --noconfirm -S sed git unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
     ```
 
   * Export Environment variables
@@ -95,6 +95,7 @@ See also: https://github.com/therecipe/qt/wiki/Installation-on-Windows#msys2-ver
     | ------------- | ----- |
     | QT_MSYS2           | true            |
     | QT_MSYS2_DIR       | {Path to MSYS2} |
+    | QT_MSYS2_STATIC    | true            |
     | QT_MSYS2_ARCH      | amd64           |
     | QT_DEBUG           | false           |
     | GO111MODULE        | off             |
@@ -129,12 +130,6 @@ See also: https://github.com/therecipe/qt/wiki/Installation-on-Windows#msys2-ver
     $(go env GOPATH)/bin/qtmoc
     ```
 
-  * Test in cmd.exe
-
-    ```
-    go.exe test github.com/akiyosi/goneovim/editor
-    ```
-
   * Build in MSYS2 shell
 
     ```
@@ -149,7 +144,7 @@ See also: https://github.com/therecipe/qt/wiki/Installation-on-Windows#msys2-ver
 
   * Install MSVC 2017 Visual C++ Buildtools
 
-  * Install Qt; Note that we recommend to install Qt 5.12.X (where X is 0-6)
+  * Install Qt 5.14.2
   
     - Qt installation on Windows
       - [https://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe](https://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe)
@@ -165,7 +160,6 @@ See also: https://github.com/therecipe/qt/wiki/Installation-on-Windows#msys2-ver
     | QT_VERSION       | The version of Qt you installed |
     | QT_DIR           | The directory path where qt is installed |
     | GOVSVARSPATH     | \Path\To\BuildTools\VC\Auxiliary\Build\vcvars64.bat |
-    | CGO_ENABLED      | 1 |
     | QT_MSVC          | true |
 
 
@@ -230,6 +224,13 @@ See also: https://github.com/therecipe/qt/wiki/Installation-on-Windows#msys2-ver
     %GOPATH%/bin/qtmoc.exe
     ```
 
+  * Test
+
+    ```
+    cd %GOPATH%/src/github.com/akiyosi/goneovim
+    %GOPATH%/bin/qtdeploy.exe build desktop
+    ```
+
   * Build
 
     ```
@@ -237,9 +238,4 @@ See also: https://github.com/therecipe/qt/wiki/Installation-on-Windows#msys2-ver
     %GOPATH%/bin/qtdeploy.exe build desktop
     ```
 
-    If you have Qt5.13 installed, you can run the following command
-
-    ```
-    %GOPATH%/bin/qtdeploy build desktop
-    ```
 
