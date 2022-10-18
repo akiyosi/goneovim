@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"net"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -576,23 +577,10 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 	}
 	ctx := context.Background()
 
-	userhost := ""
-	port := "22"
-	parts := strings.Split(editor.opts.Ssh, ":")
-	if len(parts) >= 3 {
-		return nil, errors.New("Invalid hostname")
-	}
-	if len(parts) == 2 {
-		userhost = parts[0]
-		port = parts[1]
-		_, err := strconv.Atoi(port)
-		if port == "" || err != nil {
-			port = "22"
-		}
-	}
-	if len(parts) == 1 {
-		userhost = parts[0]
-	}
+	var hostname string = ""
+	var portno string = "22"
+	var err error
+	hostname, portno, err = net.SplitHostPort(editor.opts.Ssh)
 
 	nvimargs := `"nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed `
 	for _, s := range editor.args {
@@ -600,8 +588,8 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 	}
 	nvimargs += `"`
 	sshargs := []string{
-		userhost,
-		"-p", port,
+		hostname,
+		"-p", portno,
 		"$SHELL",
 		"--login",
 		"-c",
