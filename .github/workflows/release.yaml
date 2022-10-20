@@ -34,8 +34,8 @@ jobs:
     strategy:
       matrix:
         go-version: [1.18.x]
-        platform: [ubuntu-latest]
-        qtversion: [5.15.2]
+        platform: [ubuntu-latest] #, windows-latest]
+        qtversion: [5.15.6]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -46,6 +46,7 @@ jobs:
       GO111MODULE: off
       GOPROXY: https://goproxy.io
       QT_STATIC: true
+      QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
     steps:
 
     - name: Linux prerequisites 
