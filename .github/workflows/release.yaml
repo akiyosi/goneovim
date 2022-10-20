@@ -103,8 +103,6 @@ jobs:
     - name: Get Qt binding for Go
       run: |
         go get -v github.com/therecipe/qt/cmd/...
-        cd ${{ github.workspace }}/src/golang.org/x/sys/
-        git checkout 2771309
 
     - name: Checkout code
       uses: actions/checkout@v2
