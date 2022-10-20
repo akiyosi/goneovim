@@ -887,7 +887,7 @@ func (e *Editor) showWindow() {
 		}
 	}
 
-	if e.opts.Ssh == "" || e.opts.Wsl == nil {
+	if e.opts.Ssh == "" && e.opts.Wsl == nil {
 		e.window.Show()
 	}
 }
