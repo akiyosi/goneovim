@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 env:
-  cache-version: v4
+  cache-version: v8
 
 jobs:
 
@@ -14,11 +14,9 @@ jobs:
   test-and-build-linux:
     strategy:
       matrix:
-        # go-version: [1.12.x, 1.13.x]
         go-version: [1.18.x]
         platform: [ubuntu-latest] #, windows-latest]
-        #qtversion: [5.13.0, 5.14.1, 5.15.1]
-        qtversion: [5.15.2]
+        qtversion: [5.15.6]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -29,26 +27,80 @@ jobs:
       GO111MODULE: off
       GOPROXY: https://goproxy.io
       QT_STATIC: true
+      QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
     steps:
     - name: Linux prerequisites 
       run: |
         sudo apt update
-        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev
+        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake
+        sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
+        sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev
+        #sudo apt-get --no-install-recommends -qq -y install libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev libxcb1-dev libxcb-glx0-dev libxcb-keysyms1-dev libxcb-image0-dev libxcb-shm0-dev libxcb-icccm4-dev libxcb-sync0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-randr0-dev libxcb-render-util0-dev libxcb-xinerama0-dev libxkbcommon-dev libxkbcommon-x11-dev
+        sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
+        sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
 
     - name: Install Go
       uses: actions/setup-go@v1
       with:
         go-version: ${{ matrix.go-version }}
 
-    - name: Install Qt for linux
-      uses: jurplel/install-qt-action@v3
+    - uses: actions/cache@v2
+      id: cache-qt-linux
       with:
-        version: ${{ matrix.qtversion }}
-        host: linux
-        target: desktop
-        dir: ${{ github.workspace }}
-        modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
-        # mirror: 'http://mirrors.ocf.berkeley.edu/qt/'
+        path: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
+        key: ${{ matrix.qtversion }}-qt-linux-${{ env.cache-version }}
+
+    - name: Build Qt and deploy
+      if: ${{ steps.cache-qt-linux.outputs.cache-hit != 'true' }}
+      run: |
+        curl -L -o qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz https://download.qt.io/official_releases/qt/5.15/${{ matrix.qtversion }}/single/qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+        tar Jxf qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+        rm qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+        mv qt-everywhere-src-${{ matrix.qtversion }} qt5
+        ls -l ${{ github.workspace }}/qt5
+        cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
+
+    # - name: Install Qt for linux
+    #   uses: jurplel/install-qt-action@v3
+    #   with:
+    #     aqtversion: '==2.1.*'
+    #     version: ${{ matrix.qtversion }}
+    #     host: 'linux'
+    #     target: 'desktop'
+    #     arch: 'gcc_64'
+    #     dir: ${{ github.workspace }}
+    #     modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
+    #     #archives: 'qtxmlpatterns qtx11extras qtwayland qttranslations qttools qtsvg qtspeech qtserialport qtserialbus qtsensors qtscxml qtremoteobjects qtquickcontrols2 qtquickcontrols qtmultimedia qtlocation qtimageformats qtgraphicaleffects qtgamepad qtdeclarative qtconnectivity qtbase qt3d icu'
+
+    - name: Check dir
+      continue-on-error: true
+      run: |
+        ls -l ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/
+        ls -l ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin/
+        ls -l ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/
+        ls -l ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/
+        ls -l ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/plugins
+
+    - name: Build fcitx5
+      env: 
+        FILE: ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
+        CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake
+        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
+      run: |
+        ls -l $CMAKE_PREFIX_PATH
+        ls -l $Qt5_DIR
+        ls -l $QT_QMAKE_DIR
+        git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
+        echo -e "ADD_DEFINITIONS(-DQT_STATICPLUGIN)\n$(cat $FILE)" > $FILE 
+        echo -e "find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus)\n$(cat $FILE)" > $FILE 
+        echo -e "$(head -n -5 $FILE)" > $FILE 
+        sed -i -e 's/ MODULE / STATIC /g' $FILE
+        cat $FILE
+        cd fcitx-qt5/qt5/platforminputcontext && cmake . &&  make -j $(grep -c ^processor /proc/cpuinfo)
+
+    - name: Copy libfcitxplatforminputcontextplugin.a
+      run: |
+        cp -p ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/libfcitxplatforminputcontextplugin.a ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/plugins/platforminputcontexts/
 
     - name: Get Qt binding for Go
       run: |
@@ -80,6 +132,8 @@ jobs:
         key: ${{ matrix.qtversion }}-qtbindings-linux-${{ env.cache-version }}
 
     - name: Generate Qt bindings
+      env: 
+        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
       if: ${{ steps.cache-qt-bindings-linux.outputs.cache-hit != 'true' }}
       run: $(go env GOPATH)/bin/qtsetup -test=false
 
@@ -102,12 +156,13 @@ jobs:
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
         $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" build desktop
-
-    - name: Build with docker
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" -docker build linux_static
         cp -pR ../../runtime ./deploy/linux/
+
+    # - name: Build with docker
+    #   run: |
+    #     cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
+    #     $(go env GOPATH)/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=${{ steps.version-linux.outputs.GONEOVIM_VERSION }}" -docker build linux_static
+    #     cp -pR ../../runtime ./deploy/linux/
 
     - name: Archive
       run: |
