@@ -121,6 +121,7 @@ func (c *Cmdline) show(args []interface{}) {
 	c.content.prompt = prompt
 	text := c.getText("")
 	palette.setPattern(text)
+	c.shown = true
 	c.cursorMove()
 	if isResize {
 		palette.resize()
@@ -130,7 +131,6 @@ func (c *Cmdline) show(args []interface{}) {
 		palette.scrollCol.Hide()
 	}
 	palette.show()
-	c.shown = true
 }
 
 func (c *Cmdline) showAddition() {

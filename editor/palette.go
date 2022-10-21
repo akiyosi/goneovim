@@ -300,8 +300,7 @@ func (p *Palette) cursorMove(x int) {
 	c := p.ws.cursor
 	if !c.isInPalette {
 		c.SetParent(p.pattern)
-		c.x = c.x - float64(p.widget.Pos().X())
-		c.y = c.y - float64(p.widget.Pos().Y())
+		p.ws.cursor.isInPalette = true
 	}
 	if !(c.x == px && c.y == py) {
 		c.xprime = c.x
@@ -312,7 +311,6 @@ func (p *Palette) cursorMove(x int) {
 		c.animateMove()
 	}
 
-	p.ws.cursor.isInPalette = true
 	p.ws.cursor.update()
 
 	p.redrawAllContentInWindows()

@@ -621,9 +621,11 @@ func (c *Cursor) update() {
 	c.updateCursorShape()
 
 	// if ext_cmdline is true
-	if c.ws.palette != nil {
-		if c.ws.palette.widget.IsVisible() {
+	if c.ws.cmdline != nil {
+		if c.ws.cmdline.shown {
 			c.redraw()
+			// See  changepos() in cmdline.go
+
 			return
 		}
 	}
