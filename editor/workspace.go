@@ -792,6 +792,7 @@ func (w *Workspace) initGonvim() {
 		command! -nargs=? GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize", <args>)
 		command! -nargs=? GonvimFullscreen call rpcnotify(0, "Gui", "gonvim_fullscreen", <args>)
 		command! -nargs=+ GonvimWinpos call rpcnotify(0, "Gui", "gonvim_winpos", <f-args>)
+		command! GonvimToggleHorizontalScroll call rpcnotify(0, "Gui", "gonvim_toggle_horizontal_scroll")
 		command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
 		command! GonvimSmoothScroll call rpcnotify(0, "Gui", "gonvim_smoothscroll")
 		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
@@ -2073,6 +2074,13 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 				editor.window.Move(newPos)
 			}
 		}
+	case "gonvim_toggle_horizontal_scroll":
+		if editor.config.Editor.DisableHorizontalScroll {
+			editor.config.Editor.DisableHorizontalScroll = false
+		} else {
+			editor.config.Editor.DisableHorizontalScroll = true
+		}
+
 	case "gonvim_smoothscroll":
 		w.toggleSmoothScroll()
 	case "gonvim_smoothcursor":

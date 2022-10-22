@@ -914,6 +914,10 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		}
 	}
 
+	if editor.config.Editor.DisableHorizontalScroll {
+		h = 0
+	}
+
 	if (v == 0 || h == 0) && emitScrollEnd && !doAngleScroll {
 		vert, horiz = w.smoothUpdate(v, h, emitScrollEnd)
 	} else if (v != 0 || h != 0) && phase != core.Qt__NoScrollPhase && !doAngleScroll {
