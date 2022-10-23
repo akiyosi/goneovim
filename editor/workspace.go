@@ -174,13 +174,11 @@ func newWorkspace(path string) (*Workspace, error) {
 	}
 
 	// palette
-	if editor.config.Editor.ExtCmdline {
-		w.palette = initPalette()
-		w.palette.ws = w
-		w.palette.widget.SetParent(w.widget)
-		w.palette.setColor()
-		w.palette.hide()
-	}
+	w.palette = initPalette()
+	w.palette.ws = w
+	w.palette.widget.SetParent(w.widget)
+	w.palette.setColor()
+	w.palette.hide()
 
 	// popupmenu
 	if editor.config.Editor.ExtPopupmenu {
@@ -2216,8 +2214,6 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 			}
 			win.doGetSnapshot = true
 		}
-		// w.maxLineDelta = util.ReflectToInt(updates[1]) - w.maxLine
-		// w.maxLine = util.ReflectToInt(updates[1])
 
 	default:
 		fmt.Println("unhandled Gui event", event)
@@ -2742,24 +2738,48 @@ func (w *Workspace) setFileType(args []interface{}) {
 
 // InputMethodEvent is
 func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
+	w.screen.tooltip.cursorPos, w.screen.tooltip.selectionLength = selectionPosInPreeditStr(event)
+
 	if event.CommitString() != "" {
+		w.screen.tooltip.cursorVisualPos = 0
 		w.nvim.Input(event.CommitString())
 		w.screen.tooltip.Hide()
 	} else {
 		preeditString := event.PreeditString()
+
 		if preeditString == "" {
 			w.screen.tooltip.Hide()
-			w.cursor.update()
+			w.screen.refresh()
 		} else {
 			w.screen.tooltip.updateText(preeditString)
 			w.screen.tooltip.update()
 			w.screen.tooltip.show()
+
 		}
+
+		w.screen.tooltip.updateVirtualCursorPos()
 	}
+
+	w.cursor.update()
+
+	editor.putLog(
+		fmt.Sprintf(
+			"QInputMethodEvent:: IME preeditstr: cursorpos: %d, selectionLength: %d, cursorVisualPos: %d",
+			w.screen.tooltip.cursorPos,
+			w.screen.tooltip.selectionLength,
+			w.screen.tooltip.cursorVisualPos,
+		),
+	)
 }
 
 // InputMethodQuery is
 func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
+	editor.putLog(
+		fmt.Sprintf(
+			"InputMethodQuery:: query: %d", query,
+		),
+	)
+
 	if query == core.Qt__ImMicroFocus || query == core.Qt__ImCursorRectangle {
 		x, y, candX, candY := w.screen.tooltip.pos()
 		w.screen.tooltip.move(x, y)
@@ -2777,17 +2797,9 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 		}
 		imrect.SetRect(candX, candY+res+5, 1, w.font.lineHeight)
 
-		if w.palette != nil {
-			if w.palette.widget.IsVisible() {
-				// w.cursor.x = float64(x + w.screen.tooltip.Width())
-				// w.cursor.y = float64(w.palette.patternPadding + w.cursor.shift)
-				// w.cursor.Update()
-				w.cursor.Hide()
-			}
-		}
-
 		return core.NewQVariant31(imrect)
 	}
+
 	return core.NewQVariant()
 }
 
