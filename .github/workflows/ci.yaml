@@ -115,7 +115,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-        path: ./src/github.com/${{ github.repository }}
+        path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
 
     - name: Free disk space
       run: |
@@ -222,7 +222,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-        path: ./src/github.com/${{ github.repository }}
+        path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
 
     - uses: actions/cache@v2
       id: cache-qt-bindings-macos-11
@@ -329,7 +329,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-        path: .\src\github.com\${{ github.repository }}
+        path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
 
     # FIXME: Should be fixed with the deprecation of set-env
     - name: Set PATH
@@ -430,9 +430,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
       with:
-        repository: 'akiyosi/goneovim'
         fetch-depth: 0
         path: .\src\github.com\akiyosi\goneovim
+
+    - name: Copy checkout repogitory 
+      shell: msys2 {0}
+      run: |
+        mkdir -p /c/src/github.com/akiyosi
+        cp -pR /d/a/goneovim/goneovim/src/github.com/akiyosi/goneovim /c/src/github.com/akiyosi/goneovim
 
     - uses: actions/cache@v2
       id: cache-qt-bindings-windows
@@ -454,7 +459,7 @@ jobs:
     - name: Get dependencies
       continue-on-error: true
       run: |
-        go get -v -d github.com/akiyosi/goneovim/...
+        go get -v -d github.com/${{ github.repository }}/...
 
     - name: Retrieve version
       id: version-windows
@@ -610,7 +615,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-        path: .\src\github.com\${{ github.repository }}
+        path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
 
     # FIXME: Should be fixed with the deprecation of set-env
     - name: Set PATH
@@ -670,7 +675,7 @@ jobs:
         sed -i '661,666d' ${{ github.workspace }}\src\github.com\therecipe\qt\internal\binding\templater\template_cpp.go
         ${{ github.workspace }}\bin\qtsetup.exe install windows
   
-    - name: Retrieving dependencies
+    - name: Get dependencies
       continue-on-error: true
       run: |
         go get -v -d github.com/${{ github.repository }}/...
