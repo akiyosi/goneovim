@@ -173,6 +173,15 @@ func newWorkspace(path string) (*Workspace, error) {
 		w.cmdline.ws = w
 	}
 
+	// palette
+	if editor.config.Editor.ExtCmdline {
+		w.palette = initPalette()
+		w.palette.ws = w
+		w.palette.widget.SetParent(w.widget)
+		w.palette.setColor()
+		w.palette.hide()
+	}
+
 	// popupmenu
 	if editor.config.Editor.ExtPopupmenu {
 		w.popup = initPopupmenuNew()
@@ -253,13 +262,6 @@ func (w *Workspace) lazyDrawUI() {
 		w.layout2.AddWidget(w.scrollBar.widget, 0, 0)
 		w.scrollBar.setColor()
 	}
-
-	// palette
-	w.palette = initPalette()
-	w.palette.ws = w
-	w.palette.widget.SetParent(w.widget)
-	w.palette.setColor()
-	w.palette.hide()
 
 	// Add editor feature
 	go filer.RegisterPlugin(w.nvim, editor.config.Editor.FileOpenCmd)
