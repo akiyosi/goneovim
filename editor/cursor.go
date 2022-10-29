@@ -435,17 +435,30 @@ func (c *Cursor) updateCursorShape() {
 		c.isNeedUpdateModeInfo = false
 	}
 
-	var width, height int
+	var cellwidth float64
+	var height, lineSpace int
+
 	if c.font != nil {
+		cellwidth = c.font.cellwidth
 		height = c.font.height
-		if c.font.lineSpace < 0 {
-			height += c.font.lineSpace
+		lineSpace = c.font.lineSpace
+		if lineSpace < 0 {
+			height += lineSpace
 		}
-		width = int(math.Trunc(c.font.cellwidth))
 	}
+	if c.ws.palette != nil {
+		if c.ws.palette.widget.IsVisible() {
+			fontMetrics := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+			cellwidth = fontMetrics.HorizontalAdvance("w", -1)
+			height = int(math.Ceil(fontMetrics.Height()))
+			lineSpace = 0
+		}
+	}
+	width := int(math.Trunc(cellwidth))
 	if !c.normalWidth {
 		width = width * 2
 	}
+
 	p := float64(c.cellPercentage) / float64(100)
 
 	switch c.cursorShape {
