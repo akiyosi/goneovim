@@ -2,7 +2,6 @@ package editor
 
 import (
 	"math"
-	"runtime"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/therecipe/qt/core"
@@ -320,10 +319,12 @@ func (c *Cursor) getDrawingPos(x, y, xprime, yprime, deltax, deltay float64) (fl
 func (c *Cursor) move() {
 	X, Y := c.getDrawingPos(c.x, c.y, c.xprime, c.yprime, c.deltax, c.deltay)
 
-	c.Move2(
-		int(X),
-		int(Y),
-	)
+	iX := int(X)
+	iY := int(Y)
+
+	iX += c.ws.screen.tooltip.cursorVisualPos
+
+	c.Move2(iX, iY)
 }
 
 func (c *Cursor) updateFont(targetWin *Window, font *Font) {
@@ -670,9 +671,7 @@ func (c *Cursor) redraw() {
 	c.paint()
 
 	// Fix #119: Wrong candidate window position when using ibus
-	if runtime.GOOS == "linux" {
-		gui.QGuiApplication_InputMethod().Update(core.Qt__ImCursorRectangle)
-	}
+	editor.app.InputMethod().Update(core.Qt__ImCursorRectangle)
 }
 
 // paint() is to request update cursor widget.

@@ -65,6 +65,7 @@ func newScreen() *Screen {
 func (s *Screen) initInputMethodWidget() {
 	tooltip := NewIMETooltip(s.widget, 0)
 	tooltip.SetVisible(false)
+	tooltip.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	tooltip.ConnectPaintEvent(tooltip.paint)
 	tooltip.s = s
 	s.tooltip = tooltip
@@ -1264,6 +1265,22 @@ func (s *Screen) update() {
 				win.fill()
 			}
 			win.update()
+		}
+
+		return true
+	})
+}
+
+func (s *Screen) refresh() {
+	s.windows.Range(func(grid, winITF interface{}) bool {
+		win := winITF.(*Window)
+		if win != nil {
+			// Fill entire background if background color changed
+			if !win.background.equals(s.ws.background) {
+				win.background = s.ws.background.copy()
+				win.fill()
+			}
+			win.Update()
 		}
 
 		return true
