@@ -84,6 +84,7 @@ type editorConfig struct {
 	IgnoreFirstMouseClickWhenAppInactivated bool
 	HideTitlebar                            bool
 	HideMouseWhenTyping                     bool
+	IgnoreSaveConfirmationWithCloseButton   bool
 }
 
 type cursorConfig struct {
