@@ -618,15 +618,6 @@ All Options are follows:
         ## Specifies the width of the minimap.
         # Width = 100
         
-        
-        ## Configure the markdown preview feature
-        [Markdown]
-        # Disable = false
-        
-        ## Specifying code highlighting styles
-        # CodeHlStyle = "github"
-        
-        
         [SideBar]
         ## Specifies whether to show the external sidebar or not.
         # Visible = false
