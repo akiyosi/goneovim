@@ -330,12 +330,17 @@ All Options are follows:
         ## All of the following commented configuration items have default values.
         
         [Editor]
+        ## If enabled, when the Close button of the application window is clicked,
+        ## the application will exit without confirmation, even if there are unsaved
+        ## updates.
+        IgnoreSaveConfirmationWithCloseButton = false
+
         ## Makes the application window frameless.
         # BorderlessWindow = false
 
         ## Controls whether the title bar is displayed when the borderless 
-	## window setting is enabled.
-	# HideTitlebar = false
+        ## window setting is enabled.
+        # HideTitlebar = false
         
         ## Editor minimum window width (>= 400)
         # Width = 800
@@ -354,12 +359,12 @@ All Options are follows:
         # LineToScroll = 1
 
         ## MouseScrollingUnit sets the mode of mouse scrolling. 
-	## "line" scrolls in lines.
-	## "pixel" scrolls in pixels.
-	## "smart" scrolls in pixels when the amount of scrolling is small, and
-	##         scrolls in lines when the amount of scrolling is large.
-	## The default value is "smart" on macos, and "line" on other operating systems.
-	# MouseScrollingUnit = "line"
+        ## "line" scrolls in lines.
+        ## "pixel" scrolls in pixels.
+        ## "smart" scrolls in pixels when the amount of scrolling is small, and
+        ##         scrolls in lines when the amount of scrolling is large.
+        ## The default value is "smart" on macos, and "line" on other operating systems.
+        # MouseScrollingUnit = "line"
         
         ## This option makes the whole GUI window in semi-transparent.
         ## This setting also implicitly enables the Drawborder setting
@@ -434,11 +439,10 @@ All Options are follows:
         ##   "normal", "insert", "replace", "visual", "visual_select",
         ##    "cmdline_normal", "cmdline_insert", "cmdline_replace", etc.
         # ModeEnablingIME = []
-	
 
         ## This option allows you to hide the mouse cursor in the gooneovim window 
-	## when you type a key, and to redisplay it when you move the mouse cursor again. 
-	# HideMouseWhenTyping = false
+        ## when you type a key, and to redisplay it when you move the mouse cursor again. 
+        # HideMouseWhenTyping = false
         
         ## Draw borders on the GUI side instead of the vertical border and status line that nvim draws.
         # DrawWindowSeparator = false

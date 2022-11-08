@@ -328,13 +328,28 @@ func InitEditor(options Options, args []string) {
 	// When an application is closed with the Close button
 	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
 		e.putLog("The application was closed outside of Neovim's commands, such as the Close button.")
-		e.cleanup()
-		e.saveSessions()
-		if runtime.GOOS == "darwin" {
-			e.app.DisconnectEvent()
+
+		// A request to exit the application via the close button has been issued,
+		// intercept this request and send quit command to the nvim process.
+		event.Ignore()
+
+		if e.config.Workspace.RestoreSession {
+			e.cleanup()
+			e.saveSessions()
 		}
-		e.saveAppWindowState()
-		event.Accept()
+
+		var cmd string
+		if e.config.Editor.IgnoreSaveConfirmationWithCloseButton {
+			cmd = "qa!"
+		} else {
+			cmd = "confirm qa"
+		}
+
+		for _, ws := range e.workspaces {
+			go ws.nvim.Command(cmd)
+		}
+
+		return
 	})
 
 	// runs goroutine to detect stop events and quit the application
