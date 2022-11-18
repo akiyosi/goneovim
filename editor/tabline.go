@@ -54,6 +54,10 @@ type Tab struct {
 }
 
 func (t *Tabline) subscribe() {
+	if t == nil {
+		return
+	}
+
 	if !t.ws.isDrawTabline {
 		t.widget.Hide()
 		t.height = 0
@@ -64,6 +68,10 @@ func (t *Tabline) subscribe() {
 }
 
 func (t *Tabline) setColor() {
+	if t == nil {
+		return
+	}
+
 	if t.color.equals(editor.colors.inactiveFg) {
 		return
 	}
@@ -207,6 +215,10 @@ func newTab() *Tab {
 }
 
 func (t *Tab) updateStyle() {
+	if t == nil {
+		return
+	}
+
 	if editor.colors.fg == nil || editor.colors.bg == nil {
 		return
 	}
@@ -237,6 +249,10 @@ func (t *Tab) updateStyle() {
 }
 
 func (t *Tabline) updateFont() {
+	if t == nil {
+		return
+	}
+
 	// size := editor.extFontSize - 1
 	// if size <= 0 {
 	// 	size = editor.extFontSize
@@ -258,18 +274,26 @@ func (t *Tabline) updateFont() {
 }
 
 func (t *Tab) show() {
+	if t == nil {
+		return
+	}
 	if !t.hidden {
 		return
 	}
+
 	t.hidden = false
 	t.widget.Show()
 	t.updateStyle()
 }
 
 func (t *Tab) hide() {
+	if t == nil {
+		return
+	}
 	if t.hidden {
 		return
 	}
+
 	t.hidden = true
 	t.widget.Hide()
 }
@@ -289,6 +313,9 @@ func (t *Tab) updateFileText() {
 }
 
 func (t *Tab) updateSize() {
+	if t == nil {
+		return
+	}
 	if t.t.font == nil {
 		return
 	}
@@ -306,6 +333,10 @@ func (t *Tab) updateSize() {
 }
 
 func (t *Tab) updateFileIcon() {
+	if t == nil {
+		return
+	}
+
 	iconColor := editor.colors.inactiveFg
 	if t.active {
 		iconColor = nil
@@ -315,6 +346,10 @@ func (t *Tab) updateFileIcon() {
 }
 
 func (t *Tabline) updateMargin() {
+	if t == nil {
+		return
+	}
+
 	for _, tab := range t.Tabs {
 		tab.file.SetContentsMargins(0, t.marginTop, 0, t.marginBottom)
 		if !tab.hidden {
@@ -325,12 +360,20 @@ func (t *Tabline) updateMargin() {
 }
 
 func (t *Tabline) updateSize() {
+	if t == nil {
+		return
+	}
+
 	for _, tab := range t.Tabs {
 		tab.updateSize()
 	}
 }
 
 func (t *Tabline) updateTabs() {
+	if t == nil {
+		return
+	}
+
 	for _, tab := range t.Tabs {
 		svgContent := editor.getSvg(tab.fileType, nil)
 		tab.fileIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
@@ -341,6 +384,10 @@ func (t *Tabline) updateTabs() {
 }
 
 func (t *Tabline) handle(args []interface{}) {
+	if t == nil {
+		return
+	}
+
 	arg := args[0].([]interface{})
 	t.CurrentID = int(arg[0].(nvim.Tabpage))
 	tabs := arg[1].([]interface{})
@@ -385,6 +432,10 @@ func (t *Tabline) handle(args []interface{}) {
 }
 
 func (t *Tabline) update(tabs []interface{}) {
+	if t == nil {
+		return
+	}
+
 	lenhiddentabs := 0
 	for i := len(tabs); i < len(t.Tabs); i++ {
 		tab := t.Tabs[i]

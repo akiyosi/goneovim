@@ -1858,8 +1858,8 @@ func (w *Workspace) setOption(update []interface{}) {
 		// case "ext_cmdline":
 		// case "ext_hlstate":
 		// case "ext_linegrid":
-		// case "ext_messages":
 		// case "ext_multigrid":
+		// case "ext_messages":
 		// case "ext_popupmenu":
 		// case "ext_tabline":
 		// case "ext_termcolors":

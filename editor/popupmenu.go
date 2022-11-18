@@ -155,6 +155,10 @@ func initPopupmenuNew() *PopupMenu {
 }
 
 func (p *PopupMenu) updateFont(font *Font) {
+	if p == nil {
+		return
+	}
+
 	p.detailLabel.SetFont(font.fontNew)
 	for i := 0; i < p.total; i++ {
 		popupItem := p.items[i]
@@ -169,6 +173,10 @@ func (p *PopupMenu) updateFont(font *Font) {
 }
 
 func (p *PopupMenu) setColor() {
+	if p == nil {
+		return
+	}
+
 	fg := editor.colors.widgetFg.String()
 	detail := warpColor(editor.colors.widgetFg, 10).String()
 	inactiveFg := editor.colors.inactiveFg.String()
@@ -193,6 +201,10 @@ func (p *PopupMenu) setColor() {
 }
 
 func (p *PopupMenu) setPumblend(pumblend int) {
+	if p == nil {
+		return
+	}
+
 	alpha := float64(100-pumblend) / float64(100)
 	if alpha < 0 {
 		alpha = 0
@@ -221,6 +233,10 @@ func (p *PopupMenu) setPumblend(pumblend int) {
 }
 
 func (p *PopupMenu) showItems(args []interface{}) {
+	if p == nil {
+		return
+	}
+
 	arg := args[0].([]interface{})
 	items := arg[0].([]interface{})
 	selected := util.ReflectToInt(arg[1])
@@ -361,6 +377,10 @@ func (p *PopupMenu) show() {
 }
 
 func (p *PopupMenu) setWidgetSize() {
+	if p == nil {
+		return
+	}
+
 	isMenuHidden := p.hideItemIdx[0]
 	isInfoHidden := p.hideItemIdx[1]
 	maxWordLabelLen := 0
@@ -447,6 +467,10 @@ func (p *PopupMenu) setWidgetSize() {
 }
 
 func (p *PopupMenu) moveWidget(x int, y int, font *Font, isCursorBelowTheCenter bool) {
+	if p == nil {
+		return
+	}
+
 	popupWidth := p.widget.Width()
 	popupHeight := p.widget.Height()
 
@@ -466,10 +490,18 @@ func (p *PopupMenu) moveWidget(x int, y int, font *Font, isCursorBelowTheCenter 
 }
 
 func (p *PopupMenu) hide() {
+	if p == nil {
+		return
+	}
+
 	p.widget.Hide()
 }
 
 func (p *PopupMenu) selectItem(args []interface{}) {
+	if p == nil {
+		return
+	}
+
 	selected := util.ReflectToInt(args[0].([]interface{})[0])
 	if selected == -1 && p.top > 0 {
 		p.scroll(-p.top)
@@ -504,6 +536,10 @@ func (p *PopupMenu) selectItem(args []interface{}) {
 }
 
 func (p *PopupMenu) scroll(n int) {
+	if p == nil {
+		return
+	}
+
 	p.top += n
 	items := p.rawItems
 	popupItems := p.items
@@ -537,6 +573,10 @@ func (p *PopupMenu) scroll(n int) {
 }
 
 func (p *PopupItem) setDigit(num int, gridid int) {
+	if p == nil {
+		return
+	}
+
 	if !editor.config.Popupmenu.ShowDigit {
 		return
 	}
@@ -550,6 +590,10 @@ func (p *PopupItem) setDigit(num int, gridid int) {
 }
 
 func (p *PopupItem) updateContent() {
+	if p == nil {
+		return
+	}
+
 	if p.selected != p.selectedRequest {
 		p.selected = p.selectedRequest
 		kindStyle := ""
@@ -669,6 +713,9 @@ func (p *PopupMenu) detectVimCompleteMode() (string, error) {
 }
 
 func (p *PopupItem) setKind(kind string, selected bool) {
+	if p == nil {
+		return
+	}
 	if p.kind == kind && kind != "" {
 		return
 	}
@@ -843,9 +890,13 @@ func normalizeKind(kind string) string {
 }
 
 func (p *PopupItem) hide() {
+	if p == nil {
+		return
+	}
 	if p.hidden {
 		return
 	}
+
 	p.hidden = true
 	p.kindwidget.Hide()
 	p.wordLabel.Hide()
@@ -855,9 +906,13 @@ func (p *PopupItem) hide() {
 }
 
 func (p *PopupItem) show() {
+	if p == nil {
+		return
+	}
 	if !p.hidden {
 		return
 	}
+
 	p.hidden = false
 	p.kindwidget.Show()
 	p.wordLabel.Show()

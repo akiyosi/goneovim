@@ -130,6 +130,10 @@ func initMessage() *Message {
 }
 
 func (m *Message) setColor() {
+	if m == nil {
+		return
+	}
+
 	fg := editor.colors.fg.String()
 	bg := warpColor(editor.colors.bg, -15)
 	transparent := transparent() * transparent()
@@ -147,6 +151,10 @@ func (m *Message) setColor() {
 }
 
 func (m *Message) updateFont() {
+	if m == nil {
+		return
+	}
+
 	margin := m.ws.font.height / 3
 	for _, item := range m.items {
 		item.widget.SetFixedSize2(m.ws.font.height*5/3, m.ws.font.height*5/3)
@@ -158,12 +166,20 @@ func (m *Message) updateFont() {
 }
 
 func (m *Message) connectUI() {
+	if m == nil {
+		return
+	}
+
 	m.ws.signal.ConnectMessageSignal(func() {
 		m.update()
 	})
 }
 
 func (m *Message) update() {
+	if m == nil {
+		return
+	}
+
 	now := time.Now()
 	hasExpired := false
 	for _, item := range m.items {
@@ -194,6 +210,9 @@ func (m *Message) update() {
 }
 
 func (m *Message) resize() {
+	if m == nil {
+		return
+	}
 	if m.ws == nil {
 		return
 	}
@@ -269,9 +288,15 @@ func (m *Message) resizeMessages() bool {
 }
 
 func (m *Message) msgShow(args []interface{}) {
+	if m == nil {
+		fmt.Println(args)
+		return
+	}
+
 	prevKind := ""
 	isActiveState := editor.window.IsActiveWindow()
 	notifyText := ""
+
 
 	for _, arg := range args {
 		kind, ok := arg.([]interface{})[0].(string)
@@ -403,12 +428,20 @@ func (m *Message) makeMessage(kind string, attrId int, text string, length int, 
 }
 
 func (m *Message) msgClear() {
+	if m == nil {
+		return
+	}
+
 	for _, item := range m.items {
 		item.hide()
 	}
 }
 
 func (m *Message) msgHistoryShow(args []interface{}) {
+	if m == nil {
+		return
+	}
+
 	for _, arg := range args {
 		m.msgShow((arg.([]interface{})[0]).([]interface{}))
 	}
