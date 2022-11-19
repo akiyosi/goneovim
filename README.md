@@ -60,7 +60,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 
 
 ## Requirements
-* Neovim [v0.7.2](https://github.com/neovim/neovim/releases/tag/v0.6.1) or [Nightly](https://github.com/neovim/neovim/releases/tag/nightly)
+* Neovim [v0.8.1](https://github.com/neovim/neovim/releases/tag/v0.8.1) or [Nightly](https://github.com/neovim/neovim/releases/tag/nightly)
 
 See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
