@@ -67,6 +67,7 @@ type Cell struct {
 	highlight   *Highlight
 	char        string
 	normalWidth bool
+	covered     bool
 }
 
 type IntInt [2]int
@@ -1827,6 +1828,11 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 			} else {
 				highlight = line[x].highlight
 			}
+			if line[x] != nil {
+				if line[x].covered {
+					highlight = w.s.hlAttrDef[0]
+				}
+			}
 		} else {
 			highlight = w.s.hlAttrDef[0]
 		}
@@ -1949,6 +1955,10 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		// we will draw the characters on the screen one by one.
 		if cellBasedDrawing {
 
+			if line[x].covered && w.grid == 1 {
+				continue
+			}
+
 			w.drawTextInPos(
 				p,
 				int(float64(x)*wsfont.cellwidth),
@@ -2019,7 +2029,12 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 					if x == index {
 						pos++
-						buffer.WriteString(line[x].char)
+
+						char := line[x].char
+						if line[x].covered && w.grid == 1 {
+							char = " "
+						}
+						buffer.WriteString(char)
 						slice = slice[1:]
 						isIndentationWhiteSpace = false
 
@@ -2063,9 +2078,17 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		}
 
 		for _, x := range specialChars {
-			if line[x] == nil || line[x].char == " " {
+			if line[x] == nil {
 				continue
 			}
+			char := line[x].char
+			if line[x].covered && w.grid == 1 {
+				char = " "
+			}
+			if char == " " {
+				continue
+			}
+
 			w.drawTextInPos(
 				p,
 				int(float64(x)*wsfont.cellwidth),
@@ -2454,6 +2477,9 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		if !line[x].highlight.underline && !line[x].highlight.undercurl && !line[x].highlight.strikethrough {
 			continue
 		}
+		if line[x].covered && w.grid == 1 {
+			continue
+		}
 
 		// if CachedDrawing is disabled
 		if !editor.config.Editor.CachedDrawing {
@@ -2553,30 +2579,18 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyle, *RGBA, int) {
 	color := hl.bg()
 	pattern := core.Qt__BrushStyle(1)
-	t := 255
+	var t int
 
-	// if pumblend > 0
+	// We do not use the editor's transparency for popupmenu, float window, message window.
+	// It is recommended to use pumblend or winblend or editor.config.Message.Transparent to get those transparencies.
 	if w.isPopupmenu {
-		// t = int((transparent() * 255.0) * ((100.0 - float64(w.s.ws.pb)) / 100.0))
-		// NOTE:
-		// We do not use the editor's transparency for completion menus or float windows.
-		// It is recommended to use pumblend or winblend to get those transparencies.
 		t = int(255 * ((100.0 - float64(w.s.ws.pb)) / 100.0))
-	}
-	// if winblend > 0
-	if !w.isPopupmenu && w.isFloatWin {
-		// t = int((transparent() * 255.0) * ((100.0 - float64(w.wb)) / 100.0))
-		// NOTE:
-		// We do not use the editor's transparency for completion menus or float windows.
-		// It is recommended to use pumblend or winblend to get those transparencies.
+	} else if !w.isPopupmenu && w.isFloatWin && !w.isMsgGrid {
 		t = int(255 * ((100.0 - float64(w.wb)) / 100.0))
-	}
-	if w.isMsgGrid {
-		if editor.config.Message.Transparent < 1.0 {
-			t = int(editor.config.Message.Transparent * 255.0)
-		} else {
-			t = 255
-		}
+	} else if w.isMsgGrid {
+		t = int(editor.config.Message.Transparent * 255.0)
+	} else {
+		t = int(editor.config.Editor.Transparent * 255.0)
 	}
 
 	if editor.config.Editor.DiffChangePattern != 1 && hl.hlName == "DiffChange" {

@@ -41,8 +41,15 @@ type workspaceSignal struct {
 	_ func() `signal:"lazyDrawSignal"`
 }
 
+type ShouldUpdate struct {
+	minimap    bool
+	cursor     bool
+	globalgrid bool
+}
+
 // Workspace is an editor workspace
 type Workspace struct {
+	shouldUpdate       *ShouldUpdate
 	foreground         *RGBA
 	layout2            *widgets.QHBoxLayout
 	stop               chan struct{}
@@ -124,6 +131,7 @@ func newWorkspace(path string) (*Workspace, error) {
 		special:       newRGBA(255, 255, 255, 1),
 		windowsFt:     make(map[nvim.Window]string),
 		windowsTs:     make(map[nvim.Window]int),
+		shouldUpdate:  &ShouldUpdate{},
 	}
 	w.registerSignal()
 
@@ -1401,8 +1409,6 @@ func handleEvent(update interface{}) (event string, ok bool) {
 
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
-	shouldUpdateMinimap := false
-	shouldUpdateCursor := false
 	for _, update := range updates {
 		event, ok := handleEvent(update[0])
 		if !ok {
@@ -1443,7 +1449,7 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 				w.cursor.modeIdx = w.modeIdx
 			}
 			w.disableImeInNormal()
-			shouldUpdateCursor = true
+			w.shouldUpdate.cursor = true
 
 		// Not used in the current specification.
 		case "mouse_on":
@@ -1457,10 +1463,10 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		//       so it cannot be hidden straightforwardly.
 		case "busy_start":
 			w.cursor.isBusy = true
-			shouldUpdateCursor = true
+			w.shouldUpdate.cursor = true
 		case "busy_stop":
 			w.cursor.isBusy = false
-			shouldUpdateCursor = true
+			w.shouldUpdate.cursor = true
 
 		case "suspend":
 		case "update_menu":
@@ -1468,11 +1474,12 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "visual_bell":
 
 		case "flush":
-			w.flush(shouldUpdateCursor, shouldUpdateMinimap)
+			w.flush()
 
 		// Grid Events
 		case "grid_resize":
 			s.gridResize(args)
+			w.shouldUpdate.globalgrid = true
 		case "default_colors_set":
 			for _, u := range update[1:] {
 				w.setColorsSet(u.([]interface{}))
@@ -1491,23 +1498,24 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 			s.setHighlightGroup(args)
 		case "grid_line":
 			s.gridLine(args)
-			shouldUpdateCursor = true
-			shouldUpdateMinimap = true
+			w.shouldUpdate.cursor = true
+			w.shouldUpdate.minimap = true
 		case "grid_clear":
 			s.gridClear(args)
 		case "grid_destroy":
 			s.gridDestroy(args)
 		case "grid_cursor_goto":
 			s.gridCursorGoto(args)
-			shouldUpdateMinimap = true
-			shouldUpdateCursor = true
+			w.shouldUpdate.cursor = true
+			w.shouldUpdate.minimap = true
 		case "grid_scroll":
 			s.gridScroll(args)
-			shouldUpdateMinimap = true
+			w.shouldUpdate.minimap = true
 
 		// Multigrid Events
 		case "win_pos":
 			s.windowPosition(args)
+			w.shouldUpdate.globalgrid = true
 		case "win_float_pos":
 			s.windowFloatPosition(args)
 		case "win_external_pos":
@@ -1632,7 +1640,12 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	}
 }
 
-func (w *Workspace) flush(shouldUpdateCursor, shouldUpdateMinimap bool) {
+func (w *Workspace) flush() {
+	if w.shouldUpdate.globalgrid {
+		w.screen.detectCoveredCellInGlobalgrid()
+		w.shouldUpdate.globalgrid = false
+	}
+
 	// handle viewport event for smooth scroll
 	for {
 		if len(w.viewportQue) == 0 {
@@ -1652,8 +1665,9 @@ func (w *Workspace) flush(shouldUpdateCursor, shouldUpdateMinimap bool) {
 	}
 
 	// update cursor
-	if shouldUpdateCursor {
+	if w.shouldUpdate.cursor {
 		w.cursor.update()
+		w.shouldUpdate.cursor = false
 	}
 
 	// update screen
@@ -1669,8 +1683,9 @@ func (w *Workspace) flush(shouldUpdateCursor, shouldUpdateMinimap bool) {
 	w.updateIMETooltip()
 
 	// update minimap
-	if shouldUpdateMinimap {
+	if w.shouldUpdate.minimap {
 		w.updateMinimap()
+		w.shouldUpdate.minimap = false
 	}
 
 	w.maxLineDelta = 0

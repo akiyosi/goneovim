@@ -297,10 +297,11 @@ jobs:
       QT_MSVC: false
       QT_DEBUG: false
       GO111MODULE: off
+      # QT_DEBUG_CONSOLE: true
       CGO_CFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS_ALLOW: ".*" 
       CGO_LDFLAGS_ALLOW: ".*" 
-      #CGO_ENABLED: 1
+      # CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
 
@@ -387,11 +388,12 @@ jobs:
       QT_MSYS2_STATIC: true
       QT_MSVC: false
       QT_DEBUG: false
+      # QT_DEBUG_CONSOLE: true
       GO111MODULE: off
       CGO_CFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS_ALLOW: ".*" 
       CGO_LDFLAGS_ALLOW: ".*" 
-      #CGO_ENABLED: 1
+      # CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
 

@@ -695,21 +695,31 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		lenContent[i] = cols - 1
 	}
 
-	if win != nil && gridid != 1 {
-		for i := 0; i < rows; i++ {
-			if i >= len(win.content) {
-				continue
+	for i := 0; i < rows; i++ {
+		if win != nil {
+			if i < len(win.content) {
+				lenLine[i] = win.lenLine[i]
+				lenContent[i] = win.lenContent[i]
+				lenOldContent[i] = win.lenOldContent[i]
 			}
-			lenLine[i] = win.lenLine[i]
-			lenContent[i] = win.lenContent[i]
-			lenOldContent[i] = win.lenOldContent[i]
-			for j := 0; j < cols; j++ {
-				if j >= len(win.content[i]) {
-					continue
+		}
+
+		for j := 0; j < cols; j++ {
+
+			if win != nil {
+				if i < len(win.content) && j < len(win.content[i]) {
+					contentMask[i][j] = win.contentMask[i][j]
+					contentMaskOld[i][j] = win.contentMaskOld[i][j]
+					content[i][j] = win.content[i][j]
 				}
-				content[i][j] = win.content[i][j]
-				contentMask[i][j] = win.contentMask[i][j]
-				contentMaskOld[i][j] = win.contentMaskOld[i][j]
+			}
+			if content[i][j] == nil {
+				content[i][j] = &Cell{
+					highlight:   s.hlAttrDef[0],
+					char:        " ",
+					normalWidth: false,
+					covered:     false,
+				}
 			}
 		}
 	}
@@ -981,7 +991,6 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 
 			// reset smooth scroll scrolling offset
 			win.scrollPixels2 = 0
-
 		}
 	}
 }
@@ -1184,6 +1193,18 @@ func (s *Screen) gridClear(args []interface{}) {
 			}
 			win.lenContent[i] = win.cols - 1
 		}
+
+		for i, line := range win.content {
+			for j, _ := range line {
+				win.content[i][j] = &Cell{
+					highlight:   win.s.hlAttrDef[0],
+					char:        " ",
+					normalWidth: false,
+					covered:     false,
+				}
+			}
+		}
+
 		win.queueRedrawAll()
 	}
 }
@@ -1238,6 +1259,103 @@ func (s *Screen) gridScroll(args []interface{}) {
 			util.ReflectToInt(arg.([]interface{})[5]), // rows
 		)
 	}
+}
+
+// In Neovim's multigrid UI architecture, a window is represented by multiple independent grids,
+// and grid1 is a special grid called the global grid, which displays window splits, tabs, etc.
+// This is problematic when applying transparency effects to the entire application.
+// If each grid is displayed transparently, the information in grobal grid behind it will show through,
+// but the current UI specification expects the global grid to be covered by other grids,
+// so there will be unwanted content left over before and after updates.
+// detectCoveredCellInGlobalgrid() logically controls this and detects information
+// about the covered state of each grid in the global grid. These coverage states are used to control
+// whether or not certain cell contents should be drawn when processing the painting of the global grid.
+func (s *Screen) detectCoveredCellInGlobalgrid() {
+	if editor.config.Editor.Transparent == 1.0 {
+		return
+	}
+	gwin, ok := s.getWindow(1)
+	if !ok {
+		return
+	}
+
+	for _, line := range gwin.content {
+		for _, cell := range line {
+			if cell == nil {
+				continue
+			}
+			cell.covered = false
+		}
+	}
+
+	font := s.font
+
+	s.windows.Range(func(grid, winITF interface{}) bool {
+		// fmt.Println("-------------------")
+
+		win := winITF.(*Window)
+		// if grid is dirty, we remove this grid
+		if win == nil {
+			return true
+		}
+		if win.isFloatWin {
+			return true
+		}
+		if win.isExternal {
+			return true
+		}
+		if win.isMsgGrid {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+		if win.IsVisible() {
+			x := int(math.Floor(float64(win.pos[0]) * font.cellwidth))
+			y := win.pos[1] * font.lineHeight
+			width := int(math.Ceil(float64(win.cols) * font.cellwidth))
+			height := win.rows * font.lineHeight
+
+			winrect := core.NewQRect4(
+				x,
+				y,
+				width,
+				height,
+			)
+
+			for i, line := range gwin.content {
+				for j, cell := range line {
+
+					if cell == nil {
+						continue
+					}
+
+					p := core.NewQPoint2(
+						int(font.cellwidth*float64(j)+font.cellwidth/2.0),
+						font.lineHeight*i+int(float64(font.lineHeight)/2.0),
+					)
+					if winrect.Contains(p, true) {
+						if !cell.covered {
+							cell.covered = true
+							gwin.contentMask[i][j] = true
+						}
+					}
+
+					// v := 0
+					// if cell.covered {
+					// 	v = 1
+					// }
+					// fmt.Printf("%d", v)
+				}
+
+				// fmt.Printf("\n")
+			}
+		}
+		gwin.queueRedraw(0, 0, gwin.cols, gwin.rows)
+
+		return true
+	})
+
 }
 
 func (s *Screen) update() {
