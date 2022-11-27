@@ -1394,6 +1394,14 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		event := update[0].(string)
 		args := update[1:]
 		editor.putLog("start   ", event)
+
+		// for DEBUG::
+		// if event == "grid_line" {
+		// 	fmt.Println(event)
+		// } else {
+		// 	fmt.Println(event, args)
+		// }
+
 		switch event {
 		// Global Events
 		case "set_title":

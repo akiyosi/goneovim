@@ -1635,9 +1635,20 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		// TODO We should imprement to drawing msgSepChar
 		// sepChar := arg.([]interface{})[3].(string)
 
-		win, ok := s.getWindow(gridid)
+		var win *Window
+		var ok bool
+		win, ok = s.getWindow(gridid)
+		// If message grid does not exist, create it
 		if !ok {
-			continue
+			gwin, okok := s.getWindow(1)
+			if !okok {
+				continue
+			}
+			s.resizeWindow(gridid, gwin.cols, gwin.rows)
+			win, ok = s.getWindow(gridid)
+			if !ok {
+				continue
+			}
 		}
 		win.isMsgGrid = true
 		win.isFloatWin = true
