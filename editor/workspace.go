@@ -1386,12 +1386,29 @@ func (e *Editor) updateNotificationPos() {
 	e.notifications = newNotifications
 }
 
+func handleEvent(update interface{}) (event string, ok bool) {
+	switch update.(type) {
+	case string:
+		event = update.(string)
+		ok = true
+	default:
+		event = ""
+		ok = false
+	}
+
+	return event, ok
+}
+
 func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	s := w.screen
 	shouldUpdateMinimap := false
 	shouldUpdateCursor := false
 	for _, update := range updates {
-		event := update[0].(string)
+		event, ok := handleEvent(update[0])
+		if !ok {
+			continue
+		}
+
 		args := update[1:]
 		editor.putLog("start   ", event)
 
