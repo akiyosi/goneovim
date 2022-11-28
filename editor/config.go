@@ -197,7 +197,6 @@ func newConfig(home string) (string, gonvimConfig) {
 	}
 
 	if config.Editor.Transparent < 1.0 {
-		config.Editor.DrawWindowSeparator = true
 		config.Editor.BorderlessWindow = true
 	}
 
