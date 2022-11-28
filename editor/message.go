@@ -289,14 +289,12 @@ func (m *Message) resizeMessages() bool {
 
 func (m *Message) msgShow(args []interface{}) {
 	if m == nil {
-		fmt.Println(args)
 		return
 	}
 
 	prevKind := ""
 	isActiveState := editor.window.IsActiveWindow()
 	notifyText := ""
-
 
 	for _, arg := range args {
 		kind, ok := arg.([]interface{})[0].(string)
