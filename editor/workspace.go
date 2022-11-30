@@ -2784,6 +2784,7 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 		w.screen.tooltip.cursorVisualPos = 0
 		w.nvim.Input(event.CommitString())
 		w.screen.tooltip.Hide()
+		w.screen.tooltip.clearText()
 	} else {
 		preeditString := event.PreeditString()
 
@@ -2791,7 +2792,7 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 			w.screen.tooltip.Hide()
 			w.screen.refresh()
 		} else {
-			w.screen.tooltip.updateText(preeditString)
+			w.screen.tooltip.parsePreeditString(preeditString)
 			w.screen.tooltip.update()
 			w.screen.tooltip.show()
 
