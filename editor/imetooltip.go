@@ -2,7 +2,6 @@ package editor
 
 import (
 	"fmt"
-	"math"
 	"runtime"
 
 	"github.com/therecipe/qt/core"
@@ -27,13 +26,6 @@ func (i *IMETooltip) setQpainterFont(p *gui.QPainter) {
 		return
 	}
 
-	// if i.s.ws.palette.widget.IsVisible() {
-	// 	p.SetFont(
-	// 		gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false),
-	// 	)
-	// } else {
-	// 	p.SetFont(i.font.fontNew)
-	// }
 	p.SetFont(i.getFont())
 }
 
@@ -45,187 +37,12 @@ func (i *IMETooltip) getFont() *gui.QFont {
 	}
 }
 
-func (i *IMETooltip) getNthWidthAndShift(n int) (float64, int) {
-	if i.font == nil {
-		return 0.0, 0
-	}
-	if len(i.widthSlice) <= n {
-		return 0.0, 0
-	}
-
-	var width float64
-	var shift int
-	r := []rune(i.text)
-
-	if i.s.ws.palette.widget.IsVisible() {
-		fontMetrics := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
-		if n == 0 {
-			width = 0
-		} else if n > 0 {
-			width = fontMetrics.HorizontalAdvance(string(r[n-1]), -1)
-		}
-		shift = int(fontMetrics.Ascent())
-	} else {
-		width = i.widthSlice[n]
-		shift = i.font.shift
-	}
-
-	return width, shift
-}
-
 func (i *IMETooltip) paint(event *gui.QPaintEvent) {
 	p := gui.NewQPainter2(i)
 
-	i.drawBackground(p, i.setQpainterFont, i.getNthWidthAndShift)
-	i.drawForeground(p, i.setQpainterFont, i.getNthWidthAndShift)
-	i.drawPreeditString(p, i.getNthWidthAndShift)
+	i.drawContent(p, i.setQpainterFont)
 
 	p.DestroyQPainter()
-}
-
-func (i *IMETooltip) drawBackground(p *gui.QPainter, f func(*gui.QPainter), g func(int) (float64, int)) {
-	// f(p)
-
-	// p.SetPen2(i.s.ws.foreground.QColor())
-
-	var bgColor *RGBA
-	if i.s.ws.screenbg == "dark" {
-		bgColor = warpColor(editor.colors.bg, -30)
-	} else {
-		bgColor = warpColor(editor.colors.bg, 30)
-	}
-
-	var height, lineHeight int
-	if i.s.ws.palette.widget.IsVisible() {
-		height = int(
-			math.Ceil(
-				gui.NewQFontMetricsF(
-					gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false),
-				).Height(),
-			),
-		)
-		lineHeight = height
-	} else {
-		height = i.s.tooltip.font.height
-		lineHeight = i.s.tooltip.font.lineHeight
-	}
-
-	if i.text != "" {
-		r := []rune(i.text)
-		var x, rectWidth float64
-		for k := 0; k < len(r); k++ {
-
-			width, _ := g(k)
-			x += width
-			y := float64(lineHeight-height) / 2
-
-			nextWidth, _ := g(k + 1)
-			rectWidth = nextWidth
-
-			height := float64(height) * 1.1
-			if height > float64(lineHeight) {
-				height = float64(lineHeight)
-			}
-
-			// draw background
-			p.FillRect4(
-				core.NewQRectF4(
-					x,
-					y,
-					rectWidth,
-					height,
-				),
-				bgColor.QColor(),
-			)
-		}
-	}
-}
-
-func (i *IMETooltip) drawPreeditString(p *gui.QPainter, g func(int) (float64, int)) {
-
-	var fgColor *RGBA
-	if i.s.ws.screenbg == "dark" {
-		fgColor = warpColor(editor.colors.fg, 30)
-	} else {
-		fgColor = warpColor(editor.colors.fg, -30)
-	}
-
-	p.SetPen2(fgColor.QColor())
-
-	length := i.s.tooltip.selectionLength
-	start := i.s.tooltip.cursorPos
-	if runtime.GOOS == "darwin" {
-		start = i.s.tooltip.cursorPos - length
-	}
-
-	var height, lineHeight int
-	if i.s.ws.palette.widget.IsVisible() {
-		height = int(
-			math.Ceil(
-				gui.NewQFontMetricsF(
-					gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false),
-				).Height(),
-			),
-		)
-		lineHeight = height
-	} else {
-		height = i.s.tooltip.font.height
-		lineHeight = i.s.tooltip.font.lineHeight
-	}
-
-	if i.text != "" {
-		r := []rune(i.text)
-
-		var x, rectWidth float64
-		for k := 0; k < start+length; k++ {
-			if k >= len(r) {
-				break
-			}
-
-			width, shift := g(k)
-			x += width
-
-			if k < start {
-				continue
-			}
-
-			y := float64(lineHeight-height) / 2
-
-			nextWidth, _ := g(k + 1)
-			rectWidth = nextWidth
-
-			height := float64(height) * 1.1
-			if height > float64(lineHeight) {
-				height = float64(lineHeight)
-			}
-
-			var underlinePos float64 = 1
-			if i.s.ws.palette.widget.IsVisible() {
-				underlinePos = 2
-			}
-
-			// draw underline
-			p.FillRect4(
-				core.NewQRectF4(
-					x,
-					y+height-underlinePos,
-					rectWidth,
-					underlinePos,
-				),
-				fgColor.QColor(),
-			)
-
-			// draw preedit string
-			p.DrawText(
-				core.NewQPointF3(
-					float64(x),
-					float64(shift),
-				),
-				string(r[k]),
-			)
-
-		}
-	}
 }
 
 func (i *IMETooltip) pos() (int, int, int, int) {
@@ -246,8 +63,6 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 	font := win.getFont()
 
 	if ws.palette.widget.IsVisible() {
-		// font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
-		// i.SetFont(font)
 		x = ws.palette.cursorX + ws.palette.patternPadding
 		y = ws.palette.patternPadding + ws.palette.padding + 1
 		candX = x + ws.palette.widget.Pos().X()
@@ -311,71 +126,72 @@ func (i *IMETooltip) show() {
 		i.SetParent(i.s.ws.palette.widget)
 	}
 
-	// i.SetAutoFillBackground(true)
-	// p := gui.NewQPalette()
-	// p.SetColor2(gui.QPalette__Background, i.s.ws.background.QColor())
-	// i.SetPalette(p)
-
 	i.Show()
 	i.Raise()
 }
 
 func (i *IMETooltip) updateVirtualCursorPos() {
-	g := i.getNthWidthAndShift
-
-	length := i.s.tooltip.selectionLength
 	start := i.s.tooltip.cursorPos
 
 	var x float64
-	if i.text != "" {
-		r := []rune(i.text)
-
-		for k := 0; k < start+length; k++ {
-			if k > len(r) {
-				break
+	var k int
+	for _, chunk := range i.text {
+		for _, _ = range chunk.str {
+			if k == start {
+				i.cursorVisualPos = int(x)
+				return
 			}
-
-			width, _ := g(k)
-			x += width
-
-			if k >= start {
-				break
-			}
+			x += chunk.width
+			k++
 		}
 	}
 
 	i.cursorVisualPos = int(x)
 }
 
-func (i *IMETooltip) updateText(text string) {
-	if i.font == nil {
-		return
+func (i *IMETooltip) parsePreeditString(preeditStr string) {
+
+	i.clearText()
+
+	length := i.s.tooltip.selectionLength
+	start := i.s.tooltip.cursorPos
+	if runtime.GOOS == "darwin" {
+		start = i.s.tooltip.cursorPos - length
 	}
-	font := i.font
 
-	// update text in struct
-	i.text = text
+	g := &Highlight{}
+	h := &Highlight{}
+	g.foreground = i.s.ws.foreground
+	g.background = i.s.ws.background
+	if i.s.ws.screenbg == "dark" {
+		h.foreground = warpColor(editor.colors.fg, 30)
+		h.background = warpColor(editor.colors.bg, 30)
+	} else {
+		h.foreground = warpColor(editor.colors.fg, -30)
+		h.background = warpColor(editor.colors.fg, -30)
+	}
+	h.underline = true
 
-	// rune text
-	r := []rune(i.text)
+	if preeditStr != "" {
+		r := []rune(preeditStr)
 
-	// init slice
-	var wSlice []float64
-	wSlice = append(wSlice, 0.0)
-	fontMetrics := font.fontMetrics
-	width := font.cellwidth
-
-	for k := 0; k < len(r); k++ {
-		w := width
-		for {
-			cwidth := fontMetrics.HorizontalAdvance(string(r[k]), -1)
-			if cwidth <= w {
-				break
+		if length > 0 {
+			if start > 0 {
+				i.updateText(g, string(r[:start]))
+				if start+length < len(r) {
+					i.updateText(h, string(r[start:start+length]))
+					i.updateText(g, string(r[start+length:]))
+				} else {
+					i.updateText(h, string(r[start:]))
+				}
+			} else if start == 0 && length < len(r) {
+				i.updateText(h, string(r[0:length]))
+				i.updateText(g, string(r[length:]))
+			} else {
+				i.updateText(g, preeditStr)
 			}
-			w += width
+		} else {
+			i.updateText(g, preeditStr)
 		}
-		wSlice = append(wSlice, w)
 	}
-
-	i.widthSlice = wSlice
 }
