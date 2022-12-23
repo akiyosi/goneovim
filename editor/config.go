@@ -85,6 +85,7 @@ type editorConfig struct {
 	HideMouseWhenTyping                     bool
 	IgnoreSaveConfirmationWithCloseButton   bool
 	UseWSL                                  bool
+	RoundedSelection                        bool
 }
 
 type cursorConfig struct {
