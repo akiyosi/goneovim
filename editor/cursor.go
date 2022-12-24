@@ -730,7 +730,7 @@ func (c *Cursor) animateMove() {
 	a.SetDuration(int(duration))
 	a.SetStartValue(core.NewQVariant10(float64(0.01)))
 	a.SetEndValue(core.NewQVariant10(1))
-	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCirc))
+	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCirc))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuint))
@@ -742,7 +742,7 @@ func (c *Cursor) animateMove() {
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuart))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutInQuart))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutExpo))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
+	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
 	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InCubic))
 
 	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
