@@ -131,7 +131,7 @@ type Window struct {
 	ts                     int
 	devicePixelRatio       float64
 	scrollPixels2          int
-	scrollPixelsDeltaY     int
+	scrollPixels3          int
 	id                     nvim.Window
 	scrollCols             int
 	rows                   int
@@ -878,6 +878,9 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	if w.lastScrollphase != phase && w.lastScrollphase != core.Qt__ScrollEnd {
 		w.doGetSnapshot = true
 	}
+	if phase == core.Qt__ScrollEnd {
+		w.scrollPixels3 = 0
+	}
 	w.lastScrollphase = phase
 	emitScrollEnd := (w.lastScrollphase == core.Qt__ScrollEnd)
 
@@ -893,7 +896,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 			w.applyTemporaryMousescroll("ver:1,hor:1")
 		}
 
-		if math.Abs(float64(v)) > float64(font.lineHeight) {
+		if math.Abs(float64(v)) > float64(font.lineHeight*2) {
 			doAngleScroll = true
 			w.applyTemporaryMousescroll(w.s.ws.mouseScroll)
 
@@ -996,10 +999,6 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		return
 	}
 
-	// if vert != 0 {
-	// 	return
-	// }
-
 	if isTmode {
 		return
 	}
@@ -1071,6 +1070,9 @@ func (w *Window) smoothUpdate(v, h int, emitScrollEnd bool) (int, int) {
 
 	if h < 0 && w.scrollPixels[0] > 0 {
 		w.scrollPixels[0] = 0
+		if !emitScrollEnd {
+			w.scrollPixels3 = 0
+		}
 	}
 	if v < 0 && w.scrollPixels[1] > 0 {
 		w.scrollPixels[1] = 0
@@ -1080,6 +1082,13 @@ func (w *Window) smoothUpdate(v, h int, emitScrollEnd bool) (int, int) {
 	dy := math.Abs(float64(w.scrollPixels[1]))
 	horizontalScrollAmount := font.cellwidth
 	verticalScrollAmount := float64(font.lineHeight)
+
+	if math.Abs(float64(w.scrollPixels3)) < 20 {
+		if math.Abs(float64(h)) > math.Abs(float64(v)) {
+			w.scrollPixels3 += h
+		}
+		h = 0
+	}
 
 	if dx < horizontalScrollAmount {
 		w.scrollPixels[0] += h
