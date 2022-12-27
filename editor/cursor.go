@@ -105,10 +105,7 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 
 	// Paint source cell text
 	X, Y := c.getDrawingPos(c.x, c.y, c.xprime, c.yprime, c.deltax, c.deltay)
-
-	if (c.deltax != 0 || c.deltay != 0) && c.delta < 1.0 {
-		c.drawForeground(p, X, Y, c.animationStartX, c.animationStartY, c.sourcetext)
-	}
+	c.drawForeground(p, X, Y, c.animationStartX, c.animationStartY, c.sourcetext)
 
 	if c.desttext == "" {
 		p.DestroyQPainter()
@@ -319,8 +316,17 @@ func (c *Cursor) getDrawingPos(x, y, xprime, yprime, deltax, deltay float64) (fl
 func (c *Cursor) move() {
 	X, Y := c.getDrawingPos(c.x, c.y, c.xprime, c.yprime, c.deltax, c.deltay)
 
-	iX := int(X)
-	iY := int(Y)
+	var iX, iY int
+	if c.deltax > 0 {
+		iX = int(math.Ceil(X))
+	} else {
+		iX = int(math.Floor(X))
+	}
+	if c.deltay > 0 {
+		iY = int(math.Ceil(Y))
+	} else {
+		iY = int(math.Floor(Y))
+	}
 
 	iX += c.ws.screen.tooltip.cursorVisualPos
 
@@ -596,9 +602,7 @@ func (c *Cursor) updateCursorText(row, col int, win *Window) {
 		c.desttext = ""
 		c.normalWidth = true
 	} else {
-		if c.deltax == 0 && c.deltay == 0 {
-			c.sourcetext = c.desttext
-		}
+		c.sourcetext = c.desttext
 		c.desttext = win.content[row][col].char
 		c.normalWidth = win.content[row][col].normalWidth
 	}
