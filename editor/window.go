@@ -2741,7 +2741,6 @@ func (g *Guiwidget) drawText(x, y, width, height float64, p *gui.QPainter, f fun
 	}
 
 	for _, chunk := range g.text {
-		fmt.Println(chunk)
 
 		fg := chunk.hl.fg()
 		bg := chunk.hl.bg()
@@ -2762,7 +2761,7 @@ func (g *Guiwidget) drawText(x, y, width, height float64, p *gui.QPainter, f fun
 					core.NewQRectF4(
 						x,
 						y,
-						chunk.width,
+						float64(chunk.scale)*g.font.cellwidth,
 						height,
 					),
 					bg.QColor(),
@@ -2796,14 +2795,14 @@ func (g *Guiwidget) drawText(x, y, width, height float64, p *gui.QPainter, f fun
 					core.NewQRectF4(
 						x,
 						y+height-underlinePos,
-						chunk.width,
+						float64(chunk.scale)*g.font.cellwidth,
 						underlinePos,
 					),
 					fg.QColor(),
 				)
 			}
 
-			x += chunk.width
+			x += float64(chunk.scale) * g.font.cellwidth
 		}
 	}
 }

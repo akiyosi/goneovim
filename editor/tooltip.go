@@ -11,7 +11,7 @@ import (
 type ColorStr struct {
 	hl    *Highlight
 	str   string
-	width float64
+	scale int
 }
 
 // Tooltip is the tooltip
@@ -59,15 +59,17 @@ func (t *Tooltip) drawContent(p *gui.QPainter, f func(*gui.QPainter)) {
 		r := []rune(chunk.str)
 		for _, rr := range r {
 			// draw background
-			p.FillRect4(
-				core.NewQRectF4(
-					x,
-					y,
-					chunk.width,
-					height,
-				),
-				bg.QColor(),
-			)
+			if !bg.equals(t.s.ws.background) {
+				p.FillRect4(
+					core.NewQRectF4(
+						x,
+						y,
+						float64(chunk.scale)*t.font.cellwidth,
+						height,
+					),
+					bg.QColor(),
+				)
+			}
 
 			// set italic
 			if italic {
@@ -96,14 +98,14 @@ func (t *Tooltip) drawContent(p *gui.QPainter, f func(*gui.QPainter)) {
 					core.NewQRectF4(
 						x,
 						y+height-underlinePos,
-						chunk.width,
+						float64(chunk.scale)*t.font.cellwidth,
 						underlinePos,
 					),
 					fg.QColor(),
 				)
 			}
 
-			x += chunk.width
+			x += float64(chunk.scale) * t.font.cellwidth
 		}
 	}
 }
@@ -149,21 +151,25 @@ func (t *Tooltip) updateText(hl *Highlight, str string) {
 	// rune text
 	r := []rune(str)
 
+	var preScale int
 	var preStrWidth float64
 	var buffer bytes.Buffer
 	for k, rr := range r {
 
 		// detect char width based cell width
 		w := font.cellwidth
+		scale := 1
 		for {
 			cwidth := font.fontMetrics.HorizontalAdvance(string(rr), -1)
 			if cwidth <= w {
 				break
 			}
 			w += font.cellwidth
+			scale++
 		}
 		if preStrWidth == 0 {
 			preStrWidth = w
+			preScale = scale
 		}
 
 		if preStrWidth == w {
@@ -176,9 +182,10 @@ func (t *Tooltip) updateText(hl *Highlight, str string) {
 		if buffer.Len() != 0 {
 
 			t.text = append(t.text, &ColorStr{
-				hl:    hl,
-				str:   buffer.String(),
-				width: preStrWidth,
+				hl:  hl,
+				str: buffer.String(),
+				// width: preStrWidth,
+				scale: preScale,
 			})
 
 			buffer.Reset()
@@ -186,13 +193,15 @@ func (t *Tooltip) updateText(hl *Highlight, str string) {
 
 			if preStrWidth != w && k == len(r)-1 {
 				t.text = append(t.text, &ColorStr{
-					hl:    hl,
-					str:   buffer.String(),
-					width: w,
+					hl:  hl,
+					str: buffer.String(),
+					// width: w,
+					scale: scale,
 				})
 			}
 
 			preStrWidth = w
+			preScale = scale
 		}
 
 	}
@@ -219,7 +228,7 @@ func (t *Tooltip) update() {
 	for _, chunk := range t.text {
 		r := []rune(chunk.str)
 		for _, _ = range r {
-			tooltipWidth += chunk.width
+			tooltipWidth += float64(chunk.scale) * t.font.cellwidth
 		}
 	}
 

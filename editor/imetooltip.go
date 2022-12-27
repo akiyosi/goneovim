@@ -149,7 +149,7 @@ func (i *IMETooltip) updateVirtualCursorPos() {
 				i.cursorVisualPos = int(x)
 				return
 			}
-			x += chunk.width
+			x += float64(chunk.scale) * i.font.cellwidth
 			k++
 		}
 	}

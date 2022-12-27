@@ -155,11 +155,14 @@ func (w *Workspace) handleRPCGuiwidgetview(updates []interface{}) {
 			switch g.mime {
 			case "text/plain":
 				baseFont := g.s.ws.font
-				g.font = initFontNew(
-					baseFont.fontNew.Family(),
-					float64(g.height*baseFont.height)*0.8,
-					0,
-					0,
+				g.setFont(
+					// Set font adjusted to widgets height
+					initFontNew(
+						baseFont.fontNew.Family(),
+						float64(baseFont.height*g.height)*0.7,
+						0,
+						0,
+					),
 				)
 			default:
 			}
