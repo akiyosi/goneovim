@@ -31,19 +31,20 @@ type MiniMap struct {
 	stop          chan struct{}
 	redrawUpdates chan [][]interface{}
 	Screen
-	currBuf          string
-	colorscheme      string
-	viewport         [4]int
-	rows             int
-	curHeight        int
-	curPos           int
-	cols             int
-	stopOnce         sync.Once
-	mu               sync.Mutex
-	visible          bool
-	uiAttached       bool
-	isProcessSync    bool
-	isSetColorscheme bool
+	currBuf            string
+	colorscheme        string
+	viewport           [4]int
+	rows               int
+	curHeight          int
+	curPos             int
+	cols               int
+	stopOnce           sync.Once
+	mu                 sync.Mutex
+	visible            bool
+	uiAttached         bool
+	isProcessSync      bool
+	isSetColorscheme   bool
+	scrollPixelsDeltaY int
 }
 
 func newMiniMap() *MiniMap {
@@ -608,15 +609,15 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 			win.scrollPixels[1] = 0
 		}
 
-		win.scrollPixelsDeltaY = int(math.Abs(float64(vert)) - float64(win.scrollPixelsDeltaY))
-		if win.scrollPixelsDeltaY < 1 {
-			win.scrollPixelsDeltaY = 0
+		m.scrollPixelsDeltaY = int(math.Abs(float64(vert)) - float64(m.scrollPixelsDeltaY))
+		if m.scrollPixelsDeltaY < 1 {
+			m.scrollPixelsDeltaY = 0
 		}
 
-		if win.scrollPixelsDeltaY <= 2 {
+		if m.scrollPixelsDeltaY <= 2 {
 			accel = 1
-		} else if win.scrollPixelsDeltaY > 2 {
-			accel = int(float64(win.scrollPixelsDeltaY) / float64(2))
+		} else if m.scrollPixelsDeltaY > 2 {
+			accel = int(float64(m.scrollPixelsDeltaY) / float64(2))
 		}
 
 	default:
