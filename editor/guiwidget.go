@@ -26,7 +26,7 @@ type Guiwidget struct {
 	winid  nvim.Window
 }
 
-func initGuiwidget() *Guiwidget {
+func newGuiwidget() *Guiwidget {
 	guiwidget := NewGuiwidget(nil, 0)
 	guiwidget.data = nil
 	guiwidget.width = 0
@@ -53,9 +53,10 @@ func (w *Workspace) handleRPCGuiwidgetput(updates []interface{}) {
 
 		var g *Guiwidget
 		if g, ok = w.getGuiwidgetFromResID(id); !ok {
-			g = initGuiwidget()
+			g = newGuiwidget()
 			w.storeGuiwidget(id, g)
 			g.s = w.screen
+			g.setFont(g.s.font)
 		}
 
 		g.id = id
@@ -71,7 +72,7 @@ func (w *Workspace) handleRPCGuiwidgetput(updates []interface{}) {
 
 			switch mime {
 			case "text/plain":
-				g.text = s
+				g.updateText(g.s.hlAttrDef[0], s)
 
 			case "image/svg",
 				"image/svg+xml",
@@ -140,9 +141,10 @@ func (w *Workspace) handleRPCGuiwidgetview(updates []interface{}) {
 
 			var g *Guiwidget
 			if g, ok = w.getGuiwidgetFromResID(resid); !ok {
-				g = initGuiwidget()
+				g = newGuiwidget()
 				w.storeGuiwidget(resid, g)
 				g.s = w.screen
+				g.setFont(g.s.font)
 			}
 
 			g.winid = winid

@@ -2632,7 +2632,7 @@ func (w *Window) drawExtmarks(p *gui.QPainter, y int, col int, cols int) {
 					height := res.height * font.lineHeight
 
 					if res.mime == "text/plain" {
-						res.updateText(res.text)
+						// res.updateText(w.s.hlAttrDef[0], res.text)
 						p.FillRect5(
 							int(float64(x)*font.cellwidth),
 							y*font.lineHeight+scrollPixels,
@@ -2648,7 +2648,6 @@ func (w *Window) drawExtmarks(p *gui.QPainter, y int, col int, cols int) {
 						height,
 						p,
 						res.setQpainterFont,
-						res.getNthWidthAndShift,
 						w.devicePixelRatio,
 					)
 				}
@@ -2661,31 +2660,20 @@ func (w *Window) drawExtmarks(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (g *Guiwidget) drawExtmark(x, y, width, height int, p *gui.QPainter, f func(*gui.QPainter), h func(int) (float64, int), devicePixelRatio float64) {
+func (g *Guiwidget) drawExtmark(x, y, width, height int, p *gui.QPainter, f func(*gui.QPainter), devicePixelRatio float64) {
 	f(p)
 
 	p.SetPen2(g.s.ws.foreground.QColor())
 
 	switch g.mime {
 	case "text/plain":
-		if g.text != "" {
-			r := []rune(g.text)
-			var pos float64
-			for k := 0; k < len(r); k++ {
+		g.drawText(
+			float64(x),
+			float64(y),
+			float64(width),
+			float64(height),
+			p, g.setQpainterFont)
 
-				width, shift := h(k)
-				pos += width
-
-				p.DrawText(
-					core.NewQPointF3(
-						float64(x)+pos,
-						float64(y+shift),
-					),
-					string(r[k]),
-				)
-
-			}
-		}
 	case "image/svg":
 		g.data = core.NewQByteArray2(g.raw, len(g.raw))
 
@@ -2739,6 +2727,84 @@ func (g *Guiwidget) drawExtmark(x, y, width, height int, p *gui.QPainter, f func
 
 		g.drawImage(p, image, x, y, width, height)
 	default:
+	}
+}
+
+func (g *Guiwidget) drawText(x, y, width, height float64, p *gui.QPainter, f func(*gui.QPainter)) {
+	f(p)
+	font := p.Font()
+
+	p.SetPen2(g.s.ws.foreground.QColor())
+
+	if g.text == nil {
+		return
+	}
+
+	for _, chunk := range g.text {
+		fmt.Println(chunk)
+
+		fg := chunk.hl.fg()
+		bg := chunk.hl.bg()
+		// bold := chunk.hl.bold
+		underline := chunk.hl.underline
+		// undercurl := chunk.hl.undercurl
+		// strikethrough := chunk.hl.strikethrough
+		italic := chunk.hl.italic
+
+		// set foreground color
+		p.SetPen2(fg.QColor())
+
+		r := []rune(chunk.str)
+		for _, rr := range r {
+			// draw background
+			if !bg.equals(g.s.ws.background) {
+				p.FillRect4(
+					core.NewQRectF4(
+						x,
+						y,
+						chunk.width,
+						height,
+					),
+					bg.QColor(),
+				)
+			}
+
+			// set italic
+			if italic {
+				font.SetItalic(true)
+			} else {
+				font.SetItalic(false)
+			}
+
+			p.DrawText(
+				core.NewQPointF3(
+					x,
+					y+float64(g.font.shift),
+				),
+				string(rr),
+			)
+
+			// draw underline
+			if underline {
+				var underlinePos float64 = 1
+				if g.s.ws.palette.widget.IsVisible() {
+					underlinePos = 2
+				}
+
+				// draw underline
+				p.FillRect4(
+					core.NewQRectF4(
+						x,
+						y+height-underlinePos,
+						chunk.width,
+						underlinePos,
+					),
+					fg.QColor(),
+				)
+			}
+
+			x += chunk.width
+		}
 	}
 }
 
