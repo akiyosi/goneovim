@@ -15,35 +15,6 @@ import (
 )
 
 func main() {
-	// // profile the application
-	// //  https://blog.golang.org/pprof
-	// // After running the app, do the following:
-	// //  $ go tool pprof -http=localhost:9090 cpuprofile
-	// f, err := os.Create("cpuprofile")
-	// if err != nil {
-	// 	os.Exit(1)
-	// }
-	// defer f.Close()
-	// pprof.StartCPUProfile(f)
-	// defer pprof.StopCPUProfile()
-
-	// // fgprof
-	// f, err := os.Create("cpuprofile")
-	// if err != nil {
-	// 	os.Exit(1)
-	// }
-	// fgprofStop := fgprof.Start(f, fgprof.FormatPprof)
-	// defer func() {
-	// 	err = fgprofStop()
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// 	err = f.Close()
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// }()
-
 	// parse args
 	options, args := parseArgs()
 	if options.Version {
@@ -57,16 +28,19 @@ func main() {
 	if runtime.GOOS == "windows" {
 		nofork = true
 	}
+
 	// In MacOS X do not fork when the process is not launched from a tty
 	if runtime.GOOS == "darwin" {
 		if !isatty.IsTerminal(os.Stdin.Fd()) {
 			nofork = true
 		}
 	}
+
 	// If ssh option specified
 	if options.Ssh != "" {
 		nofork = true
 	}
+
 	// start editor
 	if nofork {
 		editor.InitEditor(options, args)

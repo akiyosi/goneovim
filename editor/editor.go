@@ -164,6 +164,30 @@ func (hl *Highlight) copy() Highlight {
 // InitEditor is
 func InitEditor(options Options, args []string) {
 
+	// --------------------
+	// profile the goneovim
+	// --------------------
+	//
+	// https://blog.golang.org/pprof
+	// After running the app, exec the following:
+	//  $ go tool pprof -http=localhost:9090 cpuprofile
+	//
+	// Comment out the following::
+	//
+	// // * built-in net/http/pprof
+	// f, ferr := os.Create("cpuprofile")
+	// if ferr != nil {
+	// 	os.Exit(1)
+	// }
+	// pprof.StartCPUProfile(f)
+
+	// // * https://github.com/felixge/fgprof
+	// f, ferr := os.Create("cpuprofile")
+	// if ferr != nil {
+	// 	os.Exit(1)
+	// }
+	// fgprofStop := fgprof.Start(f, fgprof.FormatPprof)
+
 	// startup time
 	startuptime := time.Now().UnixNano() / 1000
 
@@ -363,6 +387,20 @@ func InitEditor(options Options, args []string) {
 		}
 		e.saveAppWindowState()
 		cancel()
+
+		// --------------------
+		// profile the goneovim
+		// --------------------
+		//
+		// Comment out the following::
+		//
+		// // * built-in net/http/pprof
+		// pprof.StopCPUProfile()
+		// f.Close()
+
+		// // * https://github.com/felixge/fgprof
+		// fgprofStop()
+		// f.Close()
 
 		os.Exit(ret)
 	}()
