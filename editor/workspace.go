@@ -2783,13 +2783,13 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 	if event.CommitString() != "" {
 		w.screen.tooltip.cursorVisualPos = 0
 		w.nvim.Input(event.CommitString())
-		w.screen.tooltip.Hide()
+		w.screen.tooltip.hide()
 		w.screen.tooltip.clearText()
 	} else {
 		preeditString := event.PreeditString()
 
 		if preeditString == "" {
-			w.screen.tooltip.Hide()
+			w.screen.tooltip.hide()
 			w.screen.refresh()
 		} else {
 			w.screen.tooltip.parsePreeditString(preeditString)
@@ -2815,6 +2815,10 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 
 // InputMethodQuery is
 func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
+	if !w.screen.tooltip.isShown {
+		return core.NewQVariant()
+	}
+
 	editor.putLog(
 		fmt.Sprintf(
 			"InputMethodQuery:: query: %d", query,

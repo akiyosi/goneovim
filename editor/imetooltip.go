@@ -14,8 +14,8 @@ type IMETooltip struct {
 
 	cursorPos       int
 	selectionLength int
-
 	cursorVisualPos int
+	isShown         bool
 }
 
 func (i *IMETooltip) setQpainterFont(p *gui.QPainter) {
@@ -113,6 +113,11 @@ func (i *IMETooltip) move(x int, y int) {
 	i.Move(core.NewQPoint2(x+padding, y))
 }
 
+func (i *IMETooltip) hide() {
+	i.isShown = false
+	i.Hide()
+}
+
 func (i *IMETooltip) show() {
 	if i.s.ws.palette == nil {
 		return
@@ -128,6 +133,7 @@ func (i *IMETooltip) show() {
 
 	i.Show()
 	i.Raise()
+	i.isShown = true
 }
 
 func (i *IMETooltip) updateVirtualCursorPos() {
