@@ -2815,6 +2815,12 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 
 // InputMethodQuery is
 func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
+	if w.screen == nil {
+		return core.NewQVariant()
+	}
+	if w.screen.tooltip == nil {
+		return core.NewQVariant()
+	}
 	if !w.screen.tooltip.isShown {
 		return core.NewQVariant()
 	}

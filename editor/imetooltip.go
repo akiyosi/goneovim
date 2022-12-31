@@ -169,12 +169,12 @@ func (i *IMETooltip) parsePreeditString(preeditStr string) {
 	h := &Highlight{}
 	g.foreground = i.s.ws.foreground
 	g.background = i.s.ws.background
-	if i.s.ws.screenbg == "dark" {
-		h.foreground = warpColor(editor.colors.fg, 30)
-		h.background = warpColor(editor.colors.bg, 30)
+	if i.s.ws.screenbg == "light" {
+		h.foreground = warpColor(i.s.ws.background, -30)
+		h.background = warpColor(i.s.ws.foreground, -30)
 	} else {
-		h.foreground = warpColor(editor.colors.fg, -30)
-		h.background = warpColor(editor.colors.fg, -30)
+		h.foreground = warpColor(i.s.ws.foreground, 30)
+		h.background = warpColor(i.s.ws.background, 30)
 	}
 	h.underline = true
 
