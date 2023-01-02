@@ -105,7 +105,9 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 
 	// Paint source cell text
 	X, Y := c.getDrawingPos(c.x, c.y, c.xprime, c.yprime, c.deltax, c.deltay)
-	c.drawForeground(p, X, Y, c.animationStartX, c.animationStartY, c.sourcetext)
+	if editor.config.Cursor.SmoothMove {
+		c.drawForeground(p, X, Y, c.animationStartX, c.animationStartY, c.sourcetext)
+	}
 
 	if c.desttext == "" {
 		p.DestroyQPainter()

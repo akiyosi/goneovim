@@ -127,8 +127,10 @@ func (i *IMETooltip) show() {
 		if ok {
 			i.SetParent(win)
 		}
+		i.setFont(win.getFont())
 	} else {
 		i.SetParent(i.s.ws.palette.widget)
+		i.setFont(i.s.font)
 	}
 
 	i.Show()

@@ -2792,9 +2792,9 @@ func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 			w.screen.tooltip.hide()
 			w.screen.refresh()
 		} else {
+			w.screen.tooltip.show()
 			w.screen.tooltip.parsePreeditString(preeditString)
 			w.screen.tooltip.update()
-			w.screen.tooltip.show()
 
 		}
 
