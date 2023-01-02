@@ -136,6 +136,10 @@ func (t *Tooltip) clearText() {
 }
 
 func (t *Tooltip) updateText(hl *Highlight, str string) {
+	if t.font == nil {
+		return
+	}
+
 	font := t.font
 
 	// rune text
