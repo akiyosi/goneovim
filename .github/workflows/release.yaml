@@ -13,7 +13,7 @@ on:
       - v[0-9]+.[0-9]+.[0-9]+
 
 env:
-  cache-version: v8
+  cache-version: v9
 
 jobs:
 
@@ -34,7 +34,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.18.x]
-        platform: [ubuntu-latest] #, windows-latest]
+        platform: [ubuntu-20.04]
         qtversion: [5.15.6]
     runs-on: ${{ matrix.platform }}
     env:
@@ -54,7 +54,7 @@ jobs:
         sudo apt update
         sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake
         sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
-        sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev
+        sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev libzstd-dev
         #sudo apt-get --no-install-recommends -qq -y install libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev libxcb1-dev libxcb-glx0-dev libxcb-keysyms1-dev libxcb-image0-dev libxcb-shm0-dev libxcb-icccm4-dev libxcb-sync0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-randr0-dev libxcb-render-util0-dev libxcb-xinerama0-dev libxkbcommon-dev libxkbcommon-x11-dev
         sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
         sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
