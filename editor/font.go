@@ -3,7 +3,6 @@ package editor
 import (
 	"fmt"
 	"math"
-	"runtime"
 
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
@@ -31,13 +30,13 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	h := fontMetrics.Height()
 	width := fontMetrics.HorizontalAdvance("w", -1)
 
-	// On Windows, it may take a long time (~500ms) to drawing CJK characters for qpainter.
-	// Therefore, we will run this process in concurrently in the background of attaching to neovim.
-	// This issue may also be related to the following.
-	// https://github.com/equalsraf/neovim-qt/issues/614
-	if runtime.GOOS == "windows" {
-		go fontMetrics.HorizontalAdvance("無未제", -1)
-	}
+	// // On Windows, it may take a long time (~500ms) to drawing CJK characters for qpainter.
+	// // Therefore, we will run this process in concurrently in the background of attaching to neovim.
+	// // This issue may also be related to the following.
+	// // https://github.com/equalsraf/neovim-qt/issues/614
+	// if runtime.GOOS == "windows" && !editor.config.Editor.NoFontMerge {
+	// 	go fontMetrics.HorizontalAdvance("無未제", -1)
+	// }
 
 	ascent := fontMetrics.Ascent()
 	height := int(math.Ceil(h))
@@ -113,7 +112,7 @@ func (f *Font) putDebugLog() {
 	// rf = rf.FromFont(f.fontNew, gui.QFontDatabase__Any)
 	fi := gui.NewQFontInfo(f.fontNew)
 	editor.putLog(
-		"detect font family:",
+		"font family:",
 		fi.Family(),
 		fi.PointSizeF(),
 		fi.StyleName(),

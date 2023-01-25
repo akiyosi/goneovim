@@ -123,8 +123,8 @@ func (s *Screen) updateSize() {
 
 	ws := s.ws
 
-	currentCols := int(float64(s.width) / s.font.cellwidth)
-	currentRows := s.height / s.font.lineHeight
+	newCols := int(float64(s.width) / s.font.cellwidth)
+	newRows := s.height / s.font.lineHeight
 
 	// Adjust the position of the message grid.
 	s.windows.Range(func(_, winITF interface{}) bool {
@@ -139,13 +139,13 @@ func (s *Screen) updateSize() {
 		return true
 	})
 
-	isNeedTryResize := (currentCols != ws.cols || currentRows != ws.rows)
+	isNeedTryResize := (newCols != ws.cols || newRows != ws.rows)
 	if !isNeedTryResize {
 		return
 	}
 
-	ws.cols = currentCols
-	ws.rows = currentRows
+	ws.cols = newCols
+	ws.rows = newRows
 
 	if !ws.uiAttached {
 		return
@@ -164,19 +164,20 @@ func (s *Screen) updateSize() {
 		return true
 	})
 
-	s.uiTryResize(currentCols, currentRows)
+	s.uiTryResize(newCols, newRows)
 
 }
 
-func (s *Screen) uiTryResize(width, height int) {
-	if width <= 0 || height <= 0 {
+func (s *Screen) uiTryResize(cols, rows int) {
+	if cols <= 0 || rows <= 0 {
 		return
 	}
+
 	ws := s.ws
 	done := make(chan error, 5)
 	var result error
 	go func() {
-		result = ws.nvim.TryResizeUI(width, height)
+		result = ws.nvim.TryResizeUI(cols, rows)
 		done <- result
 	}()
 	select {
@@ -658,7 +659,15 @@ func (s *Screen) gridResize(args []interface{}) {
 
 		// If events related to the global grid are included
 		// Determine to resize the application window
-		if gridid == 1 && s.name != "minimap" {
+		if gridid == 1 && s.name != "minimap" && s.ws.uiAttached {
+			if !editor.window.IsVisible() {
+				if !editor.isBindNvimSizeToAppwin {
+					editor.bindResizeEvent()
+					editor.isBindNvimSizeToAppwin = true
+				}
+				continue
+			}
+
 			if !(s.ws.cols == cols && s.ws.rows == rows) {
 				s.ws.cols = cols
 				s.ws.rows = rows

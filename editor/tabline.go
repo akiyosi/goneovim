@@ -53,7 +53,7 @@ type Tab struct {
 	hidden    bool
 }
 
-func (t *Tabline) subscribe() {
+func (t *Tabline) connectUI() {
 	if t == nil {
 		return
 	}
@@ -154,6 +154,10 @@ func initTabline() *Tabline {
 	tabline.Tabs = tabs
 
 	return tabline
+}
+
+func (t *Tabline) showEvent(event *gui.QShowEvent) {
+	t.ws.updateSize()
 }
 
 func (t *Tabline) initTab() {
@@ -448,6 +452,12 @@ func (t *Tabline) update(tabs []interface{}) {
 	// Support showtabline behavior in external tabline
 	height := t.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
 	isChangeHeight := t.height != height
+
+	if t.showtabline != t.ws.showtabline || t.ws.showtabline == 1 || isChangeHeight {
+		t.ws.cursor.update()
+		t.showtabline = t.ws.showtabline
+	}
+
 	if t.ws.showtabline == 1 {
 		if lenshowntabs > 1 {
 			t.widget.Show()
@@ -464,12 +474,6 @@ func (t *Tabline) update(tabs []interface{}) {
 		t.widget.Hide()
 		t.ws.isDrawTabline = false
 		t.height = 0
-	}
-	if t.showtabline != t.ws.showtabline || t.ws.showtabline == 1 || isChangeHeight {
-		t.ws.updateSize()
-		t.ws.cursor.update()
-		t.showtabline = t.ws.showtabline
-	} else {
 	}
 }
 

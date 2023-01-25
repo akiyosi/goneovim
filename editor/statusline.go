@@ -544,7 +544,7 @@ func (s *Statusline) updateFont() {
 	s.fileFormat.c.label.SetFont(font)
 }
 
-func (s *Statusline) subscribe() {
+func (s *Statusline) connectUI() {
 	if !s.ws.isDrawStatusline {
 		s.widget.Hide()
 		return

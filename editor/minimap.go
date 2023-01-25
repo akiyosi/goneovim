@@ -257,7 +257,7 @@ func (m *MiniMap) setColorscheme() {
 	colo := ""
 	select {
 	case colo = <-coloChan:
-	case <-time.After(40 * time.Millisecond):
+	case <-time.After(80 * time.Millisecond):
 	}
 
 	sep := "/"
@@ -275,7 +275,7 @@ func (m *MiniMap) setColorscheme() {
 	var runtimePaths []string
 	select {
 	case runtimePaths = <-rtpChan:
-	case <-time.After(40 * time.Millisecond):
+	case <-time.After(80 * time.Millisecond):
 	}
 
 	colorschemePath := ""
