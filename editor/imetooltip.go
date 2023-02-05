@@ -169,6 +169,10 @@ func (i *IMETooltip) parsePreeditString(preeditStr string) {
 
 	g := &Highlight{}
 	h := &Highlight{}
+
+	if i.s.ws.foreground == nil || i.s.ws.background == nil {
+		return
+	}
 	g.foreground = i.s.ws.foreground
 	g.background = i.s.ws.background
 	if i.s.ws.screenbg == "light" {

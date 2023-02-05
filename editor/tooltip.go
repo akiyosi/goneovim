@@ -59,17 +59,15 @@ func (t *Tooltip) drawContent(p *gui.QPainter, f func(*gui.QPainter)) {
 		r := []rune(chunk.str)
 		for _, rr := range r {
 			// draw background
-			if !bg.equals(t.s.ws.background) {
-				p.FillRect4(
-					core.NewQRectF4(
-						x,
-						y,
-						chunk.width,
-						height,
-					),
-					bg.QColor(),
-				)
-			}
+			p.FillRect4(
+				core.NewQRectF4(
+					x,
+					y,
+					chunk.width,
+					height,
+				),
+				bg.QColor(),
+			)
 
 			// set italic
 			if italic {
