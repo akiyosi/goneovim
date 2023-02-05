@@ -392,7 +392,7 @@ jobs:
       QT_MSYS2_STATIC: true
       QT_MSVC: false
       QT_DEBUG: false
-      # QT_DEBUG_CONSOLE: true
+      QT_DEBUG_CONSOLE: true
       GO111MODULE: off
       CGO_CFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS_ALLOW: ".*" 
