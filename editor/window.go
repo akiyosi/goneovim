@@ -44,6 +44,9 @@ type Highlight struct {
 	undercurl     bool
 	italic        bool
 	strikethrough bool
+	underdouble   bool
+	underdotted   bool
+	underdashed   bool
 }
 
 // HlChars is used in screen cache
@@ -60,6 +63,9 @@ type HlDecoration struct {
 	underline     bool
 	undercurl     bool
 	strikethrough bool
+	underdouble   bool
+	underdotted   bool
+	underdashed   bool
 }
 
 // Cell is
@@ -1308,7 +1314,10 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 				line[col].highlight.bg().equals(w.background) &&
 				!line[col].highlight.underline &&
 				!line[col].highlight.undercurl &&
-				!line[col].highlight.strikethrough {
+				!line[col].highlight.strikethrough &&
+				!line[col].highlight.underdouble &&
+				!line[col].highlight.underdotted &&
+				!line[col].highlight.underdashed {
 				w.contentMask[row][col] = false
 			} else {
 				w.contentMask[row][col] = true
@@ -1363,7 +1372,10 @@ func (w *Window) countContent(row int) {
 				cell.highlight.bg().equals(w.background) &&
 				!cell.highlight.underline &&
 				!cell.highlight.undercurl &&
-				!cell.highlight.strikethrough {
+				!cell.highlight.strikethrough &&
+				!cell.highlight.underdouble &&
+				!cell.highlight.underdotted &&
+				!cell.highlight.underdashed {
 				width--
 			} else {
 				breakFlag[1] = true
@@ -2219,6 +2231,9 @@ func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 				underline:     highlight.underline,
 				undercurl:     highlight.undercurl,
 				strikethrough: highlight.strikethrough,
+				underdouble:   highlight.underdouble,
+				underdotted:   highlight.underdotted,
+				underdashed:   highlight.underdashed,
 			},
 			image,
 		)
@@ -2230,6 +2245,9 @@ func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 				underline:     highlight.underline,
 				undercurl:     highlight.undercurl,
 				strikethrough: highlight.strikethrough,
+				underdouble:   highlight.underdouble,
+				underdotted:   highlight.underdotted,
+				underdashed:   highlight.underdashed,
 			},
 			image,
 		)
@@ -2240,7 +2258,6 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 	font := w.getFont()
 
 	width := font.cellwidth
-	fg := highlight.fg()
 	if !isNormalWidth {
 		width = math.Ceil(w.s.runeTextWidth(font, char))
 	}
@@ -2272,74 +2289,8 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 	image.Fill3(core.Qt__transparent)
 
 	pi := gui.NewQPainter2(image)
-	pi.SetPen2(fg.QColor())
 
-	pen := gui.NewQPen()
-	var color *gui.QColor
-	sp := highlight.special
-	if sp != nil {
-		color = sp.QColor()
-		pen.SetColor(color)
-	} else {
-		fg := highlight.foreground
-		color = fg.QColor()
-		pen.SetColor(color)
-	}
-	pi.SetPen(pen)
-	start := float64(0) * font.cellwidth
-	end := float64(width) * font.cellwidth
-
-	space := float64(font.lineSpace) / 3.0
-	if math.Abs(space) > font.ascent/3.0 {
-		space = font.ascent / 3.0
-	}
-	space2 := float64(font.lineSpace)
-	if space2 < -1 {
-		space2 = float64(font.lineSpace) / 2.0
-	}
-	descent := float64(font.height) - font.ascent
-	weight := int(math.Ceil(float64(font.height) / 16.0))
-	if weight < 1 {
-		weight = 1
-	}
-	if highlight.strikethrough {
-		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent)*0.65 + float64(space2/2)
-		pi.FillRect5(
-			int(start)+horScrollPixels,
-			int(Y),
-			int(math.Ceil(font.cellwidth)),
-			weight,
-			color,
-		)
-	}
-	if highlight.underline {
-		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
-		pi.FillRect5(
-			int(start)+horScrollPixels,
-			int(Y),
-			int(math.Ceil(font.cellwidth)),
-			weight,
-			color,
-		)
-	}
-	if highlight.undercurl {
-		amplitude := descent*0.65 + float64(space2)
-		maxAmplitude := font.ascent / 8.0
-		if amplitude >= maxAmplitude {
-			amplitude = maxAmplitude
-		}
-		freq := 1.0
-		phase := 0.0
-		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent+descent*0.3) + float64(space2/2) + space
-		Y2 := Y + amplitude*math.Sin(0)
-		point := core.NewQPointF3(start+float64(horScrollPixels), Y2)
-		path := gui.NewQPainterPath2(point)
-		for i := int(point.X()); i <= int(end); i++ {
-			Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.cellwidth+phase)
-			path.LineTo(core.NewQPointF3(float64(i), Y2))
-		}
-		pi.DrawPath(path)
-	}
+	w.drawDecoration(pi, highlight, font, 0, int(width), verScrollPixels, horScrollPixels)
 
 	pi.DestroyQPainter()
 
@@ -2484,7 +2435,12 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		if line[x] == nil {
 			continue
 		}
-		if !line[x].highlight.underline && !line[x].highlight.undercurl && !line[x].highlight.strikethrough {
+		if !line[x].highlight.underline &&
+			!line[x].highlight.undercurl &&
+			!line[x].highlight.strikethrough &&
+			!line[x].highlight.underdouble &&
+			!line[x].highlight.underdotted &&
+			!line[x].highlight.underdashed {
 			continue
 		}
 		if line[x].covered && w.grid == 1 {
@@ -2493,70 +2449,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 
 		// if CachedDrawing is disabled
 		if !editor.config.Editor.CachedDrawing {
-			pen := gui.NewQPen()
-			var color *gui.QColor
-			sp := line[x].highlight.special
-			if sp != nil {
-				color = sp.QColor()
-				pen.SetColor(color)
-			} else {
-				fg := line[x].highlight.foreground
-				color = fg.QColor()
-				pen.SetColor(color)
-			}
-			p.SetPen(pen)
-			start := float64(x) * font.cellwidth
-			end := float64(x+1) * font.cellwidth
-
-			space := float64(font.lineSpace) / 3.0
-			if space > font.ascent/3.0 {
-				space = font.ascent / 3.0
-			}
-			descent := float64(font.height) - font.ascent
-			weight := int(math.Ceil(float64(font.height) / 16.0))
-			if weight < 1 {
-				weight = 1
-			}
-			if line[x].highlight.strikethrough {
-				// strikeLinef := core.NewQLineF3(start, halfY, end, halfY)
-				// p.DrawLine(strikeLinef)
-				Y := float64(y*font.lineHeight+verScrollPixels) + float64(font.ascent)*0.65 + float64(font.lineSpace/2)
-				p.FillRect5(
-					int(start)+horScrollPixels,
-					int(Y),
-					int(math.Ceil(font.cellwidth)),
-					weight,
-					color,
-				)
-			}
-			if line[x].highlight.underline {
-				Y := float64(y*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
-				p.FillRect5(
-					int(start)+horScrollPixels,
-					int(Y),
-					int(math.Ceil(font.cellwidth)),
-					weight,
-					color,
-				)
-			}
-			if line[x].highlight.undercurl {
-				amplitude := descent*0.65 + float64(font.lineSpace)
-				maxAmplitude := font.ascent / 8.0
-				if amplitude >= maxAmplitude {
-					amplitude = maxAmplitude
-				}
-				freq := 1.0
-				phase := 0.0
-				Y := float64(y*font.lineHeight+verScrollPixels) + float64(font.ascent+descent*0.3) + float64(font.lineSpace/2) + space
-				Y2 := Y + amplitude*math.Sin(0)
-				point := core.NewQPointF3(start+float64(horScrollPixels), Y2)
-				path := gui.NewQPainterPath2(point)
-				for i := int(point.X()); i <= int(end); i++ {
-					Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.cellwidth+phase)
-					path.LineTo(core.NewQPointF3(float64(i), Y2))
-				}
-				p.DrawPath(path)
-			}
+			w.drawDecoration(p, line[x].highlight, font, x, x+1, verScrollPixels, horScrollPixels)
 		} else { // if CachedDrawing is enabled
 			fgCache := w.getCache()
 			var image *gui.QImage
@@ -2565,6 +2458,9 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				underline:     line[x].highlight.underline,
 				undercurl:     line[x].highlight.undercurl,
 				strikethrough: line[x].highlight.strikethrough,
+				underdouble:   line[x].highlight.underdouble,
+				underdotted:   line[x].highlight.underdotted,
+				underdashed:   line[x].highlight.underdashed,
 			})
 
 			if err != nil {
@@ -2582,6 +2478,123 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				image,
 			)
 		}
+	}
+}
+
+func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Font, x1, x2, verScrollPixels, horScrollPixels int) {
+	pen := gui.NewQPen()
+	var color *gui.QColor
+	sp := highlight.special
+	if sp != nil {
+		color = sp.QColor()
+		pen.SetColor(color)
+	} else {
+		fg := highlight.foreground
+		color = fg.QColor()
+		pen.SetColor(color)
+	}
+	p.SetPen(pen)
+	start := float64(x1) * font.cellwidth
+	end := float64(x2) * font.cellwidth
+
+	space := float64(font.lineSpace) / 3.0
+	if math.Abs(space) > font.ascent/3.0 {
+		space = font.ascent / 3.0
+	}
+	space2 := float64(font.lineSpace)
+	if space2 < -1 {
+		space2 = float64(font.lineSpace) / 2.0
+	}
+	descent := float64(font.height) - font.ascent
+	weight := int(math.Ceil(float64(font.height) / 16.0))
+	if weight < 1 {
+		weight = 1
+	}
+	if highlight.strikethrough {
+		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent)*0.65 + float64(space2/2)
+		p.FillRect5(
+			int(start)+horScrollPixels,
+			int(Y),
+			int(math.Ceil(font.cellwidth)),
+			weight,
+			color,
+		)
+	}
+	if highlight.underline {
+		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
+		p.FillRect5(
+			int(start)+horScrollPixels,
+			int(Y),
+			int(math.Ceil(font.cellwidth)),
+			weight,
+			color,
+		)
+	}
+	if highlight.undercurl {
+		amplitude := descent*0.65 + float64(space2)
+		maxAmplitude := font.ascent / 8.0
+		if amplitude >= maxAmplitude {
+			amplitude = maxAmplitude
+		}
+		freq := 1.0
+		phase := 0.0
+		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent+descent*0.3) + float64(space2/2) + space
+		Y2 := Y + amplitude*math.Sin(0)
+		point := core.NewQPointF3(start+float64(horScrollPixels), Y2)
+		path := gui.NewQPainterPath2(point)
+		for i := int(point.X()); i <= int(end); i++ {
+			Y2 = Y + amplitude*math.Sin(2*math.Pi*freq*float64(i)/font.cellwidth+phase)
+			path.LineTo(core.NewQPointF3(float64(i), Y2))
+		}
+		p.DrawPath(path)
+	}
+	if highlight.underdouble {
+		Y1 := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.1 + float64(font.lineSpace/2) + space
+		Y2 := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.6 + float64(font.lineSpace/2) + space
+		doubleLineWeight := int(math.Ceil(float64(font.height) / 20.0))
+		p.FillRect5(
+			int(start)+horScrollPixels,
+			int(Y1),
+			int(math.Ceil(font.cellwidth)),
+			doubleLineWeight,
+			color,
+		)
+		p.FillRect5(
+			int(start)+horScrollPixels,
+			int(Y2),
+			int(math.Ceil(font.cellwidth)),
+			doubleLineWeight,
+			color,
+		)
+	}
+	if highlight.underdotted {
+		dottedWeight := int(float64(weight) * 0.8)
+		if dottedWeight < 1 {
+			dottedWeight = 1
+		}
+		pen := gui.NewQPen()
+		pen.SetWidth(dottedWeight)
+		pen.SetColor(color)
+		pen.SetStyle(core.Qt__DotLine)
+		p.SetPen(pen)
+		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
+
+		p.DrawLine3(
+			int(start)+horScrollPixels,
+			int(Y),
+			int(start)+horScrollPixels+int(math.Ceil(font.cellwidth)),
+			int(Y),
+		)
+	}
+	if highlight.underdashed {
+		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
+		p.FillRect5(
+			int(start)+int(math.Ceil(font.cellwidth*0.25))+horScrollPixels,
+			int(Y),
+			int(math.Ceil(font.cellwidth*0.5)),
+			weight,
+			color,
+		)
 	}
 }
 
