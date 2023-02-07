@@ -2313,9 +2313,10 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		)
 	}
 	if highlight.underline {
+		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
 		pi.FillRect5(
 			int(start)+horScrollPixels,
-			int(float64((0+1)*font.lineHeight+verScrollPixels))-weight,
+			int(Y),
 			int(math.Ceil(font.cellwidth)),
 			weight,
 			color,
@@ -2529,11 +2530,10 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				)
 			}
 			if line[x].highlight.underline {
-				// linef := core.NewQLineF3(start, Y, end, Y)
-				// p.DrawLine(linef)
+				Y := float64(y*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
 				p.FillRect5(
 					int(start)+horScrollPixels,
-					int(float64((y+1)*font.lineHeight+verScrollPixels))-weight,
+					int(Y),
 					int(math.Ceil(font.cellwidth)),
 					weight,
 					color,
