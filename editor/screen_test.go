@@ -20,6 +20,9 @@ func TestHighlight_fg(t *testing.T) {
 		underline     bool
 		undercurl     bool
 		strikethrough bool
+		underdouble   bool
+		underdotted   bool
+		underdashed   bool
 	}
 	tests := []struct {
 		name   string
@@ -88,6 +91,9 @@ func TestHighlight_fg(t *testing.T) {
 				underline:     tt.fields.underline,
 				undercurl:     tt.fields.undercurl,
 				strikethrough: tt.fields.strikethrough,
+				underdouble:   tt.fields.underdouble,
+				underdotted:   tt.fields.underdotted,
+				underdashed:   tt.fields.underdashed,
 			}
 			if got := hl.fg(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Highlight.fg() = %v, want %v", got, tt.want)

@@ -1120,6 +1120,27 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		highlight.undercurl = false
 	}
 
+	underdouble := hl["underdouble"]
+	if underdouble != nil {
+		highlight.underdouble = true
+	} else {
+		highlight.underdouble = false
+	}
+
+	underdashed := hl["underdashed"]
+	if underdashed != nil {
+		highlight.underdashed = true
+	} else {
+		highlight.underdashed = false
+	}
+
+	underdotted := hl["underdotted"]
+	if underdotted != nil {
+		highlight.underdotted = true
+	} else {
+		highlight.underdotted = false
+	}
+
 	strikethrough := hl["strikethrough"]
 	if strikethrough != nil {
 		highlight.strikethrough = true
