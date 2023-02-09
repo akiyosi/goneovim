@@ -105,8 +105,12 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 
 	// Paint source cell text
 	X, Y := c.getDrawingPos(c.x, c.y, c.xprime, c.yprime, c.deltax, c.deltay)
+	X2, Y2 := c.getDrawingPos(c.x, c.y, 0, 0, 0, 0)
+
 	if editor.config.Cursor.SmoothMove {
-		c.drawForeground(p, X, Y, c.animationStartX, c.animationStartY, c.sourcetext)
+		if X != X2 || Y != Y2 {
+			c.drawForeground(p, X, Y, c.animationStartX, c.animationStartY, c.sourcetext)
+		}
 	}
 
 	if c.desttext == "" {
@@ -115,7 +119,6 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 	}
 
 	// Paint destination text
-	X2, Y2 := c.getDrawingPos(c.x, c.y, 0, 0, 0, 0)
 	c.drawForeground(p, X, Y, X2, Y2, c.desttext)
 
 	p.DestroyQPainter()
@@ -583,7 +586,6 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 		c.xprime = c.x
 		c.yprime = c.y
 	}
-
 	c.x = x
 	c.y = y
 
@@ -727,6 +729,11 @@ func (c *Cursor) animateMove() {
 			c.deltax = 0
 			c.deltay = 0
 			c.doAnimate = false
+		}
+
+		if c.doAnimate {
+			c.animationStartX = c.xprime
+			c.animationStartY = c.yprime
 		}
 
 		c.move()
