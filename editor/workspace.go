@@ -519,6 +519,8 @@ func (w *Workspace) startNvim(path string) error {
 	childProcessArgs := nvim.ChildProcessArgs(
 		append(option, editor.args...)...,
 	)
+	childProcessServe := nvim.ChildProcessServe(false)
+
 	if editor.opts.Server != "" {
 		// Attaching to remote nvim session
 		neovim, err = nvim.Dial(editor.opts.Server)
@@ -526,7 +528,7 @@ func (w *Workspace) startNvim(path string) error {
 	} else if editor.opts.Nvim != "" {
 		// Attaching to /path/to/nvim
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
-		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd)
+		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd, childProcessServe)
 	} else if editor.opts.Wsl != nil {
 		// Attaching remote nvim via wsl
 		w.uiRemoteAttached = true
@@ -537,7 +539,7 @@ func (w *Workspace) startNvim(path string) error {
 		neovim, err = newRemoteChildProcess()
 	} else {
 		// Attaching to nvim normally
-		neovim, err = nvim.NewChildProcess(childProcessArgs)
+		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessServe)
 	}
 	if err != nil {
 		editor.putLog(err)
