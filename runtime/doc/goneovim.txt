@@ -391,7 +391,7 @@ All Options are follows:
 
         ## Enable the ability to remember the last window geometry that was displayed
         ## and restore it at the next startup.
-        RestoreWindowGeometry = false
+        # RestoreWindowGeometry = false
         
         ## Editor external font-family, font-siz.
         ## This is the font settings of the graphical UI as an nvim front end.
@@ -453,6 +453,12 @@ All Options are follows:
         ## This option allows you to hide the mouse cursor in the gooneovim window 
         ## when you type a key, and to redisplay it when you move the mouse cursor again. 
         # HideMouseWhenTyping = false
+
+        ## Specifies a list of characters to be scaled to the full height of the line. This solves
+        ## the problem of characters that form the UI not filling the UI design when `set linespace`
+        ## is used to increase the line spacing.
+        ## The default character list is as follows.
+        # CharsScaledLineHeight = ["", "", "", "", "", "", "", "", "", "", "│"]
         
         ## Draw borders on the GUI side instead of the vertical border and status line that nvim draws.
         # DrawWindowSeparator = false

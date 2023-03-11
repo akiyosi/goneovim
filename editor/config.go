@@ -39,6 +39,7 @@ type editorConfig struct {
 	NvimInWsl                               string
 	ModeEnablingIME                         []string
 	IndentGuideIgnoreFtList                 []string
+	CharsScaledLineHeight                   []string
 	Transparent                             float64
 	DiffDeletePattern                       int
 	DiffAddPattern                          int
@@ -339,6 +340,7 @@ func (c *gonvimConfig) init() {
 	// Indent guide
 	c.Editor.IndentGuide = false
 	c.Editor.IndentGuideIgnoreFtList = []string{"markdown", "md", "txt", "text", "help", "json", "nerdtree"}
+	c.Editor.CharsScaledLineHeight = []string{"", "", "", "", "", "", "", "", "", "", "│"}
 	c.Editor.OptionsToUseGuideWidth = "tabstop"
 
 	c.Editor.LineToScroll = 1
