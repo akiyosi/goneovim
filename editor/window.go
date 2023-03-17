@@ -2731,10 +2731,6 @@ func newWindow() *Window {
 	win.ConnectDragMoveEvent(win.dragMoveEvent)
 	win.ConnectDropEvent(win.dropEvent)
 
-	// win.ConnectMousePressEvent(screen.mousePressEvent)
-	win.ConnectMouseReleaseEvent(win.mouseEvent)
-	win.ConnectMouseMoveEvent(win.mouseEvent)
-
 	// HideMouseWhenTyping process
 	if editor.config.Editor.HideMouseWhenTyping {
 		win.InstallEventFilter(win)

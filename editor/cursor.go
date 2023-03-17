@@ -64,14 +64,14 @@ func initCursorNew() *Cursor {
 
 	c.SetContentsMargins(0, 0, 0, 0)
 	c.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
+	c.SetAttribute(core.Qt__WA_TransparentForMouseEvents, true)
+	c.SetFocusPolicy(core.Qt__NoFocus)
 	c.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	c.timer = core.NewQTimer(nil)
 	c.isNeedUpdateModeInfo = true
 	c.ConnectPaintEvent(c.paintEvent)
 	c.hasSmoothMove = editor.config.Cursor.SmoothMove
 	c.cellPercentage = 100
-	c.SetFocusPolicy(core.Qt__NoFocus)
-	c.ConnectWheelEvent(c.wheelEvent)
 
 	return c
 }
@@ -122,14 +122,6 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 	c.drawForeground(p, X, Y, X2, Y2, c.desttext)
 
 	p.DestroyQPainter()
-}
-
-func (c *Cursor) wheelEvent(event *gui.QWheelEvent) {
-	win, ok := c.ws.screen.getWindow(c.gridid)
-	if !ok {
-		return
-	}
-	win.WheelEvent(event)
 }
 
 func (c *Cursor) drawBackground(p *gui.QPainter) {
