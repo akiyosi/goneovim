@@ -710,7 +710,9 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 			if i < len(win.content) {
 				lenLine[i] = win.lenLine[i]
 				lenContent[i] = win.lenContent[i]
-				lenOldContent[i] = win.lenOldContent[i]
+				if i < len(win.lenOldContent) {
+					lenOldContent[i] = win.lenOldContent[i]
+				}
 			}
 		}
 
@@ -718,8 +720,10 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 
 			if win != nil {
 				if i < len(win.content) && j < len(win.content[i]) {
+					if i < len(win.contentMaskOld) && j < len(win.contentMaskOld[i]) {
+						contentMaskOld[i][j] = win.contentMaskOld[i][j]
+					}
 					contentMask[i][j] = win.contentMask[i][j]
-					contentMaskOld[i][j] = win.contentMaskOld[i][j]
 					content[i][j] = win.content[i][j]
 				}
 			}
