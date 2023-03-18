@@ -279,6 +279,8 @@ func newConfig(home string) (string, gonvimConfig) {
 		config.MiniMap.Width = 100
 	}
 
+	editor.putLog("reading config")
+
 	return configDir, config
 }
 

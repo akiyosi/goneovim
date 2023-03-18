@@ -207,6 +207,10 @@ func (w *Window) grabScreenSnapshot(rectangle core.QRect_ITF) {
 }
 
 func (w *Window) paint(event *gui.QPaintEvent) {
+	editor.putLog(
+		fmt.Sprintf("paint start"),
+	)
+
 	w.paintMutex.Lock()
 	defer w.paintMutex.Unlock()
 
@@ -226,13 +230,16 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	font := w.getFont()
 
 	// Set devicePixelRatio if it is not set
+	editor.putLog(
+		fmt.Sprintf("start to get screen device pixel ratio"),
+	)
 	devicePixelRatio := float64(p.PaintEngine().PaintDevice().DevicePixelRatio())
 	if w.devicePixelRatio != devicePixelRatio {
 		if w.devicePixelRatio != 0 {
 			w.s.purgeTextCacheForWins()
 		}
 		editor.putLog(
-			fmt.Sprintf("screen device pixel ratio is %f", devicePixelRatio),
+			fmt.Sprintf("end to get screen device pixel ratio is %f", devicePixelRatio),
 		)
 		w.devicePixelRatio = devicePixelRatio
 	}
@@ -859,7 +866,6 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 
 	// Detect current mode
 	mode := w.s.ws.mode
-	isTmode := w.s.ws.terminalMode
 	isCursorOnWin := w.isEventEmmitOnCursorGrid()
 	mouseScroll := w.s.ws.mouseScroll
 	if mouseScroll == "" {
@@ -867,10 +873,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	editor.putLog("detect neovim mode:", mode)
-	editor.putLog("detect neovim terminal mode:", fmt.Sprintf("%v", isTmode))
-	if isTmode && w.s.ws.mouseScroll == "" {
-		w.s.ws.nvim.Input(`<C-\><C-n>`)
-	} else if mode != "normal" && isCursorOnWin {
+	if mode != "normal" && isCursorOnWin {
 		w.s.ws.nvim.Input(w.s.ws.escKeyInInsert)
 	}
 
@@ -1005,10 +1008,6 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		return
 	}
 
-	if isTmode {
-		return
-	}
-
 	if horiz > 0 {
 		action = "left"
 	} else if horiz < 0 {
@@ -1035,7 +1034,7 @@ func (w *Window) applyTemporaryMousescroll(ms string) {
 	select {
 	case <-resultCh:
 		w.s.ws.mouseScrollTemp = ms
-	case <-time.After(40 * time.Millisecond):
+	case <-time.After(80 * time.Millisecond):
 	}
 }
 
@@ -1054,7 +1053,7 @@ func (w *Window) focusGrid() {
 
 		select {
 		case <-done:
-		case <-time.After(40 * time.Millisecond):
+		case <-time.After(80 * time.Millisecond):
 		}
 	}
 }
@@ -1258,93 +1257,77 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 func (w *Window) updateLine(row, col int, cells []interface{}) {
 	w.updateMutex.Lock()
 	line := w.content[row]
+	maskRow := w.contentMask[row]
 	colStart := col
+	hlAttrDef := w.s.hlAttrDef
+	linelen := len(line)
+
+	hl := -1
 	for _, arg := range cells {
-		if col >= len(line) {
+		if col >= linelen {
 			continue
 		}
 		cell := arg.([]interface{})
 
-		var hl, repeat int
-		hl = -1
 		if len(cell) >= 2 {
 			hl = util.ReflectToInt(cell[1])
 		}
 
+		repeat := 1
 		if len(cell) == 3 {
 			repeat = util.ReflectToInt(cell[2])
 		}
 
-		// If `repeat` is present, the cell should be
-		// repeated `repeat` times (including the first time), otherwise just
-		// once.
-		r := 1
-		if repeat == 0 {
-			repeat = 1
-		}
-		for r <= repeat {
-			if col >= len(line) {
-				break
-			}
-
+		for ; repeat > 0 && col < linelen; repeat-- {
 			if line[col] == nil {
 				line[col] = &Cell{}
-				w.contentMask[row][col] = true
+				maskRow[col] = true
 			}
 
 			line[col].char = cell[0].(string)
 			line[col].normalWidth = w.isNormalWidth(line[col].char)
 
-			// If `hl_id` is not present the most recently seen `hl_id` in
-			//	the same call should be used (it is always sent for the first
-			//	cell in the event).
-			switch col {
-			case 0:
-				line[col].highlight = w.s.hlAttrDef[hl]
-			default:
-				if hl == -1 {
-					line[col].highlight = line[col-1].highlight
-				} else {
-					line[col].highlight = w.s.hlAttrDef[hl]
-				}
-			}
-
-			// Update contentmask for screen update
-			if line[col].char == " " &&
-				line[col].highlight.bg().equals(w.background) &&
-				!line[col].highlight.underline &&
-				!line[col].highlight.undercurl &&
-				!line[col].highlight.strikethrough &&
-				!line[col].highlight.underdouble &&
-				!line[col].highlight.underdotted &&
-				!line[col].highlight.underdashed {
-				w.contentMask[row][col] = false
+			if hl != -1 || col == 0 {
+				line[col].highlight = hlAttrDef[hl]
 			} else {
-				w.contentMask[row][col] = true
+				line[col].highlight = line[col-1].highlight
 			}
 
-			// Detect popupmenu
-			if line[col].highlight.uiName == "Pmenu" ||
-				line[col].highlight.uiName == "PmenuSel" ||
-				line[col].highlight.uiName == "PmenuSbar" {
-				if !w.isPopupmenu {
-					w.isPopupmenu = true
-					w.move(w.pos[0], w.pos[1], w.anchorwin)
-				}
+			maskRow[col] = line[col].char != " " ||
+				!line[col].highlight.bg().equals(w.background) ||
+				line[col].highlight.underline ||
+				line[col].highlight.undercurl ||
+				line[col].highlight.strikethrough ||
+				line[col].highlight.underdouble ||
+				line[col].highlight.underdotted ||
+				line[col].highlight.underdashed
+
+			if !w.isPopupmenu &&
+				(line[col].highlight.uiName == "Pmenu" ||
+					line[col].highlight.uiName == "PmenuSel" ||
+					line[col].highlight.uiName == "PmenuSbar") {
+				w.isPopupmenu = true
+				w.move(w.pos[0], w.pos[1], w.anchorwin)
 			}
 
-			// Detect winblend
 			if line[col].highlight.blend > 0 {
 				w.wb = line[col].highlight.blend
 			}
 
 			col++
-			r++
 		}
 	}
 	w.updateMutex.Unlock()
 
 	w.queueRedraw(colStart, row, col-colStart+1, 1)
+}
+
+func isMissingGlyph(fm *gui.QFontMetricsF, ch string) bool {
+	if ch == "" {
+		return true
+	}
+
+	return fm.InFontUcs4(uint([]rune(ch)[0]))
 }
 
 func (w *Window) countContent(row int) {
@@ -1485,25 +1468,20 @@ func (w *Window) scroll(count int) {
 		}
 
 		if count > 0 {
-			w.content = w.content[count:]
-			w.content = append(w.content, content...)
-			w.contentMask = w.contentMask[count:]
-			w.contentMask = append(w.contentMask, contentMask...)
-
-			w.lenLine = w.lenLine[count:]
-			w.lenLine = append(w.lenLine, lenLine...)
-			w.lenContent = w.lenContent[count:]
-			w.lenContent = append(w.lenContent, lenContent...)
+			w.content = append(w.content[count:], content...)
+			w.contentMask = append(w.contentMask[count:], contentMask...)
+			w.lenLine = append(w.lenLine[count:], lenLine...)
+			w.lenContent = append(w.lenContent[count:], lenContent...)
 		}
 		if count < 0 {
-			w.content = w.content[:w.rows+count]
+			// w.content = w.content[:w.rows+count]
 			w.content = append(content, w.content...)
-			w.contentMask = w.contentMask[:w.rows+count]
+			// w.contentMask = w.contentMask[:w.rows+count]
 			w.contentMask = append(contentMask, w.contentMask...)
 
-			w.lenLine = w.lenLine[:w.rows+count]
+			// w.lenLine = w.lenLine[:w.rows+count]
 			w.lenLine = append(lenLine, w.lenLine...)
-			w.lenContent = w.lenContent[:w.rows+count]
+			// w.lenContent = w.lenContent[:w.rows+count]
 			w.lenContent = append(lenContent, w.lenContent...)
 		}
 	} else {
@@ -1646,7 +1624,7 @@ func (w *Window) update() {
 		// Create rectangles that require updating.
 		var rects [][4]int
 		isCreateRect := false
-		extendedDrawingArea := int(font.italicWidth - font.cellwidth + 1)
+		extendedDrawingArea := int(font.italicWidth-font.cellwidth+1) + 1
 
 		start := 0
 		if drawWithSingleRect {
@@ -3112,15 +3090,8 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 		}
 	}
 
-	res := 0
-	if w.isMsgGrid {
-		res = w.s.widget.Height() - w.rows*font.lineHeight
-	}
-	if res < 0 || w.isExternal {
-		res = 0
-	}
 	x := int(float64(col) * font.cellwidth)
-	y := (row * font.lineHeight) + res
+	y := (row * font.lineHeight)
 
 	// Fix https://github.com/akiyosi/goneovim/issues/316#issuecomment-1039978355
 	// Adjustment of the float window position when the repositioning process

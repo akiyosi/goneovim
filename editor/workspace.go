@@ -1,13 +1,9 @@
 package editor
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"log"
 	"math"
-	"net"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -38,7 +34,7 @@ type workspaceSignal struct {
 
 	_ func() `signal:"messageSignal"`
 
-	_ func() `signal:"lazyDrawSignal"`
+	_ func() `signal:"lazyLoadSignal"`
 }
 
 type ShouldUpdate struct {
@@ -114,99 +110,109 @@ type Workspace struct {
 	cursorStyleEnabled bool
 	isDrawStatusline   bool
 	isDrawTabline      bool
-	terminalMode       bool
 	isMouseEnabled     bool
 }
 
-func newWorkspace(path string) (*Workspace, error) {
+func newWorkspace() *Workspace {
 	editor.putLog("initialize workspace")
-	w := &Workspace{
-		stop:          make(chan struct{}),
-		signal:        NewWorkspaceSignal(nil),
-		redrawUpdates: make(chan [][]interface{}, 1000),
-		guiUpdates:    make(chan []interface{}, 1000),
-		viewportQue:   make(chan [5]int, 99),
-		foreground:    newRGBA(255, 255, 255, 1),
-		background:    newRGBA(0, 0, 0, 1),
-		special:       newRGBA(255, 255, 255, 1),
-		windowsFt:     make(map[nvim.Window]string),
-		windowsTs:     make(map[nvim.Window]int),
-		shouldUpdate:  &ShouldUpdate{},
+	ws := &Workspace{
+		stop:             make(chan struct{}),
+		viewportQue:      make(chan [5]int, 99),
+		foreground:       newRGBA(255, 255, 255, 1),
+		background:       newRGBA(0, 0, 0, 1),
+		special:          newRGBA(255, 255, 255, 1),
+		windowsFt:        make(map[nvim.Window]string),
+		windowsTs:        make(map[nvim.Window]int),
+		shouldUpdate:     &ShouldUpdate{},
+		isDrawStatusline: editor.config.Statusline.Visible,
 	}
-	w.registerSignal()
 
-	if len(editor.workspaces) > 0 {
-		w.font = initFontNew(
-			editor.extFontFamily,
-			float64(editor.extFontSize),
-			0,
-			editor.config.Editor.Letterspace,
-		)
-	} else {
-		w.font = editor.font
-	}
-	w.font.ws = w
+	return ws
+}
 
-	w.widget = widgets.NewQWidget(nil, 0)
-	w.widget.SetParent(editor.widget)
-	w.widget.SetAcceptDrops(true)
-	w.widget.ConnectDragEnterEvent(w.dragEnterEvent)
-	w.widget.ConnectDragMoveEvent(w.dragMoveEvent)
-	w.widget.ConnectDropEvent(w.dropEvent)
+func (ws *Workspace) initUI() {
+	ws.font = editor.font
+	ws.font.ws = ws
+
+	ws.widget = widgets.NewQWidget(nil, 0)
+	ws.widget.SetParent(editor.widget)
+	ws.widget.SetAcceptDrops(true)
+	ws.widget.ConnectDragEnterEvent(ws.dragEnterEvent)
+	ws.widget.ConnectDragMoveEvent(ws.dragMoveEvent)
+	ws.widget.ConnectDropEvent(ws.dropEvent)
 
 	// Basic Workspace UI component
 	// screen
-	w.screen = newScreen()
-	w.screen.ws = w
-	w.screen.font = w.font
-	w.screen.initInputMethodWidget()
+	ws.screen = newScreen()
+	ws.screen.ws = ws
+	ws.screen.initInputMethodWidget()
+	ws.screen.font = ws.font
 
 	// cursor
-	w.cursor = initCursorNew()
-	w.cursor.SetParent(w.widget)
-	w.cursor.ws = w
-	// w.cursor.setBypassScreenEvent()
+	ws.cursor = initCursorNew()
+	ws.cursor.SetParent(ws.widget)
+	ws.cursor.ws = ws
+	// ws.cursor.setBypassScreenEvent()
 
 	// If ExtFooBar is true, then we create a UI component
 	// tabline
 	if editor.config.Editor.ExtTabline {
-		w.tabline = initTabline()
-		w.tabline.ws = w
-		w.tabline.font = w.font.fontNew
+		ws.tabline = initTabline()
+		ws.tabline.ws = ws
+		ws.tabline.widget.ConnectShowEvent(ws.tabline.showEvent)
 	}
 
 	// cmdline
 	if editor.config.Editor.ExtCmdline {
-		w.cmdline = initCmdline()
-		w.cmdline.ws = w
+		ws.cmdline = initCmdline()
+		ws.cmdline.ws = ws
 	}
 
 	// palette
-	w.palette = initPalette()
-	w.palette.ws = w
-	w.palette.widget.SetParent(w.widget)
-	w.palette.setColor()
-	w.palette.hide()
+	ws.palette = initPalette()
+	ws.palette.ws = ws
+	ws.palette.widget.SetParent(ws.widget)
+	ws.palette.setColor()
+	ws.palette.hide()
 
 	// popupmenu
 	if editor.config.Editor.ExtPopupmenu {
-		w.popup = initPopupmenuNew()
-		w.popup.widget.SetParent(w.widget)
-		w.popup.ws = w
-		w.popup.widget.Hide()
+		ws.popup = initPopupmenuNew()
+		ws.popup.widget.SetParent(ws.widget)
+		ws.popup.ws = ws
+		ws.popup.widget.Hide()
 	}
 
 	// messages
 	if editor.config.Editor.ExtMessages {
-		w.message = initMessage()
-		w.message.ws = w
-		w.message.widget.SetParent(w.widget)
+		ws.message = initMessage()
+		ws.message.ws = ws
+		ws.message.widget.SetParent(ws.widget)
+		ws.signal.ConnectMessageSignal(func() {
+			ws.message.update()
+		})
 	}
 
 	// If Statusline.Visible is true, then we create statusline UI component
 	if editor.config.Statusline.Visible {
-		w.statusline = initStatusline()
-		w.statusline.ws = w
+		ws.statusline = initStatusline()
+		ws.statusline.ws = ws
+	}
+
+	if ws.tabline != nil {
+		ws.tabline.font = ws.font.fontNew
+	}
+
+	if ws.tabline != nil {
+		ws.isDrawTabline = editor.config.Tabline.Visible && editor.config.Editor.ExtTabline
+		ws.tabline.connectUI()
+	}
+	if ws.statusline != nil {
+		ws.isDrawStatusline = editor.config.Statusline.Visible
+		ws.statusline.connectUI()
+	}
+	if ws.message != nil {
+		ws.message.connectUI()
 	}
 
 	editor.putLog("initialazed UI components")
@@ -215,75 +221,71 @@ func newWorkspace(path string) (*Workspace, error) {
 	layout := widgets.NewQVBoxLayout()
 	layout.SetContentsMargins(0, 0, 0, 0)
 	layout.SetSpacing(0)
-	w.widget.SetContentsMargins(0, 0, 0, 0)
-	w.widget.SetLayout(layout)
-	w.widget.SetFocusPolicy(core.Qt__StrongFocus)
-	w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	w.widget.ConnectInputMethodEvent(w.InputMethodEvent)
-	w.widget.ConnectInputMethodQuery(w.InputMethodQuery)
+	ws.widget.SetContentsMargins(0, 0, 0, 0)
+	ws.widget.SetLayout(layout)
+	ws.widget.SetFocusPolicy(core.Qt__StrongFocus)
+	ws.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+	ws.widget.ConnectInputMethodEvent(ws.InputMethodEvent)
+	ws.widget.ConnectInputMethodQuery(ws.InputMethodQuery)
 
 	// screen widget and scrollBar widget
 	widget2 := widgets.NewQWidget(nil, 0)
 	widget2.SetContentsMargins(0, 0, 0, 0)
-	w.layout2 = widgets.NewQHBoxLayout()
-	w.layout2.SetContentsMargins(0, 0, 0, 0)
-	w.layout2.SetSpacing(0)
-	w.layout2.AddWidget(w.screen.widget, 0, 0)
-	widget2.SetLayout(w.layout2)
+	ws.layout2 = widgets.NewQHBoxLayout()
+	ws.layout2.SetContentsMargins(0, 0, 0, 0)
+	ws.layout2.SetSpacing(0)
+	ws.layout2.AddWidget(ws.screen.widget, 0, 0)
+	widget2.SetLayout(ws.layout2)
 
 	// assemble all neovim ui components
 	if editor.config.Editor.ExtTabline {
-		layout.AddWidget(w.tabline.widget, 0, 0)
+		layout.AddWidget(ws.tabline.widget, 0, 0)
 	}
 	layout.AddWidget(widget2, 1, 0)
 	if editor.config.Statusline.Visible {
-		layout.AddWidget(w.statusline.widget, 0, 0)
+		layout.AddWidget(ws.statusline.widget, 0, 0)
 	}
 
-	w.widget.Move2(0, 0)
-	editor.putLog("assembled UI components")
-
-	go w.startNvim(path)
-
-	return w, nil
+	ws.widget.Move2(0, 0)
+	editor.putLog("assembled workspace UI components")
 }
 
-func (w *Workspace) lazyDrawUI() {
+func (ws *Workspace) lazyLoadUI() {
 	editor.putLog("Start    preparing for deferred drawing UI")
 
 	// scrollbar
 	if editor.config.ScrollBar.Visible {
-		w.scrollBar = newScrollBar()
-		w.scrollBar.ws = w
+		ws.scrollBar = newScrollBar()
+		ws.scrollBar.ws = ws
 	}
 
 	// minimap
 	if !editor.config.MiniMap.Disable {
-		w.minimap = newMiniMap()
-		w.minimap.ws = w
-		w.layout2.AddWidget(w.minimap.widget, 0, 0)
+		ws.minimap = newMiniMap()
+		ws.minimap.ws = ws
+		ws.layout2.AddWidget(ws.minimap.widget, 0, 0)
 	}
 
 	if editor.config.ScrollBar.Visible {
-		w.layout2.AddWidget(w.scrollBar.widget, 0, 0)
-		w.scrollBar.setColor()
+		ws.layout2.AddWidget(ws.scrollBar.widget, 0, 0)
+		ws.scrollBar.setColor()
 	}
 
 	// Add editor feature
-	go filer.RegisterPlugin(w.nvim, editor.config.Editor.FileOpenCmd)
+	go filer.RegisterPlugin(ws.nvim, editor.config.Editor.FileOpenCmd)
 
 	// Asynchronously execute the process for minimap
 	go func() {
 		if !editor.config.MiniMap.Disable {
-			w.minimap.startMinimapProc()
+			ws.minimap.startMinimapProc()
 			time.Sleep(time.Millisecond * 50)
-			w.minimap.mu.Lock()
-			isMinimapVisible := w.minimap.visible
-			w.minimap.mu.Unlock()
+			ws.minimap.mu.Lock()
+			isMinimapVisible := ws.minimap.visible
+			ws.minimap.mu.Unlock()
 			if isMinimapVisible {
-				w.minimap.bufUpdate()
-				w.minimap.bufSync()
-				w.updateSize()
+				ws.minimap.bufUpdate()
+				ws.minimap.bufSync()
+				ws.updateSize()
 			}
 		}
 	}()
@@ -291,103 +293,66 @@ func (w *Workspace) lazyDrawUI() {
 	editor.putLog("Finished preparing the deferred drawing UI.")
 }
 
-func (w *Workspace) uiEnterProcess() {
-	// Show window if connect remote nvim via ssh
-	if editor.opts.Ssh != "" {
-		editor.window.Show()
-	}
+func (ws *Workspace) initLazyLoadUI() {
 	editor.isWindowNowActivated = false
 
-	// get nvim option
-	if editor.workspaces == nil || len(editor.workspaces) == 1 {
-		w.getNvimOptions()
-	}
-
-	// connect window resize event
-	editor.window.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		editor.resizeMainWindow()
+	ws.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
+		go ws.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
 	})
-	if len(editor.workspaces) == 1 && runtime.GOOS == "linux" {
-		editor.resizeMainWindow()
-	}
-
-	// Explicitly perform font-metrics-based geometry application during the initial
-	// application display.
-	if len(editor.workspaces) == 1 && editor.config.Editor.WindowGeometryBasedOnFontmetrics {
-		editor.resizeMainWindow()
-	}
-
-	w.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
-		go w.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
-	})
-	w.widget.ConnectFocusOutEvent(func(event *gui.QFocusEvent) {
-		go w.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
+	ws.widget.ConnectFocusOutEvent(func(event *gui.QFocusEvent) {
+		go ws.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
 	})
 
 	go func() {
-
-		if !editor.sessionExists {
+		if !editor.doRestoreSessions {
 			time.Sleep(time.Millisecond * 500)
 		}
-		w.signal.LazyDrawSignal()
+		ws.signal.LazyLoadSignal()
 
-		if !editor.sessionExists {
-			time.Sleep(time.Millisecond * 400)
+		if !editor.doRestoreSessions {
+			time.Sleep(time.Millisecond * 500)
 		}
 		editor.signal.SidebarSignal()
 
 		// put font debug log
-		w.font.putDebugLog()
-
+		ws.font.putDebugLog()
 	}()
 }
 
-func (w *Workspace) registerSignal() {
-	w.signal.ConnectRedrawSignal(func() {
-		updates := <-w.redrawUpdates
+func (ws *Workspace) registerSignal(signal *workspaceSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}) {
+	ws.signal = signal
+	ws.redrawUpdates = redrawUpdates
+	ws.guiUpdates = guiUpdates
+
+	ws.signal.ConnectRedrawSignal(func() {
+		updates := <-ws.redrawUpdates
 		editor.putLog("Received redraw event from neovim")
-		w.handleRedraw(updates)
+		ws.handleRedraw(updates)
 	})
-	w.signal.ConnectGuiSignal(func() {
-		updates := <-w.guiUpdates
+	ws.signal.ConnectGuiSignal(func() {
+		updates := <-ws.guiUpdates
 		editor.putLog("Received GUI event from neovim")
-		w.handleRPCGui(updates)
+		ws.handleGui(updates)
 	})
-	w.signal.ConnectLazyDrawSignal(func() {
-		if w.hasLazyUI {
+	ws.signal.ConnectLazyLoadSignal(func() {
+		if ws.hasLazyUI {
 			return
 		}
 		if editor.config.Editor.ExtTabline {
-			w.tabline.initTab()
+			ws.tabline.initTab()
 		}
 		editor.workspaceUpdate()
-		w.hasLazyUI = true
-		w.lazyDrawUI()
+		ws.hasLazyUI = true
+		ws.lazyLoadUI()
 	})
 
-	// // for debug signal
-	// z := 1
-	// go func() {
-	// 	for {
-	// 		w.redrawUpdates <- [][]interface{}{[]interface{}{"test event " + fmt.Sprintf("%d", z)}}
-	// 		w.signal.RedrawSignal()
-	// 		z++
-	// 		time.Sleep(time.Millisecond * 50)
-	// 	}
-	// }()
-
-	w.signal.ConnectStopSignal(func() {
-		// if !w.uiRemoteAttached {
-		// 	if !editor.config.MiniMap.Disable {
-		// 		editor.workspaces[editor.active].minimap.exit()
-		// 	}
-		// }
+	ws.signal.ConnectStopSignal(func() {
 		workspaces := []*Workspace{}
 		index := 0
 		maxworkspaceIndex := len(editor.workspaces) - 1
-		for i, ws := range editor.workspaces {
-			if ws != w {
-				workspaces = append(workspaces, ws)
+		for i, wse := range editor.workspaces {
+			if ws != wse {
+				workspaces = append(workspaces, wse)
 			} else {
 				index = i
 			}
@@ -397,14 +362,15 @@ func (w *Workspace) registerSignal() {
 			// TODO
 			// If nvim is an instance on a remote server, the connection `cmd` can be
 			// `ssh` or `wsl` command. What kind of exit status should be set?
-			if w.uiRemoteAttached {
+			if ws.uiRemoteAttached {
 				editor.close(0)
 			} else {
-				editor.close(w.nvim.ExitCode())
+				editor.close(ws.nvim.ExitCode())
 			}
 
 			return
 		}
+
 		editor.workspaces = workspaces
 
 		for i := 0; i < len(editor.side.items); i++ {
@@ -435,7 +401,7 @@ func (w *Workspace) registerSignal() {
 			editor.side.items[i].setSideItemLabel(i)
 		}
 
-		w.hide()
+		ws.hide()
 		if editor.active == index {
 			if index > 0 {
 				editor.active--
@@ -444,6 +410,38 @@ func (w *Workspace) registerSignal() {
 		}
 
 	})
+}
+
+func (ws *Workspace) bindNvim(nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bool, isSetWindowState, isLazyBind bool, file string) {
+	ws.nvim = <-nvimCh
+	ws.uiRemoteAttached = <-uiRemoteAttachedCh
+
+	// Get nvim options
+	ws.getNvimOptions()
+
+	// Adjust nvim geometry to fit application window size
+	ws.uiAttached = true
+	editor.chUiPrepared <- true
+
+	if isLazyBind {
+		if !isSetWindowState {
+			if !editor.isBindAppwinAndNvimSize {
+				ws.screen.uiTryResize(ws.cols, ws.rows)
+			}
+		} else {
+			editor.bindResizeEvent()
+		}
+	}
+
+	editor.window.Show()
+
+	// Load goneovim's neovim settings
+	loadHelpDoc(ws.nvim)
+	loadGinitVim(ws.nvim)
+	source(ws.nvim, file)
+
+	// Initialize lazy load UI
+	ws.initLazyLoadUI()
 }
 
 func (i *WorkspaceSideItem) copy(ii *WorkspaceSideItem) {
@@ -459,433 +457,95 @@ func (i *WorkspaceSideItem) copy(ii *WorkspaceSideItem) {
 
 }
 
-func (w *Workspace) hide() {
-	if w.hidden {
+func (ws *Workspace) hide() {
+	if ws.hidden {
 		return
 	}
-	w.hidden = true
-	w.widget.Hide()
+	ws.hidden = true
+	ws.widget.Hide()
 }
 
-func (w *Workspace) show() {
-	if !w.hidden {
+func (ws *Workspace) show() {
+	if !ws.hidden {
 		return
 	}
-	w.hidden = false
-	w.widget.Show()
-	w.widget.SetFocus2Default()
-	w.cursor.update()
+	ws.hidden = false
+	ws.widget.Show()
+	ws.widget.SetFocus2Default()
+	ws.cursor.update()
 }
 
-func getResourcePath() string {
-	p := ""
-	if runtime.GOOS == "darwin" {
-		p = core.QCoreApplication_ApplicationDirPath() + "/../Resources"
-	} else if runtime.GOOS == "linux" {
-		p = core.QCoreApplication_ApplicationDirPath()
-	} else if runtime.GOOS == "windows" {
-		p = core.QCoreApplication_ApplicationDirPath()
-	}
+// func register(neovim *nvim.Nvim, signal *workspaceSignal, guiUpdates *chan []interface{}) {
+// 	go neovim.Subscribe("Gui")
+//
+// 	neovim.RegisterHandler("Gui", func(updates ...interface{}) {
+// 		*guiUpdates <- updates
+// 		signal.GuiSignal()
+// 	})
+//
+// 	// if ws.statusline != nil {
+// 	// 	ws.statusline.subscribe()
+// 	// }
+//
+// 	// ws.fontMutex.Lock()
+// 	// defer ws.fontMutex.Unlock()
+// }
 
-	return p
+func (ws *Workspace) getNvimOptions() {
+	ws.getColorscheme()
+	ws.getTS()
+	ws.getBG()
+	ws.getKeymaps()
+	ws.getMousescroll()
 }
 
-func (w *Workspace) startNvim(path string) error {
-	editor.putLog("starting nvim")
-	var err error
-	var neovim *nvim.Nvim
-
-	option := []string{
-		"--cmd",
-		"let g:gonvim_running=1",
-		"--cmd",
-		"let g:goneovim=1",
-		"--cmd",
-		"set termguicolors",
-	}
-
-	// Add runtimepath
-	runtimepath := getResourcePath() + "/runtime/"
-	option = append(option, "--cmd")
-	option = append(option, fmt.Sprintf("let &rtp.=',%s'", runtimepath))
-
-	// Generate goneovim helpdoc tag
-	helpdocpath := getResourcePath() + "/runtime/doc"
-	option = append(option, "--cmd")
-	option = append(option, fmt.Sprintf(`try | helptags %s | catch /^Vim\%%((\a\+)\)\=:E/ | endtry`, helpdocpath))
-
-	option = append(option, "--embed")
-
-	childProcessArgs := nvim.ChildProcessArgs(
-		append(option, editor.args...)...,
-	)
-	childProcessServe := nvim.ChildProcessServe(false)
-
-	if editor.opts.Server != "" {
-		// Attaching to remote nvim session
-		neovim, err = nvim.Dial(editor.opts.Server)
-		w.uiRemoteAttached = true
-	} else if editor.opts.Nvim != "" {
-		// Attaching to /path/to/nvim
-		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
-		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd, childProcessServe)
-	} else if editor.opts.Wsl != nil {
-		// Attaching remote nvim via wsl
-		w.uiRemoteAttached = true
-		neovim, err = newWslProcess()
-	} else if editor.opts.Ssh != "" {
-		// Attaching remote nvim via ssh
-		w.uiRemoteAttached = true
-		neovim, err = newRemoteChildProcess()
-	} else {
-		// Attaching to nvim normally
-		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessServe)
-	}
-	if err != nil {
-		editor.putLog(err)
-		return err
-	}
-
-	neovim.RegisterHandler("Gui", func(updates ...interface{}) {
-		w.guiUpdates <- updates
-		w.signal.GuiSignal()
-	})
-	neovim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		w.redrawUpdates <- updates
-		w.signal.RedrawSignal()
-	})
-
-	editor.putLog("done starting nvim")
-
-	w.updateSize()
-	editor.putLog("updating size of UI components")
-
-	w.nvim = neovim
-
-	go func() {
-		err := w.nvim.Serve()
-		if err != nil {
-			editor.putLog(err)
-		}
-		// w.stopOnce.Do(func() {
-		// 	close(w.stop)
-		// })
-		// w.nvim.Close()
-		w.signal.StopSignal()
-	}()
-
-	go w.init(path)
-
-	return nil
-}
-
-func newRemoteChildProcess() (*nvim.Nvim, error) {
-	logf := log.Printf
-	command := "ssh"
-	if runtime.GOOS == "windows" {
-		command = `C:\windows\system32\OpenSSH\ssh.exe`
-	}
-	ctx := context.Background()
-
-	var hostname string = ""
-	var portno string = "22"
-	var err error
-	hostname, portno, err = net.SplitHostPort(editor.opts.Ssh)
-
-	nvimargs := `"nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed `
-	for _, s := range editor.args {
-		nvimargs += s + " "
-	}
-	nvimargs += `"`
-	sshargs := []string{
-		hostname,
-		"-p", portno,
-		"$SHELL",
-		"--login",
-		"-c",
-		nvimargs,
-	}
-	cmd := exec.CommandContext(
-		ctx,
-		command,
-		sshargs...,
-	)
-
-	inw, err := cmd.StdinPipe()
-	if err != nil {
-		return nil, err
-	}
-
-	outr, err := cmd.StdoutPipe()
-	if err != nil {
-		inw.Close()
-		return nil, err
-	}
-	cmd.Start()
-
-	v, err := nvim.New(outr, inw, inw, logf)
-	if err != nil {
-		editor.putLog("error:", err)
-		return nil, err
-	}
-
-	return v, nil
-}
-
-func newWslProcess() (*nvim.Nvim, error) {
-	logf := log.Printf
-	command := "wsl"
-	ctx := context.Background()
-
-	nvimargs := ""
-	if editor.config.Editor.NvimInWsl == "" {
-		nvimargs = `nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed `
-	} else {
-		nvimargs += fmt.Sprintf("%s --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed ", editor.config.Editor.NvimInWsl)
-	}
-	for _, s := range editor.args {
-		nvimargs += s + " "
-	}
-
-	wslArgs := []string{
-		"$SHELL",
-		"-lc",
-		nvimargs,
-	}
-	if editor.opts.Wsl != nil && *editor.opts.Wsl != "" {
-		wslArgs = append([]string{"-d", *editor.opts.Wsl}, wslArgs...)
-	}
-
-	cmd := exec.CommandContext(
-		ctx,
-		command,
-		wslArgs...,
-	)
-	util.PrepareRunProc(cmd)
-
-	// NOTE: cmd.String() was added in Go1.13, which cannot be used in MSVC builds based on Go1.10 builds.
-	// editor.putLog("exec command:", cmd.String())
-
-	inw, err := cmd.StdinPipe()
-	if err != nil {
-		editor.putLog("stdin pipe error:", err)
-		return nil, err
-	}
-
-	outr, err := cmd.StdoutPipe()
-	if err != nil {
-		inw.Close()
-		editor.putLog("stdin pipe error:", err)
-		return nil, err
-	}
-	cmd.Start()
-
-	v, err := nvim.New(outr, inw, inw, logf)
-	if err != nil {
-		editor.putLog("error:", err)
-		return nil, err
-	}
-
-	return v, nil
-}
-
-func (w *Workspace) init(path string) {
-	w.configure()
-	w.attachUI(path)
-	w.loadGinitVim()
-}
-
-func (w *Workspace) configure() {
-	w.isDrawStatusline = editor.config.Statusline.Visible
-
-	if editor.config.Tabline.Visible && editor.config.Editor.ExtTabline {
-		w.isDrawTabline = true
-	} else {
-		w.isDrawTabline = false
-	}
-}
-
-func (w *Workspace) attachUI(path string) error {
-	go w.nvim.Subscribe("Gui")
-	go w.initGonvim()
-	if w.tabline != nil {
-		w.tabline.subscribe()
-	}
-	if w.statusline != nil {
-		w.statusline.subscribe()
-	}
-	// if w.loc != nil {
-	// 	w.loc.subscribe()
-	// }
-	if w.message != nil {
-		w.message.connectUI()
-	}
-
-	w.fontMutex.Lock()
-	defer w.fontMutex.Unlock()
-	w.uiAttached = true
-
-	editor.putLog("attaching UI")
-	err := w.nvim.AttachUI(w.cols, w.rows, w.attachUIOption())
-	if err != nil {
-		editor.putLog(err)
-		editor.close(0)
-		return err
-	}
-
-	if path != "" {
-		go w.nvim.Command("so " + path)
-	}
-
-	return nil
-}
-
-func (w *Workspace) initGonvim() {
-	// autocmds that goneovim uses
-	gonvimAutoCmds := `
-	aug GoneovimCore | au! | aug END
-	au GoneovimCore VimEnter * call rpcnotify(0, "Gui", "gonvim_enter")
-	au GoneovimCore UIEnter * call rpcnotify(0, "Gui", "gonvim_uienter")
-	au GoneovimCore BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", win_getid())
-	au GoneovimCore WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid())
-	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
-	au GoneovimCore TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
-	au GoneovimCore TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
-	aug Goneovim | au! | aug END
-	au Goneovim DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", v:event)
-	au Goneovim BufEnter,TabEnter,DirChanged,TermOpen,TermClose * silent call rpcnotify(0, "Gui", "gonvim_workspace_filepath", expand("%:p"))
-	`
-	if editor.opts.Server == "" && !editor.config.MiniMap.Disable {
-		gonvimAutoCmds = gonvimAutoCmds + `
-		au Goneovim BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
-		au Goneovim TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_minimap_sync")
-		au Goneovim ColorScheme * call rpcnotify(0, "Gui", "gonvim_colorscheme")
-		`
-	}
-
-	if editor.config.Editor.Clipboard {
-		gonvimAutoCmds = gonvimAutoCmds + `
-	au GoneovimCore TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")
-	`
-	}
-	if editor.config.Statusline.Visible {
-		gonvimAutoCmds = gonvimAutoCmds + `
-	au Goneovim BufEnter,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat, &ro)
-	`
-	}
-	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
-	w.nvim.Command(registerScripts)
-
-	// Definition of the commands that goneovim provides
-	gonvimCommands := fmt.Sprintf(`
-	command! -nargs=1 GonvimResize call rpcnotify(0, "Gui", "gonvim_resize", <args>)
-	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
-	command! GonvimSidebarToggle call rpcnotify(0, "Gui", "side_toggle")
-	command! GonvimVersion echo "%s"`, editor.version)
-	if editor.opts.Server == "" {
-		if !editor.config.MiniMap.Disable {
-			gonvimCommands = gonvimCommands + `
-		command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
-		`
-		}
-		gonvimCommands = gonvimCommands + `
-		command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
-		command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
-		command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
-		command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
-		`
-	}
-	gonvimCommands = gonvimCommands + `
-		command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
-		command! -nargs=1 GonvimLetterSpacing call rpcnotify(0, "Gui", "gonvim_letter_spacing", <args>)
-		command! -nargs=1 GuiMacmeta call rpcnotify(0, "Gui", "gonvim_macmeta", <args>)
-		command! -nargs=? GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize", <args>)
-		command! -nargs=? GonvimFullscreen call rpcnotify(0, "Gui", "gonvim_fullscreen", <args>)
-		command! -nargs=+ GonvimWinpos call rpcnotify(0, "Gui", "gonvim_winpos", <f-args>)
-		command! GonvimToggleHorizontalScroll call rpcnotify(0, "Gui", "gonvim_toggle_horizontal_scroll")
-		command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
-		command! GonvimSmoothScroll call rpcnotify(0, "Gui", "gonvim_smoothscroll")
-		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
-		command! GonvimIndentguide call rpcnotify(0, "Gui", "gonvim_indentguide")
-		command! -nargs=? GonvimMousescrollUnit call rpcnotify(0, "Gui", "gonvim_mousescroll_unit", <args>)
-	`
-	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
-	w.nvim.Command(registerScripts)
-
-	if editor.config.Statusline.Visible {
-		gonvimInitNotify := `
-		call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat, &ro)
-		`
-		initialNotify := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimInitNotify))
-		w.nvim.Command(initialNotify)
-	}
-}
-
-func (w *Workspace) loadGinitVim() {
-	if editor.config.Editor.GinitVim != "" {
-		var result bool
-		_, err := w.nvim.Exec(editor.config.Editor.GinitVim, result)
-		if err != nil {
-			editor.pushNotification(NotifyWarn, 0, "An error occurs while processing Vimscript in Ginitvim.\n"+err.Error(), notifyOptionArg([]*NotifyButton{}))
-		}
-	}
-}
-
-func (w *Workspace) getNvimOptions() {
-	w.getColorscheme()
-	w.getTS()
-	w.getBG()
-	w.getKeymaps()
-	w.getMousescroll()
-}
-
-func (w *Workspace) getMousescroll() {
+func (ws *Workspace) getMousescroll() {
 	msChan := make(chan string, 5)
 	go func() {
 		mousescroll := ""
-		w.nvim.Option("mousescroll", &mousescroll)
+		ws.nvim.Option("mousescroll", &mousescroll)
 		msChan <- mousescroll
 	}()
 
 	select {
-	case w.mouseScroll = <-msChan:
-	case <-time.After(40 * time.Millisecond):
+	case ws.mouseScroll = <-msChan:
+	case <-time.After(80 * time.Millisecond):
 	}
 }
 
-func (w *Workspace) getColorscheme() {
+func (ws *Workspace) getColorscheme() {
 	strChan := make(chan string, 5)
 	go func() {
 		colorscheme := ""
-		w.nvim.Var("colors_name", &colorscheme)
+		ws.nvim.Var("colors_name", &colorscheme)
 		strChan <- colorscheme
 	}()
 	select {
 	case colo := <-strChan:
-		w.colorscheme = colo
+		ws.colorscheme = colo
 	case <-time.After(80 * time.Millisecond):
 	}
 }
 
-func (w *Workspace) getTS() {
+func (ws *Workspace) getTS() {
 	intChan := make(chan int, 5)
 	go func() {
 		ts := 8
-		w.nvim.Option(editor.config.Editor.OptionsToUseGuideWidth, &ts)
+		ws.nvim.Option(editor.config.Editor.OptionsToUseGuideWidth, &ts)
 		intChan <- ts
 	}()
 	select {
 	case ts := <-intChan:
-		w.ts = ts
+		ws.ts = ts
 	case <-time.After(80 * time.Millisecond):
 	}
 }
 
-func (w *Workspace) getBuffTS(buf nvim.Buffer) int {
+func (ws *Workspace) getBuffTS(buf nvim.Buffer) int {
 	intChan := make(chan int, 5)
 	go func() {
 		ts := 8
-		w.nvim.BufferOption(buf, editor.config.Editor.OptionsToUseGuideWidth, &ts)
+		ws.nvim.BufferOption(buf, editor.config.Editor.OptionsToUseGuideWidth, &ts)
 		intChan <- ts
 	}()
 
@@ -898,24 +558,24 @@ func (w *Workspace) getBuffTS(buf nvim.Buffer) int {
 	return ts
 }
 
-func (w *Workspace) getBG() {
+func (ws *Workspace) getBG() {
 	strChan := make(chan string, 5)
 	go func() {
 		screenbg := "dark"
-		w.nvim.Option("background", &screenbg)
+		ws.nvim.Option("background", &screenbg)
 		strChan <- screenbg
 	}()
 
 	select {
 	case screenbg := <-strChan:
-		w.screenbg = screenbg
+		ws.screenbg = screenbg
 	case <-time.After(80 * time.Millisecond):
 	}
 }
 
-func (w *Workspace) getKeymaps() {
-	w.escKeyInInsert = "<Esc>"
-	w.escKeyInNormal = "<Esc>"
+func (ws *Workspace) getKeymaps() {
+	ws.escKeyInInsert = "<Esc>"
+	ws.escKeyInNormal = "<Esc>"
 
 	nmapChan := make(chan []*nvim.Mapping, 5)
 	imapChan := make(chan []*nvim.Mapping, 5)
@@ -924,12 +584,12 @@ func (w *Workspace) getKeymaps() {
 	go func() {
 		var nmappings, imappings []*nvim.Mapping
 		var err1, err2 error
-		nmappings, err1 = w.nvim.KeyMap("normal")
+		nmappings, err1 = ws.nvim.KeyMap("normal")
 		if err1 != nil {
 			return
 		}
 		nmapChan <- nmappings
-		imappings, err2 = w.nvim.KeyMap("insert")
+		imappings, err2 = ws.nvim.KeyMap("insert")
 		if err2 != nil {
 			return
 		}
@@ -941,10 +601,10 @@ func (w *Workspace) getKeymaps() {
 	for {
 		select {
 		case nmappings := <-nmapChan:
-			w.normalMappings = nmappings
+			ws.normalMappings = nmappings
 			ok[0] = true
 		case imappings := <-imapChan:
-			w.insertMappings = imappings
+			ws.insertMappings = imappings
 			ok[1] = true
 		case <-time.After(160 * time.Millisecond):
 			ok[0] = true
@@ -958,11 +618,11 @@ func (w *Workspace) getKeymaps() {
 
 	altkeyCount := 0
 	metakeyCount := 0
-	for _, mapping := range w.insertMappings {
+	for _, mapping := range ws.insertMappings {
 		// Check Esc mapping
 		if strings.EqualFold(mapping.RHS, "<Esc>") || strings.EqualFold(mapping.RHS, "<C-[>") {
 			if mapping.NoRemap == 1 {
-				w.escKeyInInsert = mapping.LHS
+				ws.escKeyInInsert = mapping.LHS
 			}
 		}
 		// Count user def alt/meta key mappings
@@ -973,14 +633,14 @@ func (w *Workspace) getKeymaps() {
 			metakeyCount++
 		}
 	}
-	for _, mapping := range w.normalMappings {
+	for _, mapping := range ws.normalMappings {
 		if strings.EqualFold(mapping.RHS, "<Esc>") || strings.EqualFold(mapping.RHS, "<C-[>") {
 			if mapping.NoRemap == 1 {
-				w.escKeyInNormal = mapping.LHS
+				ws.escKeyInNormal = mapping.LHS
 			}
 		}
 		if strings.EqualFold(mapping.LHS, "<C-y>") || strings.EqualFold(mapping.LHS, "<C-e>") {
-			w.isMappingScrollKey = true
+			ws.isMappingScrollKey = true
 		}
 		// Count user def alt/meta key mappings
 		if strings.HasPrefix(mapping.LHS, "<A-") {
@@ -1000,28 +660,28 @@ func (w *Workspace) getKeymaps() {
 	editor.muMetaKey.Unlock()
 }
 
-func (w *Workspace) getNumOfTabs() int {
+func (ws *Workspace) getNumOfTabs() int {
 	done := make(chan int, 5)
 	num := 0
 	go func() {
 		tn := 0
-		w.nvim.Eval("tabpagenr('$')", &tn)
+		ws.nvim.Eval("tabpagenr('$')", &tn)
 		done <- tn
 	}()
 	select {
 	case tn := <-done:
 		num = tn
-	case <-time.After(40 * time.Millisecond):
+	case <-time.After(80 * time.Millisecond):
 	}
 
 	return num
 }
 
-func (w *Workspace) getCwd() string {
+func (ws *Workspace) getCwd() string {
 	done := make(chan bool, 5)
 	cwd := ""
 	go func() {
-		w.nvim.Eval("getcwd()", &cwd)
+		ws.nvim.Eval("getcwd()", &cwd)
 		done <- true
 	}()
 	select {
@@ -1032,23 +692,23 @@ func (w *Workspace) getCwd() string {
 	return cwd
 }
 
-func (w *Workspace) nvimEval(s string) (interface{}, error) {
+func (ws *Workspace) nvimEval(s string) (interface{}, error) {
 	doneChannel := make(chan interface{}, 5)
 	var result interface{}
 	go func() {
-		w.nvim.Eval(s, &result)
+		ws.nvim.Eval(s, &result)
 		doneChannel <- result
 	}()
 	select {
 	case done := <-doneChannel:
 		return done, nil
-	case <-time.After(40 * time.Millisecond):
+	case <-time.After(80 * time.Millisecond):
 		err := errors.New("neovim busy")
 		return nil, err
 	}
 }
 
-func (w *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
+func (ws *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
 	scope, ok := cwdinfo["scope"]
 	if !ok {
 		scope = "global"
@@ -1060,19 +720,19 @@ func (w *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
 	cwd := cwdITF.(string)
 	switch scope {
 	case "global":
-		w.setCwd(cwd)
+		ws.setCwd(cwd)
 	case "tab":
-		w.setCwdInTab(cwd)
+		ws.setCwdInTab(cwd)
 	case "window":
-		w.setCwdInWin(cwd)
+		ws.setCwdInWin(cwd)
 	}
 }
 
-func (w *Workspace) setCwd(cwd string) {
+func (ws *Workspace) setCwd(cwd string) {
 	if cwd == "" {
-		cwd = w.getCwd()
+		cwd = ws.getCwd()
 	}
-	w.cwd = cwd
+	ws.cwd = cwd
 
 	var labelpath string
 	switch editor.config.Workspace.PathStyle {
@@ -1085,32 +745,32 @@ func (w *Workspace) setCwd(cwd string) {
 	default:
 		labelpath, _ = filepath.Abs(cwd)
 	}
-	w.cwdlabel = labelpath
-	w.cwdBase = filepath.Base(cwd)
+	ws.cwdlabel = labelpath
+	ws.cwdBase = filepath.Base(cwd)
 	if editor.side == nil {
 		return
 	}
-	for i, ws := range editor.workspaces {
+	for i, wse := range editor.workspaces {
 		if i >= len(editor.side.items) {
 			return
 		}
 
-		if ws == w {
+		if ws == wse {
 			path, _ := filepath.Abs(cwd)
 			sideItem := editor.side.items[i]
 			if sideItem.cwdpath == path {
 				continue
 			}
 
-			sideItem.label.SetText(w.cwdlabel)
+			sideItem.label.SetText(wse.cwdlabel)
 			sideItem.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
 			sideItem.cwdpath = path
 		}
 	}
 }
 
-func (w *Workspace) setCwdInTab(cwd string) {
-	w.screen.windows.Range(func(_, winITF interface{}) bool {
+func (ws *Workspace) setCwdInTab(cwd string) {
+	ws.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
 		if win == nil {
@@ -1130,8 +790,8 @@ func (w *Workspace) setCwdInTab(cwd string) {
 	})
 }
 
-func (w *Workspace) setCwdInWin(cwd string) {
-	w.screen.windows.Range(func(_, winITF interface{}) bool {
+func (ws *Workspace) setCwdInWin(cwd string) {
+	ws.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
 		if win == nil {
@@ -1143,7 +803,7 @@ func (w *Workspace) setCwdInWin(cwd string) {
 		if win.isMsgGrid {
 			return true
 		}
-		if win.grid == w.cursor.gridid {
+		if win.grid == ws.cursor.gridid {
 			win.cwd = cwd
 		}
 
@@ -1151,14 +811,14 @@ func (w *Workspace) setCwdInWin(cwd string) {
 	})
 }
 
-func (w *Workspace) attachUIOption() map[string]interface{} {
+func attachUIOption(nvim *nvim.Nvim) map[string]interface{} {
 	o := make(map[string]interface{})
 	o["rgb"] = true
 	// o["ext_multigrid"] = editor.config.Editor.ExtMultigrid
 	o["ext_multigrid"] = true
 	o["ext_hlstate"] = true
 
-	apiInfo, err := w.nvim.APIInfo()
+	apiInfo, err := nvim.APIInfo()
 	if err == nil {
 		for _, item := range apiInfo {
 			i, ok := item.(map[string]interface{})
@@ -1203,7 +863,7 @@ func (w *Workspace) attachUIOption() map[string]interface{} {
 	return o
 }
 
-func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
+func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	e := editor
 
 	geometry := e.window.Geometry()
@@ -1218,27 +878,30 @@ func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 	width -= marginWidth + sideWidth
 
 	height := geometry.Height()
+
 	marginHeight := e.window.BorderSize() * 4
+	height -= marginHeight
+
 	titlebarHeight := 0
 	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
 		if !e.config.Editor.HideTitlebar {
 			titlebarHeight = e.window.TitleBar.Height()
 		}
 	}
-	height -= marginHeight + titlebarHeight
+	height -= titlebarHeight
 
 	tablineHeight := 0
-	if w.isDrawTabline && w.tabline != nil {
-		if w.tabline.showtabline != -1 {
-			w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
-			tablineHeight = w.tabline.height
+	if ws.isDrawTabline && ws.tabline != nil {
+		if ws.tabline.showtabline != -1 {
+			ws.tabline.height = ws.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
+			tablineHeight = ws.tabline.height
 		}
 	}
 
 	statuslineHeight := 0
-	if w.isDrawStatusline && w.statusline != nil {
-		w.statusline.height = w.statusline.widget.Height()
-		statuslineHeight = w.statusline.height
+	if ws.isDrawStatusline && ws.statusline != nil {
+		ws.statusline.height = ws.statusline.widget.Height()
+		statuslineHeight = ws.statusline.height
 	}
 
 	scrollbarWidth := 0
@@ -1247,8 +910,8 @@ func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 	}
 
 	minimapWidth := 0
-	if w.minimap != nil {
-		if w.minimap.visible {
+	if ws.minimap != nil {
+		if ws.minimap.visible {
 			minimapWidth = e.config.MiniMap.Width
 		}
 	}
@@ -1256,51 +919,53 @@ func (w *Workspace) updateSize() (windowWidth, windowHeight int) {
 	screenWidth := width - scrollbarWidth - minimapWidth
 	screenHeight := height - tablineHeight - statuslineHeight
 
-	rw := int(screenWidth) % int(w.screen.font.cellwidth)
-	rh := screenHeight % w.screen.font.lineHeight
+	rw := int(screenWidth) % int(ws.screen.font.cellwidth)
+	rh := screenHeight % ws.screen.font.lineHeight
 	screenWidth -= rw
 	screenHeight -= rh
 	width -= rw
 	height -= rh
 
-	if width != w.width || height != w.height {
-		w.width = width
-		w.height = height
-		w.widget.Resize2(width, height)
-		if !w.hidden {
-			w.hide()
-			w.show()
+	if width != ws.width || height != ws.height {
+		ws.width = width
+		ws.height = height
+		ws.widget.Resize2(width, height)
+		if !ws.hidden {
+			ws.hide()
+			ws.show()
 		} else {
-			w.show()
-			w.hide()
+			ws.show()
+			ws.hide()
 		}
 	}
 
-	if w.screen != nil {
-		w.screen.width = screenWidth
-		w.screen.height = screenHeight
-		w.screen.updateSize()
+	if ws.screen != nil {
+		ws.screen.width = screenWidth
+		ws.screen.height = screenHeight
+		ws.screen.updateSize()
 	}
-	if w.cursor != nil {
-		w.cursor.resize(w.cursor.width, w.cursor.height)
-		w.cursor.update()
+	if ws.cursor != nil {
+		ws.cursor.resize(ws.cursor.width, ws.cursor.height)
+		ws.cursor.update()
 	}
-	if w.palette != nil {
-		w.palette.resize()
+	if ws.palette != nil {
+		ws.palette.resize()
 	}
-	if w.message != nil {
-		w.message.resize()
+	if ws.message != nil {
+		ws.message.resize()
 	}
 
-	windowWidth = marginWidth + sideWidth + scrollbarWidth + minimapWidth + w.screen.width
-	windowHeight = marginHeight + titlebarHeight + tablineHeight + statuslineHeight + w.screen.height
+	windowWidth = marginWidth + sideWidth + scrollbarWidth + minimapWidth + ws.screen.width
+	windowHeight = marginHeight + titlebarHeight + tablineHeight + statuslineHeight + ws.screen.height
+	cols = ws.cols
+	rows = ws.rows
 
 	return
 }
 
-func (w *Workspace) updateApplicationWindowSize(cols, rows int) {
+func (ws *Workspace) updateApplicationWindowSize(cols, rows int) {
 	e := editor
-	font := w.font
+	font := ws.font
 
 	if e.window.WindowState() == core.Qt__WindowFullScreen ||
 		e.window.WindowState() == core.Qt__WindowMaximized {
@@ -1329,17 +994,17 @@ func (w *Workspace) updateApplicationWindowSize(cols, rows int) {
 	appWinHeight += marginHeight + titlebarHeight
 
 	tablineHeight := 0
-	if w.isDrawTabline && w.tabline != nil {
-		if w.tabline.showtabline != -1 {
-			w.tabline.height = w.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
-			tablineHeight = w.tabline.height
+	if ws.isDrawTabline && ws.tabline != nil {
+		if ws.tabline.showtabline != -1 {
+			ws.tabline.height = ws.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
+			tablineHeight = ws.tabline.height
 		}
 	}
 
 	statuslineHeight := 0
-	if w.isDrawStatusline && w.statusline != nil {
-		w.statusline.height = w.statusline.widget.Height()
-		statuslineHeight = w.statusline.height
+	if ws.isDrawStatusline && ws.statusline != nil {
+		ws.statusline.height = ws.statusline.widget.Height()
+		statuslineHeight = ws.statusline.height
 	}
 
 	scrollbarWidth := 0
@@ -1348,8 +1013,8 @@ func (w *Workspace) updateApplicationWindowSize(cols, rows int) {
 	}
 
 	minimapWidth := 0
-	if w.minimap != nil {
-		if w.minimap.visible {
+	if ws.minimap != nil {
+		if ws.minimap.visible {
 			minimapWidth = e.config.MiniMap.Width
 		}
 	}
@@ -1409,8 +1074,8 @@ func handleEvent(update interface{}) (event string, ok bool) {
 	return event, ok
 }
 
-func (w *Workspace) handleRedraw(updates [][]interface{}) {
-	s := w.screen
+func (ws *Workspace) handleRedraw(updates [][]interface{}) {
+	s := ws.screen
 	for _, update := range updates {
 		event, ok := handleEvent(update[0])
 		if !ok {
@@ -1438,37 +1103,37 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		case "set_icon":
 		case "mode_info_set":
-			w.modeInfoSet(args)
-			w.cursor.modeIdx = 0
+			ws.modeInfoSet(args)
+			ws.cursor.modeIdx = 0
 		case "option_set":
-			w.setOption(update)
+			ws.setOption(update)
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
-			w.modeEnablingIME(arg[0].(string))
-			w.mode = arg[0].(string)
-			w.modeIdx = util.ReflectToInt(arg[1])
-			if w.cursor.modeIdx != w.modeIdx {
-				w.cursor.modeIdx = w.modeIdx
+			ws.modeEnablingIME(arg[0].(string))
+			ws.mode = arg[0].(string)
+			ws.modeIdx = util.ReflectToInt(arg[1])
+			if ws.cursor.modeIdx != ws.modeIdx {
+				ws.cursor.modeIdx = ws.modeIdx
 			}
-			w.disableImeInNormal()
-			w.shouldUpdate.cursor = true
+			ws.disableImeInNormal()
+			ws.shouldUpdate.cursor = true
 
 		// Not used in the current specification.
 		case "mouse_on":
-			w.isMouseEnabled = true
+			ws.isMouseEnabled = true
 		case "mouse_off":
-			w.isMouseEnabled = false
+			ws.isMouseEnabled = false
 
 		// Indicates to the UI that it must stop rendering the cursor. This event
 		// is misnamed and does not actually have anything to do with busyness.
 		// NOTE: In goneovim, the wdiget layer of the cursor has special processing,
 		//       so it cannot be hidden straightforwardly.
 		case "busy_start":
-			w.cursor.isBusy = true
-			w.shouldUpdate.cursor = true
+			ws.cursor.isBusy = true
+			ws.shouldUpdate.cursor = true
 		case "busy_stop":
-			w.cursor.isBusy = false
-			w.shouldUpdate.cursor = true
+			ws.cursor.isBusy = false
+			ws.shouldUpdate.cursor = true
 
 		case "suspend":
 		case "update_menu":
@@ -1476,48 +1141,48 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "visual_bell":
 
 		case "flush":
-			w.flush()
+			ws.flush()
 
 		// Grid Events
 		case "grid_resize":
 			s.gridResize(args)
-			w.shouldUpdate.globalgrid = true
+			ws.shouldUpdate.globalgrid = true
 		case "default_colors_set":
 			for _, u := range update[1:] {
-				w.setColorsSet(u.([]interface{}))
+				ws.setDefaultColorsSet(u.([]interface{}))
 			}
 
 			// Purge all text cache for window's
-			w.screen.purgeTextCacheForWins()
+			ws.screen.purgeTextCacheForWins()
 
 		case "hl_attr_define":
 			s.setHlAttrDef(args)
 			// if goneovim own statusline is visible
-			if w.isDrawStatusline {
-				w.statusline.getColor()
+			if ws.isDrawStatusline {
+				ws.statusline.getColor()
 			}
 		case "hl_group_set":
 			s.setHighlightGroup(args)
 		case "grid_line":
 			s.gridLine(args)
-			w.shouldUpdate.cursor = true
-			w.shouldUpdate.minimap = true
+			ws.shouldUpdate.cursor = true
+			ws.shouldUpdate.minimap = true
 		case "grid_clear":
 			s.gridClear(args)
 		case "grid_destroy":
 			s.gridDestroy(args)
 		case "grid_cursor_goto":
 			s.gridCursorGoto(args)
-			w.shouldUpdate.cursor = true
-			w.shouldUpdate.minimap = true
+			ws.shouldUpdate.cursor = true
+			ws.shouldUpdate.minimap = true
 		case "grid_scroll":
 			s.gridScroll(args)
-			w.shouldUpdate.minimap = true
+			ws.shouldUpdate.minimap = true
 
 		// Multigrid Events
 		case "win_pos":
 			s.windowPosition(args)
-			w.shouldUpdate.globalgrid = true
+			ws.shouldUpdate.globalgrid = true
 		case "win_float_pos":
 			s.windowFloatPosition(args)
 		case "win_external_pos":
@@ -1529,88 +1194,88 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 		case "msg_set_pos":
 			s.msgSetPos(args)
 		case "win_viewport":
-			w.windowViewport(args)
+			ws.windowViewport(args)
 
 		// Popupmenu Events
 		case "popupmenu_show":
-			if w.cmdline != nil {
-				if w.cmdline.shown {
-					w.cmdline.cmdWildmenuShow(args)
+			if ws.cmdline != nil {
+				if ws.cmdline.shown {
+					ws.cmdline.cmdWildmenuShow(args)
 				}
 			}
-			if w.popup != nil {
-				if w.cmdline != nil {
-					if !w.cmdline.shown {
-						w.popup.showItems(args)
+			if ws.popup != nil {
+				if ws.cmdline != nil {
+					if !ws.cmdline.shown {
+						ws.popup.showItems(args)
 					}
 				} else {
-					w.popup.showItems(args)
+					ws.popup.showItems(args)
 				}
 			}
 		case "popupmenu_select":
-			if w.cmdline != nil {
-				if w.cmdline.shown {
-					w.cmdline.cmdWildmenuSelect(args)
+			if ws.cmdline != nil {
+				if ws.cmdline.shown {
+					ws.cmdline.cmdWildmenuSelect(args)
 				}
 			}
-			if w.popup != nil {
-				if w.cmdline != nil {
-					if !w.cmdline.shown {
-						w.popup.selectItem(args)
+			if ws.popup != nil {
+				if ws.cmdline != nil {
+					if !ws.cmdline.shown {
+						ws.popup.selectItem(args)
 					}
 				} else {
-					w.popup.selectItem(args)
+					ws.popup.selectItem(args)
 				}
 			}
 		case "popupmenu_hide":
-			if w.cmdline != nil {
-				if w.cmdline.shown {
-					w.cmdline.cmdWildmenuHide()
+			if ws.cmdline != nil {
+				if ws.cmdline.shown {
+					ws.cmdline.cmdWildmenuHide()
 				}
 			}
-			if w.popup != nil {
-				if w.cmdline != nil {
-					if !w.cmdline.shown {
-						w.popup.hide()
+			if ws.popup != nil {
+				if ws.cmdline != nil {
+					if !ws.cmdline.shown {
+						ws.popup.hide()
 					}
 				} else {
-					w.popup.hide()
+					ws.popup.hide()
 				}
 			}
 		// Tabline Events
 		case "tabline_update":
-			if w.tabline != nil {
-				w.tabline.handle(args)
+			if ws.tabline != nil {
+				ws.tabline.handle(args)
 			}
 
 		// Cmdline Events
 		case "cmdline_show":
-			if w.cmdline != nil {
-				w.cmdline.show(args)
+			if ws.cmdline != nil {
+				ws.cmdline.show(args)
 			}
 
 		case "cmdline_pos":
-			if w.cmdline != nil {
-				w.cmdline.changePos(args)
+			if ws.cmdline != nil {
+				ws.cmdline.changePos(args)
 			}
 
 		case "cmdline_special_char":
 
 		case "cmdline_char":
-			if w.cmdline != nil {
-				w.cmdline.putChar(args)
+			if ws.cmdline != nil {
+				ws.cmdline.putChar(args)
 			}
 		case "cmdline_hide":
-			if w.cmdline != nil {
-				w.cmdline.hide()
+			if ws.cmdline != nil {
+				ws.cmdline.hide()
 			}
 		case "cmdline_function_show":
-			if w.cmdline != nil {
-				w.cmdline.functionShow()
+			if ws.cmdline != nil {
+				ws.cmdline.functionShow()
 			}
 		case "cmdline_function_hide":
-			if w.cmdline != nil {
-				w.cmdline.functionHide()
+			if ws.cmdline != nil {
+				ws.cmdline.functionHide()
 			}
 		case "cmdline_block_show":
 		case "cmdline_block_append":
@@ -1618,22 +1283,22 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// // -- deprecated events
 		// case "wildmenu_show":
-		// 	w.cmdline.wildmenuShow(args)
+		// 	ws.cmdline.wildmenuShow(args)
 		// case "wildmenu_select":
-		// 	w.cmdline.wildmenuSelect(args)
+		// 	ws.cmdline.wildmenuSelect(args)
 		// case "wildmenu_hide":
-		// 	w.cmdline.wildmenuHide()
+		// 	ws.cmdline.wildmenuHide()
 
 		// Message/Dialog Events
 		case "msg_show":
-			w.message.msgShow(args)
+			ws.message.msgShow(args)
 		case "msg_clear":
-			w.message.msgClear()
+			ws.message.msgClear()
 		case "msg_showmode":
 		case "msg_showcmd":
 		case "msg_ruler":
 		case "msg_history_show":
-			w.message.msgHistoryShow(args)
+			ws.message.msgHistoryShow(args)
 
 		default:
 
@@ -1642,20 +1307,20 @@ func (w *Workspace) handleRedraw(updates [][]interface{}) {
 	}
 }
 
-func (w *Workspace) flush() {
-	if w.shouldUpdate.globalgrid {
-		w.screen.detectCoveredCellInGlobalgrid()
-		w.shouldUpdate.globalgrid = false
+func (ws *Workspace) flush() {
+	if ws.shouldUpdate.globalgrid {
+		ws.screen.detectCoveredCellInGlobalgrid()
+		ws.shouldUpdate.globalgrid = false
 	}
 
 	// handle viewport event for smooth scroll
 	for {
-		if len(w.viewportQue) == 0 {
+		if len(ws.viewportQue) == 0 {
 			break
 		}
 		select {
-		case viewport := <-w.viewportQue:
-			win, diff, ok := w.handleViewport(viewport)
+		case viewport := <-ws.viewportQue:
+			win, diff, ok := ws.handleViewport(viewport)
 			if diff == 0 {
 				continue
 			}
@@ -1667,85 +1332,85 @@ func (w *Workspace) flush() {
 	}
 
 	// update cursor
-	if w.shouldUpdate.cursor {
-		w.cursor.update()
-		w.shouldUpdate.cursor = false
+	if ws.shouldUpdate.cursor {
+		ws.cursor.update()
+		ws.shouldUpdate.cursor = false
 	}
 
 	// update screen
-	w.screen.update()
+	ws.screen.update()
 
 	// update external statusline
-	w.updateStatusline()
+	ws.updateStatusline()
 
 	// update external scrollbar
-	w.updateScrollbar()
+	ws.updateScrollbar()
 
 	// update IME tooltip
-	w.updateIMETooltip()
+	ws.updateIMETooltip()
 
 	// update minimap
-	if w.shouldUpdate.minimap {
-		w.updateMinimap()
-		w.shouldUpdate.minimap = false
+	if ws.shouldUpdate.minimap {
+		ws.updateMinimap()
+		ws.shouldUpdate.minimap = false
 	}
 
-	w.maxLineDelta = 0
+	ws.maxLineDelta = 0
 }
 
-func (w *Workspace) updateStatusline() {
-	if w.isDrawStatusline {
-		if w.statusline != nil {
-			w.statusline.pos.redraw(w.viewport[2], w.viewport[3])
-			w.statusline.mode.redraw()
+func (ws *Workspace) updateStatusline() {
+	if ws.isDrawStatusline {
+		if ws.statusline != nil {
+			ws.statusline.pos.redraw(ws.viewport[2], ws.viewport[3])
+			ws.statusline.mode.redraw()
 		}
 	}
 }
 
-func (w *Workspace) updateScrollbar() {
-	if w.scrollBar != nil {
+func (ws *Workspace) updateScrollbar() {
+	if ws.scrollBar != nil {
 		if editor.config.ScrollBar.Visible {
-			w.scrollBar.update()
+			ws.scrollBar.update()
 		}
 	}
 }
 
-func (w *Workspace) updateIMETooltip() {
-	if w.screen.tooltip.IsVisible() {
-		x, y, _, _ := w.screen.tooltip.pos()
-		w.screen.tooltip.move(x, y)
+func (ws *Workspace) updateIMETooltip() {
+	if ws.screen.tooltip.IsVisible() {
+		x, y, _, _ := ws.screen.tooltip.pos()
+		ws.screen.tooltip.move(x, y)
 	}
 }
 
-func (w *Workspace) updateMinimap() {
-	if w.minimap != nil {
-		if w.minimap.visible && w.minimap.widget.IsVisible() {
-			w.scrollMinimap()
-			w.minimap.mapScroll()
+func (ws *Workspace) updateMinimap() {
+	if ws.minimap != nil {
+		if ws.minimap.visible && ws.minimap.widget.IsVisible() {
+			ws.scrollMinimap()
+			ws.minimap.mapScroll()
 		}
 	}
 }
 
-func (w *Workspace) disableImeInNormal() {
+func (ws *Workspace) disableImeInNormal() {
 	if !editor.config.Editor.DisableImeInNormal {
 		return
 	}
-	switch w.mode {
+	switch ws.mode {
 	case "insert":
-		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+		ws.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	case "cmdline_normal":
-		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+		ws.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	default:
 	}
 }
 
-func (w *Workspace) modeEnablingIME(mode string) {
+func (ws *Workspace) modeEnablingIME(mode string) {
 	if len(editor.config.Editor.ModeEnablingIME) == 0 {
 		return
 	}
-	if w.mode == mode {
+	if ws.mode == mode {
 		return
 	}
 	doEnable := false
@@ -1755,48 +1420,55 @@ func (w *Workspace) modeEnablingIME(mode string) {
 		}
 	}
 	if doEnable {
-		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+		ws.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	} else {
-		w.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
+		ws.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
 		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, false)
 	}
 }
 
-func (w *Workspace) setColorsSet(args []interface{}) {
+func (ws *Workspace) setDefaultColorsSet(args []interface{}) {
 	fg := util.ReflectToInt(args[0])
 	bg := util.ReflectToInt(args[1])
 	sp := util.ReflectToInt(args[2])
 
+	editor.putLog("default colors set", fg, bg, sp)
+
 	if fg != -1 {
-		w.foreground.R = calcColor(fg).R
-		w.foreground.G = calcColor(fg).G
-		w.foreground.B = calcColor(fg).B
+		ws.foreground.R = calcColor(fg).R
+		ws.foreground.G = calcColor(fg).G
+		ws.foreground.B = calcColor(fg).B
 	}
 	if bg != -1 {
-		w.background.R = calcColor(bg).R
-		w.background.G = calcColor(bg).G
-		w.background.B = calcColor(bg).B
+		ws.background.R = calcColor(bg).R
+		ws.background.G = calcColor(bg).G
+		ws.background.B = calcColor(bg).B
 	}
 	if sp != -1 {
-		w.special.R = calcColor(sp).R
-		w.special.G = calcColor(sp).G
-		w.special.B = calcColor(sp).B
+		ws.special.R = calcColor(sp).R
+		ws.special.G = calcColor(sp).G
+		ws.special.B = calcColor(sp).B
 	}
+
+	editor.putLog(bg, ws.background.R, ws.background.G, ws.background.B)
 
 	var isChangeFg, isChangeBg bool
 	if editor.colors.fg != nil {
-		isChangeFg = !editor.colors.fg.equals(w.foreground)
+		isChangeFg = !editor.colors.fg.equals(ws.foreground)
 	}
 	if editor.colors.bg != nil {
-		isChangeBg = !editor.colors.bg.equals(w.background)
+		isChangeBg = !editor.colors.bg.equals(ws.background)
 	}
 
 	if isChangeFg || isChangeBg {
 		editor.isSetGuiColor = false
+		editor.putLog("isSetGuiColor:", editor.isSetGuiColor)
 	}
+
+	// If it is the second or subsequent nvim instance
 	if len(editor.workspaces) > 1 {
-		w.updateWorkspaceColor()
+		ws.updateWorkspaceColor()
 		// Ignore setting GUI color when create second workspace and fg, bg equals -1
 		if fg == -1 && bg == -1 {
 			editor.isSetGuiColor = true
@@ -1808,47 +1480,50 @@ func (w *Workspace) setColorsSet(args []interface{}) {
 		return
 	}
 
-	editor.colors.fg = w.foreground.copy()
-	editor.colors.bg = w.background.copy()
+	editor.colors.fg = ws.foreground.copy()
+	editor.colors.bg = ws.background.copy()
 	// Reset hlAttrDef map 0 index:
-	if w.screen.hlAttrDef != nil {
-		w.screen.hlAttrDef[0] = &Highlight{
+	if ws.screen.hlAttrDef != nil {
+		ws.screen.hlAttrDef[0] = &Highlight{
 			foreground: editor.colors.fg,
 			background: editor.colors.bg,
 		}
 	}
 
 	editor.colors.update()
-	if !(w.colorscheme == "" && fg == -1 && bg == -1 && w.screenbg == "dark") {
+	if !(ws.colorscheme == "" && fg == -1 && bg == -1 && ws.screenbg == "dark") {
+		editor.putLog(ws.colorscheme, fg, bg, ws.screenbg)
 		editor.updateGUIColor()
 	}
 	editor.isSetGuiColor = true
 }
 
-func (w *Workspace) updateWorkspaceColor() {
-	if w.popup != nil {
-		w.popup.setColor()
+func (ws *Workspace) updateWorkspaceColor() {
+	editor.putLog("update Workspace Color")
+
+	if ws.popup != nil {
+		ws.popup.setColor()
 	}
 
-	if w.message != nil {
-		w.message.setColor()
+	if ws.message != nil {
+		ws.message.setColor()
 	}
 
-	// w.screen.setColor()
+	// ws.screen.setColor()
 
-	if w.cursor != nil {
-		w.cursor.setColor()
+	if ws.cursor != nil {
+		ws.cursor.setColor()
 	}
 
-	if w.isDrawStatusline {
-		if w.statusline != nil {
-			w.statusline.setColor()
+	if ws.isDrawStatusline {
+		if ws.statusline != nil {
+			ws.statusline.setColor()
 		}
 	}
 
-	if w.scrollBar != nil {
+	if ws.scrollBar != nil {
 		if editor.config.ScrollBar.Visible {
-			w.scrollBar.setColor()
+			ws.scrollBar.setColor()
 		}
 	}
 
@@ -1858,20 +1533,20 @@ func (w *Workspace) updateWorkspaceColor() {
 	}
 }
 
-func (w *Workspace) modeInfoSet(args []interface{}) {
+func (ws *Workspace) modeInfoSet(args []interface{}) {
 	for _, arg := range args {
-		w.cursorStyleEnabled = arg.([]interface{})[0].(bool)
+		ws.cursorStyleEnabled = arg.([]interface{})[0].(bool)
 		modePropList := arg.([]interface{})[1].([]interface{})
-		w.modeInfo = make([]map[string]interface{}, len(modePropList))
-		w.cursor.isNeedUpdateModeInfo = true
+		ws.modeInfo = make([]map[string]interface{}, len(modePropList))
+		ws.cursor.isNeedUpdateModeInfo = true
 		for i, modeProp := range modePropList {
 			// Note: i is the index which given by the `mode_idx` of the `mode_change` event
-			w.modeInfo[i] = modeProp.(map[string]interface{})
+			ws.modeInfo[i] = modeProp.(map[string]interface{})
 		}
 	}
 }
 
-func (w *Workspace) setOption(update []interface{}) {
+func (ws *Workspace) setOption(update []interface{}) {
 	for n, option := range update {
 		if n == 0 {
 			continue
@@ -1883,19 +1558,19 @@ func (w *Workspace) setOption(update []interface{}) {
 		case "ambiwidth":
 		case "emoji":
 		case "guifont":
-			w.guiFont(val.(string))
+			ws.guiFont(val.(string))
 		case "guifontset":
 		case "guifontwide":
-			w.guiFontWide(val.(string))
+			ws.guiFontWide(val.(string))
 		case "linespace":
-			w.guiLinespace(val)
+			ws.guiLinespace(val)
 		case "pumblend":
-			w.setPumblend(val)
-			if w.popup != nil {
-				w.popup.setPumblend(w.pb)
+			ws.setPumblend(val)
+			if ws.popup != nil {
+				ws.popup.setPumblend(ws.pb)
 			}
 		case "showtabline":
-			w.showtabline = util.ReflectToInt(val)
+			ws.showtabline = util.ReflectToInt(val)
 		case "termguicolors":
 		// case "ext_cmdline":
 		// case "ext_hlstate":
@@ -1910,7 +1585,7 @@ func (w *Workspace) setOption(update []interface{}) {
 	}
 }
 
-func (w *Workspace) windowViewport(args []interface{}) {
+func (ws *Workspace) windowViewport(args []interface{}) {
 	for _, e := range args {
 		arg := e.([]interface{})
 		viewport := [4]int{
@@ -1928,7 +1603,7 @@ func (w *Workspace) windowViewport(args []interface{}) {
 			util.ReflectToInt(arg[0]),
 		}
 		if scrollvp[0] < scrollvp[1] {
-			w.viewportQue <- scrollvp
+			ws.viewportQue <- scrollvp
 		}
 
 		maxLine := 0
@@ -1938,21 +1613,21 @@ func (w *Workspace) windowViewport(args []interface{}) {
 
 		// Only the viewport of the buffer where the cursor is located is used internally.
 		grid := util.ReflectToInt(arg[0])
-		if grid == w.cursor.gridid {
-			if viewport != w.viewport {
-				w.viewportMutex.Lock()
-				w.oldViewport = w.viewport
-				w.viewport = viewport
-				w.viewportMutex.Unlock()
+		if grid == ws.cursor.gridid {
+			if viewport != ws.viewport {
+				ws.viewportMutex.Lock()
+				ws.oldViewport = ws.viewport
+				ws.viewport = viewport
+				ws.viewportMutex.Unlock()
 			}
-			w.maxLineDelta = maxLine - w.maxLine
-			w.maxLine = maxLine
+			ws.maxLineDelta = maxLine - ws.maxLine
+			ws.maxLine = maxLine
 		}
 	}
 }
 
-func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
-	win, ok := w.screen.getWindow(vp[4])
+func (ws *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
+	win, ok := ws.screen.getWindow(vp[4])
 	if !ok {
 		return nil, 0, false
 	}
@@ -1977,7 +1652,7 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	// // TODO: Control processing of wrapped lines.
 	// //  This process is very incomplete and does not take into consideration the possibility
 	// //  of a wrapped line at any position in the buffer.
-	// if int(math.Abs(float64(diff))) >= win.rows/2 && viewport[1] < w.maxLine+2 {
+	// if int(math.Abs(float64(diff))) >= win.rows/2 && viewport[1] < ws.maxLine+2 {
 	// 	wrappedLines1 := win.rows - (viewport[1] - viewport[0] - 1)
 	// 	wrappedLines2 := win.rows - (oldViewport[1] - oldViewport[0] - 1)
 	// 	if diff < 0 {
@@ -1993,7 +1668,7 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	}
 
 	// if If the maximum line is increased and there is content to be pasted into the maximum line
-	if (w.maxLine == viewport[1]-1) && w.maxLineDelta != 0 {
+	if (ws.maxLine == viewport[1]-1) && ws.maxLineDelta != 0 {
 		if diff != 0 {
 			win.doGetSnapshot = false
 		}
@@ -2008,7 +1683,7 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 
 	// // do not scroll smoothly when the maximum line is less than buffer rows,
 	// // and topline has not been changed
-	if w.maxLine-w.maxLineDelta < w.rows && viewport[0] == oldViewport[0] {
+	if ws.maxLine-ws.maxLineDelta < ws.rows && viewport[0] == oldViewport[0] {
 		return nil, 0, false
 	}
 
@@ -2038,41 +1713,41 @@ func (w *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	return win, diff, true
 }
 
-func (w *Workspace) scrollMinimap() {
-	absMapTop := w.minimap.viewport[0]
-	absMapBottom := w.minimap.viewport[1]
+func (ws *Workspace) scrollMinimap() {
+	absMapTop := ws.minimap.viewport[0]
+	absMapBottom := ws.minimap.viewport[1]
 
-	w.viewportMutex.RLock()
-	topLine := w.viewport[0]
-	botLine := w.viewport[1]
-	currLine := w.viewport[2]
-	w.viewportMutex.RUnlock()
+	ws.viewportMutex.RLock()
+	topLine := ws.viewport[0]
+	botLine := ws.viewport[1]
+	currLine := ws.viewport[2]
+	ws.viewportMutex.RUnlock()
 
 	switch {
 	case botLine > absMapBottom:
 		go func() {
-			w.minimap.nvim.Input(`<ScrollWheelDown>`)
-			w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
-			w.minimap.nvim.Input(`zz`)
+			ws.minimap.nvim.Input(`<ScrollWheelDown>`)
+			ws.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
+			ws.minimap.nvim.Input(`zz`)
 		}()
 	case absMapTop > topLine:
 		go func() {
-			w.minimap.nvim.Input(`<ScrollWheelUp>`)
-			w.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
-			w.minimap.nvim.Input(`zz`)
+			ws.minimap.nvim.Input(`<ScrollWheelUp>`)
+			ws.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
+			ws.minimap.nvim.Input(`zz`)
 		}()
 	default:
 	}
 }
 
-func (w *Workspace) handleRPCGui(updates []interface{}) {
+func (ws *Workspace) handleGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "gonvim_enter":
 		editor.putLog("vim enter")
 	case "gonvim_uienter":
 		editor.putLog("ui enter")
-		w.uiEnterProcess()
+		// ws.uiEnterProcess()
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
 		editor.window.Resize2(width, height)
@@ -2124,98 +1799,101 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		}
 
 	case "gonvim_smoothscroll":
-		w.toggleSmoothScroll()
+		ws.toggleSmoothScroll()
 	case "gonvim_smoothcursor":
-		w.toggleSmoothCursor()
+		ws.toggleSmoothCursor()
 	case "gonvim_indentguide":
-		w.toggleIndentguide()
+		ws.toggleIndentguide()
 	case "gonvim_ligatures":
-		w.toggleLigatures()
+		ws.toggleLigatures()
 	case "gonvim_mousescroll_unit":
-		w.setMousescrollUnit(updates[1].(string))
+		ws.setMousescrollUnit(updates[1].(string))
 	case "Font":
-		w.guiFont(updates[1].(string))
+		ws.guiFont(updates[1].(string))
 	case "Linespace":
-		w.guiLinespace(updates[1])
+		ws.guiLinespace(updates[1])
 	// case "finder_pattern":
-	// 	w.finder.showPattern(updates[1:])
+	// 	ws.finder.showPattern(updates[1:])
 	// case "finder_pattern_pos":
-	// 	w.finder.cursorPos(updates[1:])
+	// 	ws.finder.cursorPos(updates[1:])
 	// case "finder_show_result":
-	// 	w.finder.showResult(updates[1:])
+	// 	ws.finder.showResult(updates[1:])
 	// case "finder_show":
-	// 	w.finder.show()
+	// 	ws.finder.show()
 	// case "finder_hide":
-	// 	w.finder.hide()
+	// 	ws.finder.hide()
 	// case "finder_select":
-	// 	w.finder.selectResult(updates[1:])
+	// 	ws.finder.selectResult(updates[1:])
 	// case "signature_show":
-	// 	w.signature.showItem(updates[1:])
+	// 	ws.signature.showItem(updates[1:])
 	// case "signature_pos":
-	// 	w.signature.pos(updates[1:])
+	// 	ws.signature.pos(updates[1:])
 	// case "signature_hide":
-	// 	w.signature.hide()
+	// 	ws.signature.hide()
 	case "side_open":
 		editor.side.show()
 	case "side_close":
 		editor.side.hide()
 	case "side_toggle":
 		editor.side.toggle()
-		w.updateSize()
+		ws.updateSize()
 	case "filer_update":
 		if !editor.side.scrollarea.IsVisible() {
 			return
 		}
 		if !editor.side.items[editor.active].isContentHide {
-			go w.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
+			go ws.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
 		}
 	case "filer_open":
-		editor.side.items[w.getNum()].isContentHide = false
-		editor.side.items[w.getNum()].openContent()
+		editor.side.items[ws.getNum()].isContentHide = false
+		editor.side.items[ws.getNum()].openContent()
 	case "filer_clear":
-		editor.side.items[w.getNum()].clear()
+		editor.side.items[ws.getNum()].clear()
 	case "filer_resize":
-		editor.side.items[w.getNum()].resizeContent()
+		editor.side.items[ws.getNum()].resizeContent()
 	case "filer_item_add":
-		editor.side.items[w.getNum()].addItem(updates[1:])
+		editor.side.items[ws.getNum()].addItem(updates[1:])
 	case "filer_item_select":
-		editor.side.items[w.getNum()].selectItem(updates[1:])
+		editor.side.items[ws.getNum()].selectItem(updates[1:])
 	case "gonvim_letter_spacing":
-		w.letterSpacing(updates[1])
+		ws.letterSpacing(updates[1])
 	case "gonvim_grid_font":
-		w.screen.gridFont(updates[1])
+		ws.screen.gridFont(updates[1])
 	case "gonvim_macmeta":
-		w.handleMacmeta(updates[1])
+		ws.handleMacmeta(updates[1])
 	case "gonvim_minimap_update":
-		if w.minimap != nil {
-			if w.minimap.visible {
-				w.minimap.bufUpdate()
+		if ws.minimap != nil {
+			if ws.minimap.visible {
+				ws.minimap.bufUpdate()
 			}
 		}
 	case "gonvim_minimap_sync":
-		if w.minimap != nil {
-			if w.minimap.visible {
-				go w.minimap.bufSync()
+		if ws.minimap != nil {
+			if ws.minimap.visible {
+				go ws.minimap.bufSync()
 			}
 		}
 	case "gonvim_minimap_toggle":
-		w.minimap.toggle()
+		ws.minimap.toggle()
 	case "gonvim_colorscheme":
-		if w.minimap != nil {
-			w.minimap.isSetColorscheme = false
-			w.minimap.setColorscheme()
+		if ws.minimap != nil {
+			ws.minimap.isSetColorscheme = false
+			ws.minimap.setColorscheme()
 		}
 
-		win, ok := w.screen.getWindow(w.cursor.gridid)
+		win, ok := ws.screen.getWindow(ws.cursor.gridid)
 		if !ok {
 			return
 		}
 		win.dropScreenSnapshot()
 
 	case "gonvim_copy_clipboard":
+		if !ws.uiRemoteAttached {
+			return
+		}
 		go editor.copyClipBoard()
 	case "gonvim_workspace_new":
-		editor.workspaceNew()
+		editor.workspaceAdd()
 	case "gonvim_workspace_next":
 		editor.workspaceNext()
 	case "gonvim_workspace_previous":
@@ -2224,29 +1902,30 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 		editor.workspaceSwitch(util.ReflectToInt(updates[1]))
 	case "gonvim_workspace_cwd":
 		cwdinfo := updates[1].(map[string]interface{})
-		w.handleChangeCwd(cwdinfo)
+		ws.handleChangeCwd(cwdinfo)
 	case "gonvim_workspace_filepath":
-		if w.minimap != nil {
-			w.minimap.mu.Lock()
-			w.filepath = updates[1].(string)
-			w.minimap.mu.Unlock()
+		if ws.minimap != nil {
+			ws.minimap.mu.Lock()
+			ws.filepath = updates[1].(string)
+			ws.minimap.mu.Unlock()
 		}
 	case "gonvim_optionset":
-		w.optionSet(updates)
-	case "gonvim_termenter":
-		w.terminalMode = true
-		w.cursor.update()
-	case "gonvim_termleave":
-		w.terminalMode = false
-		w.cursor.update()
+		ws.optionSet(updates)
+	// case "gonvim_termenter":
+	// 	ws.terminalMode = true
+	// 	fmt.Println("t mode", ws.terminalMode)
+	// 	ws.cursor.update()
+	// case "gonvim_termleave":
+	// 	ws.terminalMode = false
+	// 	ws.cursor.update()
 	case "gonvim_bufenter":
-		// w.maxLine = util.ReflectToInt(updates[1])
-		// w.setBuffname(updates[2], updates[3])
-		w.setBuffTS(util.ReflectToInt(updates[1]))
+		// ws.maxLine = util.ReflectToInt(updates[1])
+		// ws.setBuffname(updates[2], updates[3])
+		ws.setBuffTS(util.ReflectToInt(updates[1]))
 	case "gonvim_winenter_filetype":
-		// w.setBuffname(updates[2], updates[3])
-		w.setBuffTS(util.ReflectToInt(updates[2]))
-		w.setFileType(updates)
+		// ws.setBuffname(updates[2], updates[3])
+		ws.setBuffTS(util.ReflectToInt(updates[2]))
+		ws.setFileType(updates)
 	case "gonvim_textchanged":
 		if editor.config.Editor.SmoothScroll {
 			ws := editor.workspaces[editor.active]
@@ -2263,18 +1942,18 @@ func (w *Workspace) handleRPCGui(updates []interface{}) {
 
 }
 
-func (w *Workspace) getSnapshot() {
+func (ws *Workspace) getSnapshot() {
 	if !editor.config.Editor.SmoothScroll {
 		return
 	}
-	win, ok := w.screen.getWindow(w.cursor.gridid)
+	win, ok := ws.screen.getWindow(ws.cursor.gridid)
 	if !ok {
 		return
 	}
 	win.grabScreenSnapshot(win.Rect())
 }
 
-func (w *Workspace) setMousescrollUnit(ms string) {
+func (ws *Workspace) setMousescrollUnit(ms string) {
 	if !(ms == "line" || ms == "smart" || ms == "pixel") {
 		editor.config.Editor.MouseScrollingUnit = "line"
 		return
@@ -2282,7 +1961,7 @@ func (w *Workspace) setMousescrollUnit(ms string) {
 	editor.config.Editor.MouseScrollingUnit = ms
 }
 
-func (w *Workspace) letterSpacing(arg interface{}) {
+func (ws *Workspace) letterSpacing(arg interface{}) {
 	if arg == "" {
 		return
 	}
@@ -2290,38 +1969,41 @@ func (w *Workspace) letterSpacing(arg interface{}) {
 	letterSpace := util.ReflectToFloat(arg)
 	editor.config.Editor.Letterspace = letterSpace
 
-	w.font.changeLetterSpace(letterSpace)
-	w.screen.font = w.font
+	ws.font.changeLetterSpace(letterSpace)
+	ws.screen.font = ws.font
 
-	font := w.font
-	win, ok := w.screen.getWindow(w.cursor.gridid)
+	font := ws.font
+	win, ok := ws.screen.getWindow(ws.cursor.gridid)
 	if ok {
 		font = win.getFont()
 	}
 
-	w.updateSize()
+	ws.updateSize()
 
-	if w.popup != nil {
-		w.popup.updateFont(font)
+	if ws.popup != nil {
+		ws.popup.updateFont(font)
 	}
-	if w.message != nil {
-		w.message.updateFont()
+	if ws.message != nil {
+		ws.message.updateFont()
 	}
-	w.screen.tooltip.setFont(font)
-	w.cursor.updateFont(nil, font)
+	ws.screen.tooltip.setFont(font)
+	ws.cursor.updateFont(nil, font)
 }
 
-func (w *Workspace) guiFont(args string) {
+func (ws *Workspace) guiFont(args string) {
 	if args == "" {
 		return
 	}
+
+	editor.bindResizeEvent()
+
 	var fontHeight float64
 	var fontFamily string
 	var fontWeight gui.QFont__Weight
 	var fontStretch int
 
 	if args == "*" {
-		if w.font.ui == nil {
+		if ws.font.ui == nil {
 			fDialog := widgets.NewQFontDialog(nil)
 			fDialog.SetOption(widgets.QFontDialog__MonospacedFonts, true)
 			fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
@@ -2331,13 +2013,13 @@ func (w *Workspace) guiFont(args string) {
 				editor.putLog(fmt.Sprintf("Request to change to the following font:: %s:h%f", fontFamily, fontHeight))
 
 				// Fix the problem that the value of echo &guifont is set to * after setting.
-				// w.guiFont(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
-				w.nvim.Command(fmt.Sprintf("set guifont=%s:h%f", fontFamily, fontHeight))
+				// ws.guiFont(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
+				ws.nvim.Command(fmt.Sprintf("set guifont=%s:h%f", fontFamily, fontHeight))
 
 			})
-			w.font.ui = fDialog
+			ws.font.ui = fDialog
 		}
-		w.font.ui.Show()
+		ws.font.ui.Show()
 		return
 	}
 
@@ -2353,27 +2035,27 @@ func (w *Workspace) guiFont(args string) {
 		fontHeight = 10.0
 	}
 
-	w.font.change(fontFamily, fontHeight, fontWeight, fontStretch)
-	w.screen.font = w.font
+	ws.font.change(fontFamily, fontHeight, fontWeight, fontStretch)
+	ws.screen.font = ws.font
 
-	font := w.font
-	win, ok := w.screen.getWindow(w.cursor.gridid)
+	font := ws.font
+	win, ok := ws.screen.getWindow(ws.cursor.gridid)
 	if ok {
 		font = win.getFont()
 	}
 
-	w.updateSize()
+	ws.updateSize()
 
 	editor.iconSize = int(float64(fontHeight) * 11 / 9)
 
-	if w.popup != nil {
-		w.popup.updateFont(font)
+	if ws.popup != nil {
+		ws.popup.updateFont(font)
 	}
-	if w.message != nil {
-		w.message.updateFont()
+	if ws.message != nil {
+		ws.message.updateFont()
 	}
-	w.screen.tooltip.setFont(font)
-	w.cursor.updateFont(nil, font)
+	ws.screen.tooltip.setFont(font)
+	ws.cursor.updateFont(nil, font)
 
 	// Change external font if font setting of setting.yml is nothing
 	if editor.config.Editor.FontFamily == "" {
@@ -2383,28 +2065,28 @@ func (w *Workspace) guiFont(args string) {
 		editor.extFontSize = int(fontHeight)
 	}
 
-	if w.tabline != nil {
-		w.tabline.updateFont()
+	if ws.tabline != nil {
+		ws.tabline.updateFont()
 	}
-	if w.statusline != nil {
-		w.statusline.updateFont()
+	if ws.statusline != nil {
+		ws.statusline.updateFont()
 	}
 }
 
-func (w *Workspace) guiFontWide(args string) {
+func (ws *Workspace) guiFontWide(args string) {
 	if args == "" {
 		return
 	}
 
-	if w.fontwide == nil {
-		w.fontwide = initFontNew(
+	if ws.fontwide == nil {
+		ws.fontwide = initFontNew(
 			editor.extFontFamily,
 			float64(editor.extFontSize),
 			editor.config.Editor.Linespace,
 			editor.config.Editor.Letterspace,
 		)
-		w.fontwide.ws = w
-		w.cursor.fontwide = w.fontwide
+		ws.fontwide.ws = ws
+		ws.cursor.fontwide = ws.fontwide
 	}
 
 	var fontHeight float64
@@ -2419,7 +2101,7 @@ func (w *Workspace) guiFontWide(args string) {
 		fDialog.ConnectFontSelected(func(font *gui.QFont) {
 			fontFamily = font.Family()
 			fontHeight = font.PointSizeF()
-			w.guiFontWide(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
+			ws.guiFontWide(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
 		})
 		fDialog.Show()
 		return
@@ -2437,9 +2119,9 @@ func (w *Workspace) guiFontWide(args string) {
 		fontHeight = 10.0
 	}
 
-	w.fontwide.change(fontFamily, fontHeight, fontWeight, fontStretch)
+	ws.fontwide.change(fontFamily, fontHeight, fontWeight, fontStretch)
 
-	w.updateSize()
+	ws.updateSize()
 }
 
 func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.QFont__Weight, int) {
@@ -2505,7 +2187,7 @@ func checkValidFont(family string) bool {
 	return strings.EqualFold(fi.Family(), f.Family())
 }
 
-func (w *Workspace) guiLinespace(args interface{}) {
+func (ws *Workspace) guiLinespace(args interface{}) {
 	// fontArg := args[0].([]interface{})
 	var lineSpace int
 	var err error
@@ -2529,15 +2211,15 @@ func (w *Workspace) guiLinespace(args interface{}) {
 	// if lineSpace < 0 {
 	// 	return
 	// }
-	if lineSpace <= -1*w.font.height {
+	if lineSpace <= -1*ws.font.height {
 		return
 	}
 
-	w.font.changeLineSpace(lineSpace)
-	w.updateSize()
+	ws.font.changeLineSpace(lineSpace)
+	ws.updateSize()
 }
 
-func (w *Workspace) setPumblend(arg interface{}) {
+func (ws *Workspace) setPumblend(arg interface{}) {
 	var pumblend int
 	var err error
 	switch val := arg.(type) {
@@ -2554,13 +2236,13 @@ func (w *Workspace) setPumblend(arg interface{}) {
 		return
 	}
 
-	w.pb = pumblend
+	ws.pb = pumblend
 }
 
-// func (w *Workspace) setBuffname(idITF, nameITF interface{}) {
+// func (ws *Workspace) setBuffname(idITF, nameITF interface{}) {
 // 	id := (nvim.Window)(util.ReflectToInt(idITF))
 //
-// 	w.screen.windows.Range(func(_, winITF interface{}) bool {
+// 	ws.screen.window.Range(func(_, winITF interface{}) bool {
 // 		win := winITF.(*Window)
 //
 // 		if win == nil {
@@ -2586,7 +2268,7 @@ func (w *Workspace) setPumblend(arg interface{}) {
 // 		win.updateMutex.RUnlock()
 // 		// set buffer name
 // 		go func() {
-// 			resultBuffer, _ := w.nvim.WindowBuffer(id)
+// 			resultBuffer, _ := ws.nvim.WindowBuffer(id)
 // 			bufChan <- resultBuffer
 // 		}()
 //
@@ -2597,7 +2279,7 @@ func (w *Workspace) setPumblend(arg interface{}) {
 //
 // 		if win.bufName == "" {
 // 			go func() {
-// 				resultStr, _ := w.nvim.BufferName(buf)
+// 				resultStr, _ := ws.nvim.BufferName(buf)
 // 				strChan <- resultStr
 // 			}()
 //
@@ -2614,7 +2296,7 @@ func (w *Workspace) setPumblend(arg interface{}) {
 // 		// errChan := make(chan error, 2)
 // 		// var btITF interface{}
 // 		// go func() {
-// 		// 	err := w.nvim.BufferOption(buf, "buftype", &btITF)
+// 		// 	err := ws.nvim.BufferOption(buf, "buftype", &btITF)
 // 		// 	errChan <- err
 // 		// }()
 // 		// var bt string
@@ -2630,7 +2312,7 @@ func (w *Workspace) setPumblend(arg interface{}) {
 // 	})
 // }
 
-func (w *Workspace) setBuffTS(arg int) {
+func (ws *Workspace) setBuffTS(arg int) {
 	if !editor.config.Editor.IndentGuide {
 		return
 	}
@@ -2638,16 +2320,16 @@ func (w *Workspace) setBuffTS(arg int) {
 	var buf nvim.Buffer
 	wid := (nvim.Window)(arg)
 	go func() {
-		resultBuffer, _ := w.nvim.WindowBuffer(wid)
+		resultBuffer, _ := ws.nvim.WindowBuffer(wid)
 		bufChan <- resultBuffer
 	}()
 	select {
 	case buf = <-bufChan:
-	case <-time.After(40 * time.Millisecond):
+	case <-time.After(80 * time.Millisecond):
 	}
-	w.windowsTs[wid] = w.getBuffTS(buf)
+	ws.windowsTs[wid] = ws.getBuffTS(buf)
 
-	w.screen.windows.Range(func(_, winITF interface{}) bool {
+	ws.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
 		if win == nil {
@@ -2667,20 +2349,20 @@ func (w *Workspace) setBuffTS(arg int) {
 		id := win.id
 		win.updateMutex.RUnlock()
 		if id == wid {
-			win.ts = w.windowsTs[wid]
+			win.ts = ws.windowsTs[wid]
 			return true
 		}
 		// set buffer name
 		go func() {
-			resultBuffer, _ := w.nvim.WindowBuffer(id)
+			resultBuffer, _ := ws.nvim.WindowBuffer(id)
 			bufChan <- resultBuffer
 		}()
 		select {
 		case buf = <-bufChan:
-		case <-time.After(40 * time.Millisecond):
+		case <-time.After(80 * time.Millisecond):
 		}
 
-		win.ts = w.getBuffTS(buf)
+		win.ts = ws.getBuffTS(buf)
 
 		return true
 	})
@@ -2688,7 +2370,7 @@ func (w *Workspace) setBuffTS(arg int) {
 
 // optionSet is
 // This function gets the value of an option that cannot be caught by the set_option event.
-func (w *Workspace) optionSet(updates []interface{}) {
+func (ws *Workspace) optionSet(updates []interface{}) {
 	optionName := updates[1]
 	wid := util.ReflectToInt(updates[4])
 	// new, err := strconv.Atoi(updates[2].(string))
@@ -2696,31 +2378,31 @@ func (w *Workspace) optionSet(updates []interface{}) {
 	// 	return
 	// }
 
-	w.optionsetMutex.Lock()
+	ws.optionsetMutex.Lock()
 	switch optionName {
 	case editor.config.Editor.OptionsToUseGuideWidth:
-		w.setBuffTS(wid)
+		ws.setBuffTS(wid)
 
 	}
-	w.optionsetMutex.Unlock()
+	ws.optionsetMutex.Unlock()
 }
 
-func (w *Workspace) getPumHeight() {
-	ph := w.ph
-	errCh := make(chan error, 60)
-	go func() {
-		err := w.nvim.Option("pumheight", &ph)
-		errCh <- err
-	}()
-	select {
-	case <-errCh:
-	case <-time.After(40 * time.Millisecond):
-	}
+// func (ws *Workspace) getPumHeight() {
+// 	ph := ws.ph
+// 	errCh := make(chan error, 60)
+// 	go func() {
+// 		err := ws.nvim.Option("pumheight", &ph)
+// 		errCh <- err
+// 	}()
+// 	select {
+// 	case <-errCh:
+// 	case <-time.After(80 * time.Millisecond):
+// 	}
+//
+// 	ws.ph = ph
+// }
 
-	w.ph = ph
-}
-
-func (w *Workspace) setFileType(args []interface{}) {
+func (ws *Workspace) setFileType(args []interface{}) {
 	if !editor.config.Editor.IndentGuide {
 		return
 	}
@@ -2736,12 +2418,12 @@ func (w *Workspace) setFileType(args []interface{}) {
 	// NOTE: There are cases where the target grid is not yet created on the front-end side
 	//       when the FileType autocmd is fired. There may be a better way to implement this,
 	//       and it is an item for improvement in the future.
-	w.optionsetMutex.Lock()
-	w.windowsFt[wid] = ft
-	w.optionsetMutex.Unlock()
+	ws.optionsetMutex.Lock()
+	ws.windowsFt[wid] = ft
+	ws.optionsetMutex.Unlock()
 
 	// Update ft on the window
-	w.screen.windows.Range(func(_, winITF interface{}) bool {
+	ws.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
 		if win == nil {
@@ -2761,7 +2443,7 @@ func (w *Workspace) setFileType(args []interface{}) {
 		// var err error
 		// var ft string
 		// go func() {
-		// 	ft, err = w.nvim.CommandOutput(`echo &ft`)
+		// 	ft, err = ws.nvim.CommandOutput(`echo &ft`)
 		// 	ftChan <-err
 		// }()
 		// select {
@@ -2779,51 +2461,51 @@ func (w *Workspace) setFileType(args []interface{}) {
 }
 
 // InputMethodEvent is
-func (w *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
-	w.screen.tooltip.cursorPos, w.screen.tooltip.selectionLength = selectionPosInPreeditStr(event)
+func (ws *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
+	ws.screen.tooltip.cursorPos, ws.screen.tooltip.selectionLength = selectionPosInPreeditStr(event)
 
 	if event.CommitString() != "" {
-		w.screen.tooltip.cursorVisualPos = 0
-		w.nvim.Input(event.CommitString())
-		w.screen.tooltip.hide()
-		w.screen.tooltip.clearText()
+		ws.screen.tooltip.cursorVisualPos = 0
+		ws.nvim.Input(event.CommitString())
+		ws.screen.tooltip.hide()
+		ws.screen.tooltip.clearText()
 	} else {
 		preeditString := event.PreeditString()
 
 		if preeditString == "" {
-			w.screen.tooltip.hide()
-			w.screen.refresh()
+			ws.screen.tooltip.hide()
+			ws.screen.refresh()
 		} else {
-			w.screen.tooltip.show()
-			w.screen.tooltip.parsePreeditString(preeditString)
-			w.screen.tooltip.update()
+			ws.screen.tooltip.show()
+			ws.screen.tooltip.parsePreeditString(preeditString)
+			ws.screen.tooltip.update()
 
 		}
 
-		w.screen.tooltip.updateVirtualCursorPos()
+		ws.screen.tooltip.updateVirtualCursorPos()
 	}
 
-	w.cursor.update()
+	ws.cursor.update()
 
 	editor.putLog(
 		fmt.Sprintf(
 			"QInputMethodEvent:: IME preeditstr: cursorpos: %d, selectionLength: %d, cursorVisualPos: %d",
-			w.screen.tooltip.cursorPos,
-			w.screen.tooltip.selectionLength,
-			w.screen.tooltip.cursorVisualPos,
+			ws.screen.tooltip.cursorPos,
+			ws.screen.tooltip.selectionLength,
+			ws.screen.tooltip.cursorVisualPos,
 		),
 	)
 }
 
 // InputMethodQuery is
-func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
-	if w.screen == nil {
+func (ws *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVariant {
+	if ws.screen == nil {
 		return core.NewQVariant()
 	}
-	if w.screen.tooltip == nil {
+	if ws.screen.tooltip == nil {
 		return core.NewQVariant()
 	}
-	if !w.screen.tooltip.isShown {
+	if !ws.screen.tooltip.isShown {
 		return core.NewQVariant()
 	}
 
@@ -2834,21 +2516,21 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 	)
 
 	if query == core.Qt__ImMicroFocus || query == core.Qt__ImCursorRectangle {
-		x, y, candX, candY := w.screen.tooltip.pos()
-		w.screen.tooltip.move(x, y)
+		x, y, candX, candY := ws.screen.tooltip.pos()
+		ws.screen.tooltip.move(x, y)
 		imrect := core.NewQRect()
 
 		res := 0
-		win, ok := w.screen.getWindow(w.cursor.gridid)
+		win, ok := ws.screen.getWindow(ws.cursor.gridid)
 		if ok {
 			if win.isMsgGrid {
-				res = win.s.widget.Height() - win.rows*w.font.lineHeight
+				res = win.s.widget.Height() - win.rows*ws.font.lineHeight
 			}
 			if res < 0 {
 				res = 0
 			}
 		}
-		imrect.SetRect(candX, candY+res+5, 1, w.font.lineHeight)
+		imrect.SetRect(candX, candY+res+5, 1, ws.font.lineHeight)
 
 		return core.NewQVariant31(imrect)
 	}
@@ -2856,20 +2538,20 @@ func (w *Workspace) InputMethodQuery(query core.Qt__InputMethodQuery) *core.QVar
 	return core.NewQVariant()
 }
 
-func (w *Workspace) dragEnterEvent(e *gui.QDragEnterEvent) {
+func (ws *Workspace) dragEnterEvent(e *gui.QDragEnterEvent) {
 	e.AcceptProposedAction()
 }
 
-func (w *Workspace) dragMoveEvent(e *gui.QDragMoveEvent) {
+func (ws *Workspace) dragMoveEvent(e *gui.QDragMoveEvent) {
 	e.AcceptProposedAction()
 }
 
-func (w *Workspace) dropEvent(e *gui.QDropEvent) {
+func (ws *Workspace) dropEvent(e *gui.QDropEvent) {
 	e.SetDropAction(core.Qt__CopyAction)
 	e.AcceptProposedAction()
 	e.SetAccepted(true)
 
-	w.screen.windows.Range(func(_, winITF interface{}) bool {
+	ws.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 		if win == nil {
 			return true
@@ -2893,23 +2575,23 @@ func (w *Workspace) dropEvent(e *gui.QDropEvent) {
 	})
 }
 
-func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, *Font, bool) {
-	win, ok := w.screen.getWindow(grid)
+func (ws *Workspace) getPointInWidget(col, row, grid int) (int, int, *Font, bool) {
+	win, ok := ws.screen.getWindow(grid)
 	if !ok {
-		return 0, 0, w.font, false
+		return 0, 0, ws.font, false
 	}
 	font := win.getFont()
 
 	isCursorBelowTheCenter := false
-	if (win.pos[1]+row)*font.lineHeight > w.screen.height/2 {
+	if (win.pos[1]+row)*font.lineHeight > ws.screen.height/2 {
 		isCursorBelowTheCenter = true
 	}
 
 	x := int(float64(col) * font.cellwidth)
 	y := row * font.lineHeight
-	if w.isDrawTabline {
-		if w.tabline != nil {
-			y += w.tabline.widget.Height()
+	if ws.isDrawTabline {
+		if ws.tabline != nil {
+			y += ws.tabline.widget.Height()
 		}
 	}
 	x += int(float64(win.pos[0]) * font.cellwidth)
@@ -2918,7 +2600,7 @@ func (w *Workspace) getPointInWidget(col, row, grid int) (int, int, *Font, bool)
 	return x, y, font, isCursorBelowTheCenter
 }
 
-func (w *Workspace) toggleSmoothScroll() {
+func (ws *Workspace) toggleSmoothScroll() {
 	editor.config.mu.Lock()
 	if editor.config.Editor.SmoothScroll {
 		editor.config.Editor.SmoothScroll = false
@@ -2928,18 +2610,18 @@ func (w *Workspace) toggleSmoothScroll() {
 	editor.config.mu.Unlock()
 }
 
-func (w *Workspace) toggleSmoothCursor() {
+func (ws *Workspace) toggleSmoothCursor() {
 	editor.config.mu.Lock()
 	if editor.config.Cursor.SmoothMove {
 		editor.config.Cursor.SmoothMove = false
 	} else {
 		editor.config.Cursor.SmoothMove = true
 	}
-	w.cursor.hasSmoothMove = editor.config.Cursor.SmoothMove
+	ws.cursor.hasSmoothMove = editor.config.Cursor.SmoothMove
 	editor.config.mu.Unlock()
 }
 
-func (w *Workspace) handleMacmeta(v interface{}) {
+func (ws *Workspace) handleMacmeta(v interface{}) {
 	value := util.ReflectToInt(v)
 	editor.config.mu.Lock()
 	if value == 0 {
@@ -2950,7 +2632,7 @@ func (w *Workspace) handleMacmeta(v interface{}) {
 	editor.config.mu.Unlock()
 }
 
-func (w *Workspace) toggleLigatures() {
+func (ws *Workspace) toggleLigatures() {
 	editor.config.mu.Lock()
 	if editor.config.Editor.DisableLigatures {
 		editor.config.Editor.DisableLigatures = false
@@ -2960,10 +2642,10 @@ func (w *Workspace) toggleLigatures() {
 	}
 	editor.config.mu.Unlock()
 
-	w.screen.purgeTextCacheForWins()
+	ws.screen.purgeTextCacheForWins()
 }
 
-func (w *Workspace) toggleIndentguide() {
+func (ws *Workspace) toggleIndentguide() {
 	editor.config.mu.Lock()
 	if editor.config.Editor.IndentGuide {
 		editor.config.Editor.IndentGuide = false
@@ -2971,7 +2653,7 @@ func (w *Workspace) toggleIndentguide() {
 		editor.config.Editor.IndentGuide = true
 	}
 	editor.config.mu.Unlock()
-	go w.nvim.Command("doautocmd <nomodeline> WinEnter")
+	go ws.nvim.Command("doautocmd <nomodeline> WinEnter")
 }
 
 // WorkspaceSide is
@@ -3138,9 +2820,9 @@ func (side *WorkspaceSide) hide() {
 	side.isShown = false
 }
 
-func (w *Workspace) getNum() int {
-	for i, ws := range editor.workspaces {
-		if ws == w {
+func (ws *Workspace) getNum() int {
+	for i, wse := range editor.workspaces {
+		if ws == wse {
 			return i
 		}
 	}

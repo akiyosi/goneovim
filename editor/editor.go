@@ -19,6 +19,7 @@ import (
 	frameless "github.com/akiyosi/goqtframelesswindow"
 	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
@@ -95,56 +96,60 @@ type Options struct {
 
 // Editor is the editor
 type Editor struct {
-	stop                   chan int
-	signal                 *editorSignal
-	ctx                    context.Context
-	app                    *widgets.QApplication
-	font                   *Font
-	widget                 *widgets.QWidget
-	splitter               *widgets.QSplitter
-	window                 *frameless.QFramelessWindow
-	specialKeys            map[core.Qt__Key]string
-	svgs                   map[string]*SvgXML
-	notifyStartPos         *core.QPoint
-	colors                 *ColorPalette
-	notify                 chan *Notify
-	cbChan                 chan *string
-	sysTray                *widgets.QSystemTrayIcon
-	side                   *WorkspaceSide
-	savedGeometry          *core.QByteArray
-	prefixToMapMetaKey     string
-	macAppArg              string
-	extFontFamily          string
-	configDir              string
-	homeDir                string
-	version                string
-	config                 gonvimConfig
-	opts                   Options
-	notifications          []*Notification
-	workspaces             []*Workspace
-	args                   []string
-	ppid                   int
-	keyControl             core.Qt__Key
-	keyCmd                 core.Qt__Key
-	width                  int
-	active                 int
-	startuptime            int64
-	iconSize               int
-	height                 int
-	extFontSize            int
-	notificationWidth      int
-	stopOnce               sync.Once
-	muMetaKey              sync.Mutex
-	isSetGuiColor          bool
-	isDisplayNotifications bool
-	isKeyAutoRepeating     bool
-	sessionExists          bool
-	isWindowResized        bool
-	isWindowNowActivated   bool
-	isWindowNowInactivated bool
-	isExtWinNowActivated   bool
-	isExtWinNowInactivated bool
-	isHideMouse            bool
+	stop                    chan int
+	signal                  *editorSignal
+	ctx                     context.Context
+	app                     *widgets.QApplication
+	widget                  *widgets.QWidget
+	splitter                *widgets.QSplitter
+	window                  *frameless.QFramelessWindow
+	specialKeys             map[core.Qt__Key]string
+	svgs                    map[string]*SvgXML
+	notifyStartPos          *core.QPoint
+	colors                  *ColorPalette
+	notify                  chan *Notify
+	cbChan                  chan *string
+	chUiPrepared            chan bool
+	sysTray                 *widgets.QSystemTrayIcon
+	side                    *WorkspaceSide
+	savedGeometry           *core.QByteArray
+	prefixToMapMetaKey      string
+	macAppArg               string
+	extFontFamily           string
+	configDir               string
+	homeDir                 string
+	version                 string
+	config                  gonvimConfig
+	opts                    Options
+	font                    *Font
+	notifications           []*Notification
+	workspaces              []*Workspace
+	args                    []string
+	ppid                    int
+	keyControl              core.Qt__Key
+	keyCmd                  core.Qt__Key
+	width                   int
+	active                  int
+	startuptime             int64
+	iconSize                int
+	height                  int
+	extFontSize             int
+	notificationWidth       int
+	stopOnce                sync.Once
+	muMetaKey               sync.Mutex
+	doRestoreSessions       bool
+	isSetGuiColor           bool
+	isDisplayNotifications  bool
+	isKeyAutoRepeating      bool
+	isWindowResized         bool
+	isWindowNowActivated    bool
+	isWindowNowInactivated  bool
+	isExtWinNowActivated    bool
+	isExtWinNowInactivated  bool
+	isHideMouse             bool
+	isBindAppwinAndNvimSize bool
+	isBindNvimSizeToAppwin  bool
+	isUiPrepared            bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -165,7 +170,7 @@ func (hl *Highlight) copy() Highlight {
 func InitEditor(options Options, args []string) {
 
 	// --------------------
-	// profile the goneovim
+	// For profiling goneovim
 	// --------------------
 	//
 	// https://blog.golang.org/pprof
@@ -188,90 +193,58 @@ func InitEditor(options Options, args []string) {
 	// }
 	// fgprofStop := fgprof.Start(f, fgprof.FormatPprof)
 
-	// startup time
-	startuptime := time.Now().UnixNano() / 1000
-
-	// create editor struct
 	editor = &Editor{
-		version:     Version,
-		args:        args,
-		opts:        options,
-		startuptime: startuptime,
+		version:      Version,
+		args:         args,
+		opts:         options,
+		startuptime:  time.Now().UnixNano() / 1000,
+		signal:       NewEditorSignal(nil),
+		stop:         make(chan int),
+		notify:       make(chan *Notify, 10),
+		cbChan:       make(chan *string, 240),
+		chUiPrepared: make(chan bool, 1),
 	}
 	e := editor
 
-	// log
-	var file *os.File
-	var err error
-
-	if e.opts.Debug != "" {
-		file, err = os.OpenFile(e.opts.Debug, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			fmt.Println(err)
-
-			os.Exit(1)
-		}
-		log.SetOutput(file)
-		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	}
+	// Prepare debug log
+	e.setDebuglog()
 	e.putLog("--- GONEOVIM STARTING ---")
 
-	e.signal = NewEditorSignal(nil)
-	e.stop = make(chan int)
-	e.notify = make(chan *Notify, 10)
-	e.cbChan = make(chan *string, 240)
-
 	ctx, cancel := context.WithCancel(context.Background())
+	e.ctx = ctx
 
+	var err error
 	// detect home dir
-	home, err := homedir.Dir()
+	e.homeDir, err = homedir.Dir()
 	if err != nil {
-		home = "~"
+		e.homeDir = "~"
 	}
-	e.putLog("detecting home directory path")
+	e.putLog("detecting home directory path", e.homeDir)
 
-	configDir, config := newConfig(home)
+	// load config
+	e.configDir, e.config = newConfig(e.homeDir)
+	e.overwriteConfigByCLIOption()
 
-	e.config = config
-	if e.opts.Exttabline {
-		e.config.Editor.ExtTabline = true
-	}
-	if e.opts.Extcmdline {
-		e.config.Editor.ExtCmdline = true
-	}
-	if e.opts.Extpopupmenu {
-		e.config.Editor.ExtPopupmenu = true
-	}
-	if e.opts.Extmessages {
-		e.config.Editor.ExtMessages = true
-		e.config.Editor.ExtCmdline = true
-	}
+	// get parent process id
+	e.ppid = os.Getppid()
+	e.putLog("finished getting ppid")
 
-	e.homeDir = home
-	e.configDir = configDir
-	e.putLog("reading config")
+	// put shell environment
+	e.setEnvironmentVariables()
 
-	// application
+	// create qapplication
 	e.putLog("start    generating the application")
 	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
-	e.ppid = os.Getppid()
 	e.app.SetDoubleClickInterval(0)
 	e.putLog("finished generating the application")
 
-	// put shell environment
-	// TODO: This process runs on a Unix-like OS, but it is very slow. I want to improve it.
-	e.setEnv()
-	e.putLog("setting environment variable")
+	// new nvim instance
+	signal, redrawUpdates, guiUpdates, nvimCh, uiRCh := newNvim(100, 10, e.ctx)
 
-	// set application working directory path
-	// TODO: This process is problematic and needs a better way to set up CWD
-	//        * https://github.com/akiyosi/goneovim/issues/43
-	//        * https://github.com/akiyosi/goneovim/issues/337
-	//        * https://github.com/akiyosi/goneovim/issues/325
 	// e.setAppDirPath(home)
-	e.putLog("set working directory path")
 
+	// e.initAppFont()
 	e.extFontFamily = e.config.Editor.FontFamily
 	e.extFontSize = e.config.Editor.FontSize
 	fontGenAsync := make(chan *Font, 2)
@@ -285,150 +258,99 @@ func InitEditor(options Options, args []string) {
 
 		fontGenAsync <- font
 	}()
-	e.setFont()
-	e.putLog("initializing font")
 
 	e.initSVGS()
-	e.putLog("initializing svg images")
 
 	e.initColorPalette()
-	e.putLog("initializing color palette")
 
 	e.initNotifications()
-	e.putLog("initializing notification UI")
 
 	e.initSysTray()
 
+	e.initSpecialKeys()
+
 	// application main window
-	// e.window = widgets.NewQMainWindow(nil, 0)
-	e.putLog("start    preparing the application window.")
-	isframeless := e.config.Editor.BorderlessWindow
-	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
-	e.window.SetupBorderSize(e.config.Editor.Margin)
-	e.window.SetupWindowGap(e.config.Editor.Gap)
-	e.connectWindowEvents()
-	e.setWindowSizeFromOpts()
-	e.showWindow()
-	e.setWindowOptions()
-	e.putLog("finished preparing the application window.")
+	isSetWindowState := e.initAppWindow()
 
 	// window layout
-	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
-	l.SetContentsMargins(0, 0, 0, 0)
-	l.SetSpacing(0)
-	e.window.SetupContent(l)
-
-	// window content
-	e.widget = widgets.NewQWidget(nil, 0)
-	e.newSplitter()
-	e.splitter.InsertWidget(1, e.widget)
-	l.AddWidget(e.splitter, 1, 0)
-	e.putLog("window layout done")
+	e.setWindowLayout()
 
 	e.font = <-fontGenAsync
-	e.putLog("done calculating the width of the font.")
-
 	// neovim workspaces
-	e.initWorkspaces()
-	e.putLog("done initialazing workspaces")
+	e.initWorkspaces(e.ctx, signal, redrawUpdates, guiUpdates, nvimCh, uiRCh, isSetWindowState)
 
 	e.connectAppSignals()
 
-	e.signal.ConnectSidebarSignal(func() {
-		if e.side != nil {
-			return
-		}
-		e.putLog("create workspace sidebar")
-		e.side = newWorkspaceSide()
-		e.side.newScrollArea()
-		e.side.scrollarea.Hide()
-		e.side.scrollarea.SetWidget(e.side.widget)
-		e.splitter.InsertWidget(0, e.side.scrollarea)
-		side := e.side
-		if e.config.SideBar.Visible {
-			side.show()
-		}
-	})
+	// go e.exitEditor(cancel, f)
+	go e.exitEditor(cancel)
 
-	// When an application is closed with the Close button
-	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
-		e.putLog("The application was closed outside of Neovim's commands, such as the Close button.")
-
-		// A request to exit the application via the close button has been issued,
-		// intercept this request and send quit command to the nvim process.
-		event.Ignore()
-
-		if e.config.Workspace.RestoreSession {
-			e.cleanup()
-			e.saveSessions()
-		}
-
-		var cmd string
-		if e.config.Editor.IgnoreSaveConfirmationWithCloseButton {
-			cmd = "qa!"
-		} else {
-			cmd = "confirm qa"
-		}
-
-		for _, ws := range e.workspaces {
-			go ws.nvim.Command(cmd)
-		}
-
-		return
-	})
-
-	// runs goroutine to detect stop events and quit the application
-	go func() {
-		ret := <-e.stop
-		close(e.stop)
-		e.putLog("The application was quitted with the exit of Neovim.")
-		e.cleanup()
-		if runtime.GOOS == "darwin" {
-			e.app.DisconnectEvent()
-		}
-		e.saveAppWindowState()
-		cancel()
-
-		// --------------------
-		// profile the goneovim
-		// --------------------
-		//
-		// Comment out the following::
-		//
-		// // * built-in net/http/pprof
-		// pprof.StopCPUProfile()
-		// f.Close()
-
-		// // * https://github.com/felixge/fgprof
-		// fgprofStop()
-		// f.Close()
-
-		os.Exit(ret)
-	}()
-
-	// launch thread to copy text to the clipboard in darwin
-	if runtime.GOOS == "darwin" {
-		if e.config.Editor.Clipboard {
-			go func(c context.Context) {
-				for {
-					select {
-					case <-c.Done():
-						return
-					default:
-						text := <-e.cbChan
-						e.app.Clipboard().SetText(*text, gui.QClipboard__Clipboard)
-					}
-				}
-			}(ctx)
-		}
-	}
-	e.putLog("done connecting UI siganal")
-
-	e.widget.SetFocus2()
-	e.putLog("focused UI")
 	e.addDockMenu()
+	e.setupClipboardForDarwin(e.ctx)
 
 	widgets.QApplication_Exec()
+}
+
+func (e *Editor) setupClipboardForDarwin(ctx context.Context) {
+	if runtime.GOOS != "darwin" {
+		return
+	}
+	if !e.config.Editor.Clipboard {
+		return
+	}
+
+	go func(c context.Context) {
+		for {
+			select {
+			case <-c.Done():
+				return
+			default:
+				text := <-e.cbChan
+				e.app.Clipboard().SetText(*text, gui.QClipboard__Clipboard)
+			}
+		}
+	}(ctx)
+}
+
+func (e *Editor) initAppWindow() bool {
+	e.putLog("start    preparing the application window.")
+	defer e.putLog("finished preparing the application window.")
+
+	isframeless := e.config.Editor.BorderlessWindow
+	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
+	e.connectWindowEvents()
+	e.setWindowOptions()
+	e.setWindowSizeFromOpts()
+
+	return e.setInitialWindowState()
+}
+
+// exitEditor is to detect stop events and quit the application
+// func (e *Editor) exitEditor(cancel context.CancelFunc, f *os.File) {
+func (e *Editor) exitEditor(cancel context.CancelFunc) {
+	ret := <-e.stop
+	close(e.stop)
+	e.putLog("The application was quitted with the exit of Neovim.")
+	if runtime.GOOS == "darwin" {
+		e.app.DisconnectEvent()
+	}
+	e.saveAppWindowState()
+	cancel()
+
+	// --------------------
+	// profile the goneovim
+	// --------------------
+	//
+	// Comment out the following::
+	//
+	// // * built-in net/http/pprof
+	// pprof.StopCPUProfile()
+	// f.Close()
+
+	// // * https://github.com/felixge/fgprof
+	// fgprofStop()
+	// f.Close()
+
+	os.Exit(ret)
 }
 
 func (e *Editor) putLog(v ...interface{}) {
@@ -440,6 +362,17 @@ func (e *Editor) putLog(v ...interface{}) {
 		fmt.Sprintf("%07.3f", float64(time.Now().UnixNano()/1000-e.startuptime)/1000),
 		strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%v", v), "["), "]"),
 	)
+}
+
+func (e *Editor) bindResizeEvent() {
+	if editor.isBindAppwinAndNvimSize {
+		return
+	}
+
+	e.window.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		e.resizeMainWindow()
+	})
+	e.isBindAppwinAndNvimSize = true
 }
 
 // addDockMenu add the action menu for app in the Dock.
@@ -481,6 +414,11 @@ func (e *Editor) addDockMenu() {
 }
 
 // setAppDirPath
+// set application working directory path
+// TODO: This process is problematic and needs a better way to set up CWD
+//        * https://github.com/akiyosi/goneovim/issues/43
+//        * https://github.com/akiyosi/goneovim/issues/337
+//        * https://github.com/akiyosi/goneovim/issues/325
 // Set the current working directory of the application to the HOME directory in darwin, linux.
 // If this process is not executed, CWD is set to the root directory, and
 // nvim plugins called as descendants of the application will not work due to lack of permission.
@@ -508,6 +446,19 @@ func (e *Editor) setAppDirPath(home string) {
 			qdir.SetCurrent(absHome)
 		}
 	}
+
+	e.putLog("set working directory")
+}
+
+func (e *Editor) overwriteConfigByCLIOption() {
+	e.config.Editor.ExtTabline = e.opts.Exttabline || e.config.Editor.ExtTabline
+	e.config.Editor.ExtCmdline = e.opts.Extcmdline || e.config.Editor.ExtCmdline
+	e.config.Editor.ExtPopupmenu = e.opts.Extpopupmenu || e.config.Editor.ExtPopupmenu
+	e.config.Editor.ExtMessages = e.opts.Extmessages || e.config.Editor.ExtMessages
+	e.config.Editor.ExtCmdline = e.opts.Extmessages || e.config.Editor.ExtCmdline
+
+	e.config.Editor.StartFullscreen = e.opts.Fullscreen || e.config.Editor.StartFullscreen
+	e.config.Editor.StartMaximizedWindow = e.opts.Maximized || e.config.Editor.StartMaximizedWindow
 }
 
 func (e *Editor) newSplitter() {
@@ -518,64 +469,143 @@ func (e *Editor) newSplitter() {
 	e.splitter = splitter
 }
 
-func (e *Editor) initWorkspaces() {
+func (e *Editor) setDebuglog() (file *os.File) {
+	if e.opts.Debug == "" {
+		return nil
+	}
+
+	file, err := os.OpenFile(e.opts.Debug, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Println(err)
+
+		os.Exit(1)
+	}
+	log.SetOutput(file)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
+	return
+}
+
+func (e *Editor) initWorkspaces(ctx context.Context, signal *workspaceSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}, nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bool, isSetWindowState bool) {
 	e.workspaces = []*Workspace{}
 
-	// If ui attaching remote nvim
-	if !(editor.opts.Server == "" && editor.opts.Wsl == nil && editor.opts.Ssh == "") {
-		e.config.Workspace.RestoreSession = false
-	}
-	if e.config.Workspace.RestoreSession {
-		for i := 0; i <= WORKSPACELEN; i++ {
-			path := filepath.Join(e.configDir, "sessions", strconv.Itoa(i)+".vim")
-			_, err := os.Stat(path)
-			if err != nil {
-				break
-			}
-			e.sessionExists = true
-			ws, err := newWorkspace(path)
-			if err != nil {
-				break
-			}
-			e.workspaces = append(e.workspaces, ws)
-			ws.widget.SetParent(e.widget)
-		}
-	}
-	if !e.sessionExists {
-		ws, err := newWorkspace("")
+	// ws := newWorkspace()
+	// ws.registerSignal(signal, &redrawUpdates, &guiUpdates)
+	// ws.initUI()
+	// ws.updateSize()
+	// go ws.bindNvim(nvimCh, uiRCh, isSetWindowState)
+	// e.workspaces = append(e.workspaces, ws)
+	// ws.widget.SetParent(e.widget)
+
+	// Detect session file
+	sessionExists := false
+	restoreFiles := []string{}
+	for i := 0; i <= WORKSPACELEN; i++ {
+		path := filepath.Join(e.configDir, "sessions", strconv.Itoa(i)+".vim")
+		_, err := os.Stat(path)
 		if err != nil {
-			return
+			continue
 		}
-		e.workspaces = append(e.workspaces, ws)
-		ws.widget.SetParent(e.widget)
+		sessionExists = true
+		restoreFiles = append(restoreFiles, path)
+
 	}
+	e.doRestoreSessions = sessionExists && e.config.Workspace.RestoreSession
+	if len(restoreFiles) == 0 || !e.doRestoreSessions {
+		restoreFiles = []string{""}
+	}
+
+	for i, file := range restoreFiles {
+		ws := newWorkspace()
+		ws.initUI()
+		ws.updateSize()
+
+		// Only the first nvim instance is lazy-bound to the workspace,
+		// but the second and subsequent instances are not lazy-bound
+		isLazyBind := true
+		if i > 0 {
+			isLazyBind = false
+			signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh = newNvim(ws.cols, ws.rows, ctx)
+		}
+
+		ws.registerSignal(signal, redrawUpdates, guiUpdates)
+		go ws.bindNvim(nvimCh, uiRemoteAttachedCh, isSetWindowState, isLazyBind, file)
+
+		e.workspaces = append(e.workspaces, ws)
+	}
+
+	e.putLog("done initialazing workspaces")
 }
 
 func (e *Editor) connectAppSignals() {
 	if e.app == nil {
 		return
 	}
-	if runtime.GOOS != "darwin" {
-		return
-	}
-	e.app.ConnectEvent(func(event *core.QEvent) bool {
-		switch event.Type() {
-		case core.QEvent__FileOpen:
-			// If goneovim not launched on finder (it is started in terminal)
-			if e.ppid != 1 {
-				return false
+	if runtime.GOOS == "darwin" {
+		e.app.ConnectEvent(func(event *core.QEvent) bool {
+			switch event.Type() {
+			case core.QEvent__FileOpen:
+				// If goneovim not launched on finder (it is started in terminal)
+				if e.ppid != 1 {
+					return false
+				}
+				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
+				e.macAppArg = fileOpenEvent.File()
+				e.loadFileInDarwin()
 			}
-			fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
-			e.macAppArg = fileOpenEvent.File()
-			e.loadFileInDarwin()
+			return true
+		})
+	}
+	e.signal.ConnectSidebarSignal(func() {
+		if e.side != nil {
+			return
 		}
-		return true
+		e.putLog("create workspace sidebar")
+		e.side = newWorkspaceSide()
+		e.side.newScrollArea()
+		e.side.scrollarea.Hide()
+		e.side.scrollarea.SetWidget(e.side.widget)
+		e.splitter.InsertWidget(0, e.side.scrollarea)
+		side := e.side
+		if e.config.SideBar.Visible {
+			side.show()
+		}
+
+		editor.initAppFont()
 	})
+
+	// When an application is closed with the Close button
+	e.window.ConnectCloseEvent(func(event *gui.QCloseEvent) {
+		e.putLog("The application was closed outside of Neovim's commands, such as the Close button.")
+
+		// A request to exit the application via the close button has been issued,
+		// intercept this request and send quit command to the nvim process.
+		event.Ignore()
+
+		if e.config.Workspace.RestoreSession {
+			e.cleanup()
+			e.saveSessions()
+		}
+
+		var cmd string
+		if e.config.Editor.IgnoreSaveConfirmationWithCloseButton {
+			cmd = "qa!"
+		} else {
+			cmd = "confirm qa"
+		}
+
+		for _, ws := range e.workspaces {
+			go ws.nvim.Command(cmd)
+		}
+
+		return
+	})
+	e.putLog("done connecting UI siganal")
 }
 
 func (e *Editor) resizeMainWindow() {
 	cws := e.workspaces[e.active]
-	windowWidth, windowHeight := cws.updateSize()
+	windowWidth, windowHeight, _, _ := cws.updateSize()
 
 	if !editor.config.Editor.WindowGeometryBasedOnFontmetrics {
 		return
@@ -629,6 +659,8 @@ func (e *Editor) initNotifications() {
 			e.popupNotification(notify.level, notify.period, notify.message, notifyOptionArg(notify.buttons))
 		}
 	})
+
+	e.putLog("initializing notification UI")
 }
 
 func (e *Editor) initSysTray() {
@@ -656,7 +688,7 @@ func (e *Editor) initSysTray() {
 	e.putLog("initialize system tray")
 }
 
-func (e *Editor) setEnv() {
+func (e *Editor) setEnvironmentVariables() {
 	// For Linux
 	if runtime.GOOS == "linux" {
 		// // It was not a necessary process to export the following environment variables.
@@ -703,11 +735,17 @@ func (e *Editor) setEnv() {
 	if runtime.GOOS == "windows" {
 		_ = os.Setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
 	}
+
+	e.putLog("setting environment variable")
 }
 
-func (e *Editor) setFont() {
+func (e *Editor) initAppFont() {
+	// e.extFontFamily = e.config.Editor.FontFamily
+	// e.extFontSize = e.config.Editor.FontSize
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QWidget")
 	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QLabel")
+
+	e.putLog("initializing font")
 }
 
 // pushNotification is
@@ -755,6 +793,8 @@ func (e *Editor) initColorPalette() {
 
 	e.colors = c
 	e.colors.update()
+
+	e.putLog("initializing color palette")
 }
 
 func (c *ColorPalette) update() {
@@ -792,7 +832,7 @@ func (c *ColorPalette) update() {
 }
 
 func (e *Editor) updateGUIColor() {
-	e.putLog("start    updating UI color")
+	e.putLog("start    updating GUI color")
 	e.workspaces[e.active].updateWorkspaceColor()
 
 	// Do not use frameless drawing on linux
@@ -808,7 +848,7 @@ func (e *Editor) updateGUIColor() {
 	}
 
 	// e.window.SetWindowOpacity(1.0)
-	e.putLog("finished updating UI color")
+	e.putLog("finished updating GUI color")
 }
 
 func hexToRGBA(hex string) *RGBA {
@@ -835,12 +875,14 @@ func hexToRGBA(hex string) *RGBA {
 }
 
 func (e *Editor) setWindowSizeFromOpts() {
-	if e.opts.Geometry == "" {
-		return
+	e.window.SetupBorderSize(e.config.Editor.Margin)
+	e.window.SetupWindowGap(e.config.Editor.Gap)
+
+	if e.opts.Geometry != "" {
+		width, height := e.setWindowSize(e.opts.Geometry)
+		e.config.Editor.Width = width
+		e.config.Editor.Height = height
 	}
-	width, height := e.setWindowSize(e.opts.Geometry)
-	e.config.Editor.Width = width
-	e.config.Editor.Height = height
 }
 
 func (e *Editor) setWindowSize(s string) (int, int) {
@@ -858,7 +900,7 @@ func (e *Editor) setWindowSize(s string) (int, int) {
 	return width, height
 }
 
-func (e *Editor) restoreWindow() (isRestoreGeometry, isRestoreState bool) {
+func (e *Editor) restoreWindow() {
 	if !e.config.Editor.RestoreWindowGeometry {
 		return
 	}
@@ -872,11 +914,11 @@ func (e *Editor) restoreWindow() (isRestoreGeometry, isRestoreState bool) {
 
 	if geometryBA.Length() != 0 {
 		e.window.RestoreGeometry(geometryBA)
-		isRestoreGeometry = true
+		// isRestoreGeometry = true
 	}
 	if stateBA.Length() != 0 {
 		e.window.RestoreState(stateBA, 0)
-		isRestoreState = true
+		// isRestoreState = true
 	}
 
 	return
@@ -885,6 +927,15 @@ func (e *Editor) restoreWindow() (isRestoreGeometry, isRestoreState bool) {
 func (e *Editor) connectWindowEvents() {
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.ConnectKeyReleaseEvent(e.keyRelease)
+	e.window.ConnectShowEvent(func(event *gui.QShowEvent) {
+		editor.putLog("show application window")
+		if editor.isBindNvimSizeToAppwin {
+			return
+		}
+		e.bindResizeEvent()
+		e.resizeMainWindow()
+	})
+
 	e.window.InstallEventFilter(e.window)
 	e.window.ConnectEventFilter(func(watched *core.QObject, event *core.QEvent) bool {
 		switch event.Type() {
@@ -906,12 +957,11 @@ func (e *Editor) connectWindowEvents() {
 func (e *Editor) setWindowOptions() {
 	e.window.SetupTitle("Neovim")
 	e.window.SetMinimumSize2(40, 30)
-	e.initSpecialKeys()
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)
 	e.window.SetAcceptDrops(true)
 }
 
-func (e *Editor) showWindow() {
+func (e *Editor) setInitialWindowState() (isSetWindowState bool) {
 	e.width = e.config.Editor.Width
 	e.height = e.config.Editor.Height
 	if e.config.Editor.HideTitlebar {
@@ -919,31 +969,42 @@ func (e *Editor) showWindow() {
 		e.window.TitleBar.Hide()
 	}
 
-	isRestoreGeometry, isRestoreState := e.restoreWindow()
+	// isRestoreGeometry, isRestoreState := e.restoreWindow()
 
 	// If command line options are given, they take priority.
-	if e.opts.Fullscreen || e.opts.Maximized {
-		if e.opts.Fullscreen {
+	if e.config.Editor.StartFullscreen ||
+		e.config.Editor.StartMaximizedWindow {
+		if e.config.Editor.StartFullscreen {
 			e.window.WindowFullScreen()
-		} else if e.opts.Maximized {
+		} else if e.config.Editor.StartMaximizedWindow {
 			e.window.WindowMaximize()
 		}
+		isSetWindowState = true
 	} else {
-		if !isRestoreGeometry {
+		if e.config.Editor.RestoreWindowGeometry && e.opts.Geometry == "" {
+			e.restoreWindow()
+		} else {
 			e.window.Resize2(e.width, e.height)
-		}
-		if !isRestoreState {
-			if e.config.Editor.StartFullscreen {
-				e.window.WindowFullScreen()
-			} else if e.config.Editor.StartMaximizedWindow {
-				e.window.WindowMaximize()
-			}
 		}
 	}
 
-	if e.opts.Ssh == "" {
-		e.window.Show()
-	}
+	return
+}
+
+func (e *Editor) setWindowLayout() {
+	// window layout
+	l := widgets.NewQBoxLayout(widgets.QBoxLayout__RightToLeft, nil)
+	l.SetContentsMargins(0, 0, 0, 0)
+	l.SetSpacing(0)
+	e.window.SetupContent(l)
+
+	// window content
+	e.widget = widgets.NewQWidget(nil, 0)
+	e.newSplitter()
+	e.splitter.InsertWidget(1, e.widget)
+	l.AddWidget(e.splitter, 1, 0)
+
+	e.putLog("window content layout done")
 }
 
 func isFileExist(filename string) bool {
@@ -964,15 +1025,18 @@ func (e *Editor) copyClipBoard() {
 
 }
 
-func (e *Editor) workspaceNew() {
+func (e *Editor) workspaceAdd() {
 	if len(e.workspaces) == WORKSPACELEN {
 		return
 	}
 	editor.isSetGuiColor = false
-	ws, err := newWorkspace("")
-	if err != nil {
-		return
-	}
+
+	ws := newWorkspace()
+	ws.initUI()
+	ws.updateSize()
+	signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh := newNvim(ws.cols, ws.rows, e.ctx)
+	ws.registerSignal(signal, redrawUpdates, guiUpdates)
+	go ws.bindNvim(nvimCh, uiRemoteAttachedCh, false, false, "")
 
 	e.workspaces = append(e.workspaces, nil)
 	e.active = len(e.workspaces) - 1
@@ -1057,6 +1121,9 @@ func (e *Editor) keyRelease(event *gui.QKeyEvent) {
 }
 
 func (e *Editor) keyPress(event *gui.QKeyEvent) {
+	if len(e.workspaces) <= e.active {
+		return
+	}
 	ws := e.workspaces[e.active]
 	if ws.nvim == nil {
 		return
@@ -1399,6 +1466,7 @@ func (e *Editor) close(exitcode int) {
 }
 
 func (e *Editor) saveAppWindowState() {
+	e.putLog("save application window state")
 	settings := core.NewQSettings("neovim", "goneovim", nil)
 	settings.SetValue("geometry", core.NewQVariant13(e.window.SaveGeometry()))
 	settings.SetValue("windowState", core.NewQVariant13(e.window.SaveState(0)))
@@ -1419,17 +1487,14 @@ func (e *Editor) saveSessions() {
 	if !e.config.Workspace.RestoreSession {
 		return
 	}
-	ws := e.workspaces[e.active]
-	if ws.uiRemoteAttached {
-		return
-	}
 
 	sessions := filepath.Join(e.configDir, "sessions")
 
 	for i, ws := range e.workspaces {
+		if ws.uiRemoteAttached {
+			continue
+		}
 		sessionPath := filepath.Join(sessions, strconv.Itoa(i)+".vim")
-		fmt.Println(sessionPath)
-		fmt.Println(ws.nvim.Command("mksession " + sessionPath))
-		fmt.Println("mksession finished")
+		ws.nvim.Command("mksession " + sessionPath)
 	}
 }

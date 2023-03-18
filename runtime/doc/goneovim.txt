@@ -429,7 +429,9 @@ All Options are follows:
         ## Disables font ligatures.
         # DisableLigatures = true
         
-        ## Copy yanked text to clipboard
+        ## Copy yanked text to clipboard.
+        ## This only works when connected to a remote nvim instance.
+        ## Please check `:h clipboard` for clipboard integration in local nvim instances.
         # Clipboard = true
         
         ## This setting is equivalent to Macmeta in MacVim.
