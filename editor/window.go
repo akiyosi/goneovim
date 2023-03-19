@@ -1207,6 +1207,7 @@ func (hl *Highlight) bg() *RGBA {
 }
 
 func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
+
 	if colStart < 0 {
 		return
 	}
@@ -1334,46 +1335,36 @@ func (w *Window) countContent(row int) {
 	line := w.content[row]
 	lenLine := w.cols - 1
 	width := w.cols - 1
-	var breakFlag [2]bool
+	var breakFlag0, breakFlag1 bool
 	for j := w.cols - 1; j >= 0; j-- {
 		cell := line[j]
 
-		if !breakFlag[0] {
-			if cell == nil {
-				lenLine--
-			} else if cell.char == " " {
+		if !breakFlag0 {
+			if cell == nil || cell.char == " " {
 				lenLine--
 			} else {
-				breakFlag[0] = true
+				breakFlag0 = true
 			}
 		}
 
-		if !breakFlag[1] {
-			if cell == nil {
-				width--
-			} else if cell.char == " " &&
-				cell.highlight.bg().equals(w.background) &&
-				!cell.highlight.underline &&
-				!cell.highlight.undercurl &&
-				!cell.highlight.strikethrough &&
-				!cell.highlight.underdouble &&
-				!cell.highlight.underdotted &&
-				!cell.highlight.underdashed {
+		if !breakFlag1 {
+			if cell == nil || (cell.char == " " && cell.highlight.bg().equals(w.background) &&
+				!cell.highlight.underline && !cell.highlight.undercurl &&
+				!cell.highlight.strikethrough && !cell.highlight.underdouble &&
+				!cell.highlight.underdotted && !cell.highlight.underdashed) {
 				width--
 			} else {
-				breakFlag[1] = true
+				breakFlag1 = true
 			}
 		}
 
-		if breakFlag[0] && breakFlag[1] {
+		if breakFlag0 && breakFlag1 {
 			break
 		}
 	}
-	lenLine++
-	width++
 
-	w.lenLine[row] = lenLine
-	w.lenContent[row] = width
+	w.lenLine[row] = lenLine + 1
+	w.lenContent[row] = width + 1
 }
 
 // func (w *Window) makeUpdateMask(row, col int, cells []interface{}) {
