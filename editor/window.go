@@ -1922,8 +1922,8 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	line := w.content[y]
 	chars := map[*Highlight][]int{}
 	specialChars := []int{}
-
 	cellBasedDrawing := editor.config.Editor.DisableLigatures || (editor.config.Editor.Letterspace > 0)
+	wsfontLineHeight := y * wsfont.lineHeight
 
 	// pointX := float64(col) * wsfont.cellwidth
 	for x := col; x <= col+cols; x++ {
@@ -1955,7 +1955,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			w.drawTextInPos(
 				p,
 				int(float64(x)*wsfont.cellwidth),
-				y*wsfont.lineHeight,
+				wsfontLineHeight,
 				line[x].char,
 				line[x].highlight,
 				false,
@@ -2043,7 +2043,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 						w.drawTextInPos(
 							p,
 							int(float64(x-pos)*wsfont.cellwidth),
-							y*wsfont.lineHeight,
+							wsfontLineHeight,
 							buffer.String(),
 							highlight,
 							true,
@@ -2085,7 +2085,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			w.drawTextInPos(
 				p,
 				int(float64(x)*wsfont.cellwidth),
-				y*wsfont.lineHeight,
+				wsfontLineHeight,
 				line[x].char,
 				line[x].highlight,
 				false,
