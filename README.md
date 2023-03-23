@@ -32,22 +32,20 @@ If you are interested in these GUI attractions, try goneovim.
 
 All of the features are optional. You can use it like a plain nvim or as a nvim with a rich UI.
 
-- Fast (faster than neovim-qt)
+- Fast
 - Cross-platform
 - Modern Text Editor Features
   - Minimap
   - Smooth pixel scroll (Support for both touchpad and Vim scroll command reactions.)
   - Animated Cursor
-  - Workspace feature which manages multiple nvim
   - Ligatures
   - Built-in Indent guide
   - Scrollbar
-  - High DPI scaling
+  - Workspace feature which manages multiple nvim
 - Features as neovim GUI
   - Externalizable tabline, popupmenu, wildmenu, cmdline, messsages
   - Support gui option: `guifont`, `guifontwide`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
   - Support mouse
-  - Support for drawing borders and shadows in a float window
   - Independent font settings per window (currently experimental)
   - Attach/Connect feature to a remote nvim
 - Basic feature as a Text Editor
@@ -84,7 +82,7 @@ scoop bucket add versions
 scoop install goneovim-nightly
 ```
 
-Mac users can install using homebrew:
+MacOS users can install using homebrew:
 
 `brew install --cask goneovim`
 
@@ -92,6 +90,29 @@ Mac users can install using homebrew:
 ## Usage
 
 See `:h goneovim` or [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
+
+## Development
+
+1. Clone this repo and cd into the repo
+1. `make qt_bindings`
+1. `make deps`
+1. `make app`
+
+For more information, see [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md)
+
+
+
+## Similar projects
+
+* [Neovide](https://github.com/Kethku/neovide)
+* [Gnvim](https://github.com/vhakulinen/gnvim)
+* [FVim](https://github.com/yatli/fvim)
+* [Uivonim](https://github.com/smolck/uivonim)
+
+## Credits
+
+* Gonvim was created by dzhou121 ([https://github.com/dzhou121/gonvim](https://github.com/dzhou121/gonvim))
+
 
 ## Screenshots
 
@@ -107,22 +128,5 @@ See `:h goneovim` or [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 ### Minimap, External Float Window
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-top.png)
 
-
-## Development
-
-See [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md)
-
-
-
-## Similar projects
-
-* [Neovide](https://github.com/Kethku/neovide)
-* [Gnvim](https://github.com/vhakulinen/gnvim)
-* [FVim](https://github.com/yatli/fvim)
-* [Uivonim](https://github.com/smolck/uivonim)
-
-## Credits
-
-* Gonvim was created by dzhou121 ([https://github.com/dzhou121/gonvim](https://github.com/dzhou121/gonvim))
 
 
