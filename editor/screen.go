@@ -21,7 +21,7 @@ var globalOrder int
 
 // Screen is the main editor area
 type Screen struct {
-	fgCache          Cache
+	cache            Cache
 	tooltip          *IMETooltip
 	font             *Font
 	hlAttrDef        map[int]*Highlight
@@ -52,7 +52,7 @@ func newScreen() *Screen {
 		windows:        sync.Map{},
 		cursor:         [2]int{0, 0},
 		highlightGroup: make(map[string]int),
-		fgCache:        newCache(),
+		cache:          newCache(),
 	}
 
 	widget.ConnectMousePressEvent(screen.mousePressEvent)
@@ -271,12 +271,12 @@ func (s *Screen) gridFont(update interface{}) {
 	newRows := oldHeight / win.font.lineHeight
 
 	// Cache
-	cache := win.fgCache
+	cache := win.cache
 	if cache == (Cache{}) {
 		cache := newCache()
-		win.fgCache = cache
+		win.cache = cache
 	} else {
-		win.fgCache.purge()
+		win.cache.purge()
 	}
 
 	_ = s.ws.nvim.TryResizeUIGrid(win.grid, newCols, newRows)
@@ -294,7 +294,7 @@ func (s *Screen) purgeTextCacheForWins() {
 	if !editor.config.Editor.CachedDrawing {
 		return
 	}
-	s.fgCache.purge()
+	s.cache.purge()
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 		if win == nil {
@@ -303,11 +303,11 @@ func (s *Screen) purgeTextCacheForWins() {
 		if win.font == nil {
 			return true
 		}
-		cache := win.fgCache
+		cache := win.cache
 		if cache == (Cache{}) {
 			return true
 		}
-		win.fgCache.purge()
+		win.cache.purge()
 		return true
 	})
 }
@@ -706,15 +706,15 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	}
 
 	for i := 0; i < rows; i++ {
-		if win != nil {
-			if i < len(win.content) {
-				lenLine[i] = win.lenLine[i]
-				lenContent[i] = win.lenContent[i]
-				if i < len(win.lenOldContent) {
-					lenOldContent[i] = win.lenOldContent[i]
-				}
-			}
-		}
+		// if win != nil {
+		// 	if i < len(win.content) {
+		// 		// lenLine[i] = win.lenLine[i]
+		// 		lenContent[i] = win.lenContent[i]
+		// 		if i < len(win.lenOldContent) {
+		// 			lenOldContent[i] = win.lenOldContent[i]
+		// 		}
+		// 	}
+		// }
 
 		for j := 0; j < cols; j++ {
 
@@ -956,6 +956,12 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 }
 
 func (s *Screen) gridCursorGoto(args []interface{}) {
+	// b := time.Now()
+	// defer func() {
+	// 	a := time.Now()
+	// 	s.t4 += a.Sub(b)
+	// }()
+
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 
@@ -1240,6 +1246,12 @@ func (s *Screen) gridClear(args []interface{}) {
 }
 
 func (s *Screen) gridLine(args []interface{}) {
+	// b := time.Now()
+	// defer func() {
+	// 	a := time.Now()
+	// 	s.t2 += a.Sub(b)
+	// }()
+
 	var win *Window
 	var ok bool
 
@@ -1270,6 +1282,12 @@ func (s *Screen) gridLine(args []interface{}) {
 }
 
 func (s *Screen) gridScroll(args []interface{}) {
+	// b := time.Now()
+	// defer func() {
+	// 	a := time.Now()
+	// 	s.t3 += a.Sub(b)
+	// }()
+
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
 		if isSkipGlobalId(gridid) {
@@ -1413,6 +1431,7 @@ func (s *Screen) update() {
 				win.background = s.ws.background.copy()
 				win.fill()
 			}
+
 			win.update()
 		}
 
@@ -1427,8 +1446,8 @@ func (s *Screen) refresh() {
 			// Fill entire background if background color changed
 			if !win.background.equals(s.ws.background) {
 				win.background = s.ws.background.copy()
-				win.fill()
 			}
+			win.fill()
 			win.Update()
 		}
 

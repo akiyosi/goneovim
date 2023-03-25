@@ -1586,6 +1586,12 @@ func (ws *Workspace) setOption(update []interface{}) {
 }
 
 func (ws *Workspace) windowViewport(args []interface{}) {
+	// b := time.Now()
+	// defer func() {
+	// 	a := time.Now()
+	// 	ws.screen.t5 += a.Sub(b)
+	// }()
+
 	for _, e := range args {
 		arg := e.([]interface{})
 		viewport := [4]int{
@@ -2653,6 +2659,7 @@ func (ws *Workspace) toggleIndentguide() {
 		editor.config.Editor.IndentGuide = true
 	}
 	editor.config.mu.Unlock()
+	ws.screen.refresh()
 	go ws.nvim.Command("doautocmd <nomodeline> WinEnter")
 }
 
