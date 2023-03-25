@@ -66,7 +66,6 @@ func initCursorNew() *Cursor {
 	c.SetAttribute(core.Qt__WA_OpaquePaintEvent, true)
 	c.SetAttribute(core.Qt__WA_TransparentForMouseEvents, true)
 	c.SetFocusPolicy(core.Qt__NoFocus)
-	c.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 	c.timer = core.NewQTimer(nil)
 	c.isNeedUpdateModeInfo = true
 	c.ConnectPaintEvent(c.paintEvent)
@@ -152,7 +151,7 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 	if editor.config.Editor.CachedDrawing {
 		var image *gui.QImage
 		charCache := *c.charCache
-		imagev, err := charCache.get(HlChars{
+		imagev, err := charCache.get(HlTextKey{
 			text:   text,
 			fg:     c.fg,
 			italic: false,
@@ -245,7 +244,7 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 
 func (c *Cursor) setCharCache(text string, fg *RGBA, image *gui.QImage) {
 	c.charCache.set(
-		HlChars{
+		HlTextKey{
 			text:   text,
 			fg:     c.fg,
 			italic: false,

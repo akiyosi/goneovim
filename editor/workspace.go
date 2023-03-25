@@ -2676,6 +2676,7 @@ func (ws *Workspace) toggleIndentguide() {
 		editor.config.Editor.IndentGuide = true
 	}
 	editor.config.mu.Unlock()
+	ws.screen.refresh()
 	go ws.nvim.Command("doautocmd <nomodeline> WinEnter")
 }
 
