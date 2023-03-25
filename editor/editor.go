@@ -572,6 +572,7 @@ func (e *Editor) connectAppSignals() {
 		}
 
 		editor.initAppFont()
+		editor.window.SetupTitle(editor.window.TitleStringLabel.Text())
 	})
 
 	// When an application is closed with the Close button
