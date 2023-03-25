@@ -49,16 +49,16 @@ type Highlight struct {
 	underdashed   bool
 }
 
-// HlChars is used in screen cache
-type HlChars struct {
+// HlText is used in screen cache
+type HlTextKey struct {
 	fg     *RGBA
 	text   string
 	italic bool
 	bold   bool
 }
 
-// HlDecoration is used in screen cache
-type HlDecoration struct {
+// HlDecorationKey is used in screen cache
+type HlDecorationKey struct {
 	fg            *RGBA
 	underline     bool
 	undercurl     bool
@@ -66,6 +66,11 @@ type HlDecoration struct {
 	underdouble   bool
 	underdotted   bool
 	underdashed   bool
+}
+
+type HlBgKey struct {
+	bg     *RGBA
+	length int
 }
 
 // Cell is
@@ -101,9 +106,10 @@ type zindex struct {
 
 // Window is
 type Window struct {
-	fgCache Cache
+	cache Cache
 	widgets.QWidget
 	snapshot               *gui.QPixmap
+	imagePainter           *gui.QPainter
 	font                   *Font
 	localWindows           *[4]localWindow
 	extwin                 *ExternalWin
@@ -119,12 +125,12 @@ type Window struct {
 	ft                     string
 	lenOldContent          []int
 	lenContent             []int
+	lenLine                []int
 	scrollRegion           []int
 	contentMaskOld         [][]bool
 	contentMask            [][]bool
 	content                [][]*Cell
 	extwinAutoLayoutPosY   []int
-	lenLine                []int
 	extwinAutoLayoutPosX   []int
 	charsScaledLineHeight  []string
 	scrollViewport         [6]int
@@ -163,6 +169,7 @@ type Window struct {
 	isMsgGrid              bool
 	isGridDirty            bool
 	doGetSnapshot          bool
+	t                      time.Duration
 }
 
 type localWindow struct {
@@ -231,14 +238,18 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	)
 
 	w.paintMutex.Lock()
-	defer w.paintMutex.Unlock()
 
 	p := gui.NewQPainter2(w)
+
+	// clip rect
+	rect := event.Rect()
+	p.SetClipRect2(rect, core.Qt__ReplaceClip)
 
 	// Erase the snapshot used in the animation scroll
 	if w.doErase {
 		p.EraseRect3(w.Rect())
 		p.DestroyQPainter()
+		w.paintMutex.Unlock()
 		return
 	}
 
@@ -249,21 +260,13 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	font := w.getFont()
 
 	// Set devicePixelRatio if it is not set
-	editor.putLog(
-		fmt.Sprintf("start to get screen device pixel ratio"),
-	)
 	devicePixelRatio := float64(p.PaintEngine().PaintDevice().DevicePixelRatio())
 	if w.devicePixelRatio != devicePixelRatio {
 		if w.devicePixelRatio != 0 {
 			w.s.purgeTextCacheForWins()
 		}
-		editor.putLog(
-			fmt.Sprintf("end to get screen device pixel ratio is %f", devicePixelRatio),
-		)
 		w.devicePixelRatio = devicePixelRatio
 	}
-
-	rect := event.Rect()
 
 	col := int(math.Trunc(float64(rect.Left()) / font.cellwidth))
 	row := int(math.Trunc(float64(rect.Top()) / float64(font.lineHeight)))
@@ -321,25 +324,26 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		}
 	}
 
+	w.adjustSmoothScrollAmount()
+	p.DestroyQPainter()
+	w.paintMutex.Unlock()
+}
+
+func (w *Window) adjustSmoothScrollAmount() {
 	// Reset to 0 after drawing is complete.
 	// This is to suppress flickering in smooth scroll
-	dx := math.Abs(float64(w.scrollPixels[0]))
-	dy := math.Abs(float64(w.scrollPixels[1]))
+	font := w.getFont()
 	horizontalScrollAmount := font.cellwidth
 	verticalScrollAmount := float64(font.lineHeight)
 
+	dx := math.Abs(float64(w.scrollPixels[0]))
+	dy := math.Abs(float64(w.scrollPixels[1]))
 	if dx >= horizontalScrollAmount {
 		w.scrollPixels[0] = 0
 	}
 	if dy >= verticalScrollAmount {
 		w.scrollPixels[1] = 0
 	}
-
-	if w.lastScrollphase == core.Qt__NoScrollPhase {
-		w.lastScrollphase = core.Qt__ScrollEnd
-	}
-
-	p.DestroyQPainter()
 }
 
 func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
@@ -1236,7 +1240,6 @@ func (hl *Highlight) bg() *RGBA {
 }
 
 func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
-
 	if colStart < 0 {
 		return
 	}
@@ -1253,8 +1256,16 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 		win.scrollPixels[1] = 0
 	}
 
-	win.updateLine(row, colStart, cells)
-	win.countContent(row)
+	lenContent, doNotCountContent, isPartialUpdate := win.updateLine(row, colStart, cells)
+	if !editor.config.Editor.IndentGuide {
+		if !doNotCountContent && !isPartialUpdate {
+			win.countContent(row)
+		} else if doNotCountContent {
+			win.lenContent[row] = lenContent
+		}
+	} else {
+		win.countContent(row)
+	}
 
 	if !win.isShown() {
 		win.show()
@@ -1284,7 +1295,7 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 	}
 }
 
-func (w *Window) updateLine(row, col int, cells []interface{}) {
+func (w *Window) updateLine(row, col int, cells []interface{}) (int, bool, bool) {
 	w.updateMutex.Lock()
 	line := w.content[row]
 	maskRow := w.contentMask[row]
@@ -1294,7 +1305,9 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 	lenScaledChars := len(w.charsScaledLineHeight)
 
 	hl := -1
-	for _, arg := range cells {
+	lastSpaces := 0
+	lenCells := len(cells)
+	for k, arg := range cells {
 		if col >= linelen {
 			continue
 		}
@@ -1321,6 +1334,13 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 		repeat := 1
 		if len(cell) == 3 {
 			repeat = util.ReflectToInt(cell[2])
+
+			// Count spaces in line end for culcurate content
+			if k == lenCells-1 {
+				if char == " " && hl == 0 {
+					lastSpaces = util.ReflectToInt(cell[2])
+				}
+			}
 		}
 
 		for ; repeat > 0 && col < linelen; repeat-- {
@@ -1332,6 +1352,12 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 			line[col].char = char
 			line[col].normalWidth = w.isNormalWidth(char)
 			line[col].scaled = scaled
+
+			// if w.grid == 2 {
+			// 	fmt.Printf(
+			// 		fmt.Sprintf("'%s',", line[col].char),
+			// 	)
+			// }
 
 			if hl != -1 || col == 0 {
 				line[col].highlight = hlAttrDef[hl]
@@ -1363,9 +1389,27 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 			col++
 		}
 	}
+
 	w.updateMutex.Unlock()
 
 	w.queueRedraw(colStart, row, col-colStart+1, 1)
+
+	lenContentRow := w.cols
+	if len(w.lenContent) >= row+1 {
+		lenContentRow = w.lenContent[row]
+	}
+	doNotCountContent1 := (col == w.cols && lastSpaces > 0)
+	doNotCountContent2 := (col == lenContentRow && lastSpaces > 0)
+	doNotCountContent := doNotCountContent1 || doNotCountContent2
+	isPartialUpdate := col < lenContentRow && lenContentRow < w.cols
+	newlenContent := 0
+	if doNotCountContent1 {
+		newlenContent = w.cols - lastSpaces
+	} else if doNotCountContent2 {
+		newlenContent = w.lenContent[row] - lastSpaces
+	}
+
+	return newlenContent, doNotCountContent, isPartialUpdate
 }
 
 func isMissingGlyph(fm *gui.QFontMetricsF, ch string) bool {
@@ -1380,7 +1424,12 @@ func (w *Window) countContent(row int) {
 	line := w.content[row]
 	lenLine := w.cols - 1
 	width := w.cols - 1
+
 	var breakFlag0, breakFlag1 bool
+	if !editor.config.Editor.IndentGuide {
+		breakFlag0 = true
+	}
+
 	for j := w.cols - 1; j >= 0; j-- {
 		cell := line[j]
 
@@ -1400,6 +1449,7 @@ func (w *Window) countContent(row int) {
 				width--
 			} else {
 				breakFlag1 = true
+				break
 			}
 		}
 
@@ -1565,12 +1615,11 @@ func (w *Window) scrollContentByCount(row, left, right, bot, count int) {
 		return
 	}
 
-	// copy(w.content[row], w.content[row+count])
-	// copy(w.contentMask[row], w.contentMask[row+count])
 	for col := left; col <= right; col++ {
 		w.content[row][col] = w.content[row+count][col]
 		w.contentMask[row][col] = w.contentMask[row+count][col]
 	}
+
 	w.lenLine[row] = w.lenLine[row+count]
 	w.lenContent[row] = w.lenContent[row+count]
 }
@@ -1598,36 +1647,37 @@ func (w *Window) update() {
 	w.redrawMutex.Lock()
 
 	font := w.getFont()
-	start := w.queueRedrawArea[1]
+	begin := w.queueRedrawArea[1]
 	end := w.queueRedrawArea[3]
 	extendedDrawingArea := int(font.cellwidth)
 
-	// Update all lines when using the wheel scroll or indent guide feature.
-	if w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide || w.s.name == "minimap" {
-		start = 0
+	drawWithSingleRect := w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide || w.s.name == "minimap" || (editor.config.Editor.SmoothScroll && w.scrollPixels2 != 0)
+	if drawWithSingleRect {
+		begin = 0
 		end = w.rows
 	}
 
 	// Mitigate #389
 	if runtime.GOOS == "windows" {
-		start = 0
+		begin = 0
 		end = w.rows
 	}
 
-	for i := start; i < end; i++ {
+	for i := begin; i < end; i++ {
 
 		if len(w.content) <= i {
 			continue
 		}
 
 		width := w.lenContent[i]
+		contentMaskI := w.contentMask[i]
+		lenContentMaskI := len(contentMaskI)
+		lineHeightI := i * font.lineHeight
 
 		if width < w.lenOldContent[i] {
 			width = w.lenOldContent[i]
 		}
 		w.lenOldContent[i] = w.lenContent[i]
-
-		drawWithSingleRect := false
 
 		// If DrawIndentGuide is enabled
 		if editor.config.Editor.IndentGuide {
@@ -1636,28 +1686,11 @@ func (w *Window) update() {
 					width = w.lenContent[i+1]
 				}
 			}
-			drawWithSingleRect = true
 		}
+
 		// If screen is minimap
-		if w.s.name == "minimap" {
-			width = w.maxLenContent
-			drawWithSingleRect = true
-		}
-		// If scroll is smooth with touchpad
-		if w.scrollPixels[0] != 0 {
+		if drawWithSingleRect {
 			width = w.cols
-			drawWithSingleRect = true
-		}
-		if w.scrollPixels[1] != 0 {
-			width = w.maxLenContent
-			drawWithSingleRect = true
-		}
-		// If scroll is smooth
-		if editor.config.Editor.SmoothScroll {
-			if w.scrollPixels2 != 0 {
-				width = w.maxLenContent
-				drawWithSingleRect = true
-			}
 		}
 		width++
 
@@ -1665,20 +1698,17 @@ func (w *Window) update() {
 		var rects [][4]int
 		isCreateRect := false
 
-		start := 0
 		if drawWithSingleRect {
 			rect := [4]int{
 				0,
-				i * font.lineHeight,
+				lineHeightI,
 				int(math.Ceil(float64(width)*font.cellwidth)) + extendedDrawingArea,
 				font.lineHeight,
 			}
 			rects = append(rects, rect)
-			for j, _ := range w.contentMask[i] {
-				w.contentMaskOld[i][j] = w.contentMask[i][j]
-			}
 		} else {
-			for j, cm := range w.contentMask[i] {
+			start := 0
+			for j, cm := range contentMaskI {
 				mask := cm || w.contentMaskOld[i][j]
 				// Starting point for creating a rectangular area
 				if mask && !isCreateRect {
@@ -1686,10 +1716,10 @@ func (w *Window) update() {
 					isCreateRect = true
 				}
 				// Judgment point for end of rectangular area creation
-				if (!mask && isCreateRect) || (j >= len(w.contentMask[i])-1 && isCreateRect) {
+				if (!mask && isCreateRect) || (j >= lenContentMaskI-1 && isCreateRect) {
 					// If the next rectangular area will be created with only one cell separating it, merge it.
-					if j+1 <= len(w.contentMask[i])-1 {
-						if w.contentMask[i][j+1] {
+					if j+1 <= lenContentMaskI-1 {
+						if contentMaskI[j+1] {
 							continue
 						}
 					}
@@ -1697,7 +1727,7 @@ func (w *Window) update() {
 					jj := j
 
 					// If it reaches the edge of the grid
-					if j >= len(w.contentMask[i])-1 && isCreateRect {
+					if j >= lenContentMaskI-1 && isCreateRect {
 						jj++
 					}
 
@@ -1709,35 +1739,28 @@ func (w *Window) update() {
 					}
 					rect := [4]int{
 						x, // update a slightly larger area.
-						i * font.lineHeight,
+						lineHeightI,
 						int(math.Ceil(float64(jj-start)*font.cellwidth)) + extendedDrawingArea, // update a slightly larger area.
 						font.lineHeight,
 					}
 					rects = append(rects, rect)
 					isCreateRect = false
 				}
-				w.contentMaskOld[i][j] = w.contentMask[i][j]
 			}
 		}
 
 		// Request screen refresh for each rectangle region.
-		if len(rects) == 0 {
+		for _, rect := range rects {
 			w.Update2(
-				0,
-				i*font.lineHeight,
-				int(float64(width)*font.cellwidth),
-				font.lineHeight,
+				rect[0],
+				rect[1],
+				rect[2],
+				rect[3],
 			)
-		} else {
-			for _, rect := range rects {
-				w.Update2(
-					rect[0],
-					rect[1],
-					rect[2],
-					rect[3],
-				)
-			}
 		}
+
+		// Update contentMaskOld
+		copy(w.contentMaskOld[i], contentMaskI)
 	}
 
 	// reset redraw area
@@ -1935,27 +1958,104 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 
 	font := w.getFont()
 	if width > 0 {
-		// Set diff pattern
-		pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
+		if editor.config.Editor.CachedDrawing {
+			cache := w.getCache()
+			if cache == (Cache{}) {
+				return
+			}
+			var image *gui.QImage
+			imagev, err := cache.get(HlBgKey{
+				bg:     lastHighlight.bg(),
+				length: width,
+			})
 
-		// Fill background with pattern
-		rectF := core.NewQRectF4(
-			float64(start)*font.cellwidth+float64(horScrollPixels),
-			float64((y)*font.lineHeight+verScrollPixels),
-			float64(width)*font.cellwidth,
-			float64(font.lineHeight),
-		)
-		p.FillRect(
-			rectF,
-			gui.NewQBrush3(
-				gui.NewQColor3(
-					color.R,
-					color.G,
-					color.B,
-					transparent,
+			if err != nil {
+				image = w.newBgCache(lastHighlight, width)
+				w.setBgCache(lastHighlight, width, image)
+			} else {
+				image = imagev.(*gui.QImage)
+			}
+
+			p.DrawImage9(
+				int(float64(start)*font.cellwidth+float64(horScrollPixels)),
+				int(float64((y)*font.lineHeight+verScrollPixels)),
+				image,
+				0, 0,
+				-1, -1,
+				core.Qt__AutoColor,
+			)
+		} else {
+			// Set diff pattern
+			pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
+
+			// Fill background with pattern
+			rectF := core.NewQRectF4(
+				float64(start)*font.cellwidth+float64(horScrollPixels),
+				float64((y)*font.lineHeight+verScrollPixels),
+				float64(width)*font.cellwidth,
+				float64(font.lineHeight),
+			)
+			p.FillRect(
+				rectF,
+				gui.NewQBrush3(
+					gui.NewQColor3(
+						color.R,
+						color.G,
+						color.B,
+						transparent,
+					),
+					pattern,
 				),
-				pattern,
-			),
+			)
+		}
+
+	}
+}
+
+func (w *Window) newBgCache(lastHighlight *Highlight, length int) *gui.QImage {
+	font := w.getFont()
+	width := float64(length) * font.cellwidth
+	height := float64(font.lineHeight)
+
+	image := gui.NewQImage3(
+		int(w.devicePixelRatio*width),
+		int(w.devicePixelRatio*height),
+		gui.QImage__Format_ARGB32_Premultiplied,
+	)
+
+	image.SetDevicePixelRatio(w.devicePixelRatio)
+
+	// Set diff pattern
+	_, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
+
+	image.Fill2(
+		gui.NewQColor3(
+			color.R,
+			color.G,
+			color.B,
+			transparent,
+		),
+	)
+
+	return image
+}
+
+func (w *Window) setBgCache(highlight *Highlight, length int, image *gui.QImage) {
+	if w.font != nil {
+		w.cache.set(
+			HlBgKey{
+				bg:     highlight.bg(),
+				length: length,
+			},
+			image,
+		)
+	} else {
+		w.s.cache.set(
+			HlBgKey{
+				bg:     highlight.bg(),
+				length: length,
+			},
+			image,
 		)
 	}
 }
@@ -2154,7 +2254,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 }
 
 func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool, scaled bool) {
-
 	// Set smooth scroll offset
 	var horScrollPixels, verScrollPixels int
 	if w.s.ws.mouseScroll != "" {
@@ -2229,9 +2328,9 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 		return
 	}
 
-	fgCache := w.getCache()
+	cache := w.getCache()
 	var image *gui.QImage
-	imagev, err := fgCache.get(HlChars{
+	imagev, err := cache.get(HlTextKey{
 		text:   text,
 		fg:     highlight.fg(),
 		italic: highlight.italic,
@@ -2275,8 +2374,8 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 	if w.font != nil {
 		// If window has own font setting
-		w.fgCache.set(
-			HlDecoration{
+		w.cache.set(
+			HlDecorationKey{
 				fg:            highlight.fg(),
 				underline:     highlight.underline,
 				undercurl:     highlight.undercurl,
@@ -2289,8 +2388,8 @@ func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 		)
 	} else {
 		// screen text cache
-		w.s.fgCache.set(
-			HlDecoration{
+		w.s.cache.set(
+			HlDecorationKey{
 				fg:            highlight.fg(),
 				underline:     highlight.underline,
 				undercurl:     highlight.undercurl,
@@ -2350,8 +2449,8 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QImage) {
 	if w.font != nil {
 		// If window has own font setting
-		w.fgCache.set(
-			HlChars{
+		w.cache.set(
+			HlTextKey{
 				text:   text,
 				fg:     highlight.fg(),
 				italic: highlight.italic,
@@ -2361,8 +2460,8 @@ func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QIma
 		)
 	} else {
 		// screen text cache
-		w.s.fgCache.set(
-			HlChars{
+		w.s.cache.set(
+			HlTextKey{
 				text:   text,
 				fg:     highlight.fg(),
 				italic: highlight.italic,
@@ -2370,6 +2469,19 @@ func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QIma
 			},
 			image,
 		)
+	}
+}
+
+func (w *Window) initImagePainter() {
+	if w.imagePainter == nil {
+		w.imagePainter = gui.NewQPainter()
+	}
+}
+
+func (w *Window) destroyImagePainter() {
+	if w.imagePainter != nil {
+		w.imagePainter.DestroyQPainter()
+		w.imagePainter = nil
 	}
 }
 
@@ -2414,27 +2526,31 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		int(w.devicePixelRatio*float64(font.lineHeight)),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
+
 	image.SetDevicePixelRatio(w.devicePixelRatio)
 	image.Fill3(core.Qt__transparent)
 
-	pi := gui.NewQPainter2(image)
-	pi.SetPen2(fg.QColor())
+	w.initImagePainter()
+	w.imagePainter.Begin(image)
+	// pi := gui.NewQPainter2(image)
+
+	w.imagePainter.SetPen2(fg.QColor())
 
 	if !isNormalWidth && w.font == nil && w.s.ws.fontwide != nil {
-		pi.SetFont(w.s.ws.fontwide.fontNew)
+		w.imagePainter.SetFont(w.s.ws.fontwide.fontNew)
 	} else {
-		pi.SetFont(font.fontNew)
+		w.imagePainter.SetFont(font.fontNew)
 	}
 
 	if highlight.bold {
 		// pi.Font().SetBold(true)
-		pi.Font().SetWeight(font.fontNew.Weight() + 50)
+		w.imagePainter.Font().SetWeight(font.fontNew.Weight() + 50)
 	}
 	if highlight.italic {
-		pi.Font().SetItalic(true)
+		w.imagePainter.Font().SetItalic(true)
 	}
 
-	pi.DrawText6(
+	w.imagePainter.DrawText6(
 		core.NewQRectF4(
 			0,
 			0,
@@ -2442,7 +2558,9 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 			float64(font.lineHeight),
 		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
-	pi.DestroyQPainter()
+
+	w.imagePainter.End()
+	// pi.DestroyQPainter()
 
 	editor.putLog("finished creating word cache:", text)
 
@@ -2465,6 +2583,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	}
 	line := w.content[y]
 	font := w.getFont()
+	cache := w.getCache()
 
 	// Set smooth scroll offset
 	var horScrollPixels, verScrollPixels int
@@ -2485,12 +2604,14 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		if line[x] == nil {
 			continue
 		}
-		if !line[x].highlight.underline &&
-			!line[x].highlight.undercurl &&
-			!line[x].highlight.strikethrough &&
-			!line[x].highlight.underdouble &&
-			!line[x].highlight.underdotted &&
-			!line[x].highlight.underdashed {
+
+		highlight := line[x].highlight
+		if !highlight.underline &&
+			!highlight.undercurl &&
+			!highlight.strikethrough &&
+			!highlight.underdouble &&
+			!highlight.underdotted &&
+			!highlight.underdashed {
 			continue
 		}
 		if line[x].covered && w.grid == 1 {
@@ -2499,23 +2620,22 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 
 		// if CachedDrawing is disabled
 		if !editor.config.Editor.CachedDrawing {
-			w.drawDecoration(p, line[x].highlight, font, x, x+1, verScrollPixels, horScrollPixels)
+			w.drawDecoration(p, highlight, font, x, x+1, verScrollPixels, horScrollPixels)
 		} else { // if CachedDrawing is enabled
-			fgCache := w.getCache()
 			var image *gui.QImage
-			imagev, err := fgCache.get(HlDecoration{
-				fg:            line[x].highlight.fg(),
-				underline:     line[x].highlight.underline,
-				undercurl:     line[x].highlight.undercurl,
-				strikethrough: line[x].highlight.strikethrough,
-				underdouble:   line[x].highlight.underdouble,
-				underdotted:   line[x].highlight.underdotted,
-				underdashed:   line[x].highlight.underdashed,
+			imagev, err := cache.get(HlDecorationKey{
+				fg:            highlight.fg(),
+				underline:     highlight.underline,
+				undercurl:     highlight.undercurl,
+				strikethrough: highlight.strikethrough,
+				underdouble:   highlight.underdouble,
+				underdotted:   highlight.underdotted,
+				underdashed:   highlight.underdashed,
 			})
 
 			if err != nil {
-				image = w.newDecorationCache(line[x].char, line[x].highlight, line[x].normalWidth)
-				w.setDecorationCache(line[x].highlight, image)
+				image = w.newDecorationCache(line[x].char, highlight, line[x].normalWidth)
+				w.setDecorationCache(highlight, image)
 			} else {
 				image = imagev.(*gui.QImage)
 			}
@@ -2755,10 +2875,10 @@ func (w *Window) setResizableForExtWin() {
 
 func (w *Window) getCache() Cache {
 	if w.font != nil {
-		return w.fgCache
+		return w.cache
 	}
 
-	return w.s.fgCache
+	return w.s.cache
 }
 
 func newWindow() *Window {
@@ -2781,6 +2901,9 @@ func newWindow() *Window {
 	win.ConnectDragEnterEvent(win.dragEnterEvent)
 	win.ConnectDragMoveEvent(win.dragMoveEvent)
 	win.ConnectDropEvent(win.dropEvent)
+	win.ConnectDestroyed(func(*core.QObject) {
+		win.destroyImagePainter()
+	})
 
 	// HideMouseWhenTyping process
 	if editor.config.Editor.HideMouseWhenTyping {
@@ -3107,6 +3230,7 @@ func (w *Window) refreshUpdateArea(fullmode int) {
 		boundary = w.maxLenContent
 	}
 	for i := 0; i < len(w.lenContent); i++ {
+		w.countContent(i)
 		w.lenContent[i] = boundary
 		for j, _ := range w.contentMask[i] {
 			w.contentMask[i][j] = true
