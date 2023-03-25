@@ -219,10 +219,11 @@ func InitEditor(options Options, args []string) {
 	if err != nil {
 		e.homeDir = "~"
 	}
-	e.putLog("detecting home directory path", e.homeDir)
+	e.putLog("detecting home directory path:", e.homeDir)
 
 	// load config
 	e.configDir, e.config = newConfig(e.homeDir)
+	e.putLog("Detecting the goneovim configuration directory:", e.configDir)
 	e.overwriteConfigByCLIOption()
 
 	// get parent process id

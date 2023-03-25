@@ -322,13 +322,11 @@ Goneovim’s config file is located at
         $XDG_CONFIG_HOME/goneovim/settings.toml
 <
 
-In particular, one of the following locations is available in Windows
+In Windows, `%XDG_CONFIG_HOME%` is not usually defined on Windows. In this case,
+the configuration directory is detected in the following order in Windows
 
 >
-        %LOCALAPPDATA%\goneovim\settings.toml
-
-Or
->
+        %USERPROFILE%\.condig\goneovim\settings.toml
         %USERPROFILE%\.goneovim\settings.toml
 <
 
