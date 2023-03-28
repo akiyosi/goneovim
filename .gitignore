@@ -1,6 +1,7 @@
 .DS_Store
 .go-version
 .nvimlog
+debug.log
 tags*
 moc*
 cmd/goneovim/goneovim
