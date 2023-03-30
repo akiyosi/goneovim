@@ -7,7 +7,6 @@ import (
 	"net"
 	"os/exec"
 	"runtime"
-	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/neovim/go-client/nvim"
@@ -376,27 +375,29 @@ func loadHelpDoc(neovim *nvim.Nvim) {
 	cmd := fmt.Sprintf("let &rtp.=',%s'", runtimepath)
 
 	var result bool
-	resultCh := make(chan bool, 5)
+	// resultCh := make(chan bool, 5)
 
-	go func() {
-		neovim.Exec(cmd, result)
-		resultCh <- result
-	}()
-	select {
-	case <-time.After(80 * time.Millisecond):
-	}
+	// go func() {
+	// 	neovim.Exec(cmd, result)
+	// 	resultCh <- result
+	// }()
+	// select {
+	// case <-time.After(80 * time.Millisecond):
+	// }
+	neovim.Exec(cmd, result)
 
 	// Generate goneovim helpdoc tag
 	helpdocpath := getResourcePath() + "/runtime/doc"
 	cmd = fmt.Sprintf(`try | helptags %s | catch /^Vim\%%((\a\+)\)\=:E/ | endtry`, helpdocpath)
 
-	go func() {
-		neovim.Exec(cmd, result)
-		resultCh <- result
-	}()
-	select {
-	case <-time.After(80 * time.Millisecond):
-	}
+	// go func() {
+	// 	neovim.Exec(cmd, result)
+	// 	resultCh <- result
+	// }()
+	// select {
+	// case <-time.After(80 * time.Millisecond):
+	// }
+	neovim.Exec(cmd, result)
 }
 
 func getResourcePath() string {
