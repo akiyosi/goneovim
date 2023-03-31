@@ -1390,6 +1390,8 @@ func (s *Screen) detectCoveredCellInGlobalgrid() {
 }
 
 func (s *Screen) update() {
+	// shownMarks := []int{}
+
 	s.windows.Range(func(grid, winITF interface{}) bool {
 		win := winITF.(*Window)
 		// if grid is dirty, we remove this grid
@@ -1414,6 +1416,9 @@ func (s *Screen) update() {
 				win.fill()
 			}
 			win.update()
+
+			// shownMarksWin := win.updateExtMarks()
+			// shownMarks = append(shownMarks, shownMarksWin...)
 		}
 
 		return true
