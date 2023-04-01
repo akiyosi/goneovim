@@ -362,7 +362,7 @@ func (ws *Workspace) registerSignal(signal *workspaceSignal, redrawUpdates chan 
 			// TODO
 			// If nvim is an instance on a remote server, the connection `cmd` can be
 			// `ssh` or `wsl` command. What kind of exit status should be set?
-			if ws.uiRemoteAttached {
+			if ws.uiRemoteAttached || ws.nvim == nil {
 				editor.close(0)
 			} else {
 				editor.close(ws.nvim.ExitCode())
