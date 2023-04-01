@@ -326,6 +326,7 @@ In Windows, `%XDG_CONFIG_HOME%` is not usually defined on Windows. In this case,
 the configuration directory is detected in the following order in Windows
 
 >
+        %LOCALAPPDATA%\.condig\goneovim\settings.toml
         %USERPROFILE%\.condig\goneovim\settings.toml
         %USERPROFILE%\.goneovim\settings.toml
 <
