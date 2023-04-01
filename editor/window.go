@@ -1556,6 +1556,8 @@ func (w *Window) update() {
 	font := w.getFont()
 	start := w.queueRedrawArea[1]
 	end := w.queueRedrawArea[3]
+	extendedDrawingArea := int(font.cellwidth)
+
 	// Update all lines when using the wheel scroll or indent guide feature.
 	if w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide || w.s.name == "minimap" {
 		start = 0
@@ -1618,7 +1620,6 @@ func (w *Window) update() {
 		// Create rectangles that require updating.
 		var rects [][4]int
 		isCreateRect := false
-		extendedDrawingArea := int(font.italicWidth-font.cellwidth+1) + 1
 
 		start := 0
 		if drawWithSingleRect {
