@@ -21,6 +21,8 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+var transparentColor = gui.NewQColor3(0, 0, 0, 0)
+
 const (
 	EXTWINBORDERSIZE = 5
 	EXTWINMARGINSIZE = 10
@@ -172,15 +174,15 @@ type localWindow struct {
 	localHeight int
 }
 
-func purgeQimage(key, value interface{}) {
-	image := value.(*gui.QImage)
-	image.DestroyQImage()
+func purgeImage(key, value interface{}) {
+	image := value.(*gui.QPixmap)
+	image.DestroyQPixmap()
 }
 
 func newCache() Cache {
 	g := gcache.New(editor.config.Editor.CacheSize).LRU().
-		EvictedFunc(purgeQimage).
-		PurgeVisitorFunc(purgeQimage).
+		EvictedFunc(purgeImage).
+		PurgeVisitorFunc(purgeImage).
 		Build()
 	return *(*Cache)(unsafe.Pointer(&g))
 }
@@ -1940,7 +1942,7 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 	if width > 0 {
 
 		cache := w.getCache()
-		var image *gui.QImage
+		var image *gui.QPixmap
 		imagev, err := cache.get(HlBgKey{
 			bg:     lastHighlight.bg(),
 			length: width,
@@ -1950,7 +1952,7 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 			image = w.newBgCache(lastHighlight, width)
 			w.setBgCache(lastHighlight, width, image)
 		} else {
-			image = imagev.(*gui.QImage)
+			image = imagev.(*gui.QPixmap)
 		}
 
 		// // Set diff pattern
@@ -1975,26 +1977,39 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 		// 		pattern,
 		// 	),
 		// )
-		p.DrawImage9(
+
+		// p.DrawImage9(
+		// 	int(float64(start)*font.cellwidth+float64(horScrollPixels)),
+		// 	int(float64((y)*font.lineHeight+verScrollPixels)),
+		// 	image,
+		// 	0, 0,
+		// 	-1, -1,
+		// 	core.Qt__AutoColor,
+		// )
+
+		p.DrawPixmap9(
 			int(float64(start)*font.cellwidth+float64(horScrollPixels)),
 			int(float64((y)*font.lineHeight+verScrollPixels)),
 			image,
-			0, 0,
-			-1, -1,
-			core.Qt__AutoColor,
 		)
 	}
 }
 
-func (w *Window) newBgCache(lastHighlight *Highlight, length int) *gui.QImage {
+func (w *Window) newBgCache(lastHighlight *Highlight, length int) *gui.QPixmap {
 	font := w.getFont()
 	width := float64(length) * font.cellwidth
 	height := float64(font.lineHeight)
 
-	image := gui.NewQImage3(
-		int(w.devicePixelRatio*width),
-		int(w.devicePixelRatio*height),
-		gui.QImage__Format_ARGB32_Premultiplied,
+	// image := gui.NewQImage3(
+	// 	int(w.devicePixelRatio*width),
+	// 	int(w.devicePixelRatio*height),
+	// 	gui.QImage__Format_ARGB32_Premultiplied,
+	// )
+	image := gui.NewQPixmap2(
+		core.NewQSize2(
+			int(w.devicePixelRatio*width),
+			int(w.devicePixelRatio*height),
+		),
 	)
 
 	image.SetDevicePixelRatio(w.devicePixelRatio)
@@ -2002,7 +2017,7 @@ func (w *Window) newBgCache(lastHighlight *Highlight, length int) *gui.QImage {
 	// Set diff pattern
 	_, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
 
-	image.Fill2(
+	image.Fill(
 		gui.NewQColor3(
 			color.R,
 			color.G,
@@ -2014,7 +2029,7 @@ func (w *Window) newBgCache(lastHighlight *Highlight, length int) *gui.QImage {
 	return image
 }
 
-func (w *Window) setBgCache(highlight *Highlight, length int, image *gui.QImage) {
+func (w *Window) setBgCache(highlight *Highlight, length int, image *gui.QPixmap) {
 	if w.font != nil {
 		w.cache.set(
 			HlBgKey{
@@ -2290,7 +2305,7 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 	}
 
 	cache := w.getCache()
-	var image *gui.QImage
+	var image *gui.QPixmap
 	imagev, err := cache.get(HlTextKey{
 		text:   text,
 		fg:     highlight.fg(),
@@ -2302,19 +2317,24 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 		image = w.newTextCache(text, highlight, isNormalWidth)
 		w.setTextCache(text, highlight, image)
 	} else {
-		image = imagev.(*gui.QImage)
+		image = imagev.(*gui.QPixmap)
 	}
 
-	p.DrawImage9(
+	// p.DrawImage9(
+	// 	x, y,
+	// 	image,
+	// 	0, 0,
+	// 	-1, -1,
+	// 	core.Qt__AutoColor,
+	// )
+
+	p.DrawPixmap9(
 		x, y,
 		image,
-		0, 0,
-		-1, -1,
-		core.Qt__AutoColor,
 	)
 }
 
-func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
+func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QPixmap) {
 	if w.font != nil {
 		// If window has own font setting
 		w.cache.set(
@@ -2346,7 +2366,7 @@ func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 	}
 }
 
-func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalWidth bool) *gui.QImage {
+func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalWidth bool) *gui.QPixmap {
 	font := w.getFont()
 
 	width := font.cellwidth
@@ -2366,19 +2386,28 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 		verScrollPixels += w.scrollPixels[1]
 	}
 
-	// QImage default device pixel ratio is 1.0,
+	// QPixmap default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
-	image := gui.NewQImage2(
-		core.NewQRectF4(
-			0,
-			0,
-			w.devicePixelRatio*width,
-			w.devicePixelRatio*float64(font.lineHeight),
-		).Size().ToSize(),
-		gui.QImage__Format_ARGB32_Premultiplied,
+
+	// image := gui.NewQImage2(
+	// 	core.NewQRectF4(
+	// 		0,
+	// 		0,
+	// 		w.devicePixelRatio*width,
+	// 		w.devicePixelRatio*float64(font.lineHeight),
+	// 	).Size().ToSize(),
+	// 	gui.QImage__Format_ARGB32_Premultiplied,
+	// )
+
+	image := gui.NewQPixmap2(
+		core.NewQSize2(
+			int(w.devicePixelRatio*width),
+			int(w.devicePixelRatio*float64(font.lineHeight)),
+		),
 	)
 	image.SetDevicePixelRatio(w.devicePixelRatio)
-	image.Fill3(core.Qt__transparent)
+	// image.Fill3(core.Qt__transparent)
+	image.Fill(transparentColor)
 
 	pi := gui.NewQPainter2(image)
 
@@ -2389,7 +2418,7 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 	return image
 }
 
-func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QImage) {
+func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QPixmap) {
 	if w.font != nil {
 		// If window has own font setting
 		w.cache.set(
@@ -2428,7 +2457,7 @@ func (w *Window) destroyImagePainter() {
 	}
 }
 
-func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth bool) *gui.QImage {
+func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth bool) *gui.QPixmap {
 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
 	editor.putLog("start creating word cache:", text)
 
@@ -2452,7 +2481,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		width = math.Ceil(w.s.runeTextWidth(font, text))
 	}
 
-	// QImage default device pixel ratio is 1.0,
+	// QPixmap default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
 
 	// image := gui.NewQImage2(
@@ -2464,14 +2493,22 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	// 	).Size().ToSize(),
 	// 	gui.QImage__Format_ARGB32_Premultiplied,
 	// )
-	image := gui.NewQImage3(
-		int(w.devicePixelRatio*width),
-		int(w.devicePixelRatio*float64(font.lineHeight)),
-		gui.QImage__Format_ARGB32_Premultiplied,
+
+	// image := gui.NewQImage3(
+	// 	int(w.devicePixelRatio*width),
+	// 	int(w.devicePixelRatio*float64(font.lineHeight)),
+	// 	gui.QImage__Format_ARGB32_Premultiplied,
+	// )
+	image := gui.NewQPixmap2(
+		core.NewQSize2(
+			int(w.devicePixelRatio*width),
+			int(w.devicePixelRatio*float64(font.lineHeight)),
+		),
 	)
 
 	image.SetDevicePixelRatio(w.devicePixelRatio)
-	image.Fill3(core.Qt__transparent)
+	// image.Fill3(core.Qt__transparent)
+	image.Fill(transparentColor)
 
 	w.initImagePainter()
 	w.imagePainter.Begin(image)
@@ -2565,7 +2602,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		if !editor.config.Editor.CachedDrawing {
 			w.drawDecoration(p, highlight, font, x, x+1, verScrollPixels, horScrollPixels)
 		} else { // if CachedDrawing is enabled
-			var image *gui.QImage
+			var image *gui.QPixmap
 			imagev, err := cache.get(HlDecorationKey{
 				fg:            highlight.fg(),
 				underline:     highlight.underline,
@@ -2580,10 +2617,10 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 				image = w.newDecorationCache(line[x].char, highlight, line[x].normalWidth)
 				w.setDecorationCache(highlight, image)
 			} else {
-				image = imagev.(*gui.QImage)
+				image = imagev.(*gui.QPixmap)
 			}
 
-			p.DrawImage7(
+			p.DrawPixmap7(
 				core.NewQPointF3(
 					float64(x)*font.cellwidth+float64(horScrollPixels),
 					float64(y*font.lineHeight)+float64(verScrollPixels),

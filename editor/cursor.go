@@ -149,7 +149,7 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 
 	// Paint target cell text
 	if editor.config.Editor.CachedDrawing {
-		var image *gui.QImage
+		var image *gui.QPixmap
 		charCache := *c.charCache
 		imagev, err := charCache.get(HlTextKey{
 			text:   text,
@@ -161,19 +161,26 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 			image = c.newCharCache(text, c.fg, c.normalWidth)
 			c.setCharCache(text, c.fg, image)
 		} else {
-			image = imagev.(*gui.QImage)
+			image = imagev.(*gui.QPixmap)
 		}
 		yy := dy - sy - float64(c.horizontalShift)
 		if c.font.lineSpace < 0 {
 			yy += float64(font.lineSpace) / 2.0
 		}
-		p.DrawImage9(
-			int(dx-sx),
-			int(yy),
+		// p.DrawImage9(
+		// 	int(dx-sx),
+		// 	int(yy),
+		// 	image,
+		// 	0, 0,
+		// 	-1, -1,
+		// 	core.Qt__AutoColor,
+		// )
+		p.DrawPixmap7(
+			core.NewQPointF3(
+				dx-sx,
+				yy,
+			),
 			image,
-			0, 0,
-			-1, -1,
-			core.Qt__AutoColor,
 		)
 	} else {
 		if !c.normalWidth && c.fontwide != nil {
@@ -198,7 +205,7 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 	}
 }
 
-func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QImage {
+func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QPixmap {
 	font := c.font
 
 	width := float64(len(text)) * font.italicWidth
@@ -206,15 +213,23 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 		width = math.Ceil(c.ws.screen.runeTextWidth(font, text))
 	}
 
-	// QImage default device pixel ratio is 1.0,
+	// QPixmap default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
-	image := gui.NewQImage3(
-		int(c.devicePixelRatio*width),
-		int(c.devicePixelRatio*float64(font.height)),
-		gui.QImage__Format_ARGB32_Premultiplied,
+
+	// image := gui.NewQImage3(
+	// 	int(c.devicePixelRatio*width),
+	// 	int(c.devicePixelRatio*float64(font.height)),
+	// 	gui.QImage__Format_ARGB32_Premultiplied,
+	// )
+	image := gui.NewQPixmap2(
+		core.NewQSize2(
+			int(c.devicePixelRatio*width),
+			int(c.devicePixelRatio*float64(font.height)),
+		),
 	)
 	image.SetDevicePixelRatio(c.devicePixelRatio)
-	image.Fill3(core.Qt__transparent)
+	// image.Fill3(core.Qt__transparent)
+	image.Fill(transparentColor)
 
 	pi := gui.NewQPainter2(image)
 	pi.SetPen2(fg.QColor())
@@ -242,7 +257,7 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 	return image
 }
 
-func (c *Cursor) setCharCache(text string, fg *RGBA, image *gui.QImage) {
+func (c *Cursor) setCharCache(text string, fg *RGBA, image *gui.QPixmap) {
 	c.charCache.set(
 		HlTextKey{
 			text:   text,
