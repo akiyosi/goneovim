@@ -453,7 +453,8 @@ func (t *Tabline) update(tabs []interface{}) {
 	height := t.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
 	isChangeHeight := t.height != height
 
-	if t.showtabline != t.ws.showtabline || t.ws.showtabline == 1 || isChangeHeight {
+	doUpdate := t.showtabline != t.ws.showtabline || t.ws.showtabline == 1 || isChangeHeight
+	if doUpdate {
 		t.ws.cursor.update()
 		t.showtabline = t.ws.showtabline
 	}
@@ -474,6 +475,10 @@ func (t *Tabline) update(tabs []interface{}) {
 		t.widget.Hide()
 		t.ws.isDrawTabline = false
 		t.height = 0
+	}
+
+	if doUpdate {
+		t.ws.updateSize()
 	}
 }
 
