@@ -85,8 +85,8 @@ type Workspace struct {
 	normalMappings     []*nvim.Mapping
 	modeInfo           []map[string]interface{}
 	insertMappings     []*nvim.Mapping
-	viewport           [4]int
-	oldViewport        [4]int
+	viewport           [5]int
+	oldViewport        [5]int
 	height             int
 	maxLineDelta       int
 	maxLine            int
@@ -117,7 +117,7 @@ func newWorkspace() *Workspace {
 	editor.putLog("initialize workspace")
 	ws := &Workspace{
 		stop:             make(chan struct{}),
-		viewportQue:      make(chan [5]int, 99),
+		viewportQue:      make(chan [5]int, 1000),
 		foreground:       newRGBA(255, 255, 255, 1),
 		background:       newRGBA(0, 0, 0, 1),
 		special:          newRGBA(255, 255, 255, 1),
@@ -1588,22 +1588,14 @@ func (ws *Workspace) setOption(update []interface{}) {
 func (ws *Workspace) windowViewport(args []interface{}) {
 	for _, e := range args {
 		arg := e.([]interface{})
-		viewport := [4]int{
+
+		grid := util.ReflectToInt(arg[0])
+		viewport := [5]int{
 			util.ReflectToInt(arg[2]) + 1, // top
 			util.ReflectToInt(arg[3]) + 1, // bottom
 			util.ReflectToInt(arg[4]) + 1, // curline
 			util.ReflectToInt(arg[5]) + 1, // curcol
-		}
-
-		scrollvp := [5]int{
-			util.ReflectToInt(arg[2]) + 1,
-			util.ReflectToInt(arg[3]) + 1,
-			util.ReflectToInt(arg[4]) + 1,
-			util.ReflectToInt(arg[5]) + 1,
-			util.ReflectToInt(arg[0]),
-		}
-		if scrollvp[0] < scrollvp[1] {
-			ws.viewportQue <- scrollvp
+			grid,
 		}
 
 		maxLine := 0
@@ -1611,15 +1603,18 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 			maxLine = util.ReflectToInt(arg[6])
 		}
 
-		// Only the viewport of the buffer where the cursor is located is used internally.
-		grid := util.ReflectToInt(arg[0])
-		if grid == ws.cursor.gridid {
-			if viewport != ws.viewport {
-				ws.viewportMutex.Lock()
-				ws.oldViewport = ws.viewport
-				ws.viewport = viewport
-				ws.viewportMutex.Unlock()
+		if !(ws.oldViewport == ws.viewport && ws.viewport == viewport) {
+			if viewport[0] < viewport[1] {
+				ws.viewportQue <- viewport
 			}
+		}
+
+		// Only the viewport of the buffer where the cursor is located is used internally.
+		if grid == ws.cursor.gridid {
+			ws.viewportMutex.Lock()
+			ws.oldViewport = ws.viewport
+			ws.viewport = viewport
+			ws.viewportMutex.Unlock()
 			ws.maxLineDelta = maxLine - ws.maxLine
 			ws.maxLine = maxLine
 		}

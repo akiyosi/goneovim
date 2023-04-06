@@ -1706,7 +1706,9 @@ func (w *Window) update() {
 }
 
 func (w *Window) queueRedrawAll() {
+	w.redrawMutex.Lock()
 	w.queueRedrawArea = [4]int{0, 0, w.cols, w.rows}
+	w.redrawMutex.Unlock()
 }
 
 func (w *Window) queueRedraw(x, y, width, height int) {
