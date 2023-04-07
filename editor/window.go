@@ -74,6 +74,7 @@ type Cell struct {
 	char        string
 	normalWidth bool
 	covered     bool
+	scaled      bool
 }
 
 type IntInt [2]int
@@ -121,6 +122,7 @@ type Window struct {
 	extwinAutoLayoutPosY   []int
 	lenLine                []int
 	extwinAutoLayoutPosX   []int
+	charsScaledLineHeight  []string
 	scrollViewport         [2][5]int
 	queueRedrawArea        [4]int
 	extwinRelativePos      [2]int
@@ -1262,13 +1264,28 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 	colStart := col
 	hlAttrDef := w.s.hlAttrDef
 	linelen := len(line)
+	lenScaledChars := len(w.charsScaledLineHeight)
 
 	hl := -1
 	for _, arg := range cells {
 		if col >= linelen {
 			continue
 		}
+		// cell
 		cell := arg.([]interface{})
+
+		// char of cell
+		char := cell[0].(string)
+
+		// is the char is scraled?
+		scaled := false
+		if lenScaledChars > 0 {
+			for _, charScaled := range w.charsScaledLineHeight {
+				if char == charScaled {
+					scaled = true
+				}
+			}
+		}
 
 		if len(cell) >= 2 {
 			hl = util.ReflectToInt(cell[1])
@@ -1285,8 +1302,9 @@ func (w *Window) updateLine(row, col int, cells []interface{}) {
 				maskRow[col] = true
 			}
 
-			line[col].char = cell[0].(string)
-			line[col].normalWidth = w.isNormalWidth(line[col].char)
+			line[col].char = char
+			line[col].normalWidth = w.isNormalWidth(char)
+			line[col].scaled = scaled
 
 			if hl != -1 || col == 0 {
 				line[col].highlight = hlAttrDef[hl]
@@ -1401,7 +1419,6 @@ func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 		if c == nil {
 			continue
 		}
-
 		if c.char != " " && !c.highlight.isSignColumn() {
 			break
 		} else {
@@ -1946,6 +1963,10 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			specialChars = append(specialChars, x)
 			continue
 		}
+		if line[x].scaled {
+			specialChars = append(specialChars, x)
+			continue
+		}
 
 		// If the ligature setting is disabled,
 		// we will draw the characters on the screen one by one.
@@ -1962,6 +1983,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				line[x].char,
 				line[x].highlight,
 				false,
+				line[x].scaled,
 			)
 
 		} else {
@@ -2050,6 +2072,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 							buffer.String(),
 							highlight,
 							true,
+							false,
 						)
 
 						buffer.Reset()
@@ -2092,13 +2115,14 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				line[x].char,
 				line[x].highlight,
 				false,
+				line[x].scaled,
 			)
 
 		}
 	}
 }
 
-func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
+func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool, scaled bool) {
 
 	// Set smooth scroll offset
 	var horScrollPixels, verScrollPixels int
@@ -2126,6 +2150,7 @@ func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight
 			text,
 			highlight,
 			isNormalWidth,
+			scaled,
 		)
 	} else { // if CachedDrawing is enabled
 		w.drawTextInPosWithCache(
@@ -2135,11 +2160,12 @@ func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight
 			text,
 			highlight,
 			isNormalWidth,
+			scaled,
 		)
 	}
 }
 
-func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
+func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool, scaled bool) {
 	if text == "" {
 		return
 	}
@@ -2163,7 +2189,7 @@ func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string
 	p.DrawText3(x, y, text)
 }
 
-func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool) {
+func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool, scaled bool) {
 	if text == "" {
 		return
 	}
@@ -2184,12 +2210,24 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 		image = imagev.(*gui.QImage)
 	}
 
-	// p.DrawImage7(
-	// 	point,
-	// 	image,
-	// )
+	// Scale specific characters to full line height
+	yOffset := 0
+	if scaled {
+		font := w.getFont()
+		ratio := (float64(font.lineHeight) / float64(font.height))
+		newHeight := int(math.Floor(w.devicePixelRatio * float64(font.lineHeight) * ratio))
+		newSpace := int(math.Ceil(float64(font.lineSpace) * ratio / 2.0))
+		yOffset = newSpace
+		image = image.Scaled2(
+			image.Width(),
+			newHeight,
+			core.Qt__IgnoreAspectRatio,
+			core.Qt__SmoothTransformation,
+		)
+	}
+
 	p.DrawImage9(
-		x, y,
+		x, y-yOffset,
 		image,
 		0, 0,
 		-1, -1,
@@ -2699,6 +2737,7 @@ func newWindow() *Window {
 	win.background = editor.colors.bg
 	win.lastMouseEvent = &inputMouseEvent{}
 	win.zindex = &zindex{}
+	win.charsScaledLineHeight = editor.config.Editor.CharsScaledLineHeight
 
 	win.SetAcceptDrops(true)
 	win.ConnectPaintEvent(win.paint)
