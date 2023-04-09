@@ -275,20 +275,18 @@ func (ws *Workspace) lazyLoadUI() {
 	go filer.RegisterPlugin(ws.nvim, editor.config.Editor.FileOpenCmd)
 
 	// Asynchronously execute the process for minimap
-	go func() {
-		if !editor.config.MiniMap.Disable {
-			ws.minimap.startMinimapProc()
-			time.Sleep(time.Millisecond * 50)
-			ws.minimap.mu.Lock()
-			isMinimapVisible := ws.minimap.visible
-			ws.minimap.mu.Unlock()
-			if isMinimapVisible {
-				ws.minimap.bufUpdate()
-				ws.minimap.bufSync()
-				ws.updateSize()
-			}
+	if !editor.config.MiniMap.Disable {
+		ws.minimap.startMinimapProc()
+		time.Sleep(time.Millisecond * 50)
+		ws.minimap.mu.Lock()
+		isMinimapVisible := ws.minimap.visible
+		ws.minimap.mu.Unlock()
+		if isMinimapVisible {
+			ws.minimap.bufUpdate()
+			ws.minimap.bufSync()
+			ws.updateSize()
 		}
-	}()
+	}
 
 	editor.putLog("Finished preparing the deferred drawing UI.")
 }
@@ -1720,17 +1718,13 @@ func (ws *Workspace) scrollMinimap() {
 
 	switch {
 	case botLine > absMapBottom:
-		go func() {
-			ws.minimap.nvim.Input(`<ScrollWheelDown>`)
-			ws.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
-			ws.minimap.nvim.Input(`zz`)
-		}()
+		ws.minimap.nvim.Input(`<ScrollWheelDown>`)
+		ws.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
+		ws.minimap.nvim.Input(`zz`)
 	case absMapTop > topLine:
-		go func() {
-			ws.minimap.nvim.Input(`<ScrollWheelUp>`)
-			ws.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
-			ws.minimap.nvim.Input(`zz`)
-		}()
+		ws.minimap.nvim.Input(`<ScrollWheelUp>`)
+		ws.minimap.nvim.Command(fmt.Sprintf("call cursor(%d, %d)", currLine, 0))
+		ws.minimap.nvim.Input(`zz`)
 	default:
 	}
 }
@@ -1865,7 +1859,7 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 	case "gonvim_minimap_sync":
 		if ws.minimap != nil {
 			if ws.minimap.visible {
-				go ws.minimap.bufSync()
+				ws.minimap.bufSync()
 			}
 		}
 	case "gonvim_minimap_toggle":

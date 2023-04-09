@@ -238,10 +238,10 @@ func (m *MiniMap) bufUpdate() {
 	m.currBuf = m.ws.filepath
 
 	if m.currBuf == "" {
-		go m.nvim.Command(":e! [No Name]")
-	} else {
-		go m.nvim.Command(":e! " + m.currBuf)
+		return
 	}
+
+	m.nvim.Command(":e! " + m.currBuf)
 	m.mapScroll()
 }
 

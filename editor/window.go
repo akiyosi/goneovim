@@ -867,17 +867,18 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	font := w.getFont()
 
 	// Detect current mode
-	mode := w.s.ws.mode
-	isCursorOnWin := w.isEventEmmitOnCursorGrid()
+	// mode := w.s.ws.mode
+	// isCursorOnWin := w.isEventEmmitOnCursorGrid()
+
 	mouseScroll := w.s.ws.mouseScroll
 	if mouseScroll == "" {
 		mouseScroll = "ver:2,hor:1"
 	}
 
-	editor.putLog("detect neovim mode:", mode)
-	if mode != "normal" && isCursorOnWin {
-		w.s.ws.nvim.Input(w.s.ws.escKeyInInsert)
-	}
+	// editor.putLog("detect neovim mode:", mode)
+	// if mode != "normal" && isCursorOnWin {
+	// 	w.s.ws.nvim.Input(w.s.ws.escKeyInInsert)
+	// }
 
 	pixels := event.PixelDelta()
 	if pixels != nil {
@@ -955,7 +956,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		}
 	}
 
-	if vert == 0 && horiz == 0 && isCursorOnWin && w.s.ws.mouseScroll == "" {
+	if vert == 0 && horiz == 0 && w.s.ws.mouseScroll == "" {
 		return
 	}
 	if vert == 0 && horiz == 0 {
@@ -980,7 +981,8 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	row := int(float64(event.X()) / font.cellwidth)
 	col := int(float64(event.Y()) / float64(font.lineHeight))
 
-	if w.s.ws.isMappingScrollKey || !isCursorOnWin || w.s.ws.mouseScroll != "" {
+	if w.s.ws.isMappingScrollKey || w.s.ws.mouseScroll != "" {
+
 		if vert != 0 {
 			w.s.ws.nvim.InputMouse("wheel", action, mod, w.grid, row, col)
 		}
