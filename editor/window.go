@@ -123,7 +123,7 @@ type Window struct {
 	lenLine                []int
 	extwinAutoLayoutPosX   []int
 	charsScaledLineHeight  []string
-	scrollViewport         [2][5]int
+	scrollViewport         [6]int
 	queueRedrawArea        [4]int
 	extwinRelativePos      [2]int
 	pos                    [2]int

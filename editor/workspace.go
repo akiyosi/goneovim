@@ -67,7 +67,7 @@ type Workspace struct {
 	nvim               *nvim.Nvim
 	widget             *widgets.QWidget
 	special            *RGBA
-	viewportQue        chan [5]int
+	viewportQue        chan [6]int
 	background         *RGBA
 	windowsFt          map[nvim.Window]string
 	windowsTs          map[nvim.Window]int
@@ -117,7 +117,7 @@ func newWorkspace() *Workspace {
 	editor.putLog("initialize workspace")
 	ws := &Workspace{
 		stop:             make(chan struct{}),
-		viewportQue:      make(chan [5]int, 1000),
+		viewportQue:      make(chan [6]int, 1000),
 		foreground:       newRGBA(255, 255, 255, 1),
 		background:       newRGBA(0, 0, 0, 1),
 		special:          newRGBA(255, 255, 255, 1),
@@ -1318,12 +1318,12 @@ func (ws *Workspace) flush() {
 		}
 		select {
 		case viewport := <-ws.viewportQue:
-			win, diff, ok := ws.handleViewport(viewport)
-			if diff == 0 {
+			win, delta, ok := ws.handleViewport(viewport)
+			if delta == 0 {
 				continue
 			}
 			if ok {
-				win.smoothScroll(diff)
+				win.smoothScroll(delta)
 			}
 		default:
 		}
@@ -1588,11 +1588,15 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 		arg := e.([]interface{})
 
 		grid := util.ReflectToInt(arg[0])
+		top := util.ReflectToInt(arg[2]) + 1
+		bottom := util.ReflectToInt(arg[3]) + 1
+		curLine := util.ReflectToInt(arg[4]) + 1
+		curCol := util.ReflectToInt(arg[5]) + 1
 		viewport := [5]int{
-			util.ReflectToInt(arg[2]) + 1, // top
-			util.ReflectToInt(arg[3]) + 1, // bottom
-			util.ReflectToInt(arg[4]) + 1, // curline
-			util.ReflectToInt(arg[5]) + 1, // curcol
+			top,
+			bottom,
+			curLine,
+			curCol,
 			grid,
 		}
 
@@ -1601,9 +1605,21 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 			maxLine = util.ReflectToInt(arg[6])
 		}
 
+		delta := -1
+		if len(arg) >= 8 {
+			delta = util.ReflectToInt(arg[7])
+		}
+
 		if !(ws.oldViewport == ws.viewport && ws.viewport == viewport) {
 			if viewport[0] < viewport[1] {
-				ws.viewportQue <- viewport
+				ws.viewportQue <- [6]int{
+					top,
+					bottom,
+					curLine,
+					curCol,
+					grid,
+					delta,
+				}
 			}
 		}
 
@@ -1619,7 +1635,7 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 	}
 }
 
-func (ws *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
+func (ws *Workspace) handleViewport(vp [6]int) (*Window, int, bool) {
 	win, ok := ws.screen.getWindow(vp[4])
 	if !ok {
 		return nil, 0, false
@@ -1628,32 +1644,10 @@ func (ws *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
-	win.scrollViewport[1] = win.scrollViewport[0]
-	win.scrollViewport[0] = vp
-	viewport := win.scrollViewport[0]
-	oldViewport := win.scrollViewport[1]
-
-	if viewport[0] == oldViewport[0] && viewport[1] != oldViewport[1] {
+	delta := vp[5]
+	if delta == 0 {
 		return nil, 0, false
 	}
-
-	diff := viewport[0] - oldViewport[0]
-	if diff == 0 {
-		diff = viewport[1] - oldViewport[1]
-	}
-
-	// // TODO: Control processing of wrapped lines.
-	// //  This process is very incomplete and does not take into consideration the possibility
-	// //  of a wrapped line at any position in the buffer.
-	// if int(math.Abs(float64(diff))) >= win.rows/2 && viewport[1] < ws.maxLine+2 {
-	// 	wrappedLines1 := win.rows - (viewport[1] - viewport[0] - 1)
-	// 	wrappedLines2 := win.rows - (oldViewport[1] - oldViewport[0] - 1)
-	// 	if diff < 0 {
-	// 		diff -= wrappedLines1
-	// 	} else if diff > 0 {
-	// 		diff += wrappedLines2
-	// 	}
-	// }
 
 	// smooth scroll feature disabled
 	if !editor.config.Editor.SmoothScroll {
@@ -1661,8 +1655,8 @@ func (ws *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 	}
 
 	// if If the maximum line is increased and there is content to be pasted into the maximum line
-	if (ws.maxLine == viewport[1]-1) && ws.maxLineDelta != 0 {
-		if diff != 0 {
+	if (ws.maxLine == vp[1]-1) && ws.maxLineDelta != 0 {
+		if delta != 0 {
 			win.doGetSnapshot = false
 		}
 	}
@@ -1674,9 +1668,8 @@ func (ws *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		win.doGetSnapshot = false
 	}
 
-	// // do not scroll smoothly when the maximum line is less than buffer rows,
-	// // and topline has not been changed
-	if ws.maxLine-ws.maxLineDelta < ws.rows && viewport[0] == oldViewport[0] {
+	// // do not scroll smoothly when the maximum line is less than buffer rows
+	if ws.maxLine-ws.maxLineDelta < ws.rows {
 		return nil, 0, false
 	}
 
@@ -1685,8 +1678,8 @@ func (ws *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
-	if diff != 0 {
-		win.scrollCols = int(math.Abs(float64(diff)))
+	if delta != 0 {
+		win.scrollCols = int(math.Abs(float64(delta)))
 	}
 
 	// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
@@ -1694,16 +1687,11 @@ func (ws *Workspace) handleViewport(vp [5]int) (*Window, int, bool) {
 		return nil, 0, false
 	}
 
-	// isGridGoto := viewport[4] != oldViewport[4]
-	// if isGridGoto {
-	// 	return win, diff, false
-	// }
-
-	if diff == 0 {
-		return win, diff, false
+	if delta == 0 {
+		return win, delta, false
 	}
 
-	return win, diff, true
+	return win, delta, true
 }
 
 func (ws *Workspace) scrollMinimap() {
