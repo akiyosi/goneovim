@@ -2217,15 +2217,17 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 	if scaled {
 		font := w.getFont()
 		ratio := (float64(font.lineHeight) / float64(font.height))
-		newHeight := int(math.Floor(w.devicePixelRatio * float64(font.lineHeight) * ratio))
-		newSpace := int(math.Ceil(float64(font.lineSpace) * ratio / 2.0))
-		yOffset = newSpace
-		image = image.Scaled2(
-			image.Width(),
-			newHeight,
-			core.Qt__IgnoreAspectRatio,
-			core.Qt__SmoothTransformation,
-		)
+		if ratio != 1.0 {
+			newHeight := int(math.Floor(w.devicePixelRatio * float64(font.lineHeight) * ratio))
+			newSpace := int(math.Ceil(float64(font.lineSpace) * ratio / 2.0))
+			yOffset = newSpace
+			image = image.Scaled2(
+				image.Width(),
+				newHeight,
+				core.Qt__IgnoreAspectRatio,
+				core.Qt__SmoothTransformation,
+			)
+		}
 	}
 
 	p.DrawImage9(
