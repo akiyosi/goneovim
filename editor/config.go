@@ -37,6 +37,7 @@ type editorConfig struct {
 	GinitVim                                string
 	WindowSeparatorTheme                    string
 	NvimInWsl                               string
+	WSLDist                                 string
 	ModeEnablingIME                         []string
 	IndentGuideIgnoreFtList                 []string
 	CharsScaledLineHeight                   []string
@@ -86,6 +87,7 @@ type editorConfig struct {
 	HideTitlebar                            bool
 	HideMouseWhenTyping                     bool
 	IgnoreSaveConfirmationWithCloseButton   bool
+	UseWSL                                  bool
 }
 
 type cursorConfig struct {
