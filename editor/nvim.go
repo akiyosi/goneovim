@@ -285,7 +285,6 @@ func initGui(neovim *nvim.Nvim) {
 	// autocmds that goneovim uses
 	gonvimAutoCmds := `
 	aug GoneovimCore | au! | aug END
-	au GoneovimCore BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", win_getid())
 	au GoneovimCore WinEnter,FileType * call rpcnotify(0, "Gui", "gonvim_winenter_filetype", &ft, win_getid())
 	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
 	aug Goneovim | au! | aug END

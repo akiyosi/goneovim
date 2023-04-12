@@ -115,6 +115,7 @@ type Window struct {
 	anchorCol              int
 	anchorRow              int
 	cwd                    string
+	winbar                 string
 	ft                     string
 	lenOldContent          []int
 	lenContent             []int
@@ -203,8 +204,21 @@ func (w *Window) dropScreenSnapshot() {
 	w.paintMutex.Unlock()
 }
 
-func (w *Window) grabScreenSnapshot(rectangle core.QRect_ITF) {
-	snapshot := w.Grab(rectangle)
+func (w *Window) grabScreenSnapshot() {
+	var rect *core.QRect
+	if w.getWinbar() != "" {
+		fullRect := w.Rect()
+		font := w.getFont()
+		rect = core.NewQRect4(
+			fullRect.X(),
+			fullRect.Y()+font.lineHeight,
+			fullRect.Width(),
+			fullRect.Height()-font.lineHeight,
+		)
+	} else {
+		rect = w.Rect()
+	}
+	snapshot := w.Grab(rect)
 	w.paintMutex.Lock()
 	w.snapshot.DestroyQPixmap()
 	w.snapshot = snapshot
@@ -265,7 +279,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	}
 
 	// Draw contents
-	for y := row; y < row+rows; y++ {
+	for y := row + rows; y >= row; y-- {
 		if y >= w.rows {
 			continue
 		}
@@ -352,6 +366,9 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 		snapshotPos = w.scrollPixels2 - height
 	} else if w.scrollPixels2 < 0 {
 		snapshotPos = height + w.scrollPixels2
+	}
+	if w.getWinbar() != "" {
+		snapshotPos += font.lineHeight
 	}
 	if w.scrollPixels2 != 0 {
 		p.DrawPixmap9(
@@ -990,6 +1007,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 			w.s.ws.nvim.InputMouse("wheel", action, mod, w.grid, row, col)
 		}
 	} else {
+		fmt.Println("hey")
 		verAmount := editor.config.Editor.LineToScroll * int(math.Abs(float64(vert)))
 		scrollUpKey := "<C-y>"
 		scrollDownKey := "<C-e>"
@@ -1041,7 +1059,7 @@ func (w *Window) applyTemporaryMousescroll(ms string) {
 	select {
 	case <-resultCh:
 		w.s.ws.mouseScrollTemp = ms
-	case <-time.After(80 * time.Millisecond):
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
 }
 
@@ -1060,7 +1078,7 @@ func (w *Window) focusGrid() {
 
 		select {
 		case <-done:
-		case <-time.After(80 * time.Millisecond):
+		case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 		}
 	}
 }
@@ -1143,9 +1161,13 @@ func (win *Window) smoothScroll(diff int) {
 		}
 		font := win.getFont()
 		win.scrollPixels2 = int(float64(diff) * v * float64(font.lineHeight))
+		y := 0
+		if win.getWinbar() != "" {
+			y = font.lineHeight
+		}
 		win.Update2(
 			0,
-			0,
+			y,
 			int(float64(win.cols)*font.cellwidth),
 			win.rows*font.lineHeight,
 		)
@@ -1153,7 +1175,7 @@ func (win *Window) smoothScroll(diff int) {
 			win.doErase = true
 			win.Update2(
 				0,
-				0,
+				y,
 				int(float64(win.cols)*font.cellwidth),
 				win.cols*font.lineHeight,
 			)
@@ -1162,7 +1184,7 @@ func (win *Window) smoothScroll(diff int) {
 
 			// get snapshot
 			if !editor.isKeyAutoRepeating && editor.config.Editor.SmoothScroll {
-				win.grabScreenSnapshot(win.Rect())
+				win.grabScreenSnapshot()
 			}
 		}
 	})
@@ -1791,6 +1813,11 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	if w.s.ws.mouseScroll != "" {
 		horScrollPixels += w.scrollPixels[0]
 	}
+	if w.getWinbar() != "" && y == 0 {
+		verScrollPixels = 0
+		horScrollPixels = 0
+		isDrawDefaultBg = true
+	}
 
 	// isDrawDefaultBg := true
 	// // Simply paint the color into a rectangle
@@ -1902,7 +1929,6 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 	if !isDrawDefaultBg && lastBg.equals(w.background) {
 		width = 0
 	}
-
 	if lastHighlight.isSignColumn() {
 		horScrollPixels = 0
 	}
@@ -2142,6 +2168,10 @@ func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight
 	}
 
 	if highlight.isSignColumn() {
+		horScrollPixels = 0
+	}
+	if w.getWinbar() != "" && y == 0 {
+		verScrollPixels = 0
 		horScrollPixels = 0
 	}
 
@@ -3243,6 +3273,14 @@ func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
 	}
 
 	return winx, winy
+}
+
+func (w *Window) getWinbar() string {
+	if w.winbar == "" {
+		return w.s.ws.winbar
+	}
+
+	return w.winbar
 }
 
 func (w *Window) layoutExternalWindow(x, y int) {

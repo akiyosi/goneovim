@@ -98,6 +98,7 @@ type Workspace struct {
 	pb                 int
 	ts                 int
 	ph                 int
+	winbar             string
 	optionsetMutex     sync.RWMutex
 	viewportMutex      sync.RWMutex
 	stopOnce           sync.Once
@@ -512,7 +513,7 @@ func (ws *Workspace) getMousescroll() {
 
 	select {
 	case ws.mouseScroll = <-msChan:
-	case <-time.After(80 * time.Millisecond):
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
 }
 
@@ -526,7 +527,7 @@ func (ws *Workspace) getColorscheme() {
 	select {
 	case colo := <-strChan:
 		ws.colorscheme = colo
-	case <-time.After(80 * time.Millisecond):
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
 }
 
@@ -540,11 +541,11 @@ func (ws *Workspace) getTS() {
 	select {
 	case ts := <-intChan:
 		ws.ts = ts
-	case <-time.After(80 * time.Millisecond):
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
 }
 
-func (ws *Workspace) getBuffTS(buf nvim.Buffer) int {
+func (ws *Workspace) buffTS(buf nvim.Buffer) int {
 	intChan := make(chan int, 5)
 	go func() {
 		ts := 8
@@ -555,7 +556,7 @@ func (ws *Workspace) getBuffTS(buf nvim.Buffer) int {
 	ts := 8
 	select {
 	case ts = <-intChan:
-	case <-time.After(80 * time.Millisecond):
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
 
 	return ts
@@ -572,7 +573,7 @@ func (ws *Workspace) getBG() {
 	select {
 	case screenbg := <-strChan:
 		ws.screenbg = screenbg
-	case <-time.After(80 * time.Millisecond):
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
 }
 
@@ -609,7 +610,7 @@ func (ws *Workspace) getKeymaps() {
 		case imappings := <-imapChan:
 			ws.insertMappings = imappings
 			ok[1] = true
-		case <-time.After(160 * time.Millisecond):
+		case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 			ok[0] = true
 			ok[1] = true
 		}
@@ -674,7 +675,7 @@ func (ws *Workspace) getNumOfTabs() int {
 	select {
 	case tn := <-done:
 		num = tn
-	case <-time.After(80 * time.Millisecond):
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
 
 	return num
@@ -689,7 +690,7 @@ func (ws *Workspace) getCwd() string {
 	}()
 	select {
 	case <-done:
-	case <-time.After(400 * time.Millisecond):
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
 
 	return cwd
@@ -705,7 +706,7 @@ func (ws *Workspace) nvimEval(s string) (interface{}, error) {
 	select {
 	case done := <-doneChannel:
 		return done, nil
-	case <-time.After(80 * time.Millisecond):
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 		err := errors.New("neovim busy")
 		return nil, err
 	}
@@ -1668,7 +1669,7 @@ func (ws *Workspace) handleViewport(vp [6]int) (*Window, int, bool) {
 
 	if win.doGetSnapshot {
 		if !editor.isKeyAutoRepeating {
-			win.grabScreenSnapshot(win.Rect())
+			win.grabScreenSnapshot()
 		}
 		win.doGetSnapshot = false
 	}
@@ -1892,22 +1893,20 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 			ws.minimap.mu.Unlock()
 		}
 	case "gonvim_optionset":
-		ws.optionSet(updates)
-	// case "gonvim_termenter":
-	// 	ws.terminalMode = true
-	// 	fmt.Println("t mode", ws.terminalMode)
-	// 	ws.cursor.update()
-	// case "gonvim_termleave":
-	// 	ws.terminalMode = false
-	// 	ws.cursor.update()
+		wid := (nvim.Window)(util.ReflectToInt(updates[4]))
+		optionName, ok := updates[1].(string)
+		if !ok {
+			return
+		}
+		ws.optionSet(optionName, wid)
 	case "gonvim_bufenter":
-		// ws.maxLine = util.ReflectToInt(updates[1])
-		// ws.setBuffname(updates[2], updates[3])
-		ws.setBuffTS(util.ReflectToInt(updates[1]))
 	case "gonvim_winenter_filetype":
 		// ws.setBuffname(updates[2], updates[3])
-		ws.setBuffTS(util.ReflectToInt(updates[2]))
-		ws.setFileType(updates)
+		wid := (nvim.Window)(util.ReflectToInt(updates[2]))
+		ws.getOpBuffTS(wid)
+		winbar := ws.getOpWinbar(nvim.LocalScope)
+		ws.screen.setWinbarForWin(wid, winbar)
+		ws.getFileType(updates)
 	case "gonvim_textchanged":
 		if editor.config.Editor.SmoothScroll {
 			ws := editor.workspaces[editor.active]
@@ -1932,7 +1931,7 @@ func (ws *Workspace) getSnapshot() {
 	if !ok {
 		return
 	}
-	win.grabScreenSnapshot(win.Rect())
+	win.grabScreenSnapshot()
 }
 
 func (ws *Workspace) setMousescrollUnit(ms string) {
@@ -2294,22 +2293,55 @@ func (ws *Workspace) setPumblend(arg interface{}) {
 // 	})
 // }
 
-func (ws *Workspace) setBuffTS(arg int) {
+func (ws *Workspace) getOpWinbar(scope nvim.OptionValueScope) string {
+	opt := make(map[string]nvim.OptionValueScope)
+	opt["scope"] = scope
+	var result interface{}
+	errChan := make(chan error, 10)
+	go func() {
+		err := ws.nvim.OptionValue("winbar", opt, &result)
+		errChan <- err
+	}()
+	var err error
+	select {
+	case err = <-errChan:
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
+	}
+	if err != nil {
+		return ""
+	}
+	if result == nil {
+		return ""
+	}
+
+	var winbar string
+	switch result.(type) {
+	case string:
+		winbar = result.(string)
+	default:
+		winbarI := util.ReflectToInt(result)
+		winbar = strconv.Itoa(winbarI)
+	}
+
+	return winbar
+}
+
+func (ws *Workspace) getOpBuffTS(wid nvim.Window) {
 	if !editor.config.Editor.IndentGuide {
 		return
 	}
 	bufChan := make(chan nvim.Buffer, 10)
 	var buf nvim.Buffer
-	wid := (nvim.Window)(arg)
+	// wid := (nvim.Window)(arg)
 	go func() {
 		resultBuffer, _ := ws.nvim.WindowBuffer(wid)
 		bufChan <- resultBuffer
 	}()
 	select {
 	case buf = <-bufChan:
-	case <-time.After(80 * time.Millisecond):
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
-	ws.windowsTs[wid] = ws.getBuffTS(buf)
+	ws.windowsTs[wid] = ws.buffTS(buf)
 
 	ws.screen.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
@@ -2330,10 +2362,12 @@ func (ws *Workspace) setBuffTS(arg int) {
 		win.updateMutex.RLock()
 		id := win.id
 		win.updateMutex.RUnlock()
-		if id == wid {
-			win.ts = ws.windowsTs[wid]
+		if id != wid {
 			return true
 		}
+		win.paintMutex.Lock()
+		win.ts = ws.windowsTs[wid]
+		win.paintMutex.Unlock()
 		// set buffer name
 		go func() {
 			resultBuffer, _ := ws.nvim.WindowBuffer(id)
@@ -2341,10 +2375,10 @@ func (ws *Workspace) setBuffTS(arg int) {
 		}()
 		select {
 		case buf = <-bufChan:
-		case <-time.After(80 * time.Millisecond):
+		case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 		}
 
-		win.ts = ws.getBuffTS(buf)
+		win.ts = ws.buffTS(buf)
 
 		return true
 	})
@@ -2352,19 +2386,23 @@ func (ws *Workspace) setBuffTS(arg int) {
 
 // optionSet is
 // This function gets the value of an option that cannot be caught by the set_option event.
-func (ws *Workspace) optionSet(updates []interface{}) {
-	optionName := updates[1]
-	wid := util.ReflectToInt(updates[4])
-	// new, err := strconv.Atoi(updates[2].(string))
-	// if err != nil {
-	// 	return
-	// }
+func (ws *Workspace) optionSet(optionName string, wid nvim.Window) {
+	// optionName := updates[1]
+	// wid := util.ReflectToInt(updates[4])
 
 	ws.optionsetMutex.Lock()
 	switch optionName {
 	case editor.config.Editor.OptionsToUseGuideWidth:
-		ws.setBuffTS(wid)
-
+		ws.getOpBuffTS(wid)
+	case "winbar":
+		ws.winbar = ws.getOpWinbar(nvim.GlobalScope)
+		fmt.Println("ws:", ws.winbar)
+		winbar := ""
+		if ws.winbar == "" {
+			winbar = ws.getOpWinbar(nvim.LocalScope)
+		}
+		fmt.Println("local:", winbar)
+		ws.screen.setWinbarForWin(wid, winbar)
 	}
 	ws.optionsetMutex.Unlock()
 }
@@ -2378,13 +2416,13 @@ func (ws *Workspace) optionSet(updates []interface{}) {
 // 	}()
 // 	select {
 // 	case <-errCh:
-// 	case <-time.After(80 * time.Millisecond):
+// 	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 // 	}
 //
 // 	ws.ph = ph
 // }
 
-func (ws *Workspace) setFileType(args []interface{}) {
+func (ws *Workspace) getFileType(args []interface{}) {
 	if !editor.config.Editor.IndentGuide {
 		return
 	}
@@ -2417,7 +2455,10 @@ func (ws *Workspace) setFileType(args []interface{}) {
 		if win.isMsgGrid {
 			return true
 		}
-		if win.id != wid {
+		win.updateMutex.RLock()
+		id := win.id
+		win.updateMutex.RUnlock()
+		if id != wid {
 			return true
 		}
 
