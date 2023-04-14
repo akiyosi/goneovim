@@ -30,7 +30,8 @@ var Version string
 var editor *Editor
 
 const (
-	WORKSPACELEN = 10
+	WORKSPACELEN    = 10
+	NVIMCALLTIMEOUT = 160
 )
 
 type editorSignal struct {
@@ -1116,7 +1117,7 @@ func (e *Editor) keyRelease(event *gui.QKeyEvent) {
 		if win.scrollPixels2 != 0 {
 			return
 		}
-		win.grabScreenSnapshot(win.Rect())
+		win.grabScreenSnapshot()
 	}
 
 	e.isKeyAutoRepeating = false

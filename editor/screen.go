@@ -1490,8 +1490,12 @@ func (s *Screen) windowPosition(args []interface{}) {
 			continue
 		}
 
+		// winbar := s.ws.getOpWinbar(nvim.LocalScope, id)
 		win.updateMutex.Lock()
 		win.id = id
+		// fmt.Println("win:", win.id, "grid:", win.grid, "winbar old:", win.winbar)
+		// win.winbar = winbar
+		// fmt.Println("win:", win.id, "grid:", win.grid, "winbar new:", win.winbar)
 		win.pos[0] = col
 		win.pos[1] = row
 		win.updateMutex.Unlock()
@@ -1777,4 +1781,33 @@ func isSkipGlobalId(id gridId) bool {
 	}
 
 	return false
+}
+
+func (s *Screen) setWinbarForWin(wid nvim.Window, winbar string) {
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
+		if win == nil {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+		if win.isMsgGrid {
+			return true
+		}
+		win.updateMutex.RLock()
+		id := win.id
+		win.updateMutex.RUnlock()
+
+		if id != wid {
+			return true
+		}
+
+		win.paintMutex.Lock()
+		win.winbar = winbar
+		win.paintMutex.Unlock()
+
+		return true
+	})
 }
