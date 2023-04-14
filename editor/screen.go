@@ -654,6 +654,9 @@ func (s *Screen) gridResize(args []interface{}) {
 		if !ok {
 			continue
 		}
+		if win.isFloatWin && !win.isMsgGrid {
+			win.setFloatWindowPosition()
+		}
 		win.move(win.pos[0], win.pos[1], win.anchorwin)
 		win.show()
 
@@ -1549,11 +1552,10 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		win.updateMutex.Lock()
 		win.id = arg.([]interface{})[1].(nvim.Window)
-		win.updateMutex.Unlock()
 		win.anchor = arg.([]interface{})[2].(string)
-		anchorGrid := util.ReflectToInt(arg.([]interface{})[3])
-		anchorRow := int(util.ReflectToFloat(arg.([]interface{})[4]))
-		anchorCol := int(util.ReflectToFloat(arg.([]interface{})[5]))
+		win.anchorGrid = util.ReflectToInt(arg.([]interface{})[3])
+		win.anchorCol = int(util.ReflectToFloat(arg.([]interface{})[5]))
+		win.anchorRow = int(util.ReflectToFloat(arg.([]interface{})[4]))
 		// focusable := (arg.([]interface{})[6]).(bool)
 
 		if len(arg.([]interface{})) >= 8 {
@@ -1562,11 +1564,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			globalOrder++
 		}
 
-		// fmt.Println("win_float_pos::", "grid:", win.grid, "anchorgrid:", anchorGrid, win.anchor, anchorCol, anchorRow, win.zindex.value)
-
-		editor.putLog("float window generated:", "anchorgrid", anchorGrid, "anchor", win.anchor, "anchorCol", anchorCol, "anchorRow", anchorRow)
-
-		win.propMutex.Lock()
+		editor.putLog("float window generated:", "anchorgrid", win.anchorGrid, "anchor", win.anchor, "anchorCol", win.anchorCol, "anchorRow", win.anchorRow)
 
 		shouldStackPerZIndex := !win.IsVisible()
 		if !win.isFloatWin {
@@ -1578,103 +1576,56 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			win.deleteExternalWin()
 			win.isExternal = false
 		}
-		win.propMutex.Unlock()
 
-		anchorwin, ok := s.getWindow(anchorGrid)
+		anchorwin, ok := s.getWindow(win.anchorGrid)
 		if !ok {
 			continue
 		}
 
 		win.anchorwin = anchorwin
 
-		// In multigrid ui, the completion float window on the message window seems to be misaligned.
-		// Therefore, a hack to workaround this problem is implemented on the GUI front-end side.
-		// This workaround assumes that the anchor window for the completion window on the message window is always a global grid.
-		pumInMsgWin := false
-		if editor.config.Editor.WorkAroundNeovimIssue12985 {
-			if anchorwin.grid == 1 && !(s.cursor[0] == 0 && s.cursor[1] == 0) && win.id == -1 {
-				cursorgridwin, ok := s.getWindow(s.ws.cursor.gridid)
-				if !ok {
-					continue
-				}
-				if cursorgridwin.isMsgGrid {
-					anchorwin = cursorgridwin
-					// No need to consider float window-on-float window because of message grid
-					anchorRow = cursorgridwin.pos[0]
-				}
-				pumInMsgWin = true
-			}
-		}
+		anchorwinIsExternal := win.anchorwin.isExternal
 
-		_, anchorposy := anchorwin.position()
-
-		anchorwin.propMutex.Lock()
-		anchorwinIsExternal := anchorwin.isExternal
-		anchorwin.propMutex.Unlock()
+		win.updateMutex.Unlock()
 
 		if anchorwinIsExternal {
 			win.SetParent(anchorwin)
-			anchorposy = 0
 		}
 
-		wincols := int(float64(win.cols) * win.getFont().cellwidth / anchorwin.getFont().cellwidth)
-		winrows := int(math.Ceil(float64(win.rows*win.getFont().lineHeight) / float64(anchorwin.getFont().lineHeight)))
+		win.setFloatWindowPosition()
+		// wincols := int(float64(win.cols) * win.getFont().cellwidth / anchorwin.getFont().cellwidth)
+		// winrows := int(math.Ceil(float64(win.rows*win.getFont().lineHeight) / float64(anchorwin.getFont().lineHeight)))
 
-		var col, row int
-		switch win.anchor {
-		case "NW":
-			col = anchorCol
-			row = anchorRow
-		case "NE":
-			col = anchorCol - wincols
-			row = anchorRow
-		case "SW":
-			col = anchorCol
+		// var col, row int
+		// switch win.anchor {
+		// case "NW":
+		// 	col = win.anchorCol
+		// 	row = win.anchorRow
+		// case "NE":
+		// 	col = win.anchorCol - wincols
+		// 	row = win.anchorRow
+		// case "SW":
+		// 	col = win.anchorCol
+		// 	row = win.anchorRow - winrows
 
-			if editor.config.Editor.WorkAroundNeovimIssue12985 {
-				// In multigrid ui, the completion float window position information is not correct.
-				// Therefore, we implement a hack to compensate for this.
-				// ref: src/nvim/popupmenu.c:L205-, L435-
-				if win.id == -1 && !pumInMsgWin {
-					yy := 0
-					contextLine := 0
-					if anchorwin.rows-s.cursor[0] >= 2 {
-						contextLine = 2
-					} else {
-						contextLine = anchorwin.rows - s.cursor[0]
-					}
-					if anchorposy+s.cursor[0] >= win.rows+contextLine {
-						yy = anchorRow + winrows
-					} else {
-						yy = -anchorposy
-					}
-					row = yy
-				} else {
-					row = anchorRow - winrows
-				}
-			} else {
-				row = anchorRow - winrows
-			}
+		// case "SE":
+		// 	col = win.anchorCol - win.cols
+		// 	row = win.anchorRow - win.rows
+		// }
 
-		case "SE":
-			col = anchorCol - win.cols
-			row = anchorRow - win.rows
-		}
+		// win.updateMutex.Lock()
+		// win.pos[0] = col
+		// win.pos[1] = row
+		// win.updateMutex.Unlock()
 
-		win.pos[0] = col
-		win.pos[1] = row
+		win.move(win.pos[0], win.pos[1], win.anchorwin)
 
-		win.move(col, row, anchorwin)
 		if shouldStackPerZIndex {
 			win.raise()
 		}
 
 		win.setShadow()
 		win.show()
-
-		// Fix an issue reported in https://github.com/akiyosi/goneovim/issues/39#issuecomment-999180208
-		// When there is a float window, mouse selection is cancelled by raising related widget.
-		// win.s.ws.cursor.raise()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
 		anchorwin.queueRedrawAll()

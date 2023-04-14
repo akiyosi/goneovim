@@ -80,7 +80,6 @@ type editorConfig struct {
 	BorderlessWindow                        bool
 	RestoreWindowGeometry                   bool
 	ExtCmdline                              bool
-	WorkAroundNeovimIssue12985              bool
 	NoFontMerge                             bool
 	WindowGeometryBasedOnFontmetrics        bool
 	IgnoreFirstMouseClickWhenAppInactivated bool
