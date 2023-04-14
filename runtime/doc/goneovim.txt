@@ -431,6 +431,14 @@ All Options are follows:
         ## This only works when connected to a remote nvim instance.
         ## Please check `:h clipboard` for clipboard integration in local nvim instances.
         # Clipboard = true
+
+        ## WSL Integration Options
+        ## If UseWSL is set to true, it will connect to nvim on WSL.
+        ## The behavior is the same as when --wslw is specified as an argument.
+        # UseWSL = false
+        ## WSLDist specifies the WSL distribution.
+        ## It is actually used as the value of the -d argument to the wsl startup command.
+        # WSLDist = ""
         
         ## This setting is equivalent to Macmeta in MacVim.
         # Macmeta = false

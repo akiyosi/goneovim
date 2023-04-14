@@ -2,6 +2,7 @@ package editor
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -94,23 +95,34 @@ func newMiniMap() *MiniMap {
 	return m
 }
 
-func (m *MiniMap) startMinimapProc() {
+func (m *MiniMap) startMinimapProc(ctx context.Context) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	var neovim *nvim.Nvim
 	var err error
 	minimapProcessArgs := nvim.ChildProcessArgs("-u", "NONE", "-n", "--embed", "--headless")
+	minimapProcessServe := nvim.ChildProcessServe(false)
+	minimapProcessContext := nvim.ChildProcessContext(ctx)
+
+	useWSL := editor.opts.Wsl != nil || editor.config.Editor.UseWSL
+	if runtime.GOOS != "windows" {
+		useWSL = false
+	}
+
 	if editor.opts.Nvim != "" {
 		// Attaching to /path/to/nvim
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
-		neovim, err = nvim.NewChildProcess(minimapProcessArgs, childProcessCmd)
+		neovim, err = nvim.NewChildProcess(minimapProcessArgs, childProcessCmd, minimapProcessServe, minimapProcessContext)
+	} else if useWSL {
+		// Attaching remote nvim via wsl
+		neovim, err = newWslProcess()
 	} else if editor.opts.Ssh != "" {
 		// Attaching remote nvim via ssh
 		neovim, err = newRemoteChildProcess()
 	} else {
 		// Attaching to nvim normally
-		neovim, err = nvim.NewChildProcess(minimapProcessArgs)
+		neovim, err = nvim.NewChildProcess(minimapProcessArgs, minimapProcessServe, minimapProcessContext)
 	}
 	if err != nil {
 		fmt.Println(err)

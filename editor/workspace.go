@@ -253,12 +253,14 @@ func (ws *Workspace) initUI() {
 func (ws *Workspace) lazyLoadUI() {
 	editor.putLog("Start    preparing for deferred drawing UI")
 
+	editor.putLog("preparing scrollbar")
 	// scrollbar
 	if editor.config.ScrollBar.Visible {
 		ws.scrollBar = newScrollBar()
 		ws.scrollBar.ws = ws
 	}
 
+	editor.putLog("preparing minimap")
 	// minimap
 	if !editor.config.MiniMap.Disable {
 		ws.minimap = newMiniMap()
@@ -266,17 +268,20 @@ func (ws *Workspace) lazyLoadUI() {
 		ws.layout2.AddWidget(ws.minimap.widget, 0, 0)
 	}
 
+	editor.putLog("preparing deferred drawing UI")
 	if editor.config.ScrollBar.Visible {
 		ws.layout2.AddWidget(ws.scrollBar.widget, 0, 0)
 		ws.scrollBar.setColor()
 	}
 
+	editor.putLog("preparing filer")
 	// Add editor feature
 	go filer.RegisterPlugin(ws.nvim, editor.config.Editor.FileOpenCmd)
 
+	editor.putLog("preparing minimap buffer")
 	// Asynchronously execute the process for minimap
 	if !editor.config.MiniMap.Disable {
-		ws.minimap.startMinimapProc()
+		ws.minimap.startMinimapProc(editor.ctx)
 		time.Sleep(time.Millisecond * 50)
 		ws.minimap.mu.Lock()
 		isMinimapVisible := ws.minimap.visible

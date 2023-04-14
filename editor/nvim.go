@@ -57,6 +57,11 @@ func startNvim(signal *workspaceSignal, ctx context.Context) (neovim *nvim.Nvim,
 	childProcessServe := nvim.ChildProcessServe(false)
 	childProcessContext := nvim.ChildProcessContext(ctx)
 
+	useWSL := editor.opts.Wsl != nil || editor.config.Editor.UseWSL
+	if runtime.GOOS != "windows" {
+		useWSL = false
+	}
+
 	if editor.opts.Server != "" {
 		// Attaching to remote nvim session
 		neovim, err = nvim.Dial(editor.opts.Server)
@@ -65,7 +70,7 @@ func startNvim(signal *workspaceSignal, ctx context.Context) (neovim *nvim.Nvim,
 		// Attaching to /path/to/nvim
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
 		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd, childProcessServe, childProcessContext)
-	} else if editor.opts.Wsl != nil {
+	} else if useWSL {
 		// Attaching remote nvim via wsl
 		uiRemoteAttached = true
 		neovim, err = newWslProcess()
@@ -198,6 +203,8 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 }
 
 func newWslProcess() (*nvim.Nvim, error) {
+	editor.putLog("Attaching nvim on wsl")
+
 	logf := log.Printf
 	command := "wsl"
 	ctx := context.Background()
@@ -217,8 +224,15 @@ func newWslProcess() (*nvim.Nvim, error) {
 		"-lc",
 		nvimargs,
 	}
-	if editor.opts.Wsl != nil && *editor.opts.Wsl != "" {
-		wslArgs = append([]string{"-d", *editor.opts.Wsl}, wslArgs...)
+	wslDist := ""
+	if editor.opts.Wsl != nil {
+		wslDist = *editor.opts.Wsl
+	}
+	if wslDist == "" {
+		wslDist = editor.config.Editor.WSLDist
+	}
+	if wslDist != "" {
+		wslArgs = append([]string{"-d", wslDist}, wslArgs...)
 	}
 
 	cmd := exec.CommandContext(
