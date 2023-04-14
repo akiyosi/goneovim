@@ -110,9 +110,12 @@ type Window struct {
 	background             *RGBA
 	s                      *Screen
 	anchorwin              *Window
+	anchor                 string
+	anchorGrid             int
+	anchorCol              int
+	anchorRow              int
 	cwd                    string
 	ft                     string
-	anchor                 string
 	lenOldContent          []int
 	lenContent             []int
 	scrollRegion           []int
@@ -3174,6 +3177,33 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 	}
 
 	w.Move2(x, y)
+}
+
+func (w *Window) setFloatWindowPosition() {
+	wincols := int(float64(w.cols) * w.getFont().cellwidth / w.anchorwin.getFont().cellwidth)
+	winrows := int(math.Ceil(float64(w.rows*w.getFont().lineHeight) / float64(w.anchorwin.getFont().lineHeight)))
+
+	var col, row int
+	switch w.anchor {
+	case "NW":
+		col = w.anchorCol
+		row = w.anchorRow
+	case "NE":
+		col = w.anchorCol - wincols
+		row = w.anchorRow
+	case "SW":
+		col = w.anchorCol
+		row = w.anchorRow - winrows
+
+	case "SE":
+		col = w.anchorCol - w.cols
+		row = w.anchorRow - w.rows
+	}
+
+	w.updateMutex.Lock()
+	w.pos[0] = col
+	w.pos[1] = row
+	w.updateMutex.Unlock()
 }
 
 func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
