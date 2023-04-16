@@ -1142,6 +1142,7 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	}
 
 	input := e.convertKey(event)
+
 	if event.IsAutoRepeat() {
 		e.isKeyAutoRepeating = true
 	}
@@ -1228,47 +1229,31 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	}
 
 	if mod&core.Qt__KeypadModifier > 0 {
-		switch core.Qt__Key(key) {
-		case core.Qt__Key_Home:
-			return fmt.Sprintf("<%skHome>", e.modPrefix(mod))
-		case core.Qt__Key_End:
-			return fmt.Sprintf("<%skEnd>", e.modPrefix(mod))
-		case core.Qt__Key_PageUp:
-			return fmt.Sprintf("<%skPageUp>", e.modPrefix(mod))
-		case core.Qt__Key_PageDown:
-			return fmt.Sprintf("<%skPageDown>", e.modPrefix(mod))
-		case core.Qt__Key_Plus:
-			return fmt.Sprintf("<%skPlus>", e.modPrefix(mod))
-		case core.Qt__Key_Minus:
-			return fmt.Sprintf("<%skMinus>", e.modPrefix(mod))
-		case core.Qt__Key_multiply:
-			return fmt.Sprintf("<%skMultiply>", e.modPrefix(mod))
-		case core.Qt__Key_division:
-			return fmt.Sprintf("<%skDivide>", e.modPrefix(mod))
-		case core.Qt__Key_Enter:
-			return fmt.Sprintf("<%skEnter>", e.modPrefix(mod))
-		case core.Qt__Key_Period:
-			return fmt.Sprintf("<%skPoint>", e.modPrefix(mod))
-		case core.Qt__Key_0:
-			return fmt.Sprintf("<%sk0>", e.modPrefix(mod))
-		case core.Qt__Key_1:
-			return fmt.Sprintf("<%sk1>", e.modPrefix(mod))
-		case core.Qt__Key_2:
-			return fmt.Sprintf("<%sk2>", e.modPrefix(mod))
-		case core.Qt__Key_3:
-			return fmt.Sprintf("<%sk3>", e.modPrefix(mod))
-		case core.Qt__Key_4:
-			return fmt.Sprintf("<%sk4>", e.modPrefix(mod))
-		case core.Qt__Key_5:
-			return fmt.Sprintf("<%sk5>", e.modPrefix(mod))
-		case core.Qt__Key_6:
-			return fmt.Sprintf("<%sk6>", e.modPrefix(mod))
-		case core.Qt__Key_7:
-			return fmt.Sprintf("<%sk7>", e.modPrefix(mod))
-		case core.Qt__Key_8:
-			return fmt.Sprintf("<%sk8>", e.modPrefix(mod))
-		case core.Qt__Key_9:
-			return fmt.Sprintf("<%sk9>", e.modPrefix(mod))
+		keypadKeys := map[core.Qt__Key]string{
+			core.Qt__Key_Home:     "kHome",
+			core.Qt__Key_End:      "kEnd",
+			core.Qt__Key_PageUp:   "kPageUp",
+			core.Qt__Key_PageDown: "kPageDown",
+			core.Qt__Key_Plus:     "kPlus",
+			core.Qt__Key_Minus:    "kMinus",
+			core.Qt__Key_multiply: "kMultiply",
+			core.Qt__Key_division: "kDivide",
+			core.Qt__Key_Enter:    "kEnter",
+			core.Qt__Key_Period:   "kPoint",
+			core.Qt__Key_0:        "k0",
+			core.Qt__Key_1:        "k1",
+			core.Qt__Key_2:        "k2",
+			core.Qt__Key_3:        "k3",
+			core.Qt__Key_4:        "k4",
+			core.Qt__Key_5:        "k5",
+			core.Qt__Key_6:        "k6",
+			core.Qt__Key_7:        "k7",
+			core.Qt__Key_8:        "k8",
+			core.Qt__Key_9:        "k9",
+		}
+
+		if value, ok := keypadKeys[core.Qt__Key(key)]; ok {
+			return fmt.Sprintf("<%s%s>", e.modPrefix(mod), value)
 		}
 	}
 
