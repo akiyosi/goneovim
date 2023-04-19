@@ -169,7 +169,6 @@ type Window struct {
 	isMsgGrid              bool
 	isGridDirty            bool
 	doGetSnapshot          bool
-	t                      time.Duration
 }
 
 type localWindow struct {
@@ -243,7 +242,7 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	// clip rect
 	rect := event.Rect()
-	p.SetClipRect2(rect, core.Qt__ReplaceClip)
+	// p.SetClipRect2(rect, core.Qt__ReplaceClip)
 
 	// Erase the snapshot used in the animation scroll
 	if w.doErase {
@@ -343,6 +342,10 @@ func (w *Window) adjustSmoothScrollAmount() {
 	}
 	if dy >= verticalScrollAmount {
 		w.scrollPixels[1] = 0
+	}
+
+	if w.lastScrollphase == core.Qt__NoScrollPhase {
+		w.lastScrollphase = core.Qt__ScrollEnd
 	}
 }
 
@@ -1011,7 +1014,6 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 			w.s.ws.nvim.InputMouse("wheel", action, mod, w.grid, row, col)
 		}
 	} else {
-		fmt.Println("hey")
 		verAmount := editor.config.Editor.LineToScroll * int(math.Abs(float64(vert)))
 		scrollUpKey := "<C-y>"
 		scrollDownKey := "<C-e>"
