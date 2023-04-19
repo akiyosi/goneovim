@@ -750,24 +750,13 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		win.SetParent(s.widget)
 
 		win.grid = gridid
-		win.s.ws.optionsetMutex.RLock()
-		ts := s.ws.ts
-		win.s.ws.optionsetMutex.RUnlock()
-		win.paintMutex.RLock()
-		win.ts = ts
-		win.paintMutex.RUnlock()
 
 		// set scroll
 		if s.name != "minimap" {
 			win.ConnectWheelEvent(win.wheelEvent)
 		}
 
-		// // first cursor pos at startup app
-		// if gridid == 1 && s.name != "minimap" {
-		// 	s.ws.cursor.widget.SetParent(win)
-		// }
 		s.ws.cursor.raise()
-
 	}
 
 	win.redrawMutex.Lock()
@@ -1494,12 +1483,10 @@ func (s *Screen) windowPosition(args []interface{}) {
 		// winbar := s.ws.getOpWinbar(nvim.LocalScope, id)
 		win.updateMutex.Lock()
 		win.id = id
-		// fmt.Println("win:", win.id, "grid:", win.grid, "winbar old:", win.winbar)
-		// win.winbar = winbar
-		// fmt.Println("win:", win.id, "grid:", win.grid, "winbar new:", win.winbar)
-		win.pos[0] = col
-		win.pos[1] = row
+		win.pos = [2]int{col, row}
+		win.setOptions()
 		win.updateMutex.Unlock()
+
 		win.move(col, row)
 		win.show()
 	}
@@ -1784,7 +1771,7 @@ func isSkipGlobalId(id gridId) bool {
 	return false
 }
 
-func (s *Screen) setWinbarForWin(wid nvim.Window, winbar string) {
+func (s *Screen) setOptionForGrid(wid nvim.Window, option string, valueITF interface{}) {
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 
@@ -1797,6 +1784,7 @@ func (s *Screen) setWinbarForWin(wid nvim.Window, winbar string) {
 		if win.isMsgGrid {
 			return true
 		}
+
 		win.updateMutex.RLock()
 		id := win.id
 		win.updateMutex.RUnlock()
@@ -1806,7 +1794,19 @@ func (s *Screen) setWinbarForWin(wid nvim.Window, winbar string) {
 		}
 
 		win.paintMutex.Lock()
-		win.winbar = winbar
+		switch option {
+		case editor.config.Editor.OptionsToUseGuideWidth:
+			value := util.ReflectToInt(valueITF)
+			win.ts = value
+		case "winbar":
+			value, ok := valueITF.(string)
+			if !ok {
+				return true
+			}
+			win.winbar = value
+		default:
+		}
+
 		win.paintMutex.Unlock()
 
 		return true
