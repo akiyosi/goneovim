@@ -394,19 +394,6 @@ func (w *Window) getFont() *Font {
 	return w.font
 }
 
-func (w *Window) getTS() int {
-	var ts int
-	var ok bool
-	if w.id != 0 {
-		ts, ok = w.s.ws.windowsTs[w.id]
-		if ok {
-			return ts
-		}
-	}
-
-	return w.ts
-}
-
 func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 	if w == nil {
 		return
@@ -421,21 +408,21 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 		return
 	}
 	if w.ft == "" {
-		w.s.ws.optionsetMutex.Lock()
-		w.ft = w.s.ws.windowsFt[w.id]
-		w.s.ws.optionsetMutex.Unlock()
-	}
-	if w.ft == "" {
 		return
+	}
+	for _, v := range editor.config.Editor.IndentGuideIgnoreFtList {
+		if v == w.ft {
+			return
+		}
 	}
 	if !w.isShown() {
 		return
 	}
-
-	ts := w.getTS()
-	if ts <= 0 {
+	if w.ts == 0 {
 		return
 	}
+
+	ts := w.ts
 
 	headspaceOfRows := make(map[int]int)
 	for y := row; y < rows; y++ {
@@ -1071,22 +1058,6 @@ func (w *Window) applyTemporaryMousescroll(ms string) {
 
 func (w *Window) isEventEmmitOnCursorGrid() bool {
 	return w.grid == w.s.ws.cursor.gridid
-}
-
-func (w *Window) focusGrid() {
-	// If the window at the mouse pointer is not the current window
-	if w.grid != w.s.ws.cursor.gridid {
-		done := make(chan bool, 2)
-		go func() {
-			_ = w.s.ws.nvim.SetCurrentWindow(w.id)
-			done <- true
-		}()
-
-		select {
-		case <-done:
-		case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
-		}
-	}
 }
 
 // screen smooth update with touchpad
@@ -3082,6 +3053,22 @@ func (w *Window) dropEvent(e *gui.QDropEvent) {
 	}
 }
 
+func (w *Window) focusGrid() {
+	// If the window at the mouse pointer is not the current window
+	if w.grid != w.s.ws.cursor.gridid {
+		done := make(chan bool, 2)
+		go func() {
+			_ = w.s.ws.nvim.SetCurrentWindow(w.id)
+			done <- true
+		}()
+
+		select {
+		case <-done:
+		case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
+		}
+	}
+}
+
 func (w *Window) isShown() bool {
 	if w == nil {
 		return false
@@ -3357,9 +3344,27 @@ func (w *Window) setFloatWindowPosition() {
 	}
 
 	w.updateMutex.Lock()
-	w.pos[0] = col
-	w.pos[1] = row
+	w.pos = [2]int{col, row}
 	w.updateMutex.Unlock()
+}
+
+func (w *Window) setOptions() {
+	if w.s == nil || w.s.ws == nil {
+		return
+	}
+
+	// get tabstop
+	w.ts = util.ReflectToInt(w.s.ws.getBufferOption("ts", w.id))
+
+	// get filetype
+	ftITF := w.s.ws.getBufferOption("ft", w.id)
+	ft, ok := ftITF.(string)
+	if ok {
+		w.ft = ft
+	}
+
+	// get winbar
+	w.winbar = w.s.ws.getWindowOption("winbar", "local", w.id)
 }
 
 func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
