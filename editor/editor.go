@@ -17,7 +17,6 @@ import (
 
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
-	clipb "github.com/atotto/clipboard"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
@@ -294,30 +293,8 @@ func InitEditor(options Options, args []string) {
 	go e.exitEditor(cancel)
 
 	e.addDockMenu()
-	e.setupClipboardForDarwin(e.ctx)
 
 	widgets.QApplication_Exec()
-}
-
-func (e *Editor) setupClipboardForDarwin(ctx context.Context) {
-	if runtime.GOOS != "darwin" {
-		return
-	}
-	if !e.config.Editor.Clipboard {
-		return
-	}
-
-	go func(c context.Context) {
-		for {
-			select {
-			case <-c.Done():
-				return
-			default:
-				text := <-e.cbChan
-				e.app.Clipboard().SetText(*text, gui.QClipboard__Clipboard)
-			}
-		}
-	}(ctx)
 }
 
 func (e *Editor) initAppWindow() bool {
@@ -495,7 +472,7 @@ func (e *Editor) setDebuglog() (file *os.File) {
 	return
 }
 
-func (e *Editor) initWorkspaces(ctx context.Context, signal *workspaceSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}, nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bool, isSetWindowState bool) {
+func (e *Editor) initWorkspaces(ctx context.Context, signal *neovimSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}, nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bool, isSetWindowState bool) {
 	e.workspaces = []*Workspace{}
 
 	// ws := newWorkspace()
@@ -1020,19 +997,6 @@ func (e *Editor) setWindowLayout() {
 func isFileExist(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
-}
-
-func (e *Editor) copyClipBoard() {
-	var yankedText string
-	yankedText, _ = e.workspaces[e.active].nvim.CommandOutput("echo getreg()")
-	if yankedText != "" {
-		if runtime.GOOS != "darwin" {
-			clipb.WriteAll(yankedText)
-		} else {
-			e.cbChan <- &yankedText
-		}
-	}
-
 }
 
 func (e *Editor) workspaceAdd() {

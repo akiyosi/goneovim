@@ -7,14 +7,18 @@ import (
 	"net"
 	"os/exec"
 	"runtime"
+	"strings"
+	"time"
 
 	"github.com/akiyosi/goneovim/util"
+	"github.com/atotto/clipboard"
 	"github.com/neovim/go-client/nvim"
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 )
 
-func newNvim(cols, rows int, ctx context.Context) (signal *workspaceSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}, nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bool, errCh chan error) {
-	signal = NewWorkspaceSignal(nil)
+func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}, nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bool, errCh chan error) {
+	signal = NewNeovimSignal(nil)
 	redrawUpdates = make(chan [][]interface{}, 1000)
 	guiUpdates = make(chan []interface{}, 1000)
 	nvimCh = make(chan *nvim.Nvim, 2)
@@ -35,6 +39,7 @@ func newNvim(cols, rows int, ctx context.Context) (signal *workspaceSignal, redr
 		initGui(neovim)
 		registerHandler(neovim, signal, redrawUpdates, guiUpdates)
 		attachUI(neovim, cols, rows)
+		setVar(neovim)
 
 		nvimCh <- neovim
 		uiRemoteAttachedCh <- uiRemoteAttached
@@ -46,7 +51,7 @@ func newNvim(cols, rows int, ctx context.Context) (signal *workspaceSignal, redr
 	return
 }
 
-func startNvim(signal *workspaceSignal, ctx context.Context) (neovim *nvim.Nvim, uiRemoteAttached bool, err error) {
+func startNvim(signal *neovimSignal, ctx context.Context) (neovim *nvim.Nvim, uiRemoteAttached bool, err error) {
 	editor.putLog("starting nvim")
 
 	option := []string{
@@ -72,8 +77,11 @@ func startNvim(signal *workspaceSignal, ctx context.Context) (neovim *nvim.Nvim,
 
 	if editor.opts.Server != "" {
 		// Attaching to remote nvim session
-		neovim, err = nvim.Dial(editor.opts.Server)
+		dialServe := nvim.DialServe(false)
+		dialContext := nvim.DialContext(ctx)
+		neovim, err = nvim.Dial(editor.opts.Server, dialServe, dialContext)
 		uiRemoteAttached = true
+
 	} else if editor.opts.Nvim != "" {
 		// Attaching to /path/to/nvim
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
@@ -120,7 +128,93 @@ func startNvim(signal *workspaceSignal, ctx context.Context) (neovim *nvim.Nvim,
 	return neovim, uiRemoteAttached, nil
 }
 
-func registerHandler(neovim *nvim.Nvim, signal *workspaceSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}) {
+func registerHandler(neovim *nvim.Nvim, signal *neovimSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}) {
+	handleRequest(neovim)
+	handleNotification(neovim, signal, redrawUpdates, guiUpdates)
+}
+
+func handleRequest(neovim *nvim.Nvim) {
+	neovim.RegisterHandler("goneovim.set_clipboard", func(args interface{}) {
+		if !editor.isUiPrepared {
+			select {
+			case <-editor.chUiPrepared:
+				editor.isUiPrepared = true
+			}
+		}
+
+		editor.putLog("goneovim.set_clipboard:: start")
+
+		var endline string
+		if runtime.GOOS == "windows" {
+			endline = "\r\n"
+		} else {
+			endline = "\n"
+		}
+
+		newlines := []string{}
+		for _, line := range args.([]interface{}) {
+			newlines = append(newlines, strings.Replace(line.(string), "\r", "", -1))
+		}
+		str := strings.Join(newlines, endline)
+		editor.putLog("goneovim.set_clipboard:: copy text is:", str)
+		if runtime.GOOS == "darwin" {
+			editor.app.Clipboard().SetText(str, gui.QClipboard__Clipboard)
+		} else {
+			clipboard.WriteAll(str)
+		}
+		editor.putLog("goneovim.set_clipboard:: finished")
+	})
+
+	neovim.RegisterHandler("goneovim.get_clipboard", func(args interface{}) ([]interface{}, error) {
+		if !editor.isUiPrepared {
+			select {
+			case <-editor.chUiPrepared:
+				editor.isUiPrepared = true
+			}
+		}
+
+		text := editor.app.Clipboard().Text(gui.QClipboard__Clipboard)
+
+		str := strings.Replace(text, "\r", "", -1)
+		isLinePaste := strings.HasSuffix(str, "\n")
+		var regType string
+		if isLinePaste {
+			regType = "V"
+		} else {
+			regType = "v"
+		}
+
+		c := make(chan string, 10)
+		go func() {
+			ff, _ := neovim.CommandOutput("echo &ff")
+			c <- ff
+		}()
+		var endLine string
+		select {
+		case endLine = <-c:
+		case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
+		}
+
+		var s string
+		if endLine == "dos" {
+			s = strings.Replace(str, "\n", "\r\n", -1)
+		} else {
+			s = str
+		}
+
+		lines := strings.Split(s, "\n")
+		linesITF := make([]interface{}, len(lines))
+		for i, line := range lines {
+			var lineITF interface{}
+			lineITF = line
+			linesITF[i] = lineITF
+		}
+
+		return []interface{}{linesITF, regType}, nil
+	})
+}
+
+func handleNotification(neovim *nvim.Nvim, signal *neovimSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}) {
 	neovim.RegisterHandler("redraw", func(updates ...[]interface{}) {
 		if !editor.isUiPrepared {
 			select {
@@ -145,17 +239,6 @@ func registerHandler(neovim *nvim.Nvim, signal *workspaceSignal, redrawUpdates c
 		signal.GuiSignal()
 	})
 }
-
-//  nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-//  	w.redrawUpdates <- updates
-//  	w.signal.RedrawSignal()
-//  })
-
-//  w.updateSize()
-//  editor.putLog("updating size of UI components")
-
-//  return nil
-// }
 
 func newRemoteChildProcess() (*nvim.Nvim, error) {
 	logf := log.Printf
@@ -276,17 +359,71 @@ func newWslProcess() (*nvim.Nvim, error) {
 	return v, nil
 }
 
-func attachUI(neovim *nvim.Nvim, cols, rows int) (err error) {
+func attachUI(neovim *nvim.Nvim, cols, rows int) error {
 	editor.putLog("attaching UI")
 
-	err = neovim.AttachUI(cols, rows, attachUIOption(neovim))
+	_, o := attachUIOption(neovim)
+	err := neovim.AttachUI(cols, rows, o)
 	if err != nil {
-		return
+		return err
 	}
 
 	editor.putLog("done attaching UI")
 
-	return
+	return nil
+}
+
+func attachUIOption(nvim *nvim.Nvim) (int, map[string]interface{}) {
+	o := make(map[string]interface{})
+	o["rgb"] = true
+	o["ext_multigrid"] = true
+	o["ext_hlstate"] = true
+
+	apiInfo, err := nvim.APIInfo()
+	var channel int
+	var item interface{}
+	if err == nil {
+		for channel, item = range apiInfo {
+			i, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			for k, v := range i {
+				if k != "ui_events" {
+					continue
+				}
+				events, ok := v.([]interface{})
+				if !ok {
+					continue
+				}
+				for _, event := range events {
+					function, ok := event.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					name, ok := function["name"]
+					if !ok {
+						continue
+					}
+
+					switch name {
+					// case "wildmenu_show" :
+					// 	o["ext_wildmenu"] = editor.config.Editor.ExtCmdline
+					case "cmdline_show":
+						o["ext_cmdline"] = editor.config.Editor.ExtCmdline
+					case "msg_show":
+						o["ext_messages"] = editor.config.Editor.ExtMessages
+					case "popupmenu_show":
+						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
+					case "tabline_update":
+						o["ext_tabline"] = editor.config.Editor.ExtTabline
+					}
+				}
+			}
+		}
+	}
+
+	return channel, o
 }
 
 func initGui(neovim *nvim.Nvim) {
@@ -305,15 +442,9 @@ func initGui(neovim *nvim.Nvim) {
 		au Goneovim ColorScheme * call rpcnotify(0, "Gui", "gonvim_colorscheme")
 		`
 	}
-
-	if editor.config.Editor.Clipboard {
-		gonvimAutoCmds = gonvimAutoCmds + `
-	au GoneovimCore TextYankPost * call rpcnotify(0, "Gui", "gonvim_copy_clipboard")
-	`
-	}
 	if editor.config.Statusline.Visible {
 		gonvimAutoCmds = gonvimAutoCmds + `
-	au Goneovim BufEnter,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat, &ro)
+		au Goneovim BufEnter,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat, &ro)
 	`
 	}
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
@@ -328,7 +459,7 @@ func initGui(neovim *nvim.Nvim) {
 	if editor.opts.Server == "" {
 		if !editor.config.MiniMap.Disable {
 			gonvimCommands = gonvimCommands + `
-		command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
+			command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
 		`
 		}
 		gonvimCommands = gonvimCommands + `
@@ -339,18 +470,18 @@ func initGui(neovim *nvim.Nvim) {
 		`
 	}
 	gonvimCommands = gonvimCommands + `
-		command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
-		command! -nargs=1 GonvimLetterSpacing call rpcnotify(0, "Gui", "gonvim_letter_spacing", <args>)
-		command! -nargs=1 GuiMacmeta call rpcnotify(0, "Gui", "gonvim_macmeta", <args>)
-		command! -nargs=? GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize", <args>)
-		command! -nargs=? GonvimFullscreen call rpcnotify(0, "Gui", "gonvim_fullscreen", <args>)
-		command! -nargs=+ GonvimWinpos call rpcnotify(0, "Gui", "gonvim_winpos", <f-args>)
-		command! GonvimToggleHorizontalScroll call rpcnotify(0, "Gui", "gonvim_toggle_horizontal_scroll")
-		command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
-		command! GonvimSmoothScroll call rpcnotify(0, "Gui", "gonvim_smoothscroll")
-		command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
-		command! GonvimIndentguide call rpcnotify(0, "Gui", "gonvim_indentguide")
-		command! -nargs=? GonvimMousescrollUnit call rpcnotify(0, "Gui", "gonvim_mousescroll_unit", <args>)
+	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
+	command! -nargs=1 GonvimLetterSpacing call rpcnotify(0, "Gui", "gonvim_letter_spacing", <args>)
+	command! -nargs=1 GuiMacmeta call rpcnotify(0, "Gui", "gonvim_macmeta", <args>)
+	command! -nargs=? GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize", <args>)
+	command! -nargs=? GonvimFullscreen call rpcnotify(0, "Gui", "gonvim_fullscreen", <args>)
+	command! -nargs=+ GonvimWinpos call rpcnotify(0, "Gui", "gonvim_winpos", <f-args>)
+	command! GonvimToggleHorizontalScroll call rpcnotify(0, "Gui", "gonvim_toggle_horizontal_scroll")
+	command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
+	command! GonvimSmoothScroll call rpcnotify(0, "Gui", "gonvim_smoothscroll")
+	command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
+	command! GonvimIndentguide call rpcnotify(0, "Gui", "gonvim_indentguide")
+	command! -nargs=? GonvimMousescrollUnit call rpcnotify(0, "Gui", "gonvim_mousescroll_unit", <args>)
 	`
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	neovim.Command(registerScripts)
@@ -362,6 +493,44 @@ func initGui(neovim *nvim.Nvim) {
 		initialNotify := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimInitNotify))
 		neovim.Command(initialNotify)
 	}
+
+	code := `
+    local function set_clipboard(register)
+        return function(lines, regtype)
+            vim.rpcrequest(vim.g.goneovim_channel_id, 'goneovim.set_clipboard', lines)
+        end
+    end
+
+    local function get_clipboard(register)
+        return function()
+            return vim.rpcrequest(vim.g.goneovim_channel_id, 'goneovim.get_clipboard', register)
+        end
+    end
+
+    vim.g.clipboard = {
+        name = 'goneovim',
+        copy = {
+            ['+'] = set_clipboard('+'),
+            ['*'] = set_clipboard('*'),
+        },
+        paste = {
+            ['+'] = get_clipboard('+'),
+            ['*'] = get_clipboard('*'),
+        },
+        cache_enabled = 0
+    }`
+	var result, args interface{}
+	if editor.config.Editor.Clipboard {
+		neovim.ExecLua(
+			code,
+			&result,
+			args,
+		)
+	}
+}
+
+func setVar(neovim *nvim.Nvim) {
+	go neovim.SetVar("goneovim_channel_id", neovim.ChannelID())
 }
 
 func source(neovim *nvim.Nvim, file string) {
