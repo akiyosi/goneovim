@@ -13,17 +13,25 @@ import (
 	"github.com/therecipe/qt/core"
 )
 
-func newNvim(cols, rows int, ctx context.Context) (signal *workspaceSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}, nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bool) {
+func newNvim(cols, rows int, ctx context.Context) (signal *workspaceSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}, nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bool, errCh chan error) {
 	signal = NewWorkspaceSignal(nil)
 	redrawUpdates = make(chan [][]interface{}, 1000)
 	guiUpdates = make(chan []interface{}, 1000)
 	nvimCh = make(chan *nvim.Nvim, 2)
 	uiRemoteAttachedCh = make(chan bool, 2)
+	errCh = make(chan error, 2)
 	var neovim *nvim.Nvim
 	// var uiAttached, uiRemoteAttached bool
 	var uiRemoteAttached bool
+	var err error
 	go func() {
-		neovim, uiRemoteAttached, _ = startNvim(signal, ctx)
+		neovim, uiRemoteAttached, err = startNvim(signal, ctx)
+		if err != nil {
+			errCh <- err
+			return
+		} else {
+			errCh <- nil
+		}
 		initGui(neovim)
 		registerHandler(neovim, signal, redrawUpdates, guiUpdates)
 		attachUI(neovim, cols, rows)

@@ -242,7 +242,7 @@ func InitEditor(options Options, args []string) {
 	e.putLog("finished generating the application")
 
 	// new nvim instance
-	signal, redrawUpdates, guiUpdates, nvimCh, uiRCh := newNvim(100, 10, e.ctx)
+	signal, redrawUpdates, guiUpdates, nvimCh, uiRCh, errCh := newNvim(100, 10, e.ctx)
 
 	// e.setAppDirPath(home)
 
@@ -279,6 +279,13 @@ func InitEditor(options Options, args []string) {
 
 	e.font = <-fontGenAsync
 	// neovim workspaces
+
+	nvimErr := <-errCh
+	if nvimErr != nil {
+		fmt.Println(nvimErr)
+		os.Exit(1)
+	}
+
 	e.initWorkspaces(e.ctx, signal, redrawUpdates, guiUpdates, nvimCh, uiRCh, isSetWindowState)
 
 	e.connectAppSignals()
@@ -527,7 +534,7 @@ func (e *Editor) initWorkspaces(ctx context.Context, signal *workspaceSignal, re
 		isLazyBind := true
 		if i > 0 {
 			isLazyBind = false
-			signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh = newNvim(ws.cols, ws.rows, ctx)
+			signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh, _ = newNvim(ws.cols, ws.rows, ctx)
 		}
 
 		ws.registerSignal(signal, redrawUpdates, guiUpdates)
@@ -1037,7 +1044,7 @@ func (e *Editor) workspaceAdd() {
 	ws := newWorkspace()
 	ws.initUI()
 	ws.updateSize()
-	signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh := newNvim(ws.cols, ws.rows, e.ctx)
+	signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh, _ := newNvim(ws.cols, ws.rows, e.ctx)
 	ws.registerSignal(signal, redrawUpdates, guiUpdates)
 	go ws.bindNvim(nvimCh, uiRemoteAttachedCh, false, false, "")
 

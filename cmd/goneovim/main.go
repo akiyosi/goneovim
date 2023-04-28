@@ -55,7 +55,7 @@ func main() {
 			pid,
 		) {
 			fmt.Println("Unable to fork into background")
-			os.Exit(-1)
+			os.Exit(1)
 		}
 	}
 }
