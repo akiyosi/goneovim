@@ -21,7 +21,7 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
-type workspaceSignal struct {
+type neovimSignal struct {
 	core.QObject
 
 	_ func() `signal:"stopSignal"`
@@ -63,7 +63,7 @@ type Workspace struct {
 	minimap            *MiniMap
 	guiUpdates         chan []interface{}
 	redrawUpdates      chan [][]interface{}
-	signal             *workspaceSignal
+	signal             *neovimSignal
 	nvim               *nvim.Nvim
 	widget             *widgets.QWidget
 	special            *RGBA
@@ -319,7 +319,7 @@ func (ws *Workspace) initLazyLoadUI() {
 	}()
 }
 
-func (ws *Workspace) registerSignal(signal *workspaceSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}) {
+func (ws *Workspace) registerSignal(signal *neovimSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}) {
 	ws.signal = signal
 	ws.redrawUpdates = redrawUpdates
 	ws.guiUpdates = guiUpdates
@@ -763,58 +763,6 @@ func (ws *Workspace) setCwdInWin(cwd string) {
 	})
 }
 
-func attachUIOption(nvim *nvim.Nvim) map[string]interface{} {
-	o := make(map[string]interface{})
-	o["rgb"] = true
-	// o["ext_multigrid"] = editor.config.Editor.ExtMultigrid
-	o["ext_multigrid"] = true
-	o["ext_hlstate"] = true
-
-	apiInfo, err := nvim.APIInfo()
-	if err == nil {
-		for _, item := range apiInfo {
-			i, ok := item.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			for k, v := range i {
-				if k != "ui_events" {
-					continue
-				}
-				events, ok := v.([]interface{})
-				if !ok {
-					continue
-				}
-				for _, event := range events {
-					function, ok := event.(map[string]interface{})
-					if !ok {
-						continue
-					}
-					name, ok := function["name"]
-					if !ok {
-						continue
-					}
-
-					switch name {
-					// case "wildmenu_show" :
-					// 	o["ext_wildmenu"] = editor.config.Editor.ExtCmdline
-					case "cmdline_show":
-						o["ext_cmdline"] = editor.config.Editor.ExtCmdline
-					case "msg_show":
-						o["ext_messages"] = editor.config.Editor.ExtMessages
-					case "popupmenu_show":
-						o["ext_popupmenu"] = editor.config.Editor.ExtPopupmenu
-					case "tabline_update":
-						o["ext_tabline"] = editor.config.Editor.ExtTabline
-					}
-				}
-			}
-		}
-	}
-
-	return o
-}
-
 func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	e := editor
 
@@ -1251,9 +1199,7 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 		case "msg_ruler":
 		case "msg_history_show":
 			ws.message.msgHistoryShow(args)
-
 		default:
-
 		}
 		editor.putLog("finished", event)
 	}
@@ -1818,11 +1764,6 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 		}
 		win.dropScreenSnapshot()
 
-	case "gonvim_copy_clipboard":
-		if !ws.uiRemoteAttached {
-			return
-		}
-		go editor.copyClipBoard()
 	case "gonvim_workspace_new":
 		editor.workspaceAdd()
 	case "gonvim_workspace_next":
