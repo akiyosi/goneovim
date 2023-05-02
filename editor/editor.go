@@ -96,60 +96,60 @@ type Options struct {
 
 // Editor is the editor
 type Editor struct {
-	stop                    chan int
-	signal                  *editorSignal
-	ctx                     context.Context
-	app                     *widgets.QApplication
-	widget                  *widgets.QWidget
-	splitter                *widgets.QSplitter
-	window                  *frameless.QFramelessWindow
-	specialKeys             map[core.Qt__Key]string
-	svgs                    map[string]*SvgXML
-	notifyStartPos          *core.QPoint
-	colors                  *ColorPalette
-	notify                  chan *Notify
-	cbChan                  chan *string
-	chUiPrepared            chan bool
-	sysTray                 *widgets.QSystemTrayIcon
-	side                    *WorkspaceSide
-	savedGeometry           *core.QByteArray
-	prefixToMapMetaKey      string
-	macAppArg               string
-	extFontFamily           string
-	configDir               string
-	homeDir                 string
-	version                 string
-	config                  gonvimConfig
-	opts                    Options
-	font                    *Font
-	notifications           []*Notification
-	workspaces              []*Workspace
-	args                    []string
-	ppid                    int
-	keyControl              core.Qt__Key
-	keyCmd                  core.Qt__Key
-	width                   int
-	active                  int
-	startuptime             int64
-	iconSize                int
-	height                  int
-	extFontSize             int
-	notificationWidth       int
-	stopOnce                sync.Once
-	muMetaKey               sync.Mutex
-	doRestoreSessions       bool
-	isSetGuiColor           bool
-	isDisplayNotifications  bool
-	isKeyAutoRepeating      bool
-	isWindowResized         bool
-	isWindowNowActivated    bool
-	isWindowNowInactivated  bool
-	isExtWinNowActivated    bool
-	isExtWinNowInactivated  bool
-	isHideMouse             bool
-	isBindAppwinAndNvimSize bool
-	isBindNvimSizeToAppwin  bool
-	isUiPrepared            bool
+	stop                   chan int
+	signal                 *editorSignal
+	ctx                    context.Context
+	app                    *widgets.QApplication
+	widget                 *widgets.QWidget
+	splitter               *widgets.QSplitter
+	window                 *frameless.QFramelessWindow
+	specialKeys            map[core.Qt__Key]string
+	svgs                   map[string]*SvgXML
+	notifyStartPos         *core.QPoint
+	colors                 *ColorPalette
+	notify                 chan *Notify
+	fontCh                 chan *Font
+	cbChan                 chan *string
+	chUiPrepared           chan bool
+	sysTray                *widgets.QSystemTrayIcon
+	side                   *WorkspaceSide
+	savedGeometry          *core.QByteArray
+	prefixToMapMetaKey     string
+	macAppArg              string
+	extFontFamily          string
+	configDir              string
+	homeDir                string
+	version                string
+	config                 gonvimConfig
+	opts                   Options
+	font                   *Font
+	notifications          []*Notification
+	workspaces             []*Workspace
+	args                   []string
+	ppid                   int
+	keyControl             core.Qt__Key
+	keyCmd                 core.Qt__Key
+	width                  int
+	active                 int
+	startuptime            int64
+	iconSize               int
+	height                 int
+	extFontSize            int
+	notificationWidth      int
+	stopOnce               sync.Once
+	muMetaKey              sync.Mutex
+	doRestoreSessions      bool
+	isSetGuiColor          bool
+	isDisplayNotifications bool
+	isKeyAutoRepeating     bool
+	isWindowResized        bool
+	isWindowNowActivated   bool
+	isWindowNowInactivated bool
+	isExtWinNowActivated   bool
+	isExtWinNowInactivated bool
+	isHideMouse            bool
+	isBindNvimSizeToAppwin bool
+	isUiPrepared           bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -248,7 +248,7 @@ func InitEditor(options Options, args []string) {
 	// e.initAppFont()
 	e.extFontFamily = e.config.Editor.FontFamily
 	e.extFontSize = e.config.Editor.FontSize
-	fontGenAsync := make(chan *Font, 2)
+	e.fontCh = make(chan *Font, 2)
 	go func() {
 		font := initFontNew(
 			editor.extFontFamily,
@@ -257,7 +257,7 @@ func InitEditor(options Options, args []string) {
 			e.config.Editor.Letterspace,
 		)
 
-		fontGenAsync <- font
+		e.fontCh <- font
 	}()
 
 	e.initSVGS()
@@ -272,11 +272,11 @@ func InitEditor(options Options, args []string) {
 
 	// application main window
 	isSetWindowState := e.initAppWindow()
+	e.window.Show()
 
 	// window layout
 	e.setWindowLayout()
 
-	e.font = <-fontGenAsync
 	// neovim workspaces
 
 	nvimErr := <-errCh
@@ -351,14 +351,15 @@ func (e *Editor) putLog(v ...interface{}) {
 }
 
 func (e *Editor) bindResizeEvent() {
-	if editor.isBindAppwinAndNvimSize {
-		return
-	}
-
 	e.window.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		if !editor.isBindNvimSizeToAppwin {
+			return
+		}
+		if len(e.workspaces) == 0 {
+			return
+		}
 		e.resizeMainWindow()
 	})
-	e.isBindAppwinAndNvimSize = true
 }
 
 // addDockMenu add the action menu for app in the Dock.
@@ -482,6 +483,7 @@ func (e *Editor) initWorkspaces(ctx context.Context, signal *neovimSignal, redra
 	// go ws.bindNvim(nvimCh, uiRCh, isSetWindowState)
 	// e.workspaces = append(e.workspaces, ws)
 	// ws.widget.SetParent(e.widget)
+	editor.putLog("start initializing workspaces")
 
 	// Detect session file
 	sessionExists := false
@@ -501,9 +503,18 @@ func (e *Editor) initWorkspaces(ctx context.Context, signal *neovimSignal, redra
 		restoreFiles = []string{""}
 	}
 
+	editor.putLog("done checking sessions")
+
 	for i, file := range restoreFiles {
 		ws := newWorkspace()
 		ws.initUI()
+
+		if i == 0 {
+			e.font = <-e.fontCh
+		}
+
+		ws.initFont()
+		ws.registerSignal(signal, redrawUpdates, guiUpdates)
 		ws.updateSize()
 
 		// Only the first nvim instance is lazy-bound to the workspace,
@@ -514,10 +525,8 @@ func (e *Editor) initWorkspaces(ctx context.Context, signal *neovimSignal, redra
 			signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh, _ = newNvim(ws.cols, ws.rows, ctx)
 		}
 
-		ws.registerSignal(signal, redrawUpdates, guiUpdates)
-		go ws.bindNvim(nvimCh, uiRemoteAttachedCh, isSetWindowState, isLazyBind, file)
-
 		e.workspaces = append(e.workspaces, ws)
+		go ws.bindNvim(nvimCh, uiRemoteAttachedCh, isSetWindowState, isLazyBind, file)
 	}
 
 	e.putLog("done initialazing workspaces")
@@ -914,13 +923,9 @@ func (e *Editor) restoreWindow() {
 func (e *Editor) connectWindowEvents() {
 	e.window.ConnectKeyPressEvent(e.keyPress)
 	e.window.ConnectKeyReleaseEvent(e.keyRelease)
+	e.bindResizeEvent()
 	e.window.ConnectShowEvent(func(event *gui.QShowEvent) {
 		editor.putLog("show application window")
-		if editor.isBindNvimSizeToAppwin {
-			return
-		}
-		e.bindResizeEvent()
-		e.resizeMainWindow()
 	})
 
 	e.window.InstallEventFilter(e.window)
@@ -942,7 +947,7 @@ func (e *Editor) connectWindowEvents() {
 }
 
 func (e *Editor) setWindowOptions() {
-	e.window.SetupTitle("Neovim")
+	// e.window.SetupTitle("Neovim")
 	e.window.SetMinimumSize2(40, 30)
 	e.window.SetAttribute(core.Qt__WA_KeyCompression, false)
 	e.window.SetAcceptDrops(true)
@@ -1010,12 +1015,13 @@ func (e *Editor) workspaceAdd() {
 	ws.updateSize()
 	signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh, _ := newNvim(ws.cols, ws.rows, e.ctx)
 	ws.registerSignal(signal, redrawUpdates, guiUpdates)
-	go ws.bindNvim(nvimCh, uiRemoteAttachedCh, false, false, "")
 
-	e.workspaces = append(e.workspaces, nil)
+	e.workspaces = append(e.workspaces, ws)
 	e.active = len(e.workspaces) - 1
 
 	e.workspaces[e.active] = ws
+	ws.bindNvim(nvimCh, uiRemoteAttachedCh, false, false, "")
+	e.workspaceUpdate()
 }
 
 func (e *Editor) workspaceSwitch(index int) {
@@ -1313,7 +1319,7 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		// }
 
 		// Some locales require Alt for basic low-ascii characters,
-		// remove AltModifier. Ex) German layouts use Alt for "{".
+		// remove AltModifer. Ex) German layouts use Alt for "{".
 		if isAsciiCharRequiringAlt(key, mod, []rune(c)[0]) {
 			mod &= ^core.Qt__AltModifier
 		}
