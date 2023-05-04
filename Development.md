@@ -176,3 +176,24 @@ See https://github.com/akiyosi/goneovim/blob/master/.github/workflows/ci.yaml
     ```
 
 
+
+# Update go.mod, go.sum
+
+```
+rm go.mod go.sum
+rm -fr vendor/*
+go mod init github.com/akiyosi/goneovim
+go mod tidy
+```
+
+Next, if necessary, explicitly update the module version.
+
+```
+go get -u github.com/neovim/go-client@HEAD
+```
+
+Next, run the following
+
+```
+go get github.com/therecipe/qt/internal/cmd@v0.0.0-20200904063919-c0c124a5770d ; go get github.com/therecipe/qt/internal/binding/files/docs/5.12.0 ; go get github.com/therecipe/qt/internal/binding/files/docs/5.13.0
+```

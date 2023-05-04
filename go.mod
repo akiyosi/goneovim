@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/BurntSushi/toml v1.2.1
-	github.com/akiyosi/goqtframelesswindow v0.0.0-20230122141233-7cf5eca270db
+	github.com/akiyosi/goqtframelesswindow v0.0.0-20230504150915-a0fc55d27d45
 	github.com/akiyosi/short_path v0.2.1
 	github.com/atotto/clipboard v0.1.4
 	github.com/bluele/gcache v0.0.2
@@ -23,5 +23,4 @@ require (
 	github.com/therecipe/qt/internal/binding/files/docs/5.12.0 v0.0.0-20200904063919-c0c124a5770d // indirect
 	github.com/therecipe/qt/internal/binding/files/docs/5.13.0 v0.0.0-20200904063919-c0c124a5770d // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/tools v0.0.0-20190420181800-aa740d480789 // indirect
 )

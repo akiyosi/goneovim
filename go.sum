@@ -1,7 +1,7 @@
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
-github.com/akiyosi/goqtframelesswindow v0.0.0-20230122141233-7cf5eca270db h1:RiPJrZ4M397SM2tfa1o6am+OhcnU4XmPXyCd2GNELBc=
-github.com/akiyosi/goqtframelesswindow v0.0.0-20230122141233-7cf5eca270db/go.mod h1:739mXLJTAy19GBfA3Z2gitVRHX5NVqrVqygAMPVB21E=
+github.com/akiyosi/goqtframelesswindow v0.0.0-20230504150915-a0fc55d27d45 h1:jDnckIngzOhCIQxc6u2K9q/Qfi5sZfhlqSl6f2m5MJM=
+github.com/akiyosi/goqtframelesswindow v0.0.0-20230504150915-a0fc55d27d45/go.mod h1:739mXLJTAy19GBfA3Z2gitVRHX5NVqrVqygAMPVB21E=
 github.com/akiyosi/short_path v0.2.1 h1:1IiEQDNISfLOzs8A4+95vSgAN1Ch2IQY4wUpjZzWU/U=
 github.com/akiyosi/short_path v0.2.1/go.mod h1:9ZdnJCTktFi81KorFR9Zihrn8pmRD1UIx0HjASMCu1U=
 github.com/akiyosi/w32 v0.0.0-20221111133244-de73be0c7b36 h1:anLmpiDCKkXZv9D7iYznS3dkYS1BPlaMVGy+65azxj8=
@@ -53,5 +53,4 @@ golang.org/x/sys v0.0.0-20210320140829-1e4c9ba3b0c4/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.6.0 h1:MVltZSvRTcU2ljQOhs94SXPftV6DCNnZViHeQps87pQ=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
-golang.org/x/tools v0.0.0-20190420181800-aa740d480789 h1:FF0rjo15h51+N6642mf5S3QuplmKo2aCrJUYkHTx85s=
 golang.org/x/tools v0.0.0-20190420181800-aa740d480789/go.mod h1:LCzVGOaR6xXOjkQ3onu1FJEFr0SW1gC7cKk1uF8kGRs=
