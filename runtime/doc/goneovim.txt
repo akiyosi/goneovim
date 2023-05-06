@@ -28,10 +28,10 @@ CLI INTERFACE                                             *goneovim-cli-interfac
       goneovim [OPTIONS]
     
     Application Options:
-          --geometry=     Initial window geomtry [e.g. --geometry=800x600]
+          --geometry=     Initial window geometry [e.g. --geometry=800x600]
           --server=       Remote session address [e.g. --server=host:3456]
           --ssh=          Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]
-          --nvim=         Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]
+          --nvim=         Executable nvim path to attach [e.g. --nvim=/path/to/nvim]
           --debug=        Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]
           --fullscreen    Open the window in fullscreen on startup
           --maximized     Maximize the window on startup
@@ -172,7 +172,7 @@ COMMANDS                                                       *goneovim-command
 	Goneovim will attempt to do the following for a window with
 	independent font settings.
 
-	For a splitted windows:
+	For split windows:
 	Goneovim will attempt to resize as much as possible within the area
 	bounded by the other windows.
 	For example, in a simple vertical split, it will adjust the number of
@@ -446,7 +446,7 @@ All Options are follows:
         
         ## The input method editor will be automatically disabled when the mode is changed to normal mode.
         ## It may be useful for users who use the input method editor (e.g. East Asian users).
-        ## This option is depricated. Use `ModeEnablingIME`
+        ## This option is deprecated. Use `ModeEnablingIME`
         # DisableImeInNormal = false
 
         ## This option specifies a list of modes in which the IME is to be enabled, and goneovim will enable

@@ -107,7 +107,7 @@ func startNvim(signal *neovimSignal, ctx context.Context) (neovim *nvim.Nvim, ui
 	// z := 1
 	// go func() {
 	// 	for {
-	// 		editor.putLog("emmit test event", z)
+	// 		editor.putLog("emit test event", z)
 	// 		*redrawUpdates <- [][]interface{}{[]interface{}{"test event " + fmt.Sprintf("%d", z)}}
 	// 		signal.RedrawSignal()
 	// 		z++

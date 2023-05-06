@@ -867,7 +867,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			}
 
 			// left window is gridfont window
-			// calcurate win window posision aa w window coordinate
+			// calculate win window posision aa w window coordinate
 			var resizeflag bool
 			winPosX := float64(win.pos[0]) * win.s.font.cellwidth
 			rightWindowPos1 := float64(w.cols)*w.getFont().cellwidth + float64(w.pos[0]+1-deltaCols+1)*win.s.font.cellwidth
@@ -916,7 +916,7 @@ func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
 			}
 
 			// top window is gridfont window
-			// calcurate win window posision aa w window coordinate
+			// calculate win window posision aa w window coordinate
 			var resizeflag bool
 			winPosY := win.pos[1] * win.s.font.lineHeight
 			bottomWindowPos1 := w.rows*w.getFont().lineHeight + (w.pos[1]+1-deltaRows+1)*win.s.font.lineHeight
@@ -1290,7 +1290,7 @@ func (s *Screen) gridScroll(args []interface{}) {
 // In Neovim's multigrid UI architecture, a window is represented by multiple independent grids,
 // and grid1 is a special grid called the global grid, which displays window splits, tabs, etc.
 // This is problematic when applying transparency effects to the entire application.
-// If each grid is displayed transparently, the information in grobal grid behind it will show through,
+// If each grid is displayed transparently, the information in global grid behind it will show through,
 // but the current UI specification expects the global grid to be covered by other grids,
 // so there will be unwanted content left over before and after updates.
 // detectCoveredCellInGlobalgrid() logically controls this and detects information

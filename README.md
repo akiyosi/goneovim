@@ -43,7 +43,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
   - Scrollbar
   - Workspace feature which manages multiple nvim
 - Features as neovim GUI
-  - Externalizable tabline, popupmenu, wildmenu, cmdline, messsages
+  - Externalizable tabline, popupmenu, wildmenu, cmdline, messages
   - Support gui option: `guifont`, `guifontwide`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
   - Support mouse
   - Independent font settings per window (currently experimental)
