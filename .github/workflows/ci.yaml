@@ -680,3 +680,10 @@ jobs:
             /home/runner/go/bin/qtmoc
             /home/runner/go/bin/qtdeploy build freebsd
 
+
+      - name: check dir
+        run: |
+          pwd
+          ls -l
+          ls -l cmd.goneovim/deploy
+
