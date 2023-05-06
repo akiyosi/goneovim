@@ -686,5 +686,5 @@ jobs:
         run: |
           pwd
           ls -l
-          ls -l cmd.goneovim/deploy
+          ls -l cmd/goneovim/deploy
 
