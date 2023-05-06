@@ -666,9 +666,8 @@ jobs:
             uname -a
             echo $SHELL
             yes | sudo pkg install devel/qt5 git go pkgconf
-            git clone https://github.com/akiyosi/goneovim.git
-            cd goneovim
-            git checkout freebsd-target
+            pwd
+            ls -l
             go get github.com/therecipe/qt/internal/cmd@v0.0.0-20200904063919-c0c124a5770d ; \
             go get github.com/therecipe/qt/internal/binding/files/docs/5.12.0 ; \
             go get github.com/therecipe/qt/internal/binding/files/docs/5.13.0 ; \
