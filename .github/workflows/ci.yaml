@@ -679,12 +679,20 @@ jobs:
             /home/runner/go/bin/qtsetup -test=false
             cd cmd/goneovim
             /home/runner/go/bin/qtmoc
-            /home/runner/go/bin/qtdeploy build freebsd
-
+            /home/runner/go/bin/qtdeploy -ldflags "-X github.com/akiyosi/goneovim/editor.Version=$(git describe --tags)"  build freebsd
 
       - name: check dir
         run: |
-          pwd
-          ls -l
-          ls -l cmd/goneovim/deploy
+          ls -l cmd/goneovim/deploy/freebsd
 
+      - name: Archive
+        run: |
+          cd cmd/goneovim/deploy
+          mv freebsd goneovim-freebsd
+          tar -jcvf goneovim-freebsd.tar.bz2 goneovim-freebsd
+  
+      - name: Upload for freebsd
+        uses: actions/upload-artifact@v1
+        with:
+          name: goneovim-freebsd
+          path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-freebsd.tar.bz2
