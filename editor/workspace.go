@@ -783,7 +783,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	height -= marginHeight
 
 	titlebarHeight := 0
-	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
+	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" && runtime.GOOS != "freebsd" {
 		if !e.config.Editor.HideTitlebar {
 			titlebarHeight = e.window.TitleBar.Height()
 		}
@@ -886,7 +886,7 @@ func (ws *Workspace) updateApplicationWindowSize(cols, rows int) {
 
 	marginHeight := e.window.BorderSize() * 4
 	titlebarHeight := 0
-	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" {
+	if e.config.Editor.BorderlessWindow && runtime.GOOS != "linux" && runtime.GOOS != "freebsd" {
 		if !e.config.Editor.HideTitlebar {
 			titlebarHeight = e.window.TitleBar.Height()
 		}
@@ -997,7 +997,7 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 		case "set_title":
 			titleStr := (update[1].([]interface{}))[0].(string)
 			editor.window.SetupTitle(titleStr)
-			if runtime.GOOS == "linux" {
+			if runtime.GOOS == "linux" || runtime.GOOS == "freebsd" {
 				editor.window.SetWindowTitle(titleStr)
 			}
 

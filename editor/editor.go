@@ -418,7 +418,7 @@ func (e *Editor) setAppDirPath(home string) {
 			return
 		}
 	}
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS == "linux" || runtime.GOOS == "freebsd" {
 		if e.ppid != 1 {
 			return
 		}
@@ -676,15 +676,15 @@ func (e *Editor) initSysTray() {
 }
 
 func (e *Editor) setEnvironmentVariables() {
-	// For Linux
-	if runtime.GOOS == "linux" {
-		// // It was not a necessary process to export the following environment variables.
-		// exe, _ := os.Executable()
-		// dir, _ := filepath.Split(exe)
-		// _ = os.Setenv("LD_LIBRARY_PATH", dir+"lib")
-		// _ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
-		// _ = os.Setenv("RESOURCE_NAME", "goneovim")
-	}
+	// // For Linux
+	// if runtime.GOOS == "linux" {
+	// 	// It was not a necessary process to export the following environment variables.
+	// 	exe, _ := os.Executable()
+	// 	dir, _ := filepath.Split(exe)
+	// 	_ = os.Setenv("LD_LIBRARY_PATH", dir+"lib")
+	// 	_ = os.Setenv("QT_PLUGIN_PATH", dir+"plugins")
+	// 	_ = os.Setenv("RESOURCE_NAME", "goneovim")
+	// }
 
 	// If the OS is MacOS and the application is launched from an .app
 	if runtime.GOOS == "darwin" && e.ppid == 1 {
@@ -823,7 +823,7 @@ func (e *Editor) updateGUIColor() {
 	e.workspaces[e.active].updateWorkspaceColor()
 
 	// Do not use frameless drawing on linux
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS == "linux" || runtime.GOOS == "freebsd" {
 		e.window.TitleBar.Hide()
 		e.window.WindowWidget.SetStyleSheet(fmt.Sprintf(" #QFramelessWidget { background-color: rgba(%d, %d, %d, %f); border-radius: 0px;}", e.colors.bg.R, e.colors.bg.G, e.colors.bg.B, e.config.Editor.Transparent))
 		e.window.SetWindowFlag(core.Qt__FramelessWindowHint, false)
@@ -1136,7 +1136,7 @@ func controlModifier() (controlModifier core.Qt__KeyboardModifier) {
 	if runtime.GOOS == "windows" {
 		controlModifier = core.Qt__ControlModifier
 	}
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS == "linux" || runtime.GOOS == "freebsd" {
 		controlModifier = core.Qt__ControlModifier
 	}
 	if runtime.GOOS == "darwin" {
@@ -1151,7 +1151,7 @@ func cmdModifier() (cmdModifier core.Qt__KeyboardModifier) {
 	if runtime.GOOS == "windows" {
 		cmdModifier = core.Qt__NoModifier
 	}
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS == "linux" || runtime.GOOS == "freebsd" {
 		cmdModifier = core.Qt__MetaModifier
 	}
 	if runtime.GOOS == "darwin" {

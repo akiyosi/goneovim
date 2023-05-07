@@ -593,7 +593,7 @@ func getResourcePath() string {
 	p := ""
 	if runtime.GOOS == "darwin" {
 		p = core.QCoreApplication_ApplicationDirPath() + "/../Resources"
-	} else if runtime.GOOS == "linux" {
+	} else if runtime.GOOS == "linux" || runtime.GOOS == "freebsd" {
 		p = core.QCoreApplication_ApplicationDirPath()
 	} else if runtime.GOOS == "windows" {
 		p = core.QCoreApplication_ApplicationDirPath()
