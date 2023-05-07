@@ -78,10 +78,10 @@ type Notify struct {
 }
 
 type Options struct {
-	Geometry     string  `long:"geometry" description:"Initial window geomtry [e.g. --geometry=800x600]"`
+	Geometry     string  `long:"geometry" description:"Initial window geometry [e.g. --geometry=800x600]"`
 	Server       string  `long:"server" description:"Remote session address [e.g. --server=host:3456]"`
 	Ssh          string  `long:"ssh" description:"Attaching to a remote nvim via ssh. Default port is 22. [e.g. --ssh=user@host:port]"`
-	Nvim         string  `long:"nvim" description:"Excutable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
+	Nvim         string  `long:"nvim" description:"Executable nvim path to attach [e.g. --nvim=/path/to/nvim]"`
 	Debug        string  `long:"debug" description:"Run debug mode with debug.log(default) file [e.g. --debug=/path/to/my-debug.log]" optional:"yes" optional-value:"debug.log"`
 	Fullscreen   bool    `long:"fullscreen" description:"Open the window in fullscreen on startup"`
 	Maximized    bool    `long:"maximized" description:"Maximize the window on startup"`
@@ -1313,7 +1313,7 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 		// }
 
 		// Some locales require Alt for basic low-ascii characters,
-		// remove AltModifer. Ex) German layouts use Alt for "{".
+		// remove AltModifier. Ex) German layouts use Alt for "{".
 		if isAsciiCharRequiringAlt(key, mod, []rune(c)[0]) {
 			mod &= ^core.Qt__AltModifier
 		}

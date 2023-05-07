@@ -506,7 +506,7 @@ func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
 						doBreak := true
 						// If the line to draw an indent-guide has a wrapped line
 						// in the next line, do not skip drawing
-						// TODO: We do not detect the wraped line when `:set nonu` setting.
+						// TODO: We do not detect the wrapped line when `:set nonu` setting.
 						if mm+1 < len(w.content) {
 							// lllen, _ := w.countHeadSpaceOfLine(mm+1)
 							lllen := headspaceOfRows[mm+1]
@@ -882,7 +882,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 
 	// Detect current mode
 	// mode := w.s.ws.mode
-	// isCursorOnWin := w.isEventEmmitOnCursorGrid()
+	// isCursorOnWin := w.isEventEmitOnCursorGrid()
 
 	mouseScroll := w.s.ws.mouseScroll
 	if mouseScroll == "" {
@@ -1056,7 +1056,7 @@ func (w *Window) applyTemporaryMousescroll(ms string) {
 	}
 }
 
-func (w *Window) isEventEmmitOnCursorGrid() bool {
+func (w *Window) isEventEmitOnCursorGrid() bool {
 	return w.grid == w.s.ws.cursor.gridid
 }
 
@@ -3291,7 +3291,7 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 	}
 
 	if w.isFloatWin && !w.isMsgGrid {
-		// A workarround for ext_popupmenu and displaying a LSP tooltip
+		// A workaround for ext_popupmenu and displaying a LSP tooltip
 		if editor.config.Editor.ExtPopupmenu {
 			if w.s.ws.mode == "insert" && w.s.ws.popup.widget.IsVisible() {
 				if w.s.ws.popup.widget.IsVisible() {

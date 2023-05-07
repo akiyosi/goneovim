@@ -123,7 +123,7 @@ func initMessage() *Message {
 	m.widget.SetGraphicsEffect(util.DropShadow(-2, 4, 40, 200))
 	m.widget.Hide()
 
-	// hide messgaes at startup.
+	// hide messages at startup.
 	m.update()
 
 	return m
@@ -313,8 +313,8 @@ func (m *Message) msgShow(args []interface{}) {
 		}
 		maxLen := m.ws.screen.widget.Width() - scrollbarwidth - 12
 		var attrId int
-		for _, tupple := range arg.([]interface{})[1].([]interface{}) {
-			chunk, ok := tupple.([]interface{})
+		for _, tuple := range arg.([]interface{})[1].([]interface{}) {
+			chunk, ok := tuple.([]interface{})
 			if !ok {
 				continue
 			}
