@@ -641,7 +641,7 @@ jobs:
 
 
   freebsd:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
@@ -661,7 +661,7 @@ jobs:
           architecture: x86_64
           version: '13.2'
           shell: bash
-          memory: 5G
+          memory: 12G
           cpu_count: 4
           run: |
             uname -a
@@ -683,6 +683,7 @@ jobs:
 
       - name: check dir
         run: |
+          pwd
           ls -l cmd/goneovim/deploy/freebsd
 
       - name: Archive
@@ -695,4 +696,4 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: goneovim-freebsd
-          path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-freebsd.tar.bz2
+          path: ${{ github.workspace }}/cmd/goneovim/deploy/goneovim-freebsd.tar.bz2
