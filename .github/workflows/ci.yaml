@@ -652,11 +652,12 @@ jobs:
           QT_PKG_CONFIG: true
           QT_API: 5.13.0
           QT_DEBUG: false
+          QT_STATIC: true
           GO111MODULE: on
           GOPROXY: https://goproxy.io
           CGO_CPPFLAGS: '-O3 -Wno-deprecated'
         with:
-          environment_variables: GOPATH QT_PKG_CONFIG QT_API QT_DEBUG GO111MODULE GOPROXY
+          environment_variables: GOPATH QT_PKG_CONFIG QT_API QT_DEBUG QT_STATIC GO111MODULE GOPROXY
           operating_system: freebsd
           architecture: x86_64
           version: '13.2'
@@ -664,16 +665,14 @@ jobs:
           memory: 12G
           cpu_count: 4
           run: |
-            uname -a
-            echo $SHELL
             yes | sudo pkg install git go pkgconf
             yes | sudo pkg install devel/qt5
-            go get github.com/therecipe/qt/internal/cmd@v0.0.0-20200904063919-c0c124a5770d ; \
-            go get github.com/therecipe/qt/internal/binding/files/docs/5.12.0 ; \
-            go get github.com/therecipe/qt/internal/binding/files/docs/5.13.0 ; \
-            go get github.com/therecipe/qt/internal/cmd/moc@v0.0.0-20200904063919-c0c124a5770d ; \
-            go install -v -tags=no_env github.com/therecipe/qt/cmd/...  ; \
-            go mod vendor  ; \
+            go get github.com/therecipe/qt/internal/cmd@v0.0.0-20200904063919-c0c124a5770d
+            go get github.com/therecipe/qt/internal/binding/files/docs/5.12.0
+            go get github.com/therecipe/qt/internal/binding/files/docs/5.13.0
+            go get github.com/therecipe/qt/internal/cmd/moc@v0.0.0-20200904063919-c0c124a5770d
+            go install -v -tags=no_env github.com/therecipe/qt/cmd/...
+            go mod vendor
             /home/runner/go/bin/qtsetup -test=false
             cd cmd/goneovim
             /home/runner/go/bin/qtmoc
