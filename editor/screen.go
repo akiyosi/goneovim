@@ -186,6 +186,32 @@ func (s *Screen) uiTryResize(cols, rows int) {
 	}
 }
 
+func (s *Screen) getGrid(wid nvim.Window) (grid *Window, ok bool) {
+	s.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
+		if win == nil {
+			return true
+		}
+		if win.grid == 1 {
+			return true
+		}
+
+		win.updateMutex.RLock()
+		id := win.id
+		win.updateMutex.RUnlock()
+
+		if id == wid {
+			grid = win
+			ok = true
+		}
+
+		return true
+	})
+
+	return grid, ok
+}
+
 func (s *Screen) getWindow(grid int) (*Window, bool) {
 	winITF, ok := s.windows.Load(grid)
 	if !ok {
@@ -1773,46 +1799,4 @@ func isSkipGlobalId(id gridId) bool {
 	}
 
 	return false
-}
-
-func (s *Screen) setOptionForGrid(wid nvim.Window, option string, valueITF interface{}) {
-	s.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-
-		if win == nil {
-			return true
-		}
-		if win.grid == 1 {
-			return true
-		}
-		if win.isMsgGrid {
-			return true
-		}
-
-		win.updateMutex.RLock()
-		id := win.id
-		win.updateMutex.RUnlock()
-
-		if id != wid {
-			return true
-		}
-
-		win.paintMutex.Lock()
-		switch option {
-		case editor.config.Editor.OptionsToUseGuideWidth:
-			value := util.ReflectToInt(valueITF)
-			win.ts = value
-		case "winbar":
-			value, ok := valueITF.(string)
-			if !ok {
-				return true
-			}
-			win.winbar = value
-		default:
-		}
-
-		win.paintMutex.Unlock()
-
-		return true
-	})
 }

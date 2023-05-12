@@ -1615,7 +1615,6 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 		editor.putLog("vim enter")
 	case "gonvim_uienter":
 		editor.putLog("ui enter")
-		// ws.uiEnterProcess()
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
 		editor.window.Resize2(width, height)
@@ -1772,8 +1771,40 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 			ws.filepath = updates[1].(string)
 			ws.minimap.mu.Unlock()
 		}
+	case "gonvim_bufenter":
+		wid := (nvim.Window)(util.ReflectToInt(updates[1]))
+
+		win, ok := ws.screen.getGrid(wid)
+		if !ok {
+			return
+		}
+
+		// get tabstop
+		win.ts = util.ReflectToInt(
+			ws.getBufferOption(editor.config.Editor.OptionsToUseGuideWidth, wid),
+		)
+
+		// get filetype
+		ftITF := ws.getBufferOption("filetype", wid)
+		ft, ok := ftITF.(string)
+		if !ok {
+			return
+		}
+		win.ft = ft
+
+		// get winbar
+		win.winbar = ws.getWindowOption("winbar", "local", wid)
+
 	case "gonvim_optionset":
 		wid := (nvim.Window)(util.ReflectToInt(updates[4]))
+		win, ok := ws.screen.getGrid(wid)
+		if !ok {
+			return
+		}
+		if win.lastScrollphase != core.Qt__ScrollEnd {
+			return
+		}
+
 		optionName, ok := updates[1].(string)
 		if !ok {
 			return
@@ -2163,29 +2194,30 @@ func (ws *Workspace) getBufferOption(option string, wid nvim.Window) interface{}
 // optionSet is
 // This function gets the value of an option that cannot be caught by the set_option event.
 func (ws *Workspace) optionSet(optionName string, wid nvim.Window) {
+	win, ok := ws.screen.getGrid(wid)
+	if !ok {
+		return
+	}
+
 	ws.optionsetMutex.Lock()
 	switch optionName {
 	case editor.config.Editor.OptionsToUseGuideWidth:
-		ws.screen.setOptionForGrid(
-			wid,
-			editor.config.Editor.OptionsToUseGuideWidth,
+		win.ts = util.ReflectToInt(
 			ws.getBufferOption(optionName, wid),
 		)
 	case "filetype":
-		ws.screen.setOptionForGrid(
-			wid,
-			"filetype",
-			ws.getBufferOption(optionName, wid),
-		)
+		ftITF := ws.getBufferOption(optionName, wid)
+		ft, ok := ftITF.(string)
+		if !ok {
+			return
+		}
+		win.ft = ft
 	case "winbar":
 		// for global-local
 		ws.winbar = ws.getWindowOption(optionName, "global")
+
 		// for window-local
-		ws.screen.setOptionForGrid(
-			wid,
-			"winbar",
-			ws.getWindowOption(optionName, "local", wid),
-		)
+		win.winbar = ws.getWindowOption(optionName, "local", wid)
 	}
 	ws.optionsetMutex.Unlock()
 }
