@@ -662,19 +662,23 @@ func (s *Screen) gridResize(args []interface{}) {
 
 		// If events related to the global grid are included
 		// Determine to resize the application window
-		if gridid == 1 && s.name != "minimap" && s.ws.uiAttached {
-			if !editor.window.IsVisible() {
+		if s.name != "minimap" && s.ws.uiAttached {
+			if win.grid == 1 {
 				if !editor.isBindNvimSizeToAppwin {
-					editor.bindResizeEvent()
-					editor.isBindNvimSizeToAppwin = true
+					continue
 				}
-				continue
+				if !(s.ws.cols == cols && s.ws.rows == rows) {
+					s.ws.cols = cols
+					s.ws.rows = rows
+					s.ws.updateApplicationWindowSize(cols, rows)
+				}
 			}
+			if win.grid != 1 && !win.isMsgGrid {
+				if !editor.isBindNvimSizeToAppwin {
+					editor.isBindNvimSizeToAppwin = true
+					s.uiTryResize(s.ws.cols, s.ws.rows)
 
-			if !(s.ws.cols == cols && s.ws.rows == rows) {
-				s.ws.cols = cols
-				s.ws.rows = rows
-				s.ws.updateApplicationWindowSize(cols, rows)
+				}
 			}
 		}
 	}

@@ -28,6 +28,19 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 	// var uiAttached, uiRemoteAttached bool
 	var uiRemoteAttached bool
 	var err error
+
+	// // for debug signal
+	// z := 1
+	// go func() {
+	// 	for {
+	// 		editor.putLog("emmit test event", z)
+	// 		redrawUpdates <- [][]interface{}{[]interface{}{"test event " + fmt.Sprintf("%d", z)}}
+	// 		signal.RedrawSignal()
+	// 		z++
+	// 		time.Sleep(time.Millisecond * 10)
+	// 	}
+	// }()
+
 	go func() {
 		neovim, uiRemoteAttached, err = startNvim(signal, ctx)
 		if err != nil {
@@ -46,7 +59,7 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 	}()
 
 	// // Suppress the problem that cmd.Start() hangs on MacOS.
-	// time.Sleep(5 * time.Millisecond)
+	// time.Sleep(3 * time.Millisecond)
 
 	return
 }
@@ -102,18 +115,6 @@ func startNvim(signal *neovimSignal, ctx context.Context) (neovim *nvim.Nvim, ui
 		editor.putLog(err)
 		return nil, false, err
 	}
-
-	// // for debug signal
-	// z := 1
-	// go func() {
-	// 	for {
-	// 		editor.putLog("emit test event", z)
-	// 		*redrawUpdates <- [][]interface{}{[]interface{}{"test event " + fmt.Sprintf("%d", z)}}
-	// 		signal.RedrawSignal()
-	// 		z++
-	// 		time.Sleep(time.Millisecond * 50)
-	// 	}
-	// }()
 
 	go func() {
 		err := neovim.Serve()

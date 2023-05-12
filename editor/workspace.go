@@ -128,9 +128,6 @@ func newWorkspace() *Workspace {
 }
 
 func (ws *Workspace) initUI() {
-	ws.font = editor.font
-	ws.font.ws = ws
-
 	ws.widget = widgets.NewQWidget(nil, 0)
 	ws.widget.SetParent(editor.widget)
 	ws.widget.SetAcceptDrops(true)
@@ -143,7 +140,6 @@ func (ws *Workspace) initUI() {
 	ws.screen = newScreen()
 	ws.screen.ws = ws
 	ws.screen.initInputMethodWidget()
-	ws.screen.font = ws.font
 
 	// cursor
 	ws.cursor = initCursorNew()
@@ -212,8 +208,6 @@ func (ws *Workspace) initUI() {
 		ws.message.connectUI()
 	}
 
-	editor.putLog("initialazed UI components")
-
 	// workspace widget, layouts
 	layout := widgets.NewQVBoxLayout()
 	layout.SetContentsMargins(0, 0, 0, 0)
@@ -244,7 +238,14 @@ func (ws *Workspace) initUI() {
 	}
 
 	ws.widget.Move2(0, 0)
+
 	editor.putLog("assembled workspace UI components")
+}
+
+func (ws *Workspace) initFont() {
+	ws.font = editor.font
+	ws.font.ws = ws
+	ws.screen.font = ws.font
 }
 
 func (ws *Workspace) lazyLoadUI() {
@@ -421,19 +422,9 @@ func (ws *Workspace) bindNvim(nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bo
 
 	// Adjust nvim geometry to fit application window size
 	ws.uiAttached = true
-	editor.chUiPrepared <- true
-
-	if isLazyBind {
-		if !isSetWindowState {
-			if !editor.isBindAppwinAndNvimSize {
-				ws.screen.uiTryResize(ws.cols, ws.rows)
-			}
-		} else {
-			editor.bindResizeEvent()
-		}
+	if len(editor.workspaces) == 1 {
+		editor.chUiPrepared <- true
 	}
-
-	editor.window.Show()
 
 	// Load goneovim's neovim settings
 	loadHelpDoc(ws.nvim)
@@ -985,8 +976,8 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 		args := update[1:]
 		editor.putLog("start   ", event)
 
-		// for DEBUG::
-		// if event == "grid_line" {
+		// // for DEBUG::
+		// if event == "grid_line" || event == "hl_attr_define" || event == "mode_info_set" {
 		// 	fmt.Println(event)
 		// } else {
 		// 	fmt.Println(event, args)

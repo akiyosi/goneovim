@@ -2516,7 +2516,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	}
 
 	if highlight.bold {
-		// pi.Font().SetBold(true)
+		// w.imagePainter.Font().SetBold(true)
 		w.imagePainter.Font().SetWeight(font.fontNew.Weight() + 50)
 	}
 	if highlight.italic {
