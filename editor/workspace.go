@@ -193,10 +193,6 @@ func (ws *Workspace) initUI() {
 	}
 
 	if ws.tabline != nil {
-		ws.tabline.font = ws.font.fontNew
-	}
-
-	if ws.tabline != nil {
 		ws.isDrawTabline = editor.config.Tabline.Visible && editor.config.Editor.ExtTabline
 		ws.tabline.connectUI()
 	}
@@ -246,6 +242,10 @@ func (ws *Workspace) initFont() {
 	ws.font = editor.font
 	ws.font.ws = ws
 	ws.screen.font = ws.font
+	if ws.tabline != nil {
+		ws.tabline.font = ws.font.fontNew
+	}
+
 }
 
 func (ws *Workspace) lazyLoadUI() {
