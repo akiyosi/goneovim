@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/atotto/clipboard"
@@ -185,25 +184,25 @@ func handleRequest(neovim *nvim.Nvim) {
 			regType = "v"
 		}
 
-		c := make(chan string, 10)
-		go func() {
-			ff, _ := neovim.CommandOutput("echo &ff")
-			c <- ff
-		}()
-		var endLine string
-		select {
-		case endLine = <-c:
-		case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
-		}
+		// c := make(chan string, 10)
+		// go func() {
+		// 	ff, _ := neovim.CommandOutput("echo &ff")
+		// 	c <- ff
+		// }()
+		// var endLine string
+		// select {
+		// case endLine = <-c:
+		// case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
+		// }
 
-		var s string
-		if endLine == "dos" {
-			s = strings.Replace(str, "\n", "\r\n", -1)
-		} else {
-			s = str
-		}
+		// var s string
+		// if endLine == "dos" {
+		// 	s = strings.Replace(str, "\n", "\r\n", -1)
+		// } else {
+		// 	s = str
+		// }
 
-		lines := strings.Split(s, "\n")
+		lines := strings.Split(str, "\n")
 		linesITF := make([]interface{}, len(lines))
 		for i, line := range lines {
 			var lineITF interface{}
