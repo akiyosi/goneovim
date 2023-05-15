@@ -728,7 +728,6 @@ func (c *Cursor) animateMove() {
 		}
 
 		c.move()
-		c.paint()
 	})
 	duration := editor.config.Cursor.Duration
 	a.SetDuration(int(duration))
