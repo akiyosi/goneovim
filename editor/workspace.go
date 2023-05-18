@@ -28,10 +28,6 @@ type neovimSignal struct {
 	_ func() `signal:"redrawSignal"`
 	_ func() `signal:"guiSignal"`
 
-	_ func() `signal:"statuslineSignal"`
-	_ func() `signal:"lintSignal"`
-	_ func() `signal:"gitSignal"`
-
 	_ func() `signal:"messageSignal"`
 
 	_ func() `signal:"lazyLoadSignal"`
@@ -53,7 +49,6 @@ type Workspace struct {
 	fontwide           *Font
 	cursor             *Cursor
 	tabline            *Tabline
-	statusline         *Statusline
 	screen             *Screen
 	scrollBar          *ScrollBar
 	palette            *Palette
@@ -107,7 +102,6 @@ type Workspace struct {
 	isMappingScrollKey bool
 	hasLazyUI          bool
 	cursorStyleEnabled bool
-	isDrawStatusline   bool
 	isDrawTabline      bool
 	isMouseEnabled     bool
 }
@@ -115,13 +109,12 @@ type Workspace struct {
 func newWorkspace() *Workspace {
 	editor.putLog("initialize workspace")
 	ws := &Workspace{
-		stop:             make(chan struct{}),
-		viewportQue:      make(chan [6]int, 1000),
-		foreground:       newRGBA(255, 255, 255, 1),
-		background:       newRGBA(0, 0, 0, 1),
-		special:          newRGBA(255, 255, 255, 1),
-		shouldUpdate:     &ShouldUpdate{},
-		isDrawStatusline: editor.config.Statusline.Visible,
+		stop:         make(chan struct{}),
+		viewportQue:  make(chan [6]int, 1000),
+		foreground:   newRGBA(255, 255, 255, 1),
+		background:   newRGBA(0, 0, 0, 1),
+		special:      newRGBA(255, 255, 255, 1),
+		shouldUpdate: &ShouldUpdate{},
 	}
 
 	return ws
@@ -186,19 +179,9 @@ func (ws *Workspace) initUI() {
 		})
 	}
 
-	// If Statusline.Visible is true, then we create statusline UI component
-	if editor.config.Statusline.Visible {
-		ws.statusline = initStatusline()
-		ws.statusline.ws = ws
-	}
-
 	if ws.tabline != nil {
 		ws.isDrawTabline = editor.config.Tabline.Visible && editor.config.Editor.ExtTabline
 		ws.tabline.connectUI()
-	}
-	if ws.statusline != nil {
-		ws.isDrawStatusline = editor.config.Statusline.Visible
-		ws.statusline.connectUI()
 	}
 	if ws.message != nil {
 		ws.message.connectUI()
@@ -229,9 +212,6 @@ func (ws *Workspace) initUI() {
 		layout.AddWidget(ws.tabline.widget, 0, 0)
 	}
 	layout.AddWidget(widget2, 1, 0)
-	if editor.config.Statusline.Visible {
-		layout.AddWidget(ws.statusline.widget, 0, 0)
-	}
 
 	ws.widget.Move2(0, 0)
 
@@ -789,12 +769,6 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 		}
 	}
 
-	statuslineHeight := 0
-	if ws.isDrawStatusline && ws.statusline != nil {
-		ws.statusline.height = ws.statusline.widget.Height()
-		statuslineHeight = ws.statusline.height
-	}
-
 	scrollbarWidth := 0
 	if e.config.ScrollBar.Visible {
 		scrollbarWidth = e.config.ScrollBar.Width
@@ -808,7 +782,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	}
 
 	screenWidth := width - scrollbarWidth - minimapWidth
-	screenHeight := height - tablineHeight - statuslineHeight
+	screenHeight := height - tablineHeight
 
 	rw := int(screenWidth) % int(ws.screen.font.cellwidth)
 	rh := screenHeight % ws.screen.font.lineHeight
@@ -847,7 +821,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	}
 
 	windowWidth = marginWidth + sideWidth + scrollbarWidth + minimapWidth + ws.screen.width
-	windowHeight = marginHeight + titlebarHeight + tablineHeight + statuslineHeight + ws.screen.height
+	windowHeight = marginHeight + titlebarHeight + tablineHeight + ws.screen.height
 	cols = ws.cols
 	rows = ws.rows
 
@@ -892,12 +866,6 @@ func (ws *Workspace) updateApplicationWindowSize(cols, rows int) {
 		}
 	}
 
-	statuslineHeight := 0
-	if ws.isDrawStatusline && ws.statusline != nil {
-		ws.statusline.height = ws.statusline.widget.Height()
-		statuslineHeight = ws.statusline.height
-	}
-
 	scrollbarWidth := 0
 	if e.config.ScrollBar.Visible {
 		scrollbarWidth = e.config.ScrollBar.Width
@@ -911,7 +879,7 @@ func (ws *Workspace) updateApplicationWindowSize(cols, rows int) {
 	}
 
 	appWinWidth += scrollbarWidth + minimapWidth
-	appWinHeight += tablineHeight + statuslineHeight
+	appWinHeight += tablineHeight
 
 	// Disable size specifications larger than the desktop screen size
 	desktopRect := e.app.Desktop().AvailableGeometry2(e.window)
@@ -1048,10 +1016,6 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 
 		case "hl_attr_define":
 			s.setHlAttrDef(args)
-			// if goneovim own statusline is visible
-			if ws.isDrawStatusline {
-				ws.statusline.getColor()
-			}
 		case "hl_group_set":
 			s.setHighlightGroup(args)
 		case "grid_line":
@@ -1229,9 +1193,6 @@ func (ws *Workspace) flush() {
 	// update screen
 	ws.screen.update()
 
-	// update external statusline
-	ws.updateStatusline()
-
 	// update external scrollbar
 	ws.updateScrollbar()
 
@@ -1245,15 +1206,6 @@ func (ws *Workspace) flush() {
 	}
 
 	ws.maxLineDelta = 0
-}
-
-func (ws *Workspace) updateStatusline() {
-	if ws.isDrawStatusline {
-		if ws.statusline != nil {
-			ws.statusline.pos.redraw(ws.viewport[2], ws.viewport[3])
-			ws.statusline.mode.redraw()
-		}
-	}
 }
 
 func (ws *Workspace) updateScrollbar() {
@@ -1402,12 +1354,6 @@ func (ws *Workspace) updateWorkspaceColor() {
 
 	if ws.cursor != nil {
 		ws.cursor.setColor()
-	}
-
-	if ws.isDrawStatusline {
-		if ws.statusline != nil {
-			ws.statusline.setColor()
-		}
 	}
 
 	if ws.scrollBar != nil {
@@ -1951,9 +1897,6 @@ func (ws *Workspace) guiFont(args string) {
 
 	if ws.tabline != nil {
 		ws.tabline.updateFont()
-	}
-	if ws.statusline != nil {
-		ws.statusline.updateFont()
 	}
 }
 
