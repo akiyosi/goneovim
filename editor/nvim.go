@@ -443,11 +443,6 @@ func initGui(neovim *nvim.Nvim) {
 		au Goneovim ColorScheme * call rpcnotify(0, "Gui", "gonvim_colorscheme")
 		`
 	}
-	if editor.config.Statusline.Visible {
-		gonvimAutoCmds = gonvimAutoCmds + `
-		au Goneovim BufEnter,TermOpen,TermClose * call rpcnotify(0, "statusline", "bufenter", &filetype, &fileencoding, &fileformat, &ro)
-	`
-	}
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
 	neovim.Command(registerScripts)
 
@@ -486,14 +481,6 @@ func initGui(neovim *nvim.Nvim) {
 	`
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	neovim.Command(registerScripts)
-
-	if editor.config.Statusline.Visible {
-		gonvimInitNotify := `
-		call rpcnotify(0, "statusline", "bufenter", expand("%:p"), &filetype, &fileencoding, &fileformat, &ro)
-		`
-		initialNotify := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimInitNotify))
-		neovim.Command(initialNotify)
-	}
 
 	code := `
     local function set_clipboard(register)

@@ -14,7 +14,6 @@ type gonvimConfig struct {
 	Editor      editorConfig
 	SideBar     sideBarConfig
 	Workspace   workspaceConfig
-	Statusline  statusLineConfig
 	FileExplore fileExploreConfig
 	Popupmenu   popupMenuConfig
 	Palette     paletteConfig
@@ -24,7 +23,6 @@ type gonvimConfig struct {
 	mu          sync.RWMutex
 	Tabline     tabLineConfig
 	ScrollBar   scrollBarConfig
-	Lint        lintConfig
 }
 
 type editorConfig struct {
@@ -104,19 +102,6 @@ type messageConfig struct {
 	Transparent float64
 }
 
-type statusLineConfig struct {
-	VisualModeColor   string
-	ModeIndicatorType string
-	NormalModeColor   string
-	CommandModeColor  string
-	InsertModeColor   string
-	ReplaceModeColor  string
-	TerminalModeColor string
-	Left              []string
-	Right             []string
-	Visible           bool
-}
-
 type tabLineConfig struct {
 	Visible  bool
 	ShowIcon bool
@@ -129,10 +114,6 @@ type popupMenuConfig struct {
 	DetailWidth int
 	ShowDetail  bool
 	ShowDigit   bool
-}
-
-type lintConfig struct {
-	Visible bool
 }
 
 type miniMapConfig struct {
@@ -208,9 +189,6 @@ func newConfig(home string) (string, gonvimConfig) {
 	if config.Editor.Transparent <= 0.1 {
 		config.Editor.Transparent = 1.0
 	}
-	if config.Statusline.ModeIndicatorType == "" {
-		config.Statusline.ModeIndicatorType = "textLabel"
-	}
 
 	if config.Editor.FontFamily == "" {
 		switch runtime.GOOS {
@@ -228,25 +206,6 @@ func newConfig(home string) (string, gonvimConfig) {
 
 	if config.Editor.Linespace < 0 {
 		config.Editor.Linespace = 6
-	}
-
-	if config.Statusline.NormalModeColor == "" {
-		config.Statusline.NormalModeColor = newRGBA(60, 171, 235, 1).Hex()
-	}
-	if config.Statusline.CommandModeColor == "" {
-		config.Statusline.CommandModeColor = newRGBA(82, 133, 184, 1).Hex()
-	}
-	if config.Statusline.InsertModeColor == "" {
-		config.Statusline.InsertModeColor = newRGBA(42, 188, 180, 1).Hex()
-	}
-	if config.Statusline.VisualModeColor == "" {
-		config.Statusline.VisualModeColor = newRGBA(153, 50, 204, 1).Hex()
-	}
-	if config.Statusline.ReplaceModeColor == "" {
-		config.Statusline.ReplaceModeColor = newRGBA(255, 140, 10, 1).Hex()
-	}
-	if config.Statusline.TerminalModeColor == "" {
-		config.Statusline.TerminalModeColor = newRGBA(119, 136, 153, 1).Hex()
 	}
 
 	if config.SideBar.Width == 0 {
@@ -412,19 +371,10 @@ func (c *gonvimConfig) init() {
 
 	// ----
 
-	c.Statusline.Visible = false
-	c.Statusline.ModeIndicatorType = "textLabel"
-	c.Statusline.Left = []string{"mode", "filepath", "filename"}
-	c.Statusline.Right = []string{"git", "filetype", "fileformat", "fileencoding", "curpos", "lint"}
-
-	// ----
-
 	c.Tabline.Visible = true
 	c.Tabline.ShowIcon = true
 
 	// ----
-
-	c.Lint.Visible = false
 
 	// ----
 

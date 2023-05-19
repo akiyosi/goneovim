@@ -574,28 +574,6 @@ All Options are follows:
         # Transparent = 1.0
         
         
-        ## The statusline configuration below relates to the display of Goenovim's own external status lines.
-        ## If you want to use neovim's status line plugin, you should disable its display.
-        # [Statusline]
-        ## Whether or not to display the external status line
-        # Visible = false
-        
-        ## Options: "textLabel" / "icon" / "background" / "none"
-        # ModeIndicatorType = "textLabel"
-        
-        ## Optional setting colors per Neovim editing modes
-        # NormalModeColor = "#3cabeb"
-        # CommandModeColor = "#5285b8"
-        # InsertModeColor = "#2abcb4"
-        # ReplaceModeColor = "#ff8c0a"
-        # VisualModeColor = "#9932cc"
-        # TerminalModeColor = "#778899"
-        
-        ## Statusline components
-        # Left = [ "mode", "filepath", "filename" ]
-        # Right = [ "message", "git", "filetype", "fileformat", "fileencoding", "curpos", "lint" ]
-        
-        
         ## Configure externalized tabline UI.
         [Tabline]
         ## Whether or not to display the external tabline
