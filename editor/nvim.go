@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -547,33 +549,23 @@ func loadGinitVim(neovim *nvim.Nvim) {
 }
 
 func loadHelpDoc(neovim *nvim.Nvim) {
-	// Add runtimepath
-	runtimepath := getResourcePath() + "/runtime/"
-	cmd := fmt.Sprintf("let &rtp.=',%s'", runtimepath)
-
+	var helpdocpath, runtimepath, cmd string
 	var result bool
-	// resultCh := make(chan bool, 5)
 
-	// go func() {
-	// 	neovim.Exec(cmd, result)
-	// 	resultCh <- result
-	// }()
-	// select {
-	// case <-time.After(80 * time.Millisecond):
-	// }
-	neovim.Exec(cmd, result)
+	// make register command
+	runtimepath = filepath.Join(getResourcePath(), "runtime")
+	if isFileExist(runtimepath) {
+		cmd = fmt.Sprintf("let &rtp.=',%s'", runtimepath)
+		neovim.Exec(cmd, result)
+		helpdocpath = filepath.Join(runtimepath, "doc")
+		cmd = fmt.Sprintf(`try | helptags %s | catch /^Vim\%%((\a\+)\)\=:E/ | endtry`, helpdocpath)
+	} else {
+		xdgDataHome := os.Getenv("XDG_DATA_HOME")
+		helpdocpath = filepath.Join(xdgDataHome, "nvim", "site", "doc")
+		goneovimHelp := filepath.Join(helpdocpath, "goneovim.txt")
+		cmd = fmt.Sprintf(`try | helptags %s | catch /^Vim\%%((\a\+)\)\=:E/ | endtry`, helpdocpath)
+	}
 
-	// Generate goneovim helpdoc tag
-	helpdocpath := getResourcePath() + "/runtime/doc"
-	cmd = fmt.Sprintf(`try | helptags %s | catch /^Vim\%%((\a\+)\)\=:E/ | endtry`, helpdocpath)
-
-	// go func() {
-	// 	neovim.Exec(cmd, result)
-	// 	resultCh <- result
-	// }()
-	// select {
-	// case <-time.After(80 * time.Millisecond):
-	// }
 	neovim.Exec(cmd, result)
 }
 
