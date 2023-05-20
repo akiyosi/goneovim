@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -1437,6 +1438,21 @@ func (s *Screen) update() {
 			if !win.background.equals(s.ws.background) {
 				win.background = s.ws.background.copy()
 				win.fill()
+			}
+
+			// Suppressed an issue where the cursor remains
+			// when moving the cursor in PopOS environment.
+			if runtime.GOOS == "linux" {
+				if s.ws.viewport == s.ws.oldViewport {
+					_, col := win.s.ws.cursor.getRowAndColFromScreen()
+					font := win.getFont()
+					x := int(math.Ceil(float64(col) * font.cellwidth))
+					win.Update2(
+						x, 0,
+						int(math.Ceil(font.cellwidth)),
+						s.height,
+					)
+				}
 			}
 
 			win.update()
