@@ -562,7 +562,6 @@ func loadHelpDoc(neovim *nvim.Nvim) {
 	} else {
 		xdgDataHome := os.Getenv("XDG_DATA_HOME")
 		helpdocpath = filepath.Join(xdgDataHome, "nvim", "site", "doc")
-		goneovimHelp := filepath.Join(helpdocpath, "goneovim.txt")
 		cmd = fmt.Sprintf(`try | helptags %s | catch /^Vim\%%((\a\+)\)\=:E/ | endtry`, helpdocpath)
 	}
 
