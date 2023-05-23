@@ -3,7 +3,7 @@ Goneovim
 
 ![CI](https://github.com/akiyosi/goneovim/workflows/CI/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/goneovim)](https://goreportcard.com/report/github.com/akiyosi/goneovim)
-![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.6.4/total)
+![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.6.5/total)
 [![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
 
 Goneovim is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
@@ -35,7 +35,6 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 - Fast
 - Cross-platform
 - Modern Text Editor Features
-  - Minimap
   - Smooth pixel scroll (Support for both touchpad and Vim scroll command reactions.)
   - Animated Cursor
   - Ligatures
@@ -46,8 +45,10 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
   - Externalizable tabline, popupmenu, wildmenu, cmdline, messages
   - Support gui option: `guifont`, `guifontwide`, `guifont=*`, `linespace`, `guicursor`. You don't need `neovim-gui-shim`
   - Support mouse
-  - Independent font settings per window (currently experimental)
+  - Independent font settings per window (experimental)
   - Attach/Connect feature to a remote nvim
+  - WSL integration (for Windows)
+  - Own clipboard provider
 - Basic feature as a Text Editor
   - Multi byte character
   - Drag and Drop files
@@ -58,7 +59,7 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 
 
 ## Requirements
-* Neovim [v0.8.1](https://github.com/neovim/neovim/releases/tag/v0.8.1) or [Nightly](https://github.com/neovim/neovim/releases/tag/nightly)
+* Neovim [v0.9.0](https://github.com/neovim/neovim/releases/tag/v0.9.0) or [Nightly](https://github.com/neovim/neovim/releases/tag/nightly)
 
 See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
@@ -105,8 +106,8 @@ For more information, see [Development](https://github.com/akiyosi/goneovim/blob
 ## Similar projects
 
 * [Neovide](https://github.com/Kethku/neovide)
-* [Gnvim](https://github.com/vhakulinen/gnvim)
 * [FVim](https://github.com/yatli/fvim)
+* [Gnvim](https://github.com/vhakulinen/gnvim)
 * [Uivonim](https://github.com/smolck/uivonim)
 
 ## Credits
@@ -125,7 +126,7 @@ For more information, see [Development](https://github.com/akiyosi/goneovim/blob
 ### Smooth Scroll for neovim scroll commands
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-smoothscroll-2.gif)
 
-### Minimap, External Float Window
+### External Float Window, Minimap(experimental)
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/v0.4.10-top.png)
 
 
