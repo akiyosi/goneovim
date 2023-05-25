@@ -1120,6 +1120,7 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 
 	input := e.convertKey(event)
 
+	e.putLog("key input for nvim::", "input:", input)
 	if event.IsAutoRepeat() {
 		e.isKeyAutoRepeating = true
 	}
@@ -1193,7 +1194,7 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	mod := event.Modifiers()
 
 	if e.opts.Debug != "" {
-		e.putLog("key input:", fmt.Sprintf("%s, %d, %v", text, key, mod))
+		e.putLog("key input(raw)::", fmt.Sprintf("text: %s, key: %d, mod: %v", text, key, mod))
 	}
 
 	// this is macmeta alternatively
