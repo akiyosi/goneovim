@@ -184,6 +184,11 @@ func (p *Palette) setColor() {
 
 	fg := p.foreground.String()
 	bg := editor.colors.widgetBg
+	if bg.HSV().V < 0.1 {
+		bg = warpColor(bg, -15)
+	} else if bg.HSV().V < 0.1 {
+		bg = warpColor(bg, -5)
+	}
 	inactiveFg := editor.colors.inactiveFg
 
 	transparent := transparent() * transparent()
