@@ -932,16 +932,14 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 				w.applyTemporaryMousescroll("ver:1,hor:1")
 			}
 		}
-		if emitScrollEnd {
-			w.applyTemporaryMousescroll(w.s.ws.mouseScroll)
-		}
 	}
 	// if value is "pixel":
 	if editor.config.Editor.MouseScrollingUnit == "pixel" {
 		w.applyTemporaryMousescroll("ver:1,hor:1")
-		if emitScrollEnd {
-			w.applyTemporaryMousescroll(w.s.ws.mouseScroll)
-		}
+	}
+
+	if emitScrollEnd {
+		defer w.applyTemporaryMousescroll(w.s.ws.mouseScroll)
 	}
 
 	if editor.config.Editor.DisableHorizontalScroll {
@@ -1064,10 +1062,23 @@ func (w *Window) isEventEmitOnCursorGrid() bool {
 func (w *Window) smoothUpdate(v, h int, emitScrollEnd bool) (int, int) {
 	var vert, horiz int
 	font := w.getFont()
+	horizontalScrollAmount := font.cellwidth
+	verticalScrollAmount := float64(font.lineHeight)
 
 	if emitScrollEnd {
+
 		w.scrollPixels[0] = 0
-		w.scrollPixels[1] = 0
+
+		if w.s.ws.isMappingScrollKey || w.s.ws.mouseScroll != "" {
+			if float64(w.scrollPixels[1]) > 0 {
+				w.s.ws.nvim.InputMouse("wheel", "up", "", w.grid, w.s.cursor[1], w.s.cursor[1])
+			} else if float64(w.scrollPixels[1]) < 0 {
+				w.s.ws.nvim.InputMouse("wheel", "down", "", w.grid, w.s.cursor[0], w.s.cursor[1])
+			}
+		} else {
+			w.scrollPixels[1] = 0
+		}
+
 		w.queueRedrawAll()
 		w.refreshUpdateArea(1)
 		w.update()
@@ -1087,8 +1098,6 @@ func (w *Window) smoothUpdate(v, h int, emitScrollEnd bool) (int, int) {
 
 	dx := math.Abs(float64(w.scrollPixels[0]))
 	dy := math.Abs(float64(w.scrollPixels[1]))
-	horizontalScrollAmount := font.cellwidth
-	verticalScrollAmount := float64(font.lineHeight)
 
 	if math.Abs(float64(w.scrollPixels3)) < 20 {
 		if math.Abs(float64(h)) > math.Abs(float64(v)) {
