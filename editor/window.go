@@ -1624,7 +1624,7 @@ func (w *Window) update() {
 	end := w.queueRedrawArea[3]
 	extendedDrawingArea := int(font.cellwidth)
 
-	drawWithSingleRect := w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0 || editor.config.Editor.IndentGuide || w.s.name == "minimap" || (editor.config.Editor.SmoothScroll && w.scrollPixels2 != 0)
+	drawWithSingleRect := (w.lastScrollphase != core.Qt__ScrollEnd && (w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0)) || editor.config.Editor.IndentGuide || w.s.name == "minimap" || (editor.config.Editor.SmoothScroll && w.scrollPixels2 != 0)
 	if drawWithSingleRect {
 		begin = 0
 		end = w.rows
@@ -1662,8 +1662,10 @@ func (w *Window) update() {
 		}
 
 		// If screen is minimap
-		if drawWithSingleRect {
+		if drawWithSingleRect && w.s.name == "minimap" {
 			width = w.cols
+		} else if drawWithSingleRect {
+			width = w.maxLenContent
 		}
 		width++
 
