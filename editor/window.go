@@ -1257,9 +1257,6 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 		}
 	}
 
-	if win.isMsgGrid {
-		return
-	}
 	if win.grid == 1 && win.s.name != "minimap" {
 		return
 	}
