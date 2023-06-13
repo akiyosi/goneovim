@@ -2886,9 +2886,7 @@ func newWindow() *Window {
 		switch event.Type() {
 		case core.QEvent__MouseMove:
 			if editor.isHideMouse && editor.config.Editor.HideMouseWhenTyping {
-				ac := gui.NewQCursor2(core.Qt__ArrowCursor)
-				gui.QGuiApplication_SetOverrideCursor(ac)
-				gui.QGuiApplication_ChangeOverrideCursor(ac)
+				gui.QGuiApplication_RestoreOverrideCursor()
 				editor.isHideMouse = false
 			}
 		default:
