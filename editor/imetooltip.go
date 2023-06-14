@@ -30,7 +30,7 @@ func (i *IMETooltip) setQpainterFont(p *gui.QPainter) {
 }
 
 func (i *IMETooltip) getFont() *gui.QFont {
-	if i.s.ws.palette.widget.IsVisible() {
+	if i.s.ws.palette != nil && i.s.ws.palette.widget.IsVisible() {
 		return gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
 	} else {
 		return i.font.fontNew
@@ -52,9 +52,6 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 	if s.lenWindows() == 0 {
 		return 0, 0, 0, 0
 	}
-	if ws.palette == nil {
-		return 0, 0, 0, 0
-	}
 
 	win, ok := s.getWindow(s.ws.cursor.gridid)
 	if !ok {
@@ -62,7 +59,7 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 	}
 	font := win.getFont()
 
-	if ws.palette.widget.IsVisible() {
+	if ws.palette != nil && ws.palette.widget.IsVisible() {
 		x = ws.palette.cursorX + ws.palette.patternPadding
 		y = ws.palette.patternPadding + ws.palette.padding + 1
 		candX = x + ws.palette.widget.Pos().X()
@@ -103,11 +100,8 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 }
 
 func (i *IMETooltip) move(x int, y int) {
-	if i.s.ws.palette == nil {
-		return
-	}
 	padding := 0
-	if i.s.ws.palette.widget.IsVisible() {
+	if i.s.ws.palette != nil && i.s.ws.palette.widget.IsVisible() {
 		padding = i.s.ws.palette.padding
 	}
 	i.Move(core.NewQPoint2(x+padding, y))
@@ -119,10 +113,7 @@ func (i *IMETooltip) hide() {
 }
 
 func (i *IMETooltip) show() {
-	if i.s.ws.palette == nil {
-		return
-	}
-	if !i.s.ws.palette.widget.IsVisible() {
+	if !(i.s.ws.palette != nil && i.s.ws.palette.widget.IsVisible()) {
 		win, ok := i.s.getWindow(i.s.ws.cursor.gridid)
 		if ok {
 			i.SetParent(win)

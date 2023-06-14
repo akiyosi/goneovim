@@ -154,12 +154,14 @@ func (ws *Workspace) initUI() {
 		ws.cmdline.ws = ws
 	}
 
-	// palette
-	ws.palette = initPalette()
-	ws.palette.ws = ws
-	ws.palette.widget.SetParent(ws.widget)
-	ws.palette.setColor()
-	ws.palette.hide()
+	// palette for cmdline
+	if editor.config.Editor.ExtCmdline {
+		ws.palette = initPalette()
+		ws.palette.ws = ws
+		ws.palette.widget.SetParent(ws.widget)
+		ws.palette.setColor()
+		ws.palette.hide()
+	}
 
 	// popupmenu
 	if editor.config.Editor.ExtPopupmenu {

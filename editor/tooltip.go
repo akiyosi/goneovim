@@ -87,7 +87,7 @@ func (t *Tooltip) drawContent(p *gui.QPainter, f func(*gui.QPainter)) {
 			// draw underline
 			if underline {
 				var underlinePos float64 = 1
-				if t.s.ws.palette.widget.IsVisible() {
+				if t.s.ws.palette != nil && t.s.ws.palette.widget.IsVisible() {
 					underlinePos = 2
 				}
 
