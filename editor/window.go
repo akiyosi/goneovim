@@ -1137,7 +1137,9 @@ func (win *Window) smoothScroll(diff int) {
 			return
 		}
 		font := win.getFont()
+
 		win.scrollPixels2 = int(float64(diff) * v * float64(font.lineHeight))
+
 		y := 0
 		if win.getWinbar() != "" {
 			y = font.lineHeight

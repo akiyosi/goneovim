@@ -62,7 +62,6 @@ type Workspace struct {
 	nvim               *nvim.Nvim
 	widget             *widgets.QWidget
 	special            *RGBA
-	viewportQue        chan [6]int
 	background         *RGBA
 	colorscheme        string
 	cwdlabel           string
@@ -110,7 +109,6 @@ func newWorkspace() *Workspace {
 	editor.putLog("initialize workspace")
 	ws := &Workspace{
 		stop:         make(chan struct{}),
-		viewportQue:  make(chan [6]int, 1000),
 		foreground:   newRGBA(255, 255, 255, 1),
 		background:   newRGBA(0, 0, 0, 1),
 		special:      newRGBA(255, 255, 255, 1),
@@ -1168,24 +1166,6 @@ func (ws *Workspace) flush() {
 		ws.shouldUpdate.globalgrid = false
 	}
 
-	// handle viewport event for smooth scroll
-	for {
-		if len(ws.viewportQue) == 0 {
-			break
-		}
-		select {
-		case viewport := <-ws.viewportQue:
-			win, delta, ok := ws.handleViewport(viewport)
-			if delta == 0 {
-				continue
-			}
-			if ok {
-				win.smoothScroll(delta)
-			}
-		default:
-		}
-	}
-
 	// update cursor
 	if ws.shouldUpdate.cursor {
 		ws.cursor.update()
@@ -1449,19 +1429,6 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 			delta = util.ReflectToInt(arg[7])
 		}
 
-		if !(ws.oldViewport == ws.viewport && ws.viewport == viewport) {
-			if viewport[0] < viewport[1] {
-				ws.viewportQue <- [6]int{
-					top,
-					bottom,
-					curLine,
-					curCol,
-					grid,
-					delta,
-				}
-			}
-		}
-
 		// Only the viewport of the buffer where the cursor is located is used internally.
 		if grid == ws.cursor.gridid {
 			ws.viewportMutex.Lock()
@@ -1471,6 +1438,26 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 			ws.maxLineDelta = maxLine - ws.maxLine
 			ws.maxLine = maxLine
 		}
+
+		if !(ws.oldViewport == ws.viewport && ws.viewport == viewport) {
+			win, delta, ok := ws.handleViewport(
+				[6]int{
+					top,
+					bottom,
+					curLine,
+					curCol,
+					grid,
+					delta,
+				},
+			)
+			if delta == 0 {
+				continue
+			}
+			if ok {
+				win.smoothScroll(delta)
+			}
+		}
+
 	}
 }
 
