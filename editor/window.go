@@ -1064,6 +1064,7 @@ func (w *Window) isEventEmitOnCursorGrid() bool {
 func (w *Window) smoothUpdate(v, h int, emitScrollEnd bool) (int, int) {
 	var vert, horiz int
 	font := w.getFont()
+	w.s.ws.shouldUpdate.deltaUpdate = true
 
 	if emitScrollEnd {
 		w.scrollPixels[0] = 0
@@ -1617,26 +1618,57 @@ func (w *Window) update() {
 	}
 
 	w.redrawMutex.Lock()
+	defer func() {
+		w.redrawMutex.Unlock()
+		w.queueRedrawReset()
+	}()
 
 	font := w.getFont()
-	begin := w.queueRedrawArea[1]
-	end := w.queueRedrawArea[3]
+	colBegin := w.queueRedrawArea[0]
+	rowBegin := w.queueRedrawArea[1]
+	colEnd := w.queueRedrawArea[2]
+	rowEnd := w.queueRedrawArea[3]
 	extendedDrawingArea := int(font.cellwidth)
 
 	drawWithSingleRect := (w.lastScrollphase != core.Qt__ScrollEnd && (w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0)) || editor.config.Editor.IndentGuide || w.s.name == "minimap" || (editor.config.Editor.SmoothScroll && w.scrollPixels2 != 0)
 	if drawWithSingleRect {
-		begin = 0
-		end = w.rows
+		rowBegin = 0
+		rowEnd = w.rows
 	}
 
 	// Mitigate #389
 	if runtime.GOOS == "windows" {
-		begin = 0
-		end = w.rows
+		rowBegin = 0
+		rowEnd = w.rows
 	}
 
-	for i := begin; i < end; i++ {
+	if !w.s.ws.shouldUpdate.deltaUpdate {
+		width := colEnd - colBegin + 1
+		if width < 0 {
+			width = 0
+		}
+		height := rowEnd - rowBegin + 1
+		if height < 0 {
+			height = 0
+		}
+		if width == 0 && height == 0 {
+			return
+		}
+		w.Update2(
+			int(math.Floor(float64(colBegin)*font.cellwidth)),
+			rowBegin*font.lineHeight,
+			int(math.Ceil(float64(width)*font.cellwidth))+extendedDrawingArea,
+			(height)*font.lineHeight,
+		)
 
+		for i := rowBegin; i < rowEnd; i++ {
+			copy(w.contentMaskOld[i], w.contentMask[i])
+		}
+
+		return
+	}
+
+	for i := rowBegin; i < rowEnd; i++ {
 		if len(w.content) <= i {
 			continue
 		}
@@ -1711,10 +1743,14 @@ func (w *Window) update() {
 					if x < 0 {
 						x = 0
 					}
+					updateWidth := jj - start
+					if updateWidth < 0 {
+						continue
+					}
 					rect := [4]int{
 						x, // update a slightly larger area.
 						lineHeightI,
-						int(math.Ceil(float64(jj-start)*font.cellwidth)) + extendedDrawingArea, // update a slightly larger area.
+						int(math.Ceil(float64(updateWidth)*font.cellwidth)) + extendedDrawingArea, // update a slightly larger area.
 						font.lineHeight,
 					}
 					rects = append(rects, rect)
@@ -1736,19 +1772,25 @@ func (w *Window) update() {
 		// Update contentMaskOld
 		copy(w.contentMaskOld[i], contentMaskI)
 	}
+}
 
+func (w *Window) queueRedrawReset() {
 	// reset redraw area
+	w.redrawMutex.Lock()
 	w.queueRedrawArea[0] = w.cols
 	w.queueRedrawArea[1] = w.rows
 	w.queueRedrawArea[2] = 0
 	w.queueRedrawArea[3] = 0
-
 	w.redrawMutex.Unlock()
 }
 
 func (w *Window) queueRedrawAll() {
+	// redraw all
 	w.redrawMutex.Lock()
-	w.queueRedrawArea = [4]int{0, 0, w.cols, w.rows}
+	w.queueRedrawArea[0] = 0
+	w.queueRedrawArea[1] = 0
+	w.queueRedrawArea[2] = w.cols
+	w.queueRedrawArea[3] = w.rows
 	w.redrawMutex.Unlock()
 }
 
@@ -2281,12 +2323,11 @@ func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string
 	font := p.Font()
 	fg := highlight.fg()
 	p.SetPen2(fg.QColor())
-	wsfont := w.getFont()
 
 	if highlight.bold {
-		font.SetWeight(wsfont.fontNew.Weight() + 25)
+		font.SetBold(true)
 	} else {
-		font.SetWeight(wsfont.fontNew.Weight())
+		font.SetBold(false)
 	}
 	if highlight.italic {
 		font.SetItalic(true)
@@ -2545,7 +2586,6 @@ func (w *Window) drawForeground(p *gui.QPainter, y int, col int, cols int) {
 	if w.s.name == "minimap" {
 		w.drawMinimap(p, y, col, cols)
 	} else {
-		// w.drawText(p, y, col, cols)
 		w.drawText(p, y, 0, w.cols)
 		w.drawTextDecoration(p, y, col, cols)
 	}

@@ -768,6 +768,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 					normalWidth: false,
 					covered:     false,
 				}
+				contentMask[i][j] = true
 			}
 		}
 	}
@@ -1408,6 +1409,7 @@ func (s *Screen) detectCoveredCellInGlobalgrid() {
 				// fmt.Printf("\n")
 			}
 		}
+
 		gwin.queueRedraw(0, 0, gwin.cols, gwin.rows)
 
 		return true

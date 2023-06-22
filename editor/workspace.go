@@ -34,9 +34,10 @@ type neovimSignal struct {
 }
 
 type ShouldUpdate struct {
-	minimap    bool
-	cursor     bool
-	globalgrid bool
+	minimap     bool
+	cursor      bool
+	globalgrid  bool
+	deltaUpdate bool
 }
 
 // Workspace is an editor workspace
@@ -935,6 +936,8 @@ func handleEvent(update interface{}) (event string, ok bool) {
 
 func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 	s := ws.screen
+	ws.shouldUpdate.deltaUpdate = false
+
 	for _, update := range updates {
 		event, ok := handleEvent(update[0])
 		if !ok {
@@ -1033,6 +1036,7 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 		case "grid_scroll":
 			s.gridScroll(args)
 			ws.shouldUpdate.minimap = true
+			ws.shouldUpdate.deltaUpdate = true
 
 		// Multigrid Events
 		case "win_pos":
@@ -1174,6 +1178,7 @@ func (ws *Workspace) flush() {
 
 	// update screen
 	ws.screen.update()
+	ws.shouldUpdate.deltaUpdate = false
 
 	// update external scrollbar
 	ws.updateScrollbar()
@@ -1462,6 +1467,11 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 }
 
 func (ws *Workspace) handleViewport(vp [6]int) (*Window, int, bool) {
+	// smooth scroll feature disabled
+	if !editor.config.Editor.SmoothScroll {
+		return nil, 0, false
+	}
+
 	win, ok := ws.screen.getWindow(vp[4])
 	if !ok {
 		return nil, 0, false
@@ -1472,11 +1482,6 @@ func (ws *Workspace) handleViewport(vp [6]int) (*Window, int, bool) {
 
 	delta := vp[5]
 	if delta == 0 {
-		return nil, 0, false
-	}
-
-	// smooth scroll feature disabled
-	if !editor.config.Editor.SmoothScroll {
 		return nil, 0, false
 	}
 
