@@ -92,6 +92,7 @@ type Options struct {
 	Version      bool    `long:"version" description:"Print Goneovim version"`
 	Wsl          *string `long:"wsl" description:"Attach to nvim process in wsl environment with distribution(default) [e.g. --wsl=Ubuntu]" optional:"yes" optional-value:""`
 	Nofork       bool    `long:"nofork" description:"Run in foreground"`
+	NoConfig     bool    `long:"noconfig" description:"Run Goneovim with no config. (Equivalent to loading an empty settings.toml)"`
 }
 
 // Editor is the editor
@@ -222,7 +223,7 @@ func InitEditor(options Options, args []string) {
 	e.putLog("detecting home directory path:", e.homeDir)
 
 	// load config
-	e.configDir, e.config = newConfig(e.homeDir)
+	e.configDir, e.config = newConfig(e.homeDir, e.opts.NoConfig)
 	e.putLog("Detecting the goneovim configuration directory:", e.configDir)
 	e.overwriteConfigByCLIOption()
 

@@ -145,7 +145,7 @@ type fileExploreConfig struct {
 	MaxDisplayItems int
 }
 
-func newConfig(home string) (string, gonvimConfig) {
+func newConfig(home string, skipConfigLoading bool) (string, gonvimConfig) {
 
 	// init
 	var config gonvimConfig
@@ -154,10 +154,12 @@ func newConfig(home string) (string, gonvimConfig) {
 	// detect configdir, configfile
 	configDir, configFilePath := detectConfig(home)
 
-	// load toml
-	_, err := toml.DecodeFile(configFilePath, &config)
-	if err != nil {
-		fmt.Println(err)
+	if !skipConfigLoading {
+		// load toml
+		_, err := toml.DecodeFile(configFilePath, &config)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	// Setting ExtMessages to true should automatically set ExtCmdLine to true as well
