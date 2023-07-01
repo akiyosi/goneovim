@@ -2281,12 +2281,11 @@ func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string
 	font := p.Font()
 	fg := highlight.fg()
 	p.SetPen2(fg.QColor())
-	wsfont := w.getFont()
 
 	if highlight.bold {
-		font.SetWeight(wsfont.fontNew.Weight() + 25)
+		font.SetBold(true)
 	} else {
-		font.SetWeight(wsfont.fontNew.Weight())
+		font.SetBold(false)
 	}
 	if highlight.italic {
 		font.SetItalic(true)

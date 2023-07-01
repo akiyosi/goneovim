@@ -1462,6 +1462,11 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 }
 
 func (ws *Workspace) handleViewport(vp [6]int) (*Window, int, bool) {
+	// smooth scroll feature disabled
+	if !editor.config.Editor.SmoothScroll {
+		return nil, 0, false
+	}
+
 	win, ok := ws.screen.getWindow(vp[4])
 	if !ok {
 		return nil, 0, false
@@ -1472,11 +1477,6 @@ func (ws *Workspace) handleViewport(vp [6]int) (*Window, int, bool) {
 
 	delta := vp[5]
 	if delta == 0 {
-		return nil, 0, false
-	}
-
-	// smooth scroll feature disabled
-	if !editor.config.Editor.SmoothScroll {
 		return nil, 0, false
 	}
 
