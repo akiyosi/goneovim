@@ -30,7 +30,7 @@ var editor *Editor
 
 const (
 	WORKSPACELEN    = 10
-	NVIMCALLTIMEOUT = 160
+	NVIMCALLTIMEOUT = 320
 )
 
 type editorSignal struct {
