@@ -1043,14 +1043,15 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 
 func (w *Window) applyTemporaryMousescroll(ms string) {
 	cmd := "set mousescroll=" + ms
-	var result bool
-	resultCh := make(chan bool, 5)
+	o := make(map[string]interface{})
+	o["output"] = true
+	outCh := make(chan map[string]interface{}, 5)
 	go func() {
-		w.s.ws.nvim.Exec(cmd, result)
-		resultCh <- result
+		out, _ := w.s.ws.nvim.Exec(cmd, o)
+		outCh <- out
 	}()
 	select {
-	case <-resultCh:
+	case <-outCh:
 		w.s.ws.mouseScrollTemp = ms
 	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
