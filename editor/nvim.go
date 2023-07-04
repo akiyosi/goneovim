@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/atotto/clipboard"
@@ -536,27 +537,42 @@ func loadGinitVim(neovim *nvim.Nvim) {
 		return
 	}
 
-	var result bool
-	_, err := neovim.Exec(editor.config.Editor.GinitVim, result)
-	if err != nil {
-		editor.pushNotification(
-			NotifyWarn,
-			0,
-			"An error occurs while processing Vimscript in Ginitvim.\n"+err.Error(),
-			notifyOptionArg([]*NotifyButton{}),
-		)
+	o := make(map[string]interface{})
+	o["output"] = true
+	errCh := make(chan error, 5)
+
+	cmd := editor.config.Editor.GinitVim
+
+	go func() {
+		_, err := neovim.Exec(cmd, o)
+		errCh <- err
+	}()
+	select {
+	case err := <-errCh:
+		// if err is not nil
+		if err != nil {
+			editor.pushNotification(
+				NotifyWarn,
+				0,
+				"An error occurs while processing Vimscript in Ginitvim.\n"+err.Error(),
+				notifyOptionArg([]*NotifyButton{}),
+			)
+		}
+	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
 	}
+
 }
 
 func loadHelpDoc(neovim *nvim.Nvim) {
 	var helpdocpath, runtimepath, cmd string
-	var result bool
+	o := make(map[string]interface{})
+	o["output"] = true
 
 	// make register command
 	runtimepath = filepath.Join(getResourcePath(), "runtime")
 	if isFileExist(runtimepath) {
 		cmd = fmt.Sprintf("let &rtp.=',%s'", runtimepath)
-		neovim.Exec(cmd, result)
+		neovim.Exec(cmd, o)
 		helpdocpath = filepath.Join(runtimepath, "doc")
 		cmd = fmt.Sprintf(`try | helptags %s | catch /^Vim\%%((\a\+)\)\=:E/ | endtry`, helpdocpath)
 	} else {
@@ -565,7 +581,7 @@ func loadHelpDoc(neovim *nvim.Nvim) {
 		cmd = fmt.Sprintf(`try | helptags %s | catch /^Vim\%%((\a\+)\)\=:E/ | endtry`, helpdocpath)
 	}
 
-	neovim.Exec(cmd, result)
+	neovim.Exec(cmd, o)
 }
 
 func getResourcePath() string {
