@@ -103,6 +103,7 @@ type Workspace struct {
 	cursorStyleEnabled bool
 	isDrawTabline      bool
 	isMouseEnabled     bool
+	isTerminalMode     bool
 }
 
 func newWorkspace() *Workspace {
@@ -1233,10 +1234,14 @@ func (ws *Workspace) modeEnablingIME(mode string) {
 	if len(editor.config.Editor.ModeEnablingIME) == 0 {
 		return
 	}
-	if ws.mode == mode {
-		return
+	// if ws.mode == mode {
+	// 	return
+	// }
+	if ws.isTerminalMode {
+		mode = "terminal"
 	}
 	doEnable := false
+
 	for _, m := range editor.config.Editor.ModeEnablingIME {
 		if mode == m {
 			doEnable = true
@@ -1706,6 +1711,12 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 			ws.filepath = updates[1].(string)
 			ws.minimap.mu.Unlock()
 		}
+	case "gonvim_termenter":
+		ws.isTerminalMode = true
+		ws.modeEnablingIME(ws.mode)
+	case "gonvim_termleave":
+		ws.isTerminalMode = false
+		ws.modeEnablingIME(ws.mode)
 	case "gonvim_bufenter":
 		wid := (nvim.Window)(util.ReflectToInt(updates[1]))
 

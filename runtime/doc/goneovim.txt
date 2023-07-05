@@ -456,7 +456,8 @@ All Options are follows:
         ## ModeEnablingIME = ["insert", "cmdline_normal"]
         ## The available mode strings:
         ##   "normal", "insert", "replace", "visual", "visual_select",
-        ##    "cmdline_normal", "cmdline_insert", "cmdline_replace", etc.
+        ##    "cmdline_normal", "cmdline_insert", "cmdline_replace",
+        ##    "terminal"
         # ModeEnablingIME = []
 
         ## This option allows you to hide the mouse cursor in the gooneovim window 

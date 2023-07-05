@@ -435,6 +435,8 @@ func initGui(neovim *nvim.Nvim) {
 	aug GoneovimCore | au! | aug END
 	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
 	au GoneovimCore BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", win_getid())
+	au GoneovimCore TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
+	au GoneovimCore TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
 	aug Goneovim | au! | aug END
 	au Goneovim DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", v:event)
 	au Goneovim BufEnter,TabEnter,DirChanged,TermOpen,TermClose * silent call rpcnotify(0, "Gui", "gonvim_workspace_filepath", expand("%:p"))
