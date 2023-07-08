@@ -908,11 +908,13 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		w.scrollPixels3 = 0
 	}
 	w.lastScrollphase = phase
+
 	emitScrollEnd := (w.lastScrollphase == core.Qt__ScrollEnd)
 
 	// handle MouseScrollingUnit configuration item
 	// if value is "line":
 	doAngleScroll := false
+
 	if editor.config.Editor.MouseScrollingUnit == "line" {
 		doAngleScroll = true
 	}
@@ -992,11 +994,10 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	}
 
 	mod := editor.modPrefix(event.Modifiers())
-	row := int(float64(event.X()) / font.cellwidth)
-	col := int(float64(event.Y()) / float64(font.lineHeight))
+	col := int(float64(event.X()) / font.cellwidth)
+	row := int(float64(event.Y()) / float64(font.lineHeight))
 
 	if w.s.ws.isMappingScrollKey || w.s.ws.mouseScroll != "" {
-
 		if vert != 0 {
 			w.s.ws.nvim.InputMouse("wheel", action, mod, w.grid, row, col)
 		}
@@ -1816,6 +1817,11 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 		horScrollPixels = 0
 		isDrawDefaultBg = true
 	}
+	if w.s.ws.isTerminalMode {
+		verScrollPixels = 0
+		horScrollPixels = 0
+		isDrawDefaultBg = true
+	}
 
 	// isDrawDefaultBg := true
 	// // Simply paint the color into a rectangle
@@ -2245,6 +2251,10 @@ func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight
 		horScrollPixels = 0
 	}
 	if w.getWinbar() != "" && y == 0 {
+		verScrollPixels = 0
+		horScrollPixels = 0
+	}
+	if w.s.ws.isTerminalMode {
 		verScrollPixels = 0
 		horScrollPixels = 0
 	}
