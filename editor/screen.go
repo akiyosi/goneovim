@@ -1621,6 +1621,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		}
 
 		win.anchorwin = anchorwin
+		win.setOptions()
 
 		anchorwinIsExternal := win.anchorwin.isExternal
 
@@ -1745,6 +1746,7 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 				win.setGridGeometry(width, height)
 				win.setResizableForExtWin()
 				win.move(win.pos[0], win.pos[1])
+				win.setOptions()
 				win.raise()
 			}
 
