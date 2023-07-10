@@ -246,7 +246,7 @@ func InitEditor(options Options, args []string) {
 
 	// e.setAppDirPath(home)
 
-	// e.initAppFont()
+	e.initAppFont()
 	e.extFontFamily = e.config.Editor.FontFamily
 	e.extFontSize = e.config.Editor.FontSize
 	e.fontCh = make(chan *Font, 2)
@@ -567,8 +567,8 @@ func (e *Editor) connectAppSignals() {
 			side.show()
 		}
 
-		editor.initAppFont()
-		editor.window.SetupTitle(editor.window.TitleStringLabel.Text())
+		// editor.initAppFont()
+		// editor.window.SetupTitle(editor.window.TitleStringLabel.Text())
 	})
 
 	// When an application is closed with the Close button
