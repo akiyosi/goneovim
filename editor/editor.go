@@ -246,7 +246,6 @@ func InitEditor(options Options, args []string) {
 
 	// e.setAppDirPath(home)
 
-	e.initAppFont()
 	e.extFontFamily = e.config.Editor.FontFamily
 	e.extFontSize = e.config.Editor.FontSize
 	e.fontCh = make(chan *Font, 2)
@@ -515,6 +514,7 @@ func (e *Editor) initWorkspaces(ctx context.Context, signal *neovimSignal, redra
 		}
 
 		ws.initFont()
+		e.initAppFont()
 		ws.registerSignal(signal, redrawUpdates, guiUpdates)
 		ws.updateSize()
 
@@ -566,9 +566,6 @@ func (e *Editor) connectAppSignals() {
 		if e.config.SideBar.Visible {
 			side.show()
 		}
-
-		// editor.initAppFont()
-		// editor.window.SetupTitle(editor.window.TitleStringLabel.Text())
 	})
 
 	// When an application is closed with the Close button

@@ -226,7 +226,6 @@ func (ws *Workspace) initFont() {
 	if ws.tabline != nil {
 		ws.tabline.font = ws.font.fontNew
 	}
-
 }
 
 func (ws *Workspace) lazyLoadUI() {
@@ -1887,13 +1886,9 @@ func (ws *Workspace) guiFont(args string) {
 	ws.screen.tooltip.setFont(font)
 	ws.cursor.updateFont(nil, font)
 
-	// Change external font if font setting of setting.yml is nothing
-	if editor.config.Editor.FontFamily == "" {
-		editor.extFontFamily = fontFamily
-	}
-	if editor.config.Editor.FontSize == 0 {
-		editor.extFontSize = int(fontHeight)
-	}
+	// TODO:
+	// Consideration of application UI policies related to external and Neovim internal fonts,
+	// and provide a way to change external fonts.
 
 	if ws.tabline != nil {
 		ws.tabline.updateFont()

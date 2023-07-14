@@ -22,14 +22,12 @@ type Tabline struct {
 	layout          *widgets.QLayout
 	font            *gui.QFont
 	color           *RGBA
-	fontfamily      string
 	currentFileText string
 	Tabs            []*Tab
 	showtabline     int
 	marginBottom    int
 	height          int
 	CurrentID       int
-	fontsize        int
 	marginTop       int
 }
 
@@ -257,16 +255,6 @@ func (t *Tabline) updateFont() {
 		return
 	}
 
-	// size := editor.extFontSize - 1
-	// if size <= 0 {
-	// 	size = editor.extFontSize
-	// }
-	// if t.fontfamily == editor.extFontFamily && t.fontsize == size {
-	// 	return
-	// }
-	// t.fontfamily = editor.extFontFamily
-	// t.fontsize = editor.extFontSize
-	// t.font = gui.NewQFont2(editor.extFontFamily, size, 1, false)
 	t.font = t.ws.font.fontNew
 
 	// t.widget.SetFont(t.font)
