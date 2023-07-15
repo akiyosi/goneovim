@@ -17,14 +17,12 @@ import (
 
 	"github.com/akiyosi/goneovim/util"
 	frameless "github.com/akiyosi/goqtframelesswindow"
+	"github.com/akiyosi/qt/core"
+	"github.com/akiyosi/qt/gui"
+	"github.com/akiyosi/qt/widgets"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
-	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
-	"github.com/therecipe/qt/widgets"
 )
-
-var Version string
 
 var editor *Editor
 

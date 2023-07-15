@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/therecipe/qt/gui"
+	"github.com/akiyosi/qt/gui"
 )
 
 // RGBA is
