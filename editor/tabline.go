@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/akiyosi/goneovim/util"
+	"github.com/akiyosi/qt/core"
+	"github.com/akiyosi/qt/gui"
+	"github.com/akiyosi/qt/svg"
+	"github.com/akiyosi/qt/widgets"
 	shortpath "github.com/akiyosi/short_path"
 	"github.com/neovim/go-client/nvim"
-	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
-	"github.com/therecipe/qt/svg"
-	"github.com/therecipe/qt/widgets"
 )
 
 // Tabline of the editor
