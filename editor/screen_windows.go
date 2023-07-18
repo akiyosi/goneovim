@@ -1,7 +1,7 @@
 package editor
 
 import (
-	"github.com/akiyosi/qt/core"
+	"github.com/therecipe/qt/core"
 )
 
 func createExternalWin() *ExternalWin {

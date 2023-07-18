@@ -9,9 +9,9 @@ import (
 	// "github.com/felixge/fgprof"
 
 	"github.com/akiyosi/goneovim/editor"
-	"github.com/akiyosi/qt/core"
 	"github.com/jessevdk/go-flags"
 	"github.com/mattn/go-isatty"
+	"github.com/therecipe/qt/core"
 )
 
 func main() {

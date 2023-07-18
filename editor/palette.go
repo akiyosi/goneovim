@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/akiyosi/goneovim/util"
-	"github.com/akiyosi/qt/core"
-	"github.com/akiyosi/qt/gui"
-	"github.com/akiyosi/qt/svg"
-	"github.com/akiyosi/qt/widgets"
+	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/svg"
+	"github.com/therecipe/qt/widgets"
 )
 
 // Palette is the popup for cmdline
