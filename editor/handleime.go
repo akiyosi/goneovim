@@ -6,7 +6,7 @@ import "C"
 import (
 	"runtime"
 
-	"github.com/therecipe/qt/gui"
+	"github.com/akiyosi/qt/gui"
 )
 
 func selectionPosInPreeditStr(event *gui.QInputMethodEvent) (cursorPos, selectionLength int) {

@@ -6,10 +6,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/akiyosi/goneovim/util"
-	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
-	"github.com/therecipe/qt/svg"
-	"github.com/therecipe/qt/widgets"
+	"github.com/akiyosi/qt/core"
+	"github.com/akiyosi/qt/gui"
+	"github.com/akiyosi/qt/svg"
+	"github.com/akiyosi/qt/widgets"
 )
 
 // NotifyLevel is notification type like "warn", "error"

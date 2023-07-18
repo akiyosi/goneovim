@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 package editor
@@ -6,8 +7,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/therecipe/qt/core"
-	"github.com/therecipe/qt/gui"
+	"github.com/akiyosi/qt/core"
+	"github.com/akiyosi/qt/gui"
 )
 
 func TestLinuxEditor_convertKey(t *testing.T) {
