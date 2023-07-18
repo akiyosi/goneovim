@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/akiyosi/goneovim/util"
-	"github.com/akiyosi/qt/widgets"
 	"github.com/neovim/go-client/nvim"
+	"github.com/therecipe/qt/widgets"
 )
 
 type Filer struct {

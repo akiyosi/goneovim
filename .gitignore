@@ -4,7 +4,6 @@
 debug.log
 tags*
 moc*
-editor/version.txt
 cmd/goneovim/goneovim
 cmd/goneovim/debug
 cmd/goneovim/deploy/*

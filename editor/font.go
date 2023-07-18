@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/akiyosi/qt/gui"
-	"github.com/akiyosi/qt/widgets"
+	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/widgets"
 )
 
 // Font is

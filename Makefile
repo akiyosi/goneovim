@@ -3,9 +3,9 @@ VERSION := $(shell git describe --tags)
 VERSION_HASH := $(shell git rev-parse HEAD)
 
 # deployment directory
-DEPLOYMENT_WINDOWS:=cmd/goneovim/deploy/windows
-DEPLOYMENT_DARWIN:=cmd/goneovim/deploy/darwin
-DEPLOYMENT_LINUX:=cmd/goneovim/deploy/linux
+DEPLOYMENT_WINDOWS:=deploy/windows
+DEPLOYMENT_DARWIN:=deploy/darwin
+DEPLOYMENT_LINUX:=deploy/linux
 
 # runtime directory
 ifeq ($(OS),Windows_NT)
@@ -37,9 +37,9 @@ endif
 
 app: ## Build goneovim
 	@test -f ./editor/moc.go & $(GOQTMOC) desktop ./cmd/goneovim && \
-	go generate && \
-	$(GOQTDEPLOY) build desktop ./cmd/goneovim && \
-	cp -pR runtime $(RUNTIME_DIR)
+	cd cmd/goneovim && \
+	$(GOQTDEPLOY) -ldflags "-X github.com/akiyosi/goneovim/editor.Version=$(VERSION)" build desktop && \
+	cp -pR ../../runtime $(RUNTIME_DIR)
 ifeq ($(OSNAME),Darwin)
 	@/usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $(VERSION_HASH)" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist" && \
 	/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $(VERSION)"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist" && \
@@ -51,34 +51,34 @@ endif
 
 qt_bindings: ## Setup Qt bindings for Go.
 ifeq ($(OSNAME),Darwin)
-	@go get -v github.com/akiyosi/qt && \
-	go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 && \
-	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/...  && \
+	@go get -v github.com/therecipe/qt && \
+	go get github.com/therecipe/qt/internal/cmd@v0.0.0-20200904063919-c0c124a5770d && \
+	go get github.com/therecipe/qt/internal/binding/files/docs/5.12.0 && \
+	go get github.com/therecipe/qt/internal/binding/files/docs/5.13.0 && \
+	go get github.com/therecipe/qt/internal/cmd/moc@v0.0.0-20200904063919-c0c124a5770d && \
+	go install -v -tags=no_env github.com/therecipe/qt/cmd/...  && \
 	go mod vendor  && \
-	git clone https://github.com/akiyosi/env_darwin_amd64_513.git vendor/github.com/akiyosi/env_darwin_amd64_513
+	git clone https://github.com/therecipe/env_darwin_amd64_513.git vendor/github.com/therecipe/env_darwin_amd64_513
 	$(GOQTSETUP) -test=false
 else ifeq ($(OSNAME),Linux)
-	@go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 && \
-	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa && \
-	go get -v github.com/akiyosi/qt && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/...  && \
+	@go get github.com/therecipe/qt/internal/cmd@v0.0.0-20200904063919-c0c124a5770d && \
+	go get github.com/therecipe/qt/internal/binding/files/docs/5.12.0 && \
+	go get github.com/therecipe/qt/internal/binding/files/docs/5.13.0 && \
+	go get github.com/therecipe/qt/internal/cmd/moc@v0.0.0-20200904063919-c0c124a5770d && \
+	go get -v github.com/therecipe/qt && \
+	go install -v -tags=no_env github.com/therecipe/qt/cmd/...  && \
 	go mod vendor  && \
-	git clone https://github.com/akiyosi/env_linux_amd64_513.git vendor/github.com/akiyosi/env_linux_amd64_513
+	git clone https://github.com/therecipe/env_linux_amd64_513.git vendor/github.com/therecipe/env_linux_amd64_513
 	$(GOQTSETUP) -test=false
 else ifeq ($(OSNAME),Windows)
-	@go.exe get -v github.com/akiyosi/qt && \
-	go.exe get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa && \
-	go.exe get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 && \
-	go.exe get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 && \
-	go.exe get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa && \
-	go.exe install -v -tags=no_env github.com/akiyosi/qt/cmd/...  && \
+	@go.exe get -v github.com/therecipe/qt && \
+	go.exe get github.com/therecipe/qt/internal/cmd@v0.0.0-20200904063919-c0c124a5770d && \
+	go.exe get github.com/therecipe/qt/internal/binding/files/docs/5.12.0 && \
+	go.exe get github.com/therecipe/qt/internal/binding/files/docs/5.13.0 && \
+	go.exe get github.com/therecipe/qt/internal/cmd/moc@v0.0.0-20200904063919-c0c124a5770d && \
+	go.exe install -v -tags=no_env github.com/therecipe/qt/cmd/...  && \
 	go.exe mod vendor  && \
-	git.exe clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
+	git.exe clone https://github.com/therecipe/env_windows_amd64_513.git vendor/github.com/therecipe/env_windows_amd64_513 
 	$(GOQTSETUP) -test=false
 endif
 
@@ -87,7 +87,7 @@ deps: ## Get dependent libraries.
 	@$(GOQTMOC) desktop ./cmd/goneovim
 
 test: ## Test goneovim
-	@go generate && go test ./editor
+	@go test ./editor
 
 clean: ## Delete pre-built application binaries and Moc files.
 	@rm -fr cmd/goneovim/deploy/*

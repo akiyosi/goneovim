@@ -3,8 +3,8 @@ package editor
 import (
 	"testing"
 
-	"github.com/akiyosi/qt/core"
-	"github.com/akiyosi/qt/gui"
+	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 )
 
 func TestEditor_convertKey(t *testing.T) {

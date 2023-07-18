@@ -1,13 +1,7 @@
 github.com/BurntSushi/toml v1.3.2 h1:o7IhLm0Msx3BaB+n3Ag7L8EVlByGnpq14C4YWiu/gL8=
 github.com/BurntSushi/toml v1.3.2/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
-github.com/akiyosi/goqtframelesswindow v0.0.0-20230716140237-a341d42df3c8 h1:yOqvoxofnHODBxSo9/l030IFNPJ7H/cKyzycHj+LkJQ=
-github.com/akiyosi/goqtframelesswindow v0.0.0-20230716140237-a341d42df3c8/go.mod h1:739mXLJTAy19GBfA3Z2gitVRHX5NVqrVqygAMPVB21E=
-github.com/akiyosi/qt v0.0.0-20230718095223-7e4e923f23fa h1:/TcUmwcQfCdp/TtrXGTgY4qBe2pnpMrQOMKmuCOrJvc=
-github.com/akiyosi/qt v0.0.0-20230718095223-7e4e923f23fa/go.mod h1:/M/wktam+Uyed7ahwhO+8zsEAe3FWZGA8eq5Sh+QePA=
-github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20230718095223-7e4e923f23fa h1:TfqsKoPqZkeMvE2n6qNLqPb/uyEiMpV73e7MwGZsUPk=
-github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20230718095223-7e4e923f23fa/go.mod h1:o1Ta8fcOD7ED+UFh1S2sJGmMYyZgY/0Nhqkayiw9EOI=
-github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20230718095223-7e4e923f23fa h1:1Y/Gr5IZkjmWJ9HElu4XAIrN+b3ss0SSmoA6/kvhP5s=
-github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20230718095223-7e4e923f23fa/go.mod h1:zr7ZzZXZ4UI9WpxGsiaq0S9OHCjo+H/7vU2Oyi6RRWw=
+github.com/akiyosi/goqtframelesswindow v0.0.0-20230504150915-a0fc55d27d45 h1:jDnckIngzOhCIQxc6u2K9q/Qfi5sZfhlqSl6f2m5MJM=
+github.com/akiyosi/goqtframelesswindow v0.0.0-20230504150915-a0fc55d27d45/go.mod h1:739mXLJTAy19GBfA3Z2gitVRHX5NVqrVqygAMPVB21E=
 github.com/akiyosi/short_path v0.2.1 h1:1IiEQDNISfLOzs8A4+95vSgAN1Ch2IQY4wUpjZzWU/U=
 github.com/akiyosi/short_path v0.2.1/go.mod h1:9ZdnJCTktFi81KorFR9Zihrn8pmRD1UIx0HjASMCu1U=
 github.com/akiyosi/w32 v0.0.0-20221111133244-de73be0c7b36 h1:anLmpiDCKkXZv9D7iYznS3dkYS1BPlaMVGy+65azxj8=
@@ -31,8 +25,8 @@ github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/neovim/go-client v1.2.1 h1:kl3PgYgbnBfvaIoGYi3ojyXH0ouY6dJY/rYUCssZKqI=
 github.com/neovim/go-client v1.2.1/go.mod h1:EeqCP3z1vJd70JTaH/KXz9RMZ/nIgEFveX83hYnh/7c=
-github.com/neovim/go-client v1.2.2-0.20230716041012-dd77a916541b h1:JDchP8fWykRzJLiq5cUQ47vKkP8UY0I1yzgGDTSpYRI=
-github.com/neovim/go-client v1.2.2-0.20230716041012-dd77a916541b/go.mod h1:UBsOERb5epbeQT0nyPTZkmUPTffRYBcHvrXXidr1NQQ=
+github.com/neovim/go-client v1.2.2-0.20230619231037-d37e022068b3 h1:VKxu+nf1gEcpQUBShwE6KGLpdNZ50IZeDbUN+j572q0=
+github.com/neovim/go-client v1.2.2-0.20230619231037-d37e022068b3/go.mod h1:UBsOERb5epbeQT0nyPTZkmUPTffRYBcHvrXXidr1NQQ=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sirupsen/logrus v1.4.1 h1:GL2rEmy6nsikmW0r8opw9JIRScdMF5hA8cOYLH7In1k=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
@@ -41,6 +35,12 @@ github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/objx v0.2.0/go.mod h1:qt09Ya8vawLte6SNmTgCsAVtYtaKzEcn8ATUoHMkEqE=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
+github.com/therecipe/qt v0.0.0-20200904063919-c0c124a5770d h1:T+d8FnaLSvM/1BdlDXhW4d5dr2F07bAbB+LpgzMxx+o=
+github.com/therecipe/qt v0.0.0-20200904063919-c0c124a5770d/go.mod h1:SUUR2j3aE1z6/g76SdD6NwACEpvCxb3fvG82eKbD6us=
+github.com/therecipe/qt/internal/binding/files/docs/5.12.0 v0.0.0-20200904063919-c0c124a5770d h1:hAZyEG2swPRWjF0kqqdGERXUazYnRJdAk4a58f14z7Y=
+github.com/therecipe/qt/internal/binding/files/docs/5.12.0 v0.0.0-20200904063919-c0c124a5770d/go.mod h1:7m8PDYDEtEVqfjoUQc2UrFqhG0CDmoVJjRlQxexndFc=
+github.com/therecipe/qt/internal/binding/files/docs/5.13.0 v0.0.0-20200904063919-c0c124a5770d h1:AJRoBel/g9cDS+yE8BcN3E+TDD/xNAguG21aoR8DAIE=
+github.com/therecipe/qt/internal/binding/files/docs/5.13.0 v0.0.0-20200904063919-c0c124a5770d/go.mod h1:mH55Ek7AZcdns5KPp99O0bg+78el64YCYWHiQKrOdt4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20190418165655-df01cb2cc480/go.mod h1:WFFai1msRO1wXaEeE5yQxYXgSfI8pQAWXbQop6sCtWE=
 golang.org/x/net v0.0.0-20190311183353-d8887717615a/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
@@ -53,5 +53,4 @@ golang.org/x/sys v0.0.0-20210320140829-1e4c9ba3b0c4/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.6.0 h1:MVltZSvRTcU2ljQOhs94SXPftV6DCNnZViHeQps87pQ=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
-golang.org/x/tools v0.0.0-20190420181800-aa740d480789 h1:FF0rjo15h51+N6642mf5S3QuplmKo2aCrJUYkHTx85s=
 golang.org/x/tools v0.0.0-20190420181800-aa740d480789/go.mod h1:LCzVGOaR6xXOjkQ3onu1FJEFr0SW1gC7cKk1uF8kGRs=

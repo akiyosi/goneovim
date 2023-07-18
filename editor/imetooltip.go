@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/akiyosi/qt/core"
-	"github.com/akiyosi/qt/gui"
+	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 )
 
 // IMETooltip is the tooltip for Input Method Editor
