@@ -60,7 +60,7 @@ jobs:
         sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
 
     - name: Install Go
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go-version }}
 
@@ -131,9 +131,10 @@ jobs:
 
     - name: Get dependencies
       run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        go generate
         go get -v -t -d github.com/${{ github.repository }}/...
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim
-        $(go env GOPATH)/bin/qtmoc
+        $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
 
     - name: Retrieve version
       id: version-linux
@@ -146,7 +147,7 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/
         go generate
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
-        cp -pR ../../runtime ./deploy/linux/
+        cp -pR runtime ./cmd/goneovim/deploy/linux/
 
     - if: github.event_name == 'workflow_dispatch'
       run: echo "ARCHIVE_NAME=goneovim-linux" >> $GITHUB_ENV
@@ -171,7 +172,7 @@ jobs:
     needs: [check-new-commit]
     strategy:
       matrix:
-        go-version: [1.20.x]
+        go-version: [1.20.6]
         platform: [windows-latest]
         qtversion: [5.14.1]
     runs-on: ${{ matrix.platform }}
@@ -198,8 +199,8 @@ jobs:
     - name: Install Go
       continue-on-error: true
       run: |
-        curl -sL --retry 10 --retry-delay 60 -O https://dl.google.com/go/go1.18.5.windows-amd64.zip
-        expand-archive -path go1.20.6.windows-amd64.zip -destinationpath .
+        curl -sL --retry 10 --retry-delay 60 -O https://dl.google.com/go/go${{ matrix.go-version }}.windows-amd64.zip
+        expand-archive -path go${{ matrix.go-version }}.windows-amd64.zip -destinationpath .
         Move-Item -Path go -Destination C:\go-root
 
     - name: Setup MSYS2 and install Qt5
@@ -267,8 +268,9 @@ jobs:
         /c/bin/qtsetup -test=false
 
     - name: Get dependencies
-      continue-on-error: true
       run: |
+        cd C:\src\github.com\akiyosi\goneovim
+        go generate
         go get -v -d github.com/${{ github.repository }}/...
 
     - name: Generate moc
@@ -276,7 +278,6 @@ jobs:
       run: |
         export PATH=$PATH:/c/bin:/c/go-root/bin:/d/a/_temp/msys64/usr/bin
         cd /c/src/github.com/akiyosi/goneovim/
-        cd
         /c/bin/qtmoc desktop ./cmd/goneovim
 
     - name: Build for windows
@@ -284,9 +285,8 @@ jobs:
       run: |
         export PATH=$PATH:/c/bin:/c/go-root/bin:/d/a/_temp/msys64/usr/bin
         cd /c/src/github.com/akiyosi/goneovim/
-        go generate
         /c/bin/qtdeploy build desktop ./cmd/goneovim
-        cp -pR ../../runtime ./deploy/windows/
+        cp -pR runtime ./cmd/goneovim/deploy/windows/
 
     - if: github.event_name == 'workflow_dispatch'
       run: echo "ARCHIVE_NAME=goneovim-windows" >> $env:GITHUB_ENV
@@ -329,7 +329,7 @@ jobs:
     steps:
 
     - name: Install Go
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go-version }}
 
@@ -378,8 +378,9 @@ jobs:
 
     - name: Get dependencies
       run: |
-        go get -v -t -d github.com/${{ github.repository }}/...
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        go generate
+        go get -v -t -d github.com/${{ github.repository }}/...
         $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
 
     - name: Build
@@ -387,7 +388,7 @@ jobs:
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/
         go generate
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
-        cp -pR ../../runtime ./deploy/darwin/goneovim.app/Contents/Resources/
+        cp -pR runtime ./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Resources/
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/
         /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION_HASH }}" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
         /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
