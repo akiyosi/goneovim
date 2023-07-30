@@ -2,6 +2,8 @@ package editor
 
 import (
 	"bytes"
+	"math"
+	"strings"
 
 	"github.com/akiyosi/qt/core"
 	"github.com/akiyosi/qt/gui"
@@ -18,11 +20,27 @@ type ColorStr struct {
 type Tooltip struct {
 	widgets.QWidget
 
-	s             *Screen
-	text          []*ColorStr
-	font          *Font
-	fallbackfonts []*Font
-	widthSlice    []float64
+	s          *Screen
+	text       []*ColorStr
+	font       *Font
+	widthSlice []float64
+
+	textWidth  float64
+	msgHeight  float64
+	background *RGBA
+
+	pathWidth float64
+	xPadding  float64
+	yPadding  float64
+	xMargin   float64
+	yMargin   float64
+	xRadius   float64
+	yRadius   float64
+
+	maximumWidth int
+	fixedWidth   bool
+
+	backgrond *RGBA
 }
 
 func resolveMetricsInFontFallback(font *Font, fallbackfonts []*Font, char string) float64 {
@@ -50,8 +68,12 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 		return
 	}
 
-	height := float64(t.s.tooltip.font.height) * 1.1
-	lineHeight := float64(t.s.tooltip.font.lineHeight)
+	screenWidth := t.s.widget.Width()
+	if t.maximumWidth == 0 {
+		t.maximumWidth = screenWidth
+	}
+	height := float64(t.font.height) * 1.1
+	lineHeight := float64(t.font.lineHeight)
 	if height > float64(lineHeight) {
 		height = float64(lineHeight)
 	}
@@ -59,73 +81,172 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 	var x float64
 	var y float64 = float64(lineHeight-height) / 2
 
-	for _, chunk := range t.text {
-
-		fg := chunk.hl.fg()
-		bg := chunk.hl.bg()
-		// bold := chunk.hl.bold
-		underline := chunk.hl.underline
-		// undercurl := chunk.hl.undercurl
-		// strikethrough := chunk.hl.strikethrough
-		italic := chunk.hl.italic
-
-		// set foreground color
-		p.SetPen2(fg.QColor())
-
-		r := []rune(chunk.str)
-		for _, rr := range r {
-			// setFont(p)
-			p.SetFont(resolveFontFallback(getFont(), t.fallbackfonts, string(rr)).qfont)
-			font := p.Font()
-
-			// draw background
-			p.FillRect4(
-				core.NewQRectF4(
-					x,
-					y,
-					chunk.width,
-					height,
-				),
-				bg.QColor(),
-			)
-
-			// set italic
-			if italic {
-				font.SetItalic(true)
-			} else {
-				font.SetItalic(false)
-			}
-
-			p.DrawText(
-				core.NewQPointF3(
-					float64(x),
-					float64(shift),
-				),
-				string(rr),
-			)
-
-			// draw underline
-			if underline {
-				var underlinePos float64 = 1
-				if t.s.ws.palette != nil && t.s.ws.palette.widget.IsVisible() {
-					underlinePos = 2
-				}
-
-				// draw underline
-				p.FillRect4(
-					core.NewQRectF4(
-						x,
-						y+height-underlinePos,
-						chunk.width,
-						underlinePos,
-					),
-					fg.QColor(),
-				)
-			}
-
-			x += chunk.width
+	color := t.background
+	if color == nil {
+		if t.s != nil {
+			color = t.s.ws.background
 		}
 	}
+
+	if t.xRadius == 0 && t.yRadius == 0 {
+		p.FillRect4(
+			core.NewQRectF4(
+				0,
+				0,
+				t.textWidth+t.xPadding*2.0,
+				t.msgHeight+t.yPadding*2.0,
+			),
+			color.QColor(),
+		)
+
+	} else {
+
+		outlineColor := warpColor(color, -20)
+		p.SetPen(
+			gui.NewQPen4(
+				gui.NewQBrush3(
+					gui.NewQColor3(
+						outlineColor.R,
+						outlineColor.G,
+						outlineColor.B,
+						255,
+					),
+					core.Qt__BrushStyle(1),
+				),
+				t.pathWidth,
+				core.Qt__SolidLine,
+				core.Qt__FlatCap,
+				core.Qt__MiterJoin,
+			),
+		)
+
+		width := t.textWidth + t.xPadding*2.0
+		if t.fixedWidth {
+			width = float64(t.maximumWidth) + t.xPadding*2.0
+		}
+
+		path := gui.NewQPainterPath()
+		path.AddRoundedRect(
+			core.NewQRectF4(
+				t.pathWidth,
+				t.pathWidth,
+				width,
+				t.msgHeight+t.yPadding*2.0,
+			),
+			t.xRadius,
+			t.yRadius,
+			core.Qt__AbsoluteSize,
+		)
+		p.DrawPath(path)
+
+		p.FillPath(
+			path,
+			gui.NewQBrush3(
+				gui.NewQColor3(
+					color.R,
+					color.G,
+					color.B,
+					255,
+				),
+				core.Qt__BrushStyle(1),
+			),
+		)
+
+	}
+
+	for _, chunk := range t.text {
+
+		for i, s := range strings.Split(chunk.str, "\n") {
+			if i > 0 {
+				x = 0
+				y += lineHeight
+			}
+
+			fg := chunk.hl.fg()
+			bg := chunk.hl.bg()
+			// bold := chunk.hl.bold
+			underline := chunk.hl.underline
+			// undercurl := chunk.hl.undercurl
+			// strikethrough := chunk.hl.strikethrough
+			italic := chunk.hl.italic
+
+			// set foreground color
+			p.SetPen2(fg.QColor())
+
+			r := []rune(s)
+			for _, rr := range r {
+				if x+t.xPadding*2 >= float64(t.maximumWidth-int(t.xMargin)*2) {
+					x = 0
+					y += lineHeight
+				}
+				// draw background
+				p.FillRect4(
+					core.NewQRectF4(
+						x+t.xPadding,
+						y+t.yPadding,
+						chunk.width,
+						height,
+					),
+					bg.QColor(),
+				)
+
+				// set italic
+				if italic {
+					font.SetItalic(true)
+				} else {
+					font.SetItalic(false)
+				}
+
+				p.DrawText(
+					core.NewQPointF3(
+						x+t.xPadding,
+						y+float64(shift)+t.yPadding,
+					),
+					string(rr),
+				)
+
+				// draw underline
+				if underline {
+					var underlinePos float64 = 1
+					if t.s.ws.palette != nil && t.s.ws.palette.widget.IsVisible() {
+						underlinePos = 2
+					}
+
+					// draw underline
+					p.FillRect4(
+						core.NewQRectF4(
+							x+t.xPadding,
+							y+height-underlinePos+t.yPadding,
+							chunk.width,
+							underlinePos,
+						),
+						fg.QColor(),
+					)
+				}
+
+				x += chunk.width
+			}
+		}
+	}
+}
+
+func (t *Tooltip) setBgColor(color *RGBA) {
+	t.background = color
+}
+
+func (t *Tooltip) setPadding(xv, yv float64) {
+	t.xPadding = xv
+	t.yPadding = yv
+}
+
+func (t *Tooltip) setMargin(xv, yv float64) {
+	t.xMargin = xv
+	t.yMargin = yv
+}
+
+func (t *Tooltip) setRadius(xr, yr float64) {
+	t.xRadius = xr
+	t.yRadius = yr
 }
 
 func (t *Tooltip) getFont() *Font {
@@ -228,21 +349,78 @@ func (t *Tooltip) show() {
 
 func (t *Tooltip) update() {
 	// detect width
-	var tooltipWidth float64
+	var textWidth float64
+	var msgHeight float64
+	screenWidth := t.s.widget.Width()
+	screenHeight := t.s.widget.Height()
+
+	if t.maximumWidth == 0 {
+		t.maximumWidth = screenWidth
+	}
+
 	if len(t.text) == 0 {
 		return
 	}
-	for _, chunk := range t.text {
-		r := []rune(chunk.str)
-		for _, _ = range r {
-			tooltipWidth += chunk.width
+	var width float64
+	var height int
+	for i, chunk := range t.text {
+		if i == 0 {
+			msgHeight += float64(t.font.lineHeight)
 		}
+
+		for j, s := range strings.Split(chunk.str, "\n") {
+			if j > 0 {
+				msgHeight += float64(t.font.lineHeight)
+				width = 0
+			}
+			r := []rune(s)
+			for k, _ := range r {
+				if width > float64(t.maximumWidth)-t.xMargin*2-t.xPadding*2-t.pathWidth*2 {
+					height = int(math.Floor(width)) / int(math.Ceil((float64(t.maximumWidth) - t.xMargin*2 - t.xPadding*2 - t.pathWidth*2)))
+					residue := int(math.Floor(width)) % int(math.Ceil((float64(t.maximumWidth) - t.xMargin*2 - t.xPadding*2 - t.pathWidth*2)))
+					if height > 0 && residue == 0 {
+						height -= 1
+					}
+				} else if textWidth < width {
+					textWidth = width
+				}
+
+				width += chunk.width
+				if k == len(r)-1 && textWidth < width {
+					textWidth = width
+				}
+
+			}
+
+		}
+
+	}
+	if height > 0 {
+		msgHeight += float64(height * t.font.lineHeight)
+	}
+
+	t.textWidth = textWidth
+	t.msgHeight = msgHeight
+
+	var tooltipwidth float64
+	if t.fixedWidth {
+		tooltipwidth = float64(t.maximumWidth) - t.xMargin*2 + t.pathWidth*2
+	} else {
+		tooltipwidth = t.textWidth + t.xPadding*2.0 + t.pathWidth*2
+		if tooltipwidth > float64(t.maximumWidth)-t.xMargin*2 {
+			tooltipwidth = float64(t.maximumWidth) - t.xMargin*2 + t.pathWidth*2
+		}
+	}
+
+	tooltipheight := t.msgHeight + t.yPadding*2.0 + t.pathWidth*2
+	if tooltipheight > float64(screenHeight)-t.yMargin*2 {
+		tooltipheight = float64(screenHeight) - t.yMargin*2
 	}
 
 	// update widget size
 	t.SetFixedSize2(
-		int(tooltipWidth),
-		t.font.lineHeight,
+		int(tooltipwidth),
+		int(tooltipheight),
 	)
 
 	t.Update()
