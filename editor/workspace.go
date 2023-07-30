@@ -28,7 +28,7 @@ type neovimSignal struct {
 	_ func() `signal:"redrawSignal"`
 	_ func() `signal:"guiSignal"`
 
-	_ func() `signal:"messageSignal"`
+	_ func() `signal:"messagesSignal"`
 
 	_ func() `signal:"lazyLoadSignal"`
 }
@@ -53,7 +53,7 @@ type Workspace struct {
 	palette            *Palette
 	popup              *PopupMenu
 	cmdline            *Cmdline
-	message            *Message
+	messages           *Messages
 	minimap            *MiniMap
 	fontdialog         *widgets.QFontDialog
 	guiUpdates         chan []interface{}
@@ -174,22 +174,19 @@ func (ws *Workspace) initUI() {
 		ws.popup.widget.Hide()
 	}
 
-	// messages
+	// messagess
 	if editor.config.Editor.ExtMessages {
-		ws.message = initMessage()
-		ws.message.ws = ws
-		ws.message.widget.SetParent(ws.widget)
-		ws.signal.ConnectMessageSignal(func() {
-			ws.message.update()
-		})
+		ws.messages = initMessages()
+		ws.messages.ws = ws
+		// ws.messages.widget.SetParent(ws.widget)
+		// ws.signal.ConnectMessagesSignal(func() {
+		// 	ws.messages.update()
+		// })
 	}
 
 	if ws.tabline != nil {
 		ws.isDrawTabline = editor.config.Tabline.Visible && editor.config.Editor.ExtTabline
 		ws.tabline.connectUI()
-	}
-	if ws.message != nil {
-		ws.message.connectUI()
 	}
 
 	// workspace widget, layouts
@@ -827,9 +824,9 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	if ws.palette != nil {
 		ws.palette.resize()
 	}
-	if ws.message != nil {
-		ws.message.resize()
-	}
+	// if ws.messages != nil {
+	// 	ws.messages.resize()
+	// }
 
 	windowWidth = marginWidth + sideWidth + scrollbarWidth + minimapWidth + ws.screen.width
 	windowHeight = marginHeight + titlebarHeight + tablineHeight + ws.screen.height
@@ -1059,16 +1056,24 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 		case "cmdline_block_append":
 		case "cmdline_block_hide":
 
-		// Message/Dialog Events
+		// // -- deprecated events
+		// case "wildmenu_show":
+		// 	ws.cmdline.wildmenuShow(args)
+		// case "wildmenu_select":
+		// 	ws.cmdline.wildmenuSelect(args)
+		// case "wildmenu_hide":
+		// 	ws.cmdline.wildmenuHide()
+
+		// messages/Dialog Events
 		case "msg_show":
-			ws.msgShow(args)
+			ws.messages.msgShow(args, false)
 		case "msg_clear":
-			ws.msgClear()
+			ws.messages.msgClear()
 		case "msg_showmode":
 		case "msg_showcmd":
 		case "msg_ruler":
 		case "msg_history_show":
-			ws.msgHistoryShow(args)
+			ws.messages.msgHistoryShow(args)
 		default:
 		}
 
@@ -1339,9 +1344,10 @@ func (ws *Workspace) updateWorkspaceColor() {
 		ws.popup.setColor()
 	}
 
-	if ws.message != nil {
-		ws.message.setColor()
-	}
+	// TODO
+	// if ws.messages != nil {
+	// 	ws.messages.setColor()
+	// }
 
 	// ws.screen.setColor()
 
@@ -1411,7 +1417,7 @@ func (ws *Workspace) optionSet(args []interface{}) {
 		// case "ext_hlstate":
 		// case "ext_linegrid":
 		// case "ext_multigrid":
-		// case "ext_messages":
+		// case "ext_messagess":
 		// case "ext_popupmenu":
 		// case "ext_tabline":
 		// case "ext_termcolors":
@@ -1426,23 +1432,23 @@ func (ws *Workspace) optionSet(args []interface{}) {
 	}
 }
 
-func (ws *Workspace) msgHistoryShow(args []interface{}) {
-	if ws.message != nil {
-		ws.message.msgHistoryShow(args)
-	}
-}
-
-func (ws *Workspace) msgClear() {
-	if ws.message != nil {
-		ws.message.msgClear()
-	}
-}
-
-func (ws *Workspace) msgShow(args []interface{}) {
-	if ws.message != nil {
-		ws.message.msgShow(args)
-	}
-}
+// func (ws *Workspace) msgHistoryShow(args []interface{}) {
+// 	if ws.message != nil {
+// 		ws.message.msgHistoryShow(args)
+// 	}
+// }
+//
+// func (ws *Workspace) msgClear() {
+// 	if ws.message != nil {
+// 		ws.message.msgClear()
+// 	}
+// }
+//
+// func (ws *Workspace) msgShow(args []interface{}) {
+// 	if ws.message != nil {
+// 		ws.message.msgShow(args)
+// 	}
+// }
 
 func (ws *Workspace) cmdlineFunctionHide(args []interface{}) {
 	if ws.cmdline != nil {
@@ -2056,9 +2062,12 @@ func (ws *Workspace) letterSpacing(arg interface{}) {
 	if ws.popup != nil {
 		ws.popup.updateFont(font)
 	}
-	if ws.message != nil {
-		ws.message.updateFont()
-	}
+
+	// TODO
+	// if ws.messages != nil {
+	// 	ws.messages.updateFont()
+	// }
+
 	ws.screen.tooltip.setFont(font)
 	ws.cursor.updateFont(nil, font, fallbackfonts)
 }
@@ -2118,9 +2127,11 @@ func (ws *Workspace) guiFont(args string) {
 	if ws.popup != nil {
 		ws.popup.updateFont(font)
 	}
-	if ws.message != nil {
-		ws.message.updateFont()
-	}
+
+	// // TODO
+	// if ws.messages != nil {
+	// 	ws.messages.updateFont()
+	// }
 
 	ws.screen.tooltip.setFont(font)
 	ws.screen.tooltip.fallbackfonts = fallbackfonts
@@ -2134,6 +2145,9 @@ func (ws *Workspace) guiFont(args string) {
 
 	if ws.tabline != nil {
 		ws.tabline.updateFont()
+	}
+	if ws.messages != nil {
+		ws.messages.updateFont()
 	}
 }
 

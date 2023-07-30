@@ -151,9 +151,9 @@ func (i *IMETooltip) updateVirtualCursorPos() {
 				i.cursorVisualPos = int(x)
 				return
 			}
-			x += chunk.width
 			k++
 		}
+		x += chunk.width
 	}
 
 	i.cursorVisualPos = int(x)
@@ -201,23 +201,25 @@ func (i *IMETooltip) parsePreeditString(preeditStr string) {
 	if preeditStr != "" {
 		r := []rune(preeditStr)
 
+		letterSpace := float64(i.s.ws.font.letterSpace)
+
 		if length > 0 {
 			if start > 0 {
-				i.updateText(preeditHl, string(r[:start]), i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(preeditHl, string(r[:start]), letterSpace, i.getFont().qfont)
 				if start+length < len(r) {
-					i.updateText(currConvHl, string(r[start:start+length]), i.s.ws.font.letterSpace, i.getFont().qfont)
-					i.updateText(preeditHl, string(r[start+length:]), i.s.ws.font.letterSpace, i.getFont().qfont)
+					i.updateText(currConvHl, string(r[start:start+length]), letterSpace, i.getFont().qfont)
+					i.updateText(preeditHl, string(r[start+length:]), letterSpace, i.getFont().qfont)
 				} else {
-					i.updateText(currConvHl, string(r[start:]), i.s.ws.font.letterSpace, i.getFont().qfont)
+					i.updateText(currConvHl, string(r[start:]), letterSpace, i.getFont().qfont)
 				}
 			} else if start == 0 && length < len(r) {
-				i.updateText(currConvHl, string(r[0:length]), i.s.ws.font.letterSpace, i.getFont().qfont)
-				i.updateText(preeditHl, string(r[length:]), i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(currConvHl, string(r[0:length]), letterSpace, i.getFont().qfont)
+				i.updateText(preeditHl, string(r[length:]), letterSpace, i.getFont().qfont)
 			} else {
-				i.updateText(preeditHl, preeditStr, i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(preeditHl, preeditStr, letterSpace, i.getFont().qfont)
 			}
 		} else {
-			i.updateText(preeditHl, preeditStr, i.s.ws.font.letterSpace, i.getFont().qfont)
+			i.updateText(preeditHl, preeditStr, letterSpace, i.getFont().qfont)
 		}
 	}
 }
