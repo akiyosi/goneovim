@@ -278,10 +278,10 @@ func (ws *Workspace) initLazyLoadUI() {
 	editor.isWindowNowActivated = false
 
 	ws.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
-		go ws.nvim.Command("if exists('#FocusGained') | doautocmd <nomodeline> FocusGained | endif")
+		ws.nvim.SetFocusUI(true)
 	})
 	ws.widget.ConnectFocusOutEvent(func(event *gui.QFocusEvent) {
-		go ws.nvim.Command("if exists('#FocusLost') | doautocmd <nomodeline> FocusLost | endif")
+		ws.nvim.SetFocusUI(false)
 	})
 
 	go func() {
