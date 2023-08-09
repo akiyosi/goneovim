@@ -25,7 +25,6 @@ jobs:
       QT_API: 5.13.0
       QT_DEBUG: false
       GO111MODULE: on
-      GOPROXY: https://goproxy.io
       QT_STATIC: true
       QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
     steps:
@@ -142,7 +141,6 @@ jobs:
       QT_API: 5.13.0
       QT_DEBUG: false
       GO111MODULE: on
-      GOPROXY: https://goproxy.io
       QMAKE_APPLE_DEVICE_ARCHS: arm64
       # SDKROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk
     steps:
