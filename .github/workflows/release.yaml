@@ -79,6 +79,7 @@ jobs:
         mv qt-everywhere-src-${{ matrix.qtversion }} qt5
         ls -l ${{ github.workspace }}/qt5
         cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
+        rm -fr ${{ github.workspace }}/qt5
 
     - name: Build fcitx5
       env: 
@@ -100,6 +101,7 @@ jobs:
     - name: Copy libfcitxplatforminputcontextplugin.a
       run: |
         cp -p ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/libfcitxplatforminputcontextplugin.a ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/plugins/platforminputcontexts/
+        rm -fr ${{ github.workspace }}/fcitx-qt5
 
     - name: Get Qt binding for Go
       run: |
@@ -116,6 +118,7 @@ jobs:
         sudo swapoff -a
         sudo rm -f /swapfile
         sudo apt clean
+        sudo rm -rf /usr/share/dotnet
 
     - uses: actions/cache@v2
       id: cache-qt-bindings-linux
