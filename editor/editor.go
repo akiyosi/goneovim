@@ -153,6 +153,11 @@ type Editor struct {
 	isBindNvimSizeToAppwin bool
 	isUiPrepared           bool
 	isWindowMaximizing     bool
+
+	fps          *widgets.QLabel
+	frames       int
+	notifyFrames chan int
+	fpsMutex     sync.Mutex
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -206,6 +211,7 @@ func InitEditor(options Options, args []string) {
 		notify:       make(chan *Notify, 10),
 		cbChan:       make(chan *string, 240),
 		chUiPrepared: make(chan bool, 1),
+		notifyFrames: make(chan int, 2000),
 	}
 	e := editor
 
@@ -291,6 +297,8 @@ func InitEditor(options Options, args []string) {
 
 	e.connectAppSignals()
 
+	e.initFpsWidget()
+
 	// go e.exitEditor(cancel, f)
 	go e.exitEditor(cancel)
 
@@ -362,6 +370,63 @@ func (e *Editor) bindResizeEvent() {
 		}
 		e.resizeMainWindow()
 	})
+}
+
+func (e *Editor) moveFpsWidget() {
+	if e.opts.Debug == "" {
+		return
+	}
+
+	e.fps.Move2(
+		e.window.Width()-e.fps.Width()-20,
+		e.window.Height()-e.fps.Height()-20,
+	)
+}
+
+func (e *Editor) initFpsWidget() {
+	if e.opts.Debug == "" {
+		return
+	}
+
+	e.fps = widgets.NewQLabel(e.window, 0)
+	e.fps.SetParent(e.window)
+	e.fps.SetFixedSize2(260, 180)
+	e.fps.SetFocusPolicy(core.Qt__NoFocus)
+	e.fps.SetContentsMargins(20, 20, 20, 20)
+	e.fps.SetWindowFlag(core.Qt__FramelessWindowHint, true)
+	e.fps.SetAttribute(core.Qt__WA_NoSystemBackground, true)
+	fpsBgColor := warpColor(e.workspaces[e.active].background, 10)
+	e.fps.SetStyleSheet(
+		fmt.Sprintf(
+			" * { background-color: rgba(%d, %d, %d, 0.9); color: rgba(128, 128, 128, 0.8); font-size: 20px;}",
+			fpsBgColor.R,
+			fpsBgColor.G,
+			fpsBgColor.B,
+		),
+	)
+
+	timer := core.NewQTimer(nil)
+	timer.Start2()
+	timer.SetInterval(1000)
+	timer.ConnectTimeout(func() {
+		e.fpsMutex.Lock()
+		e.fps.SetText(fmt.Sprintf("Frame rate: %d fps", e.frames))
+		e.frames = 0
+		e.fpsMutex.Unlock()
+	})
+
+	go func() {
+		for {
+			frames := <-e.notifyFrames
+			e.fpsMutex.Lock()
+			e.frames += frames
+			e.fpsMutex.Unlock()
+		}
+	}()
+
+	e.moveFpsWidget()
+
+	e.fps.Show()
 }
 
 // addDockMenu add the action menu for app in the Dock.
@@ -627,6 +692,8 @@ func (e *Editor) resizeMainWindow() {
 	cws := e.workspaces[e.active]
 	windowWidth, windowHeight, _, _ := cws.updateSize()
 	e.windowSize = [2]int{windowWidth, windowHeight}
+
+	e.moveFpsWidget()
 
 	if !editor.config.Editor.WindowGeometryBasedOnFontmetrics {
 		return

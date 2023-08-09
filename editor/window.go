@@ -325,7 +325,13 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	w.adjustSmoothScrollAmount()
 	p.DestroyQPainter()
+
+	if editor.opts.Debug != "" && w.grid != 1 && !w.isMsgGrid {
+		editor.notifyFrames <- 1
+	}
+
 	w.paintMutex.Unlock()
+
 }
 
 func (w *Window) adjustSmoothScrollAmount() {
