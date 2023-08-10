@@ -395,7 +395,7 @@ jobs:
         cd /c/${{ github.repository }}
         make deps
 
-    ### https://github.com/akiyosi/qt/issues/657
+    ### https://github.com/therecipe/qt/issues/657
     #- name: Test
     #  shell: msys2 {0}
     #  run: |
