@@ -119,11 +119,11 @@ jobs:
         sudo apt clean
         sudo rm -rf /usr/share/dotnet
 
-    - uses: actions/cache@v2
-      id: cache-qt-bindings-linux
-      with:
-        path: ${{ github.workspace }}/src/github.com/akiyosi
-        key: ${{ matrix.qtversion }}-qtbindings-linux-${{ env.cache-version }}
+    # - uses: actions/cache@v2
+    #   id: cache-qt-bindings-linux
+    #   with:
+    #     path: ${{ github.workspace }}/src/github.com/akiyosi/qt/*
+    #     key: ${{ matrix.qtversion }}-qtbindings-linux-${{ env.cache-version }}
 
     - name: Generate Qt bindings
       env: 
@@ -368,7 +368,7 @@ jobs:
     # - uses: actions/cache@v2
     #   id: cache-qt-bindings-macos-11
     #   with:
-    #     path: ${{ github.workspace }}/src/github.com/akiyosi
+    #     path: ${{ github.workspace }}/src/github.com/akiyosi/qt/*
     #     key: ${{ matrix.qtversion }}-qtbindings-macos-11-${{ env.cache-version }}
     
     #if: ${{ steps.cache-qt-bindings-macos-11.outputs.cache-hit != 'true' }}
