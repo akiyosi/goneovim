@@ -1261,7 +1261,7 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 		}
 	}
 
-	if win.grid == 1 && win.s.name != "minimap" {
+	if win.grid == 1 && win.s.name == "minimap" {
 		return
 	}
 	if win.maxLenContent < win.lenContent[row] {
