@@ -278,10 +278,10 @@ func (ws *Workspace) initLazyLoadUI() {
 	editor.isWindowNowActivated = false
 
 	ws.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
-		ws.nvim.SetFocusUI(true)
+		go ws.nvim.SetFocusUI(true)
 	})
 	ws.widget.ConnectFocusOutEvent(func(event *gui.QFocusEvent) {
-		ws.nvim.SetFocusUI(false)
+		go ws.nvim.SetFocusUI(false)
 	})
 
 	go func() {
