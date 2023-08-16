@@ -181,13 +181,18 @@ func InitEditor(options Options, args []string) {
 	//  $ go tool pprof -http=localhost:9090 cpuprofile
 	//
 	// Comment out the following::
-	//
-	// // * built-in net/http/pprof
+
+	// //  * built-in net/http/pprof
 	// f, ferr := os.Create("cpuprofile")
 	// if ferr != nil {
 	// 	os.Exit(1)
 	// }
 	// pprof.StartCPUProfile(f)
+	//
+	// g, ferr := os.Create("memprofile")
+	// if ferr != nil {
+	// 	os.Exit(1)
+	// }
 
 	// // * https://github.com/felixge/fgprof
 	// f, ferr := os.Create("cpuprofile")
@@ -291,7 +296,7 @@ func InitEditor(options Options, args []string) {
 
 	e.connectAppSignals()
 
-	// go e.exitEditor(cancel, f)
+	// go e.exitEditor(cancel, f, g)
 	go e.exitEditor(cancel)
 
 	e.addDockMenu()
@@ -313,7 +318,7 @@ func (e *Editor) initAppWindow() bool {
 }
 
 // exitEditor is to detect stop events and quit the application
-// func (e *Editor) exitEditor(cancel context.CancelFunc, f *os.File) {
+// func (e *Editor) exitEditor(cancel context.CancelFunc, f, g *os.File) {
 func (e *Editor) exitEditor(cancel context.CancelFunc) {
 	ret := <-e.stop
 	close(e.stop)
@@ -329,10 +334,14 @@ func (e *Editor) exitEditor(cancel context.CancelFunc) {
 	// --------------------
 	//
 	// Comment out the following::
-	//
+
 	// // * built-in net/http/pprof
 	// pprof.StopCPUProfile()
 	// f.Close()
+	//
+	// runtime.GC()
+	// pprof.WriteHeapProfile(g)
+	// g.Close()
 
 	// // * https://github.com/felixge/fgprof
 	// fgprofStop()
