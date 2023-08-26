@@ -1820,7 +1820,6 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	if w.s.ws.isTerminalMode {
 		verScrollPixels = 0
 		horScrollPixels = 0
-		isDrawDefaultBg = true
 	}
 
 	// isDrawDefaultBg := true
