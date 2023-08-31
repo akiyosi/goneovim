@@ -6,6 +6,7 @@ VERSION_HASH := $(shell git rev-parse HEAD)
 DEPLOYMENT_WINDOWS:=cmd/goneovim/deploy/windows
 DEPLOYMENT_DARWIN:=cmd/goneovim/deploy/darwin
 DEPLOYMENT_LINUX:=cmd/goneovim/deploy/linux
+DEPLOYMENT_FREEBSD:=cmd/goneovim/deploy/freebsd
 
 # runtime directory
 ifeq ($(OS),Windows_NT)
@@ -17,6 +18,9 @@ OSNAME=Darwin
 else ifeq ($(shell uname), Linux)
 RUNTIME_DIR=$(DEPLOYMENT_LINUX)/
 OSNAME=Linux
+else ifeq ($(shell uname), FreeBSD)
+RUNTIME_DIR=$(DEPLOYMENT_FREEBSD)/
+OSNAME=FreeBSD
 endif
 
 # qt bindings cmd
@@ -61,6 +65,16 @@ ifeq ($(OSNAME),Darwin)
 	git clone https://github.com/akiyosi/env_darwin_amd64_513.git vendor/github.com/akiyosi/env_darwin_amd64_513
 	$(GOQTSETUP) -test=false
 else ifeq ($(OSNAME),Linux)
+	@go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa && \
+	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 && \
+	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 && \
+	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa && \
+	go get -v github.com/akiyosi/qt && \
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/...  && \
+	go mod vendor  && \
+	git clone https://github.com/akiyosi/env_linux_amd64_513.git vendor/github.com/akiyosi/env_linux_amd64_513
+	$(GOQTSETUP) -test=false
+else ifeq ($(OSNAME),FreeBSD)
 	@go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa && \
 	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 && \
 	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 && \
