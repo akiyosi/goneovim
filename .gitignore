@@ -16,3 +16,4 @@ cmd/goneovim/__debug_bin
 cmd/goneovim/__debug_bin*
 cmd/goneovim/debug.log
 vendor/
+nvim_issue/
