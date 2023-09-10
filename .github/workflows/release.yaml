@@ -94,7 +94,6 @@ jobs:
         echo -e "find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus)\n$(cat $FILE)" > $FILE 
         echo -e "$(head -n -5 $FILE)" > $FILE 
         sed -i -e 's/ MODULE / STATIC /g' $FILE
-        cat $FILE
         cd fcitx-qt5/qt5/platforminputcontext && cmake . &&  make -j $(grep -c ^processor /proc/cpuinfo)
 
     - name: Copy libfcitxplatforminputcontextplugin.a
