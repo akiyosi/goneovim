@@ -315,6 +315,31 @@ func TestWindow_updateLine(t *testing.T) {
 				Cell{hldef[6], "m", true, false, false},
 			},
 		},
+		{
+			"test_updateline() 5",
+			fields{
+				s:           &Screen{hlAttrDef: hldef},
+				content:     content,
+				contentMask: contentMask,
+				grid:        6,
+				cols:        cols,
+				rows:        rows,
+			},
+			args{
+				row: row,
+				col: 0,
+				cells: []interface{}{
+					[]interface{}{" ", 7, 0},
+				},
+			},
+			[]Cell{
+				Cell{hldef[7], " ", true, false, false},
+				Cell{hldef[7], " ", true, false, false},
+				Cell{hldef[7], "J", true, false, false},
+				Cell{hldef[6], "i", true, false, false},
+				Cell{hldef[6], "m", true, false, false},
+			},
+		},
 	}
 
 	// Do tests
