@@ -415,8 +415,76 @@ jobs:
         name: goneovim-macos
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
 
+  freebsd:
+    needs: [check-new-commit]
+    strategy:
+      matrix:
+        go-version: [1.21.x]
+        platform: [macos-11]
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        path: ./src/github.com/${{ github.repository }}
+
+    - name: Retrieve version
+      id: version-freebsd
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+        echo "::set-output name=GONEOVIM_VERSION_HASH::$(git rev-parse HEAD)"
+
+    - name: Build for freeBSD
+      uses: cross-platform-actions/action@v0.13.0
+      env:
+        GOPATH: /home/runner/go
+        QT_PKG_CONFIG: true
+        QT_API: 5.13.0
+        QT_DEBUG: false
+        QT_STATIC: true
+        GO111MODULE: on
+        GOPROXY: https://goproxy.io
+        CGO_CPPFLAGS: '-O3 -Wno-deprecated'
+      with:
+        environment_variables: GOPATH QT_PKG_CONFIG QT_API QT_DEBUG QT_STATIC GO111MODULE GOPROXY
+        operating_system: freebsd
+        architecture: x86_64
+        version: '13.2'
+        shell: bash
+        memory: 12G
+        cpu_count: 4
+        run: |
+          yes | sudo pkg install git go pkgconf
+          yes | sudo pkg install devel/qt5
+          yes | sudo pkg install gmake
+          gmake qt_bindings
+          gmake deps
+          gmake app
+
+    - if: github.event_name == 'workflow_dispatch'
+      run: echo "ARCHIVE_NAME=goneovim-freebsd" >> $GITHUB_ENV
+    - if: github.event_name == 'schedule'
+      run: echo "ARCHIVE_NAME=goneovim-freebsd" >> $GITHUB_ENV
+    - if: github.event_name == 'push'
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-freebsd.outputs.GONEOVIM_VERSION }}-freebsd" >> $GITHUB_ENV
+
+    - name: Archive
+      run: |
+        cd cmd/goneovim/deploy
+        mv freebsd "$ARCHIVE_NAME"
+        tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
+  
+    - name: Upload
+      uses: actions/upload-artifact@v1
+      with:
+        name: goneovim-freebsd
+        path: ${{ github.workspace }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
+
+
   publish:
-    needs: [linux, windows, macos]
+    needs: [linux, windows, macos, freebsd]
     runs-on: ubuntu-20.04
     permissions:
       contents: write
@@ -460,6 +528,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create $TAG_NAME $PRERELEASE --title "$SUBJECT" --target $GITHUB_SHA /home/runner/work/goneovim/goneovim/goneovim-macos/* /home/runner/work/goneovim/goneovim/goneovim-linux/* /home/runner/work/goneovim/goneovim/goneovim-windows/*
+          gh release create $TAG_NAME $PRERELEASE --title "$SUBJECT" --target $GITHUB_SHA /home/runner/work/goneovim/goneovim/goneovim-macos/* /home/runner/work/goneovim/goneovim/goneovim-linux/* /home/runner/work/goneovim/goneovim/goneovim-windows/* /home/runner/work/goneovim/goneovim/goneovim-freebsd/*
 
 

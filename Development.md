@@ -5,6 +5,12 @@ See https://github.com/akiyosi/goneovim/blob/master/.github/workflows/ci.yaml
 
 ## For Linux, MacOS, Windows(MSYS2)
   * Install Qt
+    - FreeBSD
+      - Install the Qt5 dev packages and export **QT_PKG_CONFIG=true**
+
+      ```
+      pkg install devel/qt5
+      ```
     
     - Linux
       - Install the Qt5 dev packages through your systems package manager and export **QT_PKG_CONFIG=true**. (You will need to install the `html/doc` packages containing the `*.index` files as well.)
@@ -49,6 +55,7 @@ See https://github.com/akiyosi/goneovim/blob/master/.github/workflows/ci.yaml
 
 
   * Setup Qt binding
+    NOTE: If you are using FreeBSD, you need to use gmake instead of make.
 
     ```
     make qt_bindings
