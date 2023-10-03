@@ -11,71 +11,157 @@ jobs:
 # Linux
 #################################################################
 
-  test-and-build-linux:
+  #  test-and-build-linux:
+  #    strategy:
+  #      matrix:
+  #        go-version: [1.21.x]
+  #        platform: [ubuntu-20.04]
+  #        qtversion: [5.15.6]
+  #    runs-on: ${{ matrix.platform }}
+  #    env:
+  #      GOPATH: ${{ github.workspace }}
+  #      QT_DIR: ${{ github.workspace }}/Qt
+  #      QT_VERSION: ${{ matrix.qtversion }}
+  #      QT_API: 5.13.0
+  #      QT_DEBUG: false
+  #      GO111MODULE: on
+  #      QT_STATIC: true
+  #      QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
+  #    steps:
+  #    - name: Linux prerequisites 
+  #      run: |
+  #        sudo apt update
+  #        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake
+  #        sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
+  #        sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev libzstd-dev
+  #        sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
+  #        sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
+  #
+  #    - name: Install Go
+  #      uses: actions/setup-go@v4
+  #      with:
+  #        go-version: ${{ matrix.go-version }}
+  #
+  #    - uses: actions/cache@v2
+  #      id: cache-qt-linux
+  #      with:
+  #        path: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
+  #        key: ${{ matrix.qtversion }}-qt-linux-${{ env.cache-version }}
+  #
+  #    - name: Build Qt
+  #      if: ${{ steps.cache-qt-linux.outputs.cache-hit != 'true' }}
+  #      run: |
+  #        curl -L -o qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz https://download.qt.io/official_releases/qt/5.15/${{ matrix.qtversion }}/single/qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+  #        tar Jxf qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+  #        rm qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+  #        mv qt-everywhere-src-${{ matrix.qtversion }} qt5
+  #        ls -l ${{ github.workspace }}/qt5
+  #        cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
+  #        rm -fr ${{ github.workspace }}/qt5
+  #
+  #    - name: Build fcitx5
+  #      env: 
+  #        FILE: ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
+  #        CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake
+  #        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
+  #      run: |
+  #        git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
+  #        echo -e "ADD_DEFINITIONS(-DQT_STATICPLUGIN)\n$(cat $FILE)" > $FILE 
+  #        echo -e "find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus)\n$(cat $FILE)" > $FILE 
+  #        echo -e "$(head -n -5 $FILE)" > $FILE 
+  #        sed -i -e 's/ MODULE / STATIC /g' $FILE
+  #        cd fcitx-qt5/qt5/platforminputcontext && cmake . &&  make -j $(grep -c ^processor /proc/cpuinfo)
+  #
+  #    - name: Copy libfcitxplatforminputcontextplugin.a
+  #      run: |
+  #        cp -p ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/libfcitxplatforminputcontextplugin.a ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/plugins/platforminputcontexts/
+  #        rm -fr ${{ github.workspace }}/fcitx-qt5
+  #
+  #    - name: Checkout code
+  #      uses: actions/checkout@v2
+  #      with:
+  #        fetch-depth: 0
+  #        path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+  #
+  #    - name: Free disk space
+  #      run: |
+  #        sudo swapoff -a
+  #        sudo rm -f /swapfile
+  #        sudo apt clean
+  #        sudo rm -rf /usr/share/dotnet
+  #
+  #    - name: Get Qt binding for Go
+  #      env: 
+  #        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
+  #      run: |
+  #        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+  #        make qt_bindings
+  #
+  #    - name: Get dependencies
+  #      run: |
+  #        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+  #        make deps
+  #
+  #    - name: Test
+  #      run: |
+  #        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+  #        make test
+  #
+  #    - name: Build
+  #      run: |
+  #        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+  #        make app
+  #
+  #    - name: Archive
+  #      run: |
+  #        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+  #        mv linux goneovim-linux
+  #        tar -jcvf goneovim-linux.tar.bz2 goneovim-linux
+  #
+  #    - name: Upload for linux
+  #      uses: actions/upload-artifact@v1
+  #      with:
+  #        name: goneovim-linux
+  #        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux.tar.bz2
+
+
+#################################################################
+# MacOS
+#################################################################
+
+
+
+  test-and-build-macos-m1:
     strategy:
       matrix:
         go-version: [1.21.x]
-        platform: [ubuntu-20.04]
-        qtversion: [5.15.6]
+        platform: [macos-latest-large]
+        qtversion: [5.15.2]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
-      QT_DIR: ${{ github.workspace }}/Qt
+      #QT_DIR: ${{ github.workspace }}/Qt
+      QT_HOMEBREW: true
       QT_VERSION: ${{ matrix.qtversion }}
       QT_API: 5.13.0
       QT_DEBUG: false
       GO111MODULE: on
-      QT_STATIC: true
-      QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
+      QMAKE_APPLE_DEVICE_ARCHS: arm64
+      # SDKROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk
     steps:
-    - name: Linux prerequisites 
-      run: |
-        sudo apt update
-        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake
-        sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
-        sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev libzstd-dev
-        sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
-        sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
 
     - name: Install Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ matrix.go-version }}
 
-    - uses: actions/cache@v2
-      id: cache-qt-linux
-      with:
-        path: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
-        key: ${{ matrix.qtversion }}-qt-linux-${{ env.cache-version }}
-
-    - name: Build Qt
-      if: ${{ steps.cache-qt-linux.outputs.cache-hit != 'true' }}
+    - name: Check Go Version
       run: |
-        curl -L -o qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz https://download.qt.io/official_releases/qt/5.15/${{ matrix.qtversion }}/single/qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
-        tar Jxf qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
-        rm qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
-        mv qt-everywhere-src-${{ matrix.qtversion }} qt5
-        ls -l ${{ github.workspace }}/qt5
-        cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
-        rm -fr ${{ github.workspace }}/qt5
+        go version
 
-    - name: Build fcitx5
-      env: 
-        FILE: ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
-        CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake
-        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
+    - name: Install Qt for macOS
       run: |
-        git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
-        echo -e "ADD_DEFINITIONS(-DQT_STATICPLUGIN)\n$(cat $FILE)" > $FILE 
-        echo -e "find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus)\n$(cat $FILE)" > $FILE 
-        echo -e "$(head -n -5 $FILE)" > $FILE 
-        sed -i -e 's/ MODULE / STATIC /g' $FILE
-        cd fcitx-qt5/qt5/platforminputcontext && cmake . &&  make -j $(grep -c ^processor /proc/cpuinfo)
-
-    - name: Copy libfcitxplatforminputcontextplugin.a
-      run: |
-        cp -p ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/libfcitxplatforminputcontextplugin.a ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/plugins/platforminputcontexts/
-        rm -fr ${{ github.workspace }}/fcitx-qt5
+        brew install qt5
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -83,16 +169,7 @@ jobs:
         fetch-depth: 0
         path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
 
-    - name: Free disk space
-      run: |
-        sudo swapoff -a
-        sudo rm -f /swapfile
-        sudo apt clean
-        sudo rm -rf /usr/share/dotnet
-
     - name: Get Qt binding for Go
-      env: 
-        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         make qt_bindings
@@ -115,19 +192,17 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux goneovim-linux
-        tar -jcvf goneovim-linux.tar.bz2 goneovim-linux
+        mv darwin goneovim-macos
+        tar -jcvf goneovim-macos.tar.bz2 goneovim-macos
 
-    - name: Upload for linux
+    - name: Upload for macos
       uses: actions/upload-artifact@v1
       with:
-        name: goneovim-linux
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux.tar.bz2
+        name: goneovim-macos
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-macos.tar.bz2
 
 
-#################################################################
-# MacOS
-#################################################################
+
 
   test-and-build-macos-11:
     strategy:
@@ -204,227 +279,227 @@ jobs:
 # Windows
 #################################################################
 
-  test-windows-mingw:
-    strategy:
-      matrix:
-        go-version: [1.21.0]
-        platform: [windows-latest]
-    runs-on: ${{ matrix.platform }}
-    env:
-      GOPATH: ${{ github.workspace }}
-      QT_DIR: ${{ github.workspace }}\Qt
-      QT_API: 5.13.0
-      QT_MSYS2: true
-      QT_MSYS2_DIR: D:\a\_temp\msys64\
-      QT_MSVC: false
-      QT_DEBUG: false
-      GO111MODULE: on
-      CGO_CFLAGS_ALLOW: ".*" 
-      CGO_CXXFLAGS_ALLOW: ".*" 
-      CGO_LDFLAGS_ALLOW: ".*" 
-      # CGO_ENABLED: 1
-      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-    steps:
+  # test-windows-mingw:
+  #   strategy:
+  #     matrix:
+  #       go-version: [1.21.0]
+  #       platform: [windows-latest]
+  #   runs-on: ${{ matrix.platform }}
+  #   env:
+  #     GOPATH: ${{ github.workspace }}
+  #     QT_DIR: ${{ github.workspace }}\Qt
+  #     QT_API: 5.13.0
+  #     QT_MSYS2: true
+  #     QT_MSYS2_DIR: D:\a\_temp\msys64\
+  #     QT_MSVC: false
+  #     QT_DEBUG: false
+  #     GO111MODULE: on
+  #     CGO_CFLAGS_ALLOW: ".*" 
+  #     CGO_CXXFLAGS_ALLOW: ".*" 
+  #     CGO_LDFLAGS_ALLOW: ".*" 
+  #     # CGO_ENABLED: 1
+  #     ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  #   steps:
 
-    - name: Setup MSYS2 and install Qt5
-      uses: msys2/setup-msys2@v2
-      with:
-        update: true
-        msystem: mingw64
-        install: mingw-w64-x86_64-toolchain
-    - shell: msys2 {0}
-      run: |
-        pacman --noconfirm -S sed git make mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
+  #   - name: Setup MSYS2 and install Qt5
+  #     uses: msys2/setup-msys2@v2
+  #     with:
+  #       update: true
+  #       msystem: mingw64
+  #       install: mingw-w64-x86_64-toolchain
+  #   - shell: msys2 {0}
+  #     run: |
+  #       pacman --noconfirm -S sed git make mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
 
-    - name: Install Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ matrix.go-version }}
+  #   - name: Install Go
+  #     uses: actions/setup-go@v4
+  #     with:
+  #       go-version: ${{ matrix.go-version }}
 
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
+  #   - name: Checkout code
+  #     uses: actions/checkout@v2
+  #     with:
+  #       fetch-depth: 0
+  #       path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
 
-    - name: Get Qt binding for Go
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-        go get -v github.com/akiyosi/qt 
-        go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa
-        go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
-        go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0
-        go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa
-        go install -v -tags=no_env github.com/akiyosi/qt/cmd/... 
-        go mod vendor 
-        git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
+  #   - name: Get Qt binding for Go
+  #     shell: msys2 {0}
+  #     run: |
+  #       export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+  #       cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+  #       go get -v github.com/akiyosi/qt 
+  #       go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa
+  #       go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
+  #       go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0
+  #       go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa
+  #       go install -v -tags=no_env github.com/akiyosi/qt/cmd/... 
+  #       go mod vendor 
+  #       git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
 
-    - uses: actions/cache@v2
-      id: cache-qt-bindings-windows-test
-      with:
-        path: |
-          ${{ github.workspace }}\src\github.com\${{ github.repository }}\vendor\github.com\akiyosi\qt\*
-          !${{ github.workspace }}\src\github.com\${{ github.repository }}\vendor\github.com\akiyosi\qt\.git
-        key: cache-qtbindings-windows-test-${{ env.cache-version }}
+  #   - uses: actions/cache@v2
+  #     id: cache-qt-bindings-windows-test
+  #     with:
+  #       path: |
+  #         ${{ github.workspace }}\src\github.com\${{ github.repository }}\vendor\github.com\akiyosi\qt\*
+  #         !${{ github.workspace }}\src\github.com\${{ github.repository }}\vendor\github.com\akiyosi\qt\.git
+  #       key: cache-qtbindings-windows-test-${{ env.cache-version }}
 
-    - name: Generate Qt bindings
-      if: ${{ steps.cache-qt-bindings-windows-test.outputs.cache-hit != 'true' }}
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-        $(go env GOPATH)/bin/qtsetup -test=false
+  #   - name: Generate Qt bindings
+  #     if: ${{ steps.cache-qt-bindings-windows-test.outputs.cache-hit != 'true' }}
+  #     shell: msys2 {0}
+  #     run: |
+  #       export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+  #       cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+  #       $(go env GOPATH)/bin/qtsetup -test=false
 
-    - name: Get dependencies
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        export GOPATH=/d/a/goneovim/goneovim
-        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-        make deps
+  #   - name: Get dependencies
+  #     shell: msys2 {0}
+  #     run: |
+  #       export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+  #       export GOPATH=/d/a/goneovim/goneovim
+  #       cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+  #       make deps
 
-    - name: Test
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        export GOPATH=/d/a/goneovim/goneovim
-        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-        make test
+  #   - name: Test
+  #     shell: msys2 {0}
+  #     run: |
+  #       export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+  #       export GOPATH=/d/a/goneovim/goneovim
+  #       cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+  #       make test
 
 
-  build-windows-mingw:
-    strategy:
-      matrix:
-        go-version: [1.21.0]
-        platform: [windows-latest]
-    runs-on: ${{ matrix.platform }}
-    env:
-      GOPATH: C:\
-      QT_API: 5.13.0
-      QT_MSYS2: true
-      QT_MSYS2_DIR: D:\a\_temp\msys64\
-      QT_MSYS2_STATIC: true
-      QT_MSVC: false
-      QT_DEBUG_CONSOLE: true
-      QT_DEBUG: false
-      GO111MODULE: on
-      CGO_CFLAGS_ALLOW: ".*" 
-      CGO_CXXFLAGS_ALLOW: ".*" 
-      CGO_LDFLAGS_ALLOW: ".*" 
-      # CGO_ENABLED: 1
-      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-    steps:
+  # build-windows-mingw:
+  #   strategy:
+  #     matrix:
+  #       go-version: [1.21.0]
+  #       platform: [windows-latest]
+  #   runs-on: ${{ matrix.platform }}
+  #   env:
+  #     GOPATH: C:\
+  #     QT_API: 5.13.0
+  #     QT_MSYS2: true
+  #     QT_MSYS2_DIR: D:\a\_temp\msys64\
+  #     QT_MSYS2_STATIC: true
+  #     QT_MSVC: false
+  #     QT_DEBUG_CONSOLE: true
+  #     QT_DEBUG: false
+  #     GO111MODULE: on
+  #     CGO_CFLAGS_ALLOW: ".*" 
+  #     CGO_CXXFLAGS_ALLOW: ".*" 
+  #     CGO_LDFLAGS_ALLOW: ".*" 
+  #     # CGO_ENABLED: 1
+  #     ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  #   steps:
 
-    - name: Install Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ matrix.go-version }}
+  #   - name: Install Go
+  #     uses: actions/setup-go@v4
+  #     with:
+  #       go-version: ${{ matrix.go-version }}
 
-    - name: Setup MSYS2 and install Qt5
-      uses: msys2/setup-msys2@v2
-      with:
-        update: true
-        msystem: mingw64
-        install: mingw-w64-x86_64-toolchain
-    - shell: msys2 {0}
-      run: |
-        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
-        pacman -Scc
-        pacman -Sc
+  #   - name: Setup MSYS2 and install Qt5
+  #     uses: msys2/setup-msys2@v2
+  #     with:
+  #       update: true
+  #       msystem: mingw64
+  #       install: mingw-w64-x86_64-toolchain
+  #   - shell: msys2 {0}
+  #     run: |
+  #       pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
+  #       pacman -Scc
+  #       pacman -Sc
 
-    - name: Patch qt5
-      shell: msys2 {0}
-      run: | 
-        curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt-5.15.8/qt-5.15.8.zip
-        unzip qt-5.15.8.zip
-        cp -fpR qt5/* /mingw64/qt5-static/
-        rm -fr qt5
-        rm qt-5.15.8.zip
+  #   - name: Patch qt5
+  #     shell: msys2 {0}
+  #     run: | 
+  #       curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt-5.15.8/qt-5.15.8.zip
+  #       unzip qt-5.15.8.zip
+  #       cp -fpR qt5/* /mingw64/qt5-static/
+  #       rm -fr qt5
+  #       rm qt-5.15.8.zip
 
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        path: ${{ github.workspace }}\${{ github.repository }}
-    
-    - name: Copy checkout repogitory 
-      shell: msys2 {0}
-      run: |
-        mkdir -p /c/${{ github.repository }}
-        ls -l /d/a/goneovim/goneovim/${{ github.repository }}
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/* /c/${{ github.repository }}/
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/.* /c/${{ github.repository }}/
-        mkdir -p /c/src/github.com/${{ github.repository }}
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/* /c/src/github.com/${{ github.repository }}/
-        ls -l /c/${{ github.repository }}
-        ls -l /c/src/github.com/${{ github.repository }}
+  #   - name: Checkout code
+  #     uses: actions/checkout@v2
+  #     with:
+  #       fetch-depth: 0
+  #       path: ${{ github.workspace }}\${{ github.repository }}
+  #   
+  #   - name: Copy checkout repogitory 
+  #     shell: msys2 {0}
+  #     run: |
+  #       mkdir -p /c/${{ github.repository }}
+  #       ls -l /d/a/goneovim/goneovim/${{ github.repository }}
+  #       cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/* /c/${{ github.repository }}/
+  #       cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/.* /c/${{ github.repository }}/
+  #       mkdir -p /c/src/github.com/${{ github.repository }}
+  #       cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/* /c/src/github.com/${{ github.repository }}/
+  #       ls -l /c/${{ github.repository }}
+  #       ls -l /c/src/github.com/${{ github.repository }}
 
-    - name: Get Qt binding for Go
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
-        go get -v github.com/akiyosi/qt 
-        go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa
-        go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
-        go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0
-        go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa
-        go install -v -tags=no_env github.com/akiyosi/qt/cmd/... 
-        go mod vendor 
-        git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
+  #   - name: Get Qt binding for Go
+  #     shell: msys2 {0}
+  #     run: |
+  #       export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+  #       cd /c/${{ github.repository }}
+  #       go get -v github.com/akiyosi/qt 
+  #       go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa
+  #       go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
+  #       go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0
+  #       go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa
+  #       go install -v -tags=no_env github.com/akiyosi/qt/cmd/... 
+  #       go mod vendor 
+  #       git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
 
-    - uses: actions/cache@v2
-      id: cache-qt-bindings-windows-build
-      with:
-        path: |
-          /c/${{ github.repository }}\vendor\github.com\akiyosi\qt\*
-          !/c/${{ github.repository }}\vendor\github.com\akiyosi\qt\.git
-        key: cache-qtbindings-windows-build-${{ env.cache-version }}
+  #   - uses: actions/cache@v2
+  #     id: cache-qt-bindings-windows-build
+  #     with:
+  #       path: |
+  #         /c/${{ github.repository }}\vendor\github.com\akiyosi\qt\*
+  #         !/c/${{ github.repository }}\vendor\github.com\akiyosi\qt\.git
+  #       key: cache-qtbindings-windows-build-${{ env.cache-version }}
 
-    - name: Generate Qt bindings
-      if: ${{ steps.cache-qt-bindings-windows-build.outputs.cache-hit != 'true' }}
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
-        $(go env GOPATH)/bin/qtsetup -test=false
+  #   - name: Generate Qt bindings
+  #     if: ${{ steps.cache-qt-bindings-windows-build.outputs.cache-hit != 'true' }}
+  #     shell: msys2 {0}
+  #     run: |
+  #       export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+  #       cd /c/${{ github.repository }}
+  #       $(go env GOPATH)/bin/qtsetup -test=false
 
-    - name: Get dependencies
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
-        make deps
+  #   - name: Get dependencies
+  #     shell: msys2 {0}
+  #     run: |
+  #       export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+  #       cd /c/${{ github.repository }}
+  #       make deps
 
-    ### https://github.com/therecipe/qt/issues/657
-    #- name: Test
-    #  shell: msys2 {0}
-    #  run: |
-    #    export PATH=/c/hostedtoolcache/windows/go/1.18.10/x64/bin/:$PATH
-    #    cd /c/${{ github.repository }}
-    #    make test
+  #   ### https://github.com/therecipe/qt/issues/657
+  #   #- name: Test
+  #   #  shell: msys2 {0}
+  #   #  run: |
+  #   #    export PATH=/c/hostedtoolcache/windows/go/1.18.10/x64/bin/:$PATH
+  #   #    cd /c/${{ github.repository }}
+  #   #    make test
 
-    - name: Build
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
-        make app
+  #   - name: Build
+  #     shell: msys2 {0}
+  #     run: |
+  #       export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+  #       cd /c/${{ github.repository }}
+  #       make app
 
-    - name: Archive
-      shell: msys2 {0}
-      run: |
-        cd /c/${{ github.repository }}/cmd/goneovim/deploy
-        mv windows goneovim-windows
-        zip goneovim-windows -r goneovim-windows
+  #   - name: Archive
+  #     shell: msys2 {0}
+  #     run: |
+  #       cd /c/${{ github.repository }}/cmd/goneovim/deploy
+  #       mv windows goneovim-windows
+  #       zip goneovim-windows -r goneovim-windows
 
-    - name: Upload for windows
-      uses: actions/upload-artifact@v1
-      with:
-        name: goneovim-windows
-        path: C:/${{ github.repository }}/cmd/goneovim/deploy/goneovim-windows.zip
+  #   - name: Upload for windows
+  #     uses: actions/upload-artifact@v1
+  #     with:
+  #       name: goneovim-windows
+  #       path: C:/${{ github.repository }}/cmd/goneovim/deploy/goneovim-windows.zip
 
 
 
