@@ -314,8 +314,9 @@ func newWslProcess() (*nvim.Nvim, error) {
 	}
 
 	wslArgs := []string{
-		"$SHELL",
-		"-lc",
+		"--shell-type",
+		"login",
+		"--",
 		nvimargs,
 	}
 	wslDist := ""
