@@ -316,7 +316,6 @@ func newWslProcess() (*nvim.Nvim, error) {
 	wslArgs := []string{
 		"--shell-type",
 		"login",
-		"--",
 		nvimargs,
 	}
 	wslDist := ""
@@ -338,7 +337,7 @@ func newWslProcess() (*nvim.Nvim, error) {
 	util.PrepareRunProc(cmd)
 
 	// NOTE: cmd.String() was added in Go1.13, which cannot be used in MSVC builds based on Go1.10 builds.
-	// editor.putLog("exec command:", cmd.String())
+	editor.putLog("exec command:", cmd.String())
 
 	inw, err := cmd.StdinPipe()
 	if err != nil {
