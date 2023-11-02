@@ -219,7 +219,7 @@ func (ws *Workspace) initUI() {
 	editor.putLog("assembled workspace UI components")
 }
 
-func (ws *Workspace) initFont() {
+func (ws *Workspace) initWsFont() {
 	ws.screen.font = editor.font
 	ws.screen.fallbackfonts = editor.fallbackfonts
 	ws.font = ws.screen.font
@@ -1944,7 +1944,8 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 		if i == 0 {
 			var ff *Font
 			if *font == nil {
-				ff = initFontNew(
+				ff = initFont(
+					false,
 					fontFamily,
 					fontHeight,
 					fontWeight,
@@ -1957,7 +1958,8 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 					continue
 				}
 
-				ff = initFontNew(
+				ff = initFont(
+					false,
 					fontFamily,
 					fontHeight,
 					fontWeight,
@@ -1974,7 +1976,8 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 			}
 
 		} else {
-			ff := initFontNew(
+			ff := initFont(
+				false,
 				fontFamily,
 				fontHeight,
 				fontWeight,

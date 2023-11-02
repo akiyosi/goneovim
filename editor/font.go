@@ -43,12 +43,13 @@ type RawFont struct {
 	regularface *font.Face
 	boldface    *font.Face
 	italicface  *font.Face
+
+	wg sync.WaitGroup
 }
 
 func fontSizeNew(rawfont *gui.QRawFont) (float64, int, float64, float64) {
-	a := rawfont.GlyphIndexesForString("w")
-	gi := rawfont.AdvancesForGlyphIndexes2(a)
-	width := gi[0].X()
+	gi := rawfont.AdvancesForGlyphIndexes2(rawfont.GlyphIndexesForString("w"))
+	width := float64(int(gi[0].X()))
 	ascent := rawfont.Ascent()
 	h := ascent + rawfont.Descent()
 	height := int(math.Ceil(h))
@@ -57,54 +58,60 @@ func fontSizeNew(rawfont *gui.QRawFont) (float64, int, float64, float64) {
 	return width, height, ascent, italicWidth
 }
 
-func initFontNew(family string, size float64, weight gui.QFont__Weight, stretch, lineSpace, letterSpace int) *Font {
-	editor.putLog("start initFontNew()")
+func initFont(genFontFaceAsync bool, family string, size float64, weight gui.QFont__Weight, stretch, lineSpace, letterSpace int) *Font {
+	editor.putLog("start initFont()")
 
 	dpi := editor.app.PrimaryScreen().LogicalDotsPerInch()
 	pixelSize := int(math.Ceil(size * dpi / 72.0))
 
-	rawfont := newRawFont(family, pixelSize, weight)
-	if rawfont == nil {
-		return nil
-	}
-
-	font := gui.NewQFont()
-
-	if editor.config.Editor.ManualFontFallback {
-		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging|gui.QFont__ForceIntegerMetrics)
-	} else {
-		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
-	}
-
-	font.SetFamily(family)
-	font.SetPointSizeF(size)
-
-	var width, ascent, italicWidth float64
-	var height int
-	if rawfont != nil && rawfont.regular != nil {
-		width, height, ascent, italicWidth = fontSizeNew(rawfont.regular)
-	}
-
-	editor.putLog("finished initFontNew()")
-	return &Font{
+	font := &Font{
 		family:    family,
 		size:      size,
 		pixelSize: pixelSize,
 		weight:    weight,
 		stretch:   stretch,
-		qfont:     font,
-		rawfont:   rawfont,
-		// fontMetrics: gui.NewQFontMetricsF(font),
-		width:       width,
-		cellwidth:   width + float64(letterSpace),
-		letterSpace: letterSpace,
-		height:      height,
-		lineHeight:  height + lineSpace,
-		lineSpace:   lineSpace,
-		shift:       int(float64(lineSpace)/2 + ascent),
-		ascent:      ascent,
-		italicWidth: italicWidth,
 	}
+
+	if genFontFaceAsync {
+		font.rawfont = newRawFont(true, family, pixelSize, weight)
+	} else {
+		font.rawfont = newRawFont(false, family, pixelSize, weight)
+	}
+	if font.rawfont == nil {
+		return nil
+	}
+
+	qfont := gui.NewQFont()
+
+	if editor.config.Editor.ManualFontFallback {
+		qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
+	} else {
+		qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
+	}
+
+	qfont.SetFamily(family)
+	qfont.SetPointSizeF(size)
+
+	var width, ascent, italicWidth float64
+	var height int
+	if font.rawfont != nil && font.rawfont.regular != nil {
+		width, height, ascent, italicWidth = fontSizeNew(font.rawfont.regular)
+	}
+
+	font.qfont = qfont
+	font.width = width
+	font.cellwidth = width + float64(letterSpace)
+	font.letterSpace = letterSpace
+	font.height = height
+	font.lineHeight = height + lineSpace
+	font.lineSpace = lineSpace
+	font.shift = int(float64(lineSpace)/2 + ascent)
+	font.ascent = ascent
+	font.italicWidth = italicWidth
+
+	editor.putLog("finished initFont()")
+
+	return font
 }
 
 func (f *Font) hasGlyph(s string) bool {
@@ -158,16 +165,12 @@ func (f *Font) horizontalAdvance(str string) (width float64) {
 	return
 }
 
-func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawFont {
+func newRawFont(genFontFaceAsync bool, fontFamilyName string, size int, weight gui.QFont__Weight) *RawFont {
 
 	locations := editor.fontmap.FindSystemFonts(fontFamilyName)
 	if len(locations) == 0 {
 		return nil
 	}
-
-	var regularFont *gui.QRawFont
-	var boldFont *gui.QRawFont
-	var italicFont *gui.QRawFont
 
 	var italic string
 	var regular string
@@ -247,58 +250,17 @@ func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawF
 	var boldFace *font.Face
 	var italicFace *font.Face
 
+	var regularFont *gui.QRawFont
+	var boldFont *gui.QRawFont
+	var italicFont *gui.QRawFont
+
 	// var regularBytes []byte
 	// var boldBytes []byte
 	// var italicBytes []byte
 
-	var wg sync.WaitGroup
+	var waitgroup sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		regularFace, _ = readFontFile(regular)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		boldFace, _ = readFontFile(bold)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		italicFace, _ = readFontFile(italic)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		regularFont = loadQRawFont2(regular, size)
-		// regularFont = loadQRawFont(regularBytes, size)
-	}()
-
-	if bold != "" {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			boldFont = loadQRawFont2(bold, size)
-			// boldFont = loadQRawFont(boldBytes, size)
-		}()
-	}
-
-	if italic != "" {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			italicFont = loadQRawFont2(italic, size)
-			// italicFont = loadQRawFont(italicBytes, size)
-		}()
-	}
-
-	wg.Wait()
-
-	return &RawFont{
+	rawfont := &RawFont{
 		regular: regularFont,
 		bold:    boldFont,
 		italic:  italicFont,
@@ -306,7 +268,101 @@ func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawF
 		regularface: regularFace,
 		boldface:    boldFace,
 		italicface:  italicFace,
+
+		wg: waitgroup,
 	}
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		rawfont.regular = loadQRawFont2(regular, size)
+	}()
+
+	if bold != "" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rawfont.bold = loadQRawFont2(bold, size)
+		}()
+	}
+
+	if italic != "" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rawfont.italic = loadQRawFont2(italic, size)
+		}()
+	}
+
+	if genFontFaceAsync {
+		wg.Wait()
+
+		rawfont.wg.Add(1)
+		go func() {
+			defer rawfont.wg.Done()
+			rawfont.regularface, _ = readFontFile(regular)
+			// rawfont.boldface, _ = readFontFile(bold)
+			// rawfont.italicface, _ = readFontFile(italic)
+		}()
+
+		rawfont.wg.Add(1)
+		go func() {
+			defer rawfont.wg.Done()
+			rawfont.boldface, _ = readFontFile(bold)
+		}()
+
+		rawfont.wg.Add(1)
+		go func() {
+			defer rawfont.wg.Done()
+			rawfont.italicface, _ = readFontFile(italic)
+		}()
+
+	} else {
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rawfont.regularface, _ = readFontFile(regular)
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rawfont.boldface, _ = readFontFile(bold)
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rawfont.italicface, _ = readFontFile(italic)
+		}()
+
+		wg.Wait()
+	}
+
+	// wg.Add(1)
+	// go func() {
+	// 	defer wg.Done()
+	// 	rawfont.regularface, _ = readFontFile(regular)
+	// }()
+
+	// wg.Add(1)
+	// go func() {
+	// 	defer wg.Done()
+	// 	rawfont.boldface, _ = readFontFile(bold)
+	// }()
+
+	// wg.Add(1)
+	// go func() {
+	// 	defer wg.Done()
+	// 	rawfont.italicface, _ = readFontFile(italic)
+	// }()
+
+	wg.Wait()
+
+	return rawfont
 }
 
 func assignFontWeight(filePathList []string, i int) (fontWeightPath string) {
