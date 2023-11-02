@@ -1975,7 +1975,6 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 			notifyOptionArg([]*NotifyButton{}),
 		)
 	}
-
 }
 
 func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.QFont__Weight, int) {
