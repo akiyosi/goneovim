@@ -17,10 +17,10 @@ import (
 
 // Tabline of the editor
 type Tabline struct {
-	ws              *Workspace
-	widget          *widgets.QWidget
-	layout          *widgets.QLayout
-	font            *gui.QFont
+	ws     *Workspace
+	widget *widgets.QWidget
+	layout *widgets.QLayout
+	// font            *gui.QFont
 	color           *RGBA
 	currentFileText string
 	Tabs            []*Tab
@@ -250,20 +250,20 @@ func (t *Tab) updateStyle() {
 	t.closeIcon.Load2(core.NewQByteArray2(svgContent, len(svgContent)))
 }
 
-func (t *Tabline) updateFont() {
-	if t == nil {
-		return
-	}
-
-	t.font = t.ws.font.qfont
-
-	// t.widget.SetFont(t.font)
-	for _, tab := range t.Tabs {
-		tab.file.SetFont(t.font)
-	}
-
-	t.updateSize()
-}
+// func (t *Tabline) updateFont() {
+// 	if t == nil {
+// 		return
+// 	}
+//
+// 	t.font = t.ws.font.qfont
+//
+// 	// t.widget.SetFont(t.font)
+// 	for _, tab := range t.Tabs {
+// 		tab.file.SetFont(t.font)
+// 	}
+//
+// 	t.updateSize()
+// }
 
 func (t *Tab) show() {
 	if t == nil {
@@ -308,20 +308,23 @@ func (t *Tab) updateSize() {
 	if t == nil {
 		return
 	}
-	if t.t.font == nil {
-		return
-	}
 
-	fontmetrics := gui.NewQFontMetricsF(t.t.font)
-	width := int(fontmetrics.HorizontalAdvance(
-		t.file.Text(),
-		-1,
-	))
+	// if t.t.font == nil {
+	// 	return
+	// }
+
+	// fontmetrics := gui.NewQFontMetricsF(t.t.font)
+	// width := int(fontmetrics.HorizontalAdvance(
+	// 	t.file.Text(),
+	// 	-1,
+	// ))
+	width := t.t.ws.font.horizontalAdvance(t.file.Text())
+
 	if editor.config.Tabline.ShowIcon {
-		width += +editor.iconSize
+		width += float64(editor.iconSize)
 	}
-	height := int(fontmetrics.Height()*1.5) + t.t.marginTop + t.t.marginBottom + 1
-	t.widget.SetFixedSize2(width+editor.iconSize+5+10+5, height)
+	height := int(float64(t.t.ws.font.height)*1.3) + t.t.marginTop + t.t.marginBottom + 1
+	t.widget.SetFixedSize2(int(width)+editor.iconSize+5+10+5, height)
 }
 
 func (t *Tab) updateFileIcon() {
