@@ -78,7 +78,7 @@ type editorConfig struct {
 	BorderlessWindow                        bool
 	RestoreWindowGeometry                   bool
 	ExtCmdline                              bool
-	NoFontMerge                             bool
+	ManualFontFallback                      bool
 	WindowGeometryBasedOnFontmetrics        bool
 	IgnoreFirstMouseClickWhenAppInactivated bool
 	HideTitlebar                            bool

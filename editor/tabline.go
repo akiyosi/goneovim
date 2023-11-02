@@ -255,7 +255,7 @@ func (t *Tabline) updateFont() {
 		return
 	}
 
-	t.font = t.ws.font.fontNew
+	t.font = t.ws.font.qfont
 
 	// t.widget.SetFont(t.font)
 	for _, tab := range t.Tabs {
