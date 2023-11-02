@@ -577,6 +577,10 @@ All Options are follows:
         # DiffAddPattern    = 1
         # DiffDeletePattern = 1
         # DiffChangePattern = 1
+	
+	## Font features setting
+        # [Editor.FontFeatures]
+        # "Fira Code" = ["+ss02","-ss07","-ss08","+ss08","+ss09","+ss10","+cv19","+cv20","+cv21","+cv22","+cv23","+cv24","+cv25","+cv26","+cv27","+cv28"]
         
         ## Extra Dock menu option in MacOS
         ## You can add a menu with your own command options 
