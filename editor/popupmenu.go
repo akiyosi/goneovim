@@ -159,13 +159,13 @@ func (p *PopupMenu) updateFont(font *Font) {
 		return
 	}
 
-	p.detailLabel.SetFont(font.fontNew)
+	p.detailLabel.SetFont(font.qfont)
 	for i := 0; i < p.total; i++ {
 		popupItem := p.items[i]
-		popupItem.wordLabel.SetFont(font.fontNew)
-		popupItem.digitLabel.SetFont(font.fontNew)
-		popupItem.menuLabel.SetFont(font.fontNew)
-		popupItem.infoLabel.SetFont(font.fontNew)
+		popupItem.wordLabel.SetFont(font.qfont)
+		popupItem.digitLabel.SetFont(font.qfont)
+		popupItem.menuLabel.SetFont(font.qfont)
+		popupItem.infoLabel.SetFont(font.qfont)
 		popupItem.kindIcon.SetFixedSize2(editor.iconSize, editor.iconSize)
 		margin := editor.config.Editor.Linespace/2 + 2
 		popupItem.kindwidget.SetFixedWidth(editor.iconSize + margin*2)

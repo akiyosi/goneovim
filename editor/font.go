@@ -11,7 +11,7 @@ import (
 // Font is
 type Font struct {
 	ws          *Workspace
-	fontNew     *gui.QFont
+	qfont       *gui.QFont
 	fontMetrics *gui.QFontMetricsF
 	width       float64
 	cellwidth   float64
@@ -29,14 +29,6 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	fontMetrics := gui.NewQFontMetricsF(font)
 	h := fontMetrics.Height()
 	width := fontMetrics.HorizontalAdvance("w", -1)
-
-	// // On Windows, it may take a long time (~500ms) to drawing CJK characters for qpainter.
-	// // Therefore, we will run this process in concurrently in the background of attaching to neovim.
-	// // This issue may also be related to the following.
-	// // https://github.com/equalsraf/neovim-qt/issues/614
-	// if runtime.GOOS == "windows" && !editor.config.Editor.NoFontMerge {
-	// 	go fontMetrics.HorizontalAdvance("無未제", -1)
-	// }
 
 	ascent := fontMetrics.Ascent()
 	height := int(math.Ceil(h))
@@ -58,8 +50,8 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 	font.SetPointSizeF(size)
 	font.SetWeight(int(gui.QFont__Normal))
 
-	if editor.config.Editor.NoFontMerge {
-		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
+	if editor.config.Editor.ManualFontFallback {
+		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging|gui.QFont__ForceIntegerMetrics)
 	} else {
 		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
 	}
@@ -70,7 +62,7 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 	width, height, ascent, italicWidth := fontSizeNew(font)
 
 	return &Font{
-		fontNew:     font,
+		qfont:       font,
 		fontMetrics: gui.NewQFontMetricsF(font),
 		width:       width,
 		cellwidth:   width + letterSpace,
@@ -85,21 +77,60 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 }
 
 func (f *Font) change(family string, size float64, weight gui.QFont__Weight, stretch int) {
-	f.fontNew.SetFamily(family)
-	f.fontNew.SetPointSizeF(size)
-	f.fontNew.SetWeight(int(weight))
-	f.fontNew.SetStretch(stretch)
-	f.fontMetrics = gui.NewQFontMetricsF(f.fontNew)
-	width, height, ascent, italicWidth := fontSizeNew(f.fontNew)
-	f.height = height
+	f.qfont.SetFamily(family)
+	f.qfont.SetPointSizeF(size)
+	f.qfont.SetWeight(int(weight))
+	f.qfont.SetStretch(stretch)
+
+	if editor.config.Editor.ManualFontFallback {
+		f.qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging|gui.QFont__ForceIntegerMetrics)
+	} else {
+		f.qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
+	}
+
+	f.qfont.SetFixedPitch(true)
+	f.qfont.SetKerning(false)
+
+	width, height, ascent, italicWidth := fontSizeNew(f.qfont)
+
+	f.fontMetrics = gui.NewQFontMetricsF(f.qfont)
 	f.cellwidth = width + f.letterSpace
+	// f.letterSpace is no change
+	f.height = height
 	f.lineHeight = height + f.lineSpace
 	f.ascent = ascent
 	f.shift = int(float64(f.lineSpace)/2 + ascent)
 	f.italicWidth = italicWidth
 
 	f.putDebugLog()
-	f.ws.screen.purgeTextCacheForWins()
+}
+
+// func (f *Font) hasGlyph(s string) bool {
+// 	rawfont := gui.NewQRawFont()
+// 	rawfont = rawfont.FromFont(f.qfont, gui.QFontDatabase__Any)
+//
+// 	glyphIdx := rawfont.GlyphIndexesForString(s)
+//
+// 	if len(glyphIdx) > 0 {
+// 		glyphIdx0 := glyphIdx[0]
+//
+// 		// fmt.Println(s, "::", glyphIdx0 != 0)
+//		editor.putLog("hasGlyph:() debug::", s, ",", glyphIdx0 != 0)
+// 		return glyphIdx0 != 0
+// 	}
+//
+// 	return false
+// }
+
+func (f *Font) hasGlyph(s string) bool {
+	if s == "" {
+		return true
+	}
+
+	hasGlyph := f.fontMetrics.InFontUcs4(uint([]rune(s)[0]))
+	editor.putLog("hasGlyph:() debug::", s, ",", hasGlyph)
+
+	return hasGlyph
 }
 
 func (f *Font) putDebugLog() {
@@ -109,8 +140,8 @@ func (f *Font) putDebugLog() {
 
 	// rf := gui.NewQRawFont()
 	// db := gui.NewQFontDatabase()
-	// rf = rf.FromFont(f.fontNew, gui.QFontDatabase__Any)
-	fi := gui.NewQFontInfo(f.fontNew)
+	// rf = rf.FromFont(f.qfont, gui.QFontDatabase__Any)
+	fi := gui.NewQFontInfo(f.qfont)
 	editor.putLog(
 		"font family:",
 		fi.Family(),
@@ -125,11 +156,14 @@ func (f *Font) changeLineSpace(lineSpace int) {
 	f.lineHeight = f.height + lineSpace
 	f.shift = int(float64(lineSpace)/2 + f.ascent)
 
+	if f.ws == nil {
+		return
+	}
 	f.ws.screen.purgeTextCacheForWins()
 }
 
 func (f *Font) changeLetterSpace(letterspace float64) {
-	width, _, _, italicWidth := fontSizeNew(f.fontNew)
+	width, _, _, italicWidth := fontSizeNew(f.qfont)
 
 	f.letterSpace = letterspace
 	f.cellwidth = width + letterspace
