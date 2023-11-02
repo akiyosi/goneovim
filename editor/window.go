@@ -2431,7 +2431,8 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 
 	width := font.cellwidth
 	if !isNormalWidth {
-		width = math.Ceil(w.s.runeTextWidth(font, char))
+		// width = math.Ceil(w.s.runeTextWidth(font, char))
+		width = font.horizontalAdvance(char)
 	}
 
 	// Set smooth scroll offset
@@ -2524,24 +2525,28 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		}
 	}
 
-	// Put debug log
-	if editor.opts.Debug != "" {
-		fi := gui.NewQFontInfo(font.qfont)
-		editor.putLog(
-			"Outputs font information creating word cache:",
-			fi.Family(),
-			fi.PointSizeF(),
-			fi.StyleName(),
-			fmt.Sprintf("%v", fi.PointSizeF()),
-		)
-	}
+	// // Put debug log
+	// if editor.opts.Debug != "" {
+	// 	fi := gui.NewQFontInfo(font.qfont)
+	// 	editor.putLog(
+	// 		"Outputs font information creating word cache:",
+	// 		fi.Family(),
+	// 		fi.PointSizeF(),
+	// 		fi.StyleName(),
+	// 		fmt.Sprintf("%v", fi.PointSizeF()),
+	// 	)
+	// }
 
 	width := float64(len(text)-1)*font.cellwidth + font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
+		// Here the length of TEXT can be considered to be 1
+
 		// width = math.Ceil(w.s.runeTextWidth(font, text))
-		width = fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
+		width = fontfallbacked.horizontalAdvance(text)
 	}
+
+	editor.putLog("newTextCache 1:", text)
 
 	// QImage default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
@@ -2561,32 +2566,100 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 
+	editor.putLog("newTextCache 2:", text)
+
 	image.SetDevicePixelRatio(w.devicePixelRatio)
+
+	editor.putLog("newTextCache 3:", text)
+
 	image.Fill3(core.Qt__transparent)
 
+	editor.putLog("newTextCache 4:", text)
+
 	w.initImagePainter()
+
+	editor.putLog("newTextCache 5:", text)
+
 	w.imagePainter.Begin(image)
 	// pi := gui.NewQPainter2(image)
 
 	w.imagePainter.SetPen2(fg.QColor())
-	w.imagePainter.SetFont(fontfallbacked.qfont)
+
+	editor.putLog("newTextCache 6:", text)
+
+	// w.imagePainter.SetFont(fontfallbacked.qfont)
+
+	glyphrun := gui.NewQGlyphRun()
+
+	editor.putLog("newTextCache 7:", text)
 
 	if highlight.bold {
-		w.imagePainter.Font().SetBold(true)
+		// w.imagePainter.Font().SetBold(true)
 		// w.imagePainter.Font().SetWeight(font.qfont.Weight() + 50)
-	}
-	if highlight.italic {
-		w.imagePainter.Font().SetItalic(true)
+
+		if fontfallbacked.rawfont.bold == nil {
+			glyphrun.SetRawFont(fontfallbacked.rawfont.regular)
+		} else {
+			glyphrun.SetRawFont(fontfallbacked.rawfont.bold)
+		}
+
+	} else if highlight.italic && fontfallbacked.rawfont.italic != nil {
+		glyphrun.SetRawFont(fontfallbacked.rawfont.italic)
+	} else {
+		glyphrun.SetRawFont(fontfallbacked.rawfont.regular)
 	}
 
-	w.imagePainter.DrawText6(
-		core.NewQRectF4(
+	editor.putLog("newTextCache 8:", text)
+
+	// if highlight.italic {
+	// 	w.imagePainter.Font().SetItalic(true)
+	// }
+
+	editor.putLog("newTextCache 9:", text)
+
+	// w.imagePainter.DrawText3(
+	// 	0,
+	// 	font.shift,
+	// 	text,
+	// )
+
+	gi := fontfallbacked.rawfont.regular.GlyphIndexesForString(text)
+	var positions []*core.QPointF
+	var xpos float64 = 0
+	for _, _ = range text {
+		positions = append(
+			positions,
+			core.NewQPointF3(
+				xpos,
+				0,
+			),
+		)
+		xpos += fontfallbacked.cellwidth
+	}
+	// a := fontfallbacked.rawfont.AdvancesForGlyphIndexes(gi, gui.QRawFont__SeparateAdvances)
+	// a := fontfallbacked.rawfont.AdvancesForGlyphIndexes2(gi)
+	// fmt.Println("-----------")
+	// for _, b := range a {
+	// 	fmt.Println(b.X(), b.Y())
+	// }
+
+	// var a []uint
+	// for _, char := range text {
+	// 	uintChar, _ := strconv.ParseUint(string(char), 10, 64)
+	// 	a = append(a, uint(uintChar))
+	// }
+
+	glyphrun.SetGlyphIndexes(gi)
+	glyphrun.SetPositions(positions)
+	w.imagePainter.DrawGlyphRun(
+		core.NewQPointF3(
 			0,
-			0,
-			width,
-			float64(font.lineHeight),
-		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
+			float64(fontfallbacked.ascent),
+		),
+		glyphrun,
 	)
+
+	editor.putLog("newTextCache 10:", text)
 
 	w.imagePainter.End()
 	// pi.DestroyQPainter()
@@ -2597,6 +2670,15 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		image = scaleToGridCell(
 			image,
 			float64(font.cellwidth)*2.0/width,
+		)
+	}
+
+	if highlight.italic && fontfallbacked.rawfont.italic == nil {
+		transform := gui.NewQTransform2()
+		transform = transform.Shear(-0.17, 0)
+		image = image.Transformed2(
+			transform,
+			core.Qt__FastTransformation,
 		)
 	}
 
@@ -2898,10 +2980,10 @@ func (w *Window) isNormalWidth(char string) bool {
 	}
 
 	if w.font == nil {
-		return resolveFontFallback(w.s.font, w.s.fallbackfonts, char).fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
+		return resolveFontFallback(w.s.font, w.s.fallbackfonts, char).horizontalAdvance(char) == w.getFont().cellwidth
 	}
 
-	return resolveFontFallback(w.font, w.fallbackfonts, char).fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
+	return resolveFontFallback(w.font, w.fallbackfonts, char).horizontalAdvance(char) == w.getFont().cellwidth
 }
 
 func (w *Window) deleteExternalWin() {
