@@ -152,7 +152,7 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 		return
 	}
 
-	shift := font.ascent
+	// shift := font.ascent
 
 	// Paint target cell text
 	if editor.config.Editor.CachedDrawing {
@@ -184,40 +184,71 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 		)
 	} else {
 		if !c.normalWidth && c.fontwide != nil {
-			p.SetFont(resolveFontFallback(c.fontwide, c.fallbackfontwides, text).qfont)
-			if c.fontwide.lineHeight > font.lineHeight {
-				shift += c.fontwide.ascent - font.ascent
-			}
+			// p.SetFont(resolveFontFallback(c.fontwide, c.fallbackfontwides, text).qfont)
+			// if c.fontwide.lineHeight > font.lineHeight {
+			// 	shift += c.fontwide.ascent - font.ascent
+			// }
+			font = resolveFontFallback(c.fontwide, c.fallbackfontwides, text)
 		} else {
-			p.SetFont(resolveFontFallback(c.font, c.fallbackfonts, text).qfont)
+			// p.SetFont(resolveFontFallback(c.font, c.fallbackfonts, text).qfont)
+			font = resolveFontFallback(c.font, c.fallbackfonts, text)
 		}
-		p.SetPen2(c.fg.QColor())
+		// p.SetPen2(c.fg.QColor())
 
-		yy := dy - sy + shift - float64(c.horizontalShift)
-		if c.font.lineSpace < 0 {
-			yy += float64(font.lineSpace) / 2.0
+		gi := font.rawfont.regular.GlyphIndexesForString(text)
+		var positions []*core.QPointF
+		var xpos float64 = 0
+		for _, _ = range text {
+			positions = append(
+				positions,
+				core.NewQPointF3(
+					xpos,
+					0,
+				),
+			)
+			xpos += font.cellwidth
 		}
-		p.DrawText3(
-			int(dx-sx),
-			int(yy),
-			text,
+
+		// yy := dy - sy + shift - float64(c.horizontalShift)
+		// if c.font.lineSpace < 0 {
+		// 	yy += float64(font.lineSpace) / 2.0
+		// }
+		// p.DrawText3(
+		// 	int(dx-sx),
+		// 	int(yy),
+		// 	text,
+		// )
+
+		glyphrun := gui.NewQGlyphRun()
+		glyphrun.SetRawFont(font.rawfont.regular)
+
+		glyphrun.SetGlyphIndexes(gi)
+		glyphrun.SetPositions(positions)
+		p.DrawGlyphRun(
+			core.NewQPointF3(
+				0,
+				float64(font.ascent),
+			),
+			glyphrun,
 		)
+
 	}
+
 }
 
-func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QImage {
+func (c *Cursor) newCharCache(char string, fg *RGBA, isNormalWidth bool) *gui.QImage {
 	font := c.font
 
 	if !isNormalWidth && c.fontwide != nil {
-		font = resolveFontFallback(c.fontwide, c.fallbackfontwides, text)
+		font = resolveFontFallback(c.fontwide, c.fallbackfontwides, char)
 	} else {
-		font = resolveFontFallback(c.font, c.fallbackfonts, text)
+		font = resolveFontFallback(c.font, c.fallbackfonts, char)
 	}
 
-	width := float64(len(text)) * font.italicWidth
+	width := float64(len(char)) * font.italicWidth
 	if !isNormalWidth {
-		// width = math.Ceil(c.ws.screen.runeTextWidth(font, text))
-		width = font.fontMetrics.HorizontalAdvance(text, -1)
+		// width = math.Ceil(c.ws.screen.runeTextWidth(font, char))
+		width = font.horizontalAdvance(char)
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -232,18 +263,45 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 
 	pi := gui.NewQPainter2(image)
 	pi.SetPen2(fg.QColor())
-	pi.SetFont(font.qfont)
+	// pi.SetFont(font.qfont)
+
+	gi := font.rawfont.regular.GlyphIndexesForString(char)
+	var positions []*core.QPointF
+	var xpos float64 = 0
+	for _, _ = range char {
+		positions = append(
+			positions,
+			core.NewQPointF3(
+				xpos,
+				0,
+			),
+		)
+		xpos += font.cellwidth
+	}
 
 	// TODO
 	// Set bold, italic styles
 
-	pi.DrawText6(
-		core.NewQRectF4(
+	// pi.DrawText6(
+	// 	core.NewQRectF4(
+	// 		0,
+	// 		0,
+	// 		width,
+	// 		float64(font.height),
+	// 	), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
+	// )
+
+	glyphrun := gui.NewQGlyphRun()
+	glyphrun.SetRawFont(font.rawfont.regular)
+
+	glyphrun.SetGlyphIndexes(gi)
+	glyphrun.SetPositions(positions)
+	pi.DrawGlyphRun(
+		core.NewQPointF3(
 			0,
-			0,
-			width,
-			float64(c.font.height),
-		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
+			float64(c.font.ascent),
+		),
+		glyphrun,
 	)
 
 	pi.DestroyQPainter()
@@ -258,10 +316,10 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 	return image
 }
 
-func (c *Cursor) setCharCache(text string, fg *RGBA, image *gui.QImage) {
+func (c *Cursor) setCharCache(char string, fg *RGBA, image *gui.QImage) {
 	c.charCache.set(
 		HlTextKey{
-			text:   text,
+			text:   char,
 			fg:     c.fg,
 			italic: false,
 			bold:   false,
