@@ -488,7 +488,7 @@ func parseFont(families string, size int, weight string, stretch, linespace, let
 		wg.Add(1)
 		go func(index int, family string) {
 			defer wg.Done()
-			fonts[index] = initFontNew(strings.TrimSpace(family), float64(size), fontWeight, stretch, linespace, letterspace)
+			fonts[index] = initFont(true, strings.TrimSpace(family), float64(size), fontWeight, stretch, linespace, letterspace)
 		}(i, f)
 	}
 
@@ -647,7 +647,7 @@ func (e *Editor) initWorkspaces(ctx context.Context, signal *neovimSignal, redra
 			}
 		}
 
-		ws.initFont()
+		ws.initWsFont()
 		e.initAppFont()
 		ws.registerSignal(signal, redrawUpdates, guiUpdates)
 		ws.updateSize()
@@ -1270,7 +1270,7 @@ func (e *Editor) workspaceAdd() {
 
 	ws := newWorkspace()
 	ws.initUI()
-	ws.initFont()
+	ws.initWsFont()
 
 	ws.updateSize()
 	signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh, _ := newNvim(ws.cols, ws.rows, e.ctx)

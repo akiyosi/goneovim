@@ -2705,11 +2705,9 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		}
 	}
 
-	width := float64(len(text)-1)*font.cellwidth + font.italicWidth
 	fg := highlight.fg()
-	if !isNormalWidth {
-		width = fontfallbacked.horizontalAdvance(text)
-	}
+
+	width := fontfallbacked.horizontalAdvance(text)
 
 	// QImage default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
@@ -2741,6 +2739,9 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	glyphrun := gui.NewQGlyphRun()
 	var usingFont *gui.QRawFont
 	var usingFace *typesettingfont.Face
+
+	fontfallbacked.rawfont.wg.Wait()
+
 	if highlight.bold {
 		if fontfallbacked.rawfont.bold == nil {
 			usingFont = fontfallbacked.rawfont.regular
