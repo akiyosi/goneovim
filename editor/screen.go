@@ -1567,7 +1567,7 @@ func (s *Screen) runeTextWidth(font *Font, text string) float64 {
 	r := buffer.String()
 	width := (font.cellwidth)*float64(ascii) + (font.cellwidth)*float64(cjk)*2
 	if r == "" {
-		width += font.fontMetrics.HorizontalAdvance(r, -1)
+		width += font.horizontalAdvance(r)
 	}
 	if width == 0 {
 		width = font.cellwidth * 2

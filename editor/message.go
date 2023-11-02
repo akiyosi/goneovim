@@ -161,7 +161,7 @@ func (m *Message) updateFont() {
 		item.icon.SetFixedSize2(m.ws.font.height, m.ws.font.height)
 		item.label.SetContentsMargins(margin/2, margin, margin, margin)
 		item.icon.Move2(margin*5/4, margin)
-		item.label.SetFont(m.ws.font.qfont)
+		// item.label.SetFont(m.ws.font.qfont)
 	}
 }
 

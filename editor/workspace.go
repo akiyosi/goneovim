@@ -222,16 +222,17 @@ func (ws *Workspace) initUI() {
 	editor.putLog("assembled workspace UI components")
 }
 
-func (ws *Workspace) initFont() {
+func (ws *Workspace) initWsFont() {
 	ws.screen.font = editor.font
 	ws.screen.fallbackfonts = editor.fallbackfonts
 	ws.font = ws.screen.font
 	ws.screen.tooltip.setFont(editor.font)
 	ws.screen.tooltip.fallbackfonts = editor.fallbackfonts
 	ws.font.ws = ws
-	if ws.tabline != nil {
-		ws.tabline.font = ws.font.qfont
-	}
+
+	// if ws.tabline != nil {
+	// 	ws.tabline.font = ws.font.qfont
+	// }
 }
 
 func (ws *Workspace) lazyLoadUI() {
@@ -292,7 +293,7 @@ func (ws *Workspace) initLazyLoadUI() {
 
 	go func() {
 		if !editor.doRestoreSessions {
-			time.Sleep(time.Millisecond * 500)
+			time.Sleep(time.Millisecond * 1500)
 		}
 		ws.signal.LazyLoadSignal()
 
@@ -302,7 +303,7 @@ func (ws *Workspace) initLazyLoadUI() {
 		editor.signal.SidebarSignal()
 
 		// put font debug log
-		ws.font.putDebugLog()
+		// ws.font.putDebugLog()
 	}()
 }
 
@@ -322,13 +323,16 @@ func (ws *Workspace) registerSignal(signal *neovimSignal, redrawUpdates chan [][
 		ws.handleGui(updates)
 	})
 	ws.signal.ConnectLazyLoadSignal(func() {
+		editor.putLog("start lazy signal")
 		if ws.hasLazyUI {
 			return
 		}
 		if editor.config.Editor.ExtTabline {
 			ws.tabline.initTab()
 		}
+		editor.putLog("start workspace update in lazy signal")
 		editor.workspaceUpdate()
+		editor.putLog("end workspace update in lazy signal")
 		ws.hasLazyUI = true
 		ws.lazyLoadUI()
 	})
@@ -2131,7 +2135,6 @@ func (ws *Workspace) guiFont(args string) {
 	// When setting up a different font for a workspace other than the neovim drawing screen,
 	// it is necessary to consider handling the fonts on the workspace side independently, etc.
 	ws.font = ws.screen.font
-
 	font := ws.screen.font
 	fallbackfonts := ws.screen.fallbackfonts
 
@@ -2161,9 +2164,9 @@ func (ws *Workspace) guiFont(args string) {
 	// Consideration of application UI policies related to external and Neovim internal fonts,
 	// and provide a way to change external fonts.
 
-	if ws.tabline != nil {
-		ws.tabline.updateFont()
-	}
+	// if ws.tabline != nil {
+	// 	ws.tabline.updateFont()
+	// }
 }
 
 func (ws *Workspace) guiFontWide(args string) {
@@ -2189,15 +2192,11 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 	for i, gfn := range strings.Split(str, ",") {
 		fontFamily, fontHeight, fontWeight, fontStretch := getFontFamilyAndHeightAndWeightAndStretch(gfn)
 
-		ok := checkValidFont(fontFamily)
-		if !ok {
-			errGfns = append(errGfns, fontFamily)
-			continue
-		}
-
 		if i == 0 {
+			var ff *Font
 			if *font == nil {
-				*font = initFontNew(
+				ff = initFont(
+					false,
 					fontFamily,
 					fontHeight,
 					fontWeight,
@@ -2206,10 +2205,30 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 					ws.screen.font.letterSpace,
 				)
 			} else {
-				(*font).change(fontFamily, fontHeight, fontWeight, fontStretch)
+				if (*font).family == fontFamily && (*font).size == fontHeight && (*font).weight == fontWeight && (*font).stretch == fontStretch {
+					continue
+				}
+
+				ff = initFont(
+					false,
+					fontFamily,
+					fontHeight,
+					fontWeight,
+					fontStretch,
+					(*font).lineSpace,
+					(*font).letterSpace,
+				)
 			}
+
+			if ff != nil && ff.rawfont.regular != nil {
+				(*font) = ff
+			} else {
+				errGfns = append(errGfns, fontFamily)
+			}
+
 		} else {
-			ff := initFontNew(
+			ff := initFont(
+				false,
 				fontFamily,
 				fontHeight,
 				fontWeight,
@@ -2217,6 +2236,11 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 				(*font).lineSpace,
 				(*font).letterSpace,
 			)
+
+			if ff == nil || ff.rawfont.regular == nil {
+				errGfns = append(errGfns, fontFamily)
+			}
+
 			*fonts = append(*fonts, ff)
 		}
 	}
@@ -2236,7 +2260,6 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 			notifyOptionArg([]*NotifyButton{}),
 		)
 	}
-
 }
 
 func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.QFont__Weight, int) {
