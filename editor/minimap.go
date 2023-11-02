@@ -85,11 +85,11 @@ func newMiniMap() *MiniMap {
 
 	switch runtime.GOOS {
 	case "windows":
-		m.font = initFontNew("Consolas", 1.0, 0, 0.0)
+		m.font = initFontNew("Consolas", 1.0, gui.QFont__Normal, 100, 0, 0)
 	case "darwin":
-		m.font = initFontNew("Courier New", 2.0, 0, 0.0)
+		m.font = initFontNew("Courier New", 2.0, gui.QFont__Normal, 100, 0, 0)
 	default:
-		m.font = initFontNew("Monospace", 1.0, 0, 0.0)
+		m.font = initFontNew("Monospace", 1.0, gui.QFont__Normal, 100, 0, 0)
 	}
 
 	return m
@@ -677,7 +677,7 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 		return
 	}
 	wsfont := w.getFont()
-	p.SetFont(wsfont.fontNew)
+	p.SetFont(wsfont.qfont)
 	p.SetRenderHint(gui.QPainter__Antialiasing, true)
 	line := w.content[y]
 	chars := map[*Highlight][]int{}

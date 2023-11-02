@@ -18,33 +18,29 @@ type IMETooltip struct {
 	isShown         bool
 }
 
-func (i *IMETooltip) setQpainterFont(p *gui.QPainter) {
-	if i.font == nil {
-		return
-	}
-	if i.font.fontNew == nil {
-		return
-	}
+// func (i *IMETooltip) setQpainterFont(p *gui.QPainter) {
+// 	if i.font == nil {
+// 		return
+// 	}
+// 	if i.font.qfont == nil {
+// 		return
+// 	}
+//
+// 	p.SetFont(i.getFont())
+// }
 
-	p.SetFont(i.getFont())
-}
-
-func (i *IMETooltip) getFont() *gui.QFont {
+func (i *IMETooltip) getFont() *Font {
 	if i.s.ws.palette != nil && i.s.ws.palette.widget.IsVisible() {
-		font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
-		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
-		font.SetFixedPitch(true)
-		font.SetKerning(false)
-		return font
+		return editor.font
 	} else {
-		return i.font.fontNew
+		return i.font
 	}
 }
 
 func (i *IMETooltip) paint(event *gui.QPaintEvent) {
 	p := gui.NewQPainter2(i)
 
-	i.drawContent(p, i.setQpainterFont)
+	i.drawContent(p, i.getFont)
 
 	p.DestroyQPainter()
 }
@@ -195,21 +191,21 @@ func (i *IMETooltip) parsePreeditString(preeditStr string) {
 
 		if length > 0 {
 			if start > 0 {
-				i.updateText(g, string(r[:start]), i.s.ws.font.letterSpace, i.getFont())
+				i.updateText(g, string(r[:start]), i.s.ws.font.letterSpace, i.getFont().qfont)
 				if start+length < len(r) {
-					i.updateText(h, string(r[start:start+length]), i.s.ws.font.letterSpace, i.getFont())
-					i.updateText(g, string(r[start+length:]), i.s.ws.font.letterSpace, i.getFont())
+					i.updateText(h, string(r[start:start+length]), i.s.ws.font.letterSpace, i.getFont().qfont)
+					i.updateText(g, string(r[start+length:]), i.s.ws.font.letterSpace, i.getFont().qfont)
 				} else {
-					i.updateText(h, string(r[start:]), i.s.ws.font.letterSpace, i.getFont())
+					i.updateText(h, string(r[start:]), i.s.ws.font.letterSpace, i.getFont().qfont)
 				}
 			} else if start == 0 && length < len(r) {
-				i.updateText(h, string(r[0:length]), i.s.ws.font.letterSpace, i.getFont())
-				i.updateText(g, string(r[length:]), i.s.ws.font.letterSpace, i.getFont())
+				i.updateText(h, string(r[0:length]), i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(g, string(r[length:]), i.s.ws.font.letterSpace, i.getFont().qfont)
 			} else {
-				i.updateText(g, preeditStr, i.s.ws.font.letterSpace, i.getFont())
+				i.updateText(g, preeditStr, i.s.ws.font.letterSpace, i.getFont().qfont)
 			}
 		} else {
-			i.updateText(g, preeditStr, i.s.ws.font.letterSpace, i.getFont())
+			i.updateText(g, preeditStr, i.s.ws.font.letterSpace, i.getFont().qfont)
 		}
 	}
 }

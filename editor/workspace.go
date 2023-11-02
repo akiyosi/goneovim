@@ -55,6 +55,7 @@ type Workspace struct {
 	cmdline            *Cmdline
 	message            *Message
 	minimap            *MiniMap
+	fontdialog         *widgets.QFontDialog
 	guiUpdates         chan []interface{}
 	redrawUpdates      chan [][]interface{}
 	signal             *neovimSignal
@@ -219,11 +220,14 @@ func (ws *Workspace) initUI() {
 }
 
 func (ws *Workspace) initFont() {
-	ws.font = editor.font
+	ws.screen.font = editor.font
+	ws.screen.fallbackfonts = editor.fallbackfonts
+	ws.font = ws.screen.font
+	ws.screen.tooltip.setFont(editor.font)
+	ws.screen.tooltip.fallbackfonts = editor.fallbackfonts
 	ws.font.ws = ws
-	ws.screen.font = ws.font
 	if ws.tabline != nil {
-		ws.tabline.font = ws.font.fontNew
+		ws.tabline.font = ws.font.qfont
 	}
 }
 
@@ -1799,13 +1803,17 @@ func (ws *Workspace) letterSpacing(arg interface{}) {
 		return
 	}
 
-	letterSpace := util.ReflectToFloat(arg)
+	letterSpace := util.ReflectToInt(arg)
 	editor.config.Editor.Letterspace = letterSpace
 
-	ws.font.changeLetterSpace(letterSpace)
-	ws.screen.font = ws.font
+	ws.screen.font.changeLetterSpace(letterSpace)
+	for _, font := range ws.screen.fallbackfonts {
+		font.changeLetterSpace(letterSpace)
+	}
 
-	font := ws.font
+	font := ws.screen.font
+	fallbackfonts := ws.screen.fallbackfonts
+
 	win, ok := ws.screen.getWindow(ws.cursor.gridid)
 	if ok {
 		font = win.getFont()
@@ -1820,7 +1828,26 @@ func (ws *Workspace) letterSpacing(arg interface{}) {
 		ws.message.updateFont()
 	}
 	ws.screen.tooltip.setFont(font)
-	ws.cursor.updateFont(nil, font)
+	ws.cursor.updateFont(nil, font, fallbackfonts)
+}
+
+func (ws *Workspace) handleFontDialog(guifontStr string, args string) {
+	if ws.fontdialog == nil {
+		fDialog := widgets.NewQFontDialog(nil)
+		fDialog.SetOption(widgets.QFontDialog__MonospacedFonts, true)
+		fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
+		fDialog.ConnectFontSelected(func(font *gui.QFont) {
+			ff := strings.Replace(font.Family(), " ", "_", -1)
+			fh := font.PointSizeF()
+			editor.putLog(fmt.Sprintf("Request to change to the following font:: %s:h%f", ff, fh))
+
+			// Fix the problem that the value of echo &guifont is set to * after setting.
+			// ws.guiFont(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
+			ws.nvim.Command(fmt.Sprintf("set %s=%s:h%f", guifontStr, ff, fh))
+		})
+		ws.fontdialog = fDialog
+	}
+	ws.fontdialog.Show()
 }
 
 func (ws *Workspace) guiFont(args string) {
@@ -1830,48 +1857,23 @@ func (ws *Workspace) guiFont(args string) {
 
 	editor.bindResizeEvent()
 
-	var fontHeight float64
-	var fontFamily string
-	var fontWeight gui.QFont__Weight
-	var fontStretch int
-
 	if args == "*" {
-		if ws.font.ui == nil {
-			fDialog := widgets.NewQFontDialog(nil)
-			fDialog.SetOption(widgets.QFontDialog__MonospacedFonts, true)
-			fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
-			fDialog.ConnectFontSelected(func(font *gui.QFont) {
-				fontFamily = strings.Replace(font.Family(), " ", "_", -1)
-				fontHeight = font.PointSizeF()
-				editor.putLog(fmt.Sprintf("Request to change to the following font:: %s:h%f", fontFamily, fontHeight))
-
-				// Fix the problem that the value of echo &guifont is set to * after setting.
-				// ws.guiFont(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
-				ws.nvim.Command(fmt.Sprintf("set guifont=%s:h%f", fontFamily, fontHeight))
-
-			})
-			ws.font.ui = fDialog
-		}
-		ws.font.ui.Show()
+		ws.handleFontDialog("guifont", args)
 		return
 	}
 
-	for _, gfn := range strings.Split(args, ",") {
-		fontFamily, fontHeight, fontWeight, fontStretch = getFontFamilyAndHeightAndWeightAndStretch(gfn)
-		ok := checkValidFont(fontFamily)
-		if ok {
-			break
-		}
-	}
+	ws.screen.fallbackfonts = nil
 
-	if fontHeight == 0 {
-		fontHeight = 10.0
-	}
+	ws.parseAndApplyFont(args, &ws.screen.font, &ws.screen.fallbackfonts)
+	ws.screen.purgeTextCacheForWins()
 
-	ws.font.change(fontFamily, fontHeight, fontWeight, fontStretch)
-	ws.screen.font = ws.font
+	// When setting up a different font for a workspace other than the neovim drawing screen,
+	// it is necessary to consider handling the fonts on the workspace side independently, etc.
+	ws.font = ws.screen.font
 
-	font := ws.font
+	font := ws.screen.font
+	fallbackfonts := ws.screen.fallbackfonts
+
 	win, ok := ws.screen.getWindow(ws.cursor.gridid)
 	if ok {
 		font = win.getFont()
@@ -1879,7 +1881,7 @@ func (ws *Workspace) guiFont(args string) {
 
 	ws.updateSize()
 
-	editor.iconSize = int(float64(fontHeight) * 11 / 9)
+	editor.iconSize = int(float64(ws.screen.font.height) * 11 / 9)
 
 	if ws.popup != nil {
 		ws.popup.updateFont(font)
@@ -1887,8 +1889,12 @@ func (ws *Workspace) guiFont(args string) {
 	if ws.message != nil {
 		ws.message.updateFont()
 	}
+
 	ws.screen.tooltip.setFont(font)
-	ws.cursor.updateFont(nil, font)
+	ws.screen.tooltip.fallbackfonts = fallbackfonts
+
+	ws.cursor.updateFont(nil, font, fallbackfonts)
+	ws.cursor.fallbackfonts = fallbackfonts
 
 	// TODO:
 	// Consideration of application UI policies related to external and Neovim internal fonts,
@@ -1903,54 +1909,73 @@ func (ws *Workspace) guiFontWide(args string) {
 	if args == "" {
 		return
 	}
-	if ws.screen == nil {
-		return
-	}
-
-	if ws.screen.fontwide == nil {
-		ws.screen.fontwide = initFontNew(
-			editor.extFontFamily,
-			float64(editor.extFontSize),
-			editor.config.Editor.Linespace,
-			editor.config.Editor.Letterspace,
-		)
-		ws.screen.fontwide.ws = ws
-		ws.cursor.fontwide = ws.screen.fontwide
-	}
-
-	var fontHeight float64
-	var fontFamily string
-	var fontWeight gui.QFont__Weight
-	var fontStretch int
 
 	if args == "*" {
-		fDialog := widgets.NewQFontDialog(nil)
-		fDialog.SetOption(widgets.QFontDialog__MonospacedFonts, true)
-		fDialog.SetOption(widgets.QFontDialog__ProportionalFonts, false)
-		fDialog.ConnectFontSelected(func(font *gui.QFont) {
-			fontFamily = font.Family()
-			fontHeight = font.PointSizeF()
-			ws.guiFontWide(fmt.Sprintf("%s:h%f", fontFamily, fontHeight))
-		})
-		fDialog.Show()
+		ws.handleFontDialog("guifontwide", args)
 		return
 	}
 
-	for _, gfn := range strings.Split(args, ",") {
-		fontFamily, fontHeight, fontWeight, fontStretch = getFontFamilyAndHeightAndWeightAndStretch(gfn)
+	ws.screen.fallbackfontwides = nil
+
+	ws.parseAndApplyFont(args, &ws.screen.fontwide, &ws.screen.fallbackfontwides)
+	ws.screen.purgeTextCacheForWins()
+
+	ws.updateSize()
+}
+
+func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Font)) {
+	errGfns := []string{}
+	for i, gfn := range strings.Split(str, ",") {
+		fontFamily, fontHeight, fontWeight, fontStretch := getFontFamilyAndHeightAndWeightAndStretch(gfn)
+
 		ok := checkValidFont(fontFamily)
-		if ok {
-			break
+		if !ok {
+			errGfns = append(errGfns, fontFamily)
+			continue
+		}
+
+		if i == 0 {
+			if *font == nil {
+				*font = initFontNew(
+					fontFamily,
+					fontHeight,
+					fontWeight,
+					fontStretch,
+					ws.screen.font.lineSpace,
+					ws.screen.font.letterSpace,
+				)
+			} else {
+				(*font).change(fontFamily, fontHeight, fontWeight, fontStretch)
+			}
+		} else {
+			ff := initFontNew(
+				fontFamily,
+				fontHeight,
+				fontWeight,
+				fontStretch,
+				(*font).lineSpace,
+				(*font).letterSpace,
+			)
+			*fonts = append(*fonts, ff)
 		}
 	}
 
-	if fontHeight == 0 {
-		fontHeight = 10.0
+	if len(errGfns) > 0 {
+		s := ""
+		for k, errgfn := range errGfns {
+			s += "'" + errgfn + "'"
+			if k < len(errGfns)-1 {
+				s += ", "
+			}
+		}
+		editor.pushNotification(
+			NotifyWarn,
+			4,
+			fmt.Sprintf("The specified font family %s was not found on this system.", s),
+			notifyOptionArg([]*NotifyButton{}),
+		)
 	}
 
-	ws.screen.fontwide.change(fontFamily, fontHeight, fontWeight, fontStretch)
-
-	ws.updateSize()
 }
 
 func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.QFont__Weight, int) {
@@ -2010,10 +2035,26 @@ func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.Q
 }
 
 func checkValidFont(family string) bool {
-	f := gui.NewQFont2(family, 10.0, 1, false)
+	// f := gui.NewQFont2(family, 10.0, 1, false)
+	f := gui.NewQFont()
+	if editor.config.Editor.ManualFontFallback {
+		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
+	} else {
+		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
+	}
+
+	f.SetFamily(family)
+	f.SetPointSizeF(10.0)
+	f.SetWeight(int(gui.QFont__Normal))
+
 	fi := gui.NewQFontInfo(f)
 
-	return strings.EqualFold(fi.Family(), f.Family())
+	fname1 := fi.Family()
+	fname2 := f.Family()
+
+	ret := strings.EqualFold(fname1, fname2)
+
+	return ret
 }
 
 func (ws *Workspace) guiLinespace(args interface{}) {
@@ -2044,7 +2085,12 @@ func (ws *Workspace) guiLinespace(args interface{}) {
 		return
 	}
 
-	ws.font.changeLineSpace(lineSpace)
+	ws.screen.font.changeLineSpace(lineSpace)
+	for _, font := range ws.screen.fallbackfonts {
+		font.changeLineSpace(lineSpace)
+	}
+
+	ws.font = ws.screen.font
 	ws.updateSize()
 }
 

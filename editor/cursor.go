@@ -14,7 +14,9 @@ type Cursor struct {
 	widgets.QWidget
 	charCache            *Cache
 	font                 *Font
+	fallbackfonts        []*Font
 	fontwide             *Font
+	fallbackfontwides    []*Font
 	bg                   *RGBA
 	fg                   *RGBA
 	ws                   *Workspace
@@ -182,12 +184,12 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 		)
 	} else {
 		if !c.normalWidth && c.fontwide != nil {
-			p.SetFont(c.fontwide.fontNew)
+			p.SetFont(resolveFontFallback(c.fontwide, c.fallbackfontwides, text).qfont)
 			if c.fontwide.lineHeight > font.lineHeight {
 				shift += c.fontwide.ascent - font.ascent
 			}
 		} else {
-			p.SetFont(font.fontNew)
+			p.SetFont(resolveFontFallback(c.font, c.fallbackfonts, text).qfont)
 		}
 		p.SetPen2(c.fg.QColor())
 
@@ -206,6 +208,12 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QImage {
 	font := c.font
 
+	if !isNormalWidth && c.fontwide != nil {
+		font = resolveFontFallback(c.fontwide, c.fallbackfontwides, text)
+	} else {
+		font = resolveFontFallback(c.font, c.fallbackfonts, text)
+	}
+
 	width := float64(len(text)) * font.italicWidth
 	if !isNormalWidth {
 		// width = math.Ceil(c.ws.screen.runeTextWidth(font, text))
@@ -216,7 +224,7 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 	// So we set the correct device pixel ratio
 	image := gui.NewQImage3(
 		int(c.devicePixelRatio*width),
-		int(c.devicePixelRatio*float64(font.height)),
+		int(c.devicePixelRatio*float64(c.font.height)),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 	image.SetDevicePixelRatio(c.devicePixelRatio)
@@ -224,12 +232,7 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 
 	pi := gui.NewQPainter2(image)
 	pi.SetPen2(fg.QColor())
-
-	if !isNormalWidth && font == nil && c.fontwide != nil {
-		pi.SetFont(c.fontwide.fontNew)
-	} else {
-		pi.SetFont(font.fontNew)
-	}
+	pi.SetFont(font.qfont)
 
 	// TODO
 	// Set bold, italic styles
@@ -342,7 +345,7 @@ func (c *Cursor) move() {
 	c.Move2(iX, iY)
 }
 
-func (c *Cursor) updateFont(targetWin *Window, font *Font) {
+func (c *Cursor) updateFont(targetWin *Window, font *Font, fallbackfonts []*Font) {
 	win := targetWin
 	ok := false
 	if win == nil {
@@ -353,12 +356,16 @@ func (c *Cursor) updateFont(targetWin *Window, font *Font) {
 	}
 
 	if win == nil {
+		c.font = font
+		c.fallbackfonts = fallbackfonts
 		return
 	}
 	if win.font == nil {
 		c.font = font
+		c.fallbackfonts = fallbackfonts
 	} else {
 		c.font = win.font
+		c.fallbackfonts = win.fallbackfonts
 	}
 }
 
