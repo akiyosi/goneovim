@@ -32,6 +32,7 @@ type editorConfig struct {
 	FileOpenCmd                             string
 	WindowSeparatorColor                    string
 	FontFamily                              string
+	FontFeatures                            map[string]([]string)
 	GinitVim                                string
 	WindowSeparatorTheme                    string
 	NvimInWsl                               string

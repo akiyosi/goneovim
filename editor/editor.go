@@ -22,6 +22,8 @@ import (
 	"github.com/akiyosi/qt/widgets"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
+
+	"github.com/go-text/typesetting/fontscan"
 )
 
 var editor *Editor
@@ -116,6 +118,8 @@ type Editor struct {
 	sysTray                *widgets.QSystemTrayIcon
 	side                   *WorkspaceSide
 	savedGeometry          *core.QByteArray
+	fontmap                *fontscan.FontMap
+	logger                 *GonvimLogger
 	prefixToMapMetaKey     string
 	macAppArg              string
 	configDir              string
@@ -127,6 +131,7 @@ type Editor struct {
 	fallbackfonts          []*Font
 	fontCh                 chan []*Font
 	fontErrors             []string
+	loadSysFontCh          chan error
 	notifications          []*Notification
 	workspaces             []*Workspace
 	args                   []string
@@ -228,6 +233,13 @@ func InitEditor(options Options, args []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	e.ctx = ctx
 
+	// load System Fonts
+	e.loadSysFontCh = make(chan error, 2)
+	go func() {
+		e.fontmap = fontscan.NewFontMap(e.logger)
+		e.loadSysFontCh <- e.fontmap.UseSystemFonts("")
+	}()
+
 	var err error
 	// detect home dir
 	e.homeDir, err = homedir.Dir()
@@ -239,6 +251,7 @@ func InitEditor(options Options, args []string) {
 	// load config
 	e.configDir, e.config = newConfig(e.homeDir, e.opts.NoConfig)
 	e.putLog("Detecting the goneovim configuration directory:", e.configDir)
+
 	e.overwriteConfigByCLIOption()
 
 	// get parent process id
@@ -277,18 +290,6 @@ func InitEditor(options Options, args []string) {
 
 	// e.setAppDirPath(home)
 
-	e.fontCh = make(chan []*Font, 100)
-	go func() {
-		e.fontCh <- parseFont(
-			e.config.Editor.FontFamily,
-			e.config.Editor.FontSize,
-			e.config.Editor.FontWeight,
-			e.config.Editor.FontStretch,
-			e.config.Editor.Linespace,
-			e.config.Editor.Letterspace,
-		)
-	}()
-
 	e.initSVGS()
 
 	e.initColorPalette()
@@ -311,6 +312,23 @@ func InitEditor(options Options, args []string) {
 		fmt.Println(nvimErr)
 		os.Exit(1)
 	}
+
+	loadSysFontErr := <-e.loadSysFontCh
+	if loadSysFontErr != nil {
+		panic(loadSysFontErr)
+	}
+
+	e.fontCh = make(chan []*Font, 2)
+	go func() {
+		e.fontCh <- parseFont(
+			e.config.Editor.FontFamily,
+			e.config.Editor.FontSize,
+			e.config.Editor.FontWeight,
+			e.config.Editor.FontStretch,
+			e.config.Editor.Linespace,
+			e.config.Editor.Letterspace,
+		)
+	}()
 
 	e.initWorkspaces(e.ctx, signal, redrawUpdates, guiUpdates, nvimCh, uiRCh, isSetWindowState)
 
@@ -373,16 +391,16 @@ func (e *Editor) exitEditor(cancel context.CancelFunc) {
 	os.Exit(ret)
 }
 
-func (e *Editor) putLog(v ...interface{}) {
-	if e.opts.Debug == "" {
-		return
-	}
-
-	log.Println(
-		fmt.Sprintf("%07.3f", float64(time.Now().UnixNano()/1000-e.startuptime)/1000),
-		strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%v", v), "["), "]"),
-	)
-}
+// func (e *Editor) putLog(v ...interface{}) {
+// 	if e.opts.Debug == "" {
+// 		return
+// 	}
+//
+// 	log.Println(
+// 		fmt.Sprintf("%07.3f", float64(time.Now().UnixNano()/1000-e.startuptime)/1000),
+// 		strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%v", v), "["), "]"),
+// 	)
+// }
 
 func (e *Editor) bindResizeEvent() {
 	e.window.ConnectResizeEvent(func(event *gui.QResizeEvent) {
@@ -434,7 +452,7 @@ func (e *Editor) addDockMenu() {
 	menu.SetAsDockMenu()
 }
 
-func parseFont(families string, size int, weight string, stretch, linespace, letterspace int) (fonts []*Font) {
+func parseFont(families string, size int, weight string, stretch, linespace, letterspace int) []*Font {
 	weight = strings.ToLower(weight)
 	var fontWeight gui.QFont__Weight
 	switch weight {
@@ -456,18 +474,28 @@ func parseFont(families string, size int, weight string, stretch, linespace, let
 		fontWeight = gui.QFont__Black
 	}
 
-	for _, f := range strings.Split(families, ",") {
-		font := initFontNew(strings.TrimSpace(f), float64(size), fontWeight, stretch, linespace, letterspace)
-		fonts = append(fonts, font)
+	// for _, f := range strings.Split(families, ",") {
+	// 	fonts = append(
+	// 		fonts,
+	// 		initFontNew(strings.TrimSpace(f), float64(size), fontWeight, stretch, linespace, letterspace),
+	// 	)
+	// }
 
-		ok := checkValidFont(f)
-		if !ok {
-			editor.fontErrors = append(editor.fontErrors, f)
-			continue
-		}
+	familiesSlice := strings.Split(families, ",")
+	fonts := make([]*Font, len(familiesSlice))
+
+	var wg sync.WaitGroup
+	for i, f := range familiesSlice {
+		wg.Add(1)
+		go func(index int, family string) {
+			defer wg.Done()
+			fonts[index] = initFont(true, strings.TrimSpace(family), float64(size), fontWeight, stretch, linespace, letterspace)
+		}(i, f)
 	}
 
-	return
+	wg.Wait()
+
+	return fonts
 }
 
 func (e *Editor) showFontErrors() {
@@ -542,6 +570,23 @@ func (e *Editor) newSplitter() {
 	e.splitter = splitter
 }
 
+// func (e *Editor) setDebuglog() (file *os.File) {
+// 	if e.opts.Debug == "" {
+// 		return nil
+// 	}
+//
+// 	file, err := os.OpenFile(e.opts.Debug, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+// 	if err != nil {
+// 		fmt.Println(err)
+//
+// 		os.Exit(1)
+// 	}
+// 	log.SetOutput(file)
+// 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+//
+// 	return
+// }
+
 func (e *Editor) setDebuglog() (file *os.File) {
 	if e.opts.Debug == "" {
 		return nil
@@ -550,13 +595,28 @@ func (e *Editor) setDebuglog() (file *os.File) {
 	file, err := os.OpenFile(e.opts.Debug, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Println(err)
-
 		os.Exit(1)
 	}
+
 	log.SetOutput(file)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
+	e.logger = &GonvimLogger{
+		logger: log.New(file, "", log.LstdFlags|log.Lmicroseconds),
+	}
+
 	return
+}
+
+func (e *Editor) putLog(v ...interface{}) {
+	if e.opts.Debug == "" {
+		return
+	}
+
+	e.logger.Println(
+		fmt.Sprintf("%07.3f", float64(time.Now().UnixNano()/1000-e.startuptime)/1000),
+		strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%v", v), "["), "]"),
+	)
 }
 
 func (e *Editor) initWorkspaces(ctx context.Context, signal *neovimSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}, nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bool, isSetWindowState bool) {
@@ -603,7 +663,7 @@ func (e *Editor) initWorkspaces(ctx context.Context, signal *neovimSignal, redra
 			}
 		}
 
-		ws.initFont()
+		ws.initWsFont()
 		e.initAppFont()
 		ws.registerSignal(signal, redrawUpdates, guiUpdates)
 		ws.updateSize()
@@ -1236,7 +1296,7 @@ func (e *Editor) workspaceAdd() {
 
 	ws := newWorkspace()
 	ws.initUI()
-	ws.initFont()
+	ws.initWsFont()
 
 	ws.updateSize()
 	signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh, _ := newNvim(ws.cols, ws.rows, e.ctx)
