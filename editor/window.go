@@ -2093,7 +2093,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				wsfontLineHeight,
 				line[x].char,
 				line[x].highlight,
-				false,
+				true,
 				line[x].scaled,
 			)
 
@@ -2202,8 +2202,8 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 	if len(specialChars) >= 1 {
 		if !editor.config.Editor.CachedDrawing {
-			if w.s.ws.fontwide != nil && w.font == nil && w.s.ws.fontwide.fontNew != nil {
-				p.SetFont(w.s.ws.fontwide.fontNew)
+			if w.font == nil && w.s.fontwide != nil {
+				p.SetFont(w.s.fontwide.fontNew)
 			}
 		}
 
@@ -2519,8 +2519,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 
 	w.imagePainter.SetPen2(fg.QColor())
 
-	if !isNormalWidth && w.font == nil && w.s.ws.fontwide != nil {
-		w.imagePainter.SetFont(w.s.ws.fontwide.fontNew)
+	if !isNormalWidth && w.font == nil && w.s.fontwide != nil {
+		w.imagePainter.SetFont(w.s.fontwide.fontNew)
 	} else {
 		w.imagePainter.SetFont(font.fontNew)
 	}

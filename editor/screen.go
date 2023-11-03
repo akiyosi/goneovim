@@ -25,6 +25,7 @@ type Screen struct {
 	cache            Cache
 	tooltip          *IMETooltip
 	font             *Font
+	fontwide         *Font
 	hlAttrDef        map[int]*Highlight
 	widget           *widgets.QWidget
 	ws               *Workspace

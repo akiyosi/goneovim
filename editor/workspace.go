@@ -46,7 +46,6 @@ type Workspace struct {
 	layout2            *widgets.QHBoxLayout
 	stop               chan struct{}
 	font               *Font
-	fontwide           *Font
 	cursor             *Cursor
 	tabline            *Tabline
 	screen             *Screen
@@ -1899,16 +1898,19 @@ func (ws *Workspace) guiFontWide(args string) {
 	if args == "" {
 		return
 	}
+	if ws.screen == nil {
+		return
+	}
 
-	if ws.fontwide == nil {
-		ws.fontwide = initFontNew(
+	if ws.screen.fontwide == nil {
+		ws.screen.fontwide = initFontNew(
 			editor.extFontFamily,
 			float64(editor.extFontSize),
 			editor.config.Editor.Linespace,
 			editor.config.Editor.Letterspace,
 		)
-		ws.fontwide.ws = ws
-		ws.cursor.fontwide = ws.fontwide
+		ws.screen.fontwide.ws = ws
+		ws.cursor.fontwide = ws.screen.fontwide
 	}
 
 	var fontHeight float64
@@ -1941,7 +1943,7 @@ func (ws *Workspace) guiFontWide(args string) {
 		fontHeight = 10.0
 	}
 
-	ws.fontwide.change(fontFamily, fontHeight, fontWeight, fontStretch)
+	ws.screen.fontwide.change(fontFamily, fontHeight, fontWeight, fontStretch)
 
 	ws.updateSize()
 }

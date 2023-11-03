@@ -14,9 +14,9 @@ type Cursor struct {
 	widgets.QWidget
 	charCache            *Cache
 	font                 *Font
+	fontwide             *Font
 	bg                   *RGBA
 	fg                   *RGBA
-	fontwide             *Font
 	ws                   *Workspace
 	timer                *core.QTimer
 	cursorShape          string
@@ -219,8 +219,8 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 	pi := gui.NewQPainter2(image)
 	pi.SetPen2(fg.QColor())
 
-	if !isNormalWidth && font == nil && c.ws.fontwide != nil {
-		pi.SetFont(c.ws.fontwide.fontNew)
+	if !isNormalWidth && font == nil && c.fontwide != nil {
+		pi.SetFont(c.fontwide.fontNew)
 	} else {
 		pi.SetFont(font.fontNew)
 	}
