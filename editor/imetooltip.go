@@ -31,7 +31,11 @@ func (i *IMETooltip) setQpainterFont(p *gui.QPainter) {
 
 func (i *IMETooltip) getFont() *gui.QFont {
 	if i.s.ws.palette != nil && i.s.ws.palette.widget.IsVisible() {
-		return gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
+		font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
+		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
+		font.SetFixedPitch(true)
+		font.SetKerning(false)
+		return font
 	} else {
 		return i.font.fontNew
 	}
@@ -61,7 +65,7 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 
 	if ws.palette != nil && ws.palette.widget.IsVisible() {
 		x = ws.palette.cursorX + ws.palette.patternPadding
-		y = ws.palette.patternPadding + ws.palette.padding + 1
+		y = ws.palette.patternPadding + ws.palette.padding - (font.lineHeight-ws.cursor.height)/2
 		candX = x + ws.palette.widget.Pos().X()
 		candY = y + ws.palette.widget.Pos().Y()
 	} else {

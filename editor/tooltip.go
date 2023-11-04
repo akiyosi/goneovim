@@ -24,8 +24,8 @@ type Tooltip struct {
 	widthSlice []float64
 }
 
-func (t *Tooltip) drawContent(p *gui.QPainter, f func(*gui.QPainter)) {
-	f(p)
+func (t *Tooltip) drawContent(p *gui.QPainter, setFont func(*gui.QPainter)) {
+	setFont(p)
 	font := p.Font()
 
 	p.SetPen2(t.s.ws.foreground.QColor())
