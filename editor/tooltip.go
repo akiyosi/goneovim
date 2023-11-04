@@ -133,12 +133,13 @@ func (t *Tooltip) clearText() {
 	t.text = newText
 }
 
-func (t *Tooltip) updateText(hl *Highlight, str string) {
+func (t *Tooltip) updateText(hl *Highlight, str string, letterspace float64, font *gui.QFont) {
 	if t.font == nil {
 		return
 	}
 
-	font := t.font
+	fontMetrics := gui.NewQFontMetricsF(font)
+	cellwidth := fontMetrics.HorizontalAdvance("w", -1) + letterspace
 
 	// rune text
 	r := []rune(str)
@@ -148,13 +149,13 @@ func (t *Tooltip) updateText(hl *Highlight, str string) {
 	for k, rr := range r {
 
 		// detect char width based cell width
-		w := font.cellwidth
+		w := cellwidth
 		for {
-			cwidth := font.fontMetrics.HorizontalAdvance(string(rr), -1)
+			cwidth := fontMetrics.HorizontalAdvance(string(rr), -1)
 			if cwidth <= w {
 				break
 			}
-			w += font.cellwidth
+			w += cellwidth
 		}
 		if preStrWidth == 0 {
 			preStrWidth = w

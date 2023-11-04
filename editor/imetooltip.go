@@ -195,21 +195,21 @@ func (i *IMETooltip) parsePreeditString(preeditStr string) {
 
 		if length > 0 {
 			if start > 0 {
-				i.updateText(g, string(r[:start]))
+				i.updateText(g, string(r[:start]), i.s.ws.font.letterSpace, i.getFont())
 				if start+length < len(r) {
-					i.updateText(h, string(r[start:start+length]))
-					i.updateText(g, string(r[start+length:]))
+					i.updateText(h, string(r[start:start+length]), i.s.ws.font.letterSpace, i.getFont())
+					i.updateText(g, string(r[start+length:]), i.s.ws.font.letterSpace, i.getFont())
 				} else {
-					i.updateText(h, string(r[start:]))
+					i.updateText(h, string(r[start:]), i.s.ws.font.letterSpace, i.getFont())
 				}
 			} else if start == 0 && length < len(r) {
-				i.updateText(h, string(r[0:length]))
-				i.updateText(g, string(r[length:]))
+				i.updateText(h, string(r[0:length]), i.s.ws.font.letterSpace, i.getFont())
+				i.updateText(g, string(r[length:]), i.s.ws.font.letterSpace, i.getFont())
 			} else {
-				i.updateText(g, preeditStr)
+				i.updateText(g, preeditStr, i.s.ws.font.letterSpace, i.getFont())
 			}
 		} else {
-			i.updateText(g, preeditStr)
+			i.updateText(g, preeditStr, i.s.ws.font.letterSpace, i.getFont())
 		}
 	}
 }
