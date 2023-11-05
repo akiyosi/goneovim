@@ -2489,7 +2489,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	width := float64(len(text)) * font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
-		width = math.Ceil(w.s.runeTextWidth(font, text))
+		// width = math.Ceil(w.s.runeTextWidth(font, text))
+		width = font.fontMetrics.HorizontalAdvance(text, -1)
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -2547,7 +2548,27 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 
 	editor.putLog("finished creating word cache:", text)
 
+	if !isNormalWidth {
+		image = scaleToGridCell(
+			image,
+			float64(font.cellwidth)*2.0/width,
+		)
+	}
+
 	return image
+}
+
+func scaleToGridCell(image *gui.QImage, ratio float64) *gui.QImage {
+	if ratio >= 1.0 {
+		return image
+	}
+
+	return image.Scaled2(
+		int(float64(image.Width())*ratio),
+		int(float64(image.Height())*ratio),
+		core.Qt__IgnoreAspectRatio,
+		core.Qt__SmoothTransformation,
+	)
 }
 
 func (w *Window) drawForeground(p *gui.QPainter, y int, col int, cols int) {

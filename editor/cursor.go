@@ -203,7 +203,8 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 
 	width := float64(len(text)) * font.italicWidth
 	if !isNormalWidth {
-		width = math.Ceil(c.ws.screen.runeTextWidth(font, text))
+		// width = math.Ceil(c.ws.screen.runeTextWidth(font, text))
+		width = font.fontMetrics.HorizontalAdvance(text, -1)
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -238,6 +239,13 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 	)
 
 	pi.DestroyQPainter()
+
+	if !isNormalWidth {
+		image = scaleToGridCell(
+			image,
+			float64(font.cellwidth)*2.0/width,
+		)
+	}
 
 	return image
 }
