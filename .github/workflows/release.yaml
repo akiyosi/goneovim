@@ -127,7 +127,6 @@ jobs:
     - name: Generate Qt bindings
       env: 
         Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
-      if: ${{ steps.cache-qt-bindings-linux.outputs.cache-hit != 'true' }}
       run: $(go env GOPATH)/bin/qtsetup -test=false
 
     - name: Get dependencies
@@ -314,13 +313,11 @@ jobs:
     strategy:
       matrix:
         go-version: [1.21.x]
-        platform: [macos-11]
-        qtversion: [5.15.2]
+        platform: [macos-latest]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
-      QT_DIR: ${{ github.workspace }}/Qt
-      QT_VERSION: ${{ matrix.qtversion }}
+      QT_HOMEBREW: true
       QT_API: 5.13.0
       QT_DEBUG: false
       GO111MODULE: off
@@ -334,14 +331,8 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Install Qt for macOS
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: ${{ matrix.qtversion }}
-        host: mac
-        target: desktop
-        dir: ${{ github.workspace }}
-        modules: 'qtcharts qtdatavis3d qtpurchasing qtvirtualkeyboard qtwebengine qtnetworkauth qtwebglplugin qtscript'
-        setup-python: 'false'
+      run: |
+        brew install qt@5
 
     - name: Get Qt binding for Go
       run: |
