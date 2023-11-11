@@ -1633,30 +1633,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		}
 
 		win.setFloatWindowPosition()
-		// wincols := int(float64(win.cols) * win.getFont().cellwidth / anchorwin.getFont().cellwidth)
-		// winrows := int(math.Ceil(float64(win.rows*win.getFont().lineHeight) / float64(anchorwin.getFont().lineHeight)))
-
-		// var col, row int
-		// switch win.anchor {
-		// case "NW":
-		// 	col = win.anchorCol
-		// 	row = win.anchorRow
-		// case "NE":
-		// 	col = win.anchorCol - wincols
-		// 	row = win.anchorRow
-		// case "SW":
-		// 	col = win.anchorCol
-		// 	row = win.anchorRow - winrows
-
-		// case "SE":
-		// 	col = win.anchorCol - win.cols
-		// 	row = win.anchorRow - win.rows
-		// }
-
-		// win.updateMutex.Lock()
-		// win.pos[0] = col
-		// win.pos[1] = row
-		// win.updateMutex.Unlock()
 
 		win.move(win.pos[0], win.pos[1], win.anchorwin)
 

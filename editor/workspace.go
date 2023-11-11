@@ -89,7 +89,7 @@ type Workspace struct {
 	pb                 int
 	ts                 int
 	ph                 int
-	winbar             string
+	winbar             *string
 	optionsetMutex     sync.RWMutex
 	viewportMutex      sync.RWMutex
 	stopOnce           sync.Once
@@ -1460,7 +1460,6 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 				win.smoothScroll(delta)
 			}
 		}
-
 	}
 }
 
@@ -1723,21 +1722,26 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 			return
 		}
 
-		// get tabstop
-		win.ts = util.ReflectToInt(
-			ws.getBufferOption(editor.config.Editor.OptionsToUseGuideWidth, wid),
-		)
+		if editor.config.Editor.IndentGuide {
+			// get tabstop
+			win.ts = util.ReflectToInt(
+				ws.getBufferOption(editor.config.Editor.OptionsToUseGuideWidth, wid),
+			)
 
-		// get filetype
-		ftITF := ws.getBufferOption("filetype", wid)
-		ft, ok := ftITF.(string)
-		if !ok {
-			return
+			// get filetype
+			ftITF := ws.getBufferOption("filetype", wid)
+			ft, ok := ftITF.(string)
+			if !ok {
+				return
+			}
+			win.ft = ft
 		}
-		win.ft = ft
 
 		// get winbar
-		win.winbar = ws.getWindowOption("winbar", "local", wid)
+		if win.winbar != nil {
+			winbar := ws.getWindowOption("winbar", "local", wid)
+			win.winbar = &winbar
+		}
 
 	case "gonvim_optionset":
 		wid := (nvim.Window)(util.ReflectToInt(updates[4]))
@@ -2153,11 +2157,14 @@ func (ws *Workspace) optionSet(optionName string, wid nvim.Window) {
 		}
 		win.ft = ft
 	case "winbar":
+
 		// for global-local
-		ws.winbar = ws.getWindowOption(optionName, "global")
+		winbar := ws.getWindowOption(optionName, "global")
+		ws.winbar = &winbar
 
 		// for window-local
-		win.winbar = ws.getWindowOption(optionName, "local", wid)
+		winbar = ws.getWindowOption(optionName, "local", wid)
+		win.winbar = &winbar
 	}
 	ws.optionsetMutex.Unlock()
 }

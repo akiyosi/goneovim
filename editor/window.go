@@ -121,7 +121,7 @@ type Window struct {
 	anchorCol              int
 	anchorRow              int
 	cwd                    string
-	winbar                 string
+	winbar                 *string
 	ft                     string
 	lenOldContent          []int
 	lenContent             []int
@@ -2914,6 +2914,7 @@ func newWindow() *Window {
 		win.InstallEventFilter(win)
 		win.SetMouseTracking(true)
 	}
+
 	win.ConnectEventFilter(func(watched *core.QObject, event *core.QEvent) bool {
 		switch event.Type() {
 		case core.QEvent__MouseMove:
@@ -3381,19 +3382,29 @@ func (w *Window) setOptions() {
 	if w.s == nil || w.s.ws == nil {
 		return
 	}
+	if w.id == 0 {
+		return
+	}
 
-	// get tabstop
-	w.ts = util.ReflectToInt(w.s.ws.getBufferOption("ts", w.id))
+	if editor.config.Editor.IndentGuide {
+		// get tabstop
+		w.ts = util.ReflectToInt(w.s.ws.getBufferOption("ts", w.id))
 
-	// get filetype
-	ftITF := w.s.ws.getBufferOption("ft", w.id)
-	ft, ok := ftITF.(string)
-	if ok {
-		w.ft = ft
+		if w.ft == "" {
+			// get filetype
+			ftITF := w.s.ws.getBufferOption("ft", w.id)
+			ft, ok := ftITF.(string)
+			if ok {
+				w.ft = ft
+			}
+		}
 	}
 
 	// get winbar
-	w.winbar = w.s.ws.getWindowOption("winbar", "local", w.id)
+	if w.winbar == nil {
+		winbar := w.s.ws.getWindowOption("winbar", "local", w.id)
+		w.winbar = &winbar
+	}
 }
 
 func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
@@ -3436,11 +3447,21 @@ func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
 }
 
 func (w *Window) getWinbar() string {
-	if w.winbar == "" {
-		return w.s.ws.winbar
+	if w.winbar != nil && *w.winbar == "" {
+		if w.s.ws.winbar != nil {
+			return *w.s.ws.winbar
+		} else {
+			return ""
+		}
+	} else if w.winbar == nil {
+		if w.s.ws.winbar != nil {
+			return *w.s.ws.winbar
+		} else {
+			return ""
+		}
 	}
 
-	return w.winbar
+	return *w.winbar
 }
 
 func (w *Window) layoutExternalWindow(x, y int) {
