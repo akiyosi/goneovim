@@ -125,7 +125,7 @@ darwin: ## Build binaries for MacOS using Vagrant.
 debug: ## Debug runs of the application using delve.
 	@test -f ./editor/moc.go & $(GOQTMOC) desktop ./cmd/goneovim && \
 	cd cmd/goneovim && \
-	dlv debug --build-flags -race -- $(DEBUG_ARGS)
+	dlv debug --output goneovim --build-flags -race -- $(DEBUG_ARGS)
 
 help: ## Display this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "%-20s %s\n", $$1, $$2}'
