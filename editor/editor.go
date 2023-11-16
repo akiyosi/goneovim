@@ -27,8 +27,9 @@ import (
 var editor *Editor
 
 const (
-	WORKSPACELEN    = 10
-	NVIMCALLTIMEOUT = 320
+	WORKSPACELEN     = 10
+	NVIMCALLTIMEOUT  = 320
+	NVIMCALLTIMEOUT2 = 30
 )
 
 type editorSignal struct {

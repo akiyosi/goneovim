@@ -3388,11 +3388,11 @@ func (w *Window) setOptions() {
 
 	if editor.config.Editor.IndentGuide {
 		// get tabstop
-		w.ts = util.ReflectToInt(w.s.ws.getBufferOption("ts", w.id))
+		w.ts = util.ReflectToInt(w.s.ws.getBufferOption(NVIMCALLTIMEOUT, "ts", w.id))
 
 		if w.ft == "" {
 			// get filetype
-			ftITF := w.s.ws.getBufferOption("ft", w.id)
+			ftITF := w.s.ws.getBufferOption(NVIMCALLTIMEOUT, "ft", w.id)
 			ft, ok := ftITF.(string)
 			if ok {
 				w.ft = ft
@@ -3402,7 +3402,7 @@ func (w *Window) setOptions() {
 
 	// get winbar
 	if w.winbar == nil {
-		winbar := w.s.ws.getWindowOption("winbar", "local", w.id)
+		winbar := w.s.ws.getWindowOption(NVIMCALLTIMEOUT2, "winbar", "local", w.id)
 		w.winbar = &winbar
 	}
 }

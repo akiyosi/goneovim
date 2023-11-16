@@ -1725,11 +1725,11 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 		if editor.config.Editor.IndentGuide {
 			// get tabstop
 			win.ts = util.ReflectToInt(
-				ws.getBufferOption(editor.config.Editor.OptionsToUseGuideWidth, wid),
+				ws.getBufferOption(NVIMCALLTIMEOUT, editor.config.Editor.OptionsToUseGuideWidth, wid),
 			)
 
 			// get filetype
-			ftITF := ws.getBufferOption("filetype", wid)
+			ftITF := ws.getBufferOption(NVIMCALLTIMEOUT, "filetype", wid)
 			ft, ok := ftITF.(string)
 			if !ok {
 				return
@@ -1739,7 +1739,7 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 
 		// get winbar
 		if win.winbar != nil {
-			winbar := ws.getWindowOption("winbar", "local", wid)
+			winbar := ws.getWindowOption(NVIMCALLTIMEOUT2, "winbar", "local", wid)
 			win.winbar = &winbar
 		}
 
@@ -2067,7 +2067,7 @@ func (ws *Workspace) setPumblend(arg interface{}) {
 	ws.pb = pumblend
 }
 
-func (ws *Workspace) getWindowOption(option, scope string, wid ...nvim.Window) string {
+func (ws *Workspace) getWindowOption(timeout int, option, scope string, wid ...nvim.Window) string {
 	opts := fmt.Sprintf(
 		`{"scope":"%s"`,
 		scope,
@@ -2094,7 +2094,7 @@ func (ws *Workspace) getWindowOption(option, scope string, wid ...nvim.Window) s
 	var result string
 	select {
 	case result = <-c:
-	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
+	case <-time.After(time.Duration(timeout) * time.Millisecond):
 	}
 
 	return result
@@ -2115,7 +2115,7 @@ func (ws *Workspace) getBuffer(wid nvim.Window) (buf nvim.Buffer) {
 	return
 }
 
-func (ws *Workspace) getBufferOption(option string, wid nvim.Window) interface{} {
+func (ws *Workspace) getBufferOption(timeout int, option string, wid nvim.Window) interface{} {
 	buf := ws.getBuffer(wid)
 
 	// get buffer tabstop
@@ -2129,7 +2129,7 @@ func (ws *Workspace) getBufferOption(option string, wid nvim.Window) interface{}
 	var result interface{}
 	select {
 	case result = <-c:
-	case <-time.After(NVIMCALLTIMEOUT * time.Millisecond):
+	case <-time.After(time.Duration(timeout) * time.Millisecond):
 	}
 
 	return result
@@ -2147,10 +2147,10 @@ func (ws *Workspace) optionSet(optionName string, wid nvim.Window) {
 	switch optionName {
 	case editor.config.Editor.OptionsToUseGuideWidth:
 		win.ts = util.ReflectToInt(
-			ws.getBufferOption(optionName, wid),
+			ws.getBufferOption(NVIMCALLTIMEOUT, optionName, wid),
 		)
 	case "filetype":
-		ftITF := ws.getBufferOption(optionName, wid)
+		ftITF := ws.getBufferOption(NVIMCALLTIMEOUT, optionName, wid)
 		ft, ok := ftITF.(string)
 		if !ok {
 			return
@@ -2159,11 +2159,11 @@ func (ws *Workspace) optionSet(optionName string, wid nvim.Window) {
 	case "winbar":
 
 		// for global-local
-		winbar := ws.getWindowOption(optionName, "global")
+		winbar := ws.getWindowOption(NVIMCALLTIMEOUT2, optionName, "global")
 		ws.winbar = &winbar
 
 		// for window-local
-		winbar = ws.getWindowOption(optionName, "local", wid)
+		winbar = ws.getWindowOption(NVIMCALLTIMEOUT2, optionName, "local", wid)
 		win.winbar = &winbar
 	}
 	ws.optionsetMutex.Unlock()
