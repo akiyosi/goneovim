@@ -1,0 +1,4 @@
+package editor
+
+func setMyApplicationDelegate() {
+}
