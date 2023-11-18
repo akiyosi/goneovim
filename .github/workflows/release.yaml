@@ -345,7 +345,7 @@ jobs:
         path: ./src/github.com/${{ github.repository }}
 
     - name: Retrieve version
-      id: version-macos-11
+      id: version-macos
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
@@ -353,15 +353,15 @@ jobs:
 
     - name: test version
       run: |
-        echo ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}
+        echo ${{ steps.version-macos.outputs.GONEOVIM_VERSION }}
 
     # - uses: actions/cache@v2
-    #   id: cache-qt-bindings-macos-11
+    #   id: cache-qt-bindings-macos
     #   with:
     #     path: ${{ github.workspace }}/src/github.com/akiyosi/qt/*
-    #     key: ${{ matrix.qtversion }}-qtbindings-macos-11-${{ env.cache-version }}
+    #     key: ${{ matrix.qtversion }}-qtbindings-macos-${{ env.cache-version }}
     
-    #if: ${{ steps.cache-qt-bindings-macos-11.outputs.cache-hit != 'true' }}
+    #if: ${{ steps.cache-qt-bindings-macos.outputs.cache-hit != 'true' }}
 
     - name: Generate Qt bindings
       continue-on-error: true
@@ -381,8 +381,8 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime ./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Resources/
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/
-        /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION_HASH }}" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
-        /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string ${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ steps.version-macos.outputs.GONEOVIM_VERSION_HASH }}" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string ${{ steps.version-macos.outputs.GONEOVIM_VERSION }}"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/darwin/goneovim.app/Contents/Frameworks/
         rm -fr QtQuick.framework
         rm -fr QtVirtualKeyboard.framework
@@ -392,7 +392,7 @@ jobs:
     - if: github.event_name == 'schedule'
       run: echo "ARCHIVE_NAME=goneovim-macos" >> $GITHUB_ENV
     - if: github.event_name == 'push'
-      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-macos-11.outputs.GONEOVIM_VERSION }}-macos" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-macos.outputs.GONEOVIM_VERSION }}-macos" >> $GITHUB_ENV
 
     - name: Archive
       run: |
@@ -411,7 +411,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.21.x]
-        platform: [macos-11]
+        platform: [macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
     - name: Checkout code

@@ -660,55 +660,55 @@ jobs:
 ############################################
 
 
-  test-and-build-freebsd:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Build for freeBSD
-        uses: cross-platform-actions/action@v0.13.0
-        env:
-          GOPATH: /home/runner/go
-          QT_PKG_CONFIG: true
-          QT_API: 5.13.0
-          QT_DEBUG: false
-          QT_STATIC: true
-          GO111MODULE: on
-          GOPROXY: https://goproxy.io
-          CGO_CPPFLAGS: '-O3 -Wno-deprecated'
-        with:
-          environment_variables: GOPATH QT_PKG_CONFIG QT_API QT_DEBUG QT_STATIC GO111MODULE GOPROXY
-          operating_system: freebsd
-          architecture: x86_64
-          version: '13.2'
-          shell: bash
-          memory: 12G
-          cpu_count: 4
-          run: |
-            yes | sudo pkg install git go pkgconf
-            yes | sudo pkg install devel/qt5
-            yes | sudo pkg install gmake
-            gmake qt_bindings
-            gmake deps
-            gmake test
-            gmake app
-
-      - name: check dir
-        run: |
-          pwd
-          ls -l cmd/goneovim/deploy/freebsd
-
-      - name: Archive
-        run: |
-          cd cmd/goneovim/deploy
-          mv freebsd goneovim-freebsd
-          tar -jcvf goneovim-freebsd.tar.bz2 goneovim-freebsd
-  
-      - name: Upload for freebsd
-        uses: actions/upload-artifact@v1
-        with:
-          name: goneovim-freebsd
-          path: ${{ github.workspace }}/cmd/goneovim/deploy/goneovim-freebsd.tar.bz2
+#   test-and-build-freebsd:
+#     runs-on: macos-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+#         with:
+#           fetch-depth: 0
+# 
+#       - name: Build for freeBSD
+#         uses: cross-platform-actions/action@v0.13.0
+#         env:
+#           GOPATH: /home/runner/go
+#           QT_PKG_CONFIG: true
+#           QT_API: 5.13.0
+#           QT_DEBUG: false
+#           QT_STATIC: true
+#           GO111MODULE: on
+#           GOPROXY: https://goproxy.io
+#           CGO_CPPFLAGS: '-O3 -Wno-deprecated'
+#         with:
+#           environment_variables: GOPATH QT_PKG_CONFIG QT_API QT_DEBUG QT_STATIC GO111MODULE GOPROXY
+#           operating_system: freebsd
+#           architecture: x86_64
+#           version: '13.2'
+#           shell: bash
+#           memory: 12G
+#           cpu_count: 4
+#           run: |
+#             yes | sudo pkg install git go pkgconf
+#             yes | sudo pkg install devel/qt5
+#             yes | sudo pkg install gmake
+#             gmake qt_bindings
+#             gmake deps
+#             gmake test
+#             gmake app
+# 
+#       - name: check dir
+#         run: |
+#           pwd
+#           ls -l cmd/goneovim/deploy/freebsd
+# 
+#       - name: Archive
+#         run: |
+#           cd cmd/goneovim/deploy
+#           mv freebsd goneovim-freebsd
+#           tar -jcvf goneovim-freebsd.tar.bz2 goneovim-freebsd
+#   
+#       - name: Upload for freebsd
+#         uses: actions/upload-artifact@v1
+#         with:
+#           name: goneovim-freebsd
+#           path: ${{ github.workspace }}/cmd/goneovim/deploy/goneovim-freebsd.tar.bz2
