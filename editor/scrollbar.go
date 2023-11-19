@@ -27,7 +27,7 @@ type ScrollBar struct {
 func newScrollBar() *ScrollBar {
 	widget := widgets.NewQWidget(nil, 0)
 	widget.SetContentsMargins(0, 0, 0, 0)
-	widget.SetFixedWidth(10)
+	widget.SetFixedWidth(editor.config.ScrollBar.Width)
 	thumb := widgets.NewQWidget(widget, 0)
 	thumb.SetFixedWidth(8)
 

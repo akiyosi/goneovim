@@ -738,6 +738,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 
 	geometry := e.window.Geometry()
 	width := geometry.Width()
+
 	marginWidth := e.window.BorderSize()*4 + e.window.WindowGap()*2
 	sideWidth := 0
 	if e.side != nil {
@@ -783,7 +784,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	screenWidth := width - scrollbarWidth - minimapWidth
 	screenHeight := height - tablineHeight
 
-	rw := int(screenWidth) % int(ws.screen.font.cellwidth)
+	rw := screenWidth - int(math.Ceil(float64(int(float64(screenWidth)/ws.screen.font.cellwidth))*ws.screen.font.cellwidth))
 	rh := screenHeight % ws.screen.font.lineHeight
 	screenWidth -= rw
 	screenHeight -= rh
@@ -836,7 +837,7 @@ func (ws *Workspace) updateApplicationWindowSize(cols, rows int) {
 		return
 	}
 
-	appWinWidth := int(font.cellwidth * float64(cols))
+	appWinWidth := int(math.Ceil(font.cellwidth * float64(cols)))
 	appWinHeight := int(float64(font.lineHeight) * float64(rows))
 
 	marginWidth := e.window.BorderSize()*4 + e.window.WindowGap()*2
