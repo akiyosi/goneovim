@@ -97,6 +97,10 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 
 	c.drawBackground(p)
 
+	if c.devicePixelRatio == 0 {
+		c.devicePixelRatio = float64(p.PaintEngine().PaintDevice().DevicePixelRatio())
+	}
+
 	if c.sourcetext == "" || c.devicePixelRatio == 0 || c.width < int(font.cellwidth/2.0) {
 		p.DestroyQPainter()
 		return
@@ -145,6 +149,7 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 	if font == nil {
 		return
 	}
+
 	shift := font.ascent
 
 	// Paint target cell text
