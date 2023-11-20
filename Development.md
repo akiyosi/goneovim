@@ -40,6 +40,8 @@ See https://github.com/akiyosi/goneovim/blob/master/.github/workflows/ci.yaml
         | QT_MSYS2_DIR       | {Path to MSYS2} |
         | QT_MSYS2_STATIC    | true            |
         | QT_MSYS2_ARCH      | amd64           |
+
+        Note that the path specified in QT_MSYS2_DIR must be Windows style, not MSYS2 style.
   
 
   * Export Environment variables **QT_API=5.13.0**
