@@ -246,6 +246,8 @@ func InitEditor(options Options, args []string) {
 	e.putLog("start    generating the application")
 	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
+	setMyApplicationDelegate()
+
 	e.app.SetDoubleClickInterval(0)
 	e.putLog("finished generating the application")
 
