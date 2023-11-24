@@ -240,7 +240,7 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 			0,
 			width,
 			float64(font.height),
-		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
+		), text, gui.NewQTextOption2(core.Qt__AlignBottom),
 	)
 
 	pi.DestroyQPainter()
