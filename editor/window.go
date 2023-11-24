@@ -2486,7 +2486,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		)
 	}
 
-	width := float64(len(text)) * font.italicWidth
+	width := float64(len(text)-1)*font.cellwidth + font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
 		// width = math.Ceil(w.s.runeTextWidth(font, text))
@@ -2506,7 +2506,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	// 	gui.QImage__Format_ARGB32_Premultiplied,
 	// )
 	image := gui.NewQImage3(
-		int(w.devicePixelRatio*width),
+		int(math.Ceil(w.devicePixelRatio*width)),
 		int(w.devicePixelRatio*float64(font.lineHeight)),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
@@ -2534,13 +2534,10 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		w.imagePainter.Font().SetItalic(true)
 	}
 
-	w.imagePainter.DrawText6(
-		core.NewQRectF4(
-			0,
-			0,
-			width,
-			float64(font.lineHeight),
-		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
+	w.imagePainter.DrawText3(
+		0,
+		font.shift,
+		text,
 	)
 
 	w.imagePainter.End()

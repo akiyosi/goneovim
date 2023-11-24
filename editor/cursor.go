@@ -234,13 +234,10 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 	// TODO
 	// Set bold, italic styles
 
-	pi.DrawText6(
-		core.NewQRectF4(
-			0,
-			0,
-			width,
-			float64(font.height),
-		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
+	pi.DrawText3(
+		0,
+		int(font.ascent),
+		text,
 	)
 
 	pi.DestroyQPainter()
