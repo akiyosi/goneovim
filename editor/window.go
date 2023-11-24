@@ -2486,12 +2486,15 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		)
 	}
 
-	width := float64(len(text)) * font.italicWidth
+	width := float64(len(text)-1)*font.cellwidth + font.italicWidth
+	height := float64(font.lineHeight)
 	fg := highlight.fg()
 	if !isNormalWidth {
 		// width = math.Ceil(w.s.runeTextWidth(font, text))
 		width = font.fontMetrics.HorizontalAdvance(text, -1)
+		height = font.fontMetrics.BoundingRect(text).Height() + 1
 	}
+	fmt.Println(font.lineHeight, height)
 
 	// QImage default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
@@ -2506,8 +2509,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	// 	gui.QImage__Format_ARGB32_Premultiplied,
 	// )
 	image := gui.NewQImage3(
-		int(w.devicePixelRatio*width),
-		int(w.devicePixelRatio*float64(font.lineHeight)),
+		int(math.Ceil(w.devicePixelRatio*width)),
+		int(math.Ceil(w.devicePixelRatio*height)),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 
