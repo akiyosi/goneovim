@@ -332,14 +332,14 @@ jobs:
         pacman -Scc
         pacman -Sc
 
-    - name: Patch qt5
-      shell: msys2 {0}
-      run: | 
-        curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt-5.15.8/qt-5.15.8.zip
-        unzip qt-5.15.8.zip
-        cp -fpR qt5/* /mingw64/qt5-static/
-        rm -fr qt5
-        rm qt-5.15.8.zip
+    # - name: Patch qt5
+    #   shell: msys2 {0}
+    #   run: | 
+    #     curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt-5.15.8/qt-5.15.8.zip
+    #     unzip qt-5.15.8.zip
+    #     cp -fpR qt5/* /mingw64/qt5-static/
+    #     rm -fr qt5
+    #     rm qt-5.15.8.zip
 
     - name: Checkout code
       uses: actions/checkout@v2
