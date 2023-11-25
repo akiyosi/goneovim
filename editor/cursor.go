@@ -363,9 +363,6 @@ func (c *Cursor) updateCursorShape() {
 	if !c.ws.cursorStyleEnabled {
 		return
 	}
-	if editor.isKeyAutoRepeating {
-		return
-	}
 
 	var cursorShape string
 	var cellPercentage, blinkWait, blinkOn, blinkOff int
