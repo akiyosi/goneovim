@@ -1855,6 +1855,7 @@ func (ws *Workspace) guiFont(args string) {
 	}
 
 	ws.screen.fallbackfonts = nil
+
 	ws.parseAndApplyFont(args, &ws.screen.font, &ws.screen.fallbackfonts)
 
 	// When setting up a different font for a workspace other than the neovim drawing screen,
@@ -1879,8 +1880,10 @@ func (ws *Workspace) guiFont(args string) {
 	if ws.message != nil {
 		ws.message.updateFont()
 	}
+
 	ws.screen.tooltip.setFont(font)
 	ws.screen.tooltip.fallbackfonts = fallbackfonts
+
 	ws.cursor.updateFont(nil, font, fallbackfonts)
 	ws.cursor.fallbackfonts = fallbackfonts
 
@@ -1949,8 +1952,10 @@ func (ws *Workspace) guiFontWide(args string) {
 }
 
 func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Font)) {
+
 	for i, gfn := range strings.Split(str, ",") {
 		fontFamily, fontHeight, fontWeight, fontStretch := getFontFamilyAndHeightAndWeightAndStretch(gfn)
+
 		ok := checkValidFont(fontFamily)
 		if ok {
 			if fontHeight == 0 {
@@ -2039,10 +2044,31 @@ func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.Q
 }
 
 func checkValidFont(family string) bool {
-	f := gui.NewQFont2(family, 10.0, 1, false)
+	// f := gui.NewQFont2(family, 10.0, 1, false)
+	f := gui.NewQFont()
+	if editor.config.Editor.ManualFontFallback {
+		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging|gui.QFont__ForceIntegerMetrics)
+	} else {
+		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
+	}
+
+	f.SetFamily(family)
+	f.SetPointSizeF(10.0)
+	f.SetWeight(int(gui.QFont__Normal))
+
+	if editor.config.Editor.ManualFontFallback {
+		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging|gui.QFont__ForceIntegerMetrics)
+	} else {
+		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
+	}
 	fi := gui.NewQFontInfo(f)
 
-	return strings.EqualFold(fi.Family(), f.Family())
+	fname1 := fi.Family()
+	fname2 := f.Family()
+
+	ret := strings.EqualFold(fname1, fname2)
+
+	return ret
 }
 
 func (ws *Workspace) guiLinespace(args interface{}) {
