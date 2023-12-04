@@ -1956,33 +1956,30 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 	for i, gfn := range strings.Split(str, ",") {
 		fontFamily, fontHeight, fontWeight, fontStretch := getFontFamilyAndHeightAndWeightAndStretch(gfn)
 
-		ok := checkValidFont(fontFamily)
-		if ok {
-			if fontHeight == 0 {
-				fontHeight = 10.0
-			}
+		if fontHeight == 0 {
+			fontHeight = 10.0
+		}
 
-			if i == 0 {
-				if *font == nil {
-					*font = initFontNew(
-						fontFamily,
-						fontHeight,
-						ws.screen.font.lineSpace,
-						ws.screen.font.letterSpace,
-					)
-				} else {
-					(*font).change(fontFamily, fontHeight, fontWeight, fontStretch)
-					ws.screen.purgeTextCacheForWins()
-				}
-			} else {
-				ff := initFontNew(
+		if i == 0 {
+			if *font == nil {
+				*font = initFontNew(
 					fontFamily,
 					fontHeight,
-					(*font).lineSpace,
-					(*font).letterSpace,
+					ws.screen.font.lineSpace,
+					ws.screen.font.letterSpace,
 				)
-				*fonts = append(*fonts, ff)
+			} else {
+				(*font).change(fontFamily, fontHeight, fontWeight, fontStretch)
+				ws.screen.purgeTextCacheForWins()
 			}
+		} else {
+			ff := initFontNew(
+				fontFamily,
+				fontHeight,
+				(*font).lineSpace,
+				(*font).letterSpace,
+			)
+			*fonts = append(*fonts, ff)
 		}
 	}
 }
