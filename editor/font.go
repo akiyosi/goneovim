@@ -29,9 +29,16 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	editor.putLog("fontSizeNew debug 1")
 	fontMetrics := gui.NewQFontMetricsF(font)
 	editor.putLog("fontSizeNew debug 2")
-	h := fontMetrics.Height()
+	rawfont := gui.QRawFont_FromFont(font, gui.QFontDatabase__Armenian)
+
+	// h := fontMetrics.Height()
+	h := rawfont.Ascent() + rawfont.Descent()
+
 	editor.putLog("fontSizeNew debug 3")
-	width := fontMetrics.HorizontalAdvance("w", -1)
+
+	// width := fontMetrics.HorizontalAdvance("w", -1)
+	width := rawfont.MaxCharWidth()
+
 	editor.putLog("fontSizeNew debug 4")
 
 	ascent := fontMetrics.Ascent()
