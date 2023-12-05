@@ -1963,7 +1963,7 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 		// 	continue
 		// }
 
-		editor.putLog("parseAndApplyFont debug 3,", i)
+		editor.putLog("parseAndApplyFont debug 3,", i, fontFamily, fontHeight)
 
 		if fontHeight == 0 {
 			fontHeight = 10.0

@@ -69,7 +69,7 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 	font.SetFixedPitch(true)
 	font.SetKerning(false)
 
-	fmt.Println("initFontNew:", family)
+	editor.putLog("initFontNew:", family)
 	width, height, ascent, italicWidth := fontSizeNew(font)
 
 	return &Font{
@@ -108,7 +108,7 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	f.qfont.SetKerning(false)
 
 	editor.putLog("change debug 4")
-	fmt.Println("change:", family)
+	editor.putLog("change:", family)
 	width, height, ascent, italicWidth := fontSizeNew(f.qfont)
 	editor.putLog("change debug 5")
 
