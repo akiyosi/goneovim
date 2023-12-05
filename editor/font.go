@@ -47,7 +47,7 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 	// font := gui.NewQFont2(family, size, int(gui.QFont__Normal), false)
 	font := gui.NewQFont()
 	if editor.config.Editor.ManualFontFallback {
-		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging|gui.QFont__ForceIntegerMetrics)
+		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
 	} else {
 		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
 	}

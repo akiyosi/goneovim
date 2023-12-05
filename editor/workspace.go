@@ -1956,6 +1956,11 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 	for i, gfn := range strings.Split(str, ",") {
 		fontFamily, fontHeight, fontWeight, fontStretch := getFontFamilyAndHeightAndWeightAndStretch(gfn)
 
+		ok := checkValidFont(fontFamily)
+		if !ok {
+			continue
+		}
+
 		if fontHeight == 0 {
 			fontHeight = 10.0
 		}
@@ -2044,7 +2049,7 @@ func checkValidFont(family string) bool {
 	// f := gui.NewQFont2(family, 10.0, 1, false)
 	f := gui.NewQFont()
 	if editor.config.Editor.ManualFontFallback {
-		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging|gui.QFont__ForceIntegerMetrics)
+		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
 	} else {
 		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
 	}
@@ -2053,11 +2058,6 @@ func checkValidFont(family string) bool {
 	f.SetPointSizeF(10.0)
 	f.SetWeight(int(gui.QFont__Normal))
 
-	if editor.config.Editor.ManualFontFallback {
-		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging|gui.QFont__ForceIntegerMetrics)
-	} else {
-		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
-	}
 	fi := gui.NewQFontInfo(f)
 
 	fname1 := fi.Family()
