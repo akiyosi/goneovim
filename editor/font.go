@@ -26,19 +26,29 @@ type Font struct {
 }
 
 func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
+	editor.putLog("fontSizeNew debug 1")
 	fontMetrics := gui.NewQFontMetricsF(font)
+	editor.putLog("fontSizeNew debug 2")
 	h := fontMetrics.Height()
+	editor.putLog("fontSizeNew debug 3")
 	width := fontMetrics.HorizontalAdvance("w", -1)
+	editor.putLog("fontSizeNew debug 4")
 
 	ascent := fontMetrics.Ascent()
+	editor.putLog("fontSizeNew debug 5")
 	height := int(math.Ceil(h))
+	editor.putLog("fontSizeNew debug 6")
 	font.SetStyle(gui.QFont__StyleItalic)
+	editor.putLog("fontSizeNew debug 7")
 	italicFontMetrics := gui.NewQFontMetricsF(font)
+	editor.putLog("fontSizeNew debug 8")
 	italicWidth := italicFontMetrics.BoundingRect("w").Width()
+	editor.putLog("fontSizeNew debug 9")
 	if italicWidth <= width {
 		italicWidth = width * 1.5
 	}
 	font.SetStyle(gui.QFont__StyleNormal)
+	editor.putLog("fontSizeNew debug 10")
 
 	return width, height, ascent, italicWidth
 }
