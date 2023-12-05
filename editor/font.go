@@ -78,6 +78,13 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 
 func (f *Font) change(family string, size float64, weight gui.QFont__Weight, stretch int) {
 	f.qfont.SetFamily(family)
+
+	if editor.config.Editor.ManualFontFallback {
+		f.qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
+	} else {
+		f.qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
+	}
+
 	f.qfont.SetPointSizeF(size)
 	f.qfont.SetWeight(int(weight))
 	f.qfont.SetStretch(stretch)

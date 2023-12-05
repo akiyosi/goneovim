@@ -1952,8 +1952,10 @@ func (ws *Workspace) guiFontWide(args string) {
 }
 
 func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Font)) {
+	editor.putLog("parseAndApplyFont debug 1")
 
 	for i, gfn := range strings.Split(str, ",") {
+		editor.putLog("parseAndApplyFont debug 2,", i)
 		fontFamily, fontHeight, fontWeight, fontStretch := getFontFamilyAndHeightAndWeightAndStretch(gfn)
 
 		// ok := checkValidFont(fontFamily)
@@ -1961,32 +1963,41 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 		// 	continue
 		// }
 
+		editor.putLog("parseAndApplyFont debug 3,", i)
+
 		if fontHeight == 0 {
 			fontHeight = 10.0
 		}
 
 		if i == 0 {
 			if *font == nil {
+				editor.putLog("parseAndApplyFont debug 4,", i)
 				*font = initFontNew(
 					fontFamily,
 					fontHeight,
 					ws.screen.font.lineSpace,
 					ws.screen.font.letterSpace,
 				)
+				editor.putLog("parseAndApplyFont debug 5,", i)
 			} else {
+				editor.putLog("parseAndApplyFont debug 6,", i)
 				(*font).change(fontFamily, fontHeight, fontWeight, fontStretch)
 				ws.screen.purgeTextCacheForWins()
+				editor.putLog("parseAndApplyFont debug 7,", i)
 			}
 		} else {
+			editor.putLog("parseAndApplyFont debug 8,", i)
 			ff := initFontNew(
 				fontFamily,
 				fontHeight,
 				(*font).lineSpace,
 				(*font).letterSpace,
 			)
+			editor.putLog("parseAndApplyFont debug 9,", i)
 			*fonts = append(*fonts, ff)
 		}
 	}
+	editor.putLog("parseAndApplyFont debug 10")
 }
 
 func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.QFont__Weight, int) {
