@@ -96,7 +96,7 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	f.shift = int(float64(f.lineSpace)/2 + ascent)
 	f.italicWidth = italicWidth
 
-	f.putDebugLog()
+	// f.putDebugLog()
 }
 
 // func (f *Font) hasGlyph(s string) bool {
