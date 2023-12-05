@@ -1982,22 +1982,24 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 			} else {
 				editor.putLog("parseAndApplyFont debug 6,", i)
 				(*font).change(fontFamily, fontHeight, fontWeight, fontStretch)
-				ws.screen.purgeTextCacheForWins()
+
 				editor.putLog("parseAndApplyFont debug 7,", i)
+				ws.screen.purgeTextCacheForWins()
+				editor.putLog("parseAndApplyFont debug 8,", i)
 			}
 		} else {
-			editor.putLog("parseAndApplyFont debug 8,", i)
+			editor.putLog("parseAndApplyFont debug 9,", i)
 			ff := initFontNew(
 				fontFamily,
 				fontHeight,
 				(*font).lineSpace,
 				(*font).letterSpace,
 			)
-			editor.putLog("parseAndApplyFont debug 9,", i)
+			editor.putLog("parseAndApplyFont debug a,", i)
 			*fonts = append(*fonts, ff)
 		}
 	}
-	editor.putLog("parseAndApplyFont debug 10")
+	editor.putLog("parseAndApplyFont debug b")
 }
 
 func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.QFont__Weight, int) {

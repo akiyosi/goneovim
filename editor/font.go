@@ -77,24 +77,31 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 }
 
 func (f *Font) change(family string, size float64, weight gui.QFont__Weight, stretch int) {
+	editor.putLog("change debug 0")
 	f.qfont.SetFamily(family)
+	editor.putLog("change debug 1")
 
 	if editor.config.Editor.ManualFontFallback {
 		f.qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
 	} else {
 		f.qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
 	}
+	editor.putLog("change debug 2")
 
 	f.qfont.SetPointSizeF(size)
 	f.qfont.SetWeight(int(weight))
 	f.qfont.SetStretch(stretch)
+	editor.putLog("change debug 3")
 
 	f.qfont.SetFixedPitch(true)
 	f.qfont.SetKerning(false)
 
+	editor.putLog("change debug 4")
 	width, height, ascent, italicWidth := fontSizeNew(f.qfont)
+	editor.putLog("change debug 5")
 
 	f.fontMetrics = gui.NewQFontMetricsF(f.qfont)
+	editor.putLog("change debug 6")
 	f.cellwidth = width + f.letterSpace
 	// f.letterSpace is no change
 	f.height = height
@@ -102,6 +109,7 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	f.ascent = ascent
 	f.shift = int(float64(f.lineSpace)/2 + ascent)
 	f.italicWidth = italicWidth
+	editor.putLog("change debug 7")
 
 	// f.putDebugLog()
 }
