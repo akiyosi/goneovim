@@ -1956,10 +1956,10 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 	for i, gfn := range strings.Split(str, ",") {
 		fontFamily, fontHeight, fontWeight, fontStretch := getFontFamilyAndHeightAndWeightAndStretch(gfn)
 
-		ok := checkValidFont(fontFamily)
-		if !ok {
-			continue
-		}
+		// ok := checkValidFont(fontFamily)
+		// if !ok {
+		// 	continue
+		// }
 
 		if fontHeight == 0 {
 			fontHeight = 10.0
