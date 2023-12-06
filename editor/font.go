@@ -29,7 +29,7 @@ type Font struct {
 
 func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	editor.putLog("fontSizeNew debug 1")
-	fontMetrics := gui.NewQFontMetricsF(font)
+	// fontMetrics := gui.NewQFontMetricsF(font)
 	editor.putLog("fontSizeNew debug 2")
 
 	// FontMapのインスタンスを作成
@@ -57,7 +57,7 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 		gui.QFont__PreferDefaultHinting,
 	)
 
-	fmt.Println("pixel size:", font.PixelSize(), "point size:", font.PointSizeF())
+	// fmt.Println("pixel size:", font.PixelSize(), "point size:", font.PointSizeF())
 
 	editor.putLog("fontSizeNew debug 2-1")
 	uintChar, _ := strconv.ParseUint("w", 10, 64)
@@ -89,7 +89,7 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	// h := fontMetrics.Height()
 	h := ascent + rawfont.Descent()
 
-	fmt.Println("rawfont:", width, h, "metrics:", fontMetrics.HorizontalAdvance("w", -1), fontMetrics.Height())
+	// fmt.Println("rawfont:", width, h, "metrics:", fontMetrics.HorizontalAdvance("w", -1), fontMetrics.Height())
 
 	editor.putLog("fontSizeNew debug 5")
 	height := int(math.Ceil(h))
