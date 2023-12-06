@@ -30,7 +30,6 @@ type Font struct {
 
 func fontSizeNew(font *gui.QFont) (float64, int, float64, float64, *gui.QRawFont) {
 	editor.putLog("fontSizeNew debug 1")
-	// fontMetrics := gui.NewQFontMetricsF(font)
 	editor.putLog("fontSizeNew debug 2")
 
 	// create FontMap
@@ -61,14 +60,16 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64, *gui.QRawFont
 	// fmt.Println("pixel size:", font.PixelSize(), "point size:", font.PointSizeF())
 
 	editor.putLog("fontSizeNew debug 2-1")
+
+	editor.putLog("fontSizeNew debug 2-2")
+
+	// fontMetrics := gui.NewQFontMetricsF(font)
+	// width := fontMetrics.HorizontalAdvance("w", -1)
+
 	uintChar, _ := strconv.ParseUint("w", 10, 64)
 	var a []uint
 	a = append(a, uint(uintChar))
 	gi := rawfont.AdvancesForGlyphIndexes2(a)
-
-	editor.putLog("fontSizeNew debug 2-2")
-
-	// width := fontMetrics.HorizontalAdvance("w", -1)
 	width := gi[0].X()
 
 	editor.putLog("fontSizeNew debug 3")
@@ -258,6 +259,8 @@ func (f *Font) horizontalAdvance(char string) float64 {
 	if !(len(gi) > 0) {
 		return 0
 	}
+
+	// fmt.Println(gi[0].X(), f.fontMetrics.HorizontalAdvance(char, -1))
 
 	return gi[0].X()
 }

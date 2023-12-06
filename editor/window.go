@@ -2545,6 +2545,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		width = fontfallbacked.horizontalAdvance(text)
 	}
 
+	editor.putLog("newTextCache 1:", text)
+
 	// QImage default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
 
@@ -2563,29 +2565,51 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 
+	editor.putLog("newTextCache 2:", text)
+
 	image.SetDevicePixelRatio(w.devicePixelRatio)
+
+	editor.putLog("newTextCache 3:", text)
+
 	image.Fill3(core.Qt__transparent)
 
+	editor.putLog("newTextCache 4:", text)
+
 	w.initImagePainter()
+
+	editor.putLog("newTextCache 5:", text)
+
 	w.imagePainter.Begin(image)
 	// pi := gui.NewQPainter2(image)
 
 	w.imagePainter.SetPen2(fg.QColor())
+
+	editor.putLog("newTextCache 6:", text)
+
 	w.imagePainter.SetFont(fontfallbacked.qfont)
+
+	editor.putLog("newTextCache 7:", text)
 
 	if highlight.bold {
 		w.imagePainter.Font().SetBold(true)
 		// w.imagePainter.Font().SetWeight(font.qfont.Weight() + 50)
 	}
+
+	editor.putLog("newTextCache 8:", text)
+
 	if highlight.italic {
 		w.imagePainter.Font().SetItalic(true)
 	}
+
+	editor.putLog("newTextCache 9:", text)
 
 	w.imagePainter.DrawText3(
 		0,
 		font.shift,
 		text,
 	)
+
+	editor.putLog("newTextCache 10:", text)
 
 	w.imagePainter.End()
 	// pi.DestroyQPainter()
