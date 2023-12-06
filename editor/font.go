@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/akiyosi/qt/gui"
 	"github.com/akiyosi/qt/widgets"
@@ -29,17 +30,34 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	editor.putLog("fontSizeNew debug 1")
 	fontMetrics := gui.NewQFontMetricsF(font)
 	editor.putLog("fontSizeNew debug 2")
-	rawfont := gui.QRawFont_FromFont(font, gui.QFontDatabase__Armenian)
+	rawfont := gui.QRawFont_FromFont(font, gui.QFontDatabase__Any)
+
+	editor.putLog("fontSizeNew debug 2-1")
+	uintChar, _ := strconv.ParseUint("w", 10, 64)
+	var a []uint
+	a = append(a, uint(uintChar))
+	gi := rawfont.AdvancesForGlyphIndexes2(a)
+	gi0 := gi[0]
+
+	editor.putLog("fontSizeNew debug 2-2")
+
+	// width := fontMetrics.HorizontalAdvance("w", -1)
+	width := gi0.X()
+
+	editor.putLog("fontSizeNew debug 3")
 
 	// h := fontMetrics.Height()
 	h := rawfont.Ascent() + rawfont.Descent()
 
-	editor.putLog("fontSizeNew debug 3")
-
-	// width := fontMetrics.HorizontalAdvance("w", -1)
-	width := rawfont.MaxCharWidth()
-
 	editor.putLog("fontSizeNew debug 4")
+
+	// fmt.Println(
+	// 	gi0.X(),
+	// 	rawfont.Ascent()+rawfont.Descent(),
+	// 	"|",
+	// 	width,
+	// 	h,
+	// )
 
 	ascent := fontMetrics.Ascent()
 	editor.putLog("fontSizeNew debug 5")
