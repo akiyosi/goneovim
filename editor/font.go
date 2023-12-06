@@ -7,6 +7,7 @@ import (
 
 	"github.com/akiyosi/qt/gui"
 	"github.com/akiyosi/qt/widgets"
+	"github.com/go-text/typesetting/fontscan"
 )
 
 // Font is
@@ -30,7 +31,33 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	editor.putLog("fontSizeNew debug 1")
 	fontMetrics := gui.NewQFontMetricsF(font)
 	editor.putLog("fontSizeNew debug 2")
-	rawfont := gui.QRawFont_FromFont(font, gui.QFontDatabase__Any)
+
+	// FontMapのインスタンスを作成
+	fm := fontscan.NewFontMap(nil)
+
+	// システムフォントをロード
+	err := fm.UseSystemFonts("")
+	if err != nil {
+		panic(err)
+	}
+
+	// フォントファミリに基づいてフォントを検索
+	var location fontscan.Location
+	var found bool
+	location, found = fm.FindSystemFont(font.Family())
+	if !found {
+		fmt.Println("the font not found")
+	}
+
+	editor.putLog("font file location:", location.File)
+
+	rawfont := gui.NewQRawFont2(
+		location.File,
+		float64(font.PixelSize()),
+		gui.QFont__PreferDefaultHinting,
+	)
+
+	fmt.Println("pixel size:", font.PixelSize(), "point size:", font.PointSizeF())
 
 	editor.putLog("fontSizeNew debug 2-1")
 	uintChar, _ := strconv.ParseUint("w", 10, 64)
@@ -50,6 +77,8 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	h := rawfont.Ascent() + rawfont.Descent()
 
 	editor.putLog("fontSizeNew debug 4")
+
+	fmt.Println("rawfont:", width, h, "metrics:", fontMetrics.HorizontalAdvance("w", -1), fontMetrics.Height())
 
 	// fmt.Println(
 	// 	gi0.X(),
@@ -88,7 +117,7 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 	}
 
 	font.SetFamily(family)
-	font.SetPointSizeF(size)
+	font.SetPixelSize(int(math.Ceil(size)))
 	font.SetWeight(int(gui.QFont__Normal))
 
 	font.SetFixedPitch(true)
@@ -124,7 +153,7 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	}
 	editor.putLog("change debug 2")
 
-	f.qfont.SetPointSizeF(size)
+	f.qfont.SetPixelSize(int(math.Ceil(size)))
 	f.qfont.SetWeight(int(weight))
 	f.qfont.SetStretch(stretch)
 	editor.putLog("change debug 3")
