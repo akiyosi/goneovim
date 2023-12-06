@@ -14,6 +14,7 @@ import (
 type Font struct {
 	ws          *Workspace
 	qfont       *gui.QFont
+	rawfont     *gui.QRawFont
 	fontMetrics *gui.QFontMetricsF
 	width       float64
 	cellwidth   float64
@@ -27,7 +28,7 @@ type Font struct {
 	ui          *widgets.QFontDialog
 }
 
-func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
+func fontSizeNew(font *gui.QFont) (float64, int, float64, float64, *gui.QRawFont) {
 	editor.putLog("fontSizeNew debug 1")
 	// fontMetrics := gui.NewQFontMetricsF(font)
 	editor.putLog("fontSizeNew debug 2")
@@ -108,7 +109,7 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	font.SetStyle(gui.QFont__StyleNormal)
 	editor.putLog("fontSizeNew debug 10")
 
-	return width, height, ascent, italicWidth
+	return width, height, ascent, italicWidth, rawfont
 }
 
 func initFontNew(family string, size float64, lineSpace int, letterSpace float64) *Font {
@@ -128,10 +129,11 @@ func initFontNew(family string, size float64, lineSpace int, letterSpace float64
 	font.SetKerning(false)
 
 	editor.putLog("initFontNew:", family)
-	width, height, ascent, italicWidth := fontSizeNew(font)
+	width, height, ascent, italicWidth, rawfont := fontSizeNew(font)
 
 	return &Font{
 		qfont:       font,
+		rawfont:     rawfont,
 		fontMetrics: gui.NewQFontMetricsF(font),
 		width:       width,
 		cellwidth:   width + letterSpace,
@@ -167,9 +169,10 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 
 	editor.putLog("change debug 4")
 	editor.putLog("change:", family)
-	width, height, ascent, italicWidth := fontSizeNew(f.qfont)
+	width, height, ascent, italicWidth, rawfont := fontSizeNew(f.qfont)
 	editor.putLog("change debug 5")
 
+	f.rawfont = rawfont
 	f.fontMetrics = gui.NewQFontMetricsF(f.qfont)
 	editor.putLog("change debug 6")
 	f.cellwidth = width + f.letterSpace
@@ -184,33 +187,30 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	// f.putDebugLog()
 }
 
-// func (f *Font) hasGlyph(s string) bool {
-// 	rawfont := gui.NewQRawFont()
-// 	rawfont = rawfont.FromFont(f.qfont, gui.QFontDatabase__Any)
-//
-// 	glyphIdx := rawfont.GlyphIndexesForString(s)
-//
-// 	if len(glyphIdx) > 0 {
-// 		glyphIdx0 := glyphIdx[0]
-//
-// 		// fmt.Println(s, "::", glyphIdx0 != 0)
-//		editor.putLog("hasGlyph:() debug::", s, ",", glyphIdx0 != 0)
-// 		return glyphIdx0 != 0
-// 	}
-//
-// 	return false
-// }
-
 func (f *Font) hasGlyph(s string) bool {
-	if s == "" {
-		return true
+	glyphIdx := f.rawfont.GlyphIndexesForString(s)
+
+	if len(glyphIdx) > 0 {
+		glyphIdx0 := glyphIdx[0]
+
+		// fmt.Println(s, "::", glyphIdx0 != 0)
+		editor.putLog("hasGlyph:() debug::", s, ",", glyphIdx0 != 0)
+		return glyphIdx0 != 0
 	}
 
-	hasGlyph := f.fontMetrics.InFontUcs4(uint([]rune(s)[0]))
-	editor.putLog("hasGlyph:() debug::", s, ",", hasGlyph)
-
-	return hasGlyph
+	return false
 }
+
+// func (f *Font) hasGlyph(s string) bool {
+// 	if s == "" {
+// 		return true
+// 	}
+//
+// 	hasGlyph := f.fontMetrics.InFontUcs4(uint([]rune(s)[0]))
+// 	editor.putLog("hasGlyph:() debug::", s, ",", hasGlyph)
+//
+// 	return hasGlyph
+// }
 
 func (f *Font) putDebugLog() {
 	if editor.opts.Debug == "" {
@@ -242,7 +242,7 @@ func (f *Font) changeLineSpace(lineSpace int) {
 }
 
 func (f *Font) changeLetterSpace(letterspace float64) {
-	width, _, _, italicWidth := fontSizeNew(f.qfont)
+	width, _, _, italicWidth, _ := fontSizeNew(f.qfont)
 
 	f.letterSpace = letterspace
 	f.cellwidth = width + letterspace
