@@ -27,22 +27,22 @@ type Tooltip struct {
 
 func resolveMetricsInFontFallback(font *Font, fallbackfonts []*Font, char string) float64 {
 	if len(fallbackfonts) == 0 {
-		return font.fontMetrics.HorizontalAdvance(char, -1)
+		return font.horizontalAdvance(char)
 	}
 
 	hasGlyph := font.hasGlyph(char)
 	if hasGlyph {
-		return font.fontMetrics.HorizontalAdvance(char, -1)
+		return font.horizontalAdvance(char)
 	} else {
 		for _, ff := range fallbackfonts {
 			hasGlyph = ff.hasGlyph(char)
 			if hasGlyph {
-				return ff.fontMetrics.HorizontalAdvance(char, -1)
+				return ff.horizontalAdvance(char)
 			}
 		}
 	}
 
-	return font.fontMetrics.HorizontalAdvance(char, -1)
+	return font.horizontalAdvance(char)
 }
 
 func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {

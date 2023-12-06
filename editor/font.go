@@ -33,16 +33,16 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64, *gui.QRawFont
 	// fontMetrics := gui.NewQFontMetricsF(font)
 	editor.putLog("fontSizeNew debug 2")
 
-	// FontMapのインスタンスを作成
+	// create FontMap
 	fm := fontscan.NewFontMap(nil)
 
-	// システムフォントをロード
+	// load system font
 	err := fm.UseSystemFonts("")
 	if err != nil {
 		panic(err)
 	}
 
-	// フォントファミリに基づいてフォントを検索
+	// Find font family
 	var location fontscan.Location
 	var found bool
 	location, found = fm.FindSystemFont(font.Family())
@@ -65,12 +65,11 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64, *gui.QRawFont
 	var a []uint
 	a = append(a, uint(uintChar))
 	gi := rawfont.AdvancesForGlyphIndexes2(a)
-	gi0 := gi[0]
 
 	editor.putLog("fontSizeNew debug 2-2")
 
 	// width := fontMetrics.HorizontalAdvance("w", -1)
-	width := gi0.X()
+	width := gi[0].X()
 
 	editor.putLog("fontSizeNew debug 3")
 
@@ -249,4 +248,16 @@ func (f *Font) changeLetterSpace(letterspace float64) {
 	f.italicWidth = italicWidth + letterspace
 
 	f.ws.screen.purgeTextCacheForWins()
+}
+
+func (f *Font) horizontalAdvance(char string) float64 {
+	uintChar, _ := strconv.ParseUint(char, 10, 64)
+	var a []uint
+	a = append(a, uint(uintChar))
+	gi := f.rawfont.AdvancesForGlyphIndexes2(a)
+	if !(len(gi) > 0) {
+		return 0
+	}
+
+	return gi[0].X()
 }

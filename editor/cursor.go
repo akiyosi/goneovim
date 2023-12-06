@@ -205,19 +205,19 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 	}
 }
 
-func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QImage {
+func (c *Cursor) newCharCache(char string, fg *RGBA, isNormalWidth bool) *gui.QImage {
 	font := c.font
 
 	if !isNormalWidth && c.fontwide != nil {
-		font = resolveFontFallback(c.fontwide, c.fallbackfontwides, text)
+		font = resolveFontFallback(c.fontwide, c.fallbackfontwides, char)
 	} else {
-		font = resolveFontFallback(c.font, c.fallbackfonts, text)
+		font = resolveFontFallback(c.font, c.fallbackfonts, char)
 	}
 
-	width := float64(len(text)) * font.italicWidth
+	width := float64(len(char)) * font.italicWidth
 	if !isNormalWidth {
-		// width = math.Ceil(c.ws.screen.runeTextWidth(font, text))
-		width = font.fontMetrics.HorizontalAdvance(text, -1)
+		// width = math.Ceil(c.ws.screen.runeTextWidth(font, char))
+		width = font.horizontalAdvance(char)
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -240,7 +240,7 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 	pi.DrawText3(
 		0,
 		int(c.font.ascent),
-		text,
+		char,
 	)
 
 	pi.DestroyQPainter()
@@ -255,10 +255,10 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 	return image
 }
 
-func (c *Cursor) setCharCache(text string, fg *RGBA, image *gui.QImage) {
+func (c *Cursor) setCharCache(char string, fg *RGBA, image *gui.QImage) {
 	c.charCache.set(
 		HlTextKey{
-			text:   text,
+			text:   char,
 			fg:     c.fg,
 			italic: false,
 			bold:   false,

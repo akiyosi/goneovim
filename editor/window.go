@@ -2430,7 +2430,8 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 
 	width := font.cellwidth
 	if !isNormalWidth {
-		width = math.Ceil(w.s.runeTextWidth(font, char))
+		// width = math.Ceil(w.s.runeTextWidth(font, char))
+		width = font.horizontalAdvance(char)
 	}
 
 	// Set smooth scroll offset
@@ -2538,8 +2539,10 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	width := float64(len(text)-1)*font.cellwidth + font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
+		// Here the length of TEXT can be considered to be 1
+
 		// width = math.Ceil(w.s.runeTextWidth(font, text))
-		width = fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
+		width = fontfallbacked.horizontalAdvance(text)
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -2894,10 +2897,10 @@ func (w *Window) isNormalWidth(char string) bool {
 	}
 
 	if w.font == nil {
-		return resolveFontFallback(w.s.font, w.s.fallbackfonts, char).fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
+		return resolveFontFallback(w.s.font, w.s.fallbackfonts, char).horizontalAdvance(char) == w.getFont().cellwidth
 	}
 
-	return resolveFontFallback(w.font, w.fallbackfonts, char).fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
+	return resolveFontFallback(w.font, w.fallbackfonts, char).horizontalAdvance(char) == w.getFont().cellwidth
 }
 
 func (w *Window) deleteExternalWin() {
