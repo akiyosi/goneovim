@@ -73,12 +73,10 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 
 	editor.putLog("fontSizeNew debug 3")
 
-	// h := fontMetrics.Height()
-	h := rawfont.Ascent() + rawfont.Descent()
+	// ascent := fontMetrics.Ascent()
+	ascent := rawfont.Ascent()
 
 	editor.putLog("fontSizeNew debug 4")
-
-	fmt.Println("rawfont:", width, h, "metrics:", fontMetrics.HorizontalAdvance("w", -1), fontMetrics.Height())
 
 	// fmt.Println(
 	// 	gi0.X(),
@@ -88,19 +86,25 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	// 	h,
 	// )
 
-	ascent := fontMetrics.Ascent()
+	// h := fontMetrics.Height()
+	h := ascent + rawfont.Descent()
+
+	fmt.Println("rawfont:", width, h, "metrics:", fontMetrics.HorizontalAdvance("w", -1), fontMetrics.Height())
+
 	editor.putLog("fontSizeNew debug 5")
 	height := int(math.Ceil(h))
 	editor.putLog("fontSizeNew debug 6")
 	font.SetStyle(gui.QFont__StyleItalic)
 	editor.putLog("fontSizeNew debug 7")
-	italicFontMetrics := gui.NewQFontMetricsF(font)
-	editor.putLog("fontSizeNew debug 8")
-	italicWidth := italicFontMetrics.BoundingRect("w").Width()
+
+	// italicFontMetrics := gui.NewQFontMetricsF(font)
+	// editor.putLog("fontSizeNew debug 8")
+
+	// italicWidth := italicFontMetrics.BoundingRect("w").Width()
 	editor.putLog("fontSizeNew debug 9")
-	if italicWidth <= width {
-		italicWidth = width * 1.5
-	}
+	// if italicWidth <= width {
+	italicWidth := width * 1.5
+	// }
 	font.SetStyle(gui.QFont__StyleNormal)
 	editor.putLog("fontSizeNew debug 10")
 
