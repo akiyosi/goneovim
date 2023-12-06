@@ -2524,17 +2524,17 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		}
 	}
 
-	// Put debug log
-	if editor.opts.Debug != "" {
-		fi := gui.NewQFontInfo(font.qfont)
-		editor.putLog(
-			"Outputs font information creating word cache:",
-			fi.Family(),
-			fi.PointSizeF(),
-			fi.StyleName(),
-			fmt.Sprintf("%v", fi.PointSizeF()),
-		)
-	}
+	// // Put debug log
+	// if editor.opts.Debug != "" {
+	// 	fi := gui.NewQFontInfo(font.qfont)
+	// 	editor.putLog(
+	// 		"Outputs font information creating word cache:",
+	// 		fi.Family(),
+	// 		fi.PointSizeF(),
+	// 		fi.StyleName(),
+	// 		fmt.Sprintf("%v", fi.PointSizeF()),
+	// 	)
+	// }
 
 	width := float64(len(text)-1)*font.cellwidth + font.italicWidth
 	fg := highlight.fg()
