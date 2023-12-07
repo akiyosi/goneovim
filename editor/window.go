@@ -2603,10 +2603,49 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 
 	editor.putLog("newTextCache 9:", text)
 
-	w.imagePainter.DrawText3(
-		0,
-		font.shift,
-		text,
+	// w.imagePainter.DrawText3(
+	// 	0,
+	// 	font.shift,
+	// 	text,
+	// )
+
+	glyphrun := gui.NewQGlyphRun()
+	glyphrun.SetRawFont(fontfallbacked.rawfont)
+
+	gi := fontfallbacked.rawfont.GlyphIndexesForString(text)
+	var positions []*core.QPointF
+	var xpos float64 = 0
+	for _, _ = range text {
+		positions = append(
+			positions,
+			core.NewQPointF3(
+				xpos,
+				0,
+			),
+		)
+		xpos += fontfallbacked.cellwidth
+	}
+	// a := fontfallbacked.rawfont.AdvancesForGlyphIndexes(gi, gui.QRawFont__SeparateAdvances)
+	// a := fontfallbacked.rawfont.AdvancesForGlyphIndexes2(gi)
+	// fmt.Println("-----------")
+	// for _, b := range a {
+	// 	fmt.Println(b.X(), b.Y())
+	// }
+
+	// var a []uint
+	// for _, char := range text {
+	// 	uintChar, _ := strconv.ParseUint(string(char), 10, 64)
+	// 	a = append(a, uint(uintChar))
+	// }
+
+	glyphrun.SetGlyphIndexes(gi)
+	glyphrun.SetPositions(positions)
+	w.imagePainter.DrawGlyphRun(
+		core.NewQPointF3(
+			0,
+			float64(fontfallbacked.ascent),
+		),
+		glyphrun,
 	)
 
 	editor.putLog("newTextCache 10:", text)

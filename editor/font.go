@@ -50,6 +50,7 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64, *gui.QRawFont
 	}
 
 	editor.putLog("font file location:", location.File)
+	fmt.Println("font file location:", location.File)
 
 	rawfont := gui.NewQRawFont2(
 		location.File,
