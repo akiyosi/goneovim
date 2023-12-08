@@ -57,7 +57,10 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64, *gui.QRawFont
 	// 	gui.QFont__PreferDefaultHinting,
 	// )
 
-	rawfont := gui.QRawFont_FromFont(font, gui.QFontDatabase__Latin)
+	// rawfont := gui.QRawFont_FromFont(font, gui.QFontDatabase__Latin)
+
+	rawfont := gui.NewQRawFont()
+	rawfont = rawfont.FromFont(font, gui.QFontDatabase__Latin)
 
 	// fontMetrics := gui.NewQFontMetricsF(font)
 	// width := fontMetrics.HorizontalAdvance("w", -1)
