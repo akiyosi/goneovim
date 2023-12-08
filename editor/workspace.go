@@ -285,7 +285,7 @@ func (ws *Workspace) initLazyLoadUI() {
 
 	go func() {
 		if !editor.doRestoreSessions {
-			time.Sleep(time.Millisecond * 500)
+			time.Sleep(time.Millisecond * 2500)
 		}
 		ws.signal.LazyLoadSignal()
 
@@ -315,13 +315,16 @@ func (ws *Workspace) registerSignal(signal *neovimSignal, redrawUpdates chan [][
 		ws.handleGui(updates)
 	})
 	ws.signal.ConnectLazyLoadSignal(func() {
+		editor.putLog("start lazy signal")
 		if ws.hasLazyUI {
 			return
 		}
 		if editor.config.Editor.ExtTabline {
 			ws.tabline.initTab()
 		}
+		editor.putLog("start workspace update in lazy signal")
 		editor.workspaceUpdate()
+		editor.putLog("end workspace update in lazy signal")
 		ws.hasLazyUI = true
 		ws.lazyLoadUI()
 	})
