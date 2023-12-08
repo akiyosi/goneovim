@@ -7,7 +7,6 @@ import (
 
 	"github.com/akiyosi/qt/gui"
 	"github.com/akiyosi/qt/widgets"
-	"github.com/go-text/typesetting/fontscan"
 )
 
 // Font is
@@ -30,39 +29,35 @@ type Font struct {
 
 func fontSizeNew(font *gui.QFont) (float64, int, float64, float64, *gui.QRawFont) {
 	editor.putLog("fontSizeNew debug 1")
-	editor.putLog("fontSizeNew debug 2")
 
-	// create FontMap
-	fm := fontscan.NewFontMap(nil)
+	// // Detect font file path
+	// // create FontMap
+	// fm := fontscan.NewFontMap(nil)
 
-	// load system font
-	err := fm.UseSystemFonts("")
-	if err != nil {
-		panic(err)
-	}
+	// // load system font
+	// err := fm.UseSystemFonts("")
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	// Find font family
-	var location fontscan.Location
-	var found bool
-	location, found = fm.FindSystemFont(font.Family())
-	if !found {
-		fmt.Println("the font not found")
-	}
+	// // Find font family
+	// var location fontscan.Location
+	// var found bool
+	// location, found = fm.FindSystemFont(font.Family())
+	// if !found {
+	// 	fmt.Println("the font not found")
+	// }
 
-	editor.putLog("font file location:", location.File)
-	fmt.Println("font file location:", location.File)
+	// editor.putLog("font file location:", location.File)
+	// fmt.Println("font file location:", location.File)
 
-	rawfont := gui.NewQRawFont2(
-		location.File,
-		float64(font.PixelSize()),
-		gui.QFont__PreferDefaultHinting,
-	)
+	// rawfont := gui.NewQRawFont2(
+	// 	location.File,
+	// 	float64(font.PixelSize()),
+	// 	gui.QFont__PreferDefaultHinting,
+	// )
 
-	// fmt.Println("pixel size:", font.PixelSize(), "point size:", font.PointSizeF())
-
-	editor.putLog("fontSizeNew debug 2-1")
-
-	editor.putLog("fontSizeNew debug 2-2")
+	rawfont := gui.QRawFont_FromFont(font, gui.QFontDatabase__Latin)
 
 	// fontMetrics := gui.NewQFontMetricsF(font)
 	// width := fontMetrics.HorizontalAdvance("w", -1)
