@@ -73,6 +73,12 @@ type HlBgKey struct {
 	length int
 }
 
+type VSelection struct {
+	highlight *Highlight
+	start     int
+	end       int
+}
+
 // Cell is
 type Cell struct {
 	highlight   *Highlight
@@ -280,12 +286,17 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		rows++
 	}
 
+	var vsSlice []*VSelection
+	// for y := row; y < row+rows; y++ {
+	for y := row; y < w.rows; y++ {
+		vsSlice = w.drawBackground(p, y, col, cols, vsSlice)
+	}
+
 	// Draw contents
 	for y := row + rows; y >= row; y-- {
 		if y >= w.rows {
 			continue
 		}
-		w.drawBackground(p, y, col, cols)
 		w.drawForeground(p, y, col, cols)
 	}
 
@@ -1625,7 +1636,7 @@ func (w *Window) update() {
 	end := w.queueRedrawArea[3]
 	extendedDrawingArea := int(font.cellwidth)
 
-	drawWithSingleRect := (w.lastScrollphase != core.Qt__ScrollEnd && (w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0)) || editor.config.Editor.IndentGuide || w.s.name == "minimap" || (editor.config.Editor.SmoothScroll && w.scrollPixels2 != 0)
+	drawWithSingleRect := (w.lastScrollphase != core.Qt__ScrollEnd && (w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0)) || editor.config.Editor.IndentGuide || w.s.name == "minimap" || (editor.config.Editor.SmoothScroll && w.scrollPixels2 != 0) || (editor.config.Editor.RoundedSelection && w.grid != 1 && !w.isMsgGrid)
 	if drawWithSingleRect {
 		begin = 0
 		end = w.rows
@@ -1771,9 +1782,9 @@ func (w *Window) queueRedraw(x, y, width, height int) {
 	w.redrawMutex.Unlock()
 }
 
-func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
+func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int, vsSlice []*VSelection) []*VSelection {
 	if y >= len(w.content) {
-		return
+		return vsSlice
 	}
 
 	line := w.content[y]
@@ -1860,9 +1871,11 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	// }
 
 	// The same color combines the rectangular areas and paints at once
+
 	var start, end int
 	var lastBg *RGBA
 	var lastHighlight, highlight *Highlight
+	var vss []*VSelection
 
 	for x := col; x <= col+cols; x++ {
 
@@ -1904,7 +1917,19 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 				end = x
 			}
 			if !lastBg.equals(bg) || x == bounds {
-				w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
+
+				w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg, vsSlice)
+				width := end - start + 1
+				if !isDrawDefaultBg && lastBg.equals(w.background) {
+					width = 0
+				}
+				if width > 0 {
+					vss = append(vss, &VSelection{
+						highlight: lastHighlight,
+						start:     start,
+						end:       end,
+					})
+				}
 
 				start = x
 				end = x
@@ -1912,14 +1937,29 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 				lastHighlight = highlight
 
 				if x == bounds {
-					w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
+
+					w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg, vsSlice)
+					width := end - start + 1
+					if !isDrawDefaultBg && lastBg.equals(w.background) {
+						width = 0
+					}
+					if width > 0 {
+						vss = append(vss, &VSelection{
+							highlight: lastHighlight,
+							start:     start,
+							end:       end,
+						})
+					}
+
 				}
 			}
 		}
 	}
+
+	return vss
 }
 
-func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg *RGBA, y, start, end, horScrollPixels, verScrollPixels int, isDrawDefaultBg bool) {
+func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg *RGBA, y, start, end, horScrollPixels, verScrollPixels int, isDrawDefaultBg bool, vsSlice []*VSelection) {
 
 	if lastHighlight == nil {
 		return
@@ -1937,37 +1977,67 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 	}
 
 	font := w.getFont()
+
+	// if width > 0 {
+	// 	if editor.config.Editor.CachedDrawing {
+	// 		cache := w.getCache()
+	// 		if cache == (Cache{}) {
+	// 			return
+	// 		}
+	// 		var image *gui.QImage
+	// 		imagev, err := cache.get(HlBgKey{
+	// 			bg:     lastHighlight.bg(),
+	// 			length: width,
+	// 		})
+
+	// 		if err != nil {
+	// 			image = w.newBgCache(lastHighlight, width)
+	// 			w.setBgCache(lastHighlight, width, image)
+	// 		} else {
+	// 			image = imagev.(*gui.QImage)
+	// 		}
+
+	// 		p.DrawImage9(
+	// 			int(float64(start)*font.cellwidth+float64(horScrollPixels)),
+	// 			int(float64((y)*font.lineHeight+verScrollPixels)),
+	// 			image,
+	// 			0, 0,
+	// 			-1, -1,
+	// 			core.Qt__AutoColor,
+	// 		)
+	// 	} else {
+	// 		// Set diff pattern
+	// 		pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
+
+	// 		// Fill background with pattern
+	// 		rectF := core.NewQRectF4(
+	// 			float64(start)*font.cellwidth+float64(horScrollPixels),
+	// 			float64((y)*font.lineHeight+verScrollPixels),
+	// 			float64(width)*font.cellwidth,
+	// 			float64(font.lineHeight),
+	// 		)
+	// 		p.FillRect(
+	// 			rectF,
+	// 			gui.NewQBrush3(
+	// 				gui.NewQColor3(
+	// 					color.R,
+	// 					color.G,
+	// 					color.B,
+	// 					transparent,
+	// 				),
+	// 				pattern,
+	// 			),
+	// 		)
+	// 	}
+	// }
+
+	// -----------------------
+
 	if width > 0 {
-		if editor.config.Editor.CachedDrawing {
-			cache := w.getCache()
-			if cache == (Cache{}) {
-				return
-			}
-			var image *gui.QImage
-			imagev, err := cache.get(HlBgKey{
-				bg:     lastHighlight.bg(),
-				length: width,
-			})
+		// Set diff pattern
+		pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
 
-			if err != nil {
-				image = w.newBgCache(lastHighlight, width)
-				w.setBgCache(lastHighlight, width, image)
-			} else {
-				image = imagev.(*gui.QImage)
-			}
-
-			p.DrawImage9(
-				int(float64(start)*font.cellwidth+float64(horScrollPixels)),
-				int(float64((y)*font.lineHeight+verScrollPixels)),
-				image,
-				0, 0,
-				-1, -1,
-				core.Qt__AutoColor,
-			)
-		} else {
-			// Set diff pattern
-			pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
-
+		if !(editor.config.Editor.RoundedSelection && w.grid != 1 && !w.isMsgGrid) {
 			// Fill background with pattern
 			rectF := core.NewQRectF4(
 				float64(start)*font.cellwidth+float64(horScrollPixels),
@@ -1987,9 +2057,73 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 					pattern,
 				),
 			)
+
+			return
+		}
+
+		// ---------------------
+		// Apply rounded corners
+		// ---------------------
+
+		path := gui.NewQPainterPath()
+		path.AddRoundedRect(
+			core.NewQRectF4(
+				float64(start)*font.cellwidth+float64(horScrollPixels),
+				float64((y)*font.lineHeight+verScrollPixels),
+				float64(width)*font.cellwidth,
+				float64(font.lineHeight),
+			),
+			font.cellwidth/2.5,
+			font.cellwidth/2.5,
+			core.Qt__AbsoluteSize,
+		)
+
+		p.SetPen2(color.QColor())
+		p.FillPath(
+			path,
+			gui.NewQBrush3(
+				gui.NewQColor3(
+					color.R,
+					color.G,
+					color.B,
+					transparent,
+				),
+				pattern,
+			),
+		)
+
+		for _, vs := range vsSlice {
+			if !vs.highlight.bg().equals(color) {
+				continue
+			}
+
+			if start < vs.start && end >= vs.start {
+				w.drawRoundedCorner("rightbottom", p, y, pattern, color, transparent, start, end, vs, horScrollPixels, verScrollPixels)
+			}
+			if end > vs.end && start <= vs.end {
+				w.drawRoundedCorner("leftbottom", p, y, pattern, color, transparent, start, end, vs, horScrollPixels, verScrollPixels)
+			}
+
+			if vs.start < start && vs.end >= start {
+				w.drawRoundedCorner("topright", p, y, pattern, color, transparent, start, end, vs, horScrollPixels, verScrollPixels)
+			}
+			if vs.end > end && vs.start <= end {
+				w.drawRoundedCorner("topleft", p, y, pattern, color, transparent, start, end, vs, horScrollPixels, verScrollPixels)
+			}
+
+			if vs.start == start {
+				w.drawRoundedCorner("leftside", p, y, pattern, color, transparent, start, end, vs, horScrollPixels, verScrollPixels)
+			}
+			if vs.end == end {
+				w.drawRoundedCorner("rightside", p, y, pattern, color, transparent, start, end, vs, horScrollPixels, verScrollPixels)
+			}
+
 		}
 
 	}
+
+	// -----------------------
+
 }
 
 func (w *Window) newBgCache(lastHighlight *Highlight, length int) *gui.QImage {
@@ -2038,6 +2172,93 @@ func (w *Window) setBgCache(highlight *Highlight, length int, image *gui.QImage)
 			image,
 		)
 	}
+}
+
+func (w *Window) drawRoundedCorner(pStr string, p *gui.QPainter, y int, pattern core.Qt__BrushStyle, color *RGBA, transparent, start, end int, vs *VSelection, horScrollPixels, verScrollPixels int) {
+	font := w.getFont()
+
+	var a [2]float64
+	var b [2]int
+	switch pStr {
+	case "rightbottom":
+		a[0] = float64(vs.start) - 0.5
+		a[1] = -0.5
+		b[0] = vs.start - 1
+		b[1] = -1
+	case "leftbottom":
+		a[0] = float64(vs.end+1) - 0.5
+		a[1] = -0.5
+		b[0] = vs.end + 1
+		b[1] = -1
+	case "topright":
+		a[0] = float64(start) - 0.5
+		a[1] = 0
+		b[0] = start - 1
+		b[1] = 0
+	case "topleft":
+		a[0] = float64(end+1) - 0.5
+		a[1] = 0
+		b[0] = end + 1
+		b[1] = 0
+	case "rightside":
+		a[0] = float64(end)
+		a[1] = -0.25
+		b[0] = 0
+		b[1] = 0
+	case "leftside":
+		a[0] = float64(start)
+		a[1] = -0.25
+		b[0] = 0
+		b[1] = 0
+	}
+
+	rect := core.NewQRectF4(
+		a[0]*font.cellwidth+float64(horScrollPixels),
+		(float64(y)+a[1])*float64(font.lineHeight)+float64(verScrollPixels),
+		float64(1.0)*font.cellwidth,
+		float64(font.lineHeight)*0.5,
+	)
+	p.FillRect(
+		rect,
+		gui.NewQBrush3(
+			gui.NewQColor3(
+				vs.highlight.bg().R,
+				vs.highlight.bg().G,
+				vs.highlight.bg().B,
+				transparent,
+			),
+			pattern,
+		),
+	)
+
+	if pStr == "leftside" || pStr == "rightside" {
+		return
+	}
+
+	path := gui.NewQPainterPath()
+	path.AddRoundedRect(
+		core.NewQRectF4(
+			float64(b[0])*font.cellwidth+float64(horScrollPixels),
+			float64((y+b[1])*font.lineHeight+verScrollPixels),
+			float64(1)*font.cellwidth,
+			float64(font.lineHeight),
+		),
+		font.cellwidth/2.5,
+		font.cellwidth/2.5,
+		core.Qt__AbsoluteSize,
+	)
+	p.FillPath(
+		path,
+		gui.NewQBrush3(
+			gui.NewQColor3(
+				w.background.R,
+				w.background.G,
+				w.background.B,
+				transparent,
+			),
+			pattern,
+		),
+	)
 }
 
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
