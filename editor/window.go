@@ -2534,10 +2534,13 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		w.imagePainter.Font().SetItalic(true)
 	}
 
-	w.imagePainter.DrawText3(
-		0,
-		font.shift,
-		text,
+	w.imagePainter.DrawText6(
+		core.NewQRectF4(
+			0,
+			0,
+			width,
+			float64(font.lineHeight),
+		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
 
 	w.imagePainter.End()
