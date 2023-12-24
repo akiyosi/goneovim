@@ -2589,25 +2589,25 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 
 	// w.imagePainter.SetFont(fontfallbacked.qfont)
 
-	glyphrun := gui.NewQGlyphRun()
+	// glyphrun := gui.NewQGlyphRun()
 
 	editor.putLog("newTextCache 7:", text)
 
-	if highlight.bold {
-		// w.imagePainter.Font().SetBold(true)
-		// w.imagePainter.Font().SetWeight(font.qfont.Weight() + 50)
+	// if highlight.bold {
+	// 	// w.imagePainter.Font().SetBold(true)
+	// 	// w.imagePainter.Font().SetWeight(font.qfont.Weight() + 50)
 
-		if fontfallbacked.rawfont.bold == nil {
-			glyphrun.SetRawFont(fontfallbacked.rawfont.regular)
-		} else {
-			glyphrun.SetRawFont(fontfallbacked.rawfont.bold)
-		}
+	// 	if fontfallbacked.rawfont.bold == nil {
+	// 		glyphrun.SetRawFont(fontfallbacked.rawfont.regular)
+	// 	} else {
+	// 		glyphrun.SetRawFont(fontfallbacked.rawfont.bold)
+	// 	}
 
-	} else if highlight.italic && fontfallbacked.rawfont.italic != nil {
-		glyphrun.SetRawFont(fontfallbacked.rawfont.italic)
-	} else {
-		glyphrun.SetRawFont(fontfallbacked.rawfont.regular)
-	}
+	// } else if highlight.italic && fontfallbacked.rawfont.italic != nil {
+	// 	glyphrun.SetRawFont(fontfallbacked.rawfont.italic)
+	// } else {
+	// 	glyphrun.SetRawFont(fontfallbacked.rawfont.regular)
+	// }
 
 	editor.putLog("newTextCache 8:", text)
 
@@ -2623,19 +2623,28 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	// 	text,
 	// )
 
-	gi := fontfallbacked.rawfont.regular.GlyphIndexesForString(text)
-	var positions []*core.QPointF
-	var xpos float64 = 0
-	for _, _ = range text {
-		positions = append(
-			positions,
-			core.NewQPointF3(
-				xpos,
-				0,
-			),
-		)
-		xpos += fontfallbacked.cellwidth
-	}
+	tl := gui.NewQTextLayout4(text, fontfallbacked.qfont, image)
+
+	tl.BeginLayout()
+	line := tl.CreateLine()
+	tl.EndLayout()
+
+	glyphruns := line.GlyphRuns(-1, -1)
+
+	// gi := fontfallbacked.rawfont.regular.GlyphIndexesForString(text)
+	// var positions []*core.QPointF
+	// var xpos float64 = 0
+	// for _, _ = range text {
+	// 	positions = append(
+	// 		positions,
+	// 		core.NewQPointF3(
+	// 			xpos,
+	// 			0,
+	// 		),
+	// 	)
+	// 	xpos += fontfallbacked.cellwidth
+	// }
+
 	// a := fontfallbacked.rawfont.AdvancesForGlyphIndexes(gi, gui.QRawFont__SeparateAdvances)
 	// a := fontfallbacked.rawfont.AdvancesForGlyphIndexes2(gi)
 	// fmt.Println("-----------")
@@ -2649,15 +2658,25 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	// 	a = append(a, uint(uintChar))
 	// }
 
-	glyphrun.SetGlyphIndexes(gi)
-	glyphrun.SetPositions(positions)
-	w.imagePainter.DrawGlyphRun(
-		core.NewQPointF3(
-			0,
-			float64(fontfallbacked.ascent),
-		),
-		glyphrun,
-	)
+	// glyphrun.SetGlyphIndexes(gi)
+	// glyphrun.SetPositions(positions)
+	// w.imagePainter.DrawGlyphRun(
+	// 	core.NewQPointF3(
+	// 		0,
+	// 		float64(fontfallbacked.ascent),
+	// 	),
+	// 	glyphrun,
+	// )
+
+	for _, glyphrun := range glyphruns {
+		w.imagePainter.DrawGlyphRun(
+			core.NewQPointF3(
+				0,
+				0,
+			),
+			glyphrun,
+		)
+	}
 
 	editor.putLog("newTextCache 10:", text)
 
