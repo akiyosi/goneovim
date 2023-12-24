@@ -244,7 +244,7 @@ COMMANDS                                                       *goneovim-command
 	in settings.toml, or if you want to put the settings in |init.vim|, 
 	you can use the following |rpcnotify|.
 >
-	:call rpcnotify(0, "Gui", "gonvim_letter_spacing", 0.5)
+	:call rpcnotify(0, "Gui", "gonvim_letter_spacing", 2)
 <
 
 :GuiMacmeta {boolean}                                               *:GuiMacmeta*
@@ -405,6 +405,23 @@ All Options are follows:
         # FontFamily = "Windows"
         ## Fontsize is
         # FontSize = 12
+        ## FontWeight specifis the glyph weight for the configured font family.
+        ## * Possible values are: 
+        ##    - "Thin", "Hairline"
+        ##    - "ExtraLight", "Ultralight"
+        ##    - "Light"
+        ##    - "Normal", "regular"
+        ##    - "Medium"
+        ##    - "DemiBold", "SemiBold"
+        ##    - "Bold"
+        ##    - "Extra Bold", "UltraBold"
+        ##    - "Black"
+        ## * Default value is "Normal".
+        ## * Note that for the glyphs of a specified weight to be validly displayed,
+        ##   a font of the corresponding weight must be installed.
+        # FontWeight = "normal"
+        ## FontStretch is the ratio of Horizontal stretch. Default is 100 [%]
+        # FontStretch = 100
         ## letterspace is
         # Letterspace = 0
         

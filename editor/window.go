@@ -30,12 +30,13 @@ type gridId = int
 
 // Highlight is
 type Highlight struct {
-	special       *RGBA
-	foreground    *RGBA
-	background    *RGBA
-	kind          string
-	uiName        string
-	hlName        string
+	special    *RGBA
+	foreground *RGBA
+	background *RGBA
+	kind       string
+	uiName     string
+	hlName     string
+	// altfont       string
 	blend         int
 	id            int
 	reverse       bool
@@ -111,6 +112,7 @@ type Window struct {
 	snapshot               *gui.QPixmap
 	imagePainter           *gui.QPainter
 	font                   *Font
+	fallbackfonts          []*Font
 	localWindows           *[4]localWindow
 	extwin                 *ExternalWin
 	background             *RGBA
@@ -392,6 +394,14 @@ func (w *Window) getFont() *Font {
 	}
 
 	return w.font
+}
+
+func (w *Window) getFallbackFonts() []*Font {
+	if w.font == nil {
+		return w.s.fallbackfonts
+	}
+
+	return w.fallbackfonts
 }
 
 func (w *Window) drawIndentguide(p *gui.QPainter, row, rows int) {
@@ -1386,14 +1396,6 @@ func (w *Window) updateLine(row, col int, cells []interface{}) (int, bool, bool)
 	return newlenContent, doNotCountContent, isPartialUpdate
 }
 
-func isMissingGlyph(fm *gui.QFontMetricsF, ch string) bool {
-	if ch == "" {
-		return true
-	}
-
-	return fm.InFontUcs4(uint([]rune(ch)[0]))
-}
-
 func (w *Window) countContent(row int) {
 	line := w.content[row]
 	lenLine := w.cols - 1
@@ -2040,6 +2042,26 @@ func (w *Window) setBgCache(highlight *Highlight, length int, image *gui.QImage)
 	}
 }
 
+func resolveFontFallback(font *Font, fallbackfonts []*Font, char string) *Font {
+	if len(fallbackfonts) == 0 {
+		return font
+	}
+
+	hasGlyph := font.hasGlyph(char)
+	if hasGlyph {
+		return font
+	} else {
+		for _, ff := range fallbackfonts {
+			hasGlyph = ff.hasGlyph(char)
+			if hasGlyph {
+				return ff
+			}
+		}
+	}
+
+	return font
+}
+
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
@@ -2047,7 +2069,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	wsfont := w.getFont()
 
 	if !editor.config.Editor.CachedDrawing {
-		p.SetFont(wsfont.fontNew)
+		p.SetFont(wsfont.qfont)
 	}
 
 	line := w.content[y]
@@ -2085,6 +2107,17 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 			if line[x].covered && w.grid == 1 {
 				continue
+			}
+
+			// wsfont.hasGlyph(line[x].char)
+
+			// font fallbacking manualy
+			if !editor.config.Editor.CachedDrawing {
+				if w.font == nil {
+					p.SetFont(resolveFontFallback(w.s.font, w.s.fallbackfonts, line[x].char).qfont)
+				} else {
+					p.SetFont(resolveFontFallback(w.font, w.fallbackfonts, line[x].char).qfont)
+				}
 			}
 
 			w.drawTextInPos(
@@ -2201,12 +2234,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 
 	if len(specialChars) >= 1 {
-		if !editor.config.Editor.CachedDrawing {
-			if w.font == nil && w.s.fontwide != nil {
-				p.SetFont(w.s.fontwide.fontNew)
-			}
-		}
-
 		for _, x := range specialChars {
 			if line[x] == nil {
 				continue
@@ -2217,6 +2244,19 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			}
 			if char == " " {
 				continue
+			}
+
+			// font fallbacking manualy
+			if !editor.config.Editor.CachedDrawing {
+				if w.s.fontwide != nil && w.font == nil {
+					p.SetFont(resolveFontFallback(w.s.fontwide, w.s.fallbackfontwides, line[x].char).qfont)
+				} else {
+					if w.font == nil {
+						p.SetFont(resolveFontFallback(w.s.font, w.s.fallbackfonts, line[x].char).qfont)
+					} else {
+						p.SetFont(resolveFontFallback(w.font, w.fallbackfonts, line[x].char).qfont)
+					}
+				}
 			}
 
 			w.drawTextInPos(
@@ -2473,10 +2513,20 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	editor.putLog("start creating word cache:", text)
 
 	font := w.getFont()
+	var fontfallbacked *Font
+	if !isNormalWidth && w.font == nil && w.s.fontwide != nil {
+		fontfallbacked = resolveFontFallback(w.s.fontwide, w.s.fallbackfontwides, text)
+	} else {
+		if w.font == nil {
+			fontfallbacked = resolveFontFallback(w.s.font, w.s.fallbackfonts, text)
+		} else {
+			fontfallbacked = resolveFontFallback(w.font, w.fallbackfonts, text)
+		}
+	}
 
 	// Put debug log
 	if editor.opts.Debug != "" {
-		fi := gui.NewQFontInfo(font.fontNew)
+		fi := gui.NewQFontInfo(font.qfont)
 		editor.putLog(
 			"Outputs font information creating word cache:",
 			fi.Family(),
@@ -2490,7 +2540,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	fg := highlight.fg()
 	if !isNormalWidth {
 		// width = math.Ceil(w.s.runeTextWidth(font, text))
-		width = font.fontMetrics.HorizontalAdvance(text, -1)
+		width = fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
 	}
 
 	// QImage default device pixel ratio is 1.0,
@@ -2519,16 +2569,11 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	// pi := gui.NewQPainter2(image)
 
 	w.imagePainter.SetPen2(fg.QColor())
-
-	if !isNormalWidth && w.font == nil && w.s.fontwide != nil {
-		w.imagePainter.SetFont(w.s.fontwide.fontNew)
-	} else {
-		w.imagePainter.SetFont(font.fontNew)
-	}
+	w.imagePainter.SetFont(fontfallbacked.qfont)
 
 	if highlight.bold {
 		w.imagePainter.Font().SetBold(true)
-		// w.imagePainter.Font().SetWeight(font.fontNew.Weight() + 50)
+		// w.imagePainter.Font().SetWeight(font.qfont.Weight() + 50)
 	}
 	if highlight.italic {
 		w.imagePainter.Font().SetItalic(true)
@@ -2852,7 +2897,11 @@ func (w *Window) isNormalWidth(char string) bool {
 		return false
 	}
 
-	return w.getFont().fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
+	if w.font == nil {
+		return resolveFontFallback(w.s.font, w.s.fallbackfonts, char).fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
+	}
+
+	return resolveFontFallback(w.font, w.fallbackfonts, char).fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
 }
 
 func (w *Window) deleteExternalWin() {
@@ -3154,7 +3203,7 @@ func (w *Window) raise() {
 
 func (w *Window) setUIParent() {
 	// Update cursor font
-	w.s.ws.cursor.updateFont(w, w.getFont())
+	w.s.ws.cursor.updateFont(w, w.getFont(), w.getFallbackFonts())
 	defer func() {
 		w.s.ws.cursor.isInPalette = false
 	}()
@@ -3167,8 +3216,8 @@ func (w *Window) setUIParent() {
 
 		// Suppress window activation when font selection dialog is displayed
 		if w.s.ws.font != nil {
-			if w.s.ws.font.ui != nil {
-				if !w.s.ws.font.ui.IsVisible() {
+			if w.s.ws.fontdialog != nil {
+				if !w.s.ws.fontdialog.IsVisible() {
 					editor.window.Raise()
 				}
 			}

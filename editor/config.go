@@ -36,6 +36,7 @@ type editorConfig struct {
 	WindowSeparatorTheme                    string
 	NvimInWsl                               string
 	WSLDist                                 string
+	FontWeight                              string
 	ModeEnablingIME                         []string
 	IndentGuideIgnoreFtList                 []string
 	CharsScaledLineHeight                   []string
@@ -46,8 +47,9 @@ type editorConfig struct {
 	DiffChangePattern                       int
 	CacheSize                               int
 	Linespace                               int
-	Letterspace                             float64
+	Letterspace                             int
 	FontSize                                int
+	FontStretch                             int
 	Margin                                  int
 	Gap                                     int
 	Height                                  int
@@ -78,7 +80,7 @@ type editorConfig struct {
 	BorderlessWindow                        bool
 	RestoreWindowGeometry                   bool
 	ExtCmdline                              bool
-	NoFontMerge                             bool
+	ManualFontFallback                      bool
 	WindowGeometryBasedOnFontmetrics        bool
 	IgnoreFirstMouseClickWhenAppInactivated bool
 	HideTitlebar                            bool
@@ -315,6 +317,10 @@ func (c *gonvimConfig) init() {
 		c.Editor.Margin = 0
 		c.Editor.MouseScrollingUnit = "line"
 	}
+	c.Editor.FontSize = 12
+	c.Editor.FontWeight = "normal"
+	// Horizontal stretch ratio
+	c.Editor.FontStretch = 100
 	c.Editor.FontSize = 12
 	c.Editor.Linespace = 6
 

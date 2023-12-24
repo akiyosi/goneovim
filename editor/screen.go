@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,22 +21,24 @@ var globalOrder int
 
 // Screen is the main editor area
 type Screen struct {
-	cache            Cache
-	tooltip          *IMETooltip
-	font             *Font
-	fontwide         *Font
-	hlAttrDef        map[int]*Highlight
-	widget           *widgets.QWidget
-	ws               *Workspace
-	highlightGroup   map[string]int
-	windows          sync.Map
-	name             string
-	cursor           [2]int
-	height           int
-	width            int
-	resizeCount      uint
-	topLevelGrid     int
-	lastGridLineGrid int
+	cache             Cache
+	tooltip           *IMETooltip
+	font              *Font
+	fallbackfonts     []*Font
+	fontwide          *Font
+	fallbackfontwides []*Font
+	hlAttrDef         map[int]*Highlight
+	widget            *widgets.QWidget
+	ws                *Workspace
+	highlightGroup    map[string]int
+	windows           sync.Map
+	name              string
+	cursor            [2]int
+	height            int
+	width             int
+	resizeCount       uint
+	topLevelGrid      int
+	lastGridLineGrid  int
 }
 
 type Cache struct {
@@ -261,30 +262,31 @@ func (s *Screen) gridFont(update interface{}) {
 	if updateStr == "" {
 		return
 	}
+
 	parts := strings.Split(updateStr, ":")
 	if len(parts) < 1 {
 		return
 	}
 
-	fontfamily := parts[0]
-	height := 14
+	// fontfamily := parts[0]
+	// height := 14
 
-	for _, p := range parts[1:] {
-		if strings.HasPrefix(p, "h") {
-			var err error
-			height, err = strconv.Atoi(p[1:])
-			if err != nil {
-				return
-			}
-		} else if strings.HasPrefix(p, "w") {
-			var err error
-			width, err := strconv.Atoi(p[1:])
-			if err != nil {
-				return
-			}
-			height = 2 * width
-		}
-	}
+	// for _, p := range parts[1:] {
+	// 	if strings.HasPrefix(p, "h") {
+	// 		var err error
+	// 		height, err = strconv.Atoi(p[1:])
+	// 		if err != nil {
+	// 			return
+	// 		}
+	// 	} else if strings.HasPrefix(p, "w") {
+	// 		var err error
+	// 		width, err := strconv.Atoi(p[1:])
+	// 		if err != nil {
+	// 			return
+	// 		}
+	// 		height = 2 * width
+	// 	}
+	// }
 
 	oldWidth := float64(win.cols) * win.getFont().cellwidth
 	oldHeight := win.rows * win.getFont().lineHeight
@@ -292,7 +294,12 @@ func (s *Screen) gridFont(update interface{}) {
 	win.height = oldHeight
 	win.localWindows = &[4]localWindow{}
 
-	win.font = initFontNew(fontfamily, float64(height), 1, 0.0)
+	win.fallbackfonts = nil
+	s.ws.parseAndApplyFont(updateStr, &win.font, &win.fallbackfonts)
+
+	if win.font == nil {
+		return
+	}
 
 	// Calculate new cols, rows of current grid
 	newCols := int(oldWidth / win.font.cellwidth)
@@ -310,6 +317,7 @@ func (s *Screen) gridFont(update interface{}) {
 	_ = s.ws.nvim.TryResizeUIGrid(win.grid, newCols, newRows)
 
 	s.ws.cursor.font = win.getFont()
+	s.ws.cursor.fallbackfonts = win.fallbackfonts
 
 	if win.isExternal {
 		width := int(float64(newCols)*win.font.cellwidth) + EXTWINBORDERSIZE*2
@@ -1214,6 +1222,11 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 		rgba := calcColor(util.ReflectToInt(sp))
 		highlight.special = rgba
 	}
+
+	// af, ok := hl["altfont"]
+	// if ok {
+	// 	highlight.altfont = af.(string)
+	// }
 
 	bl, ok := hl["blend"]
 	if ok {

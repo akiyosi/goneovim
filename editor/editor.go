@@ -109,7 +109,7 @@ type Editor struct {
 	notifyStartPos         *core.QPoint
 	colors                 *ColorPalette
 	notify                 chan *Notify
-	fontCh                 chan *Font
+	fontCh                 chan []*Font
 	cbChan                 chan *string
 	chUiPrepared           chan bool
 	geometryUpdateTimer    *time.Timer
@@ -125,6 +125,7 @@ type Editor struct {
 	config                 gonvimConfig
 	opts                   Options
 	font                   *Font
+	fallbackfonts          []*Font
 	notifications          []*Notification
 	workspaces             []*Workspace
 	args                   []string
@@ -258,16 +259,16 @@ func InitEditor(options Options, args []string) {
 
 	e.extFontFamily = e.config.Editor.FontFamily
 	e.extFontSize = e.config.Editor.FontSize
-	e.fontCh = make(chan *Font, 2)
+	e.fontCh = make(chan []*Font, 100)
 	go func() {
-		font := initFontNew(
+		e.fontCh <- parseFont(
 			editor.extFontFamily,
-			float64(editor.extFontSize),
-			0,
+			editor.extFontSize,
+			e.config.Editor.FontWeight,
+			e.config.Editor.FontStretch,
+			e.config.Editor.Linespace,
 			e.config.Editor.Letterspace,
 		)
-
-		e.fontCh <- font
 	}()
 
 	e.initSVGS()
@@ -414,6 +415,38 @@ func (e *Editor) addDockMenu() {
 	menu.SetAsDockMenu()
 }
 
+func parseFont(families string, size int, weight string, stretch, linespace, letterspace int) (fonts []*Font) {
+	weight = strings.ToLower(weight)
+	var fontWeight gui.QFont__Weight
+	switch weight {
+	case "thin":
+		fontWeight = gui.QFont__Thin
+	case "extralight", "ultralight":
+		fontWeight = gui.QFont__ExtraLight
+	case "light":
+		fontWeight = gui.QFont__Light
+	case "normal", "regular":
+		fontWeight = gui.QFont__Normal
+	case "demibold", "semibold":
+		fontWeight = gui.QFont__DemiBold
+	case "bold":
+		fontWeight = gui.QFont__Bold
+	case "extrabold", "ultrabold":
+		fontWeight = gui.QFont__ExtraBold
+	case "black", "heavy":
+		fontWeight = gui.QFont__Black
+	}
+
+	for _, f := range strings.Split(families, ",") {
+		fonts = append(
+			fonts,
+			initFontNew(strings.TrimSpace(f), float64(size), fontWeight, stretch, linespace, letterspace),
+		)
+	}
+
+	return
+}
+
 // setAppDirPath
 // set application working directory path
 // TODO: This process is problematic and needs a better way to set up CWD
@@ -524,7 +557,11 @@ func (e *Editor) initWorkspaces(ctx context.Context, signal *neovimSignal, redra
 		ws.initUI()
 
 		if i == 0 {
-			e.font = <-e.fontCh
+			fonts := <-e.fontCh
+			e.font = fonts[0]
+			if len(fonts) > 1 {
+				e.fallbackfonts = fonts[1:]
+			}
 		}
 
 		ws.initFont()
