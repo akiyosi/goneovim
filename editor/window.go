@@ -2623,7 +2623,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	// 	text,
 	// )
 
-	tl := gui.NewQTextLayout4(text, fontfallbacked.qfont, image)
+	tl := gui.NewQTextLayout2(text)
+	tl.SetFont(fontfallbacked.qfont)
 
 	tl.BeginLayout()
 	line := tl.CreateLine()
