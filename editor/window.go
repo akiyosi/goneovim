@@ -2624,13 +2624,22 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	// )
 
 	tl := gui.NewQTextLayout2(text)
+
+	editor.putLog("newTextCache 10:", text)
+
 	tl.SetFont(fontfallbacked.qfont)
+
+	editor.putLog("newTextCache 11:", text)
 
 	tl.BeginLayout()
 	line := tl.CreateLine()
 	tl.EndLayout()
 
+	editor.putLog("newTextCache 12:", text)
+
 	glyphruns := line.GlyphRuns(-1, -1)
+
+	editor.putLog("newTextCache 13:", text)
 
 	// gi := fontfallbacked.rawfont.regular.GlyphIndexesForString(text)
 	// var positions []*core.QPointF
@@ -2679,7 +2688,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		)
 	}
 
-	editor.putLog("newTextCache 10:", text)
+	editor.putLog("newTextCache 14:", text)
 
 	w.imagePainter.End()
 	// pi.DestroyQPainter()
@@ -2693,6 +2702,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		)
 	}
 
+	editor.putLog("newTextCache 15:", text)
+
 	if highlight.italic && fontfallbacked.rawfont.italic == nil {
 		transform := gui.NewQTransform2()
 		transform = transform.Shear(-0.17, 0)
@@ -2701,6 +2712,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 			core.Qt__FastTransformation,
 		)
 	}
+
+	editor.putLog("newTextCache 16:", text)
 
 	return image
 }
