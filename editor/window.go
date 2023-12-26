@@ -18,7 +18,11 @@ import (
 	"github.com/akiyosi/qt/gui"
 	"github.com/akiyosi/qt/widgets"
 	"github.com/bluele/gcache"
+	"github.com/go-text/typesetting/di"
+	"github.com/go-text/typesetting/language"
+	"github.com/go-text/typesetting/shaping"
 	"github.com/neovim/go-client/nvim"
+	"golang.org/x/image/math/fixed"
 )
 
 const (
@@ -2525,18 +2529,6 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		}
 	}
 
-	// // Put debug log
-	// if editor.opts.Debug != "" {
-	// 	fi := gui.NewQFontInfo(font.qfont)
-	// 	editor.putLog(
-	// 		"Outputs font information creating word cache:",
-	// 		fi.Family(),
-	// 		fi.PointSizeF(),
-	// 		fi.StyleName(),
-	// 		fmt.Sprintf("%v", fi.PointSizeF()),
-	// 	)
-	// }
-
 	width := float64(len(text)-1)*font.cellwidth + font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
@@ -2581,7 +2573,6 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	editor.putLog("newTextCache 5:", text)
 
 	w.imagePainter.Begin(image)
-	// pi := gui.NewQPainter2(image)
 
 	w.imagePainter.SetPen2(fg.QColor())
 
@@ -2589,104 +2580,116 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 
 	// w.imagePainter.SetFont(fontfallbacked.qfont)
 
-	// glyphrun := gui.NewQGlyphRun()
-
 	editor.putLog("newTextCache 7:", text)
 
-	// if highlight.bold {
-	// 	// w.imagePainter.Font().SetBold(true)
-	// 	// w.imagePainter.Font().SetWeight(font.qfont.Weight() + 50)
+	glyphrun := gui.NewQGlyphRun()
+	if highlight.bold {
+		if fontfallbacked.rawfont.bold == nil {
+			glyphrun.SetRawFont(fontfallbacked.rawfont.regular)
+		} else {
+			glyphrun.SetRawFont(fontfallbacked.rawfont.bold)
+		}
 
-	// 	if fontfallbacked.rawfont.bold == nil {
-	// 		glyphrun.SetRawFont(fontfallbacked.rawfont.regular)
-	// 	} else {
-	// 		glyphrun.SetRawFont(fontfallbacked.rawfont.bold)
-	// 	}
-
-	// } else if highlight.italic && fontfallbacked.rawfont.italic != nil {
-	// 	glyphrun.SetRawFont(fontfallbacked.rawfont.italic)
-	// } else {
-	// 	glyphrun.SetRawFont(fontfallbacked.rawfont.regular)
-	// }
+	} else if highlight.italic && fontfallbacked.rawfont.italic != nil {
+		glyphrun.SetRawFont(fontfallbacked.rawfont.italic)
+	} else {
+		glyphrun.SetRawFont(fontfallbacked.rawfont.regular)
+	}
 
 	editor.putLog("newTextCache 8:", text)
 
-	// if highlight.italic {
-	// 	w.imagePainter.Font().SetItalic(true)
-	// }
-
-	editor.putLog("newTextCache 9:", text)
-
-	// w.imagePainter.DrawText3(
-	// 	0,
-	// 	font.shift,
-	// 	text,
-	// )
-
-	tl := gui.NewQTextLayout2(text)
-
-	editor.putLog("newTextCache 10:", text)
-
-	tl.SetFont(fontfallbacked.qfont)
-
-	editor.putLog("newTextCache 11:", text)
-
-	tl.BeginLayout()
-	line := tl.CreateLine()
-	tl.EndLayout()
+	// // qfont is slow
+	// tl := gui.NewQTextLayout2(text)
+	// tl.SetFont(fontfallbacked.qfont)
+	// tl.BeginLayout()
+	// line := tl.CreateLine()
+	// tl.EndLayout()
+	// glyphruns := line.GlyphRuns(-1, -1)
 
 	editor.putLog("newTextCache 12:", text)
 
-	glyphruns := line.GlyphRuns(-1, -1)
-
-	editor.putLog("newTextCache 13:", text)
-
-	// gi := fontfallbacked.rawfont.regular.GlyphIndexesForString(text)
-	// var positions []*core.QPointF
-	// var xpos float64 = 0
-	// for _, _ = range text {
-	// 	positions = append(
-	// 		positions,
-	// 		core.NewQPointF3(
-	// 			xpos,
-	// 			0,
-	// 		),
-	// 	)
-	// 	xpos += fontfallbacked.cellwidth
+	// // DEBUG log
+	// if w.grid != 1 && !w.isMsgGrid {
+	// 	fmt.Println("---------------------------------------")
+	// 	gi := fontfallbacked.rawfont.regular.GlyphIndexesForString(text)
+	// 	for i, u := range gi {
+	// 		fmt.Println("debug1:", string(text[i]), u)
+	// 	}
+	//
+	// 	for i, glyphrun := range glyphruns {
+	// 		fmt.Println("debug2:", string(text[i]), glyphrun.GlyphIndexes())
+	// 	}
+	//
+	// 	textInput := []rune(text)
+	// 	input := shaping.Input{
+	// 		Text:      textInput,
+	// 		RunStart:  0,
+	// 		RunEnd:    len(textInput),
+	// 		Direction: di.DirectionLTR,
+	// 		Face:      *fontfallbacked.rawfont.fontface,
+	// 		Size:      fixed.I((*fontfallbacked).pixelSize),
+	// 		Script:    language.Latin,
+	// 		Language:  language.NewLanguage("EN"),
+	// 	}
+	// 	shaper := shaping.HarfbuzzShaper{}
+	// 	out := shaper.Shape(input)
+	//
+	// 	for i, glyph := range out.Glyphs {
+	// 		fmt.Println("debug3:", string(text[i]), glyph.GlyphID)
+	// 	}
+	//
+	// 	fmt.Println("=======================================")
 	// }
 
-	// a := fontfallbacked.rawfont.AdvancesForGlyphIndexes(gi, gui.QRawFont__SeparateAdvances)
-	// a := fontfallbacked.rawfont.AdvancesForGlyphIndexes2(gi)
-	// fmt.Println("-----------")
-	// for _, b := range a {
-	// 	fmt.Println(b.X(), b.Y())
-	// }
-
-	// var a []uint
-	// for _, char := range text {
-	// 	uintChar, _ := strconv.ParseUint(string(char), 10, 64)
-	// 	a = append(a, uint(uintChar))
-	// }
-
-	// glyphrun.SetGlyphIndexes(gi)
-	// glyphrun.SetPositions(positions)
-	// w.imagePainter.DrawGlyphRun(
-	// 	core.NewQPointF3(
-	// 		0,
-	// 		float64(fontfallbacked.ascent),
-	// 	),
-	// 	glyphrun,
-	// )
-
-	for _, glyphrun := range glyphruns {
-		w.imagePainter.DrawGlyphRun(
+	var positions []*core.QPointF
+	var xpos float64 = 0
+	for _, _ = range text {
+		positions = append(
+			positions,
 			core.NewQPointF3(
-				0,
+				xpos,
 				0,
 			),
-			glyphrun,
 		)
+		xpos += fontfallbacked.cellwidth
 	}
+
+	textInput := []rune(text)
+	shaper := shaping.HarfbuzzShaper{}
+	out := shaper.Shape(shaping.Input{
+		Text:      textInput,
+		RunStart:  0,
+		RunEnd:    len(textInput),
+		Direction: di.DirectionLTR,
+		Face:      *fontfallbacked.rawfont.fontface,
+		Size:      fixed.I((*fontfallbacked).pixelSize),
+		Script:    language.Latin,
+		Language:  language.NewLanguage("EN"),
+	})
+	glyphIdx := []uint{}
+	for _, glyph := range out.Glyphs {
+		glyphIdx = append(glyphIdx, uint(glyph.GlyphID))
+	}
+
+	glyphrun.SetGlyphIndexes(glyphIdx)
+	glyphrun.SetPositions(positions)
+	w.imagePainter.DrawGlyphRun(
+		core.NewQPointF3(
+			0,
+			float64(fontfallbacked.ascent),
+		),
+		glyphrun,
+	)
+
+	// for _, glyphrun := range glyphruns {
+	// 	w.imagePainter.DrawGlyphRun(
+	// 		core.NewQPointF3(
+	// 			0,
+	// 			0,
+	// 		),
+	// 		glyphrun,
+	// 	)
+	// }
 
 	editor.putLog("newTextCache 14:", text)
 

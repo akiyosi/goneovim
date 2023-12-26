@@ -19,11 +19,12 @@ require (
 	github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20230719061055-7747cdc680f3 // indirect
 	github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20230719061055-7747cdc680f3 // indirect
 	github.com/akiyosi/w32 v0.0.0-20221111133244-de73be0c7b36 // indirect
-	github.com/go-text/typesetting v0.0.0-20231219150831-cc0073efdbb4 // indirect
+	github.com/go-text/typesetting v0.0.0-20231221124458-48cc05a56658 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190411002643-bd77b112433e // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/sirupsen/logrus v1.4.1 // indirect
 	golang.org/x/image v0.14.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/tools v0.1.12 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
 )

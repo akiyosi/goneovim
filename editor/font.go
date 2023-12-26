@@ -2,18 +2,21 @@ package editor
 
 import (
 	"math"
+	"os"
 	"strings"
 
 	"github.com/akiyosi/qt/gui"
+	"github.com/go-text/typesetting/font"
 	"github.com/go-text/typesetting/fontscan"
 )
 
 // Font is
 type Font struct {
-	family  string
-	size    float64
-	weight  gui.QFont__Weight
-	stretch int
+	family    string
+	size      float64
+	pixelSize int
+	weight    gui.QFont__Weight
+	stretch   int
 
 	ws    *Workspace
 	qfont *gui.QFont
@@ -34,6 +37,8 @@ type RawFont struct {
 	regular *gui.QRawFont
 	bold    *gui.QRawFont
 	italic  *gui.QRawFont
+
+	fontface *font.Face
 }
 
 func fontSizeNew(rawfont *gui.QRawFont) (float64, int, float64, float64) {
@@ -132,12 +137,13 @@ func initFontNew(family string, size float64, weight gui.QFont__Weight, stretch,
 	// glyphrun.SetRawFont(rawfont.regular)
 
 	return &Font{
-		family:  family,
-		size:    size,
-		weight:  weight,
-		stretch: stretch,
-		qfont:   font,
-		rawfont: rawfont,
+		family:    family,
+		size:      size,
+		pixelSize: pixelSize,
+		weight:    weight,
+		stretch:   stretch,
+		qfont:     font,
+		rawfont:   rawfont,
 		// fontMetrics: gui.NewQFontMetricsF(font),
 		width:       width,
 		cellwidth:   width + float64(letterSpace),
@@ -408,6 +414,10 @@ func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawF
 
 	editor.putLog("newRawFont debug A")
 
+	// fontBytes, _ := os.ReadFile(regular)
+	file, _ := os.Open(regular)
+	fontface, _ := font.ParseTTF(file)
+
 	regularFont = gui.NewQRawFont2(
 		regular,
 		float64(size),
@@ -439,9 +449,10 @@ func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawF
 	}
 
 	return &RawFont{
-		regular: regularFont,
-		bold:    boldFont,
-		italic:  italicFont,
+		regular:  regularFont,
+		bold:     boldFont,
+		italic:   italicFont,
+		fontface: &fontface,
 	}
 }
 

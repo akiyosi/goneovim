@@ -24,6 +24,8 @@ github.com/go-text/typesetting v0.0.0-20231206174126-ce41cc83e028 h1:Ml7tuFjpWEa
 github.com/go-text/typesetting v0.0.0-20231206174126-ce41cc83e028/go.mod h1:MrLApvxyzSW0MhQqLc484jkUWYX4wsEvEqDosB5Io80=
 github.com/go-text/typesetting v0.0.0-20231219150831-cc0073efdbb4 h1:MKnPksPov832ct2c9a40QUB+2lgf2pBo7N92TxAAFA8=
 github.com/go-text/typesetting v0.0.0-20231219150831-cc0073efdbb4/go.mod h1:MrLApvxyzSW0MhQqLc484jkUWYX4wsEvEqDosB5Io80=
+github.com/go-text/typesetting v0.0.0-20231221124458-48cc05a56658 h1:KeDKnC99J3l5qJK4zV13Au2UwPn4N20TnIlM0YvILj8=
+github.com/go-text/typesetting v0.0.0-20231221124458-48cc05a56658/go.mod h1:d22AnmeKq/on0HNv73UFriMKc4Ez6EqZAofLhAzpSzI=
 github.com/gopherjs/gopherjs v0.0.0-20190411002643-bd77b112433e h1:XWcjeEtTFTOVA9Fs1w7n2XBftk5ib4oZrhzWk0B+3eA=
 github.com/gopherjs/gopherjs v0.0.0-20190411002643-bd77b112433e/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/jessevdk/go-flags v1.5.0 h1:1jKYvbxEjfUl0fmqTCOfonvskHHXMjBySTLW4y9LFvc=
@@ -65,7 +67,10 @@ golang.org/x/sys v0.0.0-20210320140829-1e4c9ba3b0c4/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.6.0 h1:MVltZSvRTcU2ljQOhs94SXPftV6DCNnZViHeQps87pQ=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
+golang.org/x/text v0.14.0 h1:ScX5w1eTa3QqT8oi6+ziP7dTV1S2+ALU0bI+0zXKWiQ=
+golang.org/x/text v0.14.0/go.mod h1:18ZOQIKpY8NJVqYksKHtTdi31H5itFRjB5/qKTNYzSU=
 golang.org/x/tools v0.0.0-20190420181800-aa740d480789 h1:FF0rjo15h51+N6642mf5S3QuplmKo2aCrJUYkHTx85s=
 golang.org/x/tools v0.0.0-20190420181800-aa740d480789/go.mod h1:LCzVGOaR6xXOjkQ3onu1FJEFr0SW1gC7cKk1uF8kGRs=
 golang.org/x/tools v0.1.12 h1:VveCTK38A2rkS8ZqFY25HIDFscX5X9OoEhJd3quQmXU=
 golang.org/x/tools v0.1.12/go.mod h1:hNGJHUnrk76NpqgfD5Aqm5Crs+Hm0VOH/i9J2+nxYbc=
+golang.org/x/tools v0.6.0/go.mod h1:Xwgl3UAJ/d3gWutnCtw505GrjyAbvKui8lOU390QaIU=
