@@ -2598,15 +2598,13 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 
 	editor.putLog("newTextCache 8:", text)
 
-	// // qfont is slow
+	// // Using qfont method is slow
 	// tl := gui.NewQTextLayout2(text)
 	// tl.SetFont(fontfallbacked.qfont)
 	// tl.BeginLayout()
 	// line := tl.CreateLine()
 	// tl.EndLayout()
 	// glyphruns := line.GlyphRuns(-1, -1)
-
-	editor.putLog("newTextCache 12:", text)
 
 	// // DEBUG log
 	// if w.grid != 1 && !w.isMsgGrid {
@@ -2654,6 +2652,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		xpos += fontfallbacked.cellwidth
 	}
 
+	editor.putLog("newTextCache 9:", text)
+
 	textInput := []rune(text)
 	shaper := shaping.HarfbuzzShaper{}
 	out := shaper.Shape(shaping.Input{
@@ -2666,6 +2666,9 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		Script:    language.Latin,
 		Language:  language.NewLanguage("EN"),
 	})
+
+	editor.putLog("newTextCache 10:", text)
+
 	glyphIdx := []uint{}
 	for _, glyph := range out.Glyphs {
 		glyphIdx = append(glyphIdx, uint(glyph.GlyphID))
@@ -2681,6 +2684,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		glyphrun,
 	)
 
+	editor.putLog("newTextCache 11:", text)
+
 	// for _, glyphrun := range glyphruns {
 	// 	w.imagePainter.DrawGlyphRun(
 	// 		core.NewQPointF3(
@@ -2691,10 +2696,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	// 	)
 	// }
 
-	editor.putLog("newTextCache 14:", text)
-
 	w.imagePainter.End()
-	// pi.DestroyQPainter()
 
 	editor.putLog("finished creating word cache:", text)
 
@@ -2705,7 +2707,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		)
 	}
 
-	editor.putLog("newTextCache 15:", text)
+	editor.putLog("newTextCache 12:", text)
 
 	if highlight.italic && fontfallbacked.rawfont.italic == nil {
 		transform := gui.NewQTransform2()
@@ -2716,7 +2718,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		)
 	}
 
-	editor.putLog("newTextCache 16:", text)
+	editor.putLog("newTextCache 13:", text)
 
 	return image
 }

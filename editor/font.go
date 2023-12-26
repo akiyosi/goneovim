@@ -418,13 +418,15 @@ func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawF
 	file, _ := os.Open(regular)
 	fontface, _ := font.ParseTTF(file)
 
+	editor.putLog("newRawFont debug B")
+
 	regularFont = gui.NewQRawFont2(
 		regular,
 		float64(size),
 		gui.QFont__PreferDefaultHinting,
 	)
 
-	editor.putLog("newRawFont debug B")
+	editor.putLog("newRawFont debug C")
 
 	if bold != "" {
 		boldFont = gui.NewQRawFont2(
@@ -438,7 +440,7 @@ func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawF
 		boldFont = regularFont
 	}
 
-	editor.putLog("newRawFont debug C")
+	editor.putLog("newRawFont debug D")
 
 	if italicPath != "" {
 		italicFont = gui.NewQRawFont2(
