@@ -22,6 +22,8 @@ import (
 	"github.com/akiyosi/qt/widgets"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
+
+	"github.com/go-text/typesetting/fontscan"
 )
 
 var editor *Editor
@@ -110,12 +112,14 @@ type Editor struct {
 	colors                 *ColorPalette
 	notify                 chan *Notify
 	fontCh                 chan []*Font
+	loadSysFontCh          chan error
 	cbChan                 chan *string
 	chUiPrepared           chan bool
 	geometryUpdateTimer    *time.Timer
 	sysTray                *widgets.QSystemTrayIcon
 	side                   *WorkspaceSide
 	savedGeometry          *core.QByteArray
+	fontmap                *fontscan.FontMap
 	prefixToMapMetaKey     string
 	macAppArg              string
 	extFontFamily          string
@@ -234,6 +238,13 @@ func InitEditor(options Options, args []string) {
 	// load config
 	e.configDir, e.config = newConfig(e.homeDir, e.opts.NoConfig)
 	e.putLog("Detecting the goneovim configuration directory:", e.configDir)
+
+	e.loadSysFontCh = make(chan error, 2)
+	go func() {
+		e.fontmap = fontscan.NewFontMap(nil)
+		e.loadSysFontCh <- e.fontmap.UseSystemFonts("")
+	}()
+
 	e.overwriteConfigByCLIOption()
 
 	// get parent process id
@@ -259,6 +270,12 @@ func InitEditor(options Options, args []string) {
 
 	e.extFontFamily = e.config.Editor.FontFamily
 	e.extFontSize = e.config.Editor.FontSize
+
+	loadSysFontErr := <-e.loadSysFontCh
+	if loadSysFontErr != nil {
+		panic(loadSysFontErr)
+	}
+
 	e.fontCh = make(chan []*Font, 100)
 	go func() {
 		e.fontCh <- parseFont(

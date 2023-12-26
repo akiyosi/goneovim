@@ -4,10 +4,10 @@ import (
 	"math"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/akiyosi/qt/gui"
 	"github.com/go-text/typesetting/font"
-	"github.com/go-text/typesetting/fontscan"
 )
 
 // Font is
@@ -309,21 +309,19 @@ func (f *Font) horizontalAdvance(str string) (width float64) {
 
 func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawFont {
 	editor.putLog("newRawFont debug 1")
-	// Detect font file path
-	// create FontMap
-	fm := fontscan.NewFontMap(nil)
 
 	editor.putLog("newRawFont debug 2")
 
-	// load system font
-	err := fm.UseSystemFonts("")
-	if err != nil {
-		panic(err)
-	}
+	// // load system font
+	// fm := fontscan.NewFontMap(nil)
+	// err = fm.UseSystemFonts("")
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	editor.putLog("newRawFont debug 3")
 
-	locations := fm.FindSystemFonts(fontFamilyName)
+	locations := editor.fontmap.FindSystemFonts(fontFamilyName)
 	if len(locations) == 0 {
 		return nil
 	}
@@ -333,6 +331,7 @@ func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawF
 	var regularFont *gui.QRawFont
 	var boldFont *gui.QRawFont
 	var italicFont *gui.QRawFont
+	var fontface font.Face
 
 	var italicPath string
 
@@ -414,27 +413,40 @@ func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawF
 
 	editor.putLog("newRawFont debug A")
 
-	// fontBytes, _ := os.ReadFile(regular)
-	file, _ := os.Open(regular)
-	fontface, _ := font.ParseTTF(file)
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		file, _ := os.Open(regular)
+		fontface, _ = font.ParseTTF(file)
+	}()
 
 	editor.putLog("newRawFont debug B")
 
-	regularFont = gui.NewQRawFont2(
-		regular,
-		float64(size),
-		gui.QFont__PreferDefaultHinting,
-	)
-
-	editor.putLog("newRawFont debug C")
-
-	if bold != "" {
-		boldFont = gui.NewQRawFont2(
-			bold,
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		regularFont = gui.NewQRawFont2(
+			regular,
 			float64(size),
 			gui.QFont__PreferDefaultHinting,
 		)
-	}
+	}()
+
+	editor.putLog("newRawFont debug C")
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if bold != "" {
+			boldFont = gui.NewQRawFont2(
+				bold,
+				float64(size),
+				gui.QFont__PreferDefaultHinting,
+			)
+		}
+	}()
 
 	if boldFont == nil {
 		boldFont = regularFont
@@ -442,13 +454,19 @@ func newRawFont(fontFamilyName string, size int, weight gui.QFont__Weight) *RawF
 
 	editor.putLog("newRawFont debug D")
 
-	if italicPath != "" {
-		italicFont = gui.NewQRawFont2(
-			italicPath,
-			float64(size),
-			gui.QFont__PreferDefaultHinting,
-		)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if italicPath != "" {
+			italicFont = gui.NewQRawFont2(
+				italicPath,
+				float64(size),
+				gui.QFont__PreferDefaultHinting,
+			)
+		}
+	}()
+
+	wg.Wait()
 
 	return &RawFont{
 		regular:  regularFont,
