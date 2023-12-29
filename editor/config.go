@@ -345,7 +345,7 @@ func (c *gonvimConfig) init() {
 	// Indent guide
 	c.Editor.IndentGuide = false
 	c.Editor.IndentGuideIgnoreFtList = []string{"markdown", "md", "txt", "text", "help", "json", "nerdtree"}
-	c.Editor.CharsScaledLineHeight = []string{"", "", "", "", "", "", "", "", "", "", "│"}
+	c.Editor.CharsScaledLineHeight = []string{"", "", "", "", "", "", "", "", "", "", "│", "▎"}
 	c.Editor.OptionsToUseGuideWidth = "tabstop"
 
 	c.Editor.LineToScroll = 1
