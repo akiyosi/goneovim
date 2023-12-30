@@ -61,6 +61,8 @@ type HlTextKey struct {
 // HlDecorationKey is used in screen cache
 type HlDecorationKey struct {
 	fg            *RGBA
+	bg            *RGBA
+	sp            *RGBA
 	underline     bool
 	undercurl     bool
 	strikethrough bool
@@ -2399,7 +2401,9 @@ func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 		// If window has own font setting
 		w.cache.set(
 			HlDecorationKey{
-				fg:            highlight.fg(),
+				fg:            highlight.foreground,
+				bg:            highlight.background,
+				sp:            highlight.special,
 				underline:     highlight.underline,
 				undercurl:     highlight.undercurl,
 				strikethrough: highlight.strikethrough,
@@ -2413,7 +2417,9 @@ func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 		// screen text cache
 		w.s.cache.set(
 			HlDecorationKey{
-				fg:            highlight.fg(),
+				fg:            highlight.foreground,
+				bg:            highlight.background,
+				sp:            highlight.special,
 				underline:     highlight.underline,
 				undercurl:     highlight.undercurl,
 				strikethrough: highlight.strikethrough,
@@ -2430,31 +2436,23 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 	font := w.getFont()
 
 	width := font.cellwidth
-	if !isNormalWidth {
-		width = math.Ceil(w.s.runeTextWidth(font, char))
-	}
 
-	// Set smooth scroll offset
-	var horScrollPixels, verScrollPixels int
-	if w.s.ws.mouseScroll != "" {
-		horScrollPixels += w.scrollPixels[0]
-	}
-	if w.lastScrollphase != core.Qt__NoScrollPhase {
-		verScrollPixels = w.scrollPixels2
-	}
-	if editor.config.Editor.LineToScroll == 1 {
-		verScrollPixels += w.scrollPixels[1]
-	}
+	// // Set smooth scroll offset
+	// var horScrollPixels, verScrollPixels int
+	// if w.s.ws.mouseScroll != "" {
+	// 	horScrollPixels += w.scrollPixels[0]
+	// }
+	// if w.lastScrollphase != core.Qt__NoScrollPhase {
+	// 	verScrollPixels = w.scrollPixels2
+	// }
+	// if editor.config.Editor.LineToScroll == 1 {
+	// 	verScrollPixels += w.scrollPixels[1]
+	// }
 
-	// QImage default device pixel ratio is 1.0,
-	// So we set the correct device pixel ratio
-	image := gui.NewQImage2(
-		core.NewQRectF4(
-			0,
-			0,
-			w.devicePixelRatio*width,
-			w.devicePixelRatio*float64(font.lineHeight),
-		).Size().ToSize(),
+	// create QImage
+	image := gui.NewQImage3(
+		int(math.Ceil(w.devicePixelRatio*width)),
+		int(w.devicePixelRatio*float64(font.lineHeight)),
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 	image.SetDevicePixelRatio(w.devicePixelRatio)
@@ -2462,7 +2460,7 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 
 	pi := gui.NewQPainter2(image)
 
-	w.drawDecoration(pi, highlight, font, 0, int(width), verScrollPixels, horScrollPixels)
+	w.drawDecoration(pi, highlight, font, 0, 0, int(width), 0, 0)
 
 	pi.DestroyQPainter()
 
@@ -2655,6 +2653,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		}
 
 		highlight := line[x].highlight
+
 		if !highlight.underline &&
 			!highlight.undercurl &&
 			!highlight.strikethrough &&
@@ -2669,11 +2668,13 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 
 		// if CachedDrawing is disabled
 		if !editor.config.Editor.CachedDrawing {
-			w.drawDecoration(p, highlight, font, x, x+1, verScrollPixels, horScrollPixels)
+			w.drawDecoration(p, highlight, font, y, x, x+1, verScrollPixels, horScrollPixels)
 		} else { // if CachedDrawing is enabled
 			var image *gui.QImage
 			imagev, err := cache.get(HlDecorationKey{
-				fg:            highlight.fg(),
+				fg:            highlight.foreground,
+				bg:            highlight.background,
+				sp:            highlight.special,
 				underline:     highlight.underline,
 				undercurl:     highlight.undercurl,
 				strikethrough: highlight.strikethrough,
@@ -2698,9 +2699,10 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 			)
 		}
 	}
+
 }
 
-func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Font, x1, x2, verScrollPixels, horScrollPixels int) {
+func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Font, row, x1, x2, verScrollPixels, horScrollPixels int) {
 	pen := gui.NewQPen()
 	var color *gui.QColor
 	sp := highlight.special
@@ -2708,7 +2710,7 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 		color = sp.QColor()
 		pen.SetColor(color)
 	} else {
-		fg := highlight.foreground
+		fg := highlight.fg()
 		color = fg.QColor()
 		pen.SetColor(color)
 	}
@@ -2725,12 +2727,14 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 		space2 = float64(font.lineSpace) / 2.0
 	}
 	descent := float64(font.height) - font.ascent
+
 	weight := int(math.Ceil(float64(font.height) / 16.0))
 	if weight < 1 {
 		weight = 1
 	}
+
 	if highlight.strikethrough {
-		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent)*0.65 + float64(space2/2)
+		Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent)*0.65 + float64(space2/2)
 		p.FillRect5(
 			int(start)+horScrollPixels,
 			int(Y),
@@ -2740,7 +2744,7 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 		)
 	}
 	if highlight.underline {
-		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
+		Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
 		p.FillRect5(
 			int(start)+horScrollPixels,
 			int(Y),
@@ -2748,6 +2752,7 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 			weight,
 			color,
 		)
+
 	}
 	if highlight.undercurl {
 		amplitude := descent*0.65 + float64(space2)
@@ -2757,7 +2762,7 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 		}
 		freq := 1.0
 		phase := 0.0
-		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent+descent*0.3) + float64(space2/2) + space
+		Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent+descent*0.3) + float64(space2/2) + space
 		Y2 := Y + amplitude*math.Sin(0)
 		point := core.NewQPointF3(start+float64(horScrollPixels), Y2)
 		path := gui.NewQPainterPath2(point)
@@ -2768,8 +2773,8 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 		p.DrawPath(path)
 	}
 	if highlight.underdouble {
-		Y1 := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.1 + float64(font.lineSpace/2) + space
-		Y2 := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.6 + float64(font.lineSpace/2) + space
+		Y1 := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.1 + float64(font.lineSpace/2) + space
+		Y2 := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.6 + float64(font.lineSpace/2) + space
 		doubleLineWeight := int(math.Ceil(float64(font.height) / 20.0))
 		p.FillRect5(
 			int(start)+horScrollPixels,
@@ -2796,7 +2801,7 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 		pen.SetColor(color)
 		pen.SetStyle(core.Qt__DotLine)
 		p.SetPen(pen)
-		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
+		Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
 
 		p.DrawLine3(
 			int(start)+horScrollPixels,
@@ -2806,7 +2811,7 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 		)
 	}
 	if highlight.underdashed {
-		Y := float64(0*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
+		Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
 		p.FillRect5(
 			int(start)+int(math.Ceil(font.cellwidth*0.25))+horScrollPixels,
 			int(Y),
