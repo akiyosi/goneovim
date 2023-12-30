@@ -40,8 +40,8 @@ endif
 
 
 app: ## Build goneovim
-	@test -f ./editor/moc.go & $(GOQTMOC) desktop ./cmd/goneovim && \
-	go mod vendor  && \
+	@go mod vendor  ; \
+	test -f ./editor/moc.go & $(GOQTMOC) desktop ./cmd/goneovim && \
 	go generate && \
 	$(GOQTDEPLOY) build desktop ./cmd/goneovim && \
 	cp -pR runtime $(RUNTIME_DIR)
