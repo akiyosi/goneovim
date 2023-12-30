@@ -399,6 +399,7 @@ func (c *gonvimConfig) init() {
 
 	// ----
 
+	c.MiniMap.Disable = true
 	c.MiniMap.Width = 110
 
 	// ----
