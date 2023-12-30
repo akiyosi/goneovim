@@ -41,6 +41,7 @@ endif
 
 app: ## Build goneovim
 	@test -f ./editor/moc.go & $(GOQTMOC) desktop ./cmd/goneovim && \
+	go mod vendor  && \
 	go generate && \
 	$(GOQTDEPLOY) build desktop ./cmd/goneovim && \
 	cp -pR runtime $(RUNTIME_DIR)
@@ -108,17 +109,20 @@ clean: ## Delete pre-built application binaries and Moc files.
 	@rm -fr editor/*moc*
 
 linux: ## Build binaries for Linux using Docker.
-	@cd cmd/goneovim && \
+	@go generate && \
+	cd cmd/goneovim && \
 	$(GOQTDEPLOY) -docker build linux_static && \
 	cp -pR ../../runtime $(DEPLOYMENT_LINUX)
 
 windows: ## Build binaries for Windows using Docker.
-	@cd cmd/goneovim && \
+	@go generate && \
+	cd cmd/goneovim && \
 	$(GOQTDEPLOY) -docker build windows_64_static && \
 	cp -pR ../../runtime $(DEPLOYMENT_WINDOWS)
 
 darwin: ## Build binaries for MacOS using Vagrant.
-	@cd cmd/goneovim && \
+	@go generate && \
+	cd cmd/goneovim && \
 	$(GOQTDEPLOY) -vagrant build darwin/darwin && \
 	cp -pR ../../runtime $(DEPLOYMENT_WINDOWS)
 
