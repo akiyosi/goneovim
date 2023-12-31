@@ -800,8 +800,9 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	}
 
 	win.redrawMutex.Lock()
-	winOldCols := win.cols
-	winOldRows := win.rows
+
+	// winOldCols := win.cols
+	// winOldRows := win.rows
 
 	win.lenLine = lenLine
 	win.lenContent = lenContent
@@ -813,7 +814,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win.rows = rows
 	win.redrawMutex.Unlock()
 
-	s.resizeIndependentFontGrid(win, winOldCols, winOldRows)
+	// s.resizeIndependentFontGrid(win, winOldCols, winOldRows)
 
 	font := win.getFont()
 
