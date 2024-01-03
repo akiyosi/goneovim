@@ -20,10 +20,11 @@ type ColorStr struct {
 type Tooltip struct {
 	widgets.QWidget
 
-	s          *Screen
-	text       []*ColorStr
-	font       *Font
-	widthSlice []float64
+	s             *Screen
+	text          []*ColorStr
+	font          *Font
+	fallbackfonts []*Font
+	widthSlice    []float64
 
 	textWidth  float64
 	msgHeight  float64
@@ -43,27 +44,11 @@ type Tooltip struct {
 	backgrond *RGBA
 }
 
-func resolveMetricsInFontFallback(font *Font, fallbackfonts []*Font, char string) float64 {
-	if len(fallbackfonts) == 0 {
-		return font.fontMetrics.HorizontalAdvance(char, -1)
-	}
-
-	hasGlyph := font.hasGlyph(char)
-	if hasGlyph {
-		return font.fontMetrics.HorizontalAdvance(char, -1)
-	} else {
-		for _, ff := range fallbackfonts {
-			hasGlyph = ff.hasGlyph(char)
-			if hasGlyph {
-				return ff.fontMetrics.HorizontalAdvance(char, -1)
-			}
-		}
-	}
-
-	return font.fontMetrics.HorizontalAdvance(char, -1)
-}
-
 func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
+	// setFont(p)
+	p.SetFont(getFont().qfont)
+	font := p.Font()
+
 	if t.text == nil {
 		return
 	}
@@ -230,6 +215,10 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 	}
 }
 
+func (t *Tooltip) getFont() *Font {
+	return t.font
+}
+
 func (t *Tooltip) setBgColor(color *RGBA) {
 	t.background = color
 }
@@ -249,8 +238,8 @@ func (t *Tooltip) setRadius(xr, yr float64) {
 	t.yRadius = yr
 }
 
-func (t *Tooltip) getFont() *Font {
-	return t.font
+func (t *Tooltip) setQpainterFont(p *gui.QPainter) {
+	p.SetFont(t.font.qfont)
 }
 
 func (t *Tooltip) paint(event *gui.QPaintEvent) {
@@ -274,13 +263,14 @@ func (t *Tooltip) clearText() {
 	t.text = newText
 }
 
-func (t *Tooltip) updateText(hl *Highlight, str string, letterspace int, font *gui.QFont) {
+// func (t *Tooltip) updateText(hl *Highlight, str string, letterspace float64, font *gui.QFont) {
+func (t *Tooltip) updateText(hl *Highlight, str string, letterspace float64, font *gui.QFont) {
 	if t.font == nil {
 		return
 	}
 
 	fontMetrics := gui.NewQFontMetricsF(font)
-	cellwidth := fontMetrics.HorizontalAdvance("w", -1) + float64(letterspace)
+	cellwidth := fontMetrics.HorizontalAdvance("w", -1) + letterspace
 
 	// rune text
 	r := []rune(str)
@@ -292,8 +282,8 @@ func (t *Tooltip) updateText(hl *Highlight, str string, letterspace int, font *g
 		// detect char width based cell width
 		w := cellwidth
 		for {
-			// cwidth := fontMetrics.HorizontalAdvance(string(rr), -1)
-			cwidth := resolveMetricsInFontFallback(t.font, t.fallbackfonts, string(rr))
+
+			cwidth := fontMetrics.HorizontalAdvance(string(rr), -1)
 			if cwidth <= w {
 				break
 			}

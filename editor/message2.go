@@ -97,9 +97,23 @@ func (m *Messages) msgShow(args []interface{}, bulkmsg bool) {
 			if !ok {
 				continue
 			}
-			msg.updateText(hl, textChunk)
+			msg.updateText(
+				hl,
+				textChunk,
+				float64(m.ws.screen.font.letterSpace),
+				resolveFontFallback(
+					m.ws.screen.font,
+					m.ws.screen.fallbackfonts,
+					textChunk,
+				).qfont,
+			)
 			if bulkmsg {
-				msg.updateText(hl, "\n")
+				msg.updateText(
+					hl,
+					"\n",
+					float64(m.ws.screen.font.letterSpace),
+					m.ws.screen.font.qfont,
+				)
 			}
 		}
 
@@ -187,7 +201,16 @@ func (m *Messages) updateFont() {
 		for _, colorStr := range oldText {
 			hl := colorStr.hl
 			text := colorStr.str
-			msg.updateText(hl, text)
+			msg.updateText(
+				hl,
+				text,
+				float64(m.ws.screen.font.letterSpace),
+				resolveFontFallback(
+					m.ws.screen.font,
+					m.ws.screen.fallbackfonts,
+					text,
+				).qfont,
+			)
 			msg.update()
 			newMsgs = append(newMsgs, msg)
 		}

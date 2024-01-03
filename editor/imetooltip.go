@@ -189,23 +189,25 @@ func (i *IMETooltip) parsePreeditString(preeditStr string) {
 	if preeditStr != "" {
 		r := []rune(preeditStr)
 
+		letterSpace := float64(i.s.ws.font.letterSpace)
+
 		if length > 0 {
 			if start > 0 {
-				i.updateText(g, string(r[:start]), i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(g, string(r[:start]), letterSpace, i.getFont().qfont)
 				if start+length < len(r) {
-					i.updateText(h, string(r[start:start+length]), i.s.ws.font.letterSpace, i.getFont().qfont)
-					i.updateText(g, string(r[start+length:]), i.s.ws.font.letterSpace, i.getFont().qfont)
+					i.updateText(h, string(r[start:start+length]), letterSpace, i.getFont().qfont)
+					i.updateText(g, string(r[start+length:]), letterSpace, i.getFont().qfont)
 				} else {
-					i.updateText(h, string(r[start:]), i.s.ws.font.letterSpace, i.getFont().qfont)
+					i.updateText(h, string(r[start:]), letterSpace, i.getFont().qfont)
 				}
 			} else if start == 0 && length < len(r) {
-				i.updateText(h, string(r[0:length]), i.s.ws.font.letterSpace, i.getFont().qfont)
-				i.updateText(g, string(r[length:]), i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(h, string(r[0:length]), letterSpace, i.getFont().qfont)
+				i.updateText(g, string(r[length:]), letterSpace, i.getFont().qfont)
 			} else {
-				i.updateText(g, preeditStr, i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(g, preeditStr, letterSpace, i.getFont().qfont)
 			}
 		} else {
-			i.updateText(g, preeditStr, i.s.ws.font.letterSpace, i.getFont().qfont)
+			i.updateText(g, preeditStr, letterSpace, i.getFont().qfont)
 		}
 	}
 }
