@@ -57,7 +57,6 @@ func initFontNew(family string, size float64, weight gui.QFont__Weight, stretch,
 
 	font.SetFamily(family)
 	font.SetPointSizeF(size)
-	font.SetWeight(int(gui.QFont__Normal))
 	font.SetWeight(int(weight))
 	font.SetStretch(stretch)
 
