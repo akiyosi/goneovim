@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unicode"
 	"unsafe"
 
 	"github.com/akiyosi/goneovim/util"
@@ -2111,17 +2110,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				continue
 			}
 
-			// wsfont.hasGlyph(line[x].char)
-
-			// font fallbacking manualy
-			if !editor.config.Editor.CachedDrawing {
-				if w.font == nil {
-					p.SetFont(resolveFontFallback(w.s.font, w.s.fallbackfonts, line[x].char).qfont)
-				} else {
-					p.SetFont(resolveFontFallback(w.font, w.fallbackfonts, line[x].char).qfont)
-				}
-			}
-
 			w.drawTextInPos(
 				p,
 				int(float64(x)*wsfont.cellwidth),
@@ -2248,19 +2236,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				continue
 			}
 
-			// font fallbacking manualy
-			if !editor.config.Editor.CachedDrawing {
-				if w.s.fontwide != nil && w.font == nil {
-					p.SetFont(resolveFontFallback(w.s.fontwide, w.s.fallbackfontwides, line[x].char).qfont)
-				} else {
-					if w.font == nil {
-						p.SetFont(resolveFontFallback(w.s.font, w.s.fallbackfonts, line[x].char).qfont)
-					} else {
-						p.SetFont(resolveFontFallback(w.font, w.fallbackfonts, line[x].char).qfont)
-					}
-				}
-			}
-
 			w.drawTextInPos(
 				p,
 				int(float64(x)*wsfont.cellwidth),
@@ -2329,6 +2304,19 @@ func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string
 	if text == "" {
 		return
 	}
+
+	var fontfallbacked *Font
+	if !isASCII(text) && w.font == nil && w.s.fontwide != nil {
+		fontfallbacked = resolveFontFallback(w.s.fontwide, w.s.fallbackfontwides, text)
+	} else {
+		if w.font == nil {
+			fontfallbacked = resolveFontFallback(w.s.font, w.s.fallbackfonts, text)
+		} else {
+			fontfallbacked = resolveFontFallback(w.font, w.fallbackfonts, text)
+		}
+	}
+
+	p.SetFont(fontfallbacked.qfont)
 
 	font := p.Font()
 	fg := highlight.fg()
@@ -2512,7 +2500,7 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 
 	font := w.getFont()
 	var fontfallbacked *Font
-	if !isNormalWidth && w.font == nil && w.s.fontwide != nil {
+	if !isASCII(text) && w.font == nil && w.s.fontwide != nil {
 		fontfallbacked = resolveFontFallback(w.s.fontwide, w.s.fallbackfontwides, text)
 	} else {
 		if w.font == nil {
@@ -2537,7 +2525,6 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	width := float64(len(text)-1)*font.cellwidth + font.italicWidth
 	fg := highlight.fg()
 	if !isNormalWidth {
-		// width = math.Ceil(w.s.runeTextWidth(font, text))
 		width = fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
 	}
 
@@ -2865,22 +2852,22 @@ func (w *Window) getFillpatternAndTransparent(hl *Highlight) (core.Qt__BrushStyl
 	return pattern, color, t
 }
 
-func isCJK(char rune) bool {
-	if unicode.Is(unicode.Han, char) {
-		return true
-	}
-	if unicode.Is(unicode.Hiragana, char) {
-		return true
-	}
-	if unicode.Is(unicode.Katakana, char) {
-		return true
-	}
-	if unicode.Is(unicode.Hangul, char) {
-		return true
-	}
-
-	return false
-}
+// func isCJK(char rune) bool {
+// 	if unicode.Is(unicode.Han, char) {
+// 		return true
+// 	}
+// 	if unicode.Is(unicode.Hiragana, char) {
+// 		return true
+// 	}
+// 	if unicode.Is(unicode.Katakana, char) {
+// 		return true
+// 	}
+// 	if unicode.Is(unicode.Hangul, char) {
+// 		return true
+// 	}
+//
+// 	return false
+// }
 
 // isNormalWidth is:
 // On Windows, HorizontalAdvance() may take a long time to get the width of CJK characters.
@@ -2892,21 +2879,23 @@ func (w *Window) isNormalWidth(char string) bool {
 		return true
 	}
 
-	// if ASCII
-	if char[0] <= 127 {
+	if isASCII(char) {
 		return true
 	}
 
-	// if CJK
-	if isCJK([]rune(char)[0]) {
-		return false
-	}
-
+	var fontfallbacked *Font
 	if w.font == nil {
-		return resolveFontFallback(w.s.font, w.s.fallbackfonts, char).fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
+		fontfallbacked = resolveFontFallback(w.s.font, w.s.fallbackfonts, char)
+	} else {
+		fontfallbacked = resolveFontFallback(w.font, w.fallbackfonts, char)
 	}
 
-	return resolveFontFallback(w.font, w.fallbackfonts, char).fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
+	return fontfallbacked.fontMetrics.HorizontalAdvance(char, -1) <= w.getFont().cellwidth
+}
+
+func isASCII(c string) bool {
+	r := []rune(c)[0]
+	return r >= 0 && r <= 127
 }
 
 func (w *Window) deleteExternalWin() {

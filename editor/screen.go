@@ -1498,9 +1498,7 @@ func (s *Screen) runeTextWidth(font *Font, text string) float64 {
 	ascii := 0
 	var buffer bytes.Buffer
 	for _, c := range []rune(text) {
-		if isCJK(c) {
-			cjk++
-		} else if c <= 127 {
+		if c >= 0 && c <= 127 {
 			ascii++
 		} else {
 			buffer.WriteString(string(c))

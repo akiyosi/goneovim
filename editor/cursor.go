@@ -242,7 +242,7 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 			0,
 			0,
 			width,
-			float64(font.height),
+			float64(c.font.height),
 		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
 	)
 
