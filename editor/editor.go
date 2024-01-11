@@ -142,6 +142,7 @@ type Editor struct {
 	notificationWidth      int
 	stopOnce               sync.Once
 	muMetaKey              sync.Mutex
+	geometryUpdateMutex    sync.RWMutex
 	doRestoreSessions      bool
 	isSetGuiColor          bool
 	isDisplayNotifications bool
@@ -656,19 +657,21 @@ func (e *Editor) connectAppSignals() {
 func (e *Editor) toEmmitGeometrySignal() {
 	for {
 		time.Sleep(100 * time.Millisecond)
+
+		e.geometryUpdateMutex.RLock()
 		if e.geometryUpdateTimer == nil {
+			e.geometryUpdateMutex.RUnlock()
 			continue
 		}
+
 		select {
 		case <-e.geometryUpdateTimer.C:
+			e.geometryUpdateMutex.RUnlock()
 			e.signal.GeometrySignal()
 		default:
+			e.geometryUpdateMutex.RUnlock()
 			continue
 		}
-		// wait
-		// e.geometryUpdates <- true
-		// editor.signal.GeometrySignal()
-
 	}
 }
 
@@ -681,6 +684,7 @@ func (e *Editor) resizeMainWindow() {
 		return
 	}
 
+	e.geometryUpdateMutex.Lock()
 	if e.geometryUpdateTimer == nil {
 		e.geometryUpdateTimer = time.NewTimer(200 * time.Millisecond)
 	} else {
@@ -692,7 +696,7 @@ func (e *Editor) resizeMainWindow() {
 		}
 		e.geometryUpdateTimer.Reset(200 * time.Millisecond)
 	}
-
+	e.geometryUpdateMutex.Unlock()
 }
 
 func (e *Editor) AdjustSizeBasedOnFontmetrics(windowWidth, windowHeight int) {
