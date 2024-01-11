@@ -432,7 +432,7 @@ func (e *Editor) addDockMenu() {
 	menu.SetAsDockMenu()
 }
 
-func parseFont(families string, size int, weight string, stretch, linespace, letterspace int) (fonts []*Font) {
+func parseFont(families string, size int, weight string, stretch, linespace, letterspace int) []*Font {
 	weight = strings.ToLower(weight)
 	var fontWeight gui.QFont__Weight
 	switch weight {
@@ -454,14 +454,28 @@ func parseFont(families string, size int, weight string, stretch, linespace, let
 		fontWeight = gui.QFont__Black
 	}
 
-	for _, f := range strings.Split(families, ",") {
-		fonts = append(
-			fonts,
-			initFontNew(strings.TrimSpace(f), float64(size), fontWeight, stretch, linespace, letterspace),
-		)
+	// for _, f := range strings.Split(families, ",") {
+	// 	fonts = append(
+	// 		fonts,
+	// 		initFontNew(strings.TrimSpace(f), float64(size), fontWeight, stretch, linespace, letterspace),
+	// 	)
+	// }
+
+	familiesSlice := strings.Split(families, ",")
+	fonts := make([]*Font, len(familiesSlice))
+
+	var wg sync.WaitGroup
+	for i, f := range familiesSlice {
+		wg.Add(1)
+		go func(index int, family string) {
+			defer wg.Done()
+			fonts[index] = initFontNew(strings.TrimSpace(family), float64(size), fontWeight, stretch, linespace, letterspace)
+		}(i, f)
 	}
 
-	return
+	wg.Wait()
+
+	return fonts
 }
 
 // setAppDirPath
