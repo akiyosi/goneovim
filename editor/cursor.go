@@ -468,7 +468,7 @@ func (c *Cursor) updateCursorShape() {
 	}
 	if c.ws.palette != nil {
 		if c.ws.palette.widget.IsVisible() {
-			fontMetrics := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+			fontMetrics := gui.NewQFontMetricsF(editor.font.qfont)
 			cellwidth = fontMetrics.HorizontalAdvance("w", -1)
 			height = int(math.Ceil(fontMetrics.Height()))
 			lineSpace = 0

@@ -78,8 +78,8 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 
 	label := widgets.NewQLabel(nil, 0)
 	label.SetStyleSheet(" * {background-color: rgba(0, 0, 0, 0)}")
-	size := int(editor.workspaces[editor.active].font.width * 1.33)
-	label.SetFont(gui.NewQFont2(editor.extFontFamily, size, 1, false))
+	// size := int(editor.workspaces[editor.active].font.width * 1.33)
+	label.SetFont(editor.font.qfont)
 	if utf8.RuneCountInString(message) > 50 {
 		label.SetWordWrap(true)
 	}
@@ -136,7 +136,7 @@ func newNotification(l NotifyLevel, p int, message string, options ...NotifyOpti
 		if opt.text != "" {
 			// * plugin install button
 			buttonLabel := widgets.NewQLabel(nil, 0)
-			buttonLabel.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
+			buttonLabel.SetFont(editor.font.qfont)
 			buttonLabel.SetFixedHeight(28)
 			buttonLabel.SetContentsMargins(10, 5, 10, 5)
 			buttonLabel.SetAlignment(core.Qt__AlignCenter)

@@ -328,7 +328,7 @@ func (e *Editor) getSvg(name string, color *RGBA) string {
 }
 
 func (e *Editor) initSVGS() {
-	e.iconSize = e.extFontSize * 11 / 9
+	e.iconSize = e.config.Editor.FontSize * 11 / 9
 	e.svgs = map[string]*SvgXML{}
 
 	e.svgs["default"] = &SvgXML{

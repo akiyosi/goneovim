@@ -118,7 +118,6 @@ type Editor struct {
 	savedGeometry          *core.QByteArray
 	prefixToMapMetaKey     string
 	macAppArg              string
-	extFontFamily          string
 	configDir              string
 	homeDir                string
 	version                string
@@ -138,7 +137,6 @@ type Editor struct {
 	startuptime            int64
 	iconSize               int
 	height                 int
-	extFontSize            int
 	notificationWidth      int
 	stopOnce               sync.Once
 	muMetaKey              sync.Mutex
@@ -258,13 +256,11 @@ func InitEditor(options Options, args []string) {
 
 	// e.setAppDirPath(home)
 
-	e.extFontFamily = e.config.Editor.FontFamily
-	e.extFontSize = e.config.Editor.FontSize
 	e.fontCh = make(chan []*Font, 100)
 	go func() {
 		e.fontCh <- parseFont(
-			editor.extFontFamily,
-			editor.extFontSize,
+			e.config.Editor.FontFamily,
+			e.config.Editor.FontSize,
 			e.config.Editor.FontWeight,
 			e.config.Editor.FontStretch,
 			e.config.Editor.Linespace,
@@ -828,10 +824,8 @@ func (e *Editor) setEnvironmentVariables() {
 }
 
 func (e *Editor) initAppFont() {
-	// e.extFontFamily = e.config.Editor.FontFamily
-	// e.extFontSize = e.config.Editor.FontSize
-	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QWidget")
-	e.app.SetFont(gui.NewQFont2(e.extFontFamily, e.extFontSize, 1, false), "QLabel")
+	e.app.SetFont(e.font.qfont, "QWidget")
+	e.app.SetFont(e.font.qfont, "QLabel")
 
 	e.putLog("initializing font")
 }
@@ -1116,6 +1110,8 @@ func (e *Editor) workspaceAdd() {
 
 	ws := newWorkspace()
 	ws.initUI()
+	ws.initFont()
+
 	ws.updateSize()
 	signal, redrawUpdates, guiUpdates, nvimCh, uiRemoteAttachedCh, _ := newNvim(ws.cols, ws.rows, e.ctx)
 	ws.registerSignal(signal, redrawUpdates, guiUpdates)

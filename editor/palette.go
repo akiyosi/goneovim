@@ -335,13 +335,12 @@ func (p *Palette) redrawAllContentInWindows() {
 }
 
 func (p *Palette) updateFont() {
-	font := gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false)
-	p.widget.SetFont(font)
-	p.pattern.SetFont(font)
+	p.widget.SetFont(editor.font.qfont)
+	p.pattern.SetFont(editor.font.qfont)
 }
 
 func (p *Palette) textLength() int {
-	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+	font := gui.NewQFontMetricsF(editor.font.qfont)
 	l := 0
 	if p.isHTMLText {
 		t := gui.NewQTextDocument(nil)
@@ -365,7 +364,7 @@ func (p *Palette) textLength() int {
 }
 
 func (p *Palette) cursorPos(x int) int {
-	font := gui.NewQFontMetricsF(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+	font := gui.NewQFontMetricsF(editor.font.qfont)
 	l := 0
 	if p.isHTMLText {
 		t := gui.NewQTextDocument(nil)

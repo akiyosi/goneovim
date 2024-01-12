@@ -373,7 +373,7 @@ func (ws *Workspace) registerSignal(signal *neovimSignal, redrawUpdates chan [][
 				content.SetFocusPolicy(core.Qt__NoFocus)
 				content.SetFrameShape(widgets.QFrame__NoFrame)
 				content.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-				content.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+				content.SetFont(editor.font.qfont)
 				content.SetIconSize(core.NewQSize2(editor.iconSize*3/4, editor.iconSize*3/4))
 				editor.side.items[i].content = content
 				editor.side.items[i].widget.Layout().AddWidget(content)
@@ -689,7 +689,7 @@ func (ws *Workspace) setCwd(cwd string) {
 			}
 
 			sideItem.label.SetText(wse.cwdlabel)
-			sideItem.label.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize-1, 1, false))
+			sideItem.label.SetFont(editor.font.qfont)
 			sideItem.cwdpath = path
 		}
 	}
@@ -788,6 +788,9 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	screenWidth := width - scrollbarWidth - minimapWidth
 	screenHeight := height - tablineHeight
 
+	if ws.screen.font == nil {
+		fmt.Println("nil!")
+	}
 	rw := screenWidth - int(math.Ceil(float64(int(float64(screenWidth)/ws.screen.font.cellwidth))*ws.screen.font.cellwidth))
 	rh := screenHeight % ws.screen.font.lineHeight
 	screenWidth -= rw
@@ -2638,7 +2641,7 @@ func newWorkspaceSideItem() *WorkspaceSideItem {
 	content.SetFocusPolicy(core.Qt__NoFocus)
 	content.SetFrameShape(widgets.QFrame__NoFrame)
 	content.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-	content.SetFont(gui.NewQFont2(editor.extFontFamily, editor.extFontSize, 1, false))
+	content.SetFont(editor.font.qfont)
 	content.SetIconSize(core.NewQSize2(editor.iconSize*3/4, editor.iconSize*3/4))
 
 	labelLayout.AddWidget(openIcon, 0, 0)
