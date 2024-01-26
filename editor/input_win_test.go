@@ -92,10 +92,47 @@ func TestWindowsEditor_convertKey(t *testing.T) {
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_8), core.Qt__AltModifier, "8", false, 1),
 			"<A-8>",
 		},
+		{
+			`convertKey() Windows Spanish keyboardlayout 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Space), core.Qt__NoModifier, "`", false, 1),
+			"`",
+		},
+		// TODO  Windows ``: two events are sent on the second key event. Prints: ``
+		{
+			`convertKey() Windows Spanish keyboardlayout 3`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiCircum), core.Qt__AltModifier, "[", false, 1),
+			"[",
+		},
+		{
+			`convertKey() Windows Spanish keyboardlayout 4`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Space), core.Qt__NoModifier, "^", false, 1),
+			"^",
+		},
+
+		{
+			`convertKey() Windows Spanish keyboardlayout 4`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_AsciiCircum), core.Qt__ShiftModifier, "^", false, 1),
+			"^",
+		},
+		{
+			`convertKey() Windows Spanish keyboardlayout 5`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, 0, core.Qt__ShiftModifier, "^", false, 1),
+			"^",
+		},
+		{
+			`convertKey() Windows Spanish keyboardlayout 6`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_E), core.Qt__NoModifier, "ê", false, 1),
+			"ê",
+		},
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()
 	for key, value := range e.specialKeys {
+
+		text := ""
+		if key == core.Qt__Key_Space {
+			text = " "
+		}
 		tests = append(
 			tests,
 			[]struct {
@@ -105,22 +142,22 @@ func TestWindowsEditor_convertKey(t *testing.T) {
 			}{
 				{
 					`convertKey() Windows special keys`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__NoModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__NoModifier, text, false, 1),
 					fmt.Sprintf("<%s>", value),
 				},
 				{
 					`convertKey() Windows special keys with Ctrl`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__ControlModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__ControlModifier, text, false, 1),
 					fmt.Sprintf("<C-%s>", value),
 				},
 				{
 					`convertKey() Windows special keys with Alt`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__AltModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__AltModifier, text, false, 1),
 					fmt.Sprintf("<A-%s>", value),
 				},
 				{
 					`convertKey() Windows special keys with Meta`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__MetaModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__MetaModifier, text, false, 1),
 					fmt.Sprintf("<%s>", value),
 				},
 			}...,

@@ -132,6 +132,47 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_L), core.Qt__AltModifier|core.Qt__ShiftModifier, "|", false, 1),
 			"|",
 		},
+
+		{
+			`convertKey() MacOS spanish keyboardlayout 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Plus), core.Qt__AltModifier, "]", false, 1),
+			"]",
+		},
+		{
+			`convertKey() MacOS spanish keyboardlayout 2`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BracketLeft), core.Qt__AltModifier, "[", false, 1),
+			"[",
+		},
+		{
+			`convertKey() MacOS spanish keyboardlayout 3`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Ccedilla), core.Qt__AltModifier, "}", false, 1),
+			"}",
+		},
+		{
+			`convertKey() MacOS spanish keyboardlayout 4`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BraceLeft), core.Qt__AltModifier, "{", false, 1),
+			"{",
+		},
+		{
+			`convertKey() MacOS spanish keyboardlayout 5`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_1), core.Qt__AltModifier, "|", false, 1),
+			"|",
+		},
+		{
+			`convertKey() MacOS spanish keyboardlayout 6`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_2), core.Qt__AltModifier, "@", false, 1),
+			"@",
+		},
+		{
+			`convertKey() MacOS spanish keyboardlayout 7`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_6), core.Qt__AltModifier, "¬", false, 1),
+			"¬",
+		},
+		{
+			`convertKey() MacOS spanish keyboardlayout 8`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_3), core.Qt__AltModifier, "#", false, 1),
+			"#",
+		},
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()
@@ -139,6 +180,11 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 	e.config.Editor.Macmeta = false
 
 	for key, value := range e.specialKeys {
+
+		text := ""
+		if key == core.Qt__Key_Space {
+			text = " "
+		}
 		tests = append(
 			tests,
 			[]struct {
@@ -148,22 +194,22 @@ func TestDarwinEditor_convertKey(t *testing.T) {
 			}{
 				{
 					`convertKey() MacOS special keys`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__NoModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__NoModifier, text, false, 1),
 					fmt.Sprintf("<%s>", value),
 				},
 				{
 					`convertKey() MacOS special keys with Ctrl`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__ControlModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__ControlModifier, text, false, 1),
 					fmt.Sprintf("<D-%s>", value),
 				},
 				{
 					`convertKey() MacOS special keys with Alt`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__AltModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__AltModifier, text, false, 1),
 					fmt.Sprintf("<A-%s>", value),
 				},
 				{
 					`convertKey() MacOS special keys with Meta`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__MetaModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__MetaModifier, text, false, 1),
 					fmt.Sprintf("<C-%s>", value),
 				},
 			}...,

@@ -97,10 +97,20 @@ func TestLinuxEditor_convertKey(t *testing.T) {
 			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_Space), core.Qt__ControlModifier, string("\u0000"), false, 1),
 			"<C-Space>",
 		},
+
+		{
+			`convertKey() Linux Spanish keyboardlayout 1`,
+			gui.NewQKeyEvent(core.QEvent__KeyPress, int(core.Qt__Key_BracketLeft), core.Qt__GroupSwitchModifier, string("["), false, 1),
+			"[",
+		},
 	}
 	e := &Editor{}
 	e.InitSpecialKeys()
 	for key, value := range e.specialKeys {
+		text := ""
+		if key == core.Qt__Key_Space {
+			text = " "
+		}
 		tests = append(
 			tests,
 			[]struct {
@@ -110,22 +120,22 @@ func TestLinuxEditor_convertKey(t *testing.T) {
 			}{
 				{
 					`convertKey() Linux special keys`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__NoModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__NoModifier, text, false, 1),
 					fmt.Sprintf("<%s>", value),
 				},
 				{
 					`convertKey() Linux special keys with Ctrl`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__ControlModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__ControlModifier, text, false, 1),
 					fmt.Sprintf("<C-%s>", value),
 				},
 				{
 					`convertKey() Linux special keys with Alt`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__AltModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__AltModifier, text, false, 1),
 					fmt.Sprintf("<A-%s>", value),
 				},
 				{
 					`convertKey() Linux special keys with Meta`,
-					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__MetaModifier, value, false, 1),
+					gui.NewQKeyEvent(core.QEvent__KeyPress, int(key), core.Qt__MetaModifier, text, false, 1),
 					fmt.Sprintf("<D-%s>", value),
 				},
 			}...,
