@@ -50,7 +50,7 @@ func initFontNew(family string, size float64, weight gui.QFont__Weight, stretch,
 	// font := gui.NewQFont2(family, size, int(gui.QFont__Normal), false)
 	font := gui.NewQFont()
 	if editor.config.Editor.ManualFontFallback {
-		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
+		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging|gui.QFont__ForceIntegerMetrics)
 	} else {
 		font.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
 	}
@@ -92,7 +92,7 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	f.qfont.SetFamily(family)
 
 	if editor.config.Editor.ManualFontFallback {
-		f.qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
+		f.qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging|gui.QFont__ForceIntegerMetrics)
 	} else {
 		f.qfont.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
 	}
