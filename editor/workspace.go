@@ -792,9 +792,6 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	screenWidth := width - scrollbarWidth - minimapWidth
 	screenHeight := height - tablineHeight
 
-	if ws.screen.font == nil {
-		fmt.Println("nil!")
-	}
 	rw := screenWidth - int(math.Ceil(float64(int(float64(screenWidth)/ws.screen.font.cellwidth))*ws.screen.font.cellwidth))
 	rh := screenHeight % ws.screen.font.lineHeight
 	screenWidth -= rw

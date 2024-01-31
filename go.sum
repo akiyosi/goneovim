@@ -28,6 +28,8 @@ github.com/go-text/typesetting v0.0.0-20231219150831-cc0073efdbb4 h1:MKnPksPov83
 github.com/go-text/typesetting v0.0.0-20231219150831-cc0073efdbb4/go.mod h1:MrLApvxyzSW0MhQqLc484jkUWYX4wsEvEqDosB5Io80=
 github.com/go-text/typesetting v0.0.0-20231221124458-48cc05a56658 h1:KeDKnC99J3l5qJK4zV13Au2UwPn4N20TnIlM0YvILj8=
 github.com/go-text/typesetting v0.0.0-20231221124458-48cc05a56658/go.mod h1:d22AnmeKq/on0HNv73UFriMKc4Ez6EqZAofLhAzpSzI=
+github.com/go-text/typesetting v0.1.0 h1:vioSaLPYcHwPEPLT7gsjCGDCoYSbljxoHJzMnKwVvHw=
+github.com/go-text/typesetting v0.1.0/go.mod h1:d22AnmeKq/on0HNv73UFriMKc4Ez6EqZAofLhAzpSzI=
 github.com/gopherjs/gopherjs v0.0.0-20190411002643-bd77b112433e h1:XWcjeEtTFTOVA9Fs1w7n2XBftk5ib4oZrhzWk0B+3eA=
 github.com/gopherjs/gopherjs v0.0.0-20190411002643-bd77b112433e/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gopherjs/gopherjs v1.17.2 h1:fQnZVsXk8uxXIStYb0N4bGk7jeyTalG/wsZjQ25dO0g=

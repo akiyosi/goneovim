@@ -2,6 +2,7 @@ package editor
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -10,6 +11,9 @@ import (
 	"github.com/akiyosi/qt/core"
 	"github.com/akiyosi/qt/gui"
 	"github.com/go-text/typesetting/font"
+	apifont "github.com/go-text/typesetting/opentype/api/font"
+	"github.com/go-text/typesetting/opentype/api/metadata"
+	"github.com/go-text/typesetting/opentype/loader"
 )
 
 // Font is
@@ -36,13 +40,15 @@ type Font struct {
 }
 
 type RawFont struct {
-	regular *gui.QRawFont
-	bold    *gui.QRawFont
-	italic  *gui.QRawFont
+	regular    *gui.QRawFont
+	bold       *gui.QRawFont
+	italic     *gui.QRawFont
+	boldItalic *gui.QRawFont
 
-	regularface *font.Face
-	boldface    *font.Face
-	italicface  *font.Face
+	regularface    *font.Face
+	boldface       *font.Face
+	italicface     *font.Face
+	boldItalicFace *font.Face
 
 	wg sync.WaitGroup
 }
@@ -172,6 +178,370 @@ func newRawFont(genFontFaceAsync bool, fontFamilyName string, size int, weight g
 		return nil
 	}
 
+	fontpathes := []string{}
+	for _, l := range locations {
+		skip := false
+		for _, fontpath := range fontpathes {
+			if fontpath == l.File {
+				skip = true
+			}
+		}
+		if skip {
+			continue
+		}
+		fontpathes = append(fontpathes, l.File)
+	}
+
+	isTTC := isTtcFile(fontpathes[0])
+
+	var rawfont *RawFont
+	if isTTC {
+		rawfont = newRawFontFromTTC(fontpathes, genFontFaceAsync, fontFamilyName, size, weight)
+	} else {
+		rawfont = newRawFontFromTTF(fontpathes, genFontFaceAsync, fontFamilyName, size, weight)
+	}
+
+	return rawfont
+}
+
+func assignFontWeight(filePathList []string, i int) (fontWeightPath string) {
+	for j, path := range filePathList {
+		if j < i {
+			continue
+		}
+		if path == "" {
+			continue
+		}
+		if fontWeightPath == "" {
+			fontWeightPath = path
+			break
+		}
+	}
+	if fontWeightPath == "" {
+		for j := i - 1; j >= 0; j-- {
+			if j < 0 {
+				break
+			}
+			path := filePathList[j]
+			if path == "" {
+				continue
+			}
+			if fontWeightPath == "" {
+				fontWeightPath = path
+				break
+			}
+		}
+	}
+
+	return
+}
+
+func assignFontWeight2(loaderList []*loader.Loader, i int) (fontld *loader.Loader) {
+	for j, ld := range loaderList {
+		if j < i {
+			continue
+		}
+		if ld == nil {
+			continue
+		}
+		if fontld == nil {
+			fontld = ld
+			break
+		}
+	}
+	if fontld == nil {
+		for j := i - 1; j >= 0; j-- {
+			if j < 0 {
+				break
+			}
+			ld := loaderList[j]
+			if ld == nil {
+				continue
+			}
+			if fontld == nil {
+				fontld = ld
+				break
+			}
+		}
+	}
+
+	return
+}
+
+func readTtfFile(path string) (*font.Face, []byte) {
+	if path == "" {
+		return nil, []byte{}
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, []byte{}
+	}
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil, []byte{}
+	}
+
+	fileBytes := make([]byte, fileInfo.Size())
+	_, err = file.Read(fileBytes)
+	if err != nil {
+		return nil, []byte{}
+	}
+
+	face, err := font.ParseTTF(bytes.NewReader(fileBytes))
+	if err != nil {
+		return nil, []byte{}
+	}
+
+	return &face, fileBytes
+}
+
+func readTtcFile(path string, size int, weight gui.QFont__Weight) *RawFont {
+	if path == "" {
+		return nil
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil
+	}
+
+	fileBytes := make([]byte, fileInfo.Size())
+	_, err = file.Read(fileBytes)
+	if err != nil {
+		return nil
+	}
+
+	lds, err := loader.NewLoaders(bytes.NewReader(fileBytes))
+	if err != nil {
+		return nil
+	}
+	// out := make([]*font.Face, len(lds))
+
+	var thinLd *loader.Loader
+	var extraLightLd *loader.Loader
+	var lightLd *loader.Loader
+	var regularLd *loader.Loader
+	var mediumLd *loader.Loader
+	var semiBoldLd *loader.Loader
+	var boldLd *loader.Loader
+	var extraBoldLd *loader.Loader
+	var blackLd *loader.Loader
+
+	var regular *loader.Loader
+	var bold *loader.Loader
+	var italic *loader.Loader
+
+	for _, ld := range lds {
+		aspect := metadata.Metadata(ld).Aspect
+		fmt.Println(aspect)
+
+		if aspect.Style == 1 && aspect.Weight == metadata.WeightThin {
+
+			thinLd = ld
+		}
+		if aspect.Style == 1 && aspect.Weight == metadata.WeightExtraLight {
+			extraLightLd = ld
+		}
+		if aspect.Style == 1 && aspect.Weight == metadata.WeightLight {
+			lightLd = ld
+		}
+		if aspect.Style == 1 && aspect.Weight == metadata.WeightNormal {
+			regularLd = ld
+		}
+		if aspect.Style == 1 && aspect.Weight == metadata.WeightMedium {
+			mediumLd = ld
+		}
+		if aspect.Style == 1 && aspect.Weight == metadata.WeightSemibold {
+			semiBoldLd = ld
+		}
+		if aspect.Style == 1 && aspect.Weight == metadata.WeightBold {
+			boldLd = ld
+		}
+		if aspect.Style == 1 && aspect.Weight == metadata.WeightExtraBold {
+			extraBoldLd = ld
+		}
+		if aspect.Style == 1 && aspect.Weight == metadata.WeightBlack {
+			blackLd = ld
+		}
+
+		// TODO
+		if aspect.Style == 2 && aspect.Weight == metadata.WeightNormal {
+			italic = ld
+		}
+
+	}
+
+	ldR := []*loader.Loader{thinLd, extraLightLd, lightLd, regularLd, mediumLd}
+	ldB := []*loader.Loader{semiBoldLd, boldLd, extraBoldLd, blackLd}
+
+	switch weight {
+	case gui.QFont__Thin:
+		regular = assignFontWeight2(ldR, 0)
+		bold = assignFontWeight2(ldB, 0)
+	case gui.QFont__ExtraLight:
+		regular = assignFontWeight2(ldR, 1)
+		bold = assignFontWeight2(ldB, 1)
+	case gui.QFont__Light:
+		regular = assignFontWeight2(ldR, 2)
+		bold = assignFontWeight2(ldB, 2)
+	case gui.QFont__Normal:
+		regular = assignFontWeight2(ldR, 3)
+		bold = assignFontWeight2(ldB, 3)
+	case gui.QFont__Medium:
+		regular = assignFontWeight2(ldR, 4)
+		bold = assignFontWeight2(ldB, 3)
+	case gui.QFont__DemiBold:
+		regular = assignFontWeight2(ldB, 0)
+		bold = assignFontWeight2(ldB, 3)
+	case gui.QFont__Bold:
+		regular = assignFontWeight2(ldB, 1)
+		bold = assignFontWeight2(ldB, 3)
+	case gui.QFont__ExtraBold:
+		regular = assignFontWeight2(ldB, 2)
+		bold = assignFontWeight2(ldB, 3)
+	case gui.QFont__Black:
+		regular = assignFontWeight2(ldB, 3)
+		bold = assignFontWeight2(ldB, 3)
+	}
+
+	var regularFace *font.Face
+	var boldFace *font.Face
+	var italicFace *font.Face
+
+	var regularFont *gui.QRawFont
+	var boldFont *gui.QRawFont
+	var italicFont *gui.QRawFont
+
+	var waitgroup sync.WaitGroup
+
+	rawfont := &RawFont{
+		regular: regularFont,
+		bold:    boldFont,
+		italic:  italicFont,
+
+		regularface: regularFace,
+		boldface:    boldFace,
+		italicface:  italicFace,
+
+		wg: waitgroup,
+	}
+
+	// regular face
+	regularFt, err := apifont.NewFont(regular)
+	if err != nil {
+		return nil
+	}
+	regularface := &apifont.Face{Font: regularFt}
+	rawfont.regularface = &regularface
+
+	if bold != nil {
+		// bold face
+		boldFt, err := apifont.NewFont(bold)
+		if err != nil {
+			return nil
+		}
+		boldface := &apifont.Face{Font: boldFt}
+		rawfont.boldface = &boldface
+	} else {
+		rawfont.boldface = &regularface
+	}
+
+	if italic != nil {
+		// italic face
+		italicFt, err := apifont.NewFont(italic)
+		if err != nil {
+			return nil
+		}
+		italicface := &apifont.Face{Font: italicFt}
+		rawfont.italicface = &italicface
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		// cmap, err1 := regular.RawTable(loader.MustNewTag("cmap"))
+		// glyf, err2 := regular.RawTable(loader.MustNewTag("glyf"))
+		// head, err3 := regular.RawTable(loader.MustNewTag("head"))
+		// hhea, err4 := regular.RawTable(loader.MustNewTag("hhea"))
+		// hmtx, err5 := regular.RawTable(loader.MustNewTag("hmtx"))
+		// loca, err6 := regular.RawTable(loader.MustNewTag("loca"))
+		// maxp, err7 := regular.RawTable(loader.MustNewTag("maxp"))
+		// name, err8 := regular.RawTable(loader.MustNewTag("name"))
+		// post, err9 := regular.RawTable(loader.MustNewTag("post"))
+		// data := []byte{}
+		// data = append(data, cmap...)
+		// data = append(data, glyf...)
+		// data = append(data, head...)
+		// data = append(data, hhea...)
+		// data = append(data, hmtx...)
+		// data = append(data, loca...)
+		// data = append(data, maxp...)
+		// data = append(data, name...)
+		// data = append(data, post...)
+		rawfont.regular = loadQRawFont2(path, size)
+	}()
+
+	// fmt.Println(err1, err2, err3, err4, err5, err6, err7, err8, err9)
+	// data := byteConcat(cmap, glyf, head, hhea, hmtx, loca, maxp, name, post)
+
+	// if bold != nil {
+	// 	wg.Add(1)
+	// 	go func() {
+	// 		defer wg.Done()
+	// 		data, _ := bold.RawTable(loader.MustNewTag("glyf"))
+	// 		rawfont.bold = loadQRawFont(data, size)
+	// 		// rawfont.bold = loadQRawFont(bold, size)
+	// 	}()
+	// }
+
+	// if italic != nil {
+	// 	wg.Add(1)
+	// 	go func() {
+	// 		defer wg.Done()
+	// 		data, _ := italic.RawTable(loader.MustNewTag("glyf"))
+	// 		rawfont.italic = loadQRawFont(data, size)
+	// 		// rawfont.italic = loadQRawFont(italic, size)
+	// 	}()
+	// }
+	wg.Wait()
+
+	// return &RawFont{
+	// 	regular: regularFont,
+	// 	bold:    boldFont,
+	// 	italic:  italicFont,
+
+	// 	regularface: regularFace,
+	// 	boldface:    boldFace,
+	// 	italicface:  italicFace,
+
+	// 	wg: waitgroup,
+	// }
+
+	return rawfont
+
+}
+
+func newRawFontFromTTC(pathes []string, genFontFaceAsync bool, fontFamilyName string, size int, weight gui.QFont__Weight) *RawFont {
+	var rawfont *RawFont
+	for i, path := range pathes {
+		fmt.Println(i)
+		rawfont = readTtcFile(path, size, weight)
+	}
+
+	return rawfont
+}
+
+func newRawFontFromTTF(pathes []string, genFontFaceAsync bool, fontFamilyName string, size int, weight gui.QFont__Weight) *RawFont {
 	var italic string
 	var regular string
 	var bold string
@@ -186,30 +556,30 @@ func newRawFont(genFontFaceAsync bool, fontFamilyName string, size int, weight g
 	var extraboldPath string
 	var blackPath string
 
-	for _, l := range locations {
-		location := l.File
-		if isFontIsThinStyle(location) {
-			thinPath = location
-		} else if isFontIsExtraLightStyle(location) {
-			extralightPath = location
-		} else if isFontIsLightStyle(location) {
-			lightPath = location
-		} else if isFontIsMediumStyle(location) {
-			mediumPath = location
-		} else if isFontIsSemiBoldStyle(location) {
-			semiboldPath = location
-		} else if isFontIsExtraBoldStyle(location) {
-			extraboldPath = location
-		} else if isFontIsBoldStyle(location) {
-			boldPath = location
-		} else if isFontIsBlackStyle(location) {
-			blackPath = location
-		} else if isFontIsNormalStyle(location) {
-			regularPath = location
-		} else if isItalic(location) {
-			italic = location
+	for _, path := range pathes {
+
+		if isFontIsThinStyle(path) {
+			thinPath = path
+		} else if isFontIsExtraLightStyle(path) {
+			extralightPath = path
+		} else if isFontIsLightStyle(path) {
+			lightPath = path
+		} else if isFontIsMediumStyle(path) {
+			mediumPath = path
+		} else if isFontIsSemiBoldStyle(path) {
+			semiboldPath = path
+		} else if isFontIsExtraBoldStyle(path) {
+			extraboldPath = path
+		} else if isFontIsBoldStyle(path) {
+			boldPath = path
+		} else if isFontIsBlackStyle(path) {
+			blackPath = path
+		} else if isFontIsNormalStyle(path) {
+			regularPath = path
+		} else if isItalic(path) {
+			italic = path
 		} else {
-			regularPath = location
+			regularPath = path
 		}
 	}
 
@@ -302,21 +672,21 @@ func newRawFont(genFontFaceAsync bool, fontFamilyName string, size int, weight g
 		rawfont.wg.Add(1)
 		go func() {
 			defer rawfont.wg.Done()
-			rawfont.regularface, _ = readFontFile(regular)
-			// rawfont.boldface, _ = readFontFile(bold)
-			// rawfont.italicface, _ = readFontFile(italic)
+			rawfont.regularface, _ = readTtfFile(regular)
+			// rawfont.boldface, _ = readTtfFile(bold)
+			// rawfont.italicface, _ = readTtfFile(italic)
 		}()
 
 		rawfont.wg.Add(1)
 		go func() {
 			defer rawfont.wg.Done()
-			rawfont.boldface, _ = readFontFile(bold)
+			rawfont.boldface, _ = readTtfFile(bold)
 		}()
 
 		rawfont.wg.Add(1)
 		go func() {
 			defer rawfont.wg.Done()
-			rawfont.italicface, _ = readFontFile(italic)
+			rawfont.italicface, _ = readTtfFile(italic)
 		}()
 
 	} else {
@@ -324,19 +694,19 @@ func newRawFont(genFontFaceAsync bool, fontFamilyName string, size int, weight g
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			rawfont.regularface, _ = readFontFile(regular)
+			rawfont.regularface, _ = readTtfFile(regular)
 		}()
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			rawfont.boldface, _ = readFontFile(bold)
+			rawfont.boldface, _ = readTtfFile(bold)
 		}()
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			rawfont.italicface, _ = readFontFile(italic)
+			rawfont.italicface, _ = readTtfFile(italic)
 		}()
 
 		wg.Wait()
@@ -345,19 +715,19 @@ func newRawFont(genFontFaceAsync bool, fontFamilyName string, size int, weight g
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done()
-	// 	rawfont.regularface, _ = readFontFile(regular)
+	// 	rawfont.regularface, _ = readTtfFile(regular)
 	// }()
 
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done()
-	// 	rawfont.boldface, _ = readFontFile(bold)
+	// 	rawfont.boldface, _ = readTtfFile(bold)
 	// }()
 
 	// wg.Add(1)
 	// go func() {
 	// 	defer wg.Done()
-	// 	rawfont.italicface, _ = readFontFile(italic)
+	// 	rawfont.italicface, _ = readTtfFile(italic)
 	// }()
 
 	wg.Wait()
@@ -365,66 +735,40 @@ func newRawFont(genFontFaceAsync bool, fontFamilyName string, size int, weight g
 	return rawfont
 }
 
-func assignFontWeight(filePathList []string, i int) (fontWeightPath string) {
-	for j, path := range filePathList {
-		if j < i {
-			continue
-		}
-		if path == "" {
-			continue
-		}
-		if fontWeightPath == "" {
-			fontWeightPath = path
-			break
-		}
-	}
-	if fontWeightPath == "" {
-		for j := i - 1; j >= 0; j-- {
-			if j < 0 {
-				break
-			}
-			path := filePathList[j]
-			if path == "" {
-				continue
-			}
-			if fontWeightPath == "" {
-				fontWeightPath = path
-				break
-			}
-		}
-	}
-
-	return
+func isTtcFile(path string) bool {
+	return strings.HasSuffix(path, ".ttc")
 }
 
-func readFontFile(path string) (*font.Face, []byte) {
-	if path == "" {
-		return nil, []byte{}
+// // ParseTTC parse an Opentype font file, with support for collections.
+// // Single font files are supported, returning a slice with length 1.
+// func parseTTC(file Resource) ([]Face, error) {
+// 	lds, err := loader.NewLoaders(file)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	out := make([]Face, len(lds))
+// 	for i, ld := range lds {
+// 		ft, err := font.NewFont(ld)
+// 		if err != nil {
+// 			return nil, fmt.Errorf("reading font %d of collection: %s", i, err)
+// 		}
+// 		out[i] = &font.Face{Font: ft}
+// 	}
+//
+// 	return out, nil
+// }
+
+func byteConcat(s ...[]byte) []byte {
+	n := 0
+	for _, v := range s {
+		n += len(v)
 	}
 
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, []byte{}
+	b, i := make([]byte, n), 0
+	for _, v := range s {
+		i += copy(b[i:], v)
 	}
-	defer file.Close()
-
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return nil, []byte{}
-	}
-
-	fileBytes := make([]byte, fileInfo.Size())
-	_, err = file.Read(fileBytes)
-	if err != nil {
-		return nil, []byte{}
-	}
-
-	face, err := font.ParseTTF(bytes.NewReader(fileBytes))
-	if err != nil {
-		return nil, []byte{}
-	}
-
-	return &face, fileBytes
+	return b
 }
 
 func loadQRawFont(data []byte, size int) *gui.QRawFont {
