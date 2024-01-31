@@ -129,21 +129,18 @@ jobs:
 # MacOS
 #################################################################
 
-  test-and-build-macos:
+  test-and-build-macos-x86_64:
     strategy:
       matrix:
         go-version: [1.21.x]
-        platform: [macos-latest]
+        platform: [macos-12]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
-      #QT_DIR: ${{ github.workspace }}/Qt
       QT_HOMEBREW: true
       QT_API: 5.13.0
       QT_DEBUG: false
       GO111MODULE: on
-      QMAKE_APPLE_DEVICE_ARCHS: arm64
-      # SDKROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk
     steps:
 
     - name: Install Go
@@ -174,7 +171,7 @@ jobs:
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         make deps
-
+    
     - name: Test
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
@@ -188,14 +185,86 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv darwin goneovim-macos
-        tar -jcvf goneovim-macos.tar.bz2 goneovim-macos
+        mv darwin goneovim-macos-x86_64
+        tar -jcvf goneovim-macos-x86_64.tar.bz2 goneovim-macos-x86_64
 
     - name: Upload for macos
       uses: actions/upload-artifact@v1
       with:
-        name: goneovim-macos
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-macos.tar.bz2
+        name: goneovim-macos-x86_64
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-macos-x86_64.tar.bz2
+
+
+
+#################################################################
+# MacOS M1
+#################################################################
+
+  test-and-build-macos-arm64:
+    strategy:
+      matrix:
+        go-version: [1.21.x]
+        platform: [macos-14]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      QT_HOMEBREW: true
+      QT_API: 5.13.0
+      QT_DEBUG: false
+      GO111MODULE: on
+      QT_QMAKE_DIR: /opt/homebrew/opt/qt@5/bin
+    steps:
+
+    - name: Install Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Check Go Version
+      run: |
+        go version
+
+    - name: Install Qt for macOS
+      run: |
+        brew install qt@5
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+
+    - name: Get Qt binding for Go
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make qt_bindings
+
+    - name: Get dependencies
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make deps
+    
+    - name: Test
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make test
+
+    - name: Build
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make app
+
+    - name: Archive
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv darwin goneovim-macos-arm64
+        tar -jcvf goneovim-macos-arm64.tar.bz2 goneovim-macos-arm64
+
+    - name: Upload for macos m1
+      uses: actions/upload-artifact@v1
+      with:
+        name: goneovim-macos-arm64
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-macos-arm64.tar.bz2
 
 
 #################################################################

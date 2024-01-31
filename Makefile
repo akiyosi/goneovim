@@ -55,11 +55,11 @@ endif
 
 
 qt_bindings: ## Setup Qt bindings for Go.
-	@go get -v github.com/akiyosi/qt@v0.0.0-20230719061055-7747cdc680f3 && \
-	go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230719061055-7747cdc680f3 && \
+	@go get -v github.com/akiyosi/qt@v0.0.0-20240201144258-bb6c025d926e && \
+	go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240201144258-bb6c025d926e && \
 	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 && \
 	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 && \
-	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230719061055-7747cdc680f3 && \
+	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20240201144258-bb6c025d926e && \
 	go install -v -tags=no_env github.com/akiyosi/qt/cmd/...  && \
 	go mod vendor  && \
 	$(GOQTSETUP) -test=false

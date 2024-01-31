@@ -105,7 +105,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-        path: ./src/github.com/${{ github.repository }}
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
 
     - name: Free disk space
       run: |
@@ -158,15 +158,15 @@ jobs:
 
 
 #################################################################
-# MacOS
+# MacOS x86_64
 #################################################################
 
-  macos:
+  macos-x86_64:
     needs: [check-new-commit]
     strategy:
       matrix:
         go-version: [1.21.x]
-        platform: [macos-latest]
+        platform: [macos-12]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -174,7 +174,6 @@ jobs:
       QT_API: 5.13.0
       QT_DEBUG: false
       GO111MODULE: on
-      QMAKE_APPLE_DEVICE_ARCHS: arm64
       # SDKROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk
     steps:
 
@@ -191,7 +190,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-        path: ./src/github.com/${{ github.repository }}
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
 
     - name: Get Qt binding for Go
       run: |
@@ -216,11 +215,11 @@ jobs:
         make app
 
     - if: github.event_name == 'workflow_dispatch'
-      run: echo "ARCHIVE_NAME=goneovim-macos" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-macos-x86_64" >> $GITHUB_ENV
     - if: github.event_name == 'schedule'
-      run: echo "ARCHIVE_NAME=goneovim-macos" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-macos-x86_64" >> $GITHUB_ENV
     - if: github.event_name == 'push'
-      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-macos.outputs.GONEOVIM_VERSION }}-macos" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-macos.outputs.GONEOVIM_VERSION }}-macos-x86_64" >> $GITHUB_ENV
 
     - name: Archive
       run: |
@@ -231,8 +230,87 @@ jobs:
     - name: Upload for macos
       uses: actions/upload-artifact@v1
       with:
-        name: goneovim-macos
+        name: goneovim-macos-x86_64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
+
+
+#################################################################
+# MacOS M1
+#################################################################
+
+  macos-arm64:
+    needs: [check-new-commit]
+    strategy:
+      matrix:
+        go-version: [1.21.x]
+        platform: [macos-14]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      QT_HOMEBREW: true
+      QT_API: 5.13.0
+      QT_DEBUG: false
+      GO111MODULE: on
+      QT_QMAKE_DIR: /opt/homebrew/opt/qt@5/bin
+    steps:
+
+    - name: Install Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Install Qt for macOS
+      run: |
+        brew install qt@5
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
+
+    - name: Get Qt binding for Go
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make qt_bindings
+
+    - name: Get dependencies
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make deps
+
+    - name: Retrieve version
+      id: version-macos
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
+        echo "::set-output name=GONEOVIM_VERSION_HASH::$(git rev-parse HEAD)"
+
+    - name: Build
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make app
+
+    - if: github.event_name == 'workflow_dispatch'
+      run: echo "ARCHIVE_NAME=goneovim-macos-arm64" >> $GITHUB_ENV
+    - if: github.event_name == 'schedule'
+      run: echo "ARCHIVE_NAME=goneovim-macos-arm64" >> $GITHUB_ENV
+    - if: github.event_name == 'push'
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-macos.outputs.GONEOVIM_VERSION }}-macos-arm64" >> $GITHUB_ENV
+
+    - name: Archive
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv darwin "$ARCHIVE_NAME"
+        tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
+
+    - name: Upload for macos
+      uses: actions/upload-artifact@v1
+      with:
+        name: goneovim-macos-arm64
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
+
+
 
 #################################################################
 # Windows
@@ -422,7 +500,7 @@ jobs:
 
   publish:
     # needs: [linux, windows, macos, freebsd]
-    needs: [linux, windows, macos]
+    needs: [linux, windows, macos-x86_64, macos-arm64]
     runs-on: ubuntu-20.04
     permissions:
       contents: write
@@ -466,6 +544,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create $TAG_NAME $PRERELEASE --title "$SUBJECT" --target $GITHUB_SHA /home/runner/work/goneovim/goneovim/goneovim-macos/* /home/runner/work/goneovim/goneovim/goneovim-linux/* /home/runner/work/goneovim/goneovim/goneovim-windows/*
+          gh release create $TAG_NAME $PRERELEASE --title "$SUBJECT" --target $GITHUB_SHA /home/runner/work/goneovim/goneovim/goneovim-macos-x86_64/* /home/runner/work/goneovim/goneovim/goneovim-macos-arm64/* /home/runner/work/goneovim/goneovim/goneovim-linux/* /home/runner/work/goneovim/goneovim/goneovim-windows/*
 
 
