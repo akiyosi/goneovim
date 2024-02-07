@@ -308,8 +308,11 @@ func (e *Editor) initAppWindow() bool {
 	e.putLog("start    preparing the application window.")
 	defer e.putLog("finished preparing the application window.")
 
-	isframeless := e.config.Editor.BorderlessWindow
-	e.window = frameless.CreateQFramelessWindow(e.config.Editor.Transparent, isframeless)
+	e.window = frameless.CreateQFramelessWindow(frameless.FramelessConfig{
+		IsBorderless:    e.config.Editor.BorderlessWindow,
+		Alpha:           e.config.Editor.Transparent,
+		ApplyBlurEffect: e.config.Editor.EnableBackgroundBlur,
+	})
 	e.connectWindowEvents()
 	e.setWindowOptions()
 	e.setWindowSizeFromOpts()

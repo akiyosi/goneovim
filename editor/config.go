@@ -41,6 +41,7 @@ type editorConfig struct {
 	IndentGuideIgnoreFtList                 []string
 	CharsScaledLineHeight                   []string
 	Transparent                             float64
+	EnableBackgroundBlur                    bool
 	DiffDeletePattern                       int
 	DiffAddPattern                          int
 	LineToScroll                            int
@@ -169,6 +170,10 @@ func newConfig(home string, skipConfigLoading bool) (string, gonvimConfig) {
 	// Ref: https://github.com/akiyosi/goneovim/issues/162
 	if config.Editor.ExtMessages {
 		config.Editor.ExtCmdline = true
+	}
+
+	if config.Editor.EnableBackgroundBlur {
+		config.Editor.Transparent = 0.9
 	}
 
 	if config.Editor.Transparent < 1.0 {

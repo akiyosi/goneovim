@@ -4,7 +4,7 @@ go 1.21.4
 
 require (
 	github.com/BurntSushi/toml v1.3.2
-	github.com/akiyosi/goqtframelesswindow v0.0.0-20230716140237-a341d42df3c8
+	github.com/akiyosi/goqtframelesswindow v0.0.0-20240222071727-593e283fef92
 	github.com/akiyosi/qt v0.0.0-20240222123055-9c99603bbb9a
 	github.com/akiyosi/short_path v0.2.1
 	github.com/atotto/clipboard v0.1.4
@@ -18,8 +18,9 @@ require (
 require (
 	github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20240222123055-9c99603bbb9a // indirect
 	github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20240222123055-9c99603bbb9a // indirect
-	github.com/akiyosi/w32 v0.0.0-20221111133244-de73be0c7b36 // indirect
+	github.com/akiyosi/w32 v0.0.0-20240207145154-5d3ee780f6cb // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/sys v0.6.0 // indirect

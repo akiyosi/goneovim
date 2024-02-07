@@ -973,6 +973,13 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 			ws.cursor.modeIdx = 0
 		case "option_set":
 			ws.setOption(update)
+
+			// Set Transparent blue effect
+			if runtime.GOOS == "darwin" && editor.config.Editor.EnableBackgroundBlur {
+				isLight := ws.screenbg == "light"
+				editor.window.SetBlurEffectForMacOS(isLight)
+			}
+
 		case "mode_change":
 			arg := update[len(update)-1].([]interface{})
 			ws.modeEnablingIME(arg[0].(string))
