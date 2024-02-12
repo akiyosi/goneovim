@@ -104,6 +104,8 @@ type inputMouseEvent struct {
 type zindex struct {
 	value int
 	order int
+
+	nearestLowerZOrderWindow *Window
 }
 
 // Window is
@@ -1786,7 +1788,12 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	isDrawDefaultBg := false
 	if w.isFloatWin || w.isMsgGrid {
 		// If transparent is true, then we should draw every cell's background color
-		if editor.config.Editor.Transparent < 1.0 || editor.config.Message.Transparent < 1.0 {
+		if w.isFloatWin && editor.config.Editor.Transparent < 1.0 {
+			w.SetAutoFillBackground(false)
+			isDrawDefaultBg = true
+		}
+
+		if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
 			w.SetAutoFillBackground(false)
 			isDrawDefaultBg = true
 		}
@@ -1926,6 +1933,19 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 
 	if lastHighlight == nil {
 		return
+	}
+
+	// If the background color to be painted is a Normal highlight group and another float window
+	// that covers the float window and is closest in z-order has the same background color,
+	// the background color should not be painted.
+	if w.isFloatWin && !w.isMsgGrid {
+		if w.zindex.nearestLowerZOrderWindow != nil && w.zindex.nearestLowerZOrderWindow.isFloatWin {
+			if lastHighlight.uiName == "NormalFloat" || lastHighlight.uiName == "NormalNC" {
+				if w.s.getHighlight("Normal", lastHighlight.bg().Hex()) != nil {
+					return
+				}
+			}
+		}
 	}
 
 	width := end - start + 1
@@ -3187,8 +3207,18 @@ func (w *Window) raise() {
 			return false
 		},
 	)
-	for _, win := range floatWins {
-		win.Raise()
+
+	// For each window object, set the pointer of closest window in the z-order
+	// that covers the target window on the region.
+	for i := 1; i < len(floatWins); i++ {
+		if i > 0 {
+			for j := i - 1; j >= 0; j-- {
+				if floatWins[j].Geometry().Contains2(floatWins[i].Geometry(), false) {
+					floatWins[i].zindex.nearestLowerZOrderWindow = floatWins[j]
+				}
+			}
+		}
+		floatWins[i].Raise()
 	}
 
 	// handle cursor widget

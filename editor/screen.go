@@ -1059,7 +1059,7 @@ func (s *Screen) setHlAttrDef(args []interface{}) {
 
 	for _, arg := range args {
 		id := util.ReflectToInt(arg.([]interface{})[0])
-		h[id] = s.getHighlight(arg)
+		h[id] = s.makeHighlight(arg)
 	}
 
 	if s.hlAttrDef == nil {
@@ -1106,7 +1106,7 @@ func (s *Screen) setHighlightGroup(args []interface{}) {
 	}
 }
 
-func (s *Screen) getHighlight(args interface{}) *Highlight {
+func (s *Screen) makeHighlight(args interface{}) *Highlight {
 	arg := args.([]interface{})
 	highlight := Highlight{}
 
@@ -1235,6 +1235,17 @@ func (s *Screen) getHighlight(args interface{}) *Highlight {
 	}
 
 	return &highlight
+}
+
+func (s *Screen) getHighlight(name string, hex string) (hl *Highlight) {
+	for _, h := range s.hlAttrDef {
+		if h.uiName == name && h.bg().Hex() == hex {
+			hl = h
+			break
+		}
+	}
+
+	return
 }
 
 func (s *Screen) gridClear(args []interface{}) {
