@@ -364,30 +364,7 @@ jobs:
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
         cd /c/${{ github.repository }}
-        go get -v github.com/akiyosi/qt 
-        go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa
-        go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
-        go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0
-        go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa
-        go install -v -tags=no_env github.com/akiyosi/qt/cmd/... 
-        go mod vendor 
-        git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
-
-    - uses: actions/cache@v2
-      id: cache-qt-bindings-windows-build
-      with:
-        path: |
-          /c/${{ github.repository }}\vendor\github.com\akiyosi\qt\*
-          !/c/${{ github.repository }}\vendor\github.com\akiyosi\qt\.git
-        key: cache-qtbindings-windows-build-${{ env.cache-version }}
-
-    - name: Generate Qt bindings
-      if: ${{ steps.cache-qt-bindings-windows-build.outputs.cache-hit != 'true' }}
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
-        $(go env GOPATH)/bin/qtsetup -test=false
+        make qt_bindings
 
     - name: Get dependencies
       shell: msys2 {0}
@@ -416,7 +393,7 @@ jobs:
       run: |
         cd /c/${{ github.repository }}/cmd/goneovim/deploy
         mv windows goneovim-windows
-        zip goneovim-windows -r goneovim-windows
+        zip -r goneovim-windows.zip goneovim-windows
 
     - name: Upload for windows
       uses: actions/upload-artifact@v1

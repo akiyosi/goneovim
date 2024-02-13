@@ -55,47 +55,14 @@ endif
 
 
 qt_bindings: ## Setup Qt bindings for Go.
-ifeq ($(OSNAME),Darwin)
-	@go get -v github.com/akiyosi/qt && \
+	@go get -v github.com/akiyosi/qt@v0.0.0-20230719061055-7747cdc680f3 && \
 	go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230719061055-7747cdc680f3 && \
 	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 && \
 	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 && \
 	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230719061055-7747cdc680f3 && \
 	go install -v -tags=no_env github.com/akiyosi/qt/cmd/...  && \
 	go mod vendor  && \
-	git clone https://github.com/akiyosi/env_darwin_amd64_513.git vendor/github.com/akiyosi/env_darwin_amd64_513
 	$(GOQTSETUP) -test=false
-else ifeq ($(OSNAME),Linux)
-	@go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230719061055-7747cdc680f3 && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 && \
-	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230719061055-7747cdc680f3 && \
-	go get -v github.com/akiyosi/qt && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/...  && \
-	go mod vendor  && \
-	git clone https://github.com/akiyosi/env_linux_amd64_513.git vendor/github.com/akiyosi/env_linux_amd64_513
-	$(GOQTSETUP) -test=false
-else ifeq ($(OSNAME),FreeBSD)
-	@go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230719061055-7747cdc680f3 && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 && \
-	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230719061055-7747cdc680f3 && \
-	go get -v github.com/akiyosi/qt && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/...  && \
-	go mod vendor  && \
-	git clone https://github.com/akiyosi/env_linux_amd64_513.git vendor/github.com/akiyosi/env_linux_amd64_513
-	$(GOQTSETUP) -test=false
-else ifeq ($(OSNAME),Windows)
-	@go.exe get -v github.com/akiyosi/qt && \
-	go.exe get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230719061055-7747cdc680f3 && \
-	go.exe get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 && \
-	go.exe get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 && \
-	go.exe get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230719061055-7747cdc680f3 && \
-	go.exe install -v -tags=no_env github.com/akiyosi/qt/cmd/...  && \
-	go.exe mod vendor  && \
-	git.exe clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
-	$(GOQTSETUP) -test=false
-endif
 
 deps: ## Get dependent libraries.
 	@go get github.com/akiyosi/goneovim
