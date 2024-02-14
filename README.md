@@ -6,7 +6,7 @@ Goneovim
 ![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.6.8/total)
 [![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
 
-Goneovim is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
+Goneovim (pronounced like "go-neovim") is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
 This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
 
 ![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/goneovim.png)
