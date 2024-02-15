@@ -206,14 +206,18 @@ jobs:
       matrix:
         go-version: [1.21.x]
         platform: [macos-14]
+        qtversion: [5.15.12]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
-      QT_HOMEBREW: true
+      QT_HOMEBREW: false
       QT_API: 5.13.0
+      QT_VERSION: 5.15.12
+      QT_DIR: ${{ github.workspace }}/Qt
+      QT_STATIC: true
       QT_DEBUG: false
       GO111MODULE: on
-      QT_QMAKE_DIR: /opt/homebrew/opt/qt@5/bin
+      QT_QMAKE_DIR: ${{ github.workspace }}/Qt/bin
     steps:
 
     - name: Install Go
@@ -225,9 +229,50 @@ jobs:
       run: |
         go version
 
-    - name: Install Qt for macOS
+    # - name: Install Qt for macOS
+    #   run: |
+    #     brew install qt@5
+
+
+    # - uses: actions/cache@v2
+    #   id: cache-qt-src
+    #   with:
+    #     path: ${{ github.workspace }}/qt5
+    #     key: ${{ matrix.qtversion }}-qt-src-macos-${{ env.cache-version }}
+
+    # - name: Download Qt src
+    #   if: ${{ steps.cache-qt-src.outputs.cache-hit != 'true' }}
+    #   run: |
+    #     curl -L -o qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz https://download.qt.io/official_releases/qt/5.15/${{ matrix.qtversion }}/single/qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+    #     tar Jxf qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+    #     rm qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+    #     mv qt-everywhere-src-${{ matrix.qtversion }} qt5
+
+    # - uses: actions/cache@v2
+    #   id: cache-qt-macos
+    #   with:
+    #     path: ${{ github.workspace }}/Qt
+    #     key: ${{ matrix.qtversion }}-qt-macos-${{ env.cache-version }}
+
+    # - name: Build Qt
+    #   if: ${{ steps.cache-qt-macos.outputs.cache-hit != 'true' }}
+    #   run: |
+    #     cd ${{ github.workspace }}/qt5/qtbase
+    #     curl -L "https://codereview.qt-project.org/gitweb?p=qt/qtbase.git;a=patch;h=cdf64b0e47115cc473e1afd1472b4b09e130b2a5" -o cdf64b0.diff
+    #     patch -p1 < ./cdf64b0.diff
+    #     cd ..
+    #     ./configure -static -release -prefix ${{ github.workspace }}/Qt -platform macx-clang -skip qt3d -skip qtandroidextras -skip qtwayland -skip webengine -skip qtwinextras -skip qtx11extras -nomake tests -nomake examples -opensource -confirm-license -c++std c++17
+    #     sudo make -j 3
+    #     echo "!make done"
+    #     sudo make install -j 3
+    #     echo "!make install done"
+    #     rm -fr ${{ github.workspace }}/qt5
+
+
+    - name: Download pre built Qt
       run: |
-        brew install qt@5
+        curl -L -o qt-macos-static-5.15.12.tar.bz2 https://github.com/akiyosi/qt-static-builds/releases/download/macOS-arm64/qt-macos-static-5.15.12.tar.bz2
+        tar xf qt-macos-static-5.15.12.tar.bz2
 
     - name: Checkout code
       uses: actions/checkout@v2
