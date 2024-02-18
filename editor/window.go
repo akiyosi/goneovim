@@ -1787,8 +1787,9 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	// draw default background color if window is float window or msg grid
 	isDrawDefaultBg := false
 	if w.isFloatWin || w.isMsgGrid {
+
 		// If transparent is true, then we should draw every cell's background color
-		if w.isFloatWin && editor.config.Editor.Transparent < 1.0 {
+		if !w.isMsgGrid && w.isFloatWin && editor.config.Editor.Transparent < 1.0 {
 			w.SetAutoFillBackground(false)
 			isDrawDefaultBg = true
 		}
@@ -3187,7 +3188,7 @@ func (w *Window) raise() {
 		if win == nil {
 			return true
 		}
-		if win.isFloatWin {
+		if win.isFloatWin && !win.isExternal {
 			floatWins = append(floatWins, win)
 		}
 
@@ -3210,15 +3211,21 @@ func (w *Window) raise() {
 
 	// For each window object, set the pointer of closest window in the z-order
 	// that covers the target window on the region.
-	for i := 1; i < len(floatWins); i++ {
+	for i := 0; i < len(floatWins); i++ {
+		floatWins[i].Raise()
 		if i > 0 {
+			if floatWins[i].isMsgGrid {
+				continue
+			}
 			for j := i - 1; j >= 0; j-- {
+				if floatWins[j].isMsgGrid {
+					continue
+				}
 				if floatWins[j].Geometry().Contains2(floatWins[i].Geometry(), false) {
 					floatWins[i].zindex.nearestLowerZOrderWindow = floatWins[j]
 				}
 			}
 		}
-		floatWins[i].Raise()
 	}
 
 	// handle cursor widget
