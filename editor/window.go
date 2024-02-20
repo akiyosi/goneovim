@@ -1928,6 +1928,8 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 			}
 		}
 	}
+
+	w.drawMsgSep(p)
 }
 
 func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg *RGBA, y, start, end, horScrollPixels, verScrollPixels int, isDrawDefaultBg bool) {
@@ -1942,7 +1944,7 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 	if w.isFloatWin && !w.isMsgGrid {
 		if w.zindex.nearestLowerZOrderWindow != nil && w.zindex.nearestLowerZOrderWindow.isFloatWin {
 			if lastHighlight.uiName == "NormalFloat" || lastHighlight.uiName == "NormalNC" {
-				if w.s.getHighlight("Normal", lastHighlight.bg().Hex()) != nil {
+				if w.s.getHighlight("Normal").bg().Hex() == lastHighlight.bg().Hex() {
 					return
 				}
 			}
@@ -2062,6 +2064,26 @@ func (w *Window) setBgCache(highlight *Highlight, length int, image *gui.QImage)
 			image,
 		)
 	}
+}
+
+func (w *Window) drawMsgSep(p *gui.QPainter) {
+	if !w.isMsgGrid {
+		return
+	}
+	if !editor.config.Message.ShowMessageSeparators {
+		return
+	}
+
+	hl := w.s.getHighlight("MsgSeparator")
+	color := hl.bg().QColor()
+
+	p.FillRect5(
+		0,
+		0,
+		w.Width(),
+		1,
+		color,
+	)
 }
 
 func resolveFontFallback(font *Font, fallbackfonts []*Font, char string) *Font {

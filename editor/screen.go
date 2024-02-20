@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -1237,9 +1238,20 @@ func (s *Screen) makeHighlight(args interface{}) *Highlight {
 	return &highlight
 }
 
-func (s *Screen) getHighlight(name string, hex string) (hl *Highlight) {
-	for _, h := range s.hlAttrDef {
-		if h.uiName == name && h.bg().Hex() == hex {
+func (s *Screen) getHighlight(name string) (hl *Highlight) {
+	keys := make([]int, 0, len(s.hlAttrDef))
+	for k := range s.hlAttrDef {
+		if s.hlAttrDef[k].uiName == "" {
+			continue
+		}
+		keys = append(keys, k)
+	}
+
+	sort.Sort(sort.Reverse(sort.IntSlice(keys)))
+
+	for _, k := range keys {
+		h := s.hlAttrDef[k]
+		if h.uiName == name {
 			hl = h
 			break
 		}

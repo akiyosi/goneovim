@@ -101,7 +101,8 @@ type paletteConfig struct {
 }
 
 type messageConfig struct {
-	Transparent float64
+	Transparent           float64
+	ShowMessageSeparators bool
 }
 
 type tabLineConfig struct {
