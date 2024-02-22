@@ -5,7 +5,7 @@ go 1.21.4
 require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/akiyosi/goqtframelesswindow v0.0.0-20230716140237-a341d42df3c8
-	github.com/akiyosi/qt v0.0.0-20240201144258-bb6c025d926e
+	github.com/akiyosi/qt v0.0.0-20240222123055-9c99603bbb9a
 	github.com/akiyosi/short_path v0.2.1
 	github.com/atotto/clipboard v0.1.4
 	github.com/bluele/gcache v0.0.2
@@ -16,8 +16,8 @@ require (
 )
 
 require (
-	github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20240201144258-bb6c025d926e // indirect
-	github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20240201144258-bb6c025d926e // indirect
+	github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20240222123055-9c99603bbb9a // indirect
+	github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20240222123055-9c99603bbb9a // indirect
 	github.com/akiyosi/w32 v0.0.0-20221111133244-de73be0c7b36 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
