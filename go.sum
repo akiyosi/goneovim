@@ -1,17 +1,19 @@
 github.com/BurntSushi/toml v1.3.2 h1:o7IhLm0Msx3BaB+n3Ag7L8EVlByGnpq14C4YWiu/gL8=
 github.com/BurntSushi/toml v1.3.2/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
-github.com/akiyosi/goqtframelesswindow v0.0.0-20230716140237-a341d42df3c8 h1:yOqvoxofnHODBxSo9/l030IFNPJ7H/cKyzycHj+LkJQ=
-github.com/akiyosi/goqtframelesswindow v0.0.0-20230716140237-a341d42df3c8/go.mod h1:739mXLJTAy19GBfA3Z2gitVRHX5NVqrVqygAMPVB21E=
 github.com/akiyosi/qt v0.0.0-20240222123055-9c99603bbb9a h1:69JsQo6bkAT+b5asiHZQcnCSzAQRr3o2gFyUMl4o+V0=
 github.com/akiyosi/qt v0.0.0-20240222123055-9c99603bbb9a/go.mod h1:/M/wktam+Uyed7ahwhO+8zsEAe3FWZGA8eq5Sh+QePA=
 github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20240222123055-9c99603bbb9a h1:6ihuNQFveofbkQxbr/nq8X/+umLXVwzd1xRqgXXfc00=
 github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20240222123055-9c99603bbb9a/go.mod h1:o1Ta8fcOD7ED+UFh1S2sJGmMYyZgY/0Nhqkayiw9EOI=
 github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20240222123055-9c99603bbb9a h1:JrmvRaWdpG8Otgbjsr9yo0zBZsmBp1A0FfFD1JbPuY0=
 github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20240222123055-9c99603bbb9a/go.mod h1:zr7ZzZXZ4UI9WpxGsiaq0S9OHCjo+H/7vU2Oyi6RRWw=
+github.com/akiyosi/goqtframelesswindow v0.0.0-20240222071727-593e283fef92 h1:xz2X8F9iT01j/9hGihRFBSO+OdXK241izLWxVS6RQEk=
+github.com/akiyosi/goqtframelesswindow v0.0.0-20240222071727-593e283fef92/go.mod h1:739mXLJTAy19GBfA3Z2gitVRHX5NVqrVqygAMPVB21E=
 github.com/akiyosi/short_path v0.2.1 h1:1IiEQDNISfLOzs8A4+95vSgAN1Ch2IQY4wUpjZzWU/U=
 github.com/akiyosi/short_path v0.2.1/go.mod h1:9ZdnJCTktFi81KorFR9Zihrn8pmRD1UIx0HjASMCu1U=
-github.com/akiyosi/w32 v0.0.0-20221111133244-de73be0c7b36 h1:anLmpiDCKkXZv9D7iYznS3dkYS1BPlaMVGy+65azxj8=
-github.com/akiyosi/w32 v0.0.0-20221111133244-de73be0c7b36/go.mod h1:2FtFEIlFioFN1gthevKcpsJgo3YWZyFoa+/V7UA4onI=
+github.com/akiyosi/w32 v0.0.0-20240206235442-ad043c730afb h1:O3/WamAsR0N/8fgn93Sj3btBhXrEbtVj1W4x+CHeChs=
+github.com/akiyosi/w32 v0.0.0-20240206235442-ad043c730afb/go.mod h1:2FtFEIlFioFN1gthevKcpsJgo3YWZyFoa+/V7UA4onI=
+github.com/akiyosi/w32 v0.0.0-20240207145154-5d3ee780f6cb h1:3NzVmrKMtXEYNq4dsgNcqSh8wBAljNalVFIr9r/5+2E=
+github.com/akiyosi/w32 v0.0.0-20240207145154-5d3ee780f6cb/go.mod h1:2FtFEIlFioFN1gthevKcpsJgo3YWZyFoa+/V7UA4onI=
 github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z4=
 github.com/atotto/clipboard v0.1.4/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
 github.com/bluele/gcache v0.0.2 h1:WcbfdXICg7G/DGBh1PFfcirkWOQV+v077yF1pSy3DGw=
@@ -25,6 +27,7 @@ github.com/gopherjs/gopherjs v1.17.2/go.mod h1:pRRIvn/QzFLrKfvEz3qUuEhtE/zLCWfre
 github.com/jessevdk/go-flags v1.5.0 h1:1jKYvbxEjfUl0fmqTCOfonvskHHXMjBySTLW4y9LFvc=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
+github.com/konsorten/go-windows-terminal-sequences v1.0.2 h1:DB17ag19krx9CFsz4o3enTrPXyIXCl+2iCXH/aMAp9s=
 github.com/konsorten/go-windows-terminal-sequences v1.0.2/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
@@ -37,6 +40,7 @@ github.com/neovim/go-client v1.2.2-0.20220415170422-ef8a8cf9c522/go.mod h1:UBsOE
 github.com/neovim/go-client v1.2.2-0.20230716041012-dd77a916541b h1:JDchP8fWykRzJLiq5cUQ47vKkP8UY0I1yzgGDTSpYRI=
 github.com/neovim/go-client v1.2.2-0.20230716041012-dd77a916541b/go.mod h1:UBsOERb5epbeQT0nyPTZkmUPTffRYBcHvrXXidr1NQQ=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/sirupsen/logrus v1.4.1 h1:GL2rEmy6nsikmW0r8opw9JIRScdMF5hA8cOYLH7In1k=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
@@ -65,6 +69,7 @@ golang.org/x/sys v0.0.0-20210320140829-1e4c9ba3b0c4/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.6.0 h1:MVltZSvRTcU2ljQOhs94SXPftV6DCNnZViHeQps87pQ=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
+golang.org/x/tools v0.0.0-20190420181800-aa740d480789 h1:FF0rjo15h51+N6642mf5S3QuplmKo2aCrJUYkHTx85s=
 golang.org/x/tools v0.0.0-20190420181800-aa740d480789/go.mod h1:LCzVGOaR6xXOjkQ3onu1FJEFr0SW1gC7cKk1uF8kGRs=
 golang.org/x/tools v0.0.0-20191119224855-298f0cb1881e/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
 golang.org/x/tools v0.1.5 h1:ouewzE6p+/VEB31YYnTbEJdi8pFqKp4P4n85vwo3DHA=

@@ -3361,6 +3361,9 @@ func (w *Window) refreshUpdateArea(fullmode int) {
 
 func (w *Window) fill() {
 	w.refreshUpdateArea(0)
+	if editor.config.Editor.EnableBackgroundBlur {
+		return
+	}
 	if editor.config.Editor.Transparent < 1.0 {
 		return
 	}
