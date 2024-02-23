@@ -251,7 +251,7 @@ func InitEditor(options Options, args []string) {
 	e.putLog("finished generating the application")
 
 	// new nvim instance
-	signal, redrawUpdates, guiUpdates, nvimCh, uiRCh, errCh := newNvim(100, 10, e.ctx)
+	signal, redrawUpdates, guiUpdates, nvimCh, uiRCh, errCh := newNvim(100, 50, e.ctx)
 
 	// e.setAppDirPath(home)
 
