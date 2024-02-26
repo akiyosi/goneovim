@@ -268,23 +268,6 @@ func InitEditor(options Options, args []string) {
 
 	// e.setAppDirPath(home)
 
-	loadSysFontErr := <-e.loadSysFontCh
-	if loadSysFontErr != nil {
-		panic(loadSysFontErr)
-	}
-
-	e.fontCh = make(chan []*Font, 2)
-	go func() {
-		e.fontCh <- parseFont(
-			e.config.Editor.FontFamily,
-			e.config.Editor.FontSize,
-			e.config.Editor.FontWeight,
-			e.config.Editor.FontStretch,
-			e.config.Editor.Linespace,
-			e.config.Editor.Letterspace,
-		)
-	}()
-
 	e.initSVGS()
 
 	e.initColorPalette()
