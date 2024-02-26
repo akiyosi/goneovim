@@ -350,6 +350,10 @@ All Options are follows:
         ## Controls whether the title bar is displayed when the borderless 
         ## window setting is enabled.
         # HideTitlebar = false
+
+        ## EnableBackgroundBlur applies a translucent Blur/Acrylic effect to the window
+        ## background.
+        EnableBackgroundBlur = false
         
         ## Editor minimum window width (>= 400)
         # Width = 800
@@ -590,6 +594,8 @@ All Options are follows:
         [Message]
         ## Specifies the opacity of the message window.
         # Transparent = 1.0
+        ## ShowMessageSeparators displays separators in the message window.
+        # ShowMessageSeparators = false
         
         
         ## Configure externalized tabline UI.
