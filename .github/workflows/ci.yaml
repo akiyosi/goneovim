@@ -141,6 +141,7 @@ jobs:
       QT_API: 5.13.0
       QT_DEBUG: false
       GO111MODULE: on
+      QT_QMAKE_DIR: /usr/local/opt/qt@5/bin
     steps:
 
     - name: Install Go
@@ -155,6 +156,11 @@ jobs:
     - name: Install Qt for macOS
       run: |
         brew install qt@5
+
+    - name: Check dir
+      continue-on-error: true
+      run: |
+        ls -l /usr/local/opt/qt@5/bin
 
     - name: Checkout code
       uses: actions/checkout@v2
