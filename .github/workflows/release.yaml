@@ -174,7 +174,7 @@ jobs:
       QT_API: 5.13.0
       QT_DEBUG: false
       GO111MODULE: on
-      # SDKROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk
+      QT_QMAKE_DIR: /usr/local/opt/qt@5/bin
     steps:
 
     - name: Install Go
