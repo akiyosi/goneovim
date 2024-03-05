@@ -247,11 +247,14 @@ jobs:
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
-      QT_HOMEBREW: true
+      QT_HOMEBREW: false
       QT_API: 5.13.0
+      QT_VERSION: 5.15.12
+      QT_DIR: ${{ github.workspace }}/Qt
+      QT_STATIC: true
       QT_DEBUG: false
       GO111MODULE: on
-      QT_QMAKE_DIR: /opt/homebrew/opt/qt@5/bin
+      QT_QMAKE_DIR: ${{ github.workspace }}/Qt/bin
     steps:
 
     - name: Install Go
@@ -259,9 +262,10 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
-    - name: Install Qt for macOS
+    - name: Download pre built Qt
       run: |
-        brew install qt@5
+        curl -L -o qt-macos-static-5.15.12.tar.bz2 https://github.com/akiyosi/qt-static-builds/releases/download/macOS-arm64/qt-macos-static-5.15.12.tar.bz2
+        tar xf qt-macos-static-5.15.12.tar.bz2
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -359,7 +363,7 @@ jobs:
 
     # - name: Patch qt5
     #   shell: msys2 {0}
-    #   run: | 
+    #   run: |
     #     curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt5-patched-qtbug-71737/qt-5.15.5_patched-qtbug71737.zip
     #     unzip qt-5.15.5_patched-qtbug71737.zip
     #     cp -fpR qt5/* /mingw64/qt5-static/

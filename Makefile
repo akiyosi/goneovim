@@ -40,27 +40,33 @@ endif
 
 
 app: ## Build goneovim
-	@go mod vendor  ; \
-	test -f ./editor/moc.go & $(GOQTMOC) desktop ./cmd/goneovim && \
+	@test -f ./editor/moc.go & $(GOQTMOC) desktop ./cmd/goneovim && \
 	go generate && \
 	$(GOQTDEPLOY) build desktop ./cmd/goneovim && \
 	cp -pR runtime $(RUNTIME_DIR)
 ifeq ($(OSNAME),Darwin)
 	@/usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $(VERSION_HASH)" "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist" && \
-	/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $(VERSION)"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist" && \
+	/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $(VERSION)"  "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Info.plist"
+	@if [ -d "./cmd/goneovim/deploy/darwin/goneovim.app/Contents/Frameworks/" ]; then \
 	cd cmd/goneovim/deploy/darwin/goneovim.app/Contents/Frameworks/ && \
-	rm -fr QtQuick.framework && \
-	rm -fr QtVirtualKeyboard.framework
+	rm -fr QtQuick.framework ; \
+	rm -fr QtVirtualKeyboard.framework; \
+	else \
+	exit 0; \
+	fi
 endif
 
-
 qt_bindings: ## Setup Qt bindings for Go.
-	@go get -v github.com/akiyosi/qt@v0.0.0-20240222123055-9c99603bbb9a && \
-	go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240222123055-9c99603bbb9a && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0@v0.0.0-20240222123055-9c99603bbb9a && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0@v0.0.0-20240222123055-9c99603bbb9a && \
-	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20240222123055-9c99603bbb9a && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/...  && \
+	@go get -v github.com/akiyosi/qt@v0.0.0-20240304155940-b43fff373ad5 && \
+	go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240304155940-b43fff373ad5 && \
+	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0@v0.0.0-20240304155940-b43fff373ad5 && \
+	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0@v0.0.0-20240304155940-b43fff373ad5 && \
+	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20240304155940-b43fff373ad5 && \
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtdeploy@v0.0.0-20240304155940-b43fff373ad5  && \
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtminimal@v0.0.0-20240304155940-b43fff373ad5 && \
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtmoc@v0.0.0-20240304155940-b43fff373ad5     && \
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@v0.0.0-20240304155940-b43fff373ad5     && \
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@v0.0.0-20240304155940-b43fff373ad5   && \
 	go mod vendor  && \
 	$(GOQTSETUP) -test=false
 
