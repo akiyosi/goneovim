@@ -1786,17 +1786,22 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 
 	// draw default background color if window is float window or msg grid
 	isDrawDefaultBg := false
-	if w.isFloatWin || w.isMsgGrid {
 
-		// If transparent is true, then we should draw every cell's background color
-		if !w.isMsgGrid && w.isFloatWin && editor.config.Editor.Transparent < 1.0 {
-			w.SetAutoFillBackground(false)
-			isDrawDefaultBg = true
+	if w.isPopupmenu || w.isMsgGrid || w.isFloatWin {
+
+		// If blur effect is true, then we should draw every cell's background color
+		if editor.config.Editor.EnableBackgroundBlur {
+		    if !(w.isPopupmenu || w.isMsgGrid || w.isFloatWin) {
+				w.SetAutoFillBackground(false)
+				isDrawDefaultBg = true
+			}
 		}
 
 		if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
-			w.SetAutoFillBackground(false)
-			isDrawDefaultBg = true
+			if w.isMsgGrid {
+				w.SetAutoFillBackground(false)
+				isDrawDefaultBg = true
+			}
 		}
 
 		// If the window is popupmenu and  pumblend is set
@@ -1806,7 +1811,7 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 		}
 
 		// If the window is float window and winblend is set
-		if w.isFloatWin && !w.isPopupmenu && w.wb > 0 {
+		if w.isFloatWin && !w.isPopupmenu && !w.isMsgGrid && w.wb > 0 {
 			w.SetAutoFillBackground(false)
 			isDrawDefaultBg = true
 		}
@@ -3484,23 +3489,35 @@ func (w *Window) refreshUpdateArea(fullmode int) {
 
 func (w *Window) fill() {
 	w.refreshUpdateArea(0)
-	if editor.config.Editor.EnableBackgroundBlur {
-		return
-	}
+
+	// If transparent is true, then we should draw every cell's background color
 	if editor.config.Editor.Transparent < 1.0 {
-		return
+	    if !(w.isPopupmenu || w.isMsgGrid || w.isFloatWin) {
+			return
+		}
 	}
+
+	// If blur effect is true, then we should draw every cell's background color
+	if editor.config.Editor.EnableBackgroundBlur {
+	    if !(w.isPopupmenu || w.isMsgGrid || w.isFloatWin) {
+			return
+		}
+	}
+
 	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
 		return
 	}
+
 	// If popupmenu pumblend is set
 	if w.isPopupmenu && w.s.ws.pb > 0 {
 		return
 	}
+
 	// If window winblend > 0 is set
-	if !w.isPopupmenu && w.isFloatWin && w.wb > 0 {
+	if w.isFloatWin && !w.isPopupmenu && !w.isMsgGrid && w.wb > 0 {
 		return
 	}
+
 	if w.background != nil {
 		w.SetAutoFillBackground(true)
 		p := gui.NewQPalette()
