@@ -295,6 +295,18 @@ COMMANDS                                                       *goneovim-command
 	"smart" scrolls in pixels when the amount of scrolling is small, and
 	        scrolls in lines when the amount of scrolling is large.
 
+================================================================================
+Input method in Goneovim                                *input-method-in-goneovim*
+
+Goneovim supports input via input methods. The input fields for input methods
+can be styled using two highlights: `GuiImePreeditText` and `GuiImeCurrentConversionText`
+
+e.g.
+
+>
+    vim.api.nvim_set_hl(0, "GuiImePreeditText", { fg = "#ffffff", bg = "#000000" })
+    vim.api.nvim_set_hl(0, "GuiImeCurrentConversionText", { fg = "#ffffff", bg = "#333333", sp = "#ffffff", bold = true, underdouble = true })
+<
 
 ================================================================================
 WSL integration                                                     *goneovim-wsl*

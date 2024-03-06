@@ -169,43 +169,56 @@ func (i *IMETooltip) parsePreeditString(preeditStr string) {
 		start = i.s.tooltip.cursorPos - length
 	}
 
-	g := &Highlight{}
-	h := &Highlight{}
+	preeditHl := i.s.getHighlightByHlname("GuiImePreeditText")
+	currConvHl := i.s.getHighlightByHlname("GuiImeCurrentConversionText")
 
-	if i.s.ws.foreground == nil || i.s.ws.background == nil {
-		return
+	if preeditHl == nil {
+		if i.s.ws.foreground == nil || i.s.ws.background == nil {
+			return
+		}
+
+		preeditHl = &Highlight{}
+		preeditHl.foreground = i.s.ws.foreground
+		preeditHl.background = i.s.ws.background
 	}
-	g.foreground = i.s.ws.foreground
-	g.background = i.s.ws.background
-	if i.s.ws.screenbg == "light" {
-		h.foreground = warpColor(i.s.ws.background, -30)
-		h.background = warpColor(i.s.ws.foreground, -30)
-	} else {
-		h.foreground = warpColor(i.s.ws.foreground, 30)
-		h.background = warpColor(i.s.ws.background, 30)
+
+	if currConvHl == nil {
+		if i.s.ws.foreground == nil || i.s.ws.background == nil {
+			return
+		}
+
+		currConvHl = &Highlight{}
+
+		if i.s.ws.screenbg == "light" {
+			currConvHl.foreground = warpColor(i.s.ws.background, -30)
+			currConvHl.background = warpColor(i.s.ws.foreground, -30)
+		} else {
+			currConvHl.foreground = warpColor(i.s.ws.foreground, 30)
+			currConvHl.background = warpColor(i.s.ws.background, 30)
+		}
+		currConvHl.underline = true
 	}
-	h.underline = true
 
 	if preeditStr != "" {
 		r := []rune(preeditStr)
 
 		if length > 0 {
 			if start > 0 {
-				i.updateText(g, string(r[:start]), i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(preeditHl, string(r[:start]), i.s.ws.font.letterSpace, i.getFont().qfont)
 				if start+length < len(r) {
-					i.updateText(h, string(r[start:start+length]), i.s.ws.font.letterSpace, i.getFont().qfont)
-					i.updateText(g, string(r[start+length:]), i.s.ws.font.letterSpace, i.getFont().qfont)
+					i.updateText(currConvHl, string(r[start:start+length]), i.s.ws.font.letterSpace, i.getFont().qfont)
+					i.updateText(preeditHl, string(r[start+length:]), i.s.ws.font.letterSpace, i.getFont().qfont)
 				} else {
-					i.updateText(h, string(r[start:]), i.s.ws.font.letterSpace, i.getFont().qfont)
+					i.updateText(currConvHl, string(r[start:]), i.s.ws.font.letterSpace, i.getFont().qfont)
 				}
 			} else if start == 0 && length < len(r) {
-				i.updateText(h, string(r[0:length]), i.s.ws.font.letterSpace, i.getFont().qfont)
-				i.updateText(g, string(r[length:]), i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(currConvHl, string(r[0:length]), i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(preeditHl, string(r[length:]), i.s.ws.font.letterSpace, i.getFont().qfont)
 			} else {
-				i.updateText(g, preeditStr, i.s.ws.font.letterSpace, i.getFont().qfont)
+				i.updateText(preeditHl, preeditStr, i.s.ws.font.letterSpace, i.getFont().qfont)
 			}
 		} else {
-			i.updateText(g, preeditStr, i.s.ws.font.letterSpace, i.getFont().qfont)
+			i.updateText(preeditHl, preeditStr, i.s.ws.font.letterSpace, i.getFont().qfont)
 		}
 	}
 }

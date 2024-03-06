@@ -63,18 +63,23 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 
 		fg := chunk.hl.fg()
 		bg := chunk.hl.bg()
-		// bold := chunk.hl.bold
-		underline := chunk.hl.underline
-		// undercurl := chunk.hl.undercurl
-		// strikethrough := chunk.hl.strikethrough
+		sp := chunk.hl.special
+
+
+		bold := chunk.hl.bold
 		italic := chunk.hl.italic
+		underline := chunk.hl.underline
+		undercurl := chunk.hl.undercurl
+		underdouble := chunk.hl.underdouble
+		underdotted := chunk.hl.underdotted
+		underdashed := chunk.hl.underdashed
+		strikethrough := chunk.hl.strikethrough
 
 		// set foreground color
 		p.SetPen2(fg.QColor())
 
 		r := []rune(chunk.str)
 		for _, rr := range r {
-			// setFont(p)
 			p.SetFont(resolveFontFallback(getFont(), t.fallbackfonts, string(rr)).qfont)
 			font := p.Font()
 
@@ -89,12 +94,9 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 				bg.QColor(),
 			)
 
-			// set italic
-			if italic {
-				font.SetItalic(true)
-			} else {
-				font.SetItalic(false)
-			}
+			// set italic, bold
+			font.SetItalic(italic)
+			font.SetBold(bold)
 
 			p.DrawText(
 				core.NewQPointF3(
@@ -104,23 +106,32 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 				string(rr),
 			)
 
-			// draw underline
-			if underline {
-				var underlinePos float64 = 1
-				if t.s.ws.palette != nil && t.s.ws.palette.widget.IsVisible() {
-					underlinePos = 2
-				}
+			//
+			// set text decoration
+			//
 
-				// draw underline
-				p.FillRect4(
-					core.NewQRectF4(
-						x,
-						y+height-underlinePos,
-						chunk.width,
-						underlinePos,
-					),
-					fg.QColor(),
-				)
+			if strikethrough {
+				drawStrikethrough(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+			}
+
+			if underline {
+				drawUnderline(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+			}
+
+			if undercurl {
+				drawUndercurl(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+			}
+
+			if underdouble {
+				drawUnderdouble(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+			}
+
+			if underdotted {
+				drawUnderdotted(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+			}
+
+			if underdashed {
+				drawUnderdashed(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
 			}
 
 			x += chunk.width

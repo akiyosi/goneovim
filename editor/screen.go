@@ -1238,7 +1238,29 @@ func (s *Screen) makeHighlight(args interface{}) *Highlight {
 	return &highlight
 }
 
-func (s *Screen) getHighlight(name string) (hl *Highlight) {
+func (s *Screen) getHighlightByHlname(name string) (hl *Highlight) {
+	keys := make([]int, 0, len(s.hlAttrDef))
+	for k := range s.hlAttrDef {
+		if s.hlAttrDef[k].hlName == "" {
+			continue
+		}
+		keys = append(keys, k)
+	}
+
+	sort.Sort(sort.Reverse(sort.IntSlice(keys)))
+
+	for _, k := range keys {
+		h := s.hlAttrDef[k]
+		if h.hlName == name {
+			hl = h
+			break
+		}
+	}
+
+	return
+}
+
+func (s *Screen) getHighlightByUiname(name string) (hl *Highlight) {
 	keys := make([]int, 0, len(s.hlAttrDef))
 	for k := range s.hlAttrDef {
 		if s.hlAttrDef[k].uiName == "" {
