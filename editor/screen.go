@@ -713,7 +713,15 @@ func (s *Screen) gridResize(args []interface{}) {
 			if win.grid != 1 && !win.isMsgGrid {
 				if !editor.isBindNvimSizeToAppwin {
 					editor.isBindNvimSizeToAppwin = true
-					s.uiTryResize(s.ws.cols, s.ws.rows)
+					newCols := s.ws.cols
+					if editor.isSetColumns {
+						newCols = editor.initialColumns
+					}
+					newRows := s.ws.rows
+					if editor.isSetLines {
+						newRows = editor.initialLines
+					}
+					s.uiTryResize(newCols, newRows)
 
 				}
 			}

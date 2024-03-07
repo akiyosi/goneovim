@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"regexp"
 	"sync"
 	"time"
 
@@ -141,6 +142,10 @@ type Editor struct {
 	muMetaKey              sync.Mutex
 	geometryUpdateMutex    sync.RWMutex
 	doRestoreSessions      bool
+	initialColumns         int
+	initialLines           int
+	isSetColumns           bool
+	isSetLines             bool
 	isSetGuiColor          bool
 	isDisplayNotifications bool
 	isKeyAutoRepeating     bool
@@ -250,8 +255,21 @@ func InitEditor(options Options, args []string) {
 	e.app.SetDoubleClickInterval(0)
 	e.putLog("finished generating the application")
 
+	var cerr, lerr error
+	e.initialColumns, cerr, e.initialLines, lerr = parseLinesAndColumns(args)
+	if cerr == nil {
+		editor.isSetColumns = true
+	}
+	if lerr == nil {
+		editor.isSetLines = true
+	}
+
 	// new nvim instance
-	signal, redrawUpdates, guiUpdates, nvimCh, uiRCh, errCh := newNvim(100, 50, e.ctx)
+	signal, redrawUpdates, guiUpdates, nvimCh, uiRCh, errCh := newNvim(
+		e.initialColumns,
+		e.initialLines,
+		e.ctx,
+	)
 
 	// e.setAppDirPath(home)
 
@@ -879,6 +897,52 @@ func (e *Editor) initColorPalette() {
 	e.colors.update()
 
 	e.putLog("initializing color palette")
+}
+
+func parseLinesAndColumns(args []string) (int, error, int, error) {
+    var columns, lines int = -1, -1
+
+    pattern := regexp.MustCompile(`lines=(\d+)|columns=(\d+)|vim\.o\["(lines|columns)"\]=(\d+)`)
+
+    for _, arg := range args {
+        matches := pattern.FindAllStringSubmatch(arg, -1)
+        for _, match := range matches {
+            if match[1] != "" { // "lines=XX"
+                if val, err := strconv.Atoi(match[1]); err == nil {
+                    lines = val
+                }
+            } else if match[2] != "" { // "columns=XX"
+                if val, err := strconv.Atoi(match[2]); err == nil {
+                    columns = val
+                }
+            } else if match[3] == "lines" && match[4] != "" { // vim.o["lines"]=XX
+                if val, err := strconv.Atoi(match[4]); err == nil {
+                    lines = val
+                }
+            } else if match[3] == "columns" && match[4] != "" { // vim.o["columns"]=XX
+                if val, err := strconv.Atoi(match[4]); err == nil {
+                    columns = val
+                }
+            }
+        }
+    }
+
+    if columns == -1 && lines == -1 {
+        return 100, fmt.Errorf("columns are not set"), 50, fmt.Errorf("lines are not set")
+    }
+
+	var cerr error
+    if columns == -1 {
+        columns = 100
+		cerr = fmt.Errorf("columns are not set")
+    }
+	var lerr error
+    if lines == -1 {
+        lines = 50
+		lerr = fmt.Errorf("lines are not set")
+    }
+
+    return columns, cerr, lines, lerr
 }
 
 func (c *ColorPalette) update() {
