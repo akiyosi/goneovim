@@ -64,7 +64,9 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 		fg := chunk.hl.fg()
 		bg := chunk.hl.bg()
 		sp := chunk.hl.special
-
+		if sp == nil {
+			sp = fg
+		}
 
 		bold := chunk.hl.bold
 		italic := chunk.hl.italic

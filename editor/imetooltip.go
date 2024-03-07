@@ -173,21 +173,20 @@ func (i *IMETooltip) parsePreeditString(preeditStr string) {
 	currConvHl := i.s.getHighlightByHlname("GuiImeCurrentConversionText")
 
 	if preeditHl == nil {
+		preeditHl = &Highlight{}
 		if i.s.ws.foreground == nil || i.s.ws.background == nil {
 			return
 		}
 
-		preeditHl = &Highlight{}
 		preeditHl.foreground = i.s.ws.foreground
 		preeditHl.background = i.s.ws.background
 	}
 
 	if currConvHl == nil {
+		currConvHl = &Highlight{}
 		if i.s.ws.foreground == nil || i.s.ws.background == nil {
 			return
 		}
-
-		currConvHl = &Highlight{}
 
 		if i.s.ws.screenbg == "light" {
 			currConvHl.foreground = warpColor(i.s.ws.background, -30)
