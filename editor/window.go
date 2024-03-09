@@ -1370,6 +1370,9 @@ func (w *Window) updateLine(row, col int, cells []interface{}) (int, bool, bool)
 			}
 
 			if line[col].highlight.blend > 0 {
+				if w.wb != line[col].highlight.blend {
+					w.s.ws.screen.purgeTextCacheForWins()
+				}
 				w.wb = line[col].highlight.blend
 			}
 
@@ -1787,34 +1790,26 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	// draw default background color if window is float window or msg grid
 	isDrawDefaultBg := false
 
-	if w.isPopupmenu || w.isMsgGrid || w.isFloatWin {
-
-		// If blur effect is true, then we should draw every cell's background color
-		if editor.config.Editor.EnableBackgroundBlur {
-		    if !(w.isPopupmenu || w.isMsgGrid || w.isFloatWin) {
-				w.SetAutoFillBackground(false)
+	// fmt.Println(w.grid, " pum:", w.isPopupmenu, " msg", w.isMsgGrid, " float:", w.isFloatWin)
+	if editor.config.Editor.EnableBackgroundBlur ||
+		editor.config.Editor.Transparent < 1.0 {
+		if !w.isExternal {
+			if w.isFloatWin {
 				isDrawDefaultBg = true
 			}
 		}
-
+	} else {
 		if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
-			if w.isMsgGrid {
-				w.SetAutoFillBackground(false)
-				isDrawDefaultBg = true
-			}
-		}
-
-		// If the window is popupmenu and  pumblend is set
-		if w.isPopupmenu && w.s.ws.pb > 0 {
-			w.SetAutoFillBackground(false)
+			isDrawDefaultBg = true
+		} else if w.isPopupmenu && w.s.ws.pb > 0 {
+			isDrawDefaultBg = true
+		} else if w.isFloatWin && w.wb > 0 {
 			isDrawDefaultBg = true
 		}
+	}
 
-		// If the window is float window and winblend is set
-		if w.isFloatWin && !w.isPopupmenu && !w.isMsgGrid && w.wb > 0 {
-			w.SetAutoFillBackground(false)
-			isDrawDefaultBg = true
-		}
+	if isDrawDefaultBg {
+		w.SetAutoFillBackground(false)
 	}
 
 	// Set smooth scroll offset
@@ -2789,7 +2784,7 @@ func drawStrikethrough(p *gui.QPainter, font *Font, color *gui.QColor, row int, 
 		weight = 1
 	}
 
-	width := int(end-start)
+	width := int(end - start)
 	if width < 0 {
 		width = 0
 	}
@@ -2823,7 +2818,7 @@ func drawUnderline(p *gui.QPainter, font *Font, color *gui.QColor, row int, star
 
 	Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
 
-	width := int(end-start)
+	width := int(end - start)
 	if width < 0 {
 		width = 0
 	}
@@ -2890,7 +2885,7 @@ func drawUnderdouble(p *gui.QPainter, font *Font, color *gui.QColor, row int, st
 	Y1 := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.1 + float64(font.lineSpace/2) + space
 	Y2 := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.8 + float64(font.lineSpace/2) + space
 
-	width := int(end-start)
+	width := int(end - start)
 	if width < 0 {
 		width = 0
 	}
@@ -2963,7 +2958,7 @@ func drawUnderdashed(p *gui.QPainter, font *Font, color *gui.QColor, row int, st
 		weight = 1
 	}
 
-	width := int((end-start)/2)
+	width := int((end - start) / 2)
 	if width < 0 {
 		width = 0
 	}
@@ -3490,31 +3485,23 @@ func (w *Window) refreshUpdateArea(fullmode int) {
 func (w *Window) fill() {
 	w.refreshUpdateArea(0)
 
-	// If transparent is true, then we should draw every cell's background color
-	if editor.config.Editor.Transparent < 1.0 {
-	    if !(w.isPopupmenu || w.isMsgGrid || w.isFloatWin) {
-			return
+	setAutoFill := true
+	if editor.config.Editor.EnableBackgroundBlur ||
+		editor.config.Editor.Transparent < 1.0 {
+		if !w.isExternal {
+			setAutoFill = false
+		}
+	} else {
+		if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
+			setAutoFill = false
+		} else if w.isPopupmenu && w.s.ws.pb > 0 {
+			setAutoFill = false
+		} else if w.isFloatWin && w.wb > 0 {
+			setAutoFill = false
 		}
 	}
 
-	// If blur effect is true, then we should draw every cell's background color
-	if editor.config.Editor.EnableBackgroundBlur {
-	    if !(w.isPopupmenu || w.isMsgGrid || w.isFloatWin) {
-			return
-		}
-	}
-
-	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
-		return
-	}
-
-	// If popupmenu pumblend is set
-	if w.isPopupmenu && w.s.ws.pb > 0 {
-		return
-	}
-
-	// If window winblend > 0 is set
-	if w.isFloatWin && !w.isPopupmenu && !w.isMsgGrid && w.wb > 0 {
+	if !setAutoFill {
 		return
 	}
 
