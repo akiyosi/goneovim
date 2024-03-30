@@ -15,17 +15,17 @@ func (e *Editor) keyRelease(event *gui.QKeyEvent) {
 		return
 	}
 
-	if editor.config.Editor.SmoothScroll {
-		ws := e.workspaces[e.active]
-		win, ok := ws.screen.getWindow(ws.cursor.gridid)
-		if !ok {
-			return
-		}
-		if win.scrollPixels2 != 0 {
-			return
-		}
-		win.grabScreenSnapshot()
-	}
+	// if editor.config.Editor.SmoothScroll {
+	// 	ws := e.workspaces[e.active]
+	// 	win, ok := ws.screen.getWindow(ws.cursor.gridid)
+	// 	if !ok {
+	// 		return
+	// 	}
+	// 	if win.scrollPixels2 != 0 {
+	// 		return
+	// 	}
+	// 	win.grabScreenSnapshot()
+	// }
 
 	e.isKeyAutoRepeating = false
 }
@@ -38,9 +38,12 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	if ws.nvim == nil {
 		return
 	}
-	if !e.isKeyAutoRepeating {
-		ws.getSnapshot()
+	if event.IsAutoRepeat() {
+		e.isKeyAutoRepeating = true
 	}
+	// if !e.isKeyAutoRepeating {
+	// 	ws.getSnapshot()
+	// }
 	if !e.isHideMouse && e.config.Editor.HideMouseWhenTyping {
 		bc := gui.NewQCursor2(core.Qt__BlankCursor)
 		gui.QGuiApplication_SetOverrideCursor(bc)
@@ -51,9 +54,6 @@ func (e *Editor) keyPress(event *gui.QKeyEvent) {
 	input := e.convertKey(event)
 
 	e.putLog("key input for nvim::", "input:", input)
-	if event.IsAutoRepeat() {
-		e.isKeyAutoRepeating = true
-	}
 	if input != "" {
 		ws.nvim.Input(input)
 	}

@@ -12,6 +12,8 @@ import (
 // Cursor is
 type Cursor struct {
 	widgets.QWidget
+
+	smoothMoveAnimation  *core.QPropertyAnimation
 	charCache            *Cache
 	font                 *Font
 	fallbackfonts        []*Font
@@ -692,15 +694,60 @@ func (c *Cursor) redraw() {
 
 // paint() is to request update cursor widget.
 // NOTE: This function execution may not be necessary.
-//       This is because move() is performed in the redraw() of the cursor,
-//       and it seems that paintEvent is fired inside
-//       the cursor widget in conjunction with this move processing.
+//
+//	This is because move() is performed in the redraw() of the cursor,
+//	and it seems that paintEvent is fired inside
+//	the cursor widget in conjunction with this move processing.
 func (c *Cursor) paint() {
 	if editor.isKeyAutoRepeating {
 		return
 	}
 
 	c.Update()
+}
+
+func (c *Cursor) initializeOrReuseSmoothMoveAnimation() {
+	if c.smoothMoveAnimation == nil {
+		c.smoothMoveAnimation = core.NewQPropertyAnimation2(c, core.NewQByteArray2("animationProp", len("animationProp")), c)
+		c.smoothMoveAnimation.SetDuration(int(editor.config.Cursor.Duration))
+		c.smoothMoveAnimation.SetStartValue(core.NewQVariant10(float64(0.01)))
+		c.smoothMoveAnimation.SetEndValue(core.NewQVariant10(1))
+		c.smoothMoveAnimation.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
+
+		c.smoothMoveAnimation.ConnectValueChanged(func(value *core.QVariant) {
+			if !c.doAnimate {
+				c.delta = 0
+				c.deltax = 0
+				c.deltay = 0
+				c.move()
+				c.paint()
+				return
+			}
+			ok := false
+			v := value.ToDouble(&ok)
+			if !ok {
+				return
+			}
+
+			c.delta = v
+			c.deltax = (c.x - c.xprime) * v
+			c.deltay = (c.y - c.yprime) * v
+
+			if v == 1.0 {
+				c.delta = 0
+				c.deltax = 0
+				c.deltay = 0
+				c.doAnimate = false
+			}
+
+			if c.doAnimate {
+				c.animationStartX = c.xprime
+				c.animationStartY = c.yprime
+			}
+
+			c.move()
+		})
+	}
 }
 
 func (c *Cursor) animateMove() {
@@ -711,61 +758,13 @@ func (c *Cursor) animateMove() {
 		return
 	}
 
-	// process smooth scroll
-	a := core.NewQPropertyAnimation2(c, core.NewQByteArray2("animationProp", len("animationProp")), c)
-	a.ConnectValueChanged(func(value *core.QVariant) {
-		if !c.doAnimate {
-			c.delta = 0
-			c.deltax = 0
-			c.deltay = 0
-			c.move()
-			c.paint()
-			return
-		}
-		ok := false
-		v := value.ToDouble(&ok)
-		if !ok {
-			return
-		}
+	c.initializeOrReuseSmoothMoveAnimation()
 
-		c.delta = v
-		c.deltax = (c.x - c.xprime) * v
-		c.deltay = (c.y - c.yprime) * v
+	if c.smoothMoveAnimation.State() == core.QAbstractAnimation__Running {
+		c.smoothMoveAnimation.Stop()
+	}
 
-		if v == 1.0 {
-			c.delta = 0
-			c.deltax = 0
-			c.deltay = 0
-			c.doAnimate = false
-		}
-
-		if c.doAnimate {
-			c.animationStartX = c.xprime
-			c.animationStartY = c.yprime
-		}
-
-		c.move()
-	})
-	duration := editor.config.Cursor.Duration
-	a.SetDuration(int(duration))
-	a.SetStartValue(core.NewQVariant10(float64(0.01)))
-	a.SetEndValue(core.NewQVariant10(1))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCirc))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuart))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutExpo))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutQuint))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutCubic))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuint))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__Linear))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InQuart))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCubic))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutQuart))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutInQuart))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InOutExpo))
-	a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__OutCirc))
-	// a.SetEasingCurve(core.NewQEasingCurve(core.QEasingCurve__InCubic))
-
-	a.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__DeleteWhenStopped))
+	c.smoothMoveAnimation.Start(core.QAbstractAnimation__DeletionPolicy(core.QAbstractAnimation__KeepWhenStopped))
 }
 
 func (c *Cursor) resize(width, height int) {

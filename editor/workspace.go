@@ -58,6 +58,7 @@ type Workspace struct {
 	fontdialog         *widgets.QFontDialog
 	guiUpdates         chan []interface{}
 	redrawUpdates      chan [][]interface{}
+	flushCh            chan []interface{}
 	signal             *neovimSignal
 	nvim               *nvim.Nvim
 	widget             *widgets.QWidget
@@ -104,12 +105,15 @@ type Workspace struct {
 	isDrawTabline      bool
 	isMouseEnabled     bool
 	isTerminalMode     bool
+	doGetSnapshot      bool
+	doneGetSnapshot    bool
 }
 
 func newWorkspace() *Workspace {
 	editor.putLog("initialize workspace")
 	ws := &Workspace{
 		stop:         make(chan struct{}),
+		flushCh:      make(chan []interface{}, 100),
 		foreground:   newRGBA(255, 255, 255, 1),
 		background:   newRGBA(0, 0, 0, 1),
 		special:      newRGBA(255, 255, 255, 1),
@@ -941,7 +945,13 @@ func handleEvent(update interface{}) (event string, ok bool) {
 }
 
 func (ws *Workspace) handleRedraw(updates [][]interface{}) {
-	s := ws.screen
+
+	ws.doGetSnapshot = ws.shouldGetSnapshot(updates)
+	if ws.doGetSnapshot {
+		ws.getSnapshot()
+		ws.doneGetSnapshot = true
+	}
+
 	for _, update := range updates {
 		event, ok := handleEvent(update[0])
 		if !ok {
@@ -951,62 +961,26 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 		args := update[1:]
 		editor.putLog("start   ", event)
 
-		// // for DEBUG::
-		// if event == "grid_line" || event == "hl_attr_define" || event == "mode_info_set" {
-		// 	fmt.Println(event)
-		// } else {
-		// 	fmt.Println(event, args)
-		// }
-
 		switch event {
-		// Global Events
 		case "set_title":
-			titleStr := (update[1].([]interface{}))[0].(string)
-			editor.window.SetupTitle(titleStr)
-			if runtime.GOOS == "linux" {
-				editor.window.SetWindowTitle(titleStr)
-			}
-
+			ws.setTitle(args)
 		case "set_icon":
 		case "mode_info_set":
 			ws.modeInfoSet(args)
-			ws.cursor.modeIdx = 0
 		case "option_set":
-			ws.setOption(update)
-
-			// Set Transparent blue effect
-			if runtime.GOOS == "darwin" && editor.config.Editor.EnableBackgroundBlur {
-				isLight := ws.screenbg == "light"
-				editor.window.SetBlurEffectForMacOS(isLight)
-			}
-
+			ws.optionSet(args)
 		case "mode_change":
-			arg := update[len(update)-1].([]interface{})
-			ws.modeEnablingIME(arg[0].(string))
-			ws.mode = arg[0].(string)
-			ws.modeIdx = util.ReflectToInt(arg[1])
-			if ws.cursor.modeIdx != ws.modeIdx {
-				ws.cursor.modeIdx = ws.modeIdx
-			}
-			ws.disableImeInNormal()
-			ws.shouldUpdate.cursor = true
+			ws.modeChange(args)
 
-		// Not used in the current specification.
 		case "mouse_on":
-			ws.isMouseEnabled = true
+			ws.mouseOn()
 		case "mouse_off":
-			ws.isMouseEnabled = false
+			ws.mouseOff()
 
-		// Indicates to the UI that it must stop rendering the cursor. This event
-		// is misnamed and does not actually have anything to do with busyness.
-		// NOTE: In goneovim, the wdiget layer of the cursor has special processing,
-		//       so it cannot be hidden straightforwardly.
 		case "busy_start":
-			ws.cursor.isBusy = true
-			ws.shouldUpdate.cursor = true
+			ws.busyStart()
 		case "busy_stop":
-			ws.cursor.isBusy = false
-			ws.shouldUpdate.cursor = true
+			ws.busyStop()
 
 		case "suspend":
 		case "update_menu":
@@ -1018,163 +992,115 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Grid Events
 		case "grid_resize":
-			s.gridResize(args)
-			ws.shouldUpdate.globalgrid = true
+			ws.gridResize(args)
 		case "default_colors_set":
-			for _, u := range update[1:] {
-				ws.setDefaultColorsSet(u.([]interface{}))
-			}
-
-			// Purge all text cache for window's
-			ws.screen.purgeTextCacheForWins()
-
+			ws.defaultColorsSet(args)
 		case "hl_attr_define":
-			s.setHlAttrDef(args)
+			ws.hlAttrDefine(args)
 		case "hl_group_set":
-			s.setHighlightGroup(args)
+			ws.hlGroupSet(args)
+
 		case "grid_line":
-			s.gridLine(args)
-			ws.shouldUpdate.cursor = true
-			ws.shouldUpdate.minimap = true
+			ws.flushCh <- update
 		case "grid_clear":
-			s.gridClear(args)
+			ws.flushCh <- update
 		case "grid_destroy":
-			s.gridDestroy(args)
+			ws.flushCh <- update
 		case "grid_cursor_goto":
-			s.gridCursorGoto(args)
-			ws.shouldUpdate.cursor = true
-			ws.shouldUpdate.minimap = true
+			ws.flushCh <- update
 		case "grid_scroll":
-			s.gridScroll(args)
-			ws.shouldUpdate.minimap = true
+			ws.flushCh <- update
 
 		// Multigrid Events
 		case "win_pos":
-			s.windowPosition(args)
-			ws.shouldUpdate.globalgrid = true
+			ws.winPos(args)
 		case "win_float_pos":
-			s.windowFloatPosition(args)
+			ws.winFloatPos(args)
 		case "win_external_pos":
-			s.windowExternalPosition(args)
+			ws.winExternalPos(args)
 		case "win_hide":
-			s.windowHide(args)
+			ws.winHide(args)
 		case "win_close":
-			s.windowClose()
+			ws.winClose()
 		case "msg_set_pos":
-			s.msgSetPos(args)
+			ws.msgSetPos(args)
 		case "win_viewport":
-			ws.windowViewport(args)
+			ws.flushCh <- update
 
 		// Popupmenu Events
 		case "popupmenu_show":
-			if ws.cmdline != nil {
-				if ws.cmdline.shown {
-					ws.cmdline.cmdWildmenuShow(args)
-				}
-			}
-			if ws.popup != nil {
-				if ws.cmdline != nil {
-					if !ws.cmdline.shown {
-						ws.popup.showItems(args)
-					}
-				} else {
-					ws.popup.showItems(args)
-				}
-			}
+			ws.popupmenuShow(args)
 		case "popupmenu_select":
-			if ws.cmdline != nil {
-				if ws.cmdline.shown {
-					ws.cmdline.cmdWildmenuSelect(args)
-				}
-			}
-			if ws.popup != nil {
-				if ws.cmdline != nil {
-					if !ws.cmdline.shown {
-						ws.popup.selectItem(args)
-					}
-				} else {
-					ws.popup.selectItem(args)
-				}
-			}
+			ws.popupmenuSelect(args)
 		case "popupmenu_hide":
-			if ws.cmdline != nil {
-				if ws.cmdline.shown {
-					ws.cmdline.cmdWildmenuHide()
-				}
-			}
-			if ws.popup != nil {
-				if ws.cmdline != nil {
-					if !ws.cmdline.shown {
-						ws.popup.hide()
-					}
-				} else {
-					ws.popup.hide()
-				}
-			}
+			ws.popupmenuHide(args)
+
 		// Tabline Events
 		case "tabline_update":
-			if ws.tabline != nil {
-				ws.tabline.handle(args)
-			}
+			ws.tablineUpdate(args)
 
 		// Cmdline Events
 		case "cmdline_show":
-			if ws.cmdline != nil {
-				ws.cmdline.show(args)
-			}
-
+			ws.cmdlineShow(args)
 		case "cmdline_pos":
-			if ws.cmdline != nil {
-				ws.cmdline.changePos(args)
-			}
-
+			ws.cmdlinePos(args)
 		case "cmdline_special_char":
-
 		case "cmdline_char":
-			if ws.cmdline != nil {
-				ws.cmdline.putChar(args)
-			}
+			ws.cmdlineChar(args)
 		case "cmdline_hide":
-			if ws.cmdline != nil {
-				ws.cmdline.hide()
-			}
+			ws.cmdlineHide(args)
 		case "cmdline_function_show":
-			if ws.cmdline != nil {
-				ws.cmdline.functionShow()
-			}
+			ws.cmdlineFunctionShow(args)
 		case "cmdline_function_hide":
-			if ws.cmdline != nil {
-				ws.cmdline.functionHide()
-			}
+			ws.cmdlineFunctionHide(args)
 		case "cmdline_block_show":
 		case "cmdline_block_append":
 		case "cmdline_block_hide":
 
-		// // -- deprecated events
-		// case "wildmenu_show":
-		// 	ws.cmdline.wildmenuShow(args)
-		// case "wildmenu_select":
-		// 	ws.cmdline.wildmenuSelect(args)
-		// case "wildmenu_hide":
-		// 	ws.cmdline.wildmenuHide()
-
 		// Message/Dialog Events
 		case "msg_show":
-			ws.message.msgShow(args)
+			ws.msgShow(args)
 		case "msg_clear":
-			ws.message.msgClear()
+			ws.msgClear()
 		case "msg_showmode":
 		case "msg_showcmd":
 		case "msg_ruler":
 		case "msg_history_show":
-			ws.message.msgHistoryShow(args)
+			ws.msgHistoryShow(args)
 		default:
 		}
+
 		editor.putLog("finished", event)
 	}
 }
 
 func (ws *Workspace) flush() {
+	close(ws.flushCh)
+	for update := range ws.flushCh {
+		event, ok := handleEvent(update[0])
+		if !ok {
+			continue
+		}
+
+		args := update[1:]
+		switch event {
+		case "grid_line":
+			ws.gridLine(args)
+		case "grid_clear":
+			ws.gridClear(args)
+		case "grid_destroy":
+			ws.gridDestroy(args)
+		case "grid_cursor_goto":
+			ws.gridCursorGoto(args)
+		case "grid_scroll":
+			ws.gridScroll(args)
+		case "win_viewport":
+			ws.winViewport(args)
+		}
+	}
+	ws.flushCh = make(chan []interface{}, 100)
+	ws.doneGetSnapshot = false
+
 	if ws.shouldUpdate.globalgrid {
 		ws.screen.detectCoveredCellInGlobalgrid()
 		ws.shouldUpdate.globalgrid = false
@@ -1241,6 +1167,69 @@ func (ws *Workspace) disableImeInNormal() {
 		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
 	default:
 	}
+}
+
+func (ws *Workspace) shouldGetSnapshot(updates [][]interface{}) bool {
+	doGetSnapshot := false
+	for _, update := range updates {
+		event, ok := handleEvent(update[0])
+		if !ok {
+			continue
+		}
+
+		args := update[1:]
+
+		switch event {
+		case "grid_scroll":
+			for _, arg := range args {
+				gridid := util.ReflectToInt(arg.([]interface{})[0])
+				if gridid == 1 {
+					continue
+				}
+
+				win, ok := ws.screen.getWindow(gridid)
+				if !ok {
+					continue
+				}
+
+				if win.isMsgGrid {
+					continue
+				}
+
+				cols := arg.([]interface{})[5]
+				if cols != 0 {
+					doGetSnapshot = true
+				}
+
+			}
+		case "win_viewport":
+			delta := -1
+			for _, a := range args {
+				arg := a.([]interface{})
+				if len(arg) >= 8 {
+					delta = util.ReflectToInt(arg[7])
+				}
+				grid := util.ReflectToInt(arg[0])
+				win, ok := ws.screen.getWindow(grid)
+				if !ok {
+					continue
+				}
+				if win.grid == 1 || win.isMsgGrid {
+					continue
+				}
+
+				if delta != 0 {
+					doGetSnapshot = true
+				}
+			}
+		}
+	}
+
+	if ws.doneGetSnapshot {
+		doGetSnapshot = false
+	}
+
+	return doGetSnapshot
 }
 
 func (ws *Workspace) modeEnablingIME(mode string) {
@@ -1368,6 +1357,14 @@ func (ws *Workspace) updateWorkspaceColor() {
 	}
 }
 
+func (ws *Workspace) setTitle(args []interface{}) {
+	titleStr := (args[0].([]interface{}))[0].(string)
+	editor.window.SetupTitle(titleStr)
+	if runtime.GOOS == "linux" {
+		editor.window.SetWindowTitle(titleStr)
+	}
+}
+
 func (ws *Workspace) modeInfoSet(args []interface{}) {
 	for _, arg := range args {
 		ws.cursorStyleEnabled = arg.([]interface{})[0].(bool)
@@ -1379,13 +1376,12 @@ func (ws *Workspace) modeInfoSet(args []interface{}) {
 			ws.modeInfo[i] = modeProp.(map[string]interface{})
 		}
 	}
+
+	ws.cursor.modeIdx = 0
 }
 
-func (ws *Workspace) setOption(update []interface{}) {
-	for n, option := range update {
-		if n == 0 {
-			continue
-		}
+func (ws *Workspace) optionSet(args []interface{}) {
+	for _, option := range args {
 		key := (option.([]interface{}))[0].(string)
 		val := (option.([]interface{}))[1]
 		switch key {
@@ -1418,9 +1414,242 @@ func (ws *Workspace) setOption(update []interface{}) {
 		default:
 		}
 	}
+
+	// Set Transparent blue effect
+	if runtime.GOOS == "darwin" && editor.config.Editor.EnableBackgroundBlur {
+		isLight := ws.screenbg == "light"
+		editor.window.SetBlurEffectForMacOS(isLight)
+	}
 }
 
-func (ws *Workspace) windowViewport(args []interface{}) {
+func (ws *Workspace) msgHistoryShow(args []interface{}) {
+	if ws.message != nil {
+		ws.message.msgHistoryShow(args)
+	}
+}
+
+func (ws *Workspace) msgClear() {
+	if ws.message != nil {
+		ws.message.msgClear()
+	}
+}
+
+func (ws *Workspace) msgShow(args []interface{}) {
+	if ws.message != nil {
+		ws.message.msgShow(args)
+	}
+}
+
+func (ws *Workspace) cmdlineFunctionHide(args []interface{}) {
+	if ws.cmdline != nil {
+		ws.cmdline.functionHide()
+	}
+}
+
+func (ws *Workspace) cmdlineFunctionShow(args []interface{}) {
+	if ws.cmdline != nil {
+		ws.cmdline.functionShow()
+	}
+}
+
+func (ws *Workspace) cmdlineHide(args []interface{}) {
+	if ws.cmdline != nil {
+		ws.cmdline.hide()
+	}
+}
+
+func (ws *Workspace) cmdlineChar(args []interface{}) {
+	if ws.cmdline != nil {
+		ws.cmdline.putChar(args)
+	}
+}
+
+func (ws *Workspace) cmdlineSpecialChar(args []interface{}) {
+}
+
+func (ws *Workspace) cmdlinePos(args []interface{}) {
+	if ws.cmdline != nil {
+		ws.cmdline.changePos(args)
+	}
+}
+
+func (ws *Workspace) cmdlineShow(args []interface{}) {
+	if ws.cmdline != nil {
+		ws.cmdline.show(args)
+	}
+}
+
+func (ws *Workspace) tablineUpdate(args []interface{}) {
+	if ws.tabline != nil {
+		ws.tabline.handle(args)
+	}
+}
+
+func (ws *Workspace) popupmenuHide(args []interface{}) {
+	if ws.cmdline != nil {
+		if ws.cmdline.shown {
+			ws.cmdline.cmdWildmenuHide()
+		}
+	}
+	if ws.popup != nil {
+		if ws.cmdline != nil {
+			if !ws.cmdline.shown {
+				ws.popup.hide()
+			}
+		} else {
+			ws.popup.hide()
+		}
+	}
+}
+
+func (ws *Workspace) popupmenuSelect(args []interface{}) {
+	if ws.cmdline != nil {
+		if ws.cmdline.shown {
+			ws.cmdline.cmdWildmenuSelect(args)
+		}
+	}
+	if ws.popup != nil {
+		if ws.cmdline != nil {
+			if !ws.cmdline.shown {
+				ws.popup.selectItem(args)
+			}
+		} else {
+			ws.popup.selectItem(args)
+		}
+	}
+}
+
+func (ws *Workspace) popupmenuShow(args []interface{}) {
+	if ws.cmdline != nil {
+		if ws.cmdline.shown {
+			ws.cmdline.cmdWildmenuShow(args)
+		}
+	}
+	if ws.popup != nil {
+		if ws.cmdline != nil {
+			if !ws.cmdline.shown {
+				ws.popup.showItems(args)
+			}
+		} else {
+			ws.popup.showItems(args)
+		}
+	}
+}
+
+func (ws *Workspace) msgSetPos(args []interface{}) {
+	ws.screen.msgSetPos(args)
+}
+
+func (ws *Workspace) winClose() {
+	ws.screen.windowClose()
+}
+
+func (ws *Workspace) winHide(args []interface{}) {
+	ws.screen.windowHide(args)
+}
+
+func (ws *Workspace) winExternalPos(args []interface{}) {
+	ws.screen.windowExternalPosition(args)
+}
+
+func (ws *Workspace) winFloatPos(args []interface{}) {
+	ws.screen.windowFloatPosition(args)
+}
+
+func (ws *Workspace) winPos(args []interface{}) {
+	ws.screen.windowPosition(args)
+	ws.shouldUpdate.globalgrid = true
+}
+
+func (ws *Workspace) gridScroll(args []interface{}) {
+	ws.screen.gridScroll(args)
+	ws.shouldUpdate.minimap = true
+}
+
+func (ws *Workspace) gridCursorGoto(args []interface{}) {
+	ws.screen.gridCursorGoto(args)
+	ws.shouldUpdate.cursor = true
+	ws.shouldUpdate.minimap = true
+}
+
+func (ws *Workspace) gridDestroy(args []interface{}) {
+	ws.screen.gridDestroy(args)
+}
+
+func (ws *Workspace) gridClear(args []interface{}) {
+	ws.screen.gridClear(args)
+}
+
+func (ws *Workspace) gridLine(args []interface{}) {
+	ws.screen.gridLine(args)
+	ws.shouldUpdate.cursor = true
+	ws.shouldUpdate.minimap = true
+}
+
+func (ws *Workspace) hlGroupSet(args []interface{}) {
+	ws.screen.setHighlightGroup(args)
+}
+
+func (ws *Workspace) hlAttrDefine(args []interface{}) {
+	ws.screen.setHlAttrDef(args)
+}
+
+func (ws *Workspace) defaultColorsSet(args []interface{}) {
+	for _, u := range args {
+		ws.setDefaultColorsSet(u.([]interface{}))
+	}
+
+	// Purge all text cache for window's
+	ws.screen.purgeTextCacheForWins()
+
+}
+
+func (ws *Workspace) gridResize(args []interface{}) {
+	ws.screen.gridResize(args)
+	ws.shouldUpdate.globalgrid = true
+}
+
+func (ws *Workspace) busyStart() {
+	ws.cursor.isBusy = true
+	ws.shouldUpdate.cursor = true
+}
+
+func (ws *Workspace) busyStop() {
+	ws.cursor.isBusy = false
+	ws.shouldUpdate.cursor = true
+}
+
+func (ws *Workspace) mouseOn() {
+	ws.isMouseEnabled = true
+}
+
+func (ws *Workspace) mouseOff() {
+	ws.isMouseEnabled = false
+}
+
+func (ws *Workspace) modeChange(args []interface{}) {
+	arg := args[0].([]interface{})
+	ws.modeEnablingIME(arg[0].(string))
+	ws.mode = arg[0].(string)
+	ws.modeIdx = util.ReflectToInt(arg[1])
+	if ws.cursor.modeIdx != ws.modeIdx {
+		ws.cursor.modeIdx = ws.modeIdx
+	}
+	ws.disableImeInNormal()
+	ws.shouldUpdate.cursor = true
+}
+
+func (ws *Workspace) winViewport(args []interface{}) {
+	// smooth scroll feature disabled
+	if !editor.config.Editor.SmoothScroll {
+		return
+	}
+
+	// Suppress smooth scroll rendering when key auto-repeat is enabled
+	if editor.isKeyAutoRepeating {
+		return
+	}
+
 	for _, e := range args {
 		arg := e.([]interface{})
 
@@ -1436,6 +1665,10 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 			curCol,
 			grid,
 		}
+
+		// fmt.Println(
+		// 	fmt.Sprintf("top:%d, bottom:%d", top, bottom),
+		// )
 
 		maxLine := 0
 		if len(arg) >= 7 {
@@ -1457,84 +1690,52 @@ func (ws *Workspace) windowViewport(args []interface{}) {
 			ws.maxLine = maxLine
 		}
 
-		if !(ws.oldViewport == ws.viewport && ws.viewport == viewport) {
-			win, delta, ok := ws.handleViewport(
-				[6]int{
-					top,
-					bottom,
-					curLine,
-					curCol,
-					grid,
-					delta,
-				},
-			)
-			if delta == 0 {
-				continue
-			}
-			if ok {
-				win.smoothScroll(delta)
-			}
+		if delta == 0 {
+			continue
 		}
-	}
-}
 
-func (ws *Workspace) handleViewport(vp [6]int) (*Window, int, bool) {
-	// smooth scroll feature disabled
-	if !editor.config.Editor.SmoothScroll {
-		return nil, 0, false
-	}
-
-	win, ok := ws.screen.getWindow(vp[4])
-	if !ok {
-		return nil, 0, false
-	}
-	if win.isMsgGrid || vp[4] == 1 { // if grid is message grid or global grid
-		return nil, 0, false
-	}
-
-	delta := vp[5]
-	if delta == 0 {
-		return nil, 0, false
-	}
-
-	// if If the maximum line is increased and there is content to be pasted into the maximum line
-	if (ws.maxLine == vp[1]-1) && ws.maxLineDelta != 0 {
-		if delta != 0 {
-			win.doGetSnapshot = false
+		// do not scroll smoothly when the maximum line is less than buffer rows
+		if ws.maxLine-ws.maxLineDelta < ws.rows {
+			continue
 		}
-	}
 
-	if win.doGetSnapshot {
-		if !editor.isKeyAutoRepeating {
-			win.grabScreenSnapshot()
+		// Does not scroll smoothly if the size of the grid is increased without
+		// changing the position of the top
+		if top == ws.oldViewport[0] && bottom != ws.oldViewport[1] {
+			continue
 		}
-		win.doGetSnapshot = false
-	}
 
-	// // do not scroll smoothly when the maximum line is less than buffer rows
-	if ws.maxLine-ws.maxLineDelta < ws.rows {
-		return nil, 0, false
-	}
+		win, ok := ws.screen.getWindow(grid)
+		if !ok {
+			continue
+		}
 
-	// suppress snapshot
-	if editor.isKeyAutoRepeating {
-		return nil, 0, false
-	}
+		// if grid is message grid or global grid
+		if win.isMsgGrid || win.grid == 1 {
+			continue
+		}
 
-	if delta != 0 {
-		win.scrollCols = int(math.Abs(float64(delta)))
-	}
+		// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
+		if win.lastScrollphase != core.Qt__ScrollEnd {
+			continue
+		}
 
-	// Compatibility of smooth scrolling with touchpad and smooth scrolling with scroll commands
-	if win.lastScrollphase != core.Qt__ScrollEnd {
-		return nil, 0, false
-	}
+		// Suppresses smooth scrolling by command while touchpad scrolling is in progress
+		if win.scrollPixels[1] != 0 || win.lastScrollphase != core.Qt__ScrollEnd {
+			continue
+		}
 
-	if delta == 0 {
-		return win, delta, false
-	}
+		if delta > 0 && delta > win.rows {
+			delta = 1
+			win.dropScreenSnapshot()
+		}
+		if delta < 0 && delta*-1 > win.rows {
+			delta = -1
+			win.dropScreenSnapshot()
+		}
 
-	return win, delta, true
+		win.smoothScroll(float64(delta))
+	}
 }
 
 func (ws *Workspace) scrollMinimap() {
@@ -1772,16 +1973,7 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 		if !ok {
 			return
 		}
-		ws.optionSet(optionName, wid)
-	case "gonvim_textchanged":
-		if editor.config.Editor.SmoothScroll {
-			ws := editor.workspaces[editor.active]
-			win, ok := ws.screen.getWindow(ws.cursor.gridid)
-			if !ok {
-				return
-			}
-			win.doGetSnapshot = true
-		}
+		ws.setOption(optionName, wid)
 
 	default:
 		fmt.Println("unhandled Gui event", event)
@@ -2122,6 +2314,7 @@ func (ws *Workspace) setPumblend(arg interface{}) {
 	}
 
 	ws.pb = pumblend
+	ws.screen.purgeTextCacheForWins()
 }
 
 func (ws *Workspace) getWindowOption(timeout int, option, scope string, wid ...nvim.Window) string {
@@ -2192,9 +2385,9 @@ func (ws *Workspace) getBufferOption(timeout int, option string, wid nvim.Window
 	return result
 }
 
-// optionSet is
+// setOption is
 // This function gets the value of an option that cannot be caught by the set_option event.
-func (ws *Workspace) optionSet(optionName string, wid nvim.Window) {
+func (ws *Workspace) setOption(optionName string, wid nvim.Window) {
 	win, ok := ws.screen.getGrid(wid)
 	if !ok {
 		return

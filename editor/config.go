@@ -356,7 +356,7 @@ func (c *gonvimConfig) init() {
 
 	c.Editor.LineToScroll = 1
 	c.Editor.SmoothScroll = false
-	c.Editor.SmoothScrollDuration = 300
+	c.Editor.SmoothScrollDuration = 600
 	c.Editor.DisableHorizontalScroll = false
 
 	c.Editor.DrawBorderForFloatWindow = false
@@ -370,7 +370,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.DiffDeletePattern = 1
 	c.Editor.DiffChangePattern = 1
 
-	c.Cursor.Duration = 70
+	c.Cursor.Duration = 180
 
 	// ----
 
