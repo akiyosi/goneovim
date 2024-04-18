@@ -1026,6 +1026,8 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 			ws.msgSetPos(args)
 		case "win_viewport":
 			ws.flushCh <- update
+		case "win_viewport_margins":
+			ws.flushCh <- update
 
 		// Popupmenu Events
 		case "popupmenu_show":
@@ -1096,6 +1098,8 @@ func (ws *Workspace) flush() {
 			ws.gridScroll(args)
 		case "win_viewport":
 			ws.winViewport(args)
+		case "win_viewport_margins":
+			ws.winViewportMargins(args)
 		}
 	}
 	ws.flushCh = make(chan []interface{}, 100)
@@ -1725,6 +1729,13 @@ func (ws *Workspace) winViewport(args []interface{}) {
 			continue
 		}
 
+		// If the mouse is off in terminal mode and the cursor column is 0,
+		// it is assumed that tig, lazygit, or other proprietary UI has been executed.
+		if ws.isTerminalMode && ws.cursor.isBusy && curCol == 1 {
+			win.dropScreenSnapshot()
+			continue
+		}
+
 		if delta > 0 && delta > win.rows {
 			delta = 1
 			win.dropScreenSnapshot()
@@ -1735,6 +1746,25 @@ func (ws *Workspace) winViewport(args []interface{}) {
 		}
 
 		win.smoothScroll(float64(delta))
+	}
+}
+
+func (ws *Workspace) winViewportMargins(args []interface{}) {
+	for _, e := range args {
+		arg := e.([]interface{})
+
+		grid := util.ReflectToInt(arg[0])
+		top := util.ReflectToInt(arg[2])
+		bottom := util.ReflectToInt(arg[3])
+		left := util.ReflectToInt(arg[4])
+		right := util.ReflectToInt(arg[5])
+
+		win, ok := ws.screen.getWindow(grid)
+		if !ok {
+			continue
+		}
+
+		win.viewportMargins = [4]int{top, bottom, left, right}
 	}
 }
 

@@ -518,7 +518,7 @@ All Options are follows:
         ## Animates the scrolling behavior of Neovim when the scroll command is entered.
         # SmoothScroll = false
         ## Specifies the speed of animation in smooth scrolling.
-        # SmoothScrollDuration = 300
+        # SmoothScrollDuration = 750
         ## Disables horizontal scrolling for smooth scrolling with the touchpad.
         # DisableHorizontalScroll = true
         

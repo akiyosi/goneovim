@@ -144,6 +144,7 @@ type Window struct {
 	extwinRelativePos      [2]int
 	pos                    [2]int
 	scrollPixels           [2]int
+	viewportMargins        [4]int
 	wb                     int
 	height                 int
 	grid                   gridId
@@ -228,18 +229,18 @@ func (w *Window) grabScreenSnapshot() {
 
 func (w *Window) grabScreen() *gui.QPixmap {
 	var rect *core.QRect
-	if w.getWinbar() != "" {
-		fullRect := w.Rect()
-		font := w.getFont()
-		rect = core.NewQRect4(
-			fullRect.X(),
-			fullRect.Y()+font.lineHeight,
-			fullRect.Width(),
-			fullRect.Height()-font.lineHeight,
-		)
-	} else {
-		rect = w.Rect()
-	}
+	fullRect := w.Rect()
+	font := w.getFont()
+	rect = core.NewQRect4(
+		fullRect.X()+w.viewportMargins[2]*int(font.cellwidth),
+		fullRect.Y()+(w.viewportMargins[0]*font.lineHeight),
+		fullRect.Width()-w.viewportMargins[2]*int(font.cellwidth)-w.viewportMargins[3]*int(font.cellwidth),
+		fullRect.Height()-(w.viewportMargins[0]*font.lineHeight)-(w.viewportMargins[1]*font.lineHeight),
+		// fullRect.X(),
+		// fullRect.Y(),
+		// fullRect.Width(),
+		// fullRect.Height(),
+	)
 	return w.Grab(rect)
 }
 
@@ -292,17 +293,36 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		rows++
 	}
 
-	// Draw contents
-	for y := row + rows; y >= row; y-- {
-		if y >= w.rows {
-			continue
-		}
-		w.drawBackground(p, y, col, cols)
-		w.drawForeground(p, y, col, cols)
-	}
-
 	// Draw scroll snapshot
 	w.drawScrollSnapshot(p)
+
+	var verScrollPixels int
+	if w.lastScrollphase != core.Qt__NoScrollPhase {
+		verScrollPixels = w.scrollPixels2
+	}
+	if editor.config.Editor.LineToScroll == 1 {
+		verScrollPixels += w.scrollPixels[1]
+	}
+
+	// Draw contents
+	if w.isFloatWin && !w.isMsgGrid {
+		w.drawUndrawnAreas(p)
+	}
+	// for y := row + rows; y >= row; y-- {
+	// 	w.drawBackground(p, y, col, cols)
+	// 	w.drawForeground(p, y, col, cols)
+	// }
+	if verScrollPixels <= 0 {
+		for y := row + rows; y >= row; y-- {
+			w.drawBackground(p, y, col, cols)
+			w.drawForeground(p, y, col, cols)
+		}
+	} else {
+		for y := row; y <= row+rows; y++ {
+			w.drawBackground(p, y, col, cols)
+			w.drawForeground(p, y, col, cols)
+		}
+	}
 
 	// TODO: We should use msgSepChar to separate message window area
 	// // If Window is Message Area, draw separator
@@ -380,20 +400,20 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 	font := w.getFont()
 	height := math.Abs(w.scrollDelta) * float64(font.lineHeight)
 
-	var snapshotPos float64
+	var snapshotPosX, snapshotPosY float64
+	snapshotPosX = float64(w.viewportMargins[2]) * font.cellwidth
 	if w.scrollPixels2 > 0 {
-		snapshotPos = float64(w.scrollPixels2) - height
+		snapshotPosY = float64(w.scrollPixels2) - height
 	} else if w.scrollPixels2 < 0 {
-		snapshotPos = height + float64(w.scrollPixels2)
+		snapshotPosY = height + float64(w.scrollPixels2)
 	}
-	if w.getWinbar() != "" {
-		snapshotPos += float64(font.lineHeight)
-	}
+	snapshotPosY += float64(w.viewportMargins[0] * font.lineHeight)
+
 	if w.scrollPixels2 != 0 {
 		p.DrawPixmap7(
 			core.NewQPointF3(
-				0,
-				snapshotPos,
+				snapshotPosX,
+				snapshotPosY,
 			),
 			w.snapshot,
 		)
@@ -1763,6 +1783,55 @@ func (w *Window) queueRedraw(x, y, width, height int) {
 	w.redrawMutex.Unlock()
 }
 
+// func (w *Window) drawUndrawnAreas(p *gui.QPainter, y int, col int, cols int) {
+func (w *Window) drawUndrawnAreas(p *gui.QPainter) {
+	var verScrollPixels int
+	if w.lastScrollphase != core.Qt__NoScrollPhase {
+		verScrollPixels = w.scrollPixels2
+	}
+	if editor.config.Editor.LineToScroll == 1 {
+		verScrollPixels += w.scrollPixels[1]
+	}
+	if verScrollPixels == 0 {
+		return
+	}
+
+	font := w.getFont()
+	hl := w.s.getHighlightByUiname("NormalFloat")
+	pattern, color, transparent := w.getFillpatternAndTransparent(hl)
+
+	var x, y, width, height float64
+	if verScrollPixels < 0 {
+		x = 0
+		y = float64((w.rows * font.lineHeight) - ((w.viewportMargins[1] + 1) * font.lineHeight) + (font.lineHeight + verScrollPixels))
+		width = float64(w.cols) * font.cellwidth //  - (w.viewportMargins[2] * font.lineHeight)) - (w.viewportMargins[3] * font.lineHeight))
+		height = math.Abs(float64(verScrollPixels))
+	}
+	if verScrollPixels > 0 {
+		x = 0
+		y = float64((w.viewportMargins[1] + 1) * font.lineHeight)
+		width = float64(w.cols) * font.cellwidth //  - (w.viewportMargins[2] * font.lineHeight)) - (w.viewportMargins[3] * font.lineHeight))
+		height = math.Abs(float64(verScrollPixels))
+	}
+
+	rectF := core.NewQRectF4(
+		x, y, width, height,
+	)
+	p.FillRect(
+		rectF,
+		gui.NewQBrush3(
+			gui.NewQColor3(
+				color.R,
+				color.G,
+				color.B,
+				transparent,
+			),
+			pattern,
+		),
+	)
+
+}
+
 func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
@@ -1771,10 +1840,12 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 	line := w.content[y]
 	var bg *RGBA
 
+	// Set smooth scroll offset
+	var horScrollPixels, verScrollPixels int
+
 	// draw default background color if window is float window or msg grid
 	isDrawDefaultBg := false
 
-	// fmt.Println(w.grid, " pum:", w.isPopupmenu, " msg", w.isMsgGrid, " float:", w.isFloatWin)
 	if editor.config.Editor.EnableBackgroundBlur ||
 		editor.config.Editor.Transparent < 1.0 {
 		if !w.isExternal {
@@ -1792,22 +1863,13 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 		}
 	}
 
+	// In transparent mode and float windows, there is no need to automatically draw the
+	//  background color of the entire grid, so the background color is not automatically drawn.
 	if isDrawDefaultBg {
 		w.SetAutoFillBackground(false)
 	}
 
-	// Set smooth scroll offset
-	var horScrollPixels, verScrollPixels int
-	if w.lastScrollphase != core.Qt__NoScrollPhase {
-		verScrollPixels = w.scrollPixels2
-	}
-	if editor.config.Editor.LineToScroll == 1 {
-		verScrollPixels += w.scrollPixels[1]
-	}
-	if w.s.ws.mouseScroll != "" {
-		horScrollPixels += w.scrollPixels[0]
-	}
-	if w.getWinbar() != "" && y == 0 {
+	if y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1 {
 		verScrollPixels = 0
 		horScrollPixels = 0
 		isDrawDefaultBg = true
@@ -1857,6 +1919,18 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 
 	for x := col; x <= col+cols; x++ {
 
+		if !(y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1) {
+			if w.s.ws.mouseScroll != "" {
+				horScrollPixels = w.scrollPixels[0]
+			}
+			if w.lastScrollphase != core.Qt__NoScrollPhase {
+				verScrollPixels = w.scrollPixels2
+			}
+			if editor.config.Editor.LineToScroll == 1 {
+				verScrollPixels += w.scrollPixels[1]
+			}
+		}
+
 		if x >= len(line)+1 {
 			continue
 		}
@@ -1893,6 +1967,25 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int) {
 		if lastBg != nil {
 			if lastBg.equals(bg) {
 				end = x
+			}
+			if x < w.viewportMargins[1] {
+				horScrollPixels = 0
+				w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
+
+				continue
+			}
+			if x > w.cols-w.viewportMargins[3]-1 {
+				horScrollPixels = 0
+				w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
+
+				start = x
+				end = x
+
+				if x == bounds {
+					w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
+				}
+
+				continue
 			}
 			if !lastBg.equals(bg) || x == bounds {
 				w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
@@ -2102,7 +2195,9 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	cellBasedDrawing := editor.config.Editor.DisableLigatures || (editor.config.Editor.Letterspace > 0)
 	wsfontLineHeight := y * wsfont.lineHeight
 
-	// pointX := float64(col) * wsfont.cellwidth
+	// Set smooth scroll offset
+	var horScrollPixels, verScrollPixels int
+
 	for x := col; x <= col+cols; x++ {
 		if x >= len(line) {
 			continue
@@ -2133,10 +2228,31 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				continue
 			}
 
+			if w.s.ws.mouseScroll != "" {
+				horScrollPixels = w.scrollPixels[0]
+			}
+			if w.lastScrollphase != core.Qt__NoScrollPhase {
+				verScrollPixels = w.scrollPixels2
+			}
+			if editor.config.Editor.LineToScroll == 1 {
+				verScrollPixels += w.scrollPixels[1]
+			}
+			if line[x].highlight.isSignColumn() {
+				horScrollPixels = 0
+			}
+			if x < w.viewportMargins[1] || x > w.cols-w.viewportMargins[3]-1 {
+				horScrollPixels = 0
+				verScrollPixels = 0
+			}
+			if y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1 {
+				horScrollPixels = 0
+				verScrollPixels = 0
+			}
+
 			w.drawTextInPos(
 				p,
-				int(float64(x)*wsfont.cellwidth),
-				wsfontLineHeight,
+				int(float64(x)*wsfont.cellwidth)+horScrollPixels,
+				wsfontLineHeight+verScrollPixels,
 				line[x].char,
 				line[x].highlight,
 				true,
@@ -2146,6 +2262,12 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		} else {
 			// Prepare to draw a group of identical highlight units.
 			highlight := line[x].highlight
+			if x < w.viewportMargins[1] || x > w.cols-w.viewportMargins[3]-1 {
+				highlight.special = highlight.special.copy()
+				highlight.foreground = highlight.foreground.copy()
+				highlight.background = highlight.background.copy()
+			}
+
 			colorSlice, ok := chars[highlight]
 			if !ok {
 				colorSlice = []int{}
@@ -2165,6 +2287,26 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			isIndentationWhiteSpace := true
 			pos := col
 			for x := col; x <= col+cols; x++ {
+				if w.s.ws.mouseScroll != "" {
+					horScrollPixels = w.scrollPixels[0]
+				}
+				if w.lastScrollphase != core.Qt__NoScrollPhase {
+					verScrollPixels = w.scrollPixels2
+				}
+				if editor.config.Editor.LineToScroll == 1 {
+					verScrollPixels += w.scrollPixels[1]
+				}
+				if highlight.isSignColumn() {
+					horScrollPixels = 0
+				}
+				if x < w.viewportMargins[1] || x > w.cols-w.viewportMargins[3]-1 {
+					horScrollPixels = 0
+					verScrollPixels = 0
+				}
+				if y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1 {
+					horScrollPixels = 0
+					verScrollPixels = 0
+				}
 
 				isDrawWord := false
 				index := slice[0]
@@ -2222,10 +2364,11 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					}
 
 					if buffer.Len() != 0 {
+
 						w.drawTextInPos(
 							p,
-							int(float64(x-pos)*wsfont.cellwidth),
-							wsfontLineHeight,
+							int(float64(x-pos)*wsfont.cellwidth)+horScrollPixels,
+							wsfontLineHeight+verScrollPixels,
 							buffer.String(),
 							highlight,
 							true,
@@ -2259,10 +2402,31 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				continue
 			}
 
+			if w.s.ws.mouseScroll != "" {
+				horScrollPixels = w.scrollPixels[0]
+			}
+			if w.lastScrollphase != core.Qt__NoScrollPhase {
+				verScrollPixels = w.scrollPixels2
+			}
+			if editor.config.Editor.LineToScroll == 1 {
+				verScrollPixels += w.scrollPixels[1]
+			}
+			if line[x].highlight.isSignColumn() {
+				horScrollPixels = 0
+			}
+			if x < w.viewportMargins[1] || x > w.cols-w.viewportMargins[3]-1 {
+				horScrollPixels = 0
+				verScrollPixels = 0
+			}
+			if y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1 {
+				horScrollPixels = 0
+				verScrollPixels = 0
+			}
+
 			w.drawTextInPos(
 				p,
-				int(float64(x)*wsfont.cellwidth),
-				wsfontLineHeight,
+				int(float64(x)*wsfont.cellwidth)+horScrollPixels,
+				wsfontLineHeight+verScrollPixels,
 				line[x].char,
 				line[x].highlight,
 				false,
@@ -2274,33 +2438,20 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 }
 
 func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool, scaled bool) {
-	// Set smooth scroll offset
-	var horScrollPixels, verScrollPixels int
-	if w.s.ws.mouseScroll != "" {
-		horScrollPixels += w.scrollPixels[0]
-	}
-	if w.lastScrollphase != core.Qt__NoScrollPhase {
-		verScrollPixels = w.scrollPixels2
-	}
-	if editor.config.Editor.LineToScroll == 1 {
-		verScrollPixels += w.scrollPixels[1]
-	}
-
-	if highlight.isSignColumn() {
-		horScrollPixels = 0
-	}
-	if w.getWinbar() != "" && y == 0 {
-		verScrollPixels = 0
-		horScrollPixels = 0
-	}
-
 	wsfont := w.getFont()
+
+	// var horScrollPixels int
+	// horScrollPixels = w.scrollPixels[0]
+	// if highlight.isSignColumn() {
+	// 	horScrollPixels = 0
+	// }
+
 	// if CachedDrawing is disabled
 	if !editor.config.Editor.CachedDrawing {
 		w.drawTextInPosWithNoCache(
 			p,
-			x+horScrollPixels,
-			y+wsfont.shift+verScrollPixels,
+			x, //+horScrollPixels,
+			y+wsfont.shift,
 			text,
 			highlight,
 			isNormalWidth,
@@ -2309,8 +2460,8 @@ func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight
 	} else { // if CachedDrawing is enabled
 		w.drawTextInPosWithCache(
 			p,
-			x+horScrollPixels,
-			y+verScrollPixels,
+			x, //+horScrollPixels,
+			y,
 			text,
 			highlight,
 			isNormalWidth,
@@ -3132,16 +3283,20 @@ func (win *Window) initializeOrReuseSmoothScrollAnimation() {
 
 			win.scrollPixels2 = int(v * float64(font.lineHeight))
 
-			y := 0
-			if win.getWinbar() != "" {
-				y = font.lineHeight
-			}
+			// var x, y int
+			// win.Update2(
+			// 	x+win.viewportMargins[2]*int(font.cellwidth),
+			// 	y+(win.viewportMargins[0]*font.lineHeight),
+			// 	int(float64(win.cols)*font.cellwidth)-win.viewportMargins[2]*int(font.cellwidth)-win.viewportMargins[3]*int(font.cellwidth),
+			// 	win.rows*font.lineHeight-(win.viewportMargins[0]*font.lineHeight)-(win.viewportMargins[1]*font.lineHeight),
+			// )
 
+			var y int
 			win.Update2(
 				0,
-				y,
+				y+(win.viewportMargins[0]*font.lineHeight),
 				int(float64(win.cols)*font.cellwidth),
-				win.rows*font.lineHeight,
+				win.rows*font.lineHeight-(win.viewportMargins[0]*font.lineHeight)-(win.viewportMargins[1]*font.lineHeight),
 			)
 
 			if v == 0 {
@@ -3150,9 +3305,9 @@ func (win *Window) initializeOrReuseSmoothScrollAnimation() {
 				win.doErase = true
 				win.Update2(
 					0,
-					y,
+					y+(win.viewportMargins[0]*font.lineHeight),
 					int(float64(win.cols)*font.cellwidth),
-					win.cols*font.lineHeight,
+					win.rows*font.lineHeight-(win.viewportMargins[0]*font.lineHeight)-(win.viewportMargins[1]*font.lineHeight),
 				)
 				win.doErase = false
 				win.fill()
@@ -3701,23 +3856,23 @@ func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
 	return winx, winy
 }
 
-func (w *Window) getWinbar() string {
-	if w.winbar != nil && *w.winbar == "" {
-		if w.s.ws.winbar != nil {
-			return *w.s.ws.winbar
-		} else {
-			return ""
-		}
-	} else if w.winbar == nil {
-		if w.s.ws.winbar != nil {
-			return *w.s.ws.winbar
-		} else {
-			return ""
-		}
-	}
-
-	return *w.winbar
-}
+// func (w *Window) getWinbar() string {
+// 	if w.winbar != nil && *w.winbar == "" {
+// 		if w.s.ws.winbar != nil {
+// 			return *w.s.ws.winbar
+// 		} else {
+// 			return ""
+// 		}
+// 	} else if w.winbar == nil {
+// 		if w.s.ws.winbar != nil {
+// 			return *w.s.ws.winbar
+// 		} else {
+// 			return ""
+// 		}
+// 	}
+//
+// 	return *w.winbar
+// }
 
 func (w *Window) layoutExternalWindow(x, y int) {
 	font := w.s.font
