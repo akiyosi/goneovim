@@ -225,6 +225,10 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 	}
 
 	if text == "\\" {
+		// If key code is yen and text is backslash, return backslash. #534
+		if key == 165 {
+			return "<Bslash>"
+		}
 		return fmt.Sprintf("<%s%s>", e.modPrefix(mod), "Bslash")
 	}
 
