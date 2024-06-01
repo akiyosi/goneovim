@@ -405,17 +405,41 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 	if w.scrollPixels2 > 0 {
 		snapshotPosY = float64(w.scrollPixels2) - height
 	} else if w.scrollPixels2 < 0 {
-		snapshotPosY = height + float64(w.scrollPixels2)
+		snapshotPosY = (float64(w.snapshot.Height()) / w.devicePixelRatio) + float64(w.scrollPixels2)
 	}
 	snapshotPosY += float64(w.viewportMargins[0] * font.lineHeight)
 
+	var drawPos *core.QPointF
+	var sourceRect *core.QRectF
+	if w.scrollPixels2 > 0 {
+		drawPos = core.NewQPointF3(
+			snapshotPosX,
+			snapshotPosY,
+		)
+		sourceRect = core.NewQRectF4(
+			0,
+			0,
+			float64(w.snapshot.Width()),
+			math.Abs(height)*w.devicePixelRatio,
+		)
+	} else if w.scrollPixels2 < 0 {
+		drawPos = core.NewQPointF3(
+			snapshotPosX,
+			snapshotPosY,
+		)
+		sourceRect = core.NewQRectF4(
+			0,
+			(float64(w.snapshot.Height())/w.devicePixelRatio-math.Abs(height))*w.devicePixelRatio,
+			float64(w.snapshot.Width()),
+			math.Abs(height)*w.devicePixelRatio,
+		)
+	}
+
 	if w.scrollPixels2 != 0 {
-		p.DrawPixmap7(
-			core.NewQPointF3(
-				snapshotPosX,
-				snapshotPosY,
-			),
+		p.DrawPixmap5(
+			drawPos,
 			w.snapshot,
+			sourceRect,
 		)
 	}
 }
