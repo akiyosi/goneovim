@@ -8,10 +8,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
-	"regexp"
 	"sync"
 	"time"
 
@@ -467,9 +467,10 @@ func parseFont(families string, size int, weight string, stretch, linespace, let
 // setAppDirPath
 // set application working directory path
 // TODO: This process is problematic and needs a better way to set up CWD
-//        * https://github.com/akiyosi/goneovim/issues/43
-//        * https://github.com/akiyosi/goneovim/issues/337
-//        * https://github.com/akiyosi/goneovim/issues/325
+//   - https://github.com/akiyosi/goneovim/issues/43
+//   - https://github.com/akiyosi/goneovim/issues/337
+//   - https://github.com/akiyosi/goneovim/issues/325
+//
 // Set the current working directory of the application to the HOME directory in darwin, linux.
 // If this process is not executed, CWD is set to the root directory, and
 // nvim plugins called as descendants of the application will not work due to lack of permission.
@@ -851,8 +852,9 @@ func (e *Editor) initAppFont() {
 }
 
 // pushNotification is
-//   level: notify level
-//   period: display period
+//
+//	level: notify level
+//	period: display period
 func (e *Editor) pushNotification(level NotifyLevel, p int, message string, opt ...NotifyOptionArg) {
 	a := NotifyOptions{}
 	for _, o := range opt {
@@ -900,49 +902,49 @@ func (e *Editor) initColorPalette() {
 }
 
 func parseLinesAndColumns(args []string) (int, error, int, error) {
-    var columns, lines int = -1, -1
+	var columns, lines int = -1, -1
 
-    pattern := regexp.MustCompile(`lines=(\d+)|columns=(\d+)|vim\.o\["(lines|columns)"\]=(\d+)`)
+	pattern := regexp.MustCompile(`lines=(\d+)|columns=(\d+)|vim\.o\["(lines|columns)"\]=(\d+)`)
 
-    for _, arg := range args {
-        matches := pattern.FindAllStringSubmatch(arg, -1)
-        for _, match := range matches {
-            if match[1] != "" { // "lines=XX"
-                if val, err := strconv.Atoi(match[1]); err == nil {
-                    lines = val
-                }
-            } else if match[2] != "" { // "columns=XX"
-                if val, err := strconv.Atoi(match[2]); err == nil {
-                    columns = val
-                }
-            } else if match[3] == "lines" && match[4] != "" { // vim.o["lines"]=XX
-                if val, err := strconv.Atoi(match[4]); err == nil {
-                    lines = val
-                }
-            } else if match[3] == "columns" && match[4] != "" { // vim.o["columns"]=XX
-                if val, err := strconv.Atoi(match[4]); err == nil {
-                    columns = val
-                }
-            }
-        }
-    }
+	for _, arg := range args {
+		matches := pattern.FindAllStringSubmatch(arg, -1)
+		for _, match := range matches {
+			if match[1] != "" { // "lines=XX"
+				if val, err := strconv.Atoi(match[1]); err == nil {
+					lines = val
+				}
+			} else if match[2] != "" { // "columns=XX"
+				if val, err := strconv.Atoi(match[2]); err == nil {
+					columns = val
+				}
+			} else if match[3] == "lines" && match[4] != "" { // vim.o["lines"]=XX
+				if val, err := strconv.Atoi(match[4]); err == nil {
+					lines = val
+				}
+			} else if match[3] == "columns" && match[4] != "" { // vim.o["columns"]=XX
+				if val, err := strconv.Atoi(match[4]); err == nil {
+					columns = val
+				}
+			}
+		}
+	}
 
-    if columns == -1 && lines == -1 {
-        return 100, fmt.Errorf("columns are not set"), 50, fmt.Errorf("lines are not set")
-    }
+	if columns == -1 && lines == -1 {
+		return 100, fmt.Errorf("columns are not set"), 50, fmt.Errorf("lines are not set")
+	}
 
 	var cerr error
-    if columns == -1 {
-        columns = 100
+	if columns == -1 {
+		columns = 100
 		cerr = fmt.Errorf("columns are not set")
-    }
+	}
 	var lerr error
-    if lines == -1 {
-        lines = 50
+	if lines == -1 {
+		lines = 50
 		lerr = fmt.Errorf("lines are not set")
-    }
+	}
 
-    return columns, cerr, lines, lerr
+	return columns, cerr, lines, lerr
 }
 
 func (c *ColorPalette) update() {
@@ -1065,7 +1067,7 @@ func (e *Editor) restoreWindow() {
 		// isRestoreGeometry = true
 	}
 	if stateBA.Length() != 0 {
-		e.window.RestoreState(stateBA, 0)
+		e.window.RestoreFramelessState(stateBA, 0)
 		// isRestoreState = true
 	}
 
