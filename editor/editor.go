@@ -112,6 +112,7 @@ type Editor struct {
 	fontCh                 chan []*Font
 	cbChan                 chan *string
 	chUiPrepared           chan bool
+	openingFileCh          chan string
 	geometryUpdateTimer    *time.Timer
 	sysTray                *widgets.QSystemTrayIcon
 	side                   *WorkspaceSide
@@ -606,7 +607,33 @@ func (e *Editor) connectAppSignals() {
 	if e.app == nil {
 		return
 	}
+
 	if runtime.GOOS == "darwin" {
+
+		e.openingFileCh = make(chan string, 2)
+		go func() {
+			for {
+				openingFile := <-e.openingFileCh
+
+				file, err := os.OpenFile("/Users/akiyosi/debug3.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+				if err != nil {
+					fmt.Println(err)
+
+					os.Exit(1)
+				}
+				log.SetOutput(file)
+				log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+				log.Println(
+					fmt.Sprintf("%07.3f", float64(time.Now().UnixNano()/1000-e.startuptime)/1000),
+					strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%v", openingFile), "["), "]"),
+				)
+
+				e.loadFileInDarwin(
+					openingFile,
+				)
+			}
+		}()
+
 		e.app.ConnectEvent(func(event *core.QEvent) bool {
 			switch event.Type() {
 			case core.QEvent__FileOpen:
@@ -615,8 +642,9 @@ func (e *Editor) connectAppSignals() {
 					return false
 				}
 				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
-				e.macAppArg = fileOpenEvent.File()
-				e.loadFileInDarwin()
+				e.loadFileInDarwin(
+					fileOpenEvent.File(),
+				)
 			}
 			return true
 		})
@@ -734,7 +762,7 @@ func (e *Editor) AdjustSizeBasedOnFontmetrics(windowWidth, windowHeight int) {
 	}
 }
 
-func (e *Editor) loadFileInDarwin() {
+func (e *Editor) loadFileInDarwin(file string) {
 	if runtime.GOOS != "darwin" {
 		return
 	}
@@ -743,9 +771,9 @@ func (e *Editor) loadFileInDarwin() {
 	isModified := ""
 	isModified, _ = goneovim.CommandOutput("echo &modified")
 	if isModified == "1" {
-		goneovim.Command(fmt.Sprintf(":tabe %s", e.macAppArg))
+		goneovim.Command(fmt.Sprintf(":tabe %s", file))
 	} else {
-		goneovim.Command(fmt.Sprintf("%s %s", e.config.Editor.FileOpenCmd, e.macAppArg))
+		goneovim.Command(fmt.Sprintf("%s %s", e.config.Editor.FileOpenCmd, file))
 	}
 }
 

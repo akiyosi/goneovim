@@ -1794,10 +1794,12 @@ func (ws *Workspace) scrollMinimap() {
 func (ws *Workspace) handleGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
-	case "gonvim_enter":
-		editor.putLog("vim enter")
+	case "gonvim_vimenter":
+		// openingFile := getOpeningFilePath()
+		// if openingFile != "" {
+		// 	go ws.nvim.Command(fmt.Sprintf(":e %s", openingFile))
+		// }
 	case "gonvim_uienter":
-		editor.putLog("ui enter")
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
 		editor.window.Resize2(width, height)
