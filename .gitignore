@@ -5,6 +5,8 @@ debug.log
 tags*
 moc*
 editor/version.txt
+editor/objcbridge.h
+editor/objcbridge.m
 cmd/goneovim/goneovim
 cmd/goneovim/debug
 cmd/goneovim/deploy/*
