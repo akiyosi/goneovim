@@ -14,8 +14,6 @@ const objcbridgeH = `void SetMyApplicationDelegate();`
 
 const objcbridgeM = `#import <Cocoa/Cocoa.h>
 
-char *cFilename;
-
 // Forward declaration of the Go function to be called from C
 extern void GetOpeningFilepath(char* str);
 
@@ -29,9 +27,9 @@ extern void GetOpeningFilepath(char* str);
 }
 
 - (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename {
-    char *utf8String = [filename UTF8String];
-    cFilename = strdup(utf8String);
-    GetOpeningFilepath(cFilename);
+    const char *utf8String = [filename UTF8String];
+    char *cStr = strdup(utf8String);
+    GetOpeningFilepath(cStr);
     return YES;
 }
 
@@ -53,6 +51,17 @@ func main() {
 }
 
 func generateFile(filename, content string) {
+	if _, err := os.Stat(filename); err == nil {
+		err = os.Remove(filename)
+		if err != nil {
+			fmt.Println("Error removing existing file:", err)
+			return
+		}
+	} else if !os.IsNotExist(err) {
+		fmt.Println("Error checking file existence:", err)
+		return
+	}
+
 	file, err := os.Create(filename)
 	if err != nil {
 		fmt.Println("Error creating file:", err)
