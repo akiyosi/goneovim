@@ -12,7 +12,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/neovim/go-client v1.2.2-0.20230716041012-dd77a916541b
+	github.com/neovim/go-client v1.2.2-0.20240514170004-863141a115a5
 )
 
 require (

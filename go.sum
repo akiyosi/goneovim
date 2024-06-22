@@ -49,6 +49,8 @@ github.com/neovim/go-client v1.2.2-0.20220415170422-ef8a8cf9c522 h1:JE6/8mKKDKjU
 github.com/neovim/go-client v1.2.2-0.20220415170422-ef8a8cf9c522/go.mod h1:UBsOERb5epbeQT0nyPTZkmUPTffRYBcHvrXXidr1NQQ=
 github.com/neovim/go-client v1.2.2-0.20230716041012-dd77a916541b h1:JDchP8fWykRzJLiq5cUQ47vKkP8UY0I1yzgGDTSpYRI=
 github.com/neovim/go-client v1.2.2-0.20230716041012-dd77a916541b/go.mod h1:UBsOERb5epbeQT0nyPTZkmUPTffRYBcHvrXXidr1NQQ=
+github.com/neovim/go-client v1.2.2-0.20240514170004-863141a115a5 h1:bDKPFxHFy0ApEmtUFFQzbxMGgywlKrpyNJ2opMX4hjc=
+github.com/neovim/go-client v1.2.2-0.20240514170004-863141a115a5/go.mod h1:UBsOERb5epbeQT0nyPTZkmUPTffRYBcHvrXXidr1NQQ=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sirupsen/logrus v1.4.1 h1:GL2rEmy6nsikmW0r8opw9JIRScdMF5hA8cOYLH7In1k=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
