@@ -13,12 +13,12 @@ on:
       - v[0-9]+.[0-9]+.[0-9]+
 
 env:
-  cache-version: v11
+  cache-version: v9
 
 jobs:
 
   check-new-commit:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -38,7 +38,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.21.x]
-        platform: [ubuntu-22.04]
+        platform: [ubuntu-20.04]
         qtversion: [5.15.6]
     runs-on: ${{ matrix.platform }}
     env:
@@ -56,7 +56,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake
-        sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa  libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
+        sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
         sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev libzstd-dev
         sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
         sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
@@ -505,7 +505,7 @@ jobs:
   publish:
     # needs: [linux, windows, macos, freebsd]
     needs: [linux, windows, macos-x86_64, macos-arm64]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     permissions:
       contents: write
 
