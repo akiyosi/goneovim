@@ -1,9 +1,13 @@
 package editor
 
 import (
+	"bytes"
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/akiyosi/goneovim/util"
+	"github.com/neovim/go-client/nvim"
 )
 
 const (
@@ -44,8 +48,89 @@ func (m *Messages) msgClear() {
 }
 
 func (m *Messages) msgShow(args []interface{}, bulkmsg bool) {
+	const maxHeight = 20
+
+	// countNewlines はメッセージの各チャンク内の改行の数を調べます
+	count := 0
+	for _, arg := range args {
+		count++
+		for _, c := range arg.([]interface{})[1].([]interface{}) {
+			tuple, _ := c.([]interface{})
+			_, textChunk := parseContent(tuple)
+			count += strings.Count(textChunk, "\n")
+		}
+	}
+
+	if count > maxHeight {
+		fmt.Println("split", count)
+		m.showInSplit(args)
+	} else {
+		fmt.Println("echo", count)
+		m.showInEcho(args, bulkmsg)
+	}
+}
+
+func convertToByteLines(args []interface{}) [][]byte {
+	var byteLines [][]byte
+	for _, arg := range args {
+		for _, c := range arg.([]interface{})[1].([]interface{}) {
+			tuple, _ := c.([]interface{})
+			_, textChunk := parseContent(tuple)
+			lines := bytes.Split([]byte(textChunk), []byte("\n"))
+			for _, line := range lines {
+				byteLines = append(byteLines, line)
+			}
+		}
+	}
+
+	return byteLines
+}
+
+func (m *Messages) showInSplit(args []interface{}) {
+
+	// 新しいバッファを作成
+	buf, err := m.ws.nvim.CreateBuffer(false, true)
+	if err != nil {
+		log.Fatalf("failed to create buffer: %v", err)
+	}
+
+	// ウィンドウを開く
+	win, err := m.ws.nvim.OpenWindow(buf, true, &nvim.WindowConfig{
+		Relative: "editor",
+		Anchor:   "NW",
+		Width:    m.ws.cols,
+		Height:   10,
+		Row:      float64(m.ws.rows - 10),
+		Col:      0,
+		Style:    "minimal",
+		ZIndex:   50,
+	})
+	if err != nil {
+		return
+	}
+
+	byteLines := convertToByteLines(args)
+
+	if err := m.ws.nvim.SetBufferLines(buf, 0, -1, true, byteLines); err != nil {
+		log.Fatalf("failed to set buffer lines: %v", err)
+	}
+
+	// バッファを読み取り専用に設定
+	if err := m.ws.nvim.SetOption("readonly", true); err != nil {
+		log.Fatalf("failed to set buffer readonly: %v", err)
+	}
+
+	// カーソルをメッセージの先頭に移動
+	if err := m.ws.nvim.SetWindowCursor(win, [2]int{1, 0}); err != nil {
+		log.Fatalf("failed to set cursor position: %v", err)
+	}
+
+}
+
+func (m *Messages) showInEcho(args []interface{}, bulkmsg bool) {
 	var msg *Message
 	for _, arg := range args {
+		fmt.Println(arg)
 
 		// kind
 		var ok bool
@@ -99,7 +184,6 @@ func (m *Messages) msgShow(args []interface{}, bulkmsg bool) {
 				continue
 			}
 
-			fmt.Println(textChunk)
 			if !emmitNewMsg {
 				msg.updateText(
 					hl,
@@ -132,9 +216,9 @@ func (m *Messages) msgShow(args []interface{}, bulkmsg bool) {
 }
 
 func (m *Messages) msgHistoryShow(entries []interface{}) {
-	for _, entrie := range entries {
-		m.msgShow((entrie.([]interface{})[0]).([]interface{}), true)
-	}
+	// for _, entrie := range entries {
+	// 	m.msgShow((entrie.([]interface{})[0]).([]interface{}), true)
+	// }
 }
 
 func parseContent(tuple []interface{}) (attrId int, textChunk string) {

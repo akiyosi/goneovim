@@ -1129,13 +1129,16 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// messages/Dialog Events
 		case "msg_show":
+			fmt.Println("msg_show")
 			ws.messages.msgShow(args, false)
 		case "msg_clear":
+			fmt.Println("msg_claer")
 			ws.messages.msgClear()
 		case "msg_showmode":
 		case "msg_showcmd":
 		case "msg_ruler":
 		case "msg_history_show":
+			fmt.Println("msg_history_show")
 			ws.messages.msgHistoryShow(args)
 		default:
 		}
