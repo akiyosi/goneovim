@@ -1597,6 +1597,15 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.id = id
 		win.pos = [2]int{col, row}
 		win.setOptions()
+
+		win.isFloatWin = false
+		if win.isExternal {
+			win.isExternal = false
+			win.deleteExternalWin()
+			win.SetParent(s.widget)
+			win.raise()
+		}
+
 		win.updateMutex.Unlock()
 
 		win.move(col, row)
