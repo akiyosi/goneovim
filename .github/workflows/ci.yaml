@@ -11,7 +11,7 @@ jobs:
 # Linux
 #################################################################
 
-  test-and-build-linux:
+  linux:
     strategy:
       matrix:
         go-version: [1.21.x]
@@ -129,7 +129,7 @@ jobs:
 # MacOS
 #################################################################
 
-  test-and-build-macos-x86_64:
+  macos-x86_64:
     strategy:
       matrix:
         go-version: [1.21.x]
@@ -201,7 +201,7 @@ jobs:
 # MacOS M1
 #################################################################
 
-  test-and-build-macos-arm64:
+  macos-arm64:
     strategy:
       matrix:
         go-version: [1.21.x]
@@ -317,7 +317,7 @@ jobs:
 # Windows
 #################################################################
 
-  test-windows-mingw:
+  windows-mingw:
     strategy:
       matrix:
         go-version: [1.21.0]
@@ -347,7 +347,7 @@ jobs:
         install: mingw-w64-x86_64-toolchain
     - shell: msys2 {0}
       run: |
-        pacman --noconfirm -S sed git make mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
+        pacman --noconfirm -S sed git make zip unzip mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5 mingw-w64-x86_64-angleproject
 
     - name: Install Go
       uses: actions/setup-go@v4
@@ -406,107 +406,18 @@ jobs:
         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make test
 
-
-  build-windows-mingw:
-    strategy:
-      matrix:
-        go-version: [1.21.0]
-        platform: [windows-latest]
-    runs-on: ${{ matrix.platform }}
-    env:
-      GOPATH: C:\
-      QT_API: 5.13.0
-      QT_MSYS2: true
-      QT_MSYS2_DIR: D:\a\_temp\msys64\
-      QT_MSYS2_STATIC: true
-      QT_MSVC: false
-      QT_DEBUG_CONSOLE: true
-      QT_DEBUG: false
-      GO111MODULE: on
-      CGO_CFLAGS_ALLOW: ".*" 
-      CGO_CXXFLAGS_ALLOW: ".*" 
-      CGO_LDFLAGS_ALLOW: ".*" 
-      # CGO_ENABLED: 1
-      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-    steps:
-
-    - name: Install Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ matrix.go-version }}
-
-    - name: Setup MSYS2 and install Qt5
-      uses: msys2/setup-msys2@v2
-      with:
-        update: true
-        msystem: mingw64
-        install: mingw-w64-x86_64-toolchain
-    - shell: msys2 {0}
-      run: |
-        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
-        pacman -Scc
-        pacman -Sc
-
-    # - name: Patch qt5
-    #   shell: msys2 {0}
-    #   run: | 
-    #     curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt-5.15.8/qt-5.15.8.zip
-    #     unzip qt-5.15.8.zip
-    #     cp -fpR qt5/* /mingw64/qt5-static/
-    #     rm -fr qt5
-    #     rm qt-5.15.8.zip
-
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        path: ${{ github.workspace }}\${{ github.repository }}
-    
-    - name: Copy checkout repogitory 
-      shell: msys2 {0}
-      run: |
-        mkdir -p /c/${{ github.repository }}
-        ls -l /d/a/goneovim/goneovim/${{ github.repository }}
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/* /c/${{ github.repository }}/
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/.* /c/${{ github.repository }}/
-        mkdir -p /c/src/github.com/${{ github.repository }}
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/* /c/src/github.com/${{ github.repository }}/
-        ls -l /c/${{ github.repository }}
-        ls -l /c/src/github.com/${{ github.repository }}
-
-    - name: Get Qt binding for Go
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
-        make qt_bindings
-
-    - name: Get dependencies
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
-        make deps
-
-    ### https://github.com/therecipe/qt/issues/657
-    #- name: Test
-    #  shell: msys2 {0}
-    #  run: |
-    #    export PATH=/c/hostedtoolcache/windows/go/1.18.10/x64/bin/:$PATH
-    #    cd /c/${{ github.repository }}
-    #    make test
-
     - name: Build
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
+        export GOPATH=/d/a/goneovim/goneovim
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make app
 
     - name: Archive
       shell: msys2 {0}
       run: |
-        cd /c/${{ github.repository }}/cmd/goneovim/deploy
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
         mv windows goneovim-windows
         zip -r goneovim-windows.zip goneovim-windows
 
@@ -514,11 +425,11 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: goneovim-windows
-        path: C:/${{ github.repository }}/cmd/goneovim/deploy/goneovim-windows.zip
+        path: D:/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/goneovim-windows.zip
 
 
 
-  # test-and-build-windows-msvc:
+  # windows-msvc:
   #   if: ${{ false }}
   #   strategy:
   #     matrix:
@@ -752,7 +663,7 @@ jobs:
 ############################################
 
 
-#   test-and-build-freebsd:
+#   freebsd:
 #     runs-on: macos-latest
 #     steps:
 #       - name: Checkout code

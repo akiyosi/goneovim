@@ -328,14 +328,13 @@ jobs:
         platform: [windows-latest]
     runs-on: ${{ matrix.platform }}
     env:
-      GOPATH: C:\
+      GOPATH: ${{ github.workspace }}
+      QT_DIR: ${{ github.workspace }}\Qt
       QT_API: 5.13.0
       QT_MSYS2: true
       QT_MSYS2_DIR: D:\a\_temp\msys64\
-      QT_MSYS2_STATIC: true
       QT_MSVC: false
       QT_DEBUG: false
-      QT_DEBUG_CONSOLE: false
       GO111MODULE: on
       CGO_CFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS_ALLOW: ".*" 
@@ -344,10 +343,6 @@ jobs:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
 
-    - name: Install Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ matrix.go-version }}
 
     - name: Setup MSYS2 and install Qt5
       uses: msys2/setup-msys2@v2
@@ -357,62 +352,83 @@ jobs:
         install: mingw-w64-x86_64-toolchain
     - shell: msys2 {0}
       run: |
-        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
-        pacman -Scc
-        pacman -Sc
+        pacman --noconfirm -S sed git make zip unzip mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5 mingw-w64-x86_64-angleproject
 
-    # - name: Patch qt5
-    #   shell: msys2 {0}
-    #   run: |
-    #     curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt5-patched-qtbug-71737/qt-5.15.5_patched-qtbug71737.zip
-    #     unzip qt-5.15.5_patched-qtbug71737.zip
-    #     cp -fpR qt5/* /mingw64/qt5-static/
-    #     rm -fr qt5
-    #     rm qt-5.15.5_patched-qtbug71737.zip
+    - name: Install Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
 
     - name: Checkout code
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-        path: ${{ github.workspace }}\${{ github.repository }}
-
-    - name: Copy checkout repogitory 
-      shell: msys2 {0}
-      run: |
-        mkdir -p /c/${{ github.repository }}
-        ls -l /d/a/goneovim/goneovim/${{ github.repository }}
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/* /c/${{ github.repository }}/
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/.* /c/${{ github.repository }}/
-        mkdir -p /c/src/github.com/${{ github.repository }}
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/* /c/src/github.com/${{ github.repository }}/
-        ls -l /c/${{ github.repository }}
-        ls -l /c/src/github.com/${{ github.repository }}
+        path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
-        make qt_bindings
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        go get -v github.com/akiyosi/qt 
+        go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa
+        go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
+        go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0
+        go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/... 
+        go mod vendor 
+        git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
+
+    - name: Get Qt binding for Go
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        go get -v github.com/akiyosi/qt 
+        go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa
+        go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
+        go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0
+        go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/... 
+        go mod vendor 
+        git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
+
+    - name: Generate Qt bindings
+      if: ${{ steps.cache-qt-bindings-windows-test.outputs.cache-hit != 'true' }}
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        $(go env GOPATH)/bin/qtsetup -test=false
 
     - name: Get dependencies
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
+        export GOPATH=/d/a/goneovim/goneovim
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
     - name: Retrieve version
       id: version-windows
       run: |
-        cd C:\${{ github.repository }}
+        cd D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
 
-    - name: Build for windows
+    - name: Test
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
+        export GOPATH=/d/a/goneovim/goneovim
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        make test
+
+    - name: Build
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+        export GOPATH=/d/a/goneovim/goneovim
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make app
 
     - if: github.event_name == 'workflow_dispatch'
@@ -425,7 +441,7 @@ jobs:
     - name: Archive
       shell: msys2 {0}
       run: |
-        cd /c/${{ github.repository }}/cmd/goneovim/deploy
+        cd D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
         mv windows ${{ env.ARCHIVE_NAME }}
         zip -r ${{ env.ARCHIVE_NAME }}.zip ${{ env.ARCHIVE_NAME }}
 
@@ -433,7 +449,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: goneovim-windows
-        path: C:/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.zip
+        path: D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.zip
 
 
 #   freebsd:
