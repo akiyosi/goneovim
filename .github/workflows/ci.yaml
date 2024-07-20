@@ -426,7 +426,6 @@ jobs:
       CGO_CFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS_ALLOW: ".*" 
       CGO_LDFLAGS_ALLOW: ".*" 
-      # CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
 
@@ -443,18 +442,20 @@ jobs:
         install: mingw-w64-x86_64-toolchain
     - shell: msys2 {0}
       run: |
-        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
+        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator
         pacman -Scc
         pacman -Sc
+        curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
+        pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
 
-    # - name: Patch qt5
-    #   shell: msys2 {0}
-    #   run: | 
-    #     curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt-5.15.8/qt-5.15.8.zip
-    #     unzip qt-5.15.8.zip
-    #     cp -fpR qt5/* /mingw64/qt5-static/
-    #     rm -fr qt5
-    #     rm qt-5.15.8.zip
+    #- name: Patch qt5
+    #  shell: msys2 {0}
+    #  run: | 
+    #    curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt-5.15.8/qt-5.15.8.zip
+    #    unzip qt-5.15.8.zip
+    #    cp -fpR qt5/* /mingw64/qt5-static/
+    #    rm -fr qt5
+    #    rm qt-5.15.8.zip
 
     - name: Checkout code
       uses: actions/checkout@v2
