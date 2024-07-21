@@ -793,7 +793,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	screenHeight := height - tablineHeight
 
 	if ws.screen.font == nil {
-		fmt.Println("nil!")
+		return
 	}
 	rw := screenWidth - int(math.Ceil(float64(int(float64(screenWidth)/ws.screen.font.cellwidth))*ws.screen.font.cellwidth))
 	rh := screenHeight % ws.screen.font.lineHeight
@@ -1711,7 +1711,7 @@ func (ws *Workspace) winViewport(args []interface{}) {
 
 		win, ok := ws.screen.getWindow(grid)
 		if !ok {
-			continue
+			win = ws.screen.newWindowGird(grid)
 		}
 
 		// if grid is message grid or global grid
@@ -1761,7 +1761,7 @@ func (ws *Workspace) winViewportMargins(args []interface{}) {
 
 		win, ok := ws.screen.getWindow(grid)
 		if !ok {
-			continue
+			win = ws.screen.newWindowGird(grid)
 		}
 
 		win.viewportMargins = [4]int{top, bottom, left, right}

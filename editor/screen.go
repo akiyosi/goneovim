@@ -791,21 +791,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	}
 
 	if win == nil {
-		win = newWindow()
-
-		win.s = s
-		s.storeWindow(gridid, win)
-
-		win.SetParent(s.widget)
-
-		win.grid = gridid
-
-		// set scroll
-		if s.name != "minimap" {
-			win.ConnectWheelEvent(win.wheelEvent)
-		}
-
-		s.ws.cursor.raise()
+		win = s.newWindowGird(gridid)
 	}
 
 	win.redrawMutex.Lock()
@@ -836,6 +822,26 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	// win.show()
 
 	win.queueRedrawAll()
+}
+
+func (s *Screen) newWindowGird(gridid int) (win *Window) {
+	win = newWindow()
+
+	win.s = s
+	s.storeWindow(gridid, win)
+
+	win.SetParent(s.widget)
+
+	win.grid = gridid
+
+	// set scroll
+	if s.name != "minimap" {
+		win.ConnectWheelEvent(win.wheelEvent)
+	}
+
+	s.ws.cursor.raise()
+
+	return
 }
 
 func (s *Screen) resizeIndependentFontGrid(win *Window, oldCols, oldRows int) {
