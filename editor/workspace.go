@@ -2017,11 +2017,20 @@ func (ws *Workspace) getSnapshot() {
 	if !editor.config.Editor.SmoothScroll {
 		return
 	}
-	win, ok := ws.screen.getWindow(ws.cursor.gridid)
-	if !ok {
-		return
-	}
-	win.grabScreenSnapshot()
+
+	ws.screen.windows.Range(func(_, winITF interface{}) bool {
+		win := winITF.(*Window)
+
+		if win == nil {
+			return true
+		}
+		if !win.IsVisible() {
+			return true
+		}
+		win.grabScreenSnapshot()
+
+		return true
+	})
 }
 
 func (ws *Workspace) setMousescrollUnit(ms string) {
