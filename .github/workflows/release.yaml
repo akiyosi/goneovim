@@ -357,9 +357,11 @@ jobs:
         install: mingw-w64-x86_64-toolchain
     - shell: msys2 {0}
       run: |
-        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
+        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator
         pacman -Scc
         pacman -Sc
+        curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
+        pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
 
     # - name: Patch qt5
     #   shell: msys2 {0}
