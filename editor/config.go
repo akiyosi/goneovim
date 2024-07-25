@@ -88,6 +88,7 @@ type editorConfig struct {
 	HideMouseWhenTyping                     bool
 	IgnoreSaveConfirmationWithCloseButton   bool
 	UseWSL                                  bool
+	ShowDiffDialogOnDrop                    bool
 }
 
 type cursorConfig struct {

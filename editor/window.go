@@ -3482,7 +3482,7 @@ func (w *Window) dropEvent(e *gui.QDropEvent) {
 						false,
 					)
 				} else {
-					if bufName != "" {
+					if editor.config.Editor.ShowDiffDialogOnDrop && bufName != "" {
 						w.s.howToOpen(filepath)
 					} else {
 						fileOpenInBuf(filepath)
