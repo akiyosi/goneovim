@@ -3515,12 +3515,14 @@ func (w *Window) focusGrid() {
 	}
 }
 
-// convertWindowsToUnixPath converts a Windows path to a Unix path as WSL does.
-func convertWindowsToUnixPath(winPath string) string {
-	// Replace backslashes with forward slashes
+// convertWindowsToUnixPath converts a Windows path to a Unix path as wslpath does.
+func convertWindowsToUnixPath(winPath string) string {	
 	unixPath := strings.ReplaceAll(winPath, `\`, `/`)
+	if len(unixPath) <= 2 {
+		return unixPath
+	}
 	// Convert drive letter to /mnt/<drive-letter>
-	if len(unixPath) > 1 && unixPath[1] == ':' {
+	if unixPath[1] == ':' {
 		driveLetter := strings.ToLower(string(unixPath[0]))
 		unixPath = fmt.Sprintf("/mnt/%s%s", driveLetter, unixPath[2:])
 	}
