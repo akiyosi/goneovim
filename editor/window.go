@@ -3475,8 +3475,8 @@ func (w *Window) dropEvent(e *gui.QDropEvent) {
 
 				// Check if running under WSL and convert path if necessary
 				if editor.opts.Wsl != nil {
-                    filepath = convertWindowsToUnixPath(filepath)
-                }
+					filepath = convertWindowsToUnixPath(filepath)
+				}
 
 				// if message grid is active and drop the file in message area,
 				// then, we put the filepath string into message area.
@@ -3517,14 +3517,14 @@ func (w *Window) focusGrid() {
 
 // convertWindowsToUnixPath converts a Windows path to a Unix path as WSL does.
 func convertWindowsToUnixPath(winPath string) string {
-    // Replace backslashes with forward slashes
-    unixPath := strings.ReplaceAll(winPath, `\`, `/`)
-    // Convert drive letter to /mnt/<drive-letter>
-    if len(unixPath) > 1 && unixPath[1] == ':' {
-        driveLetter := strings.ToLower(string(unixPath[0]))
-        unixPath = fmt.Sprintf("/mnt/%s%s", driveLetter, unixPath[2:])
-    }
-    return unixPath
+	// Replace backslashes with forward slashes
+	unixPath := strings.ReplaceAll(winPath, `\`, `/`)
+	// Convert drive letter to /mnt/<drive-letter>
+	if len(unixPath) > 1 && unixPath[1] == ':' {
+		driveLetter := strings.ToLower(string(unixPath[0]))
+		unixPath = fmt.Sprintf("/mnt/%s%s", driveLetter, unixPath[2:])
+	}
+	return unixPath
 }
 
 func (w *Window) isShown() bool {
