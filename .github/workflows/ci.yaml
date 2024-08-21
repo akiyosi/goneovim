@@ -420,7 +420,7 @@ jobs:
       QT_MSYS2_DIR: D:\a\_temp\msys64\
       QT_MSYS2_STATIC: true
       QT_MSVC: false
-      QT_DEBUG_CONSOLE: true
+      QT_DEBUG_CONSOLE: false
       QT_DEBUG: false
       GO111MODULE: on
       CGO_CFLAGS_ALLOW: ".*" 
