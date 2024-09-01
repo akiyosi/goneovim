@@ -13,6 +13,10 @@ import "unsafe"
 func GetOpeningFilepath(str *C.char) {
 	goStr := C.GoString(str)
 	C.free(unsafe.Pointer(str))
+
+	if editor.openingFileCh == nil {
+		editor.openingFileCh = make(chan string, 2)
+	}
 	editor.openingFileCh <- goStr
 }
 

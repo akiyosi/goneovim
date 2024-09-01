@@ -610,7 +610,10 @@ func (e *Editor) connectAppSignals() {
 
 	if runtime.GOOS == "darwin" {
 
-		e.openingFileCh = make(chan string, 2)
+		if e.openingFileCh == nil {
+			e.openingFileCh = make(chan string, 2)
+		}
+
 		go func() {
 			for {
 				openingFile := <-e.openingFileCh
