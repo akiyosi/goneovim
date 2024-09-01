@@ -30,7 +30,15 @@ type IMETooltip struct {
 // }
 
 func (i *IMETooltip) getFont() *Font {
-	if i.s.ws.palette != nil && i.s.ws.palette.widget.IsVisible() {
+	if i.s == nil || i.s.ws == nil {
+		return editor.font
+	}
+
+	if i.s.ws.palette == nil || i.s.ws.palette.widget == nil {
+		return editor.font
+	}
+
+	if i.s.ws.palette.widget.IsVisible() {
 		return editor.font
 	} else {
 		return i.font
@@ -46,6 +54,10 @@ func (i *IMETooltip) paint(event *gui.QPaintEvent) {
 }
 
 func (i *IMETooltip) pos() (int, int, int, int) {
+	if i.s == nil || i.s.ws == nil {
+		return 0, 0, 0, 0
+	}
+
 	var x, y, candX, candY int
 	ws := i.s.ws
 	s := i.s
@@ -54,10 +66,13 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 	}
 
 	win, ok := s.getWindow(s.ws.cursor.gridid)
-	if !ok {
+	if !ok || win == nil {
 		return 0, 0, 0, 0
 	}
 	font := win.getFont()
+	if font == nil {
+		return 0, 0, 0, 0
+	}
 
 	if ws.palette != nil && ws.palette.widget.IsVisible() {
 		x = ws.palette.cursorX + ws.palette.patternPadding
@@ -111,6 +126,10 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 }
 
 func (i *IMETooltip) move(x int, y int) {
+	if i.s == nil || i.s.ws == nil {
+		return
+	}
+
 	padding := 0
 	if i.s.ws.palette != nil && i.s.ws.palette.widget.IsVisible() {
 		padding = i.s.ws.palette.padding
@@ -124,12 +143,21 @@ func (i *IMETooltip) hide() {
 }
 
 func (i *IMETooltip) show() {
-	if !(i.s.ws.palette != nil && i.s.ws.palette.widget.IsVisible()) {
+	if i.s == nil || i.s.ws == nil {
+		return
+	}
+
+	if !(i.s.ws.palette != nil && i.s.ws.palette.widget != nil && i.s.ws.palette.widget.IsVisible()) {
 		win, ok := i.s.getWindow(i.s.ws.cursor.gridid)
-		if ok {
-			i.SetParent(win)
+		if !ok || win == nil {
+			return
 		}
-		i.setFont(win.getFont())
+		i.SetParent(win)
+		font := win.getFont()
+		if font == nil {
+			return
+		}
+		i.setFont(font)
 	} else {
 		i.SetParent(i.s.ws.palette.widget)
 		i.setFont(i.s.font)
@@ -141,6 +169,10 @@ func (i *IMETooltip) show() {
 }
 
 func (i *IMETooltip) updateVirtualCursorPos() {
+	if i.s == nil || i.s.ws == nil {
+		return
+	}
+
 	start := i.s.tooltip.cursorPos
 
 	var x float64
@@ -160,6 +192,9 @@ func (i *IMETooltip) updateVirtualCursorPos() {
 }
 
 func (i *IMETooltip) parsePreeditString(preeditStr string) {
+	if i.s == nil || i.s.ws == nil {
+		return
+	}
 
 	i.clearText()
 
