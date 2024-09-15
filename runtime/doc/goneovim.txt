@@ -355,14 +355,14 @@ All Options are follows:
         ## the application will exit without confirmation, even if there are unsaved
         ## updates.
         IgnoreSaveConfirmationWithCloseButton = false
-
+        
         ## Makes the application window frameless.
         # BorderlessWindow = false
-
+        
         ## Controls whether the title bar is displayed when the borderless 
         ## window setting is enabled.
         # HideTitlebar = false
-
+        
         ## EnableBackgroundBlur applies a translucent Blur/Acrylic effect to the window
         ## background.
         EnableBackgroundBlur = false
@@ -382,7 +382,7 @@ All Options are follows:
         
         ## Specifies the amount of scrolling by the mouse wheel. The default value is 1.
         # LineToScroll = 1
-
+        
         ## MouseScrollingUnit sets the mode of mouse scrolling. 
         ## "line" scrolls in lines.
         ## "pixel" scrolls in pixels.
@@ -399,13 +399,13 @@ All Options are follows:
         # StartFullscreen = false
         ## Launch goneovim with maximized window size.
         # StartMaximizedWindow = false
-
+        
         ## Enabling WindowGeometryBasedOnFontmetrics sets the minimum unit of window geometry change 
         ## to the width and height values specified by font metrics.
         ## When enabled, maximization with the GonvimMaximize command may not work well due to 
         ## the combination of screen size and font metrics.
         # WindowGeometryBasedOnFontmetrics = false
-
+        
         ## Enable the ability to remember the last window geometry that was displayed
         ## and restore it at the next startup.
         # RestoreWindowGeometry = false
@@ -465,7 +465,7 @@ All Options are follows:
         ## This only works when connected to a remote nvim instance.
         ## Please check `:h clipboard` for clipboard integration in local nvim instances.
         # Clipboard = true
-
+        
         ## WSL Integration Options
         ## If UseWSL is set to true, it will connect to nvim on WSL.
         ## The behavior is the same as when --wslw is specified as an argument.
@@ -481,7 +481,7 @@ All Options are follows:
         ## It may be useful for users who use the input method editor (e.g. East Asian users).
         ## This option is deprecated. Use `ModeEnablingIME`
         # DisableImeInNormal = false
-
+        
         ## This option specifies a list of modes in which the IME is to be enabled, and goneovim will enable
         ## the IME only in those modes.
         ## It may be useful for users who use the input method editor (e.g. East Asian users).
@@ -492,11 +492,11 @@ All Options are follows:
         ##    "cmdline_normal", "cmdline_insert", "cmdline_replace",
         ##    "terminal"
         # ModeEnablingIME = []
-
+        
         ## This option allows you to hide the mouse cursor in the gooneovim window 
         ## when you type a key, and to redisplay it when you move the mouse cursor again. 
         # HideMouseWhenTyping = false
-
+        
         ## Specifies a list of characters to be scaled to the full height of the line. This solves
         ## the problem of characters that form the UI not filling the UI design when `set linespace`
         ## is used to increase the line spacing.
@@ -514,6 +514,15 @@ All Options are follows:
         # IndentGuide = false
         # IndentGuideIgnoreFtList = ["md"]
         # OptionsToUseGuideWidth = "tabstop"
+        
+        ## Enable manual font fallback.
+        ## When this option is enabled, if a character is not found in the specified font, an attempt
+        ##  is made to use the fallback destination fonts specified as comma-separated in order.
+        # ManualFontFallback = false
+        
+        ## When opening a file by drag & drop, if there is already a file opened in the buffer,
+        ## display a dialog box asking if you want to take a diff.
+        # ShowDiffDialogOnDrop = false
         
         ## Animates the scrolling behavior of Neovim when the scroll command is entered.
         # SmoothScroll = false
@@ -535,10 +544,10 @@ All Options are follows:
         ## Controls whether mouse events in Neovim are ignored when
         ## an application window is clicked while the application window is inactive.
         # IgnoreFirstMouseClickWhenAppInactivated = false
-
+        
         # Display the effect when clicked
         # ClickEffect = false
-
+        
         ## Specifies the command used to open the file in an external file explorer, etc. The default is ":e".
         # FileOpenCmd = ":e"
         
@@ -574,7 +583,7 @@ All Options are follows:
         # [Editor.DockmenuActions]
         # hoge = "-u NONE"
         # fuga = "-u NORC"
-
+        
         ## You can write a vimscript to be executed after goneovim starts,
         ## for example to disable the vimscript that Goneovim has embedded internally.
         ## GinitVim = '''
