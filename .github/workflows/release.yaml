@@ -151,7 +151,7 @@ jobs:
         tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 
     - name: Upload for linux
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-linux
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
@@ -228,7 +228,7 @@ jobs:
         tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 
     - name: Upload for macos
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-macos-x86_64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
@@ -309,7 +309,7 @@ jobs:
         tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 
     - name: Upload for macos
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-macos-arm64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
@@ -432,7 +432,7 @@ jobs:
         zip -r ${{ env.ARCHIVE_NAME }}.zip ${{ env.ARCHIVE_NAME }}
 
     - name: Upload
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-windows
         path: C:/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.zip
@@ -498,7 +498,7 @@ jobs:
 #         tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 #   
 #     - name: Upload
-#       uses: actions/upload-artifact@v1
+#       uses: actions/upload-artifact@v4
 #       with:
 #         name: goneovim-freebsd
 #         path: ${{ github.workspace }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
