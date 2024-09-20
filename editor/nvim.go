@@ -51,10 +51,10 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 		} else {
 			errCh <- nil
 		}
+		setVar(neovim)
 		initGui(neovim)
 		registerHandler(neovim, signal, redrawUpdates, guiUpdates)
 		attachUI(neovim, cols, rows)
-		setVar(neovim)
 
 		nvimCh <- neovim
 		uiRemoteAttachedCh <- uiRemoteAttached
@@ -430,22 +430,31 @@ func attachUIOption(nvim *nvim.Nvim) (int, map[string]interface{}) {
 }
 
 func initGui(neovim *nvim.Nvim) {
+	guiInitScript := `
+	aug GuiInit | au! | aug END
+	au GuiInit VimEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_vimenter")
+	`
+	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(guiInitScript))
+	neovim.Command(registerScripts)
+}
+
+func setupGoneovim(neovim *nvim.Nvim) {
 	// autocmds that goneovim uses
 	gonvimAutoCmds := `
 	aug GoneovimCore | au! | aug END
-	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(0, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
-	au GoneovimCore BufEnter * call rpcnotify(0, "Gui", "gonvim_bufenter", win_getid())
-	au GoneovimCore TermEnter * call rpcnotify(0, "Gui", "gonvim_termenter")
-	au GoneovimCore TermLeave * call rpcnotify(0, "Gui", "gonvim_termleave")
+	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
+	au GoneovimCore BufEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_bufenter", win_getid())
+	au GoneovimCore TermEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_termenter")
+	au GoneovimCore TermLeave * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_termleave")
 	aug Goneovim | au! | aug END
-	au Goneovim DirChanged * call rpcnotify(0, "Gui", "gonvim_workspace_cwd", v:event)
-	au Goneovim BufEnter,TabEnter,DirChanged,TermOpen,TermClose * silent call rpcnotify(0, "Gui", "gonvim_workspace_filepath", expand("%:p"))
+	au Goneovim DirChanged * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_cwd", v:event)
+	au Goneovim BufEnter,TabEnter,DirChanged,TermOpen,TermClose * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_filepath", expand("%:p"))
 	`
 	if editor.opts.Server == "" && !editor.config.MiniMap.Disable {
 		gonvimAutoCmds = gonvimAutoCmds + `
-		au Goneovim BufEnter,BufWrite * call rpcnotify(0, "Gui", "gonvim_minimap_update")
-		au Goneovim TextChanged,TextChangedI * call rpcnotify(0, "Gui", "gonvim_minimap_sync")
-		au Goneovim ColorScheme * call rpcnotify(0, "Gui", "gonvim_colorscheme")
+		au Goneovim BufEnter,BufWrite * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_minimap_update")
+		au Goneovim TextChanged,TextChangedI * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_minimap_sync")
+		au Goneovim ColorScheme * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_colorscheme")
 		`
 	}
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
@@ -453,36 +462,36 @@ func initGui(neovim *nvim.Nvim) {
 
 	// Definition of the commands that goneovim provides
 	gonvimCommands := fmt.Sprintf(`
-	command! -nargs=1 GonvimResize call rpcnotify(0, "Gui", "gonvim_resize", <args>)
-	command! GonvimSidebarShow call rpcnotify(0, "Gui", "side_open")
-	command! GonvimSidebarToggle call rpcnotify(0, "Gui", "side_toggle")
+	command! -nargs=1 GonvimResize call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_resize", <args>)
+	command! GonvimSidebarShow call rpcnotify(g:goneovim_channel_id, "Gui", "side_open")
+	command! GonvimSidebarToggle call rpcnotify(g:goneovim_channel_id, "Gui", "side_toggle")
 	command! GonvimVersion echo "%s"`, editor.version)
 	if editor.opts.Server == "" {
 		if !editor.config.MiniMap.Disable {
 			gonvimCommands = gonvimCommands + `
-			command! GonvimMiniMap call rpcnotify(0, "Gui", "gonvim_minimap_toggle")
+			command! GonvimMiniMap call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_minimap_toggle")
 		`
 		}
 		gonvimCommands = gonvimCommands + `
-		command! GonvimWorkspaceNew call rpcnotify(0, "Gui", "gonvim_workspace_new")
-		command! GonvimWorkspaceNext call rpcnotify(0, "Gui", "gonvim_workspace_next")
-		command! GonvimWorkspacePrevious call rpcnotify(0, "Gui", "gonvim_workspace_previous")
-		command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(0, "Gui", "gonvim_workspace_switch", <args>)
+		command! GonvimWorkspaceNew call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_new")
+		command! GonvimWorkspaceNext call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_next")
+		command! GonvimWorkspacePrevious call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_previous")
+		command! -nargs=1 GonvimWorkspaceSwitch call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_switch", <args>)
 		`
 	}
 	gonvimCommands = gonvimCommands + `
-	command! -nargs=1 GonvimGridFont call rpcnotify(0, "Gui", "gonvim_grid_font", <args>)
-	command! -nargs=1 GonvimLetterSpacing call rpcnotify(0, "Gui", "gonvim_letter_spacing", <args>)
-	command! -nargs=1 GuiMacmeta call rpcnotify(0, "Gui", "gonvim_macmeta", <args>)
-	command! -nargs=? GonvimMaximize call rpcnotify(0, "Gui", "gonvim_maximize", <args>)
-	command! -nargs=? GonvimFullscreen call rpcnotify(0, "Gui", "gonvim_fullscreen", <args>)
-	command! -nargs=+ GonvimWinpos call rpcnotify(0, "Gui", "gonvim_winpos", <f-args>)
-	command! GonvimToggleHorizontalScroll call rpcnotify(0, "Gui", "gonvim_toggle_horizontal_scroll")
-	command! GonvimLigatures call rpcnotify(0, "Gui", "gonvim_ligatures")
-	command! GonvimSmoothScroll call rpcnotify(0, "Gui", "gonvim_smoothscroll")
-	command! GonvimSmoothCursor call rpcnotify(0, "Gui", "gonvim_smoothcursor")
-	command! GonvimIndentguide call rpcnotify(0, "Gui", "gonvim_indentguide")
-	command! -nargs=? GonvimMousescrollUnit call rpcnotify(0, "Gui", "gonvim_mousescroll_unit", <args>)
+	command! -nargs=1 GonvimGridFont call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_grid_font", <args>)
+	command! -nargs=1 GonvimLetterSpacing call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_letter_spacing", <args>)
+	command! -nargs=1 GuiMacmeta call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_macmeta", <args>)
+	command! -nargs=? GonvimMaximize call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_maximize", <args>)
+	command! -nargs=? GonvimFullscreen call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_fullscreen", <args>)
+	command! -nargs=+ GonvimWinpos call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_winpos", <f-args>)
+	command! GonvimToggleHorizontalScroll call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_toggle_horizontal_scroll")
+	command! GonvimLigatures call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_ligatures")
+	command! GonvimSmoothScroll call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_smoothscroll")
+	command! GonvimSmoothCursor call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_smoothcursor")
+	command! GonvimIndentguide call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_indentguide")
+	command! -nargs=? GonvimMousescrollUnit call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_mousescroll_unit", <args>)
 	`
 	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	neovim.Command(registerScripts)
