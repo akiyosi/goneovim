@@ -2716,11 +2716,12 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		)
 	}
 
-	width := float64(len(text)-1)*font.cellwidth + font.italicWidth
+	// width := float64(len(text)-1)*font.cellwidth + font.italicWidth
+	width := fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
 	fg := highlight.fg()
-	if !isNormalWidth {
-		width = fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
-	}
+	// if !isNormalWidth {
+	// 	width = fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
+	// }
 
 	// QImage default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
@@ -3516,7 +3517,7 @@ func (w *Window) focusGrid() {
 }
 
 // convertWindowsToUnixPath converts a Windows path to a Unix path as wslpath does.
-func convertWindowsToUnixPath(winPath string) string {	
+func convertWindowsToUnixPath(winPath string) string {
 	unixPath := strings.ReplaceAll(winPath, `\`, `/`)
 	if len(unixPath) <= 2 {
 		return unixPath
