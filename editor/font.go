@@ -43,6 +43,18 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	}
 	font.SetStyle(gui.QFont__StyleNormal)
 
+	font.SetBold(true)
+	boldfontMetrics := gui.NewQFontMetricsF(font)
+	boldwidth := boldfontMetrics.HorizontalAdvance("w", -1)
+	font.SetBold(false)
+
+	editor.putLog(
+		">>>> font width, boldwidth:",
+		width,
+		boldwidth,
+		width == boldwidth,
+	)
+
 	return width, height, ascent, italicWidth
 }
 
