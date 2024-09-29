@@ -1795,7 +1795,7 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
 	case "gonvim_vimenter":
-		setupGoneovim(ws.nvim)
+		go setupGoneovim(ws.nvim)
 	case "gonvim_uienter":
 	case "gonvim_resize":
 		width, height := editor.setWindowSize(updates[1].(string))
