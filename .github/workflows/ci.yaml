@@ -504,19 +504,18 @@ jobs:
         cd /c/${{ github.repository }}
         make app
 
-    - name: Archive
+    - name: Rename
       shell: msys2 {0}
       run: |
         cd /c/${{ github.repository }}/cmd/goneovim/deploy
         mv windows goneovim-windows
-        zip -r goneovim-windows.zip goneovim-windows
+      # zip -r goneovim-windows.zip goneovim-windows
 
     - name: Upload for windows
       uses: actions/upload-artifact@v4
       with:
         name: goneovim-windows
-        path: C:/${{ github.repository }}/cmd/goneovim/deploy/goneovim-windows.zip
-
+        path: C:/${{ github.repository }}/cmd/goneovim/deploy
 
 
   # test-and-build-windows-msvc:
