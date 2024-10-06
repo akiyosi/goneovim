@@ -236,10 +236,6 @@ func (w *Window) grabScreen() *gui.QPixmap {
 		fullRect.Y()+(w.viewportMargins[0]*font.lineHeight),
 		fullRect.Width()-w.viewportMargins[2]*int(font.cellwidth)-w.viewportMargins[3]*int(font.cellwidth),
 		fullRect.Height()-(w.viewportMargins[0]*font.lineHeight)-(w.viewportMargins[1]*font.lineHeight),
-		// fullRect.X(),
-		// fullRect.Y(),
-		// fullRect.Width(),
-		// fullRect.Height(),
 	)
 	return w.Grab(rect)
 }
@@ -293,9 +289,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		rows++
 	}
 
-	// Draw scroll snapshot
-	w.drawScrollSnapshot(p)
-
 	var verScrollPixels int
 	if w.lastScrollphase != core.Qt__NoScrollPhase {
 		verScrollPixels = w.scrollPixels2
@@ -304,24 +297,42 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		verScrollPixels += w.scrollPixels[1]
 	}
 
+	// -------------
 	// Draw contents
+	// -------------
+
 	if w.isFloatWin && !w.isMsgGrid {
 		w.drawUndrawnAreas(p)
 	}
-	// for y := row + rows; y >= row; y-- {
-	// 	w.drawBackground(p, y, col, cols)
-	// 	w.drawForeground(p, y, col, cols)
-	// }
-	if verScrollPixels <= 0 {
-		for y := row + rows; y >= row; y-- {
-			w.drawBackground(p, y, col, cols)
-			w.drawForeground(p, y, col, cols)
+	// Draw content within viewportMargin in the y-axis direction
+	for y := row + rows; y >= row; y-- {
+		if y < w.viewportMargins[0] {
+			continue
 		}
-	} else {
-		for y := row; y <= row+rows; y++ {
-			w.drawBackground(p, y, col, cols)
-			w.drawForeground(p, y, col, cols)
+		if y > w.rows-w.viewportMargins[1] {
+			continue
 		}
+		w.drawBackground(p, y, col, cols)
+		w.drawForeground(p, y, col, cols)
+	}
+
+	// Draw scroll snapshot
+	w.drawScrollSnapshot(p)
+
+	// Draw content outside the viewportMargin in the y-axis direction
+	for y := row + rows; y >= row; y-- {
+		if y <= w.viewportMargins[0] {
+			continue
+		}
+		w.drawBackground(p, y, col, cols)
+		w.drawForeground(p, y, col, cols)
+	}
+	for y := row + rows; y >= row; y-- {
+		if y >= w.rows-w.viewportMargins[1] {
+			continue
+		}
+		w.drawBackground(p, y, col, cols)
+		w.drawForeground(p, y, col, cols)
 	}
 
 	// TODO: We should use msgSepChar to separate message window area
@@ -3516,7 +3527,7 @@ func (w *Window) focusGrid() {
 }
 
 // convertWindowsToUnixPath converts a Windows path to a Unix path as wslpath does.
-func convertWindowsToUnixPath(winPath string) string {	
+func convertWindowsToUnixPath(winPath string) string {
 	unixPath := strings.ReplaceAll(winPath, `\`, `/`)
 	if len(unixPath) <= 2 {
 		return unixPath
