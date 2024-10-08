@@ -2727,7 +2727,11 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		)
 	}
 
-	width := float64(len(text)-1)*font.cellwidth + font.italicWidth
+	width := float64(len(text))*font.cellwidth + 1
+	if highlight.italic {
+		width = float64(len(text))*font.italicWidth + 1
+	}
+
 	fg := highlight.fg()
 	if !isNormalWidth {
 		width = fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
