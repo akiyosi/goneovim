@@ -3,7 +3,7 @@ goneovim
 
 ![CI](https://github.com/akiyosi/goneovim/workflows/CI/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/goneovim)](https://goreportcard.com/report/github.com/akiyosi/goneovim)
-![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.6.8/total)
+![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.6.9/total)
 [![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
 
 goneovim (pronounced like "go-neovim") is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
@@ -60,15 +60,20 @@ All of the features are optional. You can use it like a plain nvim or as a nvim 
 
 
 ## Requirements
-* Neovim [v0.10.0](https://github.com/neovim/neovim/releases/tag/v0.10.0) or [Nightly](https://github.com/neovim/neovim/releases/tag/nightly)
+* Neovim [v0.10.2](https://github.com/neovim/neovim/releases/tag/v0.10.2) or [Nightly](https://github.com/neovim/neovim/releases/tag/nightly)
 
 See [Installing Neovim](https://github.com/neovim/neovim/wiki/Installing-Neovim)
 
 
 ## Getting Started
+### Download from Github
 Pre-built packages for Windows, MacOS, Linux are found at the [Releases](https://github.com/akiyosi/goneovim/releases) page.
 
 Or you can get the latest binary from Github Actions CI. See [Actions](https://github.com/akiyosi/goneovim/actions) page.
+
+If you are a MacOS user, run `xattr -c /path/to/goneovim.app` to avoid the 'unknown developer' warning or the 'Goneovim is damaged and can't be opened' error.
+
+### Install via Package Manager
 
 Windows users can install using scoop:
 
