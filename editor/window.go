@@ -304,31 +304,44 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	if w.isFloatWin && !w.isMsgGrid {
 		w.drawUndrawnAreas(p)
 	}
-	// Draw content within viewportMargin in the y-axis direction
-	for y := row + rows; y >= row; y-- {
-		if y < w.viewportMargins[0] {
-			continue
+
+	if verScrollPixels <= 0 {
+		for y := row + rows; y >= row; y-- {
+			if y < w.viewportMargins[0] {
+				continue
+			}
+			if y > w.rows-w.viewportMargins[1]-1 {
+				continue
+			}
+			w.drawBackground(p, y, col, cols)
+			w.drawForeground(p, y, col, cols)
 		}
-		if y > w.rows-w.viewportMargins[1] {
-			continue
+	} else {
+		for y := row; y <= row+rows; y++ {
+			if y < w.viewportMargins[0] {
+				continue
+			}
+			if y > w.rows-w.viewportMargins[1]-1 {
+				continue
+			}
+			w.drawBackground(p, y, col, cols)
+			w.drawForeground(p, y, col, cols)
 		}
-		w.drawBackground(p, y, col, cols)
-		w.drawForeground(p, y, col, cols)
 	}
 
 	// Draw scroll snapshot
 	w.drawScrollSnapshot(p)
 
 	// Draw content outside the viewportMargin in the y-axis direction
-	for y := row + rows; y >= row; y-- {
-		if y <= w.viewportMargins[0] {
+	for y := row; y <= row+rows; y++ {
+		if y >= w.viewportMargins[0] {
 			continue
 		}
 		w.drawBackground(p, y, col, cols)
 		w.drawForeground(p, y, col, cols)
 	}
 	for y := row + rows; y >= row; y-- {
-		if y >= w.rows-w.viewportMargins[1] {
+		if y <= w.rows-w.viewportMargins[1]-1 {
 			continue
 		}
 		w.drawBackground(p, y, col, cols)
