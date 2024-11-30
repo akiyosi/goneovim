@@ -618,19 +618,6 @@ func (e *Editor) connectAppSignals() {
 			for {
 				openingFile := <-e.openingFileCh
 
-				file, err := os.OpenFile("/Users/akiyosi/debug3.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-				if err != nil {
-					fmt.Println(err)
-
-					os.Exit(1)
-				}
-				log.SetOutput(file)
-				log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-				log.Println(
-					fmt.Sprintf("%07.3f", float64(time.Now().UnixNano()/1000-e.startuptime)/1000),
-					strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%v", openingFile), "["), "]"),
-				)
-
 				e.loadFileInDarwin(
 					openingFile,
 				)
