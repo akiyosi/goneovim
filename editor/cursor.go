@@ -13,6 +13,7 @@ import (
 type Cursor struct {
 	widgets.QWidget
 
+	row, col             int
 	smoothMoveAnimation  *core.QPropertyAnimation
 	charCache            *Cache
 	font                 *Font
@@ -647,7 +648,11 @@ func (c *Cursor) update() {
 	row, col := c.getRowAndColFromScreen()
 
 	// update cursor text
-	c.updateCursorText(row, col, win)
+	if !(c.row == row && c.col == col) {
+		c.row = row
+		c.col = col
+		c.updateCursorText(row, col, win)
+	}
 
 	// update cursor shape
 	c.updateCursorShape()
