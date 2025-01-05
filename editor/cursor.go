@@ -610,22 +610,30 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 }
 
 func (c *Cursor) updateCursorText(row, col int, win *Window) {
+
 	if row >= len(win.content) ||
 		col >= len(win.content[0]) ||
 		win.content[row][col] == nil ||
 		win.content[row][col].char == "" {
 		c.desttext = ""
 		c.normalWidth = true
-	} else {
-		c.sourcetext = c.desttext
-		c.desttext = win.content[row][col].char
-		c.normalWidth = win.content[row][col].normalWidth
+	}
+
+	if (c.row == row && c.col == col) && (c.desttext == win.content[row][col].char) {
+		return
 	}
 	if c.ws.palette != nil {
 		if c.isInPalette {
 			c.desttext = ""
+			return
 		}
 	}
+	c.sourcetext = c.desttext
+	c.desttext = win.content[row][col].char
+	c.normalWidth = win.content[row][col].normalWidth
+	c.row = row
+	c.col = col
+
 }
 
 func (c *Cursor) update() {
@@ -648,11 +656,7 @@ func (c *Cursor) update() {
 	row, col := c.getRowAndColFromScreen()
 
 	// update cursor text
-	if !(c.row == row && c.col == col) {
-		c.row = row
-		c.col = col
-		c.updateCursorText(row, col, win)
-	}
+	c.updateCursorText(row, col, win)
 
 	// update cursor shape
 	c.updateCursorShape()
