@@ -71,8 +71,6 @@ Pre-built packages for Windows, MacOS, Linux are found at the [Releases](https:/
 
 Or you can get the latest binary from Github Actions CI. See [Actions](https://github.com/akiyosi/goneovim/actions) page.
 
-If you are a MacOS user, run `xattr -c /path/to/goneovim.app` to avoid the 'unknown developer' warning or the 'Goneovim is damaged and can't be opened' error.
-
 ### Install via Package Manager
 
 Windows users can install using scoop:
@@ -92,6 +90,14 @@ scoop install goneovim-nightly
 MacOS users can install using homebrew:
 
 `brew install --cask goneovim`
+
+> [!NOTE]
+> If you are a macOS user, since this is an unsigned application, you need to execute the following command after obtaining goneovim.app:
+> ```
+> xattr -c /path/to/goneovim.app
+> ```
+> 
+> This will help you avoid the "unknown developer" warning or the "Goneovim is damaged and can't be opened" error.
 
 
 ## Usage

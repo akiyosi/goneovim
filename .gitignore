@@ -20,3 +20,5 @@ cmd/goneovim/debug.log
 vendor/
 nvim_issue/
 version.txt
+cpuprofile
+memprofile
