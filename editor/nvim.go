@@ -52,7 +52,8 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 			errCh <- nil
 		}
 		setVar(neovim)
-		initGui(neovim)
+		setupGoneovim(neovim)
+		setupGoneovimCommands(neovim)
 		registerHandler(neovim, signal, redrawUpdates, guiUpdates)
 		attachUI(neovim, cols, rows)
 
@@ -429,19 +430,11 @@ func attachUIOption(nvim *nvim.Nvim) (int, map[string]interface{}) {
 	return channel, o
 }
 
-func initGui(neovim *nvim.Nvim) {
-	guiInitScript := `
-	aug GuiInit | au! | aug END
-	au GuiInit VimEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_vimenter")
-	`
-	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(guiInitScript))
-	neovim.Command(registerScripts)
-}
-
 func setupGoneovim(neovim *nvim.Nvim) {
 	// autocmds that goneovim uses
 	gonvimAutoCmds := `
 	aug GoneovimCore | au! | aug END
+	au GoneovimCore VimEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_vimenter")
 	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
 	au GoneovimCore BufEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_bufenter", win_getid())
 	au GoneovimCore TermEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_termenter")
@@ -458,7 +451,9 @@ func setupGoneovim(neovim *nvim.Nvim) {
 	}
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
 	neovim.Command(registerScripts)
+}
 
+func setupGoneovimCommands(neovim *nvim.Nvim) {
 	// Definition of the commands that goneovim provides
 	gonvimCommands := fmt.Sprintf(`
 	command! -nargs=1 GonvimResize call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_resize", <args>)
@@ -492,9 +487,11 @@ func setupGoneovim(neovim *nvim.Nvim) {
 	command! GonvimIndentguide call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_indentguide")
 	command! -nargs=? GonvimMousescrollUnit call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_mousescroll_unit", <args>)
 	`
-	registerScripts = fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
+	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	neovim.Command(registerScripts)
+}
 
+func setupGoneovimClipBoard(neovim *nvim.Nvim) {
 	code := `
     local function set_clipboard(register)
         return function(lines, regtype)
