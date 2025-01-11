@@ -638,25 +638,33 @@ func (ws *Workspace) nvimEval(s string) (interface{}, error) {
 	}
 }
 
-func (ws *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
-	scope, ok := cwdinfo["scope"]
-	if !ok {
-		scope = "global"
-	}
-	cwdITF, ok := cwdinfo["cwd"]
-	if !ok {
-		return
-	}
-	cwd := cwdITF.(string)
-	switch scope {
-	case "global":
+func (ws *Workspace) changeCwd(args []interface{}) {
+	for _, arg := range args {
+		cwd := (arg.([]interface{}))[0].(string)
 		ws.setCwd(cwd)
-	case "tab":
-		ws.setCwdInTab(cwd)
-	case "window":
-		ws.setCwdInWin(cwd)
 	}
 }
+
+// func (ws *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
+// 	fmt.Println("handle change cwd:", cwdinfo)
+// 	scope, ok := cwdinfo["scope"]
+// 	if !ok {
+// 		scope = "global"
+// 	}
+// 	cwdITF, ok := cwdinfo["cwd"]
+// 	if !ok {
+// 		return
+// 	}
+// 	cwd := cwdITF.(string)
+// 	switch scope {
+// 	case "global":
+// 		ws.setCwd(cwd)
+// 	case "tab":
+// 		ws.setCwdInTab(cwd)
+// 	case "window":
+// 		ws.setCwdInWin(cwd)
+// 	}
+// }
 
 func (ws *Workspace) setCwd(cwd string) {
 	if cwd == "" {
@@ -699,47 +707,47 @@ func (ws *Workspace) setCwd(cwd string) {
 	}
 }
 
-func (ws *Workspace) setCwdInTab(cwd string) {
-	ws.screen.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-
-		if win == nil {
-			return true
-		}
-		if win.grid == 1 {
-			return true
-		}
-		if win.isMsgGrid {
-			return true
-		}
-		if win.isShown() {
-			win.cwd = cwd
-		}
-
-		return true
-	})
-}
-
-func (ws *Workspace) setCwdInWin(cwd string) {
-	ws.screen.windows.Range(func(_, winITF interface{}) bool {
-		win := winITF.(*Window)
-
-		if win == nil {
-			return true
-		}
-		if win.grid == 1 {
-			return true
-		}
-		if win.isMsgGrid {
-			return true
-		}
-		if win.grid == ws.cursor.gridid {
-			win.cwd = cwd
-		}
-
-		return true
-	})
-}
+// func (ws *Workspace) setCwdInTab(cwd string) {
+// 	ws.screen.windows.Range(func(_, winITF interface{}) bool {
+// 		win := winITF.(*Window)
+//
+// 		if win == nil {
+// 			return true
+// 		}
+// 		if win.grid == 1 {
+// 			return true
+// 		}
+// 		if win.isMsgGrid {
+// 			return true
+// 		}
+// 		if win.isShown() {
+// 			win.cwd = cwd
+// 		}
+//
+// 		return true
+// 	})
+// }
+//
+// func (ws *Workspace) setCwdInWin(cwd string) {
+// 	ws.screen.windows.Range(func(_, winITF interface{}) bool {
+// 		win := winITF.(*Window)
+//
+// 		if win == nil {
+// 			return true
+// 		}
+// 		if win.grid == 1 {
+// 			return true
+// 		}
+// 		if win.isMsgGrid {
+// 			return true
+// 		}
+// 		if win.grid == ws.cursor.gridid {
+// 			win.cwd = cwd
+// 		}
+//
+// 		return true
+// 	})
+// }
 
 func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	e := editor
@@ -969,6 +977,8 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 			ws.modeInfoSet(args)
 		case "option_set":
 			ws.optionSet(args)
+		case "chdir":
+			ws.changeCwd(args)
 		case "mode_change":
 			ws.modeChange(args)
 
@@ -1944,9 +1954,6 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 		editor.workspacePrevious()
 	case "gonvim_workspace_switch":
 		editor.workspaceSwitch(util.ReflectToInt(updates[1]))
-	case "gonvim_workspace_cwd":
-		cwdinfo := updates[1].(map[string]interface{})
-		ws.handleChangeCwd(cwdinfo)
 	case "gonvim_workspace_filepath":
 		if ws.minimap != nil {
 			ws.minimap.mu.Lock()

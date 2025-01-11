@@ -126,7 +126,6 @@ type Window struct {
 	anchorGrid             int
 	anchorCol              int
 	anchorRow              int
-	cwd                    string
 	winbar                 *string
 	ft                     string
 	lenOldContent          []int

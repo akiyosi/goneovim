@@ -447,8 +447,7 @@ func setupGoneovim(neovim *nvim.Nvim) {
 	au GoneovimCore TermEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_termenter")
 	au GoneovimCore TermLeave * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_termleave")
 	aug Goneovim | au! | aug END
-	au Goneovim DirChanged * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_cwd", v:event)
-	au Goneovim BufEnter,TabEnter,DirChanged,TermOpen,TermClose * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_filepath", expand("%:p"))
+	au Goneovim BufEnter,TabEnter,TermOpen,TermClose * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_filepath", expand("%:p"))
 	`
 	if editor.opts.Server == "" && !editor.config.MiniMap.Disable {
 		gonvimAutoCmds = gonvimAutoCmds + `
