@@ -91,7 +91,6 @@ type Workspace struct {
 	pb                 int
 	ts                 int
 	ph                 int
-	winbar             *string
 	optionsetMutex     sync.RWMutex
 	viewportMutex      sync.RWMutex
 	stopOnce           sync.Once
@@ -1989,12 +1988,6 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 			win.ft = ft
 		}
 
-		// get winbar
-		if win.winbar != nil {
-			winbar := ws.getWindowOption(NVIMCALLTIMEOUT2, "winbar", "local", wid)
-			win.winbar = &winbar
-		}
-
 	case "gonvim_optionset":
 		wid := (nvim.Window)(util.ReflectToInt(updates[4]))
 		win, ok := ws.screen.getGrid(wid)
@@ -2451,15 +2444,6 @@ func (ws *Workspace) setOption(optionName string, wid nvim.Window) {
 			return
 		}
 		win.ft = ft
-	case "winbar":
-
-		// for global-local
-		winbar := ws.getWindowOption(NVIMCALLTIMEOUT2, optionName, "global")
-		ws.winbar = &winbar
-
-		// for window-local
-		winbar = ws.getWindowOption(NVIMCALLTIMEOUT2, optionName, "local", wid)
-		win.winbar = &winbar
 	}
 	ws.optionsetMutex.Unlock()
 }

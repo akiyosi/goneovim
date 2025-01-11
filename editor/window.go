@@ -126,7 +126,6 @@ type Window struct {
 	anchorGrid             int
 	anchorCol              int
 	anchorRow              int
-	winbar                 *string
 	ft                     string
 	lenOldContent          []int
 	lenContent             []int
@@ -3882,12 +3881,6 @@ func (w *Window) setOptions() {
 			}
 		}
 	}
-
-	// get winbar
-	if w.winbar == nil {
-		winbar := w.s.ws.getWindowOption(NVIMCALLTIMEOUT2, "winbar", "local", w.id)
-		w.winbar = &winbar
-	}
 }
 
 func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
@@ -3928,24 +3921,6 @@ func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
 
 	return winx, winy
 }
-
-// func (w *Window) getWinbar() string {
-// 	if w.winbar != nil && *w.winbar == "" {
-// 		if w.s.ws.winbar != nil {
-// 			return *w.s.ws.winbar
-// 		} else {
-// 			return ""
-// 		}
-// 	} else if w.winbar == nil {
-// 		if w.s.ws.winbar != nil {
-// 			return *w.s.ws.winbar
-// 		} else {
-// 			return ""
-// 		}
-// 	}
-//
-// 	return *w.winbar
-// }
 
 func (w *Window) layoutExternalWindow(x, y int) {
 	font := w.s.font
