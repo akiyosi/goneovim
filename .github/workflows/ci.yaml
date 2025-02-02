@@ -119,7 +119,7 @@ jobs:
         tar -jcvf goneovim-linux.tar.bz2 goneovim-linux
 
     - name: Upload for linux
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-linux
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux.tar.bz2
@@ -190,7 +190,7 @@ jobs:
         tar -jcvf goneovim-macos-x86_64.tar.bz2 goneovim-macos-x86_64
 
     - name: Upload for macos
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-macos-x86_64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-macos-x86_64.tar.bz2
@@ -307,7 +307,7 @@ jobs:
         tar -jcvf goneovim-macos-arm64.tar.bz2 goneovim-macos-arm64
 
     - name: Upload for macos m1
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-macos-arm64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-macos-arm64.tar.bz2
@@ -511,7 +511,7 @@ jobs:
         zip -r goneovim-windows.zip goneovim-windows
 
     - name: Upload for windows
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-windows
         path: C:/${{ github.repository }}/cmd/goneovim/deploy/goneovim-windows.zip
@@ -547,7 +547,7 @@ jobs:
   #   steps:
 
   #   - name: Install Qt
-  #     uses: jurplel/install-qt-action@v3
+  #     uses: jurplel/install-qt-action@v4
   #     with:
   #       version: ${{ matrix.qtversion }}
   #       host: windows
@@ -756,7 +756,7 @@ jobs:
 #     runs-on: macos-latest
 #     steps:
 #       - name: Checkout code
-#         uses: actions/checkout@v3
+#         uses: actions/checkout@v4
 #         with:
 #           fetch-depth: 0
 # 
