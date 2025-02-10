@@ -112,7 +112,7 @@ func newWorkspace() *Workspace {
 	editor.putLog("initialize workspace")
 	ws := &Workspace{
 		stop:         make(chan struct{}),
-		flushCh:      make(chan []interface{}, 100),
+		flushCh:      newFlushCh(),
 		foreground:   newRGBA(255, 255, 255, 1),
 		background:   newRGBA(0, 0, 0, 1),
 		special:      newRGBA(255, 255, 255, 1),
@@ -1111,7 +1111,7 @@ func (ws *Workspace) flush() {
 			ws.winViewportMargins(args)
 		}
 	}
-	ws.flushCh = make(chan []interface{}, 100)
+	ws.flushCh = newFlushCh()
 	ws.doneGetSnapshot = false
 
 	if ws.shouldUpdate.globalgrid {
@@ -1141,6 +1141,27 @@ func (ws *Workspace) flush() {
 	}
 
 	ws.maxLineDelta = 0
+}
+
+// This function returns `flushCh` with an appropriate buffer size.
+//
+// `flushCh` is a channel that buffers specific `redraw` events and processes them collectively when a `flush` event is received.
+// Neovim sends multiple `redraw` batches before completing a full screen redraw, with `flush` following only the last batch.
+// This behavior can cause issues in smooth scrolling, as intermediate states before `flush` may lead to inconsistencies.
+// To ensure a stable rendering state, only relevant events are processed when `flush` is received.
+//
+// In smooth scrolling, capturing the screen triggers a `paint` event internally.
+// At this point, if `flush` has not yet been received, the UI state may be incomplete.
+// Additionally, smooth scrolling relies on `win_viewport` events, but if UI events are dispatched in
+// separate batches before `flush`, maintaining a consistent view becomes difficult.
+// By buffering these events appropriately, the system ensures that rendering remains stable and coherent.
+func newFlushCh() chan []interface{} {
+	// https://github.com/akiyosi/goneovim/issues/569
+	// Due to the above issue, in certain situations, Nvim may continue notifying redraw events
+	// without sending a flush event for a period of time. If the buffer size is too small,
+	// this can cause the application to freeze. To mitigate this, the buffer size has been increased to 5000.
+	// While this may not be a fundamental fix, it helps prevent freezes.
+	return make(chan []interface{}, 5000)
 }
 
 func (ws *Workspace) updateScrollbar() {
