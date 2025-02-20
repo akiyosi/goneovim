@@ -612,11 +612,12 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 func (c *Cursor) updateCursorText(row, col int, win *Window) {
 
 	if row >= len(win.content) ||
-		col >= len(win.content[0]) ||
+		col >= len(win.content[row]) ||
 		win.content[row][col] == nil ||
 		win.content[row][col].char == "" {
 		c.desttext = ""
 		c.normalWidth = true
+		return
 	}
 
 	if (c.row == row && c.col == col) && (c.desttext == win.content[row][col].char) {

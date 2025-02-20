@@ -312,7 +312,9 @@ func (s *Screen) gridFont(update interface{}) {
 		cache := newCache()
 		win.cache = cache
 	} else {
+		win.paintMutex.Lock()
 		win.cache.purge()
+		win.paintMutex.Unlock()
 	}
 
 	_ = s.ws.nvim.TryResizeUIGrid(win.grid, newCols, newRows)
@@ -344,7 +346,9 @@ func (s *Screen) purgeTextCacheForWins() {
 		if cache == (Cache{}) {
 			return true
 		}
+		win.paintMutex.Lock()
 		win.cache.purge()
+		win.paintMutex.Unlock()
 		return true
 	})
 }

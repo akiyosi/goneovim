@@ -2573,6 +2573,11 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 		image = imagev.(*gui.QImage)
 	}
 
+	// return if image is invalid
+	if image.Width() == 0 && image.Height() == 0 {
+		return
+	}
+
 	// Scale specific characters to full line height
 	yOffset := 0
 	if scaled {
