@@ -1426,10 +1426,8 @@ func (s *Screen) detectCoveredCellInGlobalgrid() {
 	font := s.font
 
 	s.windows.Range(func(grid, winITF interface{}) bool {
-		// fmt.Println("-------------------")
 
 		win := winITF.(*Window)
-		// if grid is dirty, we remove this grid
 		if win == nil {
 			return true
 		}
@@ -1440,6 +1438,9 @@ func (s *Screen) detectCoveredCellInGlobalgrid() {
 			return true
 		}
 		if win.isMsgGrid {
+			return true
+		}
+		if win.isGridDirty {
 			return true
 		}
 		if win.grid == 1 {
