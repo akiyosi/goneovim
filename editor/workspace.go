@@ -81,7 +81,6 @@ type Workspace struct {
 	viewport           [5]int
 	oldViewport        [5]int
 	height             int
-	maxLineDelta       int
 	maxLine            int
 	rows               int
 	cols               int
@@ -1139,8 +1138,6 @@ func (ws *Workspace) flush() {
 		ws.updateMinimap()
 		ws.shouldUpdate.minimap = false
 	}
-
-	ws.maxLineDelta = 0
 }
 
 // This function returns `flushCh` with an appropriate buffer size.
@@ -1720,7 +1717,6 @@ func (ws *Workspace) winViewport(args []interface{}) {
 			ws.oldViewport = ws.viewport
 			ws.viewport = viewport
 			ws.viewportMutex.Unlock()
-			ws.maxLineDelta = maxLine - ws.maxLine
 			ws.maxLine = maxLine
 		}
 
@@ -1728,10 +1724,10 @@ func (ws *Workspace) winViewport(args []interface{}) {
 			continue
 		}
 
-		// do not scroll smoothly when the maximum line is less than buffer rows
-		if ws.maxLine-ws.maxLineDelta < ws.rows {
-			continue
-		}
+		// // do not scroll smoothly when the maximum line is less than buffer rows
+		// if ws.maxLine < ws.rows {
+		// 	continue
+		// }
 
 		// Does not scroll smoothly if the size of the grid is increased without
 		// changing the position of the top
