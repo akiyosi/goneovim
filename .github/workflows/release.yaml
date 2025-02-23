@@ -151,7 +151,7 @@ jobs:
         tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 
     - name: Upload for linux
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-linux
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
@@ -166,7 +166,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.21.x]
-        platform: [macos-12]
+        platform: [macos-13]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -228,7 +228,7 @@ jobs:
         tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 
     - name: Upload for macos
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-macos-x86_64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
@@ -309,7 +309,7 @@ jobs:
         tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 
     - name: Upload for macos
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-macos-arm64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
@@ -357,9 +357,11 @@ jobs:
         install: mingw-w64-x86_64-toolchain
     - shell: msys2 {0}
       run: |
-        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
+        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator
         pacman -Scc
         pacman -Sc
+        curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
+        pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
 
     # - name: Patch qt5
     #   shell: msys2 {0}
@@ -430,7 +432,7 @@ jobs:
         zip -r ${{ env.ARCHIVE_NAME }}.zip ${{ env.ARCHIVE_NAME }}
 
     - name: Upload
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-windows
         path: C:/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.zip
@@ -496,7 +498,7 @@ jobs:
 #         tar -jcvf "$ARCHIVE_NAME".tar.bz2 "$ARCHIVE_NAME"
 #   
 #     - name: Upload
-#       uses: actions/upload-artifact@v1
+#       uses: actions/upload-artifact@v4
 #       with:
 #         name: goneovim-freebsd
 #         path: ${{ github.workspace }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
@@ -512,7 +514,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
 
       - name: Install dependencies
         run: |

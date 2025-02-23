@@ -119,7 +119,7 @@ jobs:
         tar -jcvf goneovim-linux.tar.bz2 goneovim-linux
 
     - name: Upload for linux
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-linux
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux.tar.bz2
@@ -133,7 +133,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.21.x]
-        platform: [macos-12]
+        platform: [macos-13]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -190,7 +190,7 @@ jobs:
         tar -jcvf goneovim-macos-x86_64.tar.bz2 goneovim-macos-x86_64
 
     - name: Upload for macos
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-macos-x86_64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-macos-x86_64.tar.bz2
@@ -307,7 +307,7 @@ jobs:
         tar -jcvf goneovim-macos-arm64.tar.bz2 goneovim-macos-arm64
 
     - name: Upload for macos m1
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-macos-arm64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-macos-arm64.tar.bz2
@@ -426,7 +426,6 @@ jobs:
       CGO_CFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS_ALLOW: ".*" 
       CGO_LDFLAGS_ALLOW: ".*" 
-      # CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
 
@@ -443,18 +442,20 @@ jobs:
         install: mingw-w64-x86_64-toolchain
     - shell: msys2 {0}
       run: |
-        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator mingw-w64-x86_64-qt5-static
+        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator
         pacman -Scc
         pacman -Sc
+        curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
+        pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
 
-    # - name: Patch qt5
-    #   shell: msys2 {0}
-    #   run: | 
-    #     curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt-5.15.8/qt-5.15.8.zip
-    #     unzip qt-5.15.8.zip
-    #     cp -fpR qt5/* /mingw64/qt5-static/
-    #     rm -fr qt5
-    #     rm qt-5.15.8.zip
+    #- name: Patch qt5
+    #  shell: msys2 {0}
+    #  run: | 
+    #    curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt-5.15.8/qt-5.15.8.zip
+    #    unzip qt-5.15.8.zip
+    #    cp -fpR qt5/* /mingw64/qt5-static/
+    #    rm -fr qt5
+    #    rm qt-5.15.8.zip
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -503,19 +504,18 @@ jobs:
         cd /c/${{ github.repository }}
         make app
 
-    - name: Archive
+    - name: Rename
       shell: msys2 {0}
       run: |
         cd /c/${{ github.repository }}/cmd/goneovim/deploy
         mv windows goneovim-windows
-        zip -r goneovim-windows.zip goneovim-windows
+      # zip -r goneovim-windows.zip goneovim-windows
 
     - name: Upload for windows
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: goneovim-windows
-        path: C:/${{ github.repository }}/cmd/goneovim/deploy/goneovim-windows.zip
-
+        path: C:/${{ github.repository }}/cmd/goneovim/deploy
 
 
   # test-and-build-windows-msvc:
@@ -740,7 +740,7 @@ jobs:
   #       Copy-Item -Force -Recurse -Path ../../runtime -Destination ./deploy/windows/
 
   #   - name: Upload for windows
-  #     uses: actions/upload-artifact@v1
+  #     uses: actions/upload-artifact@v4
   #     with:
   #       name: goneovim-windows-msvc
   #       path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
@@ -800,7 +800,7 @@ jobs:
 #           tar -jcvf goneovim-freebsd.tar.bz2 goneovim-freebsd
 #   
 #       - name: Upload for freebsd
-#         uses: actions/upload-artifact@v1
+#         uses: actions/upload-artifact@v4
 #         with:
 #           name: goneovim-freebsd
 #           path: ${{ github.workspace }}/cmd/goneovim/deploy/goneovim-freebsd.tar.bz2
