@@ -617,6 +617,9 @@ func (e *Editor) connectAppSignals() {
 		go func() {
 			for {
 				openingFile := <-e.openingFileCh
+				if strings.Join(editor.args, "") != "" {
+					continue
+				}
 
 				e.loadFileInDarwin(
 					openingFile,
