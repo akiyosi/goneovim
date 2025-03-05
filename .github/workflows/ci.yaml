@@ -23,7 +23,7 @@ jobs:
       QT_DIR: ${{ github.workspace }}/Qt
       QT_VERSION: ${{ matrix.qtversion }}
       QT_API: 5.13.0
-      QT_DEBUG: false
+      QT_DEBUG: true
       GO111MODULE: on
       QT_STATIC: true
       QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
@@ -139,7 +139,7 @@ jobs:
       GOPATH: ${{ github.workspace }}
       QT_HOMEBREW: true
       QT_API: 5.13.0
-      QT_DEBUG: false
+      QT_DEBUG: true
       GO111MODULE: on
       QT_QMAKE_DIR: /usr/local/opt/qt@5/bin
     steps:
@@ -215,7 +215,7 @@ jobs:
       QT_VERSION: 5.15.12
       QT_DIR: ${{ github.workspace }}/Qt
       QT_STATIC: true
-      QT_DEBUG: false
+      QT_DEBUG: true
       GO111MODULE: on
       QT_QMAKE_DIR: ${{ github.workspace }}/Qt/bin
     steps:
@@ -421,7 +421,7 @@ jobs:
       QT_MSYS2_STATIC: true
       QT_MSVC: false
       QT_DEBUG_CONSOLE: true
-      QT_DEBUG: false
+      QT_DEBUG: true
       GO111MODULE: on
       CGO_CFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS_ALLOW: ".*" 
