@@ -42,7 +42,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       id: cache-qt-linux
       with:
         path: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
@@ -234,7 +234,7 @@ jobs:
     #     brew install qt@5
 
 
-    # - uses: actions/cache@v2
+    # - uses: actions/cache@v4
     #   id: cache-qt-src
     #   with:
     #     path: ${{ github.workspace }}/qt5
@@ -248,7 +248,7 @@ jobs:
     #     rm qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
     #     mv qt-everywhere-src-${{ matrix.qtversion }} qt5
 
-    # - uses: actions/cache@v2
+    # - uses: actions/cache@v4
     #   id: cache-qt-macos
     #   with:
     #     path: ${{ github.workspace }}/Qt
@@ -374,7 +374,7 @@ jobs:
         go mod vendor 
         git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
 
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       id: cache-qt-bindings-windows-test
       with:
         path: |
@@ -565,7 +565,7 @@ jobs:
   #   #    dir C:\Qt\${{ matrix.qtversion }}
   #   #    dir C:\Qt\${{ matrix.qtversion }}\${{ env.QTARCH }}
 
-  #   - uses: actions/cache@v2
+  #   - uses: actions/cache@v4
   #     id: cache-msvc-buildtools
   #     with:
   #       path: ${{ github.workspace }}\BuildTools
@@ -663,7 +663,7 @@ jobs:
   #       cd ${{ github.workspace }}\go-root\src
   #       .\make.bat
 
-  #   # - uses: actions/cache@v2
+  #   # - uses: actions/cache@v4
   #   #   id: cache-qt-bindings-windows
   #   #   with:
   #   #     path: |
