@@ -3252,6 +3252,7 @@ func isASCII(c string) bool {
 func (w *Window) deleteExternalWin() {
 	if w.extwin != nil {
 		w.extwin.Hide()
+		w.extwin.DestroyQDialog()
 		w.extwin = nil
 	}
 }

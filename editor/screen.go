@@ -233,6 +233,16 @@ func (s *Screen) storeWindow(grid int, win *Window) {
 	s.windows.Store(grid, win)
 }
 
+func (s *Screen) deleteWindow(grid int) {
+	winITF, loaded := s.windows.LoadAndDelete(grid)
+	if loaded {
+		win := winITF.(*Window)
+		if win != nil {
+			win.DestroyWindow()
+		}
+	}
+}
+
 func (s *Screen) lenWindows() int {
 	length := 0
 	s.windows.Range(func(_, _ interface{}) bool {
@@ -1510,7 +1520,7 @@ func (s *Screen) update() {
 			// }
 			win.hide()
 			win.deleteExternalWin()
-			s.windows.Delete(grid)
+			s.deleteWindow(win.grid)
 		}
 		if win != nil {
 			// Fill entire background if background color changed

@@ -333,6 +333,7 @@ func (ws *Workspace) registerSignal(signal *neovimSignal, redrawUpdates chan [][
 	})
 
 	ws.signal.ConnectStopSignal(func() {
+		// Need cleanup?
 		workspaces := []*Workspace{}
 		index := 0
 		maxworkspaceIndex := len(editor.workspaces) - 1
@@ -1008,16 +1009,21 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 		case "hl_group_set":
 			ws.hlGroupSet(args)
 
-		case "grid_line":
-			ws.flushCh <- update
-		case "grid_clear":
-			ws.flushCh <- update
-		case "grid_destroy":
-			ws.flushCh <- update
-		case "grid_cursor_goto":
-			ws.flushCh <- update
-		case "grid_scroll":
-			ws.flushCh <- update
+		case "grid_line", "grid_clear", "grid_destroy", "grid_cursor_goto", "grid_scroll":
+			select {
+			case ws.flushCh <- update:
+
+			case <-time.After(500 * time.Millisecond):
+				// https://github.com/akiyosi/goneovim/issues/569
+				// Due to the above issue, in certain situations, Nvim may continue notifying redraw events
+				// without sending a flush event for a period of time. If the buffer size is too small,
+				// this can cause the application to freeze.
+				// Therefore, data on the existing channel queue is discarded and a new channel is re-
+				// created if it cannot be sent to the channel.
+				editor.putLog("flushCh send timeout, recreating channel")
+				ws.flushCh = newFlushCh()
+				ws.flushCh <- update
+			}
 
 		// Multigrid Events
 		case "win_pos":
@@ -1153,12 +1159,7 @@ func (ws *Workspace) flush() {
 // separate batches before `flush`, maintaining a consistent view becomes difficult.
 // By buffering these events appropriately, the system ensures that rendering remains stable and coherent.
 func newFlushCh() chan []interface{} {
-	// https://github.com/akiyosi/goneovim/issues/569
-	// Due to the above issue, in certain situations, Nvim may continue notifying redraw events
-	// without sending a flush event for a period of time. If the buffer size is too small,
-	// this can cause the application to freeze. To mitigate this, the buffer size has been increased to 5000.
-	// While this may not be a fundamental fix, it helps prevent freezes.
-	return make(chan []interface{}, 5000)
+	return make(chan []interface{}, 300)
 }
 
 func (ws *Workspace) updateScrollbar() {
