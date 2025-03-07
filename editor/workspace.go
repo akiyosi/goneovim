@@ -2123,6 +2123,7 @@ func (ws *Workspace) guiFont(args string) {
 	ws.screen.fallbackfonts = nil
 
 	ws.parseAndApplyFont(args, &ws.screen.font, &ws.screen.fallbackfonts)
+	editor.showFontErrors()
 	ws.screen.purgeTextCacheForWins()
 
 	// When setting up a different font for a workspace other than the neovim drawing screen,
@@ -2182,13 +2183,12 @@ func (ws *Workspace) guiFontWide(args string) {
 }
 
 func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Font)) {
-	errGfns := []string{}
 	for i, gfn := range strings.Split(str, ",") {
 		fontFamily, fontHeight, fontWeight, fontStretch := getFontFamilyAndHeightAndWeightAndStretch(gfn)
 
 		ok := checkValidFont(fontFamily)
 		if !ok {
-			errGfns = append(errGfns, fontFamily)
+			editor.fontErrors = append(editor.fontErrors, fontFamily)
 			continue
 		}
 
@@ -2217,23 +2217,6 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 			*fonts = append(*fonts, ff)
 		}
 	}
-
-	if len(errGfns) > 0 {
-		s := ""
-		for k, errgfn := range errGfns {
-			s += "'" + errgfn + "'"
-			if k < len(errGfns)-1 {
-				s += ", "
-			}
-		}
-		editor.pushNotification(
-			NotifyWarn,
-			4,
-			fmt.Sprintf("The specified font family %s was not found on this system.", s),
-			notifyOptionArg([]*NotifyButton{}),
-		)
-	}
-
 }
 
 func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.QFont__Weight, int) {
@@ -2295,22 +2278,19 @@ func getFontFamilyAndHeightAndWeightAndStretch(s string) (string, float64, gui.Q
 func checkValidFont(family string) bool {
 	// f := gui.NewQFont2(family, 10.0, 1, false)
 	f := gui.NewQFont()
-	if editor.config.Editor.ManualFontFallback {
-		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
-	} else {
-		f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__PreferDefault|gui.QFont__ForceIntegerMetrics)
-	}
-
+	f.SetStyleHint(gui.QFont__TypeWriter, gui.QFont__NoFontMerging)
 	f.SetFamily(family)
-	f.SetPointSizeF(10.0)
-	f.SetWeight(int(gui.QFont__Normal))
-
 	fi := gui.NewQFontInfo(f)
 
 	fname1 := fi.Family()
 	fname2 := f.Family()
 
 	ret := strings.EqualFold(fname1, fname2)
+	if !ret {
+		editor.putLog(
+			fmt.Sprintf("The specified font family '%s' was not found on this system.", family),
+		)
+	}
 
 	return ret
 }

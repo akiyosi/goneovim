@@ -109,7 +109,6 @@ type Editor struct {
 	notifyStartPos         *core.QPoint
 	colors                 *ColorPalette
 	notify                 chan *Notify
-	fontCh                 chan []*Font
 	cbChan                 chan *string
 	chUiPrepared           chan bool
 	openingFileCh          chan string
@@ -126,6 +125,8 @@ type Editor struct {
 	opts                   Options
 	font                   *Font
 	fallbackfonts          []*Font
+	fontCh                 chan []*Font
+	fontErrors             []string
 	notifications          []*Notification
 	workspaces             []*Workspace
 	args                   []string
@@ -256,6 +257,8 @@ func InitEditor(options Options, args []string) {
 	e.app.SetDoubleClickInterval(0)
 	e.putLog("finished generating the application")
 
+	e.initNotifications()
+
 	var cerr, lerr error
 	e.initialColumns, cerr, e.initialLines, lerr = parseLinesAndColumns(args)
 	if cerr == nil {
@@ -289,8 +292,6 @@ func InitEditor(options Options, args []string) {
 	e.initSVGS()
 
 	e.initColorPalette()
-
-	e.initNotifications()
 
 	e.initSysTray()
 
@@ -456,13 +457,32 @@ func parseFont(families string, size int, weight string, stretch, linespace, let
 	}
 
 	for _, f := range strings.Split(families, ",") {
-		fonts = append(
-			fonts,
-			initFontNew(strings.TrimSpace(f), float64(size), fontWeight, stretch, linespace, letterspace),
-		)
+		font := initFontNew(strings.TrimSpace(f), float64(size), fontWeight, stretch, linespace, letterspace)
+		fonts = append(fonts, font)
+
+		ok := checkValidFont(f)
+		if !ok {
+			editor.fontErrors = append(editor.fontErrors, f)
+			continue
+		}
 	}
 
 	return
+}
+
+func (e *Editor) showFontErrors() {
+	if len(e.fontErrors) == 0 {
+		return
+	}
+	for _, fontError := range e.fontErrors {
+		go e.pushNotification(
+			NotifyWarn,
+			5,
+			fmt.Sprintf("The specified font family '%s' was not found on this system.", fontError),
+			notifyOptionArg([]*NotifyButton{}),
+		)
+	}
+
 }
 
 // setAppDirPath
