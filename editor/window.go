@@ -3417,6 +3417,10 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 			bt = core.Qt__RightButton
 		} else if event.Buttons()&core.Qt__MidButton > 0 {
 			bt = core.Qt__MidButton
+		} else if event.Buttons()&core.Qt__XButton1 > 0 {
+			bt = core.Qt__XButton1
+		} else if event.Buttons()&core.Qt__XButton2 > 0 {
+			bt = core.Qt__XButton2
 		}
 	}
 
@@ -3428,6 +3432,10 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 		button += "right"
 	case core.Qt__MidButton:
 		button += "middle"
+	case core.Qt__XButton1:
+		button += "x1"
+	case core.Qt__XButton2:
+		button += "x2"
 	case core.Qt__NoButton:
 	default:
 	}
@@ -3467,6 +3475,7 @@ func (w *Window) mouseEvent(event *gui.QMouseEvent) {
 	w.lastMouseEvent.row = row
 	w.lastMouseEvent.col = col
 
+	editor.putLog("mouse event:", button, action, mod, w.grid, row, col)
 	w.s.ws.nvim.InputMouse(button, action, mod, w.grid, row, col)
 }
 
