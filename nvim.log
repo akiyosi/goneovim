@@ -1,0 +1,713 @@
+--- Startup times for process: Primary/TUI ---
+
+times in msec
+ clock   self+sourced   self:  sourced script
+ clock   elapsed:              other lines
+
+000.004  000.004: --- NVIM STARTING ---
+000.155  000.151: event init
+000.342  000.188: early init
+000.985  000.643: locale set
+001.033  000.048: init first window
+001.496  000.463: inits 1
+001.508  000.011: window checked
+001.513  000.005: parsing arguments
+002.271  000.060  000.060: require('vim.shared')
+002.411  000.070  000.070: require('vim.inspect')
+002.483  000.054  000.054: require('vim._options')
+002.486  000.210  000.086: require('vim._editor')
+002.488  000.368  000.098: require('vim._init_packages')
+002.491  000.611: init lua interpreter
+004.072  001.580: --- NVIM STARTED ---
+
+--- Startup times for process: Embedded ---
+
+times in msec
+ clock   self+sourced   self:  sourced script
+ clock   elapsed:              other lines
+
+000.001  000.001: --- NVIM STARTING ---
+000.083  000.082: event init
+000.208  000.125: early init
+000.742  000.534: locale set
+000.789  000.047: init first window
+001.178  000.389: inits 1
+001.200  000.022: window checked
+001.205  000.005: parsing arguments
+001.835  000.051  000.051: require('vim.shared')
+001.944  000.054  000.054: require('vim.inspect')
+002.003  000.045  000.045: require('vim._options')
+002.005  000.167  000.067: require('vim._editor')
+002.009  000.303  000.086: require('vim._init_packages')
+002.011  000.503: init lua interpreter
+004.237  002.226: expanding arguments
+004.259  000.023: inits 2
+004.597  000.338: init highlight
+004.598  000.001: waiting for UI
+004.796  000.197: done waiting for UI
+004.804  000.008: clear screen
+004.909  000.011  000.011: require('vim.keymap')
+005.844  001.035  001.024: require('vim._defaults')
+005.847  000.008: init default mappings & autocommands
+006.963  000.428  000.428: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/ftplugin.vim
+007.518  000.459  000.459: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/indent.vim
+010.398  001.123  001.123: require('lazy')
+010.448  000.025  000.025: require('ffi')
+010.556  000.036  000.036: require('vim.fs')
+010.955  000.392  000.392: require('vim.uri')
+010.967  000.515  000.086: require('vim.loader')
+011.960  000.962  000.962: require('lazy.stats')
+012.546  000.363  000.363: require('lazy.core.util')
+012.901  000.353  000.353: require('lazy.core.config')
+013.765  000.413  000.413: require('lazy.core.handler')
+014.921  000.219  000.219: require('lazy.pkg')
+014.927  000.778  000.559: require('lazy.core.meta')
+014.937  001.170  000.391: require('lazy.core.plugin')
+014.946  002.043  000.460: require('lazy.core.loader')
+015.991  000.373  000.373: require('lazy.core.fragments')
+018.994  000.280  000.280: require('lazy.core.handler.event')
+018.998  000.647  000.368: require('lazy.core.handler.ft')
+019.323  000.321  000.321: require('lazy.core.handler.cmd')
+019.594  000.233  000.233: require('lazy.core.handler.keys')
+020.580  000.505  000.505: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/filetype.lua
+023.173  000.365  000.365: require('cyberdream.colors')
+023.175  000.681  000.317: require('cyberdream.theme')
+023.680  000.503  000.503: require('cyberdream.config')
+024.199  000.285  000.285: require('cyberdream.treesitter')
+024.203  000.521  000.237: require('cyberdream.util')
+024.205  003.392  001.686: require('cyberdream')
+026.160  000.184  000.184: require('conjure.nfnl.module')
+026.164  001.037  000.852: require('conjure.main')
+026.862  000.696  000.696: require('conjure.mapping')
+027.419  000.366  000.366: require('conjure.nfnl.core')
+027.547  000.118  000.118: require('conjure.nfnl.string')
+030.480  003.615  003.131: require('conjure.config')
+031.090  000.182  000.182: require('conjure.sponsors')
+031.270  000.175  000.175: require('conjure.hook')
+031.602  000.117  000.117: require('conjure.aniseed.autoload')
+031.613  000.340  000.223: require('conjure.aniseed.core')
+031.623  001.098  000.400: require('conjure.log')
+031.737  000.102  000.102: require('conjure.inline')
+031.746  006.938  000.391: sourcing /Users/akiyosi/.local/share/nvim/lazy/conjure/plugin/conjure.lua
+032.845  000.153  000.153: sourcing /Users/akiyosi/.local/share/nvim/lazy/gina.vim/plugin/gina.vim
+034.051  000.173  000.173: sourcing /Users/akiyosi/.local/share/nvim/lazy/lush.nvim/plugin/lush.vim
+035.011  000.248  000.248: sourcing /Users/akiyosi/.local/share/nvim/lazy/undotree/plugin/undotree.vim
+036.887  000.423  000.423: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/autoload/provider/clipboard.vim
+048.984  013.129  012.706: sourcing /Users/akiyosi/.local/share/nvim/lazy/YankRing.vim/plugin/yankring.vim
+050.179  000.418  000.418: sourcing /Users/akiyosi/.local/share/nvim/lazy/telescope.nvim/plugin/telescope.lua
+051.259  000.136  000.136: sourcing /Users/akiyosi/.local/share/nvim/lazy/plenary.nvim/plugin/plenary.vim
+053.618  000.264  000.264: require('diffview.lazy')
+054.423  000.193  000.193: require('diffview.ffi')
+054.633  000.208  000.208: require('diffview.oop')
+054.644  000.762  000.361: require('diffview.async')
+055.058  000.398  000.398: require('diffview.utils')
+055.243  000.131  000.131: require('diffview.mock')
+055.257  001.610  000.318: require('diffview.logger')
+056.167  000.902  000.902: require('diffview.control')
+056.308  000.124  000.124: require('diffview.events')
+056.315  003.922  001.023: require('diffview.bootstrap')
+056.331  004.276  000.353: sourcing /Users/akiyosi/.local/share/nvim/lazy/diffview.nvim/plugin/diffview.lua
+057.342  000.184  000.184: sourcing /Users/akiyosi/.local/share/nvim/lazy/neogit/plugin/neogit.lua
+058.219  000.701  000.701: require('neogit')
+058.899  000.288  000.288: require('neogit.lib.util')
+058.969  000.747  000.460: require('neogit.config')
+059.158  000.187  000.187: require('neogit.lib.signs')
+059.369  000.211  000.211: require('neogit.autocmds')
+060.065  000.305  000.305: require('neogit.lib.color')
+060.069  000.699  000.394: require('neogit.lib.hl')
+060.818  000.539  000.539: require('neogit.logger')
+061.434  000.189  000.189: require('plenary.bit')
+061.574  000.139  000.139: require('plenary.functional')
+061.606  000.787  000.459: require('plenary.path')
+061.608  001.538  000.213: require('neogit.lib.state')
+062.395  000.114  000.114: require('neogit.lib.ui.component')
+062.581  000.186  000.186: require('neogit.lib.ui.renderer')
+062.754  000.172  000.172: require('neogit.lib.collection')
+062.760  000.673  000.202: require('neogit.lib.ui')
+062.766  000.891  000.218: require('neogit.lib.buffer')
+063.378  000.155  000.155: require('neogit.lib.git')
+063.382  000.464  000.309: require('neogit.buffers.common')
+064.391  000.193  000.193: require('plenary.tbl')
+064.393  000.262  000.069: require('plenary.vararg.rotate')
+064.394  000.584  000.321: require('plenary.vararg')
+064.460  000.065  000.065: require('plenary.errors')
+064.463  000.835  000.186: require('plenary.async.async')
+064.839  000.068  000.068: require('plenary.async.structs')
+064.843  000.141  000.073: require('plenary.async.control')
+064.846  000.316  000.175: require('plenary.async.util')
+064.847  000.383  000.068: require('plenary.async.tests')
+064.849  001.466  000.248: require('plenary.async')
+064.886  002.120  000.189: require('neogit.buffers.status.ui')
+065.096  000.209  000.209: require('neogit.popups')
+065.208  000.111  000.111: require('neogit.watcher')
+065.211  003.599  000.269: require('neogit.buffers.status')
+065.938  000.188  000.188: require('neogit.lib.notification')
+065.941  000.381  000.193: require('neogit.lib.popup.builder')
+066.152  000.210  000.210: require('neogit.lib.input')
+066.627  000.319  000.319: require('neogit.lib.finder')
+066.628  000.475  000.157: require('neogit.buffers.fuzzy_finder')
+066.851  000.221  000.221: require('neogit.lib.popup.ui')
+066.853  001.473  000.186: require('neogit.lib.popup')
+066.854  001.642  000.168: require('neogit.lib')
+067.344  000.093  000.093: require('neogit.buffers.process')
+067.562  000.212  000.212: require('neogit.spinner')
+067.571  000.521  000.215: require('neogit.process')
+067.778  000.206  000.206: require('neogit.runner')
+067.861  001.005  000.279: require('neogit.lib.git.cli')
+071.013  000.128  000.128: sourcing /Users/akiyosi/.local/share/nvim/lazy/vim-goimports/plugin/goimports.vim
+071.950  000.167  000.167: sourcing /Users/akiyosi/.local/share/nvim/lazy/nvim-miniyank/plugin/miniyank.vim
+076.623  000.256  000.256: require('nvim-treesitter.utils')
+079.031  000.159  000.159: require('vim.treesitter.language')
+079.175  000.143  000.143: require('vim.func')
+079.578  000.401  000.401: require('vim.func._memoize')
+079.587  000.910  000.206: require('vim.treesitter.query')
+079.655  000.068  000.068: require('vim.treesitter._range')
+079.661  001.182  000.205: require('vim.treesitter.languagetree')
+079.664  002.605  001.423: require('vim.treesitter')
+080.151  003.527  000.922: require('nvim-treesitter.parsers')
+080.874  000.067  000.067: require('nvim-treesitter.compat')
+081.150  000.173  000.173: require('nvim-treesitter.ts_utils')
+081.152  000.248  000.075: require('nvim-treesitter.tsrange')
+081.215  000.062  000.062: require('nvim-treesitter.caching')
+081.220  000.579  000.202: require('nvim-treesitter.query')
+081.226  000.871  000.291: require('nvim-treesitter.configs')
+081.227  001.075  000.204: require('nvim-treesitter.info')
+081.387  000.159  000.159: require('nvim-treesitter.shell_command_selectors')
+081.397  005.387  000.369: require('nvim-treesitter.install')
+081.460  000.062  000.062: require('nvim-treesitter.statusline')
+081.664  000.203  000.203: require('nvim-treesitter.query_predicates')
+081.665  008.644  002.991: require('nvim-treesitter')
+081.961  009.176  000.532: sourcing /Users/akiyosi/.local/share/nvim/lazy/nvim-treesitter/plugin/nvim-treesitter.lua
+082.615  000.145  000.145: sourcing /Users/akiyosi/.local/share/nvim/lazy/nvim-web-devicons/plugin/nvim-web-devicons.vim
+083.534  000.241  000.241: sourcing /Users/akiyosi/.local/share/nvim/lazy/fzf-lua/plugin/fzf-lua.lua
+084.832  000.327  000.327: require('fzf-lua.utils')
+085.208  000.159  000.159: require('fzf-lua.lib.base64')
+085.449  000.240  000.240: require('fzf-lua.lib.serpent')
+085.453  000.618  000.219: require('fzf-lua.libuv')
+085.459  001.131  000.185: require('fzf-lua.path')
+086.070  000.372  000.372: require('fzf-lua.actions')
+086.525  000.107  000.107: require('fzf-lua.class')
+086.591  000.520  000.414: require('fzf-lua.devicons')
+087.118  000.264  000.264: require('fzf-lua.previewer')
+087.423  000.829  000.565: require('fzf-lua.defaults')
+087.428  001.968  000.247: require('fzf-lua.config')
+087.687  000.185  000.185: sourcing /Users/akiyosi/.local/share/nvim/lazy/fzf-lua/autoload/fzf_lua.vim
+088.333  000.364  000.364: require('fzf-lua.win')
+089.166  000.415  000.415: require('fzf-lua.fzf')
+089.376  000.209  000.209: require('fzf-lua.shell')
+089.547  000.170  000.170: require('fzf-lua.make_entry')
+089.553  001.219  000.425: require('fzf-lua.core')
+089.572  005.772  000.906: require('fzf-lua')
+091.364  000.222  000.222: sourcing /Users/akiyosi/.local/share/nvim/lazy/vimtex/plugin/vimtex.vim
+091.715  000.137  000.137: sourcing /Users/akiyosi/.local/share/nvim/lazy/vimtex/ftdetect/cls.vim
+092.162  000.416  000.416: sourcing /Users/akiyosi/.local/share/nvim/lazy/vimtex/ftdetect/tex.vim
+092.276  000.071  000.071: sourcing /Users/akiyosi/.local/share/nvim/lazy/vimtex/ftdetect/tikz.vim
+092.827  000.109  000.109: sourcing /Users/akiyosi/.local/share/nvim/lazy/tabline.vim/plugin/tabline.vim
+095.435  001.285  001.285: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcscommand.vim
+095.483  001.648  000.363: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcsbzr.vim
+095.577  000.063  000.063: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcscommand.vim
+095.811  000.168  000.168: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcscvs.vim
+096.063  000.222  000.222: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcsgit.vim
+096.273  000.176  000.176: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcshg.vim
+096.409  000.104  000.104: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcssvk.vim
+096.605  000.166  000.166: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcssvn.vim
+097.652  000.388  000.388: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/autoload/nerdtree.vim
+098.164  000.393  000.393: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/path.vim
+098.359  000.152  000.152: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/menu_controller.vim
+098.537  000.140  000.140: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/menu_item.vim
+098.725  000.149  000.149: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/key_map.vim
+098.991  000.228  000.228: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/bookmark.vim
+099.236  000.205  000.205: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/tree_file_node.vim
+099.668  000.392  000.392: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/tree_dir_node.vim
+099.893  000.184  000.184: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/opener.vim
+100.162  000.230  000.230: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/creator.vim
+100.330  000.128  000.128: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/flag_set.vim
+100.543  000.172  000.172: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/nerdtree.vim
+100.747  000.164  000.164: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/ui.vim
+100.855  000.067  000.067: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/event.vim
+101.018  000.122  000.122: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/notifier.vim
+101.683  000.618  000.618: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/autoload/nerdtree/ui_glue.vim
+102.719  000.080  000.080: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/nerdtree_plugin/exec_menuitem.vim
+103.131  000.383  000.383: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/nerdtree_plugin/fs_menu.vim
+103.197  000.037  000.037: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/nerdtree_plugin/vcs.vim
+103.362  006.456  002.225: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/plugin/NERD_tree.vim
+103.828  000.133  000.133: sourcing /Users/akiyosi/.local/share/nvim/lazy/vim-game_engine/plugin/game_engine.vim
+105.181  000.206  000.206: sourcing /Users/akiyosi/.local/share/nvim/lazy/winbar.nvim/plugin/winbar.lua
+106.492  000.791  000.791: sourcing /Users/akiyosi/.local/share/nvim/lazy/bufexplorer/plugin/bufexplorer.vim
+107.091  000.111  000.111: sourcing /Users/akiyosi/.local/share/nvim/lazy/vim-mario/plugin/mario.vim
+107.750  000.146  000.146: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/editorconfig.lua
+107.977  000.194  000.194: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/gzip.vim
+108.124  000.115  000.115: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/man.lua
+108.989  000.250  000.250: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/pack/dist/opt/matchit/plugin/matchit.vim
+108.997  000.842  000.592: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/matchit.vim
+109.267  000.240  000.240: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/matchparen.vim
+109.562  000.259  000.259: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/netrwPlugin.vim
+109.770  000.171  000.171: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/osc52.lua
+109.987  000.177  000.177: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/rplugin.vim
+110.153  000.129  000.129: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/shada.vim
+110.266  000.078  000.078: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/spellfile.vim
+110.708  000.408  000.408: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/tarPlugin.vim
+111.169  000.411  000.411: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/tohtml.lua
+111.237  000.029  000.029: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/tutor.vim
+111.353  000.081  000.081: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/zipPlugin.vim
+112.631  000.137  000.137: require('ibl.utils')
+112.634  000.330  000.193: require('ibl.config')
+112.956  000.138  000.138: require('ibl.indent')
+112.959  000.324  000.186: require('ibl.hooks')
+112.960  000.822  000.168: require('ibl.highlights')
+113.321  000.360  000.360: require('ibl.autocmds')
+113.685  000.363  000.363: require('ibl.inlay_hints')
+113.859  000.173  000.173: require('ibl.virt_text')
+114.238  000.233  000.233: require('ibl.scope_languages')
+114.239  000.379  000.147: require('ibl.scope')
+114.243  002.342  000.244: require('ibl')
+114.272  002.592  000.250: sourcing /Users/akiyosi/.local/share/nvim/lazy/indent-blankline.nvim/after/plugin/commands.lua
+119.317  001.597  001.597: sourcing /Users/akiyosi/.local/share/nvim/lazy/vim-monokai-tasty/colors/vim-monokai-tasty.vim
+120.161  000.553  000.553: require('ufo')
+120.624  000.118  000.118: require('ufo.lib.disposable')
+121.197  000.571  000.571: require('ufo.lib.log')
+121.199  000.847  000.158: require('ufo.lib.event')
+121.502  000.302  000.302: require('ufo.utils')
+122.308  000.083  000.083: require('promise-async.utils')
+122.483  000.173  000.173: require('promise-async.error')
+122.562  000.076  000.076: require('promise-async.loop')
+122.566  000.909  000.576: require('promise')
+122.568  001.065  000.156: require('ufo.provider')
+122.824  000.079  000.079: require('ufo.config')
+123.082  000.072  000.072: require('promise-async.compat')
+123.084  000.258  000.187: require('async')
+123.418  000.071  000.071: require('ufo.model.buffer')
+123.592  000.173  000.173: require('ufo.model.foldedline')
+123.958  000.151  000.151: require('ufo.highlight')
+124.058  000.099  000.099: require('ufo.render.extmark')
+124.420  000.231  000.231: require('vim.treesitter.highlighter')
+124.422  000.363  000.132: require('ufo.render.treesitter')
+124.581  000.159  000.159: require('ufo.render.match')
+124.583  000.990  000.218: require('ufo.render')
+124.586  001.384  000.150: require('ufo.model.foldbuffer')
+124.756  000.169  000.169: require('ufo.bufmanager')
+124.995  000.088  000.088: require('ufo.wffi')
+124.996  000.239  000.151: require('ufo.fold.driver')
+124.998  001.914  000.121: require('ufo.fold.manager')
+125.090  000.090  000.090: require('ufo.lib.debounce')
+125.094  002.526  000.185: require('ufo.fold')
+125.368  000.081  000.081: require('ufo.model.window')
+125.371  000.276  000.195: require('ufo.decorator')
+125.746  000.177  000.177: require('ufo.preview.floatwin')
+126.004  000.257  000.257: require('ufo.preview.scrollbar')
+126.092  000.087  000.087: require('ufo.preview.winbar')
+126.166  000.072  000.072: require('ufo.preview.keymap')
+126.169  000.797  000.203: require('ufo.preview')
+126.173  005.992  000.179: require('ufo.main')
+127.011  000.088  000.088: require('mason-core.path')
+127.459  000.292  000.292: require('mason-core.functional')
+127.606  000.067  000.067: require('mason-core.functional.data')
+127.609  000.139  000.072: require('mason-core.functional.function')
+127.681  000.066  000.066: require('mason-core.functional.relation')
+127.752  000.068  000.068: require('mason-core.functional.logic')
+127.760  000.749  000.183: require('mason-core.platform')
+127.832  000.071  000.071: require('mason.settings')
+127.833  001.411  000.504: require('mason')
+128.098  000.173  000.173: require('mason-core.functional.list')
+128.168  000.068  000.068: require('mason-core.functional.string')
+128.211  000.370  000.128: require('mason.api.command')
+128.330  000.116  000.116: require('mason-registry.sources')
+128.782  000.116  000.116: require('winbar.config')
+128.783  000.447  000.331: require('winbar')
+130.367  000.201  000.201: require('nvim-web-devicons.filetypes')
+130.373  000.003  000.003: require('vim.F')
+130.701  000.247  000.247: require('nvim-web-devicons.default.icons_by_filename')
+131.179  000.476  000.476: require('nvim-web-devicons.default.icons_by_file_extension')
+131.460  000.280  000.280: require('nvim-web-devicons.default.icons_by_operating_system')
+131.829  000.367  000.367: require('nvim-web-devicons.default.icons_by_desktop_environment')
+132.150  000.320  000.320: require('nvim-web-devicons.default.icons_by_window_manager')
+132.151  001.773  000.083: require('nvim-web-devicons.icons-default')
+132.396  003.353  001.376: require('nvim-web-devicons')
+132.616  000.218  000.218: require('winbar.utils')
+132.890  004.042  000.471: require('winbar.winbar')
+133.445  000.234  000.234: require('lualine_require')
+134.097  001.197  000.963: require('lualine')
+135.839  000.420  000.420: require('lualine.highlight')
+137.417  000.185  000.185: require('lualine.utils.mode')
+141.709  000.112  000.112: require('gitsigns.async')
+141.807  000.096  000.096: require('gitsigns.debug.log')
+142.092  000.283  000.283: require('gitsigns.config')
+142.097  000.746  000.255: require('gitsigns')
+142.776  000.638  000.638: require('gitsigns.highlight')
+143.518  000.371  000.371: require('gitsigns.debounce')
+144.041  000.192  000.192: require('telescope._extensions')
+144.046  000.495  000.304: require('telescope')
+144.889  000.554  000.554: require('plenary.strings')
+145.007  000.117  000.117: require('telescope.deprecated')
+145.665  000.171  000.171: require('plenary.log')
+145.698  000.410  000.239: require('telescope.log')
+146.235  000.169  000.169: require('plenary.compat')
+146.240  000.347  000.179: require('plenary.job')
+146.313  000.071  000.071: require('telescope.state')
+146.330  000.631  000.212: require('telescope.utils')
+146.333  001.325  000.284: require('telescope.sorters')
+147.221  003.174  001.179: require('telescope.config')
+148.013  000.131  000.131: require('nvim-treesitter.highlight')
+149.377  141.292  039.865: require('settings')
+149.384  141.708  000.417: sourcing /Users/akiyosi/.config/nvim/init.vim
+149.387  000.945: sourcing vimrc file(s)
+149.653  000.032  000.032: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/filetype.lua
+150.157  000.151  000.151: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/syntax/synload.vim
+150.206  000.488  000.337: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/syntax/syntax.vim
+150.211  000.305: inits 3
+152.043  001.832: reading ShaDa
+152.163  000.120: opening buffers
+152.203  000.040: BufEnter autocommands
+152.204  000.001: editing files in windows
+160.389  008.185: VimEnter autocommands
+160.420  000.031: UIEnter autocommands
+160.422  000.002: before starting main loop
+160.659  000.237: first screen update
+160.660  000.001: --- NVIM STARTED ---
+
+--- Startup times for process: Embedded ---
+
+times in msec
+ clock   self+sourced   self:  sourced script
+ clock   elapsed:              other lines
+
+000.000  000.000: --- NVIM STARTING ---
+000.038  000.038: event init
+000.106  000.068: early init
+000.729  000.623: locale set
+000.756  000.027: init first window
+000.947  000.191: inits 1
+000.957  000.010: window checked
+000.960  000.003: parsing arguments
+001.240  000.022  000.022: require('vim.shared')
+001.289  000.026  000.026: require('vim.inspect')
+001.313  000.018  000.018: require('vim._options')
+001.314  000.072  000.028: require('vim._editor')
+001.314  000.130  000.036: require('vim._init_packages')
+001.315  000.225: init lua interpreter
+002.487  001.171: expanding arguments
+002.498  000.011: inits 2
+002.644  000.146: init highlight
+002.644  000.001: waiting for UI
+004.283  001.639: done waiting for UI
+004.285  000.002: clear screen
+004.328  000.005  000.005: require('vim.keymap')
+004.702  000.414  000.409: require('vim._defaults')
+004.703  000.004: init default mappings & autocommands
+004.712  000.009: --cmd commands
+005.141  000.181  000.181: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/ftplugin.vim
+005.376  000.184  000.184: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/indent.vim
+007.095  000.523  000.523: require('lazy')
+007.125  000.015  000.015: require('ffi')
+007.184  000.021  000.021: require('vim.fs')
+007.446  000.260  000.260: require('vim.uri')
+007.453  000.325  000.045: require('vim.loader')
+007.863  000.397  000.397: require('lazy.stats')
+008.193  000.303  000.303: require('lazy.core.util')
+008.454  000.259  000.259: require('lazy.core.config')
+009.013  000.269  000.269: require('lazy.core.handler')
+009.704  000.169  000.169: require('lazy.pkg')
+009.707  000.418  000.248: require('lazy.core.meta')
+009.711  000.696  000.279: require('lazy.core.plugin')
+009.717  001.262  000.296: require('lazy.core.loader')
+010.352  000.310  000.310: require('lazy.core.fragments')
+012.097  000.260  000.260: require('lazy.core.handler.event')
+012.336  000.235  000.235: require('lazy.core.handler.cmd')
+012.589  000.250  000.250: require('lazy.core.handler.keys')
+012.794  000.202  000.202: require('lazy.core.handler.ft')
+013.871  000.427  000.427: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/filetype.lua
+015.262  000.282  000.282: require('cyberdream.colors')
+015.264  000.598  000.316: require('cyberdream.theme')
+015.510  000.243  000.243: require('cyberdream.config')
+015.887  000.272  000.272: require('cyberdream.treesitter')
+015.889  000.377  000.106: require('cyberdream.util')
+015.890  001.846  000.628: require('cyberdream')
+016.183  000.105  000.105: sourcing /Users/akiyosi/.local/share/nvim/lazy/vim-mario/plugin/mario.vim
+016.790  000.134  000.134: sourcing /Users/akiyosi/.local/share/nvim/lazy/vim-game_engine/plugin/game_engine.vim
+018.528  000.332  000.332: require('nvim-treesitter.utils')
+020.596  000.192  000.192: require('vim.treesitter.language')
+020.767  000.167  000.167: require('vim.func')
+021.124  000.356  000.356: require('vim.func._memoize')
+021.132  000.936  000.221: require('vim.treesitter.query')
+021.211  000.078  000.078: require('vim.treesitter._range')
+021.217  001.249  000.235: require('vim.treesitter.languagetree')
+021.220  002.160  000.911: require('vim.treesitter')
+021.794  003.263  001.103: require('nvim-treesitter.parsers')
+022.667  000.144  000.144: require('nvim-treesitter.compat')
+022.922  000.177  000.177: require('nvim-treesitter.ts_utils')
+022.924  000.256  000.079: require('nvim-treesitter.tsrange')
+022.991  000.066  000.066: require('nvim-treesitter.caching')
+022.996  000.651  000.185: require('nvim-treesitter.query')
+023.003  000.989  000.338: require('nvim-treesitter.configs')
+023.005  001.209  000.220: require('nvim-treesitter.info')
+023.169  000.164  000.164: require('nvim-treesitter.shell_command_selectors')
+023.181  005.293  000.325: require('nvim-treesitter.install')
+023.267  000.085  000.085: require('nvim-treesitter.statusline')
+023.489  000.221  000.221: require('nvim-treesitter.query_predicates')
+023.491  006.228  000.628: require('nvim-treesitter')
+023.805  006.783  000.555: sourcing /Users/akiyosi/.local/share/nvim/lazy/nvim-treesitter/plugin/nvim-treesitter.lua
+025.046  000.209  000.209: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/autoload/nerdtree.vim
+025.617  000.422  000.422: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/path.vim
+025.852  000.180  000.180: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/menu_controller.vim
+026.038  000.143  000.143: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/menu_item.vim
+026.251  000.171  000.171: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/key_map.vim
+026.537  000.224  000.224: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/bookmark.vim
+026.821  000.238  000.238: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/tree_file_node.vim
+027.236  000.373  000.373: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/tree_dir_node.vim
+027.474  000.198  000.198: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/opener.vim
+027.762  000.248  000.248: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/creator.vim
+027.947  000.136  000.136: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/flag_set.vim
+028.156  000.169  000.169: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/nerdtree.vim
+028.394  000.199  000.199: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/ui.vim
+028.530  000.093  000.093: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/event.vim
+028.718  000.127  000.127: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/lib/nerdtree/notifier.vim
+029.362  000.595  000.595: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/autoload/nerdtree/ui_glue.vim
+030.608  000.103  000.103: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/nerdtree_plugin/exec_menuitem.vim
+031.418  000.277  000.277: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/autoload/provider/clipboard.vim
+031.677  001.029  000.752: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/nerdtree_plugin/fs_menu.vim
+031.771  000.050  000.050: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/nerdtree_plugin/vcs.vim
+031.850  007.380  002.473: sourcing /Users/akiyosi/.local/share/nvim/lazy/nerdtree/plugin/NERD_tree.vim
+032.586  000.263  000.263: sourcing /Users/akiyosi/.local/share/nvim/lazy/winbar.nvim/plugin/winbar.lua
+033.095  000.150  000.150: sourcing /Users/akiyosi/.local/share/nvim/lazy/nvim-web-devicons/plugin/nvim-web-devicons.vim
+033.725  000.128  000.128: sourcing /Users/akiyosi/.local/share/nvim/lazy/plenary.nvim/plugin/plenary.vim
+035.560  000.479  000.479: require('diffview.lazy')
+036.447  000.200  000.200: require('diffview.ffi')
+036.659  000.211  000.211: require('diffview.oop')
+036.670  000.715  000.305: require('diffview.async')
+037.189  000.506  000.506: require('diffview.utils')
+037.411  000.213  000.213: require('diffview.mock')
+037.425  001.761  000.327: require('diffview.logger')
+038.344  000.897  000.897: require('diffview.control')
+038.650  000.273  000.273: require('diffview.events')
+038.656  004.535  001.125: require('diffview.bootstrap')
+038.682  004.710  000.176: sourcing /Users/akiyosi/.local/share/nvim/lazy/diffview.nvim/plugin/diffview.lua
+039.073  000.226  000.226: sourcing /Users/akiyosi/.local/share/nvim/lazy/neogit/plugin/neogit.lua
+039.554  000.353  000.353: require('neogit')
+040.681  000.744  000.744: require('neogit.lib.util')
+040.834  001.272  000.528: require('neogit.config')
+041.136  000.301  000.301: require('neogit.lib.signs')
+041.395  000.259  000.259: require('neogit.autocmds')
+042.012  000.236  000.236: require('neogit.lib.color')
+042.015  000.619  000.383: require('neogit.lib.hl')
+042.636  000.401  000.401: require('neogit.logger')
+043.116  000.201  000.201: require('plenary.bit')
+043.276  000.159  000.159: require('plenary.functional')
+043.301  000.662  000.302: require('plenary.path')
+043.429  001.413  000.350: require('neogit.lib.state')
+044.412  000.131  000.131: require('neogit.lib.ui.component')
+044.669  000.256  000.256: require('neogit.lib.ui.renderer')
+044.852  000.181  000.181: require('neogit.lib.collection')
+044.857  000.844  000.277: require('neogit.lib.ui')
+044.863  001.216  000.371: require('neogit.lib.buffer')
+045.375  000.167  000.167: require('neogit.lib.git')
+045.380  000.348  000.181: require('neogit.buffers.common')
+046.217  000.070  000.070: require('plenary.tbl')
+046.219  000.195  000.125: require('plenary.vararg.rotate')
+046.221  000.467  000.272: require('plenary.vararg')
+046.287  000.066  000.066: require('plenary.errors')
+046.290  000.727  000.195: require('plenary.async.async')
+046.712  000.086  000.086: require('plenary.async.structs')
+046.716  000.184  000.098: require('plenary.async.control')
+046.719  000.364  000.180: require('plenary.async.util')
+046.721  000.430  000.066: require('plenary.async.tests')
+046.722  001.341  000.184: require('plenary.async')
+046.726  001.863  000.173: require('neogit.buffers.status.ui')
+046.892  000.165  000.165: require('neogit.popups')
+047.002  000.109  000.109: require('neogit.watcher')
+047.006  003.572  000.219: require('neogit.buffers.status')
+047.709  000.182  000.182: require('neogit.lib.notification')
+047.712  000.370  000.187: require('neogit.lib.popup.builder')
+047.877  000.163  000.163: require('neogit.lib.input')
+048.334  000.302  000.302: require('neogit.lib.finder')
+048.336  000.458  000.156: require('neogit.buffers.fuzzy_finder')
+048.520  000.183  000.183: require('neogit.lib.popup.ui')
+048.523  001.348  000.175: require('neogit.lib.popup')
+048.524  001.516  000.168: require('neogit.lib')
+049.092  000.136  000.136: require('neogit.buffers.process')
+049.169  000.075  000.075: require('neogit.spinner')
+049.177  000.435  000.224: require('neogit.process')
+049.261  000.083  000.083: require('neogit.runner')
+049.276  000.751  000.233: require('neogit.lib.git.cli')
+052.456  000.195  000.195: sourcing /Users/akiyosi/.local/share/nvim/lazy/lush.nvim/plugin/lush.vim
+052.935  000.228  000.228: sourcing /Users/akiyosi/.local/share/nvim/lazy/undotree/plugin/undotree.vim
+053.559  000.215  000.215: sourcing /Users/akiyosi/.local/share/nvim/lazy/nvim-miniyank/plugin/miniyank.vim
+053.933  000.151  000.151: sourcing /Users/akiyosi/.local/share/nvim/lazy/vimtex/plugin/vimtex.vim
+054.188  000.156  000.156: sourcing /Users/akiyosi/.local/share/nvim/lazy/vimtex/ftdetect/cls.vim
+054.435  000.213  000.213: sourcing /Users/akiyosi/.local/share/nvim/lazy/vimtex/ftdetect/tex.vim
+054.607  000.127  000.127: sourcing /Users/akiyosi/.local/share/nvim/lazy/vimtex/ftdetect/tikz.vim
+055.586  000.248  000.248: sourcing /Users/akiyosi/.local/share/nvim/lazy/tabline.vim/plugin/tabline.vim
+058.118  000.324  000.324: require('conjure.nfnl.module')
+058.127  001.385  001.061: require('conjure.main')
+058.776  000.648  000.648: require('conjure.mapping')
+059.433  000.280  000.280: require('conjure.nfnl.core')
+059.804  000.265  000.265: require('conjure.nfnl.string')
+063.670  004.891  004.346: require('conjure.config')
+064.388  000.116  000.116: require('conjure.sponsors')
+064.508  000.115  000.115: require('conjure.hook')
+064.771  000.106  000.106: require('conjure.aniseed.autoload')
+064.780  000.271  000.165: require('conjure.aniseed.core')
+064.789  001.055  000.552: require('conjure.log')
+064.900  000.101  000.101: require('conjure.inline')
+064.910  008.479  000.400: sourcing /Users/akiyosi/.local/share/nvim/lazy/conjure/plugin/conjure.lua
+078.712  013.581  013.581: sourcing /Users/akiyosi/.local/share/nvim/lazy/YankRing.vim/plugin/yankring.vim
+079.733  000.250  000.250: sourcing /Users/akiyosi/.local/share/nvim/lazy/fzf-lua/plugin/fzf-lua.lua
+082.108  000.289  000.289: require('fzf-lua.utils')
+082.463  000.140  000.140: require('fzf-lua.lib.base64')
+082.703  000.238  000.238: require('fzf-lua.lib.serpent')
+082.706  000.595  000.217: require('fzf-lua.libuv')
+082.712  001.287  000.403: require('fzf-lua.path')
+083.364  000.287  000.287: require('fzf-lua.actions')
+083.690  000.153  000.153: require('fzf-lua.class')
+083.719  000.354  000.201: require('fzf-lua.devicons')
+084.360  000.166  000.166: require('fzf-lua.previewer')
+084.592  000.872  000.706: require('fzf-lua.defaults')
+084.597  001.883  000.371: require('fzf-lua.config')
+084.707  000.043  000.043: sourcing /Users/akiyosi/.local/share/nvim/lazy/fzf-lua/autoload/fzf_lua.vim
+085.369  000.343  000.343: require('fzf-lua.win')
+085.750  000.082  000.082: require('fzf-lua.fzf')
+085.835  000.084  000.084: require('fzf-lua.shell')
+086.026  000.189  000.189: require('fzf-lua.make_entry')
+086.032  000.661  000.306: require('fzf-lua.core')
+086.037  006.165  001.948: require('fzf-lua')
+088.177  001.066  001.066: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcscommand.vim
+088.226  001.603  000.537: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcsbzr.vim
+088.361  000.064  000.064: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcscommand.vim
+088.620  000.223  000.223: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcscvs.vim
+088.896  000.240  000.240: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcsgit.vim
+088.997  000.066  000.066: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcshg.vim
+089.183  000.153  000.153: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcssvk.vim
+089.408  000.181  000.181: sourcing /Users/akiyosi/.local/share/nvim/lazy/vcscommand.vim/plugin/vcssvn.vim
+091.076  000.948  000.948: sourcing /Users/akiyosi/.local/share/nvim/lazy/bufexplorer/plugin/bufexplorer.vim
+091.549  000.153  000.153: sourcing /Users/akiyosi/.local/share/nvim/lazy/gina.vim/plugin/gina.vim
+091.977  000.144  000.144: sourcing /Users/akiyosi/.local/share/nvim/lazy/vim-goimports/plugin/goimports.vim
+092.891  000.533  000.533: sourcing /Users/akiyosi/.local/share/nvim/lazy/telescope.nvim/plugin/telescope.lua
+093.328  000.241  000.241: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/editorconfig.lua
+093.616  000.237  000.237: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/gzip.vim
+094.040  000.275  000.275: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/man.lua
+095.214  000.333  000.333: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/pack/dist/opt/matchit/plugin/matchit.vim
+095.234  001.143  000.810: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/matchit.vim
+095.695  000.323  000.323: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/matchparen.vim
+096.188  000.442  000.442: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/netrwPlugin.vim
+096.559  000.282  000.282: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/osc52.lua
+096.902  000.223  000.223: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/rplugin.vim
+097.225  000.231  000.231: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/shada.vim
+097.466  000.160  000.160: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/spellfile.vim
+097.632  000.088  000.088: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/tarPlugin.vim
+097.932  000.221  000.221: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/tohtml.lua
+098.067  000.078  000.078: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/tutor.vim
+098.223  000.112  000.112: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/plugin/zipPlugin.vim
+100.522  000.407  000.407: require('ibl.utils')
+100.528  001.022  000.615: require('ibl.config')
+101.185  000.407  000.407: require('ibl.indent')
+101.192  000.662  000.255: require('ibl.hooks')
+101.194  002.005  000.321: require('ibl.highlights')
+101.429  000.233  000.233: require('ibl.autocmds')
+101.669  000.238  000.238: require('ibl.inlay_hints')
+101.911  000.240  000.240: require('ibl.virt_text')
+102.531  000.419  000.419: require('ibl.scope_languages')
+102.535  000.624  000.204: require('ibl.scope')
+102.542  003.847  000.506: require('ibl')
+102.597  004.123  000.276: sourcing /Users/akiyosi/.local/share/nvim/lazy/indent-blankline.nvim/after/plugin/commands.lua
+107.032  001.815  001.815: sourcing /Users/akiyosi/.local/share/nvim/lazy/vim-monokai-tasty/colors/vim-monokai-tasty.vim
+108.074  000.448  000.448: require('ufo')
+108.842  000.171  000.171: require('ufo.lib.disposable')
+109.645  000.801  000.801: require('ufo.lib.log')
+109.650  001.255  000.283: require('ufo.lib.event')
+110.192  000.540  000.540: require('ufo.utils')
+111.283  000.243  000.243: require('promise-async.utils')
+111.442  000.154  000.154: require('promise-async.error')
+111.702  000.254  000.254: require('promise-async.loop')
+111.709  001.236  000.585: require('promise')
+111.713  001.516  000.280: require('ufo.provider')
+112.154  000.193  000.193: require('ufo.config')
+112.426  000.131  000.131: require('promise-async.compat')
+112.431  000.275  000.144: require('async')
+113.017  000.148  000.148: require('ufo.model.buffer')
+113.239  000.221  000.221: require('ufo.model.foldedline')
+113.607  000.231  000.231: require('ufo.highlight')
+113.752  000.144  000.144: require('ufo.render.extmark')
+114.355  000.404  000.404: require('vim.treesitter.highlighter')
+114.356  000.603  000.199: require('ufo.render.treesitter')
+114.661  000.304  000.304: require('ufo.render.match')
+114.669  001.429  000.147: require('ufo.render')
+114.685  002.053  000.256: require('ufo.model.foldbuffer')
+114.958  000.273  000.273: require('ufo.bufmanager')
+115.770  000.348  000.348: require('ufo.wffi')
+115.780  000.820  000.472: require('ufo.fold.driver')
+115.788  003.356  000.210: require('ufo.fold.manager')
+116.093  000.291  000.291: require('ufo.lib.debounce')
+116.108  004.394  000.279: require('ufo.fold')
+117.235  000.593  000.593: require('ufo.model.window')
+117.255  001.147  000.553: require('ufo.decorator')
+117.905  000.304  000.304: require('ufo.preview.floatwin')
+118.138  000.232  000.232: require('ufo.preview.scrollbar')
+118.352  000.213  000.213: require('ufo.preview.winbar')
+118.489  000.136  000.136: require('ufo.preview.keymap')
+118.495  001.238  000.352: require('ufo.preview')
+118.499  010.408  000.318: require('ufo.main')
+119.497  000.208  000.208: require('mason-core.path')
+119.992  000.265  000.265: require('mason-core.functional')
+120.165  000.078  000.078: require('mason-core.functional.data')
+120.168  000.161  000.083: require('mason-core.functional.function')
+120.267  000.091  000.091: require('mason-core.functional.relation')
+120.345  000.073  000.073: require('mason-core.functional.logic')
+120.364  000.865  000.275: require('mason-core.platform')
+120.451  000.087  000.087: require('mason.settings')
+120.454  001.766  000.606: require('mason')
+120.731  000.177  000.177: require('mason-core.functional.list')
+120.806  000.072  000.072: require('mason-core.functional.string')
+120.819  000.357  000.107: require('mason.api.command')
+120.897  000.074  000.074: require('mason-registry.sources')
+121.226  000.117  000.117: require('winbar.config')
+121.227  000.325  000.208: require('winbar')
+121.763  000.183  000.183: require('nvim-web-devicons.filetypes')
+121.769  000.003  000.003: require('vim.F')
+122.261  000.317  000.317: require('nvim-web-devicons.default.icons_by_filename')
+122.641  000.378  000.378: require('nvim-web-devicons.default.icons_by_file_extension')
+122.863  000.221  000.221: require('nvim-web-devicons.default.icons_by_operating_system')
+123.344  000.480  000.480: require('nvim-web-devicons.default.icons_by_desktop_environment')
+123.451  000.105  000.105: require('nvim-web-devicons.default.icons_by_window_manager')
+123.452  001.678  000.177: require('nvim-web-devicons.icons-default')
+123.583  002.090  000.226: require('nvim-web-devicons')
+123.746  000.162  000.162: require('winbar.utils')
+123.902  002.641  000.389: require('winbar.winbar')
+124.375  000.241  000.241: require('lualine_require')
+124.786  000.875  000.634: require('lualine')
+126.071  000.296  000.296: require('lualine.highlight')
+127.544  000.225  000.225: require('lualine.utils.mode')
+130.697  000.084  000.084: require('gitsigns.async')
+130.780  000.081  000.081: require('gitsigns.debug.log')
+131.001  000.220  000.220: require('gitsigns.config')
+131.004  000.580  000.195: require('gitsigns')
+131.323  000.280  000.280: require('gitsigns.highlight')
+131.848  000.194  000.194: require('gitsigns.debounce')
+132.208  000.134  000.134: require('telescope._extensions')
+132.209  000.302  000.168: require('telescope')
+132.515  000.087  000.087: require('plenary.strings')
+132.578  000.062  000.062: require('telescope.deprecated')
+133.086  000.211  000.211: require('plenary.log')
+133.106  000.307  000.096: require('telescope.log')
+133.703  000.160  000.160: require('plenary.compat')
+133.707  000.391  000.231: require('plenary.job')
+133.983  000.275  000.275: require('telescope.state')
+134.003  000.896  000.230: require('telescope.utils')
+134.006  001.427  000.224: require('telescope.sorters')
+135.065  002.854  001.278: require('telescope.config')
+135.768  000.105  000.105: require('nvim-treesitter.highlight')
+137.450  131.588  028.999: require('settings')
+137.456  132.003  000.416: sourcing /Users/akiyosi/.config/nvim/init.vim
+137.459  000.379: sourcing vimrc file(s)
+137.745  000.042  000.042: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/filetype.lua
+138.339  000.228  000.228: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/syntax/synload.vim
+138.386  000.571  000.343: sourcing /Users/akiyosi/app/nvim-macos/share/nvim/runtime/syntax/syntax.vim
+138.391  000.319: inits 3
+140.112  001.721: reading ShaDa
+140.269  000.157: opening buffers
+140.344  000.075: BufEnter autocommands
+140.346  000.002: editing files in windows
+148.669  008.323: VimEnter autocommands
+148.702  000.033: UIEnter autocommands
+148.703  000.002: before starting main loop
+148.978  000.275: first screen update
+148.979  000.001: --- NVIM STARTED ---
+

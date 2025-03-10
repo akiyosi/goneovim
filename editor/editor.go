@@ -477,7 +477,7 @@ func (e *Editor) showFontErrors() {
 	for _, fontError := range e.fontErrors {
 		go e.pushNotification(
 			NotifyWarn,
-			5,
+			6,
 			fmt.Sprintf("The specified font family '%s' was not found on this system.", fontError),
 			notifyOptionArg([]*NotifyButton{}),
 		)
@@ -737,6 +737,7 @@ func (e *Editor) resizeMainWindow() {
 	cws := e.workspaces[e.active]
 	windowWidth, windowHeight, _, _ := cws.updateSize()
 	e.windowSize = [2]int{windowWidth, windowHeight}
+	e.relocateNotifications()
 
 	if !editor.config.Editor.WindowGeometryBasedOnFontmetrics {
 		return

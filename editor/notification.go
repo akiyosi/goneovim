@@ -48,6 +48,7 @@ func notifyOptionArg(b []*NotifyButton) NotifyOptionArg {
 
 func newNotification(l NotifyLevel, p int, message string, options ...NotifyOptionArg) *Notification {
 	e := editor
+	e.isDisplayNotifications = true
 
 	widget := widgets.NewQWidget(nil, 0)
 	layout := widgets.NewQVBoxLayout()
@@ -307,22 +308,6 @@ func (n *Notification) hideNotification() {
 	}
 }
 
-func (e *Editor) showNotifications() {
-	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
-	var x, y int
-	var newNotifications []*Notification
-	for _, item := range e.notifications {
-		x = e.notifyStartPos.X()
-		y = e.notifyStartPos.Y() - item.widget.Height() - 4
-		item.widget.Move2(x, y)
-		item.statusReset()
-		e.notifyStartPos = core.NewQPoint2(x, y)
-		newNotifications = append(newNotifications, item)
-	}
-	e.notifications = newNotifications
-	e.isDisplayNotifications = true
-}
-
 func (e *Editor) hideNotifications() {
 	var newNotifications []*Notification
 	for _, item := range e.notifications {
@@ -333,6 +318,24 @@ func (e *Editor) hideNotifications() {
 	e.notifications = newNotifications
 	e.notifyStartPos = core.NewQPoint2(e.width-e.notificationWidth-10, e.height-30)
 	e.isDisplayNotifications = false
+}
+
+func (e *Editor) relocateNotifications() {
+	if !e.isDisplayNotifications {
+		return
+	}
+
+	geometry := e.window.Geometry()
+	width := geometry.Width()
+	height := geometry.Height()
+	e.notifyStartPos = core.NewQPoint2(width-e.notificationWidth-10, height-30)
+	var x, y int
+	for _, item := range e.notifications {
+		x = e.notifyStartPos.X()
+		y = e.notifyStartPos.Y() - item.widget.Height() - 5
+		item.widget.Move2(x, y)
+		e.notifyStartPos = core.NewQPoint2(x, y)
+	}
 }
 
 func (n *Notification) statusReset() {
