@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - run: >
@@ -50,6 +50,7 @@ jobs:
       GO111MODULE: on
       QT_STATIC: true
       QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
+      CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
     steps:
 
     - name: Linux prerequisites 
@@ -102,7 +103,7 @@ jobs:
         rm -fr ${{ github.workspace }}/fcitx-qt5
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
@@ -175,6 +176,7 @@ jobs:
       QT_DEBUG: false
       GO111MODULE: on
       QT_QMAKE_DIR: /usr/local/opt/qt@5/bin
+      CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
     steps:
 
     - name: Install Go
@@ -187,7 +189,7 @@ jobs:
         brew install qt@5
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
@@ -255,6 +257,7 @@ jobs:
       QT_DEBUG: false
       GO111MODULE: on
       QT_QMAKE_DIR: ${{ github.workspace }}/Qt/bin
+      CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
     steps:
 
     - name: Install Go
@@ -268,7 +271,7 @@ jobs:
         tar xf qt-macos-static-5.15.12.tar.bz2
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
@@ -340,6 +343,7 @@ jobs:
       CGO_CFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS_ALLOW: ".*" 
       CGO_LDFLAGS_ALLOW: ".*" 
+      CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
       # CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
@@ -373,7 +377,7 @@ jobs:
     #     rm qt-5.15.5_patched-qtbug71737.zip
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         path: ${{ github.workspace }}\${{ github.repository }}
@@ -512,7 +516,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: actions/download-artifact@v4
 
