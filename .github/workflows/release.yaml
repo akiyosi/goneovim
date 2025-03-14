@@ -252,11 +252,11 @@ jobs:
       GOPATH: ${{ github.workspace }}
       QT_HOMEBREW: false
       QT_API: 5.13.0
-      QT_DIR: ${{ github.workspace }}/Qt
+      QT_DIR: ${{ github.workspace }}/qt5
       QT_STATIC: true
       QT_DEBUG: false
       GO111MODULE: on
-      QT_QMAKE_DIR: ${{ github.workspace }}/Qt/bin
+      QT_QMAKE_DIR: ${{ github.workspace }}/qt5/bin
       CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
     steps:
 
