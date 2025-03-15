@@ -275,8 +275,9 @@ jobs:
     - name: Download pre built Qt
       run: |
         curl -L -o qt-macos-static-${{ matrix.qtversion }}.tar.bz2 https://github.com/akiyosi/qt-static-builds/releases/download/qt-static-${{ matrix.qtversion }}/qt-macos-arm64-${{ matrix.qtversion }}.tar.bz2
-        tar xf qt-macos-static-${{ matrix.qtversion }}.tar.bz2
-        ls -l
+        mkdir qt5 && tar xf qt-macos-static-${{ matrix.qtversion }}.tar.bz2 -C qt5
+        ls -l 
+        ls -l qt5
 
     - name: Checkout code
       uses: actions/checkout@v3
