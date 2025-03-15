@@ -268,7 +268,7 @@ jobs:
     - name: Download pre built Qt
       run: |
         curl -L -o qt-macos-static-${{ matrix.qtversion }}.tar.bz2 https://github.com/akiyosi/qt-static-builds/releases/download/qt-static-${{ matrix.qtversion }}/qt-macos-arm64-${{ matrix.qtversion }}.tar.bz2
-        mkdir qt5 && tar xf qt-macos-static-${{ matrix.qtversion }}.tar.bz2 -C qt5
+        mkdir qt5 && tar xf qt-macos-static-${{ matrix.qtversion }}.tar.bz2 && mv bin qt5/
         ls -l 
         ls -l qt5
 
