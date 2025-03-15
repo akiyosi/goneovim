@@ -39,7 +39,7 @@ jobs:
       matrix:
         go-version: [1.21.x]
         platform: [ubuntu-20.04]
-        qtversion: [5.15.6]
+        qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
@@ -246,17 +246,17 @@ jobs:
       matrix:
         go-version: [1.21.x]
         platform: [macos-14]
+        qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
       QT_HOMEBREW: false
       QT_API: 5.13.0
-      QT_VERSION: 5.15.12
-      QT_DIR: ${{ github.workspace }}/Qt
+      QT_DIR: ${{ github.workspace }}/qt5
       QT_STATIC: true
       QT_DEBUG: false
       GO111MODULE: on
-      QT_QMAKE_DIR: ${{ github.workspace }}/Qt/bin
+      QT_QMAKE_DIR: ${{ github.workspace }}/qt5/bin
       CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
     steps:
 
@@ -267,8 +267,9 @@ jobs:
 
     - name: Download pre built Qt
       run: |
-        curl -L -o qt-macos-static-5.15.12.tar.bz2 https://github.com/akiyosi/qt-static-builds/releases/download/macOS-arm64/qt-macos-static-5.15.12.tar.bz2
-        tar xf qt-macos-static-5.15.12.tar.bz2
+        curl -L -o qt-macos-static-${{ matrix.qtversion }}.tar.bz2 https://github.com/akiyosi/qt-static-builds/releases/download/qt-static-${{ matrix.qtversion }}/qt-macos-arm64-${{ matrix.qtversion }}.tar.bz2
+        tar xf qt-macos-static-${{ matrix.qtversion }}.tar.bz2
+        mkdir qt5 && mv ./Users/runner/work/qt-static-builds/qt-static-builds/Qt/* qt5/
 
     - name: Checkout code
       uses: actions/checkout@v3
@@ -329,6 +330,7 @@ jobs:
       matrix:
         go-version: [1.21.0]
         platform: [windows-latest]
+        qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: C:\
@@ -364,8 +366,8 @@ jobs:
         pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator
         pacman -Scc
         pacman -Sc
-        curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
-        pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
+        curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-qt5-static-${{ matrix.qtversion }}-1-any.pkg.tar.zst
+        pacman -U --noconfirm mingw-w64-x86_64-qt5-static-${{ matrix.qtversion }}-1-any.pkg.tar.zst
 
     # - name: Patch qt5
     #   shell: msys2 {0}
