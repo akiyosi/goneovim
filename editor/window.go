@@ -1356,7 +1356,6 @@ func (win *Window) updateGridContent(row, colStart int, cells []interface{}) {
 }
 
 func (w *Window) updateLine(row, col int, cells []interface{}) (int, bool, bool) {
-	w.updateMutex.Lock()
 	line := w.content[row]
 	maskRow := w.contentMask[row]
 	colStart := col
@@ -1452,8 +1451,6 @@ func (w *Window) updateLine(row, col int, cells []interface{}) (int, bool, bool)
 			col++
 		}
 	}
-
-	w.updateMutex.Unlock()
 
 	w.queueRedraw(colStart, row, col-colStart+1, 1)
 
