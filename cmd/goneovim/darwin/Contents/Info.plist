@@ -18,6 +18,11 @@
     <string>public.app-category.developer-tools</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>LSEnvironment</key>
+    <dict>
+	<key>GODEBUG</key>
+	<string>asyncpreemptoff=1</string>
+    </dict>
     <key>CFBundleDocumentTypes</key>
     <array>
       <dict>
