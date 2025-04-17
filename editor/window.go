@@ -3062,7 +3062,7 @@ func drawUnderline(p *gui.QPainter, font *Font, color *gui.QColor, row int, star
 	}
 	descent := float64(font.height) - font.ascent
 
-	weight := int(math.Ceil(float64(font.height) / 16.0))
+	weight := int(math.Ceil(float64(font.height) / 18.0))
 	if weight < 1 {
 		weight = 1
 	}
