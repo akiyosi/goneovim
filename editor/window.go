@@ -2815,11 +2815,9 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	}
 
 	fg := highlight.fg()
-	if !isNormalWidth {
-		advance := fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
-		if advance > 0 {
-			width = advance
-		}
+	advance := fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
+	if advance > 0 {
+		width = advance
 	}
 
 	// QImage default device pixel ratio is 1.0,
