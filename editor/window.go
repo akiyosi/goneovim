@@ -226,6 +226,10 @@ func (w *Window) grabScreenSnapshot() {
 }
 
 func (w *Window) grabScreen() *gui.QPixmap {
+	if editor.isKeyAutoRepeating {
+		return nil
+	}
+
 	var rect *core.QRect
 	fullRect := w.Rect()
 	font := w.getFont()
