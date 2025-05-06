@@ -2638,13 +2638,15 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 
 	if err != nil {
 		image = w.newTextCache(text, highlight, isNormalWidth)
-		w.setTextCache(text, highlight, image)
+		if image != nil {
+			w.setTextCache(text, highlight, image)
+		}
 	} else {
 		image = imagev.(*gui.QImage)
 	}
 
 	// return if image is invalid
-	if image.Width() == 0 && image.Height() == 0 {
+	if image == nil {
 		return
 	}
 
@@ -2826,6 +2828,12 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		}
 	}
 
+	imageWidth := int(math.Ceil(w.devicePixelRatio * width))
+	imageHeight := int(w.devicePixelRatio * float64(font.lineHeight))
+	if imageWidth <= 0 || imageHeight <= 0 {
+		return nil
+	}
+
 	// QImage default device pixel ratio is 1.0,
 	// So we set the correct device pixel ratio
 
@@ -2839,8 +2847,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	// 	gui.QImage__Format_ARGB32_Premultiplied,
 	// )
 	image := gui.NewQImage3(
-		int(math.Ceil(w.devicePixelRatio*width)),
-		int(w.devicePixelRatio*float64(font.lineHeight)),
+		imageWidth,
+		imageHeight,
 		gui.QImage__Format_ARGB32_Premultiplied,
 	)
 
