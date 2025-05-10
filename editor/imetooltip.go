@@ -144,8 +144,10 @@ func (i *IMETooltip) hide() {
 
 func (i *IMETooltip) show() {
 	if i.s == nil || i.s.ws == nil {
+		editor.putLog("IMETooltip:: show(): i.s or i.s.ws is nil, return")
 		return
 	}
+	editor.putLog("IMETooltip:: pos(): ", i.Pos().X()/int(i.s.font.cellwidth), i.Pos().Y()/i.s.font.lineHeight, "isVisible:", i.IsVisible())
 
 	if !(i.s.ws.palette != nil && i.s.ws.palette.widget != nil && i.s.ws.palette.widget.IsVisible()) {
 		win, ok := i.s.getWindow(i.s.ws.cursor.gridid)

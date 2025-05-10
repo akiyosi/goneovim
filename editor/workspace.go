@@ -2475,7 +2475,8 @@ func (ws *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 
 	editor.putLog(
 		fmt.Sprintf(
-			"QInputMethodEvent:: IME preeditstr: cursorpos: %d, selectionLength: %d, cursorVisualPos: %d",
+			"QInputMethodEvent:: IME preeditstr: %s cursorpos: %d, selectionLength: %d, cursorVisualPos: %d",
+			event.PreeditString(),
 			ws.screen.tooltip.cursorPos,
 			ws.screen.tooltip.selectionLength,
 			ws.screen.tooltip.cursorVisualPos,

@@ -168,8 +168,11 @@ func (t *Tooltip) clearText() {
 
 func (t *Tooltip) updateText(hl *Highlight, str string, letterspace int, font *gui.QFont) {
 	if t.font == nil {
+		editor.putLog("Tooltip:: updateText(): font is nil, return")
 		return
 	}
+
+	editor.putLog("Tooltip:: updateText(): fg:", hl.fg().Hex(), "bg:", hl.bg().Hex(), "str:", str, "font:", font.Family())
 
 	fontMetrics := gui.NewQFontMetricsF(font)
 	cellwidth := fontMetrics.HorizontalAdvance("w", -1) + float64(letterspace)

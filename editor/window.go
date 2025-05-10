@@ -244,7 +244,7 @@ func (w *Window) grabScreen() *gui.QPixmap {
 
 func (w *Window) paint(event *gui.QPaintEvent) {
 	editor.putLog(
-		fmt.Sprintf("paint start"),
+		fmt.Sprintf("grid:", w.grid, "paint start"),
 	)
 
 	w.paintMutex.Lock()
