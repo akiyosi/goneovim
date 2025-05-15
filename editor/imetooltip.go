@@ -138,6 +138,7 @@ func (i *IMETooltip) move(x int, y int) {
 }
 
 func (i *IMETooltip) hide() {
+	editor.putLog("IMETooltip:: hide()")
 	i.isShown = false
 	i.Hide()
 }
@@ -153,8 +154,8 @@ func (i *IMETooltip) show() {
 		win, ok := i.s.getWindow(i.s.ws.cursor.gridid)
 		editor.putLog(
 			fmt.Sprintf(
-				"IMETooltip:: ok: %v, win: %v",
-				ok, win,
+				"IMETooltip:: ok: %v, win-grid: %v",
+				ok, win.grid,
 			),
 		)
 		if !ok || win == nil {
@@ -179,6 +180,7 @@ func (i *IMETooltip) show() {
 
 	editor.putLog("IMETooltip:: show(): ")
 	i.Show()
+	editor.putLog("IMETooltip:: show() 2: ", "isVisible:", i.IsVisible())
 	i.Raise()
 	i.isShown = true
 }

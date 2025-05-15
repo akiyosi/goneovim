@@ -47,6 +47,7 @@ func resolveMetricsInFontFallback(font *Font, fallbackfonts []*Font, char string
 
 func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 	if t.text == nil {
+		editor.putLog("Tooltip:: drawContent(): text is nil")
 		return
 	}
 
