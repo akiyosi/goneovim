@@ -151,11 +151,23 @@ func (i *IMETooltip) show() {
 
 	if !(i.s.ws.palette != nil && i.s.ws.palette.widget != nil && i.s.ws.palette.widget.IsVisible()) {
 		win, ok := i.s.getWindow(i.s.ws.cursor.gridid)
+		editor.putLog(
+			fmt.Sprintf(
+				"IMETooltip:: ok: %v, win: %v",
+				ok, win,
+			),
+		)
 		if !ok || win == nil {
 			return
 		}
 		i.SetParent(win)
 		font := win.getFont()
+		editor.putLog(
+			fmt.Sprintf(
+				"IMETooltip:: font: %v",
+				font,
+			),
+		)
 		if font == nil {
 			return
 		}
@@ -165,6 +177,7 @@ func (i *IMETooltip) show() {
 		i.setFont(i.s.font)
 	}
 
+	editor.putLog("IMETooltip:: show(): ")
 	i.Show()
 	i.Raise()
 	i.isShown = true
