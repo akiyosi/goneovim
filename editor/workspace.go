@@ -2462,6 +2462,8 @@ func (ws *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 			ws.screen.tooltip.hide()
 			ws.screen.refresh()
 		} else {
+
+			editor.putLog("IME tooltip:: show, parse, update")
 			ws.screen.tooltip.show()
 			ws.screen.tooltip.parsePreeditString(preeditString)
 			ws.screen.tooltip.update()

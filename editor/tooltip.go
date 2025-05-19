@@ -244,6 +244,9 @@ func (t *Tooltip) show() {
 }
 
 func (t *Tooltip) update() {
+	editor.putLog(
+		"tooltip: update()",
+	)
 	// detect width
 	var tooltipWidth float64
 	if len(t.text) == 0 {
