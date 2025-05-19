@@ -256,6 +256,12 @@ func (t *Tooltip) update() {
 		}
 	}
 
+	editor.putLog(
+		"tooltip set size:",
+		int(tooltipWidth),
+		t.font.lineHeight,
+	)
+
 	// update widget size
 	t.SetFixedSize2(
 		int(tooltipWidth),
