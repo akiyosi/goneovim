@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"runtime"
+	"unsafe"
 
 	"github.com/akiyosi/qt/core"
 	"github.com/akiyosi/qt/gui"
@@ -165,7 +166,11 @@ func (i *IMETooltip) show() {
 		editor.putLog(
 			"IMETooltip:: size:", i.Size().Width(), i.Size().Height(),
 			"IMETooltip:: geo:", i.Geometry().Width(), i.Size().Height(),
+		)
+		pWin := (*Window)(unsafe.Pointer(i.ParentWidget()))
+		editor.putLog(
 			"IMETooltip:: parent-widget: isvisible:", i.ParentWidget().IsVisible(),
+			"IMETooltip:: parent-widget: grid:", pWin.grid,
 			"IMETooltip:: parent-widget: size:", i.ParentWidget().Size().Width(), i.ParentWidget().Size().Height(),
 			"IMETooltip:: parent-widget: geo:", i.ParentWidget().Size().Width(), i.ParentWidget().Size().Height(),
 		)
