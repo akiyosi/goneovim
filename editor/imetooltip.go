@@ -168,12 +168,16 @@ func (i *IMETooltip) show() {
 			"IMETooltip:: geo:", i.Geometry().Width(), i.Size().Height(),
 		)
 		pWin := (*Window)(unsafe.Pointer(i.ParentWidget()))
-		editor.putLog(
-			"IMETooltip:: parent-widget: isvisible:", i.ParentWidget().IsVisible(),
-			"IMETooltip:: parent-widget: grid:", pWin.grid,
-			"IMETooltip:: parent-widget: size:", i.ParentWidget().Size().Width(), i.ParentWidget().Size().Height(),
-			"IMETooltip:: parent-widget: geo:", i.ParentWidget().Size().Width(), i.ParentWidget().Size().Height(),
-		)
+		if pWin == nil {
+			editor.putLog("pWin is nil")
+		} else {
+			editor.putLog(
+				"IMETooltip:: parent-widget: isvisible:", i.ParentWidget().IsVisible(),
+				"IMETooltip:: parent-widget: grid:", pWin.grid,
+				"IMETooltip:: parent-widget: size:", i.ParentWidget().Size().Width(), i.ParentWidget().Size().Height(),
+				"IMETooltip:: parent-widget: geo:", i.ParentWidget().Size().Width(), i.ParentWidget().Size().Height(),
+			)
+		}
 		font := win.getFont()
 		editor.putLog(
 			fmt.Sprintf(
