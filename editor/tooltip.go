@@ -252,6 +252,9 @@ func (t *Tooltip) update() {
 	if len(t.text) == 0 {
 		return
 	}
+	editor.putLog(
+		"tooltip: update() 2",
+	)
 	for _, chunk := range t.text {
 		r := []rune(chunk.str)
 		for _, _ = range r {
@@ -260,7 +263,7 @@ func (t *Tooltip) update() {
 	}
 
 	editor.putLog(
-		"tooltip set size:",
+		"tooltip update():: set size:",
 		int(tooltipWidth),
 		t.font.lineHeight,
 	)

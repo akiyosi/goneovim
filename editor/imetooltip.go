@@ -163,9 +163,11 @@ func (i *IMETooltip) show() {
 		}
 		i.SetParent(win)
 		editor.putLog(
-			"IMETooltip:: parent-widget: isvisible:", i.ParentWidget().IsVisible(),
 			"IMETooltip:: size:", i.Size().Width(), i.Size().Height(),
 			"IMETooltip:: geo:", i.Geometry().Width(), i.Size().Height(),
+			"IMETooltip:: parent-widget: isvisible:", i.ParentWidget().IsVisible(),
+			"IMETooltip:: parent-widget: size:", i.ParentWidget().Size().Width(), i.ParentWidget().Size().Height(),
+			"IMETooltip:: parent-widget: geo:", i.ParentWidget().Size().Width(), i.ParentWidget().Size().Height(),
 		)
 		font := win.getFont()
 		editor.putLog(
