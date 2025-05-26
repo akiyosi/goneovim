@@ -1101,14 +1101,19 @@ func (ws *Workspace) flush() {
 		args := update[1:]
 		switch event {
 		case "grid_line":
+			fmt.Println(event)
 			ws.gridLine(args)
 		case "grid_clear":
+			fmt.Println(event, args)
 			ws.gridClear(args)
 		case "grid_destroy":
+			fmt.Println(event, args)
 			ws.gridDestroy(args)
 		case "grid_cursor_goto":
+			fmt.Println(event, args)
 			ws.gridCursorGoto(args)
 		case "grid_scroll":
+			fmt.Println(event, args)
 			ws.gridScroll(args)
 		case "win_viewport":
 			ws.winViewport(args)

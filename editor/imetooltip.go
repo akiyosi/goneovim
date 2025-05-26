@@ -162,6 +162,10 @@ func (i *IMETooltip) show() {
 		if !ok || win == nil {
 			return
 		}
+		editor.putLog(
+			"ime tooltip parent window::",
+			win.grid, win.isGridDirty,
+		)
 		i.SetParent(win)
 		editor.putLog(
 			"IMETooltip:: size:", i.Size().Width(), i.Size().Height(),
