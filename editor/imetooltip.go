@@ -147,6 +147,15 @@ func (i *IMETooltip) show() {
 		return
 	}
 
+	i.Show()
+	i.isShown = true
+}
+
+func (i *IMETooltip) setGrid() {
+	if i.s == nil || i.s.ws == nil {
+		return
+	}
+
 	if !(i.s.ws.palette != nil && i.s.ws.palette.widget != nil && i.s.ws.palette.widget.IsVisible()) {
 		win, ok := i.s.getWindow(i.s.ws.cursor.gridid)
 		if !ok || win == nil {
@@ -163,9 +172,7 @@ func (i *IMETooltip) show() {
 		i.setFont(i.s.font)
 	}
 
-	i.Show()
 	i.Raise()
-	i.isShown = true
 }
 
 func (i *IMETooltip) updateVirtualCursorPos() {

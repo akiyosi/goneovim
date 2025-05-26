@@ -1169,7 +1169,7 @@ func (w *Window) applyTemporaryMousescroll(ms string) {
 	}
 }
 
-func (w *Window) isEventEmitOnCursorGrid() bool {
+func (w *Window) isSameAsCursorGrid() bool {
 	return w.grid == w.s.ws.cursor.gridid
 }
 

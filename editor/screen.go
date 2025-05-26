@@ -1062,6 +1062,7 @@ func (s *Screen) gridCursorGoto(args []interface{}) {
 			}
 
 			win.raise()
+			win.s.tooltip.setGrid()
 
 			// reset smooth scroll scrolling offset
 			win.scrollPixels2 = 0
@@ -1508,7 +1509,7 @@ func (s *Screen) update() {
 	s.windows.Range(func(grid, winITF interface{}) bool {
 		win := winITF.(*Window)
 		// if grid is dirty, we remove this grid
-		if win.isGridDirty {
+		if win.isGridDirty && !win.isSameAsCursorGrid() {
 			// if win.queueRedrawArea[2] > 0 || win.queueRedrawArea[3] > 0 {
 			// 	// If grid has an update area even though it has a dirty flag,
 			// 	// it will still not be removed as a valid grid
