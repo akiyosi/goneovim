@@ -2462,6 +2462,7 @@ func (ws *Workspace) InputMethodEvent(event *gui.QInputMethodEvent) {
 			ws.screen.tooltip.hide()
 			ws.screen.refresh()
 		} else {
+			ws.screen.tooltip.setGrid()
 			ws.screen.tooltip.show()
 			ws.screen.tooltip.parsePreeditString(preeditString)
 			ws.screen.tooltip.update()
