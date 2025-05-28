@@ -2042,6 +2042,11 @@ func (ws *Workspace) getSnapshot() {
 		if !win.IsVisible() {
 			return true
 		}
+
+		// Suppress snapshot capture during touchpad scrolling
+		if win.scrollPixels[1] != 0 || win.lastScrollphase != core.Qt__ScrollEnd {
+			return true
+		}
 		win.grabScreenSnapshot()
 
 		return true
