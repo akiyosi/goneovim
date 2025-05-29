@@ -218,6 +218,13 @@ func (w *Window) dropScreenSnapshot() {
 }
 
 func (w *Window) grabScreenSnapshot() {
+	if editor.isKeyAutoRepeating {
+		return
+	}
+	if w.grid == 1 || w.isMsgGrid {
+		return
+	}
+
 	snapshot := w.grabScreen()
 	w.paintMutex.Lock()
 	w.snapshot.DestroyQPixmap()
@@ -226,13 +233,12 @@ func (w *Window) grabScreenSnapshot() {
 }
 
 func (w *Window) grabScreen() *gui.QPixmap {
-	if editor.isKeyAutoRepeating {
-		return nil
-	}
-
 	var rect *core.QRect
 	fullRect := w.Rect()
 	font := w.getFont()
+
+	editor.putLog("grab screen snapshot:: grid:", w.grid, "rect:", fullRect.Width(), fullRect.Height())
+
 	rect = core.NewQRect4(
 		fullRect.X()+w.viewportMargins[2]*int(font.cellwidth),
 		fullRect.Y()+(w.viewportMargins[0]*font.lineHeight),
