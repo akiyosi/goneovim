@@ -75,6 +75,12 @@ type HlBgKey struct {
 	length int
 }
 
+type BrushKey struct {
+	pattern     core.Qt__BrushStyle
+	color       *RGBA
+	transparent int
+}
+
 // Cell is
 type Cell struct {
 	highlight   *Highlight
@@ -187,10 +193,23 @@ func purgeQimage(key, value interface{}) {
 	image.DestroyQImage()
 }
 
+func purgeQBrush(key, value interface{}) {
+	brush := value.(*gui.QBrush)
+	brush.DestroyQBrush()
+}
+
 func newCache() Cache {
 	g := gcache.New(editor.config.Editor.CacheSize).LRU().
 		EvictedFunc(purgeQimage).
 		PurgeVisitorFunc(purgeQimage).
+		Build()
+	return *(*Cache)(unsafe.Pointer(&g))
+}
+
+func newBrushCache() Cache {
+	g := gcache.New(64).LRU().
+		EvictedFunc(purgeQBrush).
+		PurgeVisitorFunc(purgeQBrush).
 		Build()
 	return *(*Cache)(unsafe.Pointer(&g))
 }
@@ -2045,69 +2064,48 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 	}
 
 	font := w.getFont()
+	pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
+
+	var brush *gui.QBrush
+	if editor.config.Editor.CachedDrawing {
+		brushv, err := w.s.bgcache.get(BrushKey{
+			pattern:     pattern,
+			color:       color,
+			transparent: transparent,
+		})
+		if err != nil {
+			brush = newBgBrushCache(pattern, color, transparent)
+			w.setBgBrushCache(pattern, color, transparent, brush)
+		} else {
+			brush = brushv.(*gui.QBrush)
+		}
+	} else {
+		brush = newBgBrushCache(pattern, color, transparent)
+	}
 
 	if verScrollPixels == 0 ||
 		verScrollPixels > 0 && (y < w.rows-w.viewportMargins[1]-1) ||
 		verScrollPixels < 0 && (y > w.viewportMargins[0]) {
-		if editor.config.Editor.CachedDrawing {
-			cache := w.getCache()
-			if cache == (Cache{}) {
-				return
-			}
-			var image *gui.QImage
-			imagev, err := cache.get(HlBgKey{
-				bg:     lastHighlight.bg(),
-				length: width,
-			})
 
-			if err != nil {
-				image = w.newBgCache(lastHighlight, width)
-				w.setBgCache(lastHighlight, width, image)
-			} else {
-				image = imagev.(*gui.QImage)
-			}
+		// Fill background with pattern
+		rectF := core.NewQRectF4(
+			float64(start)*font.cellwidth+float64(horScrollPixels),
+			float64((y)*font.lineHeight+verScrollPixels),
+			float64(width)*font.cellwidth,
+			float64(font.lineHeight),
+		)
 
-			p.DrawImage9(
-				int(float64(start)*font.cellwidth+float64(horScrollPixels)),
-				int(float64((y)*font.lineHeight+verScrollPixels)),
-				image,
-				0, 0,
-				-1, -1,
-				core.Qt__AutoColor,
-			)
+		p.FillRect(
+			rectF,
+			brush,
+		)
 
-		} else {
-			// Set diff pattern
-			pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
-
-			// Fill background with pattern
-			rectF := core.NewQRectF4(
-				float64(start)*font.cellwidth+float64(horScrollPixels),
-				float64((y)*font.lineHeight+verScrollPixels),
-				float64(width)*font.cellwidth,
-				float64(font.lineHeight),
-			)
-			p.FillRect(
-				rectF,
-				gui.NewQBrush3(
-					gui.NewQColor3(
-						color.R,
-						color.G,
-						color.B,
-						transparent,
-					),
-					pattern,
-				),
-			)
-		}
 	}
 
 	// Addresses an issue where smooth scrolling with a touchpad causes incomplete
 	// background rendering at the top or bottom of floating windows.
 	// Adds compensation drawing for areas partially scrolled into view by checking
 	// `verScrollPixels` and filling the necessary background to prevent visual gaps.
-
-	pattern, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
 
 	if verScrollPixels > 0 {
 		if y == w.viewportMargins[0] {
@@ -2126,15 +2124,7 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 			)
 			p.FillRect(
 				rectF,
-				gui.NewQBrush3(
-					gui.NewQColor3(
-						color.R,
-						color.G,
-						color.B,
-						transparent,
-					),
-					pattern,
-				),
+				brush,
 			)
 		}
 
@@ -2148,15 +2138,7 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 			)
 			p.FillRect(
 				rectF,
-				gui.NewQBrush3(
-					gui.NewQColor3(
-						color.R,
-						color.G,
-						color.B,
-						transparent,
-					),
-					pattern,
-				),
+				brush,
 			)
 		}
 
@@ -2172,15 +2154,7 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 			)
 			p.FillRect(
 				rectF,
-				gui.NewQBrush3(
-					gui.NewQColor3(
-						color.R,
-						color.G,
-						color.B,
-						transparent,
-					),
-					pattern,
-				),
+				brush,
 			)
 		}
 		if y == w.rows-w.viewportMargins[1]-1 {
@@ -2197,20 +2171,37 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 			)
 			p.FillRect(
 				rectF,
-				gui.NewQBrush3(
-					gui.NewQColor3(
-						color.R,
-						color.G,
-						color.B,
-						transparent,
-					),
-					pattern,
-				),
+				brush,
 			)
 		}
 
 	}
 
+}
+
+func newBgBrushCache(pattern core.Qt__BrushStyle, color *RGBA, transparent int) *gui.QBrush {
+
+	return gui.NewQBrush3(
+		gui.NewQColor3(
+			color.R,
+			color.G,
+			color.B,
+			transparent,
+		),
+		pattern,
+	)
+
+}
+
+func (w *Window) setBgBrushCache(pattern core.Qt__BrushStyle, color *RGBA, transparent int, brush *gui.QBrush) {
+	w.s.bgcache.set(
+		BrushKey{
+			pattern:     pattern,
+			color:       color,
+			transparent: transparent,
+		},
+		brush,
+	)
 }
 
 func (w *Window) newBgCache(lastHighlight *Highlight, length int) *gui.QImage {
