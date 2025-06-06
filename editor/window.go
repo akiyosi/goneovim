@@ -50,8 +50,15 @@ type Highlight struct {
 }
 
 // HlText is used in screen cache
+type HlKey struct {
+	fg     RGBA
+	italic bool
+	bold   bool
+}
+
+// HlText is used in screen cache
 type HlTextKey struct {
-	fg     *RGBA
+	fg     RGBA
 	text   string
 	italic bool
 	bold   bool
@@ -2303,7 +2310,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 
 	line := w.content[y]
-	chars := map[*Highlight][]int{}
+	chars := map[HlKey][]int{}
 	specialChars := []int{}
 	cellBasedDrawing := editor.config.Editor.DisableLigatures || (editor.config.Editor.Letterspace > 0)
 	wsfontLineHeight := y * wsfont.lineHeight
@@ -2367,7 +2374,11 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				int(float64(x)*wsfont.cellwidth)+horScrollPixels,
 				wsfontLineHeight+verScrollPixels,
 				line[x].char,
-				line[x].highlight,
+				HlKey{
+					fg:     *(line[x].highlight.fg()),
+					bold:   line[x].highlight.bold,
+					italic: line[x].highlight.italic,
+				},
 				true,
 				line[x].scaled,
 			)
@@ -2381,19 +2392,24 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				highlight.background = highlight.background.copy()
 			}
 
-			colorSlice, ok := chars[highlight]
+			hlkey := HlKey{
+				fg:     *(highlight.fg()),
+				italic: highlight.italic,
+				bold:   highlight.bold,
+			}
+			colorSlice, ok := chars[hlkey]
 			if !ok {
 				colorSlice = []int{}
 			}
 			colorSlice = append(colorSlice, x)
-			chars[highlight] = colorSlice
+			chars[hlkey] = colorSlice
 		}
 	}
 
 	// This is the normal rendering process for goneovim,
 	// we draw a word snippet of the same highlight on the screen for each of the highlights.
 	if !cellBasedDrawing {
-		for highlight, colorSlice := range chars {
+		for hlkey, colorSlice := range chars {
 			var buffer bytes.Buffer
 			slice := colorSlice
 
@@ -2409,7 +2425,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				if editor.config.Editor.LineToScroll == 1 {
 					verScrollPixels += w.scrollPixels[1]
 				}
-				if highlight.isSignColumn() {
+				if line[x].highlight.isSignColumn() {
 					horScrollPixels = 0
 				}
 				if x < w.viewportMargins[2] || x > w.cols-w.viewportMargins[3]-1 {
@@ -2483,7 +2499,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 							int(float64(x-pos)*wsfont.cellwidth)+horScrollPixels,
 							wsfontLineHeight+verScrollPixels,
 							buffer.String(),
-							highlight,
+							hlkey,
 							true,
 							false,
 						)
@@ -2541,7 +2557,11 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				int(float64(x)*wsfont.cellwidth)+horScrollPixels,
 				wsfontLineHeight+verScrollPixels,
 				line[x].char,
-				line[x].highlight,
+				HlKey{
+					fg:     *(line[x].highlight.fg()),
+					bold:   line[x].highlight.bold,
+					italic: line[x].highlight.italic,
+				},
 				false,
 				line[x].scaled,
 			)
@@ -2550,7 +2570,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	}
 }
 
-func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool, scaled bool) {
+func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, hlkey HlKey, isNormalWidth bool, scaled bool) {
 	wsfont := w.getFont()
 
 	// var horScrollPixels int
@@ -2566,7 +2586,7 @@ func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight
 			x, //+horScrollPixels,
 			y+wsfont.shift,
 			text,
-			highlight,
+			hlkey,
 			isNormalWidth,
 			scaled,
 		)
@@ -2576,14 +2596,14 @@ func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, highlight
 			x, //+horScrollPixels,
 			y,
 			text,
-			highlight,
+			hlkey,
 			isNormalWidth,
 			scaled,
 		)
 	}
 }
 
-func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool, scaled bool) {
+func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string, hlkey HlKey, isNormalWidth bool, scaled bool) {
 	if text == "" {
 		return
 	}
@@ -2602,24 +2622,15 @@ func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string
 	p.SetFont(fontfallbacked.qfont)
 
 	font := p.Font()
-	fg := highlight.fg()
+	fg := &(hlkey.fg)
 	p.SetPen2(fg.QColor())
 
-	if highlight.bold {
-		font.SetBold(true)
-	} else {
-		font.SetBold(false)
-	}
-	if highlight.italic {
-		font.SetItalic(true)
-	} else {
-		font.SetItalic(false)
-	}
-	// p.DrawText(point, text)
+	font.SetBold(hlkey.bold)
+	font.SetItalic(hlkey.italic)
 	p.DrawText3(x, y, text)
 }
 
-func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, highlight *Highlight, isNormalWidth bool, scaled bool) {
+func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, hlkey HlKey, isNormalWidth bool, scaled bool) {
 	if text == "" {
 		return
 	}
@@ -2628,15 +2639,15 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 	var image *gui.QImage
 	imagev, err := cache.get(HlTextKey{
 		text:   text,
-		fg:     highlight.fg(),
-		italic: highlight.italic,
-		bold:   highlight.bold,
+		fg:     hlkey.fg,
+		italic: hlkey.italic,
+		bold:   hlkey.bold,
 	})
 
 	if err != nil {
-		image = w.newTextCache(text, highlight, isNormalWidth)
+		image = w.newTextCache(text, hlkey, isNormalWidth)
 		if image != nil {
-			w.setTextCache(text, highlight, image)
+			w.setTextCache(text, hlkey, image)
 		}
 	} else {
 		image = imagev.(*gui.QImage)
@@ -2745,15 +2756,15 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 	return image
 }
 
-func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QImage) {
+func (w *Window) setTextCache(text string, hlkey HlKey, image *gui.QImage) {
 	if w.font != nil {
 		// If window has own font setting
 		w.cache.set(
 			HlTextKey{
 				text:   text,
-				fg:     highlight.fg(),
-				italic: highlight.italic,
-				bold:   highlight.bold,
+				fg:     hlkey.fg,
+				italic: hlkey.italic,
+				bold:   hlkey.bold,
 			},
 			image,
 		)
@@ -2762,9 +2773,9 @@ func (w *Window) setTextCache(text string, highlight *Highlight, image *gui.QIma
 		w.s.cache.set(
 			HlTextKey{
 				text:   text,
-				fg:     highlight.fg(),
-				italic: highlight.italic,
-				bold:   highlight.bold,
+				fg:     hlkey.fg,
+				italic: hlkey.italic,
+				bold:   hlkey.bold,
 			},
 			image,
 		)
@@ -2784,7 +2795,7 @@ func (w *Window) destroyImagePainter() {
 	}
 }
 
-func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth bool) *gui.QImage {
+func (w *Window) newTextCache(text string, hlkey HlKey, isNormalWidth bool) *gui.QImage {
 	// * Ref: https://stackoverflow.com/questions/40458515/a-best-way-to-draw-a-lot-of-independent-characters-in-qt5/40476430#40476430
 	editor.putLog("start creating word cache:", text)
 
@@ -2813,11 +2824,11 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	}
 
 	width := float64(len(text))*font.cellwidth + 1
-	if highlight.italic {
+	if hlkey.italic {
 		width = float64(len(text))*font.italicWidth + 1
 	}
 
-	fg := highlight.fg()
+	fg := hlkey.fg
 	if !isNormalWidth {
 		advance := fontfallbacked.fontMetrics.HorizontalAdvance(text, -1)
 		if advance > 0 {
@@ -2859,12 +2870,11 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 	w.imagePainter.SetPen2(fg.QColor())
 	w.imagePainter.SetFont(fontfallbacked.qfont)
 
-	if highlight.bold {
-		w.imagePainter.Font().SetBold(true)
-		// w.imagePainter.Font().SetWeight(font.qfont.Weight() + 50)
+	if hlkey.bold {
+		w.imagePainter.Font().SetBold(hlkey.bold)
 	}
-	if highlight.italic {
-		w.imagePainter.Font().SetItalic(true)
+	if hlkey.italic {
+		w.imagePainter.Font().SetItalic(hlkey.italic)
 	}
 
 	w.imagePainter.DrawText6(
