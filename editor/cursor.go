@@ -163,7 +163,7 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 		charCache := *c.charCache
 		imagev, err := charCache.get(HlTextKey{
 			text:   text,
-			fg:     c.fg,
+			fg:     *(c.fg),
 			italic: false,
 			bold:   false,
 		})
@@ -265,7 +265,7 @@ func (c *Cursor) setCharCache(text string, fg *RGBA, image *gui.QImage) {
 	c.charCache.set(
 		HlTextKey{
 			text:   text,
-			fg:     c.fg,
+			fg:     *(c.fg),
 			italic: false,
 			bold:   false,
 		},
