@@ -321,6 +321,8 @@ jobs:
 # Windows
 #################################################################
 
+# test
+
   test-windows-mingw:
     strategy:
       matrix:
@@ -329,10 +331,9 @@ jobs:
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
-      QT_DIR: ${{ github.workspace }}\Qt
       QT_API: 5.13.0
       QT_MSYS2: true
-      QT_MSYS2_DIR: D:\a\_temp\msys64\
+      QT_MSYS2_DIR: C:\a\msys64\
       QT_MSVC: false
       QT_DEBUG: false
       GO111MODULE: on
@@ -350,9 +351,11 @@ jobs:
         update: true
         msystem: mingw64
         install: mingw-w64-x86_64-toolchain
+        location: C:\a\
+
     - shell: msys2 {0}
       run: |
-        pacman --noconfirm -S sed git make mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5
+        pacman --noconfirm -S sed git make tree mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5 
 
     - name: Install Go
       uses: actions/setup-go@v4
@@ -365,16 +368,17 @@ jobs:
         fetch-depth: 0
         path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
 
+
     - name: Get Qt binding for Go
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /c/a/goneovim/goneovim//src/github.com/${{ github.repository }}
         go get -v github.com/akiyosi/qt 
-        go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20230718095223-7e4e923f23fa
+        go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240304155940-b43fff373ad5
         go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
         go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0
-        go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20230718095223-7e4e923f23fa
+        go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20240304155940-b43fff373ad5
         go install -v -tags=no_env github.com/akiyosi/qt/cmd/... 
         go mod vendor 
         git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
@@ -392,25 +396,25 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         $(go env GOPATH)/bin/qtsetup -test=false
 
     - name: Get dependencies
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        export GOPATH=/d/a/goneovim/goneovim
-        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
     - name: Test
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        export GOPATH=/d/a/goneovim/goneovim
-        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make test
 
+
+# build
 
   build-windows-mingw:
     strategy:
@@ -419,10 +423,10 @@ jobs:
         platform: [windows-latest]
     runs-on: ${{ matrix.platform }}
     env:
-      GOPATH: C:\
+      GOPATH: ${{ github.workspace }}
       QT_API: 5.13.0
       QT_MSYS2: true
-      QT_MSYS2_DIR: D:\a\_temp\msys64\
+      QT_MSYS2_DIR: C:\a\msys64\
       QT_MSYS2_STATIC: true
       QT_MSVC: false
       QT_DEBUG_CONSOLE: true
@@ -446,6 +450,8 @@ jobs:
         update: true
         msystem: mingw64
         install: mingw-w64-x86_64-toolchain
+        location: C:\a\
+
     - shell: msys2 {0}
       run: |
         pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator
@@ -467,32 +473,20 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-        path: ${{ github.workspace }}\${{ github.repository }}
+        path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
     
-    - name: Copy checkout repogitory 
-      shell: msys2 {0}
-      run: |
-        mkdir -p /c/${{ github.repository }}
-        ls -l /d/a/goneovim/goneovim/${{ github.repository }}
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/* /c/${{ github.repository }}/
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/.* /c/${{ github.repository }}/
-        mkdir -p /c/src/github.com/${{ github.repository }}
-        cp -pR /d/a/goneovim/goneovim/${{ github.repository }}/* /c/src/github.com/${{ github.repository }}/
-        ls -l /c/${{ github.repository }}
-        ls -l /c/src/github.com/${{ github.repository }}
-
     - name: Get Qt binding for Go
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
+        cd /c/a/goneovim/goneovim//src/github.com/${{ github.repository }}
         make qt_bindings
 
     - name: Get dependencies
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
     ### https://github.com/therecipe/qt/issues/657
@@ -507,13 +501,13 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/${{ github.repository }}
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make app
 
     - name: Rename
       shell: msys2 {0}
       run: |
-        cd /c/${{ github.repository }}/cmd/goneovim/deploy
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
         mv windows goneovim-windows
       # zip -r goneovim-windows.zip goneovim-windows
 
