@@ -20,6 +20,8 @@ import (
 	"github.com/akiyosi/qt/core"
 	"github.com/akiyosi/qt/gui"
 	"github.com/akiyosi/qt/widgets"
+
+	// "github.com/felixge/fgprof"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/neovim/go-client/nvim"
 )
@@ -317,6 +319,7 @@ func InitEditor(options Options, args []string) {
 	e.connectAppSignals()
 
 	// go e.exitEditor(cancel, f, g)
+	// go e.exitEditor(cancel, f, fgprofStop)
 	go e.exitEditor(cancel)
 
 	e.addDockMenu()
@@ -342,6 +345,7 @@ func (e *Editor) initAppWindow() bool {
 
 // exitEditor is to detect stop events and quit the application
 // func (e *Editor) exitEditor(cancel context.CancelFunc, f, g *os.File) {
+// func (e *Editor) exitEditor(cancel context.CancelFunc, f *os.File, fgprofStop func() error) {
 func (e *Editor) exitEditor(cancel context.CancelFunc) {
 	ret := <-e.stop
 	close(e.stop)
