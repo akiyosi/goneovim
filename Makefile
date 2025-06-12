@@ -40,7 +40,7 @@ endif
 
 
 app: ## Build goneovim
-	@test -f ./editor/moc.go & $(GOQTMOC) desktop ./cmd/goneovim && \
+	@test -f ./editor/moc.go && $(GOQTMOC) desktop ./cmd/goneovim && \
 	go generate && \
 	$(GOQTDEPLOY) build desktop ./cmd/goneovim && \
 	cp -pR runtime $(RUNTIME_DIR)
@@ -100,7 +100,7 @@ darwin: ## Build binaries for MacOS using Vagrant.
 	cp -pR ../../runtime $(DEPLOYMENT_WINDOWS)
 
 debug: ## Debug runs of the application using delve.
-	@test -f ./editor/moc.go & $(GOQTMOC) desktop ./cmd/goneovim && \
+	@test -f ./editor/moc.go && $(GOQTMOC) desktop ./cmd/goneovim && \
 	cd cmd/goneovim && \
 	dlv debug --output goneovim --build-flags -race -- $(DEBUG_ARGS)
 
