@@ -244,6 +244,8 @@ func (e *Editor) convertKey(event *gui.QKeyEvent) string {
 			key == int(core.Qt__Key_Control) ||
 			key == int(core.Qt__Key_Meta) ||
 			key == int(core.Qt__Key_Shift) ||
+			key == int(core.Qt__Key_Hyper_L) ||
+			key == int(core.Qt__Key_Hyper_R) ||
 			key == int(core.Qt__Key_Super_L) ||
 			key == int(core.Qt__Key_Super_R) {
 			return ""
