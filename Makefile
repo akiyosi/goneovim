@@ -24,9 +24,9 @@ OSNAME=FreeBSD
 endif
 
 # qt bindings cmd
-GOQTSETUP:=$(shell go env GOPATH)/bin/qtsetup
-GOQTMOC:=$(shell go env GOPATH)/bin/qtmoc
-GOQTDEPLOY:=$(shell go env GOPATH)/bin/qtdeploy
+GOQTSETUP:=$(shell $(go env GOPATH)/bin/qtsetup)
+GOQTMOC:=$(shell $(go env GOPATH)/bin/qtmoc)
+GOQTDEPLOY:=$(shell $(go env GOPATH)/bin/qtdeploy)
 
 .PHONY: app qt_bindings clean linux windows darwin debug test help
 
