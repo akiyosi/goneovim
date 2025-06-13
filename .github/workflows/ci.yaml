@@ -452,7 +452,8 @@ jobs:
         install: mingw-w64-x86_64-toolchain
         location: C:\a\
 
-    - shell: msys2 {0}
+    - name: Install Qt5
+      shell: msys2 {0}
       run: |
         pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator
         pacman -Scc
