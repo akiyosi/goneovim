@@ -450,7 +450,7 @@ jobs:
 
     - shell: msys2 {0}
       run: |
-        pacman --noconfirm -S sed git make unzip zip go mingw-w64-x86_64-qt-creator
+        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-go mingw-w64-x86_64-qt-creator
         pacman -Scc
         pacman -Sc
         curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
