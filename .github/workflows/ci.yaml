@@ -460,15 +460,6 @@ jobs:
         curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
         pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
 
-    #- name: Patch qt5
-    #  shell: msys2 {0}
-    #  run: | 
-    #    curl -sL --retry 10 --retry-delay 60 -O https://github.com/akiyosi/github-actions-playground/releases/download/qt-5.15.8/qt-5.15.8.zip
-    #    unzip qt-5.15.8.zip
-    #    cp -fpR qt5/* /mingw64/qt5-static/
-    #    rm -fr qt5
-    #    rm qt-5.15.8.zip
-
     - name: Checkout code
       uses: actions/checkout@v3
       with:
@@ -480,7 +471,15 @@ jobs:
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
         cd /c/a/goneovim/goneovim//src/github.com/${{ github.repository }}
-        make qt_bindings
+        go get -v github.com/akiyosi/qt 
+        go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240304155940-b43fff373ad5
+        go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
+        go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0
+        go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20240304155940-b43fff373ad5
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/... 
+        go mod vendor 
+        git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
+        $(go env GOPATH)/bin/qtsetup -test=false
 
     - name: Get dependencies
       shell: msys2 {0}
@@ -502,7 +501,10 @@ jobs:
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-        make app
+        $(go env GOPATH)/bin/qtmod desktop ./cmd/goneovim
+        go generate
+        $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
+        cp -pR runtime cmd/goneovim/deploy/windows/
 
     - name: Rename
       shell: msys2 {0}
