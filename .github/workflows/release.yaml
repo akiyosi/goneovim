@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - run: >
@@ -103,7 +103,7 @@ jobs:
         rm -fr ${{ github.workspace }}/fcitx-qt5
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
@@ -189,7 +189,7 @@ jobs:
         brew install qt@5
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
@@ -272,7 +272,7 @@ jobs:
         mkdir qt5 && mv ./Users/runner/work/qt-static-builds/qt-static-builds/Qt/* qt5/
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
@@ -351,7 +351,7 @@ jobs:
     steps:
 
     - name: Install Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
 
@@ -382,7 +382,7 @@ jobs:
     #     rm qt-5.15.5_patched-qtbug71737.zip
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         path: ${{ github.workspace }}\${{ github.repository }}
@@ -455,7 +455,7 @@ jobs:
 #     runs-on: ${{ matrix.platform }}
 #     steps:
 #     - name: Checkout code
-#       uses: actions/checkout@v3
+#       uses: actions/checkout@v4
 #       with:
 #         fetch-depth: 0
 # 
@@ -520,7 +520,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v4
 

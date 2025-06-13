@@ -39,7 +39,7 @@ jobs:
         sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
 
     - name: Install Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
 
@@ -79,7 +79,7 @@ jobs:
         rm -fr ${{ github.workspace }}/fcitx-qt5
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
@@ -160,7 +160,7 @@ jobs:
         brew install qt@5
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
@@ -279,7 +279,7 @@ jobs:
         mkdir qt5 && mv ./Users/runner/work/qt-static-builds/qt-static-builds/Qt/* qt5/
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
@@ -363,7 +363,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
@@ -462,7 +462,7 @@ jobs:
         pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
@@ -518,7 +518,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: goneovim-windows
-        path: C:/${{ github.repository }}/cmd/goneovim/deploy
+        path: C:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
 
 
   # test-and-build-windows-msvc:
@@ -624,7 +624,7 @@ jobs:
   #       Move-Item -Path go -Destination go-root
 
   #   - name: Checkout code
-  #     uses: actions/checkout@v3
+  #     uses: actions/checkout@v4
   #     with:
   #       fetch-depth: 0
   #       path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
@@ -759,7 +759,7 @@ jobs:
 #     runs-on: macos-latest
 #     steps:
 #       - name: Checkout code
-#         uses: actions/checkout@v3
+#         uses: actions/checkout@v4
 #         with:
 #           fetch-depth: 0
 # 
