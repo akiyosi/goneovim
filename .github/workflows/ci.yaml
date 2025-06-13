@@ -506,7 +506,7 @@ jobs:
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-        $(go env GOPATH)/bin/qtmod desktop ./cmd/goneovim
+        $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
         go generate
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime cmd/goneovim/deploy/windows/
