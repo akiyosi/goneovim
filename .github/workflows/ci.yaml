@@ -457,6 +457,7 @@ jobs:
         pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
 
     - name: debug
+      continue-on-error: true
       shell: msys2 {0}
       run: |
         which go
