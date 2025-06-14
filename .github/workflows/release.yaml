@@ -385,7 +385,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        path: ${{ github.workspace }}\${{ github.repository }}
+        path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
