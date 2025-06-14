@@ -412,7 +412,7 @@ jobs:
     - name: Retrieve version
       id: version-windows
       run: |
-        cd C:\${{ github.repository }}
+        cd ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
         echo "::set-output name=GONEOVIM_VERSION::$(git describe --tags)"
 
     - name: Build for windows
