@@ -436,6 +436,7 @@ jobs:
       shell: msys2 {0}
       run: |
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv windows ${{ env.ARCHIVE_NAME }}
         zip -r ${{ env.ARCHIVE_NAME }}.zip ${{ env.ARCHIVE_NAME }}
 
     - name: Upload
