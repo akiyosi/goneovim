@@ -106,7 +106,9 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 		c.devicePixelRatio = float64(p.PaintEngine().PaintDevice().DevicePixelRatio())
 	}
 
-	if c.sourcetext == "" || c.devicePixelRatio == 0 || c.width < int(font.cellwidth/2.0) {
+	// Fixed font aren't draw if cursor isn't wide enough.
+	// But for proportional, it would ends not drawing "i","t","!"...
+	if c.sourcetext == "" || c.devicePixelRatio == 0 || (c.width < int(font.cellwidth/2.0) && !c.font.proportional) {
 		p.DestroyQPainter()
 		return
 	}
