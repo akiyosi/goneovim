@@ -465,7 +465,6 @@ func (c *Cursor) updateCursorShape(win *Window) {
 
 
 	if c.font != nil {
-		// TODO: fix Cursor text when width is small: t, i, !, f, ...
 		if !c.font.proportional {
 			cellwidth = c.font.cellwidth
 		} else {
@@ -506,7 +505,11 @@ func (c *Cursor) updateCursorShape(win *Window) {
 		}
 	case "vertical":
 		c.isTextDraw = true
-		width = int(math.Ceil(float64(width) * p))
+		if (c.font == nil || !c.font.proportional) {
+			width = int(math.Ceil(float64(width) * p))
+		} else {
+			width = int(c.font.cellwidth) / 10
+		}
 		c.horizontalShift = 0
 	default:
 		c.isTextDraw = true
