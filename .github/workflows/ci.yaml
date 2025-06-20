@@ -368,6 +368,12 @@ jobs:
         fetch-depth: 0
         path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
 
+    - name: Check
+      shell: msys2 {0}
+      run: |
+        ls -l /c/
+
+
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
