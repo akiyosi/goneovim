@@ -369,17 +369,9 @@ jobs:
         path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
 
     - name: Check
-      shell: msys2 {0}
       run: |
-        ls -l /c/
-        ls -l /c/a/
-        ls -l /c/a/goneovim/goneovim/
-        ls -l /c/a/goneovim/goneovim/src/
-        ls -l /c/a/goneovim/goneovim/src/github.com/
-        ls -l /c/a/goneovim/goneovim/src/github.com/akiyosi/
-        ls -l /c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/
-
-
+        dir ${{ env.GOPATH }}
+        dir ${{ github.workspace }}
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
