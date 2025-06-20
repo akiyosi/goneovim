@@ -372,6 +372,12 @@ jobs:
       shell: msys2 {0}
       run: |
         ls -l /c/
+        ls -l /c/a/
+        ls -l /c/a/goneovim/goneovim/
+        ls -l /c/a/goneovim/goneovim/src/
+        ls -l /c/a/goneovim/goneovim/src/github.com/
+        ls -l /c/a/goneovim/goneovim/src/github.com/akiyosi/
+        ls -l /c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/
 
 
 
@@ -379,7 +385,7 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim//src/github.com/${{ github.repository }}
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         go get -v github.com/akiyosi/qt 
         go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240304155940-b43fff373ad5
         go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
