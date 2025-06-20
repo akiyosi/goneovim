@@ -173,6 +173,8 @@ type Window struct {
 	isFloatWin             bool
 	isMsgGrid              bool
 	isGridDirty            bool
+
+	xPixelsIndexes [][]int // Proportional fonts
 }
 
 type localWindow struct {
@@ -249,9 +251,7 @@ func (w *Window) grabScreen() *gui.QPixmap {
 }
 
 func (w *Window) paint(event *gui.QPaintEvent) {
-	editor.putLog(
-		fmt.Sprintf("paint start"),
-	)
+	editor.putLog("paint start")
 
 	w.paintMutex.Lock()
 
@@ -329,6 +329,12 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	//  background color of the entire grid, so the background color is not automatically drawn.
 	if isDrawDefaultBg {
 		w.SetAutoFillBackground(false)
+	}
+
+	// If the window uses a proportional fonts, compute the X-position
+	// in pixel for each characters of each lines that will be painted
+	if font.proportional {
+		w.refreshLinesPixels(row, row + rows)
 	}
 
 	// -------------
@@ -1713,7 +1719,9 @@ func (w *Window) update() {
 	end := w.queueRedrawArea[3]
 	extendedDrawingArea := int(font.cellwidth)
 
-	drawWithSingleRect := (w.lastScrollphase != core.Qt__ScrollEnd && (w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0)) || editor.config.Editor.IndentGuide || w.s.name == "minimap" || (editor.config.Editor.SmoothScroll && w.scrollPixels2 != 0)
+	// `|| font.proportional` is a workaround, and may be avoided when
+	// the loop that compute `rects` sizes will support Proportional fonts.
+	drawWithSingleRect := (w.lastScrollphase != core.Qt__ScrollEnd && (w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0)) || editor.config.Editor.IndentGuide || w.s.name == "minimap" || (editor.config.Editor.SmoothScroll && w.scrollPixels2 != 0) || font.proportional
 	if drawWithSingleRect {
 		begin = 0
 		end = w.rows
@@ -1762,6 +1770,7 @@ func (w *Window) update() {
 		var rects [][4]int
 		isCreateRect := false
 
+		// TODO: Cellwidth cannot be used for proportional font.
 		if drawWithSingleRect {
 			rect := [4]int{
 				0,
@@ -2010,6 +2019,15 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int, isDra
 	w.drawMsgSep(p)
 }
 
+// Get the x-position of a cell, in pixel, for fixed/proportional fonts.
+func (w *Window) getPixelX(font *Font, row, col int) float64 {
+	if !font.proportional {
+		return float64(col) * font.cellwidth
+	} else {
+		return float64(w.xPixelsIndexes[row][col])
+	}
+}
+
 func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg *RGBA, y, start, end, horScrollPixels, verScrollPixels int, isDrawDefaultBg bool) {
 
 	if lastHighlight == nil {
@@ -2046,6 +2064,20 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 
 	font := w.getFont()
 
+	// Get the position and width of the Rect in pixels.
+	var pixelStart, pixelWidth float64
+	if !font.proportional {
+		pixelStart = float64(start) * font.cellwidth
+		pixelWidth = float64(width) * font.cellwidth
+	} else {
+		pixelStart = float64(w.xPixelsIndexes[y][start])
+		x2 := start + width
+		if x2 >= w.cols {
+			x2 = w.cols
+		}
+		pixelWidth = w.getPixelX(font, y, x2) - pixelStart
+	}
+
 	if verScrollPixels == 0 ||
 		verScrollPixels > 0 && (y < w.rows-w.viewportMargins[1]-1) ||
 		verScrollPixels < 0 && (y > w.viewportMargins[0]) {
@@ -2057,18 +2089,17 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 			var image *gui.QImage
 			imagev, err := cache.get(HlBgKey{
 				bg:     lastHighlight.bg(),
-				length: width,
+				length: int(pixelWidth),
 			})
 
 			if err != nil {
-				image = w.newBgCache(lastHighlight, width)
-				w.setBgCache(lastHighlight, width, image)
+				image = w.newBgCache(lastHighlight, pixelWidth)
+				w.setBgCache(lastHighlight, int(pixelWidth), image)
 			} else {
 				image = imagev.(*gui.QImage)
 			}
-
 			p.DrawImage9(
-				int(float64(start)*font.cellwidth+float64(horScrollPixels)),
+				int(pixelStart+float64(horScrollPixels)),
 				int(float64((y)*font.lineHeight+verScrollPixels)),
 				image,
 				0, 0,
@@ -2082,9 +2113,9 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 
 			// Fill background with pattern
 			rectF := core.NewQRectF4(
-				float64(start)*font.cellwidth+float64(horScrollPixels),
+				pixelStart+float64(horScrollPixels),
 				float64((y)*font.lineHeight+verScrollPixels),
-				float64(width)*font.cellwidth,
+				pixelWidth,
 				float64(font.lineHeight),
 			)
 			p.FillRect(
@@ -2213,9 +2244,9 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 
 }
 
-func (w *Window) newBgCache(lastHighlight *Highlight, length int) *gui.QImage {
+func (w *Window) newBgCache(lastHighlight *Highlight, width float64) *gui.QImage {
 	font := w.getFont()
-	width := float64(length) * font.cellwidth
+	// width := float64(length) * font.cellwidth
 	height := float64(font.lineHeight)
 
 	image := gui.NewQImage3(
@@ -2301,6 +2332,70 @@ func resolveFontFallback(font *Font, fallbackfonts []*Font, char string) *Font {
 	return font
 }
 
+/* Compute the pixel index of each character for each row in range.
+ * This function is only usefull for proportional fonts,
+ * because we can't do `col * font.cellwidth`. */
+func (w *Window) refreshLinesPixels(row_start, row_end int) {
+	if row_end >= w.rows {
+		row_end = w.rows-1
+	}
+	// Font Metrics is used to get the length of each character
+	font := w.getFont()
+	// Only Reallocate slices if necessary
+	// - Reallocation for the whole matrix
+	if w.xPixelsIndexes == nil || cap(w.xPixelsIndexes) <= row_end {
+		w.xPixelsIndexes = make([][]int, w.rows+1)
+	}
+	// - Reallocation for the subslices
+	if len(w.xPixelsIndexes) == 0 ||
+		w.xPixelsIndexes[0] == nil ||
+		cap(w.xPixelsIndexes[0]) < w.cols+1 {
+		for i, _ := range w.xPixelsIndexes {
+			w.xPixelsIndexes[i] = make([]int, w.cols+1)
+		}
+	}
+	// Temporary Pseudo Cache for character lengths
+	// TODO: Implement a better (and real) Cache.
+	normalCache := make(map[string]int)
+	italicCache := make(map[string]int)
+	boldCache := make(map[string]int)
+	italicBoldCache := make(map[string]int)
+	// Iterate over the lines to be drawn
+	for y := row_start; y <= row_end; y++ {
+		line := w.content[y]
+		// TODO: X could be something else than 0, if any margin?
+		x := 0
+		for i, cell := range line {
+			// Font metrics and cache depends on font variant
+			var cache map[string]int
+			var fm *gui.QFontMetricsF
+			if !cell.highlight.italic && !cell.highlight.bold {
+				cache = normalCache
+				fm = font.fontMetrics
+			} else if !cell.highlight.bold {
+				cache = italicCache
+				fm = font.italicFontMetrics
+			} else if !cell.highlight.italic {
+				cache = boldCache
+				fm = font.boldFontMetrics
+			} else {
+				cache = italicBoldCache
+				fm = font.italicBoldFontMetrics
+			}
+			char := cell.char
+			w.xPixelsIndexes[y][i] = x
+			charLen, ok := cache[cell.char]
+			if !ok {
+				charLen = int(fm.HorizontalAdvance(char, -1))
+				cache[cell.char] = charLen
+			}
+			// Update the index
+			x += charLen
+		}
+		w.xPixelsIndexes[y][w.cols] = x
+	}
+}
+
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
@@ -2333,7 +2428,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		if line[x].char == " " {
 			continue
 		}
-		if !line[x].normalWidth {
+		if !line[x].normalWidth && !wsfont.proportional {
 			specialChars = append(specialChars, x)
 			continue
 		}
@@ -2486,10 +2581,9 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					}
 
 					if buffer.Len() != 0 {
-
 						w.drawTextInPos(
 							p,
-							int(float64(x-pos)*wsfont.cellwidth)+horScrollPixels,
+							int(w.getPixelX(wsfont, y, x-pos))+horScrollPixels,
 							wsfontLineHeight+verScrollPixels,
 							buffer.String(),
 							highlight,
@@ -2507,7 +2601,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					}
 				}
 			}
-
 		}
 	}
 
@@ -2547,7 +2640,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 			w.drawTextInPos(
 				p,
-				int(float64(x)*wsfont.cellwidth)+horScrollPixels,
+				int(w.getPixelX(wsfont, y, x))+horScrollPixels,
 				wsfontLineHeight+verScrollPixels,
 				line[x].char,
 				line[x].highlight,
@@ -2821,6 +2914,8 @@ func (w *Window) newTextCache(text string, highlight *Highlight, isNormalWidth b
 		)
 	}
 
+	// TODO: Proportional font: no `cellwidth`
+	// TODO: Proportional font: Bold Width
 	width := float64(len(text))*font.cellwidth + 1
 	if highlight.italic {
 		width = float64(len(text))*font.italicWidth + 1
@@ -2991,7 +3086,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 
 			p.DrawImage7(
 				core.NewQPointF3(
-					float64(x)*font.cellwidth+float64(horScrollPixels),
+					w.getPixelX(font, y, x)+float64(horScrollPixels),
 					float64(y*font.lineHeight)+float64(verScrollPixels),
 				),
 				image,
@@ -3014,8 +3109,14 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 	}
 	p.SetPen(pen)
 
-	start := float64(x1) * font.cellwidth
-	end := float64(x2) * font.cellwidth
+	var start, end float64
+	if !w.getFont().proportional {
+		start = float64(x1) * font.cellwidth
+		end = float64(x2) * font.cellwidth
+	} else {
+		start = float64(w.xPixelsIndexes[row][x1])
+		end = float64(w.xPixelsIndexes[row][x2])
+	}
 
 	if highlight.strikethrough {
 		drawStrikethrough(p, font, color, row, start, end, verScrollPixels, horScrollPixels)
