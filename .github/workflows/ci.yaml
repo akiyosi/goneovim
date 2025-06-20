@@ -485,7 +485,7 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
     ### https://github.com/therecipe/qt/issues/657
