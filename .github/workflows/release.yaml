@@ -391,7 +391,7 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim//src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim//src/github.com/${{ github.repository }}
         go get -v github.com/akiyosi/qt 
         go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240304155940-b43fff373ad5
         go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
@@ -406,7 +406,7 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
     - name: Retrieve version
@@ -419,7 +419,7 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
         go generate
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
@@ -435,7 +435,7 @@ jobs:
     - name: Archive
       shell: msys2 {0}
       run: |
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
         mv windows ${{ env.ARCHIVE_NAME }}
         zip -r ${{ env.ARCHIVE_NAME }}.zip ${{ env.ARCHIVE_NAME }}
 
