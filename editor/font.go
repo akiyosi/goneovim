@@ -94,11 +94,11 @@ func initFontNew(family string, size float64, weight gui.QFont__Weight, stretch,
 		shift:       int(float64(lineSpace)/2 + ascent),
 		ascent:      ascent,
 		italicWidth: italicWidth,
-		proportional:proportional,
 
 		// Proportional fonts
-		italicFontMetrics: italicFM,
-		boldFontMetrics: boldFM,
+		proportional:          proportional,
+		italicFontMetrics:     italicFM,
+		boldFontMetrics:       boldFM,
 		italicBoldFontMetrics: italicBoldFM,
 	}
 }

@@ -598,7 +598,6 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 			} else {
 				fm = c.font.italicBoldFontMetrics
 			}
-			// TODO: Bold (and italic?) width, using `c.highlight.bold`
 			// TODO: Use cache to avoid calling HorizontalAdvance?
 			// (Window.xPixelsIndexes may not be initialized.)
 			x += fm.HorizontalAdvance(cell.char, -1)

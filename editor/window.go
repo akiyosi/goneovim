@@ -2336,6 +2336,9 @@ func resolveFontFallback(font *Font, fallbackfonts []*Font, char string) *Font {
  * This function is only usefull for proportional fonts,
  * because we can't do `col * font.cellwidth`. */
 func (w *Window) refreshLinesPixels(row_start, row_end int) {
+	if row_end >= w.rows {
+		row_end = w.rows-1
+	}
 	// Font Metrics is used to get the length of each character
 	font := w.getFont()
 	// Only Reallocate slices if necessary
