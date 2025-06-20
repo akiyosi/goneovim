@@ -2343,7 +2343,7 @@ func (w *Window) refreshLinesPixels(row_start, row_end int) {
 	font := w.getFont()
 	// Only Reallocate slices if necessary
 	// - Reallocation for the whole matrix
-	if w.xPixelsIndexes == nil || cap(w.xPixelsIndexes) < row_end {
+	if w.xPixelsIndexes == nil || cap(w.xPixelsIndexes) <= row_end {
 		w.xPixelsIndexes = make([][]int, w.rows+1)
 	}
 	// - Reallocation for the subslices
@@ -2361,7 +2361,7 @@ func (w *Window) refreshLinesPixels(row_start, row_end int) {
 	boldCache := make(map[string]int)
 	italicBoldCache := make(map[string]int)
 	// Iterate over the lines to be drawn
-	for y := row_start; y < row_end; y++ {
+	for y := row_start; y <= row_end; y++ {
 		line := w.content[y]
 		// TODO: X could be something else than 0, if any margin?
 		x := 0
