@@ -368,12 +368,11 @@ jobs:
         fetch-depth: 0
         path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
 
-
     - name: Get Qt binding for Go
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim//src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         go get -v github.com/akiyosi/qt 
         go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240304155940-b43fff373ad5
         go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
@@ -396,21 +395,21 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         $(go env GOPATH)/bin/qtsetup -test=false
 
     - name: Get dependencies
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
     - name: Test
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make test
 
 
@@ -471,7 +470,7 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim//src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim//src/github.com/${{ github.repository }}
         go get -v github.com/akiyosi/qt 
         go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240304155940-b43fff373ad5
         go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
@@ -486,7 +485,7 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
     ### https://github.com/therecipe/qt/issues/657
@@ -501,7 +500,7 @@ jobs:
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
         go generate
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
@@ -510,7 +509,7 @@ jobs:
     - name: Rename
       shell: msys2 {0}
       run: |
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
         mv windows goneovim-windows
       # zip -r goneovim-windows.zip goneovim-windows
 
@@ -518,7 +517,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: goneovim-windows
-        path: C:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        path: D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
 
 
   # test-and-build-windows-msvc:
