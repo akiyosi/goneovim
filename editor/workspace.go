@@ -1825,8 +1825,11 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 		go setupGoneovimClipBoard(ws.nvim)
 	case "gonvim_uienter":
 	case "gonvim_resize":
-		width, height := editor.setWindowSize(updates[1].(string))
-		editor.window.Resize2(width, height)
+		arg, ok := updates[1].(string)
+		if ok {
+			width, height := editor.setWindowSize(arg)
+			editor.window.Resize2(width, height)
+		}
 	case "gonvim_fullscreen":
 		arg := 1
 		if len(updates) == 2 {
