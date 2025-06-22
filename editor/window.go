@@ -2050,12 +2050,39 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int, isDra
 }
 
 // Get the x-position of a cell, in pixel, for fixed/proportional fonts.
+// When using proportional fonts, this functions dose not check that the `row+col`
+// index exists in the `Window.xPixelsIndexes` field. Thus, it must only be
+// used when it's sure that `Window.refreshLinesPixels` has already been called.
+// For other cases, use `getSinglePixelX` below.
 func (w *Window) getPixelX(font *Font, row, col int) float64 {
 	if !font.proportional {
 		return float64(col) * font.cellwidth
 	} else {
 		return float64(w.xPixelsIndexes[row][col])
 	}
+}
+
+func (w *Window) getSinglePixelX(row, col int) float64 {
+	var x float64 = 0
+	if row < 0 || row >= w.rows || col < 0 || col >= w.cols {
+		return 0
+	}
+	font := w.getFont()
+	var fm *gui.QFontMetricsF
+	for i := 0; i < col; i++ {
+		cell := w.content[row][i]
+		if !cell.highlight.italic && !cell.highlight.bold {
+			fm = font.fontMetrics
+		} else if !cell.highlight.bold {
+			fm = font.italicFontMetrics
+		} else if !cell.highlight.italic {
+			fm = font.boldFontMetrics
+		} else {
+			fm = font.italicBoldFontMetrics
+		}
+		x += fm.HorizontalAdvance(cell.char, -1)
+	}
+	return x
 }
 
 func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg *RGBA, y, start, end, horScrollPixels, verScrollPixels int, isDrawDefaultBg bool) {
@@ -4023,6 +4050,28 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 		w.layoutExternalWindow(x, y)
 
 		return
+	}
+
+	if font.proportional && w.isFloatWin && !w.isMsgGrid {
+		config, err := w.s.ws.nvim.WindowConfig(w.id)
+		// There is currently no reliable way to identify cursor-based floating
+		// window. All completion plugins set `relative` to `"editor"` in the
+		// window config (and not to `"cursor"`).
+		// Related issue: https://github.com/neovim/neovim/issues/34595
+		// For now, it seems that best workaround is to make the position of
+		// every editor/cursor-relative floating window relative to the actual
+		// content of the grid. This will place completion window correctly.
+		// As a consequence, centered floating window won't be centered anymore,
+		// but it's a minor issue since text itself doesn't occupy (as now) the
+		// whole window (because of text wrapping).
+		if err == nil && anchorwin != nil && config != nil &&
+			(config.Relative == "cursor" || config.Relative == "editor") {
+			row = anchorwin.s.ws.cursor.row
+			winwithcontent, ok := w.s.getWindow(w.s.ws.cursor.gridid)
+			if ok {
+				x = int(winwithcontent.getSinglePixelX(row, col))
+			}
+		}
 	}
 
 	w.Move2(x, y)

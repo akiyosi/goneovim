@@ -585,23 +585,7 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 	if !c.font.proportional {
 		x += float64(col)*font.cellwidth
 	} else {
-		// For proportional fonts, compute the length of each char
-		var fm *gui.QFontMetricsF
-		for i := 0; i < c.col; i++ {
-			cell := win.content[c.row][i]
-			if !cell.highlight.italic && !cell.highlight.bold {
-				fm = c.font.fontMetrics
-			} else if !cell.highlight.bold {
-				fm = c.font.italicFontMetrics
-			} else if !cell.highlight.italic {
-				fm = c.font.boldFontMetrics
-			} else {
-				fm = c.font.italicBoldFontMetrics
-			}
-			// TODO: Use cache to avoid calling HorizontalAdvance?
-			// (Window.xPixelsIndexes may not be initialized.)
-			x += fm.HorizontalAdvance(cell.char, -1)
-		}
+		x += win.getSinglePixelX(c.row, c.col)
 	}
 
 	y := float64(winy + int(float64(row*font.lineHeight)+float64(verScrollPixels)))
