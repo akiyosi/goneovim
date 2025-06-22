@@ -3,7 +3,7 @@ package editor
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -867,31 +867,34 @@ func (e *Editor) setEnvironmentVariables() {
 	}
 
 	// If the OS is MacOS and the application is launched from an .app
-	if runtime.GOOS == "darwin" && e.ppid == 1 {
+	if runtime.GOOS == "darwin" && os.Getenv("TERM") == "" {
 		shell := os.Getenv("SHELL")
 		if shell == "" {
-			shell = os.Getenv("/bin/bash")
+			shell = "/bin/zsh" // fallback
 		}
-		cmd := exec.Command(shell, "-l", "-c", "env", "-i")
-		// cmd := exec.Command("printenv")
+
+		cmd := exec.Command(shell, "-l", "-c", "env")
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
 			e.putLog(err)
 			return
 		}
+
 		if err := cmd.Start(); err != nil {
 			e.putLog(err)
 			return
 		}
-		output, err := ioutil.ReadAll(stdout)
+
+		output, err := io.ReadAll(stdout)
+		stdout.Close()
 		if err != nil {
 			e.putLog(err)
-			stdout.Close()
 			return
 		}
-		for _, b := range strings.Split(string(output), "\n") {
-			splits := strings.SplitN(b, "=", 2)
-			if len(splits) > 1 {
+
+		for _, line := range strings.Split(string(output), "\n") {
+			splits := strings.SplitN(line, "=", 2)
+			if len(splits) == 2 {
 				_ = os.Setenv(splits[0], splits[1])
 			}
 		}
