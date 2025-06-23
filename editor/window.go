@@ -186,8 +186,8 @@ type Window struct {
 	isFloatWin             bool
 	isMsgGrid              bool
 	isGridDirty            bool
-
-	xPixelsIndexes [][]int // Proportional fonts
+	xPixelsIndexes         [][]int // Proportional fonts
+	endGutterIdx           int     // Proportional fonts
 }
 
 type localWindow struct {
@@ -2068,8 +2068,14 @@ func (w *Window) getSinglePixelX(row, col int) float64 {
 		return 0
 	}
 	font := w.getFont()
+	endGutterIdx, _ := w.getTextOff(1)
 	var fm *gui.QFontMetricsF
-	for i := 0; i < col; i++ {
+	var i int = 0
+	gutterCellWidth := font.width / 2
+	for ; i < endGutterIdx; i++ {
+		x += gutterCellWidth
+	}
+	for ; i < col; i++ {
 		cell := w.content[row][i]
 		if !cell.highlight.italic && !cell.highlight.bold {
 			fm = font.fontMetrics
@@ -2371,10 +2377,13 @@ func resolveFontFallback(font *Font, fallbackfonts []*Font, char string) *Font {
  * because we can't do `col * font.cellwidth`. */
 func (w *Window) refreshLinesPixels(row_start, row_end int) {
 	if row_end >= w.rows {
-		row_end = w.rows-1
+		row_end = w.rows - 1
 	}
 	// Font Metrics is used to get the length of each character
 	font := w.getFont()
+	// For gutter alignment
+	endGutterIdx, _ := w.getTextOff(1)
+	gutterCellWidth := int(font.width / 2)
 	// Only Reallocate slices if necessary
 	// - Reallocation for the whole matrix
 	if w.xPixelsIndexes == nil || cap(w.xPixelsIndexes) <= row_end {
@@ -2397,9 +2406,15 @@ func (w *Window) refreshLinesPixels(row_start, row_end int) {
 	// Iterate over the lines to be drawn
 	for y := row_start; y <= row_end; y++ {
 		line := w.content[y]
-		// TODO: X could be something else than 0, if any margin?
 		x := 0
-		for i, cell := range line {
+		var i int
+		// It will behave strangely if `vim.opt.showcmd` is set to true.
+		for i = 0; i < endGutterIdx; i++ {
+			w.xPixelsIndexes[y][i] = x
+			x += gutterCellWidth
+		}
+		for ; i < len(line); i++ {
+			cell := line[i]
 			// Font metrics and cache depends on font variant
 			var cache map[string]int
 			var fm *gui.QFontMetricsF
@@ -2428,6 +2443,66 @@ func (w *Window) refreshLinesPixels(row_start, row_end int) {
 		}
 		w.xPixelsIndexes[y][w.cols] = x
 	}
+}
+
+/* Get the buffer offset, i.e. SignColumn and Numbers. */
+func (w *Window) getTextOff(delayMs time.Duration) (int, bool) {
+	if !editor.config.Editor.ProportionalFontAlignGutter {
+		return 0, true
+	}
+	if w.isFloatWin || w.isMsgGrid || w.isPopupmenu {
+		return 0, false
+	}
+	var isValid bool
+	validCh := make(chan bool)
+	errCh := make(chan error)
+	go func() {
+		result, err := w.s.ws.nvim.IsWindowValid(w.id)
+		if err != nil {
+			errCh <- err
+			validCh <- false
+			return
+		} else {
+			validCh <- result
+			errCh <- nil
+			return
+		}
+	}()
+	select {
+	case <- errCh:
+		return 0, false
+	case isValid = <-validCh:
+	case <-time.After(delayMs * time.Millisecond):
+		// If the delay is over, returns the last stored version.
+		// This avoids flickering.
+		return w.endGutterIdx, false
+	}
+	if !isValid {
+		return 0, false
+	}
+	var output any
+	err := w.s.ws.nvim.Call("getwininfo", &output, w.id)
+	if err != nil {
+		return 0, false
+	}
+	outputArr, ok := output.([]any)
+	if !ok || len(outputArr) < 1 {
+		return 0, false
+	}
+	outputMap, ok := outputArr[0].(map[string]any)
+	if !ok {
+		return 0, false
+	}
+	textoff, ok := outputMap["textoff"]
+	if !ok {
+		return 0, false
+	}
+	textoffInt, ok := textoff.(int64)
+	if !ok {
+		return 0, false
+	}
+	w.endGutterIdx = int(textoffInt)
+	return w.endGutterIdx, true
 }
 
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {

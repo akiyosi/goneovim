@@ -89,6 +89,7 @@ type editorConfig struct {
 	IgnoreSaveConfirmationWithCloseButton   bool
 	UseWSL                                  bool
 	ShowDiffDialogOnDrop                    bool
+	ProportionalFontAlignGutter             bool
 }
 
 type cursorConfig struct {
