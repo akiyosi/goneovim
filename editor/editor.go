@@ -1103,11 +1103,18 @@ func (e *Editor) setWindowSizeFromOpts() {
 func (e *Editor) setWindowSize(s string) (int, int) {
 	var width, height int
 	var err error
-	width, err = strconv.Atoi(strings.SplitN(s, "x", 2)[0])
+
+	parsed_s := strings.SplitN(s, "x", 2)
+	if len(parsed_s) != 2 {
+		// TODO: Error message to user?
+		return 40, 30
+	}
+
+	width, err = strconv.Atoi(parsed_s[0])
 	if err != nil || width < 40 {
 		width = 40
 	}
-	height, err = strconv.Atoi(strings.SplitN(s, "x", 2)[1])
+	height, err = strconv.Atoi(parsed_s[1])
 	if err != nil || height < 30 {
 		height = 30
 	}
