@@ -4115,20 +4115,6 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 			}
 		}
 
-		// #316
-		// Adjust the position of the floating window to the inside of the screen
-		// when it is outside of the screen.
-		x, y = w.repositioningFloatwindow([2]int{anchorposx + x, anchorposy + y})
-	}
-	if w.isExternal {
-		w.Move2(EXTWINBORDERSIZE, EXTWINBORDERSIZE)
-		w.layoutExternalWindow(x, y)
-
-		return
-	}
-
-	if font.proportional && w.isFloatWin && !w.isMsgGrid {
-		config, err := w.s.ws.nvim.WindowConfig(w.id)
 		// There is currently no reliable way to identify cursor-based floating
 		// window. All completion plugins set `relative` to `"editor"` in the
 		// window config (and not to `"cursor"`).
@@ -4139,14 +4125,27 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 		// As a consequence, centered floating window won't be centered anymore,
 		// but it's a minor issue since text itself doesn't occupy (as now) the
 		// whole window (because of text wrapping).
-		if err == nil && anchorwin != nil && config != nil &&
-			(config.Relative == "cursor" || config.Relative == "editor") {
-			row = anchorwin.s.ws.cursor.row
-			winwithcontent, ok := w.s.getWindow(w.s.ws.cursor.gridid)
-			if ok {
-				x = int(winwithcontent.getSinglePixelX(row, col))
+		winwithcontent, ok := w.s.getWindow(w.s.ws.cursor.gridid)
+		if ok && winwithcontent.getFont().proportional {
+			config, err := w.s.ws.nvim.WindowConfig(w.id)
+			if err == nil && anchorwin != nil && config != nil &&
+				(config.Relative == "cursor" || config.Relative == "editor") {
+				contentRow := anchorwin.s.ws.cursor.row
+				x = int(winwithcontent.getSinglePixelX(contentRow, col))
+				y = winwithcontent.getFont().lineHeight * row // TESTING
 			}
 		}
+
+		// #316
+		// Adjust the position of the floating window to the inside of the screen
+		// when it is outside of the screen.
+		x, y = w.repositioningFloatwindow([2]int{anchorposx + x, anchorposy + y})
+	}
+	if w.isExternal {
+		w.Move2(EXTWINBORDERSIZE, EXTWINBORDERSIZE)
+		w.layoutExternalWindow(x, y)
+
+		return
 	}
 
 	w.Move2(x, y)
