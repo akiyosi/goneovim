@@ -505,12 +505,13 @@ func (c *Cursor) updateCursorShape(win *Window) {
 		}
 	case "vertical":
 		c.isTextDraw = true
-		if (c.font == nil || !c.font.proportional) {
+		c.horizontalShift = 0
+		font := win.font
+		if font == nil || !font.proportional {
 			width = int(math.Ceil(float64(width) * p))
 		} else {
-			width = int(c.font.cellwidth) / 10
+			width = int(font.cellwidth) / 10
 		}
-		c.horizontalShift = 0
 	default:
 		c.isTextDraw = true
 		c.horizontalShift = 0
