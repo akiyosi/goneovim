@@ -443,7 +443,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: goneovim-windows
-        path: C:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.zip
+        path: D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.zip
 
 
 #   freebsd:
