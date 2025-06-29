@@ -341,6 +341,114 @@ func (s *Screen) gridFont(update interface{}) {
 	}
 }
 
+/* Based on `gridFont`, this function compute the height of the selected
+ * font to keep the same number of row in the window. Thus, it avoids issues
+ * while resizing (especially with status line).
+ *
+ * NOTE: Vertical splitting after using this function will leads to very
+ *       weird behaviour, and should be avoided.
+ */
+func (s *Screen) gridFontAutomaticHeight(update interface{}) {
+
+	// Get current window
+	grid := s.ws.cursor.gridid
+	if !editor.config.Editor.ExtCmdline {
+		grid = s.ws.cursor.bufferGridid
+	}
+
+	// Workaround for autocmds triggered with BufEnter/BufWinEnter/...
+	// When a file is opened directly e.g. with `goneovim plainfile.txt`
+	// would end with applying the new font to the status line.
+	if grid == 1 {
+		grid = 2
+	}
+
+	win, ok := s.getWindow(grid)
+	if !ok {
+		return
+	}
+
+	// The function parameter is the font family
+	fontFamily, ok := update.(string)
+	if !ok {
+		return
+	}
+	if fontFamily == "" {
+		return
+	}
+
+	font := win.getFont()
+	oldCellWidth := font.cellwidth
+
+	// The font height we'll try to approximate with the new font
+	oldFontHeight := font.fontMetrics.Height()
+
+	// Create the font
+	f := gui.NewQFont()
+	f.SetFamily(fontFamily)
+	f.SetFixedPitch(false)
+	f.SetKerning(false)
+
+	// The values we'll Iteratively modify
+	var newFontHeight float64
+	var newFontSize float64
+
+	// Create the font metrics and initialize a font size
+	newFontSize = font.size
+	f.SetPointSizeF(newFontSize)
+	fm := gui.NewQFontMetricsF(f)
+	newFontHeight = fm.Height()
+
+	// Function to update the font size
+	updateFont := func (u float64) {
+		newFontSize += u
+		f.SetPointSizeF(newFontSize)
+		fm := gui.NewQFontMetricsF(f)
+		newFontHeight = fm.Height()
+	}
+
+	// Iteratively change the font size until the right height is reached
+	for newFontHeight < oldFontHeight {
+		updateFont(1)
+	}
+	for newFontHeight > oldFontHeight {
+		updateFont(-1)
+	}
+
+	// Refresh the screen while the font.cellwidth hasn't change.
+	// It avoids old text to stay forever, between windows.
+	// (Especially between window and statusbar.)
+	s.refresh()
+
+	// Build the new font
+	win.font = initFontNew(fontFamily, newFontSize, font.weight, font.stretch, font.lineSpace, font.letterSpace)
+	if win.font == nil {
+		return
+	}
+	s.ws.cursor.font = win.font
+	win.fallbackfonts = nil
+	s.ws.cursor.fallbackfonts = win.fallbackfonts
+
+	// Keep the old cellwidth matters. Changing it would impact e.g.
+	// Window.paint(). Plus, proportional font doesn't have something
+	// such as a `cellwidth`.
+	win.font.cellwidth = oldCellWidth
+
+	// TODO: Resize Grid if enough space to add a row
+
+	// Cache
+	cache := win.cache
+	if cache == (Cache{}) {
+		cache := newCache()
+		win.cache = cache
+	} else {
+		win.paintMutex.Lock()
+		win.cache.purge()
+		win.paintMutex.Unlock()
+	}
+
+}
+
 func (s *Screen) purgeTextCacheForWins() {
 	if !editor.config.Editor.CachedDrawing {
 		return

@@ -1938,6 +1938,8 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 		ws.letterSpacing(updates[1])
 	case "gonvim_grid_font":
 		ws.screen.gridFont(updates[1])
+	case "gonvim_grid_font_automatic_height":
+		ws.screen.gridFontAutomaticHeight(updates[1])
 	case "gonvim_macmeta":
 		ws.handleMacmeta(updates[1])
 	case "gonvim_minimap_update":
