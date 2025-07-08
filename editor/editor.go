@@ -119,7 +119,6 @@ type Editor struct {
 	side                   *WorkspaceSide
 	savedGeometry          *core.QByteArray
 	prefixToMapMetaKey     string
-	macAppArg              string
 	configDir              string
 	homeDir                string
 	version                string
@@ -132,7 +131,6 @@ type Editor struct {
 	notifications          []*Notification
 	workspaces             []*Workspace
 	args                   []string
-	ppid                   int
 	keyControl             core.Qt__Key
 	keyCmd                 core.Qt__Key
 	windowSize             [2]int
@@ -243,12 +241,11 @@ func InitEditor(options Options, args []string) {
 	e.putLog("Detecting the goneovim configuration directory:", e.configDir)
 	e.overwriteConfigByCLIOption()
 
-	// get parent process id
-	e.ppid = os.Getppid()
-	e.putLog("finished getting ppid")
-
 	// put shell environment
 	e.setEnvironmentVariables()
+
+	// set application working directory path
+	e.setAppDirPath(e.homeDir)
 
 	// create qapplication
 	e.putLog("start    generating the application")
@@ -504,15 +501,8 @@ func (e *Editor) setAppDirPath(home string) {
 	if runtime.GOOS == "windows" {
 		return
 	}
-	if runtime.GOOS == "darwin" {
-		if !(e.ppid == 1 && e.macAppArg == "") {
-			return
-		}
-	}
-	if runtime.GOOS == "linux" {
-		if e.ppid != 1 {
-			return
-		}
+	if os.Getenv("TERM") != "" {
+		return
 	}
 
 	path := core.QCoreApplication_ApplicationDirPath()
@@ -655,7 +645,7 @@ func (e *Editor) connectAppSignals() {
 			switch event.Type() {
 			case core.QEvent__FileOpen:
 				// If goneovim not launched on finder (it is started in terminal)
-				if e.ppid != 1 {
+				if os.Getenv("TERM") != "" {
 					return false
 				}
 				fileOpenEvent := gui.NewQFileOpenEventFromPointer(event.Pointer())
