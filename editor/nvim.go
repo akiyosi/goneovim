@@ -475,6 +475,7 @@ func setupGoneovimCommands(neovim *nvim.Nvim) {
 	}
 	gonvimCommands = gonvimCommands + `
 	command! -nargs=1 GonvimGridFont call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_grid_font", <args>)
+	command! -nargs=1 GonvimGridFontAutomaticHeight call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_grid_font_automatic_height", <args>)
 	command! -nargs=1 GonvimLetterSpacing call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_letter_spacing", <args>)
 	command! -nargs=1 GuiMacmeta call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_macmeta", <args>)
 	command! -nargs=? GonvimMaximize call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_maximize", <args>)
