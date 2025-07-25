@@ -123,7 +123,10 @@ type zindex struct {
 
 // Window is
 type Window struct {
-	cache Cache
+	glyphMaskCache    Cache
+	coloredGlyphCache Cache
+	bgBrushCache      Cache
+
 	widgets.QWidget
 	smoothScrollAnimation  *core.QPropertyAnimation
 	snapshot               *gui.QPixmap
@@ -186,6 +189,38 @@ type Window struct {
 	isFloatWin             bool
 	isMsgGrid              bool
 	isGridDirty            bool
+
+	glyphMask map[glyphMaskKey]*glyphMaskVal
+
+	coloredGlyph map[coloredGlyphKey]*gui.QImage
+}
+
+type glyphMaskVal struct {
+	img        *gui.QImage
+	baselinePx int // 画像座標(デバイスピクセル)での baseline Y
+	dpr        float64
+	wLogical   int // optional: 使うなら
+	hLogical   int // optional
+	isColor    bool
+}
+
+type coloredGlyphKey struct {
+	text         string
+	italic, bold bool
+	rgba         uint32
+	scaled       bool
+	lineHeight   int32
+	dpr1024      uint16
+	isColor      bool
+}
+
+type glyphMaskKey struct {
+	text         string
+	italic, bold bool
+	scaled       bool
+	lineHeight   int32
+	dpr1024      uint16
+	isColor      bool
 }
 
 type localWindow struct {
@@ -193,6 +228,68 @@ type localWindow struct {
 	isResized   bool
 	localWidth  float64
 	localHeight int
+}
+
+func isEmojiRune(r rune) bool {
+	switch {
+	case r >= 0x1F300 && r <= 0x1FAFF:
+		return true
+	case r >= 0x1F900 && r <= 0x1F9FF:
+		return true
+	case r >= 0x2600 && r <= 0x26FF:
+		return true
+	case r >= 0x2700 && r <= 0x27BF:
+		return true
+	}
+	return false
+}
+
+func isEmojiText(text string) bool {
+	for _, r := range text {
+		if isEmojiRune(r) {
+			return true
+		}
+	}
+	return false
+}
+
+func packDPR(dpr float64) uint16 {
+	return uint16(math.Round(dpr * 1024)) // 任意。1024倍なら 1/1024 論理px精度
+}
+
+func (w *Window) glyphKey(text string, hl HlKey, scaled bool) glyphMaskKey {
+	f := w.getFont()
+	return glyphMaskKey{
+		text:       text,
+		italic:     hl.italic,
+		bold:       hl.bold,
+		scaled:     scaled,
+		lineHeight: int32(f.lineHeight),
+		dpr1024:    packDPR(w.devicePixelRatio),
+		isColor:    isEmojiText(text),
+	}
+}
+
+func (w *Window) coloredKey(text string, hl HlKey, scaled bool) coloredGlyphKey {
+	f := w.getFont()
+	return coloredGlyphKey{
+		text:       text,
+		italic:     hl.italic,
+		bold:       hl.bold,
+		rgba:       colorToRGBA32(hl.fg.QColor()),
+		scaled:     scaled,
+		lineHeight: int32(f.lineHeight),
+		dpr1024:    packDPR(w.devicePixelRatio),
+		isColor:    isEmojiText(text),
+	}
+}
+
+func colorToRGBA32(c *gui.QColor) uint32 {
+	r := uint32(c.Red() & 0xff)
+	g := uint32(c.Green() & 0xff)
+	b := uint32(c.Blue() & 0xff)
+	a := uint32(c.Alpha() & 0xff)
+	return (a << 24) | (r << 16) | (g << 8) | b
 }
 
 func purgeQimage(key, value interface{}) {
@@ -205,15 +302,37 @@ func purgeQBrush(key, value interface{}) {
 	brush.DestroyQBrush()
 }
 
-func newCache() Cache {
-	g := gcache.New(editor.config.Editor.CacheSize).LRU().
-		EvictedFunc(purgeQimage).
-		PurgeVisitorFunc(purgeQimage).
+func purgeGlyphMask(key, value interface{}) {
+	if v, ok := value.(*glyphMaskVal); ok && v != nil && v.img != nil {
+		v.img.DestroyQImage()
+	}
+}
+
+func purgeColoredGlyph(key, value interface{}) {
+	if img, ok := value.(*gui.QImage); ok && img != nil {
+		img.DestroyQImage()
+	}
+}
+
+func newGlyphMaskCache() Cache {
+	size := editor.config.Editor.CacheSize / 9 * 8
+	g := gcache.New(size).LRU().
+		EvictedFunc(purgeGlyphMask).
+		PurgeVisitorFunc(purgeGlyphMask).
 		Build()
 	return *(*Cache)(unsafe.Pointer(&g))
 }
 
-func newBrushCache() Cache {
+func newColoredGlyphCache() Cache {
+	size := editor.config.Editor.CacheSize / 9
+	g := gcache.New(size).LRU().
+		EvictedFunc(purgeColoredGlyph).
+		PurgeVisitorFunc(purgeColoredGlyph).
+		Build()
+	return *(*Cache)(unsafe.Pointer(&g))
+}
+
+func newBgBrushCache() Cache {
 	g := gcache.New(64).LRU().
 		EvictedFunc(purgeQBrush).
 		PurgeVisitorFunc(purgeQBrush).
@@ -231,6 +350,10 @@ func (c *Cache) get(key interface{}) (interface{}, error) {
 
 func (c *Cache) purge() {
 	c.Purge()
+}
+
+func (c Cache) IsZero() bool {
+	return c == (Cache{})
 }
 
 func (w *Window) dropScreenSnapshot() {
@@ -1550,27 +1673,6 @@ func (w *Window) countContent(row int) {
 	w.lenContent[row] = width + 1
 }
 
-// func (w *Window) makeUpdateMask(row, col int, cells []interface{}) {
-// 	for j, cell := range w.content[row] {
-// 		if cell == nil {
-// 			w.contentMask[row][j] = true
-// 			continue
-//
-// 			// If the target cell is blank and there is no text decoration of any kind
-// 		} else if cell.char == " " &&
-// 			cell.highlight.bg().equals(w.background) &&
-// 			!cell.highlight.underline &&
-// 			!cell.highlight.undercurl &&
-// 			!cell.highlight.strikethrough {
-//
-// 			w.contentMask[row][j] = false
-//
-// 		} else {
-// 			w.contentMask[row][j] = true
-// 		}
-// 	}
-// }
-
 func (w *Window) countHeadSpaceOfLine(y int) (int, error) {
 	if w == nil {
 		return 0, errors.New("window is nil")
@@ -2075,19 +2177,20 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 
 	var brush *gui.QBrush
 	if editor.config.Editor.CachedDrawing {
-		brushv, err := w.s.bgcache.get(BrushKey{
+		cache := w.getBgBrushCache()
+		brushv, err := cache.get(BrushKey{
 			pattern:     pattern,
 			color:       color,
 			transparent: transparent,
 		})
 		if err != nil {
-			brush = newBgBrushCache(pattern, color, transparent)
+			brush = newBgBrush(pattern, color, transparent)
 			w.setBgBrushCache(pattern, color, transparent, brush)
 		} else {
 			brush = brushv.(*gui.QBrush)
 		}
 	} else {
-		brush = newBgBrushCache(pattern, color, transparent)
+		brush = newBgBrush(pattern, color, transparent)
 	}
 
 	if verScrollPixels == 0 ||
@@ -2186,8 +2289,7 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 
 }
 
-func newBgBrushCache(pattern core.Qt__BrushStyle, color *RGBA, transparent int) *gui.QBrush {
-
+func newBgBrush(pattern core.Qt__BrushStyle, color *RGBA, transparent int) *gui.QBrush {
 	return gui.NewQBrush3(
 		gui.NewQColor3(
 			color.R,
@@ -2197,64 +2299,26 @@ func newBgBrushCache(pattern core.Qt__BrushStyle, color *RGBA, transparent int) 
 		),
 		pattern,
 	)
-
 }
 
 func (w *Window) setBgBrushCache(pattern core.Qt__BrushStyle, color *RGBA, transparent int, brush *gui.QBrush) {
-	w.s.bgcache.set(
-		BrushKey{
-			pattern:     pattern,
-			color:       color,
-			transparent: transparent,
-		},
-		brush,
-	)
-}
-
-func (w *Window) newBgCache(lastHighlight *Highlight, length int) *gui.QImage {
-	font := w.getFont()
-	width := float64(length) * font.cellwidth
-	height := float64(font.lineHeight)
-
-	image := gui.NewQImage3(
-		int(w.devicePixelRatio*width),
-		int(w.devicePixelRatio*height),
-		gui.QImage__Format_ARGB32_Premultiplied,
-	)
-
-	image.SetDevicePixelRatio(w.devicePixelRatio)
-
-	// Set diff pattern
-	_, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
-
-	image.Fill2(
-		gui.NewQColor3(
-			color.R,
-			color.G,
-			color.B,
-			transparent,
-		),
-	)
-
-	return image
-}
-
-func (w *Window) setBgCache(highlight *Highlight, length int, image *gui.QImage) {
 	if w.font != nil {
-		w.cache.set(
-			HlBgKey{
-				bg:     highlight.bg(),
-				length: length,
+		w.bgBrushCache.set(
+			BrushKey{
+				pattern:     pattern,
+				color:       color,
+				transparent: transparent,
 			},
-			image,
+			brush,
 		)
 	} else {
-		w.s.cache.set(
-			HlBgKey{
-				bg:     highlight.bg(),
-				length: length,
+		w.s.bgBrushCache.set(
+			BrushKey{
+				pattern:     pattern,
+				color:       color,
+				transparent: transparent,
 			},
-			image,
+			brush,
 		)
 	}
 }
@@ -2559,34 +2623,43 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, hlkey HlKey, isNormalWidth bool, scaled bool) {
 	wsfont := w.getFont()
 
-	// var horScrollPixels int
-	// horScrollPixels = w.scrollPixels[0]
-	// if highlight.isSignColumn() {
-	// 	horScrollPixels = 0
-	// }
+	w.drawMaskedChar(
+		p,
+		x,
+		y+wsfont.shift,
+		text,
+		hlkey,
+		scaled,
+	)
 
-	// if CachedDrawing is disabled
-	if !editor.config.Editor.CachedDrawing {
-		w.drawTextInPosWithNoCache(
-			p,
-			x, //+horScrollPixels,
-			y+wsfont.shift,
-			text,
-			hlkey,
-			isNormalWidth,
-			scaled,
-		)
-	} else { // if CachedDrawing is enabled
-		w.drawTextInPosWithCache(
-			p,
-			x, //+horScrollPixels,
-			y,
-			text,
-			hlkey,
-			isNormalWidth,
-			scaled,
-		)
-	}
+	// // var horScrollPixels int
+	// // horScrollPixels = w.scrollPixels[0]
+	// // if highlight.isSignColumn() {
+	// // 	horScrollPixels = 0
+	// // }
+
+	// // if CachedDrawing is disabled
+	// if !editor.config.Editor.CachedDrawing {
+	// 	w.drawTextInPosWithNoCache(
+	// 		p,
+	// 		x, //+horScrollPixels,
+	// 		y+wsfont.shift,
+	// 		text,
+	// 		hlkey,
+	// 		isNormalWidth,
+	// 		scaled,
+	// 	)
+	// } else { // if CachedDrawing is enabled
+	// 	w.drawTextInPosWithCache(
+	// 		p,
+	// 		x, //+horScrollPixels,
+	// 		y,
+	// 		text,
+	// 		hlkey,
+	// 		isNormalWidth,
+	// 		scaled,
+	// 	)
+	// }
 }
 
 func (w *Window) drawTextInPosWithNoCache(p *gui.QPainter, x, y int, text string, hlkey HlKey, isNormalWidth bool, scaled bool) {
@@ -2621,7 +2694,7 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 		return
 	}
 
-	cache := w.getCache()
+	cache := w.getColoredGlyphCache()
 	var image *gui.QImage
 	imagev, err := cache.get(HlTextKey{
 		text:   text,
@@ -2674,7 +2747,7 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 	if w.font != nil {
 		// If window has own font setting
-		w.cache.set(
+		w.coloredGlyphCache.set(
 			HlDecorationKey{
 				fg:            highlight.foreground,
 				bg:            highlight.background,
@@ -2690,7 +2763,7 @@ func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 		)
 	} else {
 		// screen text cache
-		w.s.cache.set(
+		w.s.coloredGlyphCache.set(
 			HlDecorationKey{
 				fg:            highlight.foreground,
 				bg:            highlight.background,
@@ -2705,6 +2778,264 @@ func (w *Window) setDecorationCache(highlight *Highlight, image *gui.QImage) {
 			image,
 		)
 	}
+}
+
+func (w *Window) getGlyphMask(k glyphMaskKey) *glyphMaskVal {
+	cache := w.getGlyphMaskCache()
+	if v, err := cache.get(k); err == nil {
+		return v.(*glyphMaskVal)
+	}
+	v := w.makeGlyphMask(k)
+	if v != nil {
+		w.setGlyphMaskCache(k, v)
+	}
+	return v
+}
+
+var qcolor_white = gui.NewQColor3(255, 255, 255, 255)
+
+func (w *Window) makeGlyphMask(k glyphMaskKey) *glyphMaskVal {
+	var fnt *Font
+	if !isASCII(k.text) && w.font == nil && w.s.fontwide != nil {
+		fnt = resolveFontFallback(w.s.fontwide, w.s.fallbackfontwides, k.text)
+	} else {
+		if w.font == nil {
+			fnt = resolveFontFallback(w.s.font, w.s.fallbackfonts, k.text)
+		} else {
+			fnt = resolveFontFallback(w.font, w.fallbackfonts, k.text)
+		}
+	}
+
+	width := float64(len(k.text))*fnt.cellwidth + 1
+	if k.italic {
+		width = float64(len(k.text))*fnt.italicWidth + 1
+	}
+
+	wpx := int(math.Ceil(w.devicePixelRatio * width))
+	hpx := int(math.Ceil(w.devicePixelRatio * float64(fnt.lineHeight)))
+
+	if wpx <= 0 || hpx <= 0 {
+		return nil
+	}
+
+	img := gui.NewQImage3(wpx, hpx, gui.QImage__Format_ARGB32_Premultiplied)
+	img.SetDevicePixelRatio(w.devicePixelRatio)
+	img.Fill3(core.Qt__transparent)
+
+	p := gui.NewQPainter2(img)
+	p.SetPen2(qcolor_white) // ★必ず白で描く
+	p.SetFont(fnt.qfont)
+	if k.bold {
+		p.Font().SetBold(true)
+	}
+	if k.italic {
+		p.Font().SetItalic(true)
+	}
+
+	fm := gui.NewQFontMetricsF(fnt.qfont)
+	baselineF := fm.Ascent()                                      // 論理座標（float）
+	baselinePx := int(math.Round(baselineF * w.devicePixelRatio)) // 画像座標（デバイスpx）
+	p.DrawText3(0, int(math.Round(baselineF)), k.text)
+
+	p.End()
+	fm.DestroyQFontMetricsF()
+
+	// return img
+	return &glyphMaskVal{
+		img:        img,
+		baselinePx: baselinePx,
+		dpr:        w.devicePixelRatio,
+		wLogical:   int(math.Round(float64(wpx) / w.devicePixelRatio)),
+		hLogical:   int(math.Round(float64(hpx) / w.devicePixelRatio)),
+	}
+}
+
+func (w *Window) scaleMaskIfNeeded(v *glyphMaskVal, scaled bool) *glyphMaskVal {
+	if !scaled {
+		return v
+	}
+	font := w.getFont()
+	ratio := float64(font.lineHeight) / float64(font.height)
+	if ratio == 1.0 {
+		return v
+	}
+	newH := int(math.Round(v.dpr * float64(font.lineHeight) * ratio))
+	out := v.img.Scaled2(
+		v.img.Width(),
+		newH,
+		core.Qt__IgnoreAspectRatio,
+		core.Qt__SmoothTransformation,
+	)
+	out.SetDevicePixelRatio(v.img.DevicePixelRatio())
+
+	// baseline も同じ比率でスケール
+	newBaseline := int(math.Round(float64(v.baselinePx) * ratio))
+
+	return &glyphMaskVal{
+		img:        out,
+		baselinePx: newBaseline,
+		dpr:        v.dpr,
+		wLogical:   v.wLogical,
+		hLogical:   int(math.Round(float64(newH) / v.dpr)),
+	}
+}
+
+func (w *Window) snapToDevice(v int) int {
+	dpr := w.devicePixelRatio
+	return int(math.Round(float64(v)*dpr) / dpr)
+}
+
+// drawMaskedChar draws one run (== text) either through the
+// fast monochrome “white mask + tint” path, or (for color emoji etc.)
+// through the legacy full‑color path that keeps the glyph colors intact.
+func (w *Window) drawMaskedChar(
+	p *gui.QPainter,
+	x, y int,
+	text string,
+	hl HlKey,
+	scaled bool,
+) {
+	if text == "" {
+		return
+	}
+
+	// ---- Color (emoji, COLR/CPAL, etc.) path --------------------------------
+	gk := w.glyphKey(text, hl, scaled)
+	if gk.isColor {
+		ck := w.coloredKey(text, hl, scaled)
+
+		// You said you still have newTextChar(), so colorGlyphCached can call it internally.
+		img := w.colorGlyphCached(ck, text, hl)
+		if img == nil {
+			return
+		}
+
+		// Compute top from baseline (no mask metadata here, so use QFontMetricsF).
+		f := w.getFont()
+		qf := f.qfont
+		if hl.bold {
+			qf.SetBold(true)
+		}
+		if hl.italic {
+			qf.SetItalic(true)
+		}
+		fm := gui.NewQFontMetricsF(qf)
+		baselineLogical := fm.Ascent()
+		fm.DestroyQFontMetricsF()
+
+		dpr := w.devicePixelRatio
+		top := y - int(math.Round(baselineLogical)) // logical coords
+		// snap to device grid
+		x = w.snapToDevice(x)
+		top = w.snapToDevice(top)
+
+		img.SetDevicePixelRatio(dpr)
+		p.DrawImage9(x, top, img, 0, 0, -1, -1, core.Qt__AutoColor)
+		return
+	}
+
+	// ---- Monochrome fast path (white mask + tint) ----------------------------
+	// The mask value keeps baselinePx inside, so we never derive top from height.
+	v := w.getGlyphMask(gk)
+	if v == nil {
+		return
+	}
+	v = w.scaleMaskIfNeeded(v, scaled) // returns (and caches) the scaled variant if needed
+
+	// top := baseline-align (logical coordinates)
+	top := y - int(math.Round(float64(v.baselinePx)/v.dpr))
+
+	// snap to device grid to avoid 1px residues on HiDPI + smooth scroll
+	x = w.snapToDevice(x)
+	top = w.snapToDevice(top)
+
+	ck := w.coloredKey(text, hl, scaled)
+	colored := w.tintMaskCached(ck, v.img, text, hl)
+	if colored == nil {
+		return
+	}
+	colored.SetDevicePixelRatio(v.dpr)
+
+	p.DrawImage9(x, top, colored, 0, 0, -1, -1, core.Qt__AutoColor)
+}
+
+// colorGlyphCached returns a *full-color* QImage for `text` (e.g. emoji) without
+// passing through the monochrome mask+tint pipeline. The result is cached by
+// coloredGlyphKey (whose rgba should be 0 for color glyphs).
+func (w *Window) colorGlyphCached(
+	key coloredGlyphKey,
+	text string,
+	hl HlKey,
+) *gui.QImage {
+	cache := w.getColoredGlyphCache()
+	if v, err := cache.get(key); err == nil {
+		return v.(*gui.QImage)
+	}
+
+	img := w.renderColorGlyphImage(text, hl)
+	if img == nil {
+		return nil
+	}
+
+	// Ensure DPR is correct (some renderers return 1.0).
+	img.SetDevicePixelRatio(w.devicePixelRatio)
+
+	// Cache it.
+	w.setColoredGlyphCache(key, img)
+
+	return img
+}
+
+func (w *Window) renderColorGlyphImage(text string, hl HlKey) *gui.QImage {
+	font := w.getFont()
+
+	// 幅・高さを計算（advance を使う or セル幅固定のどちらでも）
+	fm := gui.NewQFontMetricsF(font.qfont)
+	width := int(math.Ceil(w.devicePixelRatio * fm.HorizontalAdvance(text, -1)))
+	height := int(math.Ceil(w.devicePixelRatio * float64(font.lineHeight)))
+	if width <= 0 || height <= 0 {
+		return nil
+	}
+
+	img := gui.NewQImage3(width, height, gui.QImage__Format_ARGB32_Premultiplied)
+	img.SetDevicePixelRatio(w.devicePixelRatio)
+	img.Fill3(core.Qt__transparent)
+
+	p := gui.NewQPainter2(img)
+	// ここでは hl.fg 等を使わず、フォントが持つ色(=emojiの色)で描画されるよう通常描画
+	p.SetFont(font.qfont)
+	p.DrawText3(0, int(math.Round(gui.NewQFontMetricsF(font.qfont).Ascent())), text)
+	p.End()
+
+	return img
+}
+
+func (w *Window) tintMaskToImage(mask *gui.QImage, color *gui.QColor) *gui.QImage {
+	out := gui.NewQImage3(mask.Width(), mask.Height(), gui.QImage__Format_ARGB32_Premultiplied)
+	out.SetDevicePixelRatio(mask.DevicePixelRatio())
+	out.Fill3(core.Qt__transparent)
+
+	p := gui.NewQPainter2(out)
+	// 1) out を指定色で塗る
+	p.SetCompositionMode(gui.QPainter__CompositionMode_Source)
+	p.FillRect6(out.Rect(), color)
+	// 2) DestinationIn でマスクの α だけを残す
+	p.SetCompositionMode(gui.QPainter__CompositionMode_DestinationIn)
+	p.DrawImage9(0, 0, mask, 0, 0, -1, -1, core.Qt__AutoColor)
+	p.End()
+	return out
+}
+
+// mask(白グリフ, 透明背景) を color で着色した QImage をキャッシュして返す
+func (w *Window) tintMaskCached(key coloredGlyphKey, mask *gui.QImage, text string, hl HlKey) *gui.QImage {
+	if img, ok := w.coloredGlyph[key]; ok {
+		return img
+	}
+	img := w.tintMaskToImage(mask, hl.fg.QColor())
+	if img != nil {
+		w.coloredGlyph[key] = img
+	}
+	return img
 }
 
 func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalWidth bool) *gui.QImage {
@@ -2745,7 +3076,7 @@ func (w *Window) newDecorationCache(char string, highlight *Highlight, isNormalW
 func (w *Window) setTextCache(text string, hlkey HlKey, image *gui.QImage) {
 	if w.font != nil {
 		// If window has own font setting
-		w.cache.set(
+		w.coloredGlyphCache.set(
 			HlTextKey{
 				text:   text,
 				fg:     hlkey.fg,
@@ -2756,7 +3087,7 @@ func (w *Window) setTextCache(text string, hlkey HlKey, image *gui.QImage) {
 		)
 	} else {
 		// screen text cache
-		w.s.cache.set(
+		w.s.coloredGlyphCache.set(
 			HlTextKey{
 				text:   text,
 				fg:     hlkey.fg,
@@ -2916,7 +3247,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	}
 	line := w.content[y]
 	font := w.getFont()
-	cache := w.getCache()
+	cache := w.getColoredGlyphCache()
 
 	// Set smooth scroll offset
 	var horScrollPixels, verScrollPixels int
@@ -3343,12 +3674,44 @@ func (w *Window) setResizableForExtWin() {
 	}
 }
 
-func (w *Window) getCache() Cache {
+func (w *Window) getGlyphMaskCache() Cache {
 	if w.font != nil {
-		return w.cache
+		return w.glyphMaskCache
 	}
 
-	return w.s.cache
+	return w.s.glyphMaskCache
+}
+
+func (w *Window) setGlyphMaskCache(k glyphMaskKey, v *glyphMaskVal) {
+	if w.font != nil {
+		w.glyphMaskCache.set(k, v)
+	} else {
+		w.s.glyphMaskCache.set(k, v)
+	}
+}
+
+func (w *Window) getColoredGlyphCache() Cache {
+	if w.font != nil {
+		return w.coloredGlyphCache
+	}
+
+	return w.s.coloredGlyphCache
+}
+
+func (w *Window) setColoredGlyphCache(k coloredGlyphKey, v *gui.QImage) {
+	if w.font != nil {
+		w.coloredGlyphCache.set(k, v)
+	} else {
+		w.s.coloredGlyphCache.set(k, v)
+	}
+}
+
+func (w *Window) getBgBrushCache() Cache {
+	if w.font != nil {
+		return w.bgBrushCache
+	}
+
+	return w.s.bgBrushCache
 }
 
 func newWindow() *Window {
@@ -3374,6 +3737,10 @@ func newWindow() *Window {
 	win.ConnectDestroyed(func(*core.QObject) {
 		win.destroyImagePainter()
 	})
+
+	// win.glyphMask = make(map[glyphMaskKey]*gui.QImage)
+	win.glyphMask = make(map[glyphMaskKey]*glyphMaskVal)
+	win.coloredGlyph = make(map[coloredGlyphKey]*gui.QImage)
 
 	// HideMouseWhenTyping process
 	if editor.config.Editor.HideMouseWhenTyping {
