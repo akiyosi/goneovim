@@ -23,7 +23,7 @@ var globalOrder int
 // Screen is the main editor area
 type Screen struct {
 	cache             Cache
-	bgcache           Cache
+	bgBrushCache      Cache
 	tooltip           *IMETooltip
 	font              *Font
 	fallbackfonts     []*Font
@@ -58,7 +58,7 @@ func newScreen() *Screen {
 		cursor:         [2]int{0, 0},
 		highlightGroup: make(map[string]int),
 		cache:          newCache(),
-		bgcache:        newBrushCache(),
+		bgBrushCache:   newBrushCache(),
 	}
 
 	widget.ConnectMousePressEvent(screen.mousePressEvent)

@@ -123,7 +123,9 @@ type zindex struct {
 
 // Window is
 type Window struct {
-	cache Cache
+	cache        Cache
+	bgBrushCache Cache
+
 	widgets.QWidget
 	smoothScrollAnimation  *core.QPropertyAnimation
 	snapshot               *gui.QPixmap
@@ -187,8 +189,6 @@ type Window struct {
 	isMsgGrid              bool
 	isGridDirty            bool
 
-	// === 1. 追加: 色を含まないグリフマスク専用キャッシュ ================
-	// glyphMask    map[glyphMaskKey]*gui.QImage
 	glyphMask map[glyphMaskKey]*glyphMaskVal
 
 	coloredGlyph map[coloredGlyphKey]*gui.QImage
@@ -2151,7 +2151,7 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 
 	var brush *gui.QBrush
 	if editor.config.Editor.CachedDrawing {
-		brushv, err := w.s.bgcache.get(BrushKey{
+		brushv, err := w.s.bgBrushCache.get(BrushKey{
 			pattern:     pattern,
 			color:       color,
 			transparent: transparent,
@@ -2263,7 +2263,6 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 }
 
 func newBgBrushCache(pattern core.Qt__BrushStyle, color *RGBA, transparent int) *gui.QBrush {
-
 	return gui.NewQBrush3(
 		gui.NewQColor3(
 			color.R,
@@ -2273,64 +2272,26 @@ func newBgBrushCache(pattern core.Qt__BrushStyle, color *RGBA, transparent int) 
 		),
 		pattern,
 	)
-
 }
 
 func (w *Window) setBgBrushCache(pattern core.Qt__BrushStyle, color *RGBA, transparent int, brush *gui.QBrush) {
-	w.s.bgcache.set(
-		BrushKey{
-			pattern:     pattern,
-			color:       color,
-			transparent: transparent,
-		},
-		brush,
-	)
-}
-
-func (w *Window) newBgCache(lastHighlight *Highlight, length int) *gui.QImage {
-	font := w.getFont()
-	width := float64(length) * font.cellwidth
-	height := float64(font.lineHeight)
-
-	image := gui.NewQImage3(
-		int(w.devicePixelRatio*width),
-		int(w.devicePixelRatio*height),
-		gui.QImage__Format_ARGB32_Premultiplied,
-	)
-
-	image.SetDevicePixelRatio(w.devicePixelRatio)
-
-	// Set diff pattern
-	_, color, transparent := w.getFillpatternAndTransparent(lastHighlight)
-
-	image.Fill2(
-		gui.NewQColor3(
-			color.R,
-			color.G,
-			color.B,
-			transparent,
-		),
-	)
-
-	return image
-}
-
-func (w *Window) setBgCache(highlight *Highlight, length int, image *gui.QImage) {
 	if w.font != nil {
-		w.cache.set(
-			HlBgKey{
-				bg:     highlight.bg(),
-				length: length,
+		w.bgBrushCache.set(
+			BrushKey{
+				pattern:     pattern,
+				color:       color,
+				transparent: transparent,
 			},
-			image,
+			brush,
 		)
 	} else {
-		w.s.cache.set(
-			HlBgKey{
-				bg:     highlight.bg(),
-				length: length,
+		w.s.bgBrushCache.set(
+			BrushKey{
+				pattern:     pattern,
+				color:       color,
+				transparent: transparent,
 			},
-			image,
+			brush,
 		)
 	}
 }
