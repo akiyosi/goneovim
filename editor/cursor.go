@@ -649,7 +649,7 @@ func (c *Cursor) update() {
 	}
 
 	// Set Window-specific properties
-	charCache := win.getCache()
+	charCache := win.getColoredGlyphCache()
 	c.charCache = &charCache
 	c.devicePixelRatio = win.devicePixelRatio
 

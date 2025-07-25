@@ -22,8 +22,11 @@ var globalOrder int
 
 // Screen is the main editor area
 type Screen struct {
-	cache             Cache
+	glyphMaskCache    Cache
+	coloredGlyphCache Cache
 	bgBrushCache      Cache
+	textDecoCache     Cache
+
 	tooltip           *IMETooltip
 	font              *Font
 	fallbackfonts     []*Font
@@ -53,12 +56,13 @@ func newScreen() *Screen {
 	widget.SetStyleSheet(" * { background-color: rgba(0, 0, 0, 0);}")
 
 	screen := &Screen{
-		widget:         widget,
-		windows:        sync.Map{},
-		cursor:         [2]int{0, 0},
-		highlightGroup: make(map[string]int),
-		cache:          newCache(),
-		bgBrushCache:   newBrushCache(),
+		widget:            widget,
+		windows:           sync.Map{},
+		cursor:            [2]int{0, 0},
+		highlightGroup:    make(map[string]int),
+		glyphMaskCache:    newGlyphMaskCache(),
+		coloredGlyphCache: newColoredGlyphCache(),
+		bgBrushCache:      newBgBrushCache(),
 	}
 
 	widget.ConnectMousePressEvent(screen.mousePressEvent)
@@ -319,13 +323,31 @@ func (s *Screen) gridFont(update interface{}) {
 	newRows := oldHeight / win.font.lineHeight
 
 	// Cache
-	cache := win.cache
-	if cache == (Cache{}) {
-		cache := newCache()
-		win.cache = cache
+	gmcache := win.glyphMaskCache
+	if gmcache == (Cache{}) {
+		gmcache := newGlyphMaskCache()
+		win.glyphMaskCache = gmcache
 	} else {
 		win.paintMutex.Lock()
-		win.cache.purge()
+		win.glyphMaskCache.purge()
+		win.paintMutex.Unlock()
+	}
+	cgcache := win.coloredGlyphCache
+	if cgcache == (Cache{}) {
+		cgcache := newColoredGlyphCache()
+		win.coloredGlyphCache = cgcache
+	} else {
+		win.paintMutex.Lock()
+		win.coloredGlyphCache.purge()
+		win.paintMutex.Unlock()
+	}
+	bgbcache := win.bgBrushCache
+	if bgbcache == (Cache{}) {
+		bgbcache := newBgBrushCache()
+		win.bgBrushCache = bgbcache
+	} else {
+		win.paintMutex.Lock()
+		win.bgBrushCache.purge()
 		win.paintMutex.Unlock()
 	}
 
@@ -345,7 +367,7 @@ func (s *Screen) purgeTextCacheForWins() {
 	if !editor.config.Editor.CachedDrawing {
 		return
 	}
-	s.cache.purge()
+	s.coloredGlyphCache.purge()
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
 		if win == nil {
@@ -354,12 +376,12 @@ func (s *Screen) purgeTextCacheForWins() {
 		if win.font == nil {
 			return true
 		}
-		cache := win.cache
+		cache := win.coloredGlyphCache
 		if cache == (Cache{}) {
 			return true
 		}
 		win.paintMutex.Lock()
-		win.cache.purge()
+		win.coloredGlyphCache.purge()
 		win.paintMutex.Unlock()
 		return true
 	})
