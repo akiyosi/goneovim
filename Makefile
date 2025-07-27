@@ -8,6 +8,8 @@ DEPLOYMENT_DARWIN:=cmd/goneovim/deploy/darwin
 DEPLOYMENT_LINUX:=cmd/goneovim/deploy/linux
 DEPLOYMENT_FREEBSD:=cmd/goneovim/deploy/freebsd
 
+QT_VER := v0.0.0-20240304155940-b43fff373ad5
+
 # runtime directory
 ifeq ($(OS),Windows_NT)
 RUNTIME_DIR=$(DEPLOYMENT_WINDOWS)/
@@ -57,9 +59,8 @@ ifeq ($(OSNAME),Darwin)
 endif
 
 qt_bindings: ## Setup Qt bindings for Go.
-	@version=v0.0.0-20240304155940-b43fff373ad5
-	go get -d github.com/akiyosi/qt@$$version  && \
-	go install -tags=no_env github.com/akiyosi/qt/cmd/...@$$version && \
+	@go get -d github.com/akiyosi/qt@$(QT_VER)  && \
+	go install -tags=no_env github.com/akiyosi/qt/cmd/...@$(QT_VER) && \
 	$(GOQTSETUP) -test=false && \
 	go mod tidy
 	go mod vendor
