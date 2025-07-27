@@ -14,7 +14,7 @@ jobs:
   test-and-build-linux:
     strategy:
       matrix:
-        go-version: [1.21.x]
+        go-version: [1.24.x]
         platform: [ubuntu-22.04]
         qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
@@ -133,7 +133,7 @@ jobs:
   test-and-build-macos-x86_64:
     strategy:
       matrix:
-        go-version: [1.21.x]
+        go-version: [1.24.x]
         platform: [macos-13]
     runs-on: ${{ matrix.platform }}
     env:
@@ -206,7 +206,7 @@ jobs:
   test-and-build-macos-arm64:
     strategy:
       matrix:
-        go-version: [1.21.x]
+        go-version: [1.24.x]
         platform: [macos-14]
         qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
@@ -326,7 +326,7 @@ jobs:
   test-windows-mingw:
     strategy:
       matrix:
-        go-version: [1.21.0]
+        go-version: [1.24.0]
         platform: [windows-latest]
     runs-on: ${{ matrix.platform }}
     env:
@@ -418,7 +418,7 @@ jobs:
   build-windows-mingw:
     strategy:
       matrix:
-        go-version: [1.21.0]
+        go-version: [1.24.0]
         platform: [windows-latest]
     runs-on: ${{ matrix.platform }}
     env:

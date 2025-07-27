@@ -37,7 +37,7 @@ jobs:
     needs: [check-new-commit]
     strategy:
       matrix:
-        go-version: [1.21.x]
+        go-version: [1.24.x]
         platform: [ubuntu-22.04]
         qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
@@ -166,7 +166,7 @@ jobs:
     needs: [check-new-commit]
     strategy:
       matrix:
-        go-version: [1.21.x]
+        go-version: [1.24.x]
         platform: [macos-13]
     runs-on: ${{ matrix.platform }}
     env:
@@ -244,7 +244,7 @@ jobs:
     needs: [check-new-commit]
     strategy:
       matrix:
-        go-version: [1.21.x]
+        go-version: [1.24.x]
         platform: [macos-14]
         qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
@@ -328,7 +328,7 @@ jobs:
     needs: [check-new-commit]
     strategy:
       matrix:
-        go-version: [1.21.0]
+        go-version: [1.24.0]
         platform: [windows-latest]
         qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
@@ -450,7 +450,7 @@ jobs:
 #     needs: [check-new-commit]
 #     strategy:
 #       matrix:
-#         go-version: [1.21.x]
+#         go-version: [1.24.x]
 #         platform: [macos-latest]
 #     runs-on: ${{ matrix.platform }}
 #     steps:

@@ -1,6 +1,6 @@
 module github.com/akiyosi/goneovim
 
-go 1.21
+go 1.24
 
 require (
 	github.com/BurntSushi/toml v1.3.2
