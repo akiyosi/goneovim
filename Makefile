@@ -57,19 +57,12 @@ ifeq ($(OSNAME),Darwin)
 endif
 
 qt_bindings: ## Setup Qt bindings for Go.
-	@go get -v github.com/akiyosi/qt@v0.0.0-20240304155940-b43fff373ad5 && \
-	go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240304155940-b43fff373ad5 && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0@v0.0.0-20240304155940-b43fff373ad5 && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0@v0.0.0-20240304155940-b43fff373ad5 && \
-	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20240304155940-b43fff373ad5 && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtdeploy@v0.0.0-20240304155940-b43fff373ad5  && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtminimal@v0.0.0-20240304155940-b43fff373ad5 && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtmoc@v0.0.0-20240304155940-b43fff373ad5     && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@v0.0.0-20240304155940-b43fff373ad5     && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@v0.0.0-20240304155940-b43fff373ad5   && \
-	go mod vendor  && \
+	@version=v0.0.0-20240304155940-b43fff373ad5
+	go get -d github.com/akiyosi/qt@$$version  && \
+	go install -tags=no_env github.com/akiyosi/qt/cmd/...@$$version && \
 	$(GOQTSETUP) -test=false && \
-	go mod vendor 
+	go mod tidy
+	go mod vendor
 
 deps: ## Get dependent libraries.
 	@go get github.com/akiyosi/goneovim
