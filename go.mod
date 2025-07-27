@@ -16,14 +16,8 @@ require (
 )
 
 require (
-	github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20240304155940-b43fff373ad5 // indirect
 	github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20240304155940-b43fff373ad5 // indirect
 	github.com/akiyosi/w32 v0.0.0-20240207145154-5d3ee780f6cb // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
-	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
-	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/tools v0.1.5 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 )
