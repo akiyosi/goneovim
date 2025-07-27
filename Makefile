@@ -61,9 +61,8 @@ endif
 qt_bindings: ## Setup Qt bindings for Go.
 	@go get -d github.com/akiyosi/qt@$(QT_VER)  && \
 	go install -tags=no_env github.com/akiyosi/qt/cmd/...@$(QT_VER) && \
-	$(GOQTSETUP) -test=false && \
-	go mod tidy
-	go mod vendor
+	go mod vendor && \
+	$(GOQTSETUP) -test=false
 
 deps: ## Get dependent libraries.
 	@go get github.com/akiyosi/goneovim
