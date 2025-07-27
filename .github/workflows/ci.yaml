@@ -397,6 +397,7 @@ jobs:
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         $(go env GOPATH)/bin/qtsetup -test=false
+        go mod vendor
 
     - name: Get dependencies
       shell: msys2 {0}
@@ -480,6 +481,7 @@ jobs:
         go mod vendor 
         git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
         $(go env GOPATH)/bin/qtsetup -test=false
+        go mod vendor 
 
     - name: Get dependencies
       shell: msys2 {0}

@@ -68,7 +68,8 @@ qt_bindings: ## Setup Qt bindings for Go.
 	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@v0.0.0-20240304155940-b43fff373ad5     && \
 	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@v0.0.0-20240304155940-b43fff373ad5   && \
 	go mod vendor  && \
-	$(GOQTSETUP) -test=false
+	$(GOQTSETUP) -test=false && \
+	go mod vendor 
 
 deps: ## Get dependent libraries.
 	@go get github.com/akiyosi/goneovim
