@@ -8,6 +8,8 @@ DEPLOYMENT_DARWIN:=cmd/goneovim/deploy/darwin
 DEPLOYMENT_LINUX:=cmd/goneovim/deploy/linux
 DEPLOYMENT_FREEBSD:=cmd/goneovim/deploy/freebsd
 
+QT_VER := v0.0.0-20240304155940-b43fff373ad5
+
 # runtime directory
 ifeq ($(OS),Windows_NT)
 RUNTIME_DIR=$(DEPLOYMENT_WINDOWS)/
@@ -57,45 +59,41 @@ ifeq ($(OSNAME),Darwin)
 endif
 
 qt_bindings: ## Setup Qt bindings for Go.
-	@go get -v github.com/akiyosi/qt@v0.0.0-20240304155940-b43fff373ad5 && \
-	go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240304155940-b43fff373ad5 && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0@v0.0.0-20240304155940-b43fff373ad5 && \
-	go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0@v0.0.0-20240304155940-b43fff373ad5 && \
-	go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20240304155940-b43fff373ad5 && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtdeploy@v0.0.0-20240304155940-b43fff373ad5  && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtminimal@v0.0.0-20240304155940-b43fff373ad5 && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtmoc@v0.0.0-20240304155940-b43fff373ad5     && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@v0.0.0-20240304155940-b43fff373ad5     && \
-	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@v0.0.0-20240304155940-b43fff373ad5   && \
-	go mod vendor  && \
+	go get github.com/akiyosi/qt@$(QT_VER)
+	go get github.com/akiyosi/qt/internal/cmd@$(QT_VER)
+	go get github.com/akiyosi/qt/internal/cmd/moc@$(QT_VER)
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtdeploy@$(QT_VER)
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtminimal@$(QT_VER)
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtmoc@$(QT_VER)
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@$(QT_VER)
+	go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@$(QT_VER)
 	$(GOQTSETUP) -test=false
+	@$(GOQTMOC) desktop ./cmd/goneovim
 
 deps: ## Get dependent libraries.
 	@go get github.com/akiyosi/goneovim
-	@$(GOQTMOC) desktop ./cmd/goneovim
+	@go generate
+	@go mod vendor
 
 test: ## Test goneovim
-	@go generate && go test ./editor
+	go test ./editor
 
 clean: ## Delete pre-built application binaries and Moc files.
 	@rm -fr cmd/goneovim/deploy/*
 	@rm -fr editor/*moc*
 
 linux: ## Build binaries for Linux using Docker.
-	@go generate && \
-	cd cmd/goneovim && \
+	@cd cmd/goneovim && \
 	$(GOQTDEPLOY) -docker build linux_static && \
 	cp -pR ../../runtime $(DEPLOYMENT_LINUX)
 
 windows: ## Build binaries for Windows using Docker.
-	@go generate && \
-	cd cmd/goneovim && \
+	@cd cmd/goneovim && \
 	$(GOQTDEPLOY) -docker build windows_64_static && \
 	cp -pR ../../runtime $(DEPLOYMENT_WINDOWS)
 
 darwin: ## Build binaries for MacOS using Vagrant.
-	@go generate && \
-	cd cmd/goneovim && \
+	@cd cmd/goneovim && \
 	$(GOQTDEPLOY) -vagrant build darwin/darwin && \
 	cp -pR ../../runtime $(DEPLOYMENT_WINDOWS)
 

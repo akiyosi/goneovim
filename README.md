@@ -106,8 +106,9 @@ See `:h goneovim` or [wiki](https://github.com/akiyosi/goneovim/wiki/Usage)
 ## Development
 
 1. Clone this repo and cd into the repo
-1. `make qt_bindings`
 1. `make deps`
+1. `make qt_bindings`
+1. `make test`
 1. `make app`
 
 For more information, see [Development](https://github.com/akiyosi/goneovim/blob/master/Development.md)

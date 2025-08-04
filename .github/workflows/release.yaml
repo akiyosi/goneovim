@@ -37,7 +37,7 @@ jobs:
     needs: [check-new-commit]
     strategy:
       matrix:
-        go-version: [1.21.x]
+        go-version: [1.24.x]
         platform: [ubuntu-22.04]
         qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
@@ -63,7 +63,7 @@ jobs:
         sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
 
     - name: Install Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
 
@@ -115,17 +115,17 @@ jobs:
         sudo apt clean
         sudo rm -rf /usr/share/dotnet
 
+    - name: Get dependencies
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make deps
+
     - name: Get Qt binding for Go
       env: 
         Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         make qt_bindings
-
-    - name: Get dependencies
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
-        make deps
 
     - name: Retrieve version
       id: version-linux
@@ -166,7 +166,7 @@ jobs:
     needs: [check-new-commit]
     strategy:
       matrix:
-        go-version: [1.21.x]
+        go-version: [1.24.x]
         platform: [macos-13]
     runs-on: ${{ matrix.platform }}
     env:
@@ -180,7 +180,7 @@ jobs:
     steps:
 
     - name: Install Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
 
@@ -194,15 +194,15 @@ jobs:
         fetch-depth: 0
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
 
-    - name: Get Qt binding for Go
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
-        make qt_bindings
-
     - name: Get dependencies
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         make deps
+
+    - name: Get Qt binding for Go
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make qt_bindings
 
     - name: Retrieve version
       id: version-macos
@@ -244,7 +244,7 @@ jobs:
     needs: [check-new-commit]
     strategy:
       matrix:
-        go-version: [1.21.x]
+        go-version: [1.24.x]
         platform: [macos-14]
         qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
@@ -261,7 +261,7 @@ jobs:
     steps:
 
     - name: Install Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
 
@@ -277,15 +277,15 @@ jobs:
         fetch-depth: 0
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}
 
-    - name: Get Qt binding for Go
-      run: |
-        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
-        make qt_bindings
-
     - name: Get dependencies
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         make deps
+
+    - name: Get Qt binding for Go
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make qt_bindings
 
     - name: Retrieve version
       id: version-macos
@@ -328,7 +328,7 @@ jobs:
     needs: [check-new-commit]
     strategy:
       matrix:
-        go-version: [1.21.0]
+        go-version: [1.24.0]
         platform: [windows-latest]
         qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
@@ -348,6 +348,7 @@ jobs:
       CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
       # CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+      QT_BINDING_VER: "v0.0.0-20240304155940-b43fff373ad5"
     steps:
 
     - name: Install Go
@@ -387,27 +388,28 @@ jobs:
         fetch-depth: 0
         path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
 
-    - name: Get Qt binding for Go
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /d/a/goneovim/goneovim//src/github.com/${{ github.repository }}
-        go get -v github.com/akiyosi/qt 
-        go get github.com/akiyosi/qt/internal/cmd@v0.0.0-20240304155940-b43fff373ad5
-        go get github.com/akiyosi/qt/internal/binding/files/docs/5.12.0
-        go get github.com/akiyosi/qt/internal/binding/files/docs/5.13.0
-        go get github.com/akiyosi/qt/internal/cmd/moc@v0.0.0-20240304155940-b43fff373ad5
-        go install -v -tags=no_env github.com/akiyosi/qt/cmd/... 
-        go mod vendor 
-        git clone https://github.com/akiyosi/env_windows_amd64_513.git vendor/github.com/akiyosi/env_windows_amd64_513 
-        $(go env GOPATH)/bin/qtsetup -test=false
-
     - name: Get dependencies
       shell: msys2 {0}
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
+
+    - name: Get Qt binding for Go
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+        cd /d/a/goneovim/goneovim//src/github.com/${{ github.repository }}
+        go get github.com/akiyosi/qt@${{ env.QT_BINDING_VER }}
+        go get github.com/akiyosi/qt/internal/cmd@${{ env.QT_BINDING_VER }}
+        go get github.com/akiyosi/qt/internal/cmd/moc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtdeploy@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtminimal@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtmoc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@${{ env.QT_BINDING_VER }}
+        $(go env GOPATH)/bin/qtsetup -test=false
+        $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
 
     - name: Retrieve version
       id: version-windows
@@ -450,7 +452,7 @@ jobs:
 #     needs: [check-new-commit]
 #     strategy:
 #       matrix:
-#         go-version: [1.21.x]
+#         go-version: [1.24.x]
 #         platform: [macos-latest]
 #     runs-on: ${{ matrix.platform }}
 #     steps:
