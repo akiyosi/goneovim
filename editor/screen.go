@@ -1853,6 +1853,13 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		// TODO We should imprement to drawing msgSepChar
 		// sepChar := arg.([]interface{})[3].(string)
 
+		// HACK: workaround https://github.com/neovide/neovide/issues/3150 by ignoring grid id 0.
+		// The real grid id should always be something else. But Neovim 0.11.3 sends an extra
+		// msg_set_pos with grid id 0.
+		if gridid == 0 {
+		    return
+		}
+
 		var win *Window
 		var ok bool
 		win, ok = s.getWindow(gridid)
