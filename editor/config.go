@@ -337,7 +337,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.ExtMessages = false
 
 	c.Editor.CachedDrawing = true
-	c.Editor.CacheSize = 480
+	c.Editor.CacheSize = 960
 
 	c.Editor.DisableLigatures = false
 	c.Editor.Clipboard = true
