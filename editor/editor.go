@@ -1118,20 +1118,25 @@ func (e *Editor) restoreWindow() {
 	}
 
 	settings := core.NewQSettings("neovim", "goneovim", nil)
+
 	geometry := settings.Value("geometry", core.NewQVariant13(core.NewQByteArray()))
-	state := settings.Value("windowState", core.NewQVariant13(core.NewQByteArray()))
-
 	geometryBA := geometry.ToByteArray()
-	stateBA := state.ToByteArray()
-
 	if geometryBA.Length() != 0 {
 		e.window.RestoreGeometry(geometryBA)
-		// isRestoreGeometry = true
 	}
-	if stateBA.Length() != 0 {
-		e.window.RestoreFramelessState(stateBA, 0)
-		// isRestoreState = true
-	}
+
+	// Restoring `windowState` causes problems when the previous session did
+	// something like “maximize → manual resize.” The maximize flag survives,
+	// so on the next launch the window opens maximized and the original
+	// geometry is lost. Therefore, we restore only the geometry and skip
+	// `windowState`.
+
+	// state := settings.Value("windowState", core.NewQVariant13(core.NewQByteArray()))
+	// stateBA := state.ToByteArray()
+	// if stateBA.Length() != 0 {
+	// 	e.window.RestoreFramelessState(stateBA, 0)
+	// 	// isRestoreState = true
+	// }
 
 	return
 }
