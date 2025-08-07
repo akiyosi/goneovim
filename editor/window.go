@@ -2863,13 +2863,18 @@ func (w *Window) newTextCache(text string, hlkey HlKey, isNormalWidth bool) *gui
 		w.imagePainter.Font().SetItalic(hlkey.italic)
 	}
 
-	w.imagePainter.DrawText6(
-		core.NewQRectF4(
-			0,
-			0,
-			width,
-			float64(font.lineHeight),
-		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
+	// w.imagePainter.DrawText6(
+	// 	core.NewQRectF4(
+	// 		0,
+	// 		0,
+	// 		width,
+	// 		float64(font.lineHeight),
+	// 	), text, textOptionAlignVCenter,
+	// )
+	baselineY := int(math.Ceil(float64(font.lineHeight) - (float64(font.height) - font.ascent) - float64(font.lineSpace)/2.0))
+	w.imagePainter.DrawText3(
+	    0, baselineY,
+	    text,
 	)
 
 	w.imagePainter.End()
