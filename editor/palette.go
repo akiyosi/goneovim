@@ -335,8 +335,8 @@ func (p *Palette) redrawAllContentInWindows() {
 }
 
 func (p *Palette) updateFont() {
-	p.widget.SetFont(editor.font.qfont)
-	p.pattern.SetFont(editor.font.qfont)
+	p.widget.SetFont(p.ws.screen.font.qfont)
+	p.pattern.SetFont(p.ws.screen.font.qfont)
 }
 
 func (p *Palette) textLength() int {
@@ -364,7 +364,7 @@ func (p *Palette) textLength() int {
 }
 
 func (p *Palette) cursorPos(x int) int {
-	font := gui.NewQFontMetricsF(editor.font.qfont)
+	font := gui.NewQFontMetricsF(p.ws.screen.font.qfont)
 	l := 0
 	if p.isHTMLText {
 		t := gui.NewQTextDocument(nil)
