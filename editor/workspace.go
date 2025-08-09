@@ -2163,11 +2163,13 @@ func (ws *Workspace) guiFont(args string) {
 	ws.cursor.updateFont(nil, font, fallbackfonts)
 	ws.cursor.fallbackfonts = fallbackfonts
 
-	ws.palette.updateFont()
-
 	// TODO:
 	// Consideration of application UI policies related to external and Neovim internal fonts,
 	// and provide a way to change external fonts.
+
+	if ws.palette != nil {
+		ws.palette.updateFont()
+	}
 
 	if ws.tabline != nil {
 		ws.tabline.updateFont()
