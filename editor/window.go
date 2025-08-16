@@ -2672,7 +2672,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					if buffer.Len() != 0 {
 						w.drawTextInPos(
 							p,
-							int(float64(x-pos)*wsfont.cellwidth)+horScrollPixels,
+							int(w.getPixelX(wsfont, y, x-pos))+horScrollPixels,
 							wsfontLineHeight+verScrollPixels,
 							buffer.String(),
 							hlkey,
