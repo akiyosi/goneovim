@@ -1320,6 +1320,10 @@ func (hl *Highlight) fg() *RGBA {
 }
 
 func (hl *Highlight) bg() *RGBA {
+	if hl == nil {
+		return nil
+	}
+
 	var color *RGBA
 	if hl.reverse {
 		color = hl.foreground
@@ -2045,10 +2049,15 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 	// If the background color to be painted is a Normal highlight group and another float window
 	// that covers the float window and is closest in z-order has the same background color,
 	// the background color should not be painted.
-	if w.isFloatWin && !w.isMsgGrid {
-		if w.zindex.nearestLowerZOrderWindow != nil && w.zindex.nearestLowerZOrderWindow.isFloatWin {
-			if lastHighlight.uiName == "NormalFloat" || lastHighlight.uiName == "NormalNC" {
-				if w.s.getHighlightByUiname("Normal").bg().Hex() == lastHighlight.bg().Hex() {
+	normalHl := w.s.getHighlightByUiname("Normal")
+	if w.isFloatWin && !w.isMsgGrid && normalHl != nil && lastHighlight != nil {
+		hasLowerFloat := w.zindex.nearestLowerZOrderWindow != nil && w.zindex.nearestLowerZOrderWindow.isFloatWin
+		if hasLowerFloat {
+			isNormalFloatHl := lastHighlight.uiName == "NormalFloat" || lastHighlight.uiName == "NormalNC"
+			if isNormalFloatHl {
+				nh := normalHl.bg()
+				lh := lastHighlight.bg()
+				if nh.equals(lh) {
 					return
 				}
 			}
@@ -2873,8 +2882,8 @@ func (w *Window) newTextCache(text string, hlkey HlKey, isNormalWidth bool) *gui
 	// )
 	baselineY := int(math.Ceil(float64(font.lineHeight) - (float64(font.height) - font.ascent) - float64(font.lineSpace)/2.0))
 	w.imagePainter.DrawText3(
-	    0, baselineY,
-	    text,
+		0, baselineY,
+		text,
 	)
 
 	w.imagePainter.End()
