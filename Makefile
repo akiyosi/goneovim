@@ -1,3 +1,5 @@
+export CGO_ENABLED=1
+
 TAG := $(shell git describe --tags --abbrev=0)
 VERSION := $(shell git describe --tags)
 VERSION_HASH := $(shell git rev-parse HEAD)
