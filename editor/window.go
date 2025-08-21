@@ -3326,7 +3326,7 @@ func (w *Window) isNormalWidth(char string) bool {
 		fontfallbacked = resolveFontFallback(w.font, w.fallbackfonts, char)
 	}
 
-	return fontfallbacked.fontMetrics.HorizontalAdvance(char, -1) <= w.getFont().cellwidth
+	return fontfallbacked.fontMetrics.HorizontalAdvance(char, -1) == w.getFont().cellwidth
 }
 
 func isASCII(c string) bool {
