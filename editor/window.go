@@ -2046,24 +2046,6 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 		return
 	}
 
-	// If the background color to be painted is a Normal highlight group and another float window
-	// that covers the float window and is closest in z-order has the same background color,
-	// the background color should not be painted.
-	normalHl := w.s.getHighlightByUiname("Normal")
-	if w.isFloatWin && !w.isMsgGrid && normalHl != nil && lastHighlight != nil {
-		hasLowerFloat := w.zindex.nearestLowerZOrderWindow != nil && w.zindex.nearestLowerZOrderWindow.isFloatWin
-		if hasLowerFloat {
-			isNormalFloatHl := lastHighlight.uiName == "NormalFloat" || lastHighlight.uiName == "NormalNC"
-			if isNormalFloatHl {
-				nh := normalHl.bg()
-				lh := lastHighlight.bg()
-				if nh.equals(lh) {
-					return
-				}
-			}
-		}
-	}
-
 	width := end - start + 1
 	if width < 0 {
 		width = 0
@@ -3694,25 +3676,6 @@ func (w *Window) raise() {
 			return false
 		},
 	)
-
-	// For each window object, set the pointer of closest window in the z-order
-	// that covers the target window on the region.
-	for i := 0; i < len(floatWins); i++ {
-		floatWins[i].Raise()
-		if i > 0 {
-			if floatWins[i].isMsgGrid {
-				continue
-			}
-			for j := i - 1; j >= 0; j-- {
-				if floatWins[j].isMsgGrid {
-					continue
-				}
-				if floatWins[j].Geometry().Contains2(floatWins[i].Geometry(), false) {
-					floatWins[i].zindex.nearestLowerZOrderWindow = floatWins[j]
-				}
-			}
-		}
-	}
 
 	// handle cursor widget
 	w.setUIParent()
