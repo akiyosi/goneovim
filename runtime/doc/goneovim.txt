@@ -363,6 +363,14 @@ All Options are follows:
         ## window setting is enabled.
         # HideTitlebar = false
         
+        ## Windows title bar customization (Windows 11+ only)
+        ## Sets the background color of the window title bar.
+        ## Use hex color format: "#RRGGBB"
+        # NativeTitleBarBackgroundColor = ""
+        ## Sets the color of the window title text.
+        ## Use hex color format: "#RRGGBB"
+        # NativeTitleBarTextColor = ""
+        
         ## EnableBackgroundBlur applies a translucent Blur/Acrylic effect to the window
         ## background.
         EnableBackgroundBlur = false

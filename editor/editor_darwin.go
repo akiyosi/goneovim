@@ -6,8 +6,12 @@ package editor
 #include "objcbridge.h"
 #include <stdlib.h>
 */
-import "C"
-import "unsafe"
+import (
+	"C"
+	"unsafe"
+
+	frameless "github.com/akiyosi/goqtframelesswindow"
+)
 
 //export GetOpeningFilepath
 func GetOpeningFilepath(str *C.char) {
@@ -22,4 +26,14 @@ func GetOpeningFilepath(str *C.char) {
 
 func setMyApplicationDelegate() {
 	C.SetMyApplicationDelegate()
+}
+
+func setNativeTitleBarColor(window *frameless.QFramelessWindow, colorStr string) error {
+	// Not implemented (yet)
+	return nil
+}
+
+func setNativeTitleTextColor(window *frameless.QFramelessWindow, colorStr string) error {
+	// Not implemented (yet)
+	return nil
 }
