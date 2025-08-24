@@ -106,7 +106,9 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 		c.devicePixelRatio = float64(p.PaintEngine().PaintDevice().DevicePixelRatio())
 	}
 
-	if c.sourcetext == "" || c.devicePixelRatio == 0 || c.width < int(font.cellwidth/2.0) {
+	// Fixed font aren't draw if cursor isn't wide enough.
+	// But for proportional, it would ends not drawing "i","t","!"...
+	if c.sourcetext == "" || c.devicePixelRatio == 0 || (c.width < int(font.cellwidth/2.0) && !c.font.proportional) {
 		p.DestroyQPainter()
 		return
 	}
@@ -372,7 +374,7 @@ func (c *Cursor) updateFont(targetWin *Window, font *Font, fallbackfonts []*Font
 	}
 }
 
-func (c *Cursor) updateCursorShape() {
+func (c *Cursor) updateCursorShape(win *Window) {
 	if !c.ws.cursorStyleEnabled {
 		return
 	}
@@ -461,8 +463,16 @@ func (c *Cursor) updateCursorShape() {
 	var cellwidth float64
 	var height, lineSpace int
 
+
 	if c.font != nil {
-		cellwidth = c.font.cellwidth
+		if !c.font.proportional {
+			cellwidth = c.font.cellwidth
+		} else {
+			fm := c.font.fontMetrics
+			char := win.content[c.row][c.col].char
+			cellwidth = fm.HorizontalAdvance(char, -1)
+		}
+
 		height = c.font.height
 		lineSpace = c.font.lineSpace
 		if lineSpace < 0 {
@@ -478,7 +488,7 @@ func (c *Cursor) updateCursorShape() {
 		}
 	}
 	width := int(math.Trunc(cellwidth))
-	if !c.normalWidth {
+	if !c.normalWidth && (c.font == nil || !c.font.proportional) {
 		width = width * 2
 	}
 
@@ -495,8 +505,13 @@ func (c *Cursor) updateCursorShape() {
 		}
 	case "vertical":
 		c.isTextDraw = true
-		width = int(math.Ceil(float64(width) * p))
 		c.horizontalShift = 0
+		font := win.font
+		if font == nil || !font.proportional {
+			width = int(math.Ceil(float64(width) * p))
+		} else {
+			width = int(font.cellwidth) / 10
+		}
 	default:
 		c.isTextDraw = true
 		c.horizontalShift = 0
@@ -567,7 +582,13 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 		horScrollPixels += win.scrollPixels[0]
 	}
 
-	x := float64(winx + int(float64(col)*font.cellwidth) + horScrollPixels)
+	var x float64 = float64(winx + horScrollPixels)
+	if !c.font.proportional {
+		x += float64(col)*font.cellwidth
+	} else {
+		x += win.getSinglePixelX(c.row, c.col)
+	}
+
 	y := float64(winy + int(float64(row*font.lineHeight)+float64(verScrollPixels)))
 	if font.lineSpace > 0 {
 		y += float64(font.lineSpace) / 2.0
@@ -660,7 +681,7 @@ func (c *Cursor) update() {
 	c.updateCursorText(row, col, win)
 
 	// update cursor shape
-	c.updateCursorShape()
+	c.updateCursorShape(win)
 
 	// if ext_cmdline is true
 	if c.ws.cmdline != nil {

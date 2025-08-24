@@ -88,6 +88,13 @@ type BrushKey struct {
 	transparent int
 }
 
+// PFKey is key for proportional fonts
+type PFKey struct {
+	char string
+	italic bool
+	bold bool
+}
+
 // Cell is
 type Cell struct {
 	highlight   *Highlight
@@ -186,6 +193,8 @@ type Window struct {
 	isFloatWin             bool
 	isMsgGrid              bool
 	isGridDirty            bool
+	xPixelsIndexes         [][]float64 // Proportional fonts
+	endGutterIdx           int         // Proportional fonts
 }
 
 type localWindow struct {
@@ -275,9 +284,7 @@ func (w *Window) grabScreen() *gui.QPixmap {
 }
 
 func (w *Window) paint(event *gui.QPaintEvent) {
-	editor.putLog(
-		fmt.Sprintf("paint start"),
-	)
+	editor.putLog("paint start")
 
 	w.paintMutex.Lock()
 
@@ -355,6 +362,38 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	//  background color of the entire grid, so the background color is not automatically drawn.
 	if isDrawDefaultBg {
 		w.SetAutoFillBackground(false)
+	}
+
+	if font.proportional {
+		// Update the pixel x-position for each cell
+		w.refreshLinesPixels(row, row+rows)
+		var i int
+		// Finding `col` and `cols` for proportional requires to find the lowest
+		// possible value for `col` and the highest possible value for `cols`.
+		left := float64(rect.Left())
+		i = w.cols
+		for y := row; y < rows; y++ {
+			for ; i > 0; i-- {
+				if w.xPixelsIndexes[y][i] < left {
+					if i < col {
+						col = i
+					}
+					break
+				}
+			}
+		}
+		width := float64(rect.Width())
+		i = 0
+		for y := row; y < row+rows; y++ {
+			for ; i < w.cols; i++ {
+				if w.xPixelsIndexes[y][i] > width {
+					if i > cols {
+						cols = i
+					}
+					break
+				}
+			}
+		}
 	}
 
 	// -------------
@@ -1743,7 +1782,9 @@ func (w *Window) update() {
 	end := w.queueRedrawArea[3]
 	extendedDrawingArea := int(font.cellwidth)
 
-	drawWithSingleRect := (w.lastScrollphase != core.Qt__ScrollEnd && (w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0)) || editor.config.Editor.IndentGuide || w.s.name == "minimap" || (editor.config.Editor.SmoothScroll && w.scrollPixels2 != 0)
+	// `|| font.proportional` is a workaround, and may be avoided when
+	// the loop that compute `rects` sizes will support Proportional fonts.
+	drawWithSingleRect := (w.lastScrollphase != core.Qt__ScrollEnd && (w.scrollPixels[0] != 0 || w.scrollPixels[1] != 0)) || editor.config.Editor.IndentGuide || w.s.name == "minimap" || (editor.config.Editor.SmoothScroll && w.scrollPixels2 != 0) || font.proportional
 	if drawWithSingleRect {
 		begin = 0
 		end = w.rows
@@ -1792,6 +1833,7 @@ func (w *Window) update() {
 		var rects [][4]int
 		isCreateRect := false
 
+		// TODO: Cellwidth cannot be used for proportional font.
 		if drawWithSingleRect {
 			rect := [4]int{
 				0,
@@ -2040,6 +2082,39 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int, isDra
 	w.drawMsgSep(p)
 }
 
+// Get the x-position of a cell, in pixel, for fixed/proportional fonts.
+// When using proportional fonts, this functions dose not check that the `row+col`
+// index exists in the `Window.xPixelsIndexes` field. Thus, it must only be
+// used when it's sure that `Window.refreshLinesPixels` has already been called.
+// For other cases, use `getSinglePixelX` below.
+func (w *Window) getPixelX(font *Font, row, col int) float64 {
+	if !font.proportional || row >= len(w.xPixelsIndexes) {
+		return float64(col) * font.cellwidth
+	}
+	if col >= len(w.xPixelsIndexes[row]) {
+		col = len(w.xPixelsIndexes[row])-1
+	}
+	return w.xPixelsIndexes[row][col]
+}
+
+func (w *Window) getSinglePixelX(row, col int) float64 {
+	var x float64 = 0
+	if row < 0 || row >= w.rows || col < 0 || col >= w.cols {
+		return 0
+	}
+	font := w.getFont()
+	endGutterIdx, _ := w.getTextOff(1)
+	var i int = 0
+	for ; i < endGutterIdx; i++ {
+		x += font.width
+	}
+	for ; i < col; i++ {
+		cell := w.content[row][i]
+		x += getFontMetrics(font, cell.highlight).HorizontalAdvance(cell.char, -1)
+	}
+	return x
+}
+
 func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg *RGBA, y, start, end, horScrollPixels, verScrollPixels int, isDrawDefaultBg bool) {
 
 	if lastHighlight == nil {
@@ -2081,15 +2156,25 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 		brush = newBgBrushCache(pattern, color, transparent)
 	}
 
+	// Get the position and width of the Rect in pixels.
+	var pixelStart, pixelWidth float64
+	if !font.proportional {
+		pixelStart = float64(start) * font.cellwidth
+		pixelWidth = float64(width) * font.cellwidth
+	} else {
+		pixelStart = w.getPixelX(font, y, start)
+		pixelWidth = w.getPixelX(font, y, start+width) - pixelStart
+	}
+
 	if verScrollPixels == 0 ||
 		verScrollPixels > 0 && (y < w.rows-w.viewportMargins[1]-1) ||
 		verScrollPixels < 0 && (y > w.viewportMargins[0]) {
 
 		// Fill background with pattern
 		rectF := core.NewQRectF4(
-			float64(start)*font.cellwidth+float64(horScrollPixels),
+			pixelStart+float64(horScrollPixels),
 			float64((y)*font.lineHeight+verScrollPixels),
-			float64(width)*font.cellwidth,
+			pixelWidth,
 			float64(font.lineHeight),
 		)
 
@@ -2097,7 +2182,6 @@ func (w *Window) fillCellRect(p *gui.QPainter, lastHighlight *Highlight, lastBg 
 			rectF,
 			brush,
 		)
-
 	}
 
 	// Addresses an issue where smooth scrolling with a touchpad causes incomplete
@@ -2290,6 +2374,131 @@ func resolveFontFallback(font *Font, fallbackfonts []*Font, char string) *Font {
 	return font
 }
 
+func getFontMetrics(font *Font,  highlight *Highlight) *gui.QFontMetricsF {
+	if !highlight.italic {
+		if !highlight.bold {
+			return font.fontMetrics
+		}
+		return font.boldFontMetrics
+	}
+	if !highlight.bold {
+		return font.italicFontMetrics
+	}
+	return font.italicBoldFontMetrics
+}
+
+/* Compute the pixel index of each character for each row in range.
+ * This function is only usefull for proportional fonts,
+ * because we can't do `col * font.cellwidth`. */
+func (w *Window) refreshLinesPixels(row_start, row_end int) {
+	if row_end >= w.rows {
+		row_end = w.rows - 1
+	}
+	// Font Metrics is used to get the length of each character
+	font := w.getFont()
+	// For gutter alignment
+	endGutterIdx, _ := w.getTextOff(1)
+	// Only Reallocate slices if necessary
+	// - Reallocation for the whole matrix
+	if w.xPixelsIndexes == nil || cap(w.xPixelsIndexes) <= row_end {
+		w.xPixelsIndexes = make([][]float64, w.rows+1)
+	}
+	// - Reallocation for the subslices
+	if len(w.xPixelsIndexes) == 0 ||
+		w.xPixelsIndexes[0] == nil ||
+		cap(w.xPixelsIndexes[0]) < w.cols+1 {
+		for i, _ := range w.xPixelsIndexes {
+			w.xPixelsIndexes[i] = make([]float64, w.cols+1)
+		}
+	}
+	// Temporary Pseudo Cache for character lengths
+	cache := make(map[PFKey]float64)
+	// Iterate over the lines to be drawn
+	for y := row_start; y <= row_end; y++ {
+		line := w.content[y]
+		var x float64
+		var i int
+		// It will behave strangely if `vim.opt.showcmd` is set to true.
+		for i = 0; i < endGutterIdx; i++ {
+			w.xPixelsIndexes[y][i] = x
+			x += font.width
+		}
+		for ; i < len(line); i++ {
+			w.xPixelsIndexes[y][i] = x
+			cell := line[i]
+			key := PFKey{char: cell.char, italic: cell.highlight.italic, bold: cell.highlight.bold}
+			charLen, ok := cache[key]
+			if !ok {
+				charLen = getFontMetrics(font, cell.highlight).HorizontalAdvance(cell.char, -1)
+				cache[key] = charLen
+			}
+			// Update the index
+			x += charLen
+		}
+		w.xPixelsIndexes[y][w.cols] = x
+	}
+}
+
+/* Get the buffer offset, i.e. SignColumn and Numbers. */
+func (w *Window) getTextOff(delayMs time.Duration) (int, bool) {
+	if !editor.config.Editor.ProportionalFontAlignGutter {
+		return 0, true
+	}
+	if w.isFloatWin || w.isMsgGrid || w.isPopupmenu {
+		return 0, false
+	}
+	var isValid bool
+	validCh := make(chan bool)
+	errCh := make(chan error)
+	go func() {
+		result, err := w.s.ws.nvim.IsWindowValid(w.id)
+		if err != nil {
+			errCh <- err
+			validCh <- false
+			return
+		} else {
+			validCh <- result
+			errCh <- nil
+			return
+		}
+	}()
+	select {
+	case <- errCh:
+		return 0, false
+	case isValid = <-validCh:
+	case <-time.After(delayMs * time.Millisecond):
+		// If the delay is over, returns the last stored version.
+		// This avoids flickering.
+		return w.endGutterIdx, false
+	}
+	if !isValid {
+		return 0, false
+	}
+	var output any
+	err := w.s.ws.nvim.Call("getwininfo", &output, w.id)
+	if err != nil {
+		return 0, false
+	}
+	outputArr, ok := output.([]any)
+	if !ok || len(outputArr) < 1 {
+		return 0, false
+	}
+	outputMap, ok := outputArr[0].(map[string]any)
+	if !ok {
+		return 0, false
+	}
+	textoff, ok := outputMap["textoff"]
+	if !ok {
+		return 0, false
+	}
+	textoffInt, ok := textoff.(int64)
+	if !ok {
+		return 0, false
+	}
+	w.endGutterIdx = int(textoffInt)
+	return w.endGutterIdx, true
+}
+
 func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 	if y >= len(w.content) {
 		return
@@ -2322,7 +2531,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		if line[x].char == " " {
 			continue
 		}
-		if !line[x].normalWidth {
+		if !line[x].normalWidth && !wsfont.proportional {
 			specialChars = append(specialChars, x)
 			continue
 		}
@@ -2403,7 +2612,6 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		for hlkey, colorSlice := range chars {
 			var buffer bytes.Buffer
 			slice := colorSlice
-
 			isIndentationWhiteSpace := true
 			pos := col
 
@@ -2446,7 +2654,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 					if buffer.Len() != 0 {
 						w.drawTextInPos(
 							p,
-							int(float64(x-pos)*wsfont.cellwidth)+horScrollPixels,
+							int(w.getPixelX(wsfont, y, x-pos))+horScrollPixels,
 							wsfontLineHeight+verScrollPixels,
 							buffer.String(),
 							hlkey,
@@ -2477,18 +2685,16 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 						w.drawTextInPos(
 							p,
-							int(float64(x-pos)*wsfont.cellwidth)+horScrollPixels,
+							int(w.getPixelX(wsfont, y, x-pos))+horScrollPixels,
 							wsfontLineHeight+verScrollPixels,
 							buffer.String(),
 							hlkey,
 							true,
 							false,
 						)
-
 						buffer.Reset()
 						pos = 0
 					}
-
 					break
 				}
 			}
@@ -2531,7 +2737,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 			w.drawTextInPos(
 				p,
-				int(float64(x)*wsfont.cellwidth)+horScrollPixels,
+				int(w.getPixelX(wsfont, y, x))+horScrollPixels,
 				wsfontLineHeight+verScrollPixels,
 				line[x].char,
 				HlKey{
@@ -2801,7 +3007,13 @@ func (w *Window) newTextCache(text string, hlkey HlKey, isNormalWidth bool) *gui
 	}
 
 	width := float64(len(text))*font.cellwidth + 1
-	if hlkey.italic {
+	if fontfallbacked.proportional {
+		fm := getFontMetrics(fontfallbacked, &Highlight{bold: hlkey.bold, italic: hlkey.italic})
+		fmWidth := fm.HorizontalAdvance(text, -1)
+		if fmWidth > width {
+			width = fmWidth
+		}
+	} else if hlkey.italic {
 		width = float64(len(text))*font.italicWidth + 1
 	}
 
@@ -2974,7 +3186,7 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 
 			p.DrawImage7(
 				core.NewQPointF3(
-					float64(x)*font.cellwidth+float64(horScrollPixels),
+					w.getPixelX(font, y, x)+float64(horScrollPixels),
 					float64(y*font.lineHeight)+float64(verScrollPixels),
 				),
 				image,
@@ -2997,8 +3209,14 @@ func (w *Window) drawDecoration(p *gui.QPainter, highlight *Highlight, font *Fon
 	}
 	p.SetPen(pen)
 
-	start := float64(x1) * font.cellwidth
-	end := float64(x2) * font.cellwidth
+	var start, end float64
+	if !w.getFont().proportional {
+		start = float64(x1) * font.cellwidth
+		end = float64(x2) * font.cellwidth
+	} else {
+		start = w.xPixelsIndexes[row][x1]
+		end = w.xPixelsIndexes[row][x2]
+	}
 
 	if highlight.strikethrough {
 		drawStrikethrough(p, font, color, row, start, end, verScrollPixels, horScrollPixels)
@@ -3870,6 +4088,27 @@ func (w *Window) move(col int, row int, anchorwindow ...*Window) {
 				}
 
 				return
+			}
+		}
+
+		// There is currently no reliable way to identify cursor-based floating
+		// window. All completion plugins set `relative` to `"editor"` in the
+		// window config (and not to `"cursor"`).
+		// Related issue: https://github.com/neovim/neovim/issues/34595
+		// For now, it seems that best workaround is to make the position of
+		// every editor/cursor-relative floating window relative to the actual
+		// content of the grid. This will place completion window correctly.
+		// As a consequence, centered floating window won't be centered anymore,
+		// but it's a minor issue since text itself doesn't occupy (as now) the
+		// whole window (because of text wrapping).
+		winwithcontent, ok := w.s.getWindow(w.s.ws.cursor.gridid)
+		if ok && winwithcontent.getFont().proportional {
+			config, err := w.s.ws.nvim.WindowConfig(w.id)
+			if err == nil && anchorwin != nil && config != nil &&
+				config.Relative == "cursor" {
+				contentRow := anchorwin.s.ws.cursor.row
+				x = int(winwithcontent.getSinglePixelX(contentRow, col))
+				y = winwithcontent.getFont().lineHeight * row // TESTING
 			}
 		}
 
