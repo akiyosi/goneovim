@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -103,8 +104,7 @@ func startNvim(signal *neovimSignal, ctx context.Context) (neovim *nvim.Nvim, ui
 		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
 		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd, childProcessServe, childProcessContext)
 	} else if useWSL {
-		// Attaching remote nvim via wsl
-		uiRemoteAttached = true
+		// Attaching nvim via wsl
 		neovim, err = newWslProcess()
 	} else if editor.opts.Ssh != "" {
 		// Attaching remote nvim via ssh
@@ -300,25 +300,33 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 func newWslProcess() (*nvim.Nvim, error) {
 	editor.putLog("Attaching nvim on wsl")
 
-	logf := log.Printf
-	command := "wsl"
 	ctx := context.Background()
 
-	nvimargs := ""
-	if editor.config.Editor.NvimInWsl == "" {
-		nvimargs = `nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed `
-	} else {
-		nvimargs += fmt.Sprintf("%s --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed ", editor.config.Editor.NvimInWsl)
+	nvimCmd := editor.config.Editor.NvimInWsl
+	if nvimCmd == "" {
+		nvimCmd = "nvim"
 	}
-	for _, s := range editor.args {
-		nvimargs += s + " "
+
+	nvimArgs := []string{
+		nvimCmd,
+		"--cmd", "let g:gonvim_running=1",
+		"--cmd", "let g:goneovim=1",
+		"--cmd", "set termguicolors",
+		"--embed",
 	}
+	nvimArgs = append(nvimArgs, editor.args...)
+	nvimQuotedArgs := []string{}
+	for _, arg := range nvimArgs {
+		nvimQuotedArgs = append(nvimQuotedArgs, strconv.Quote(arg))
+	}
+	nvimCmdLine := strings.Join(nvimQuotedArgs, " ")
 
 	wslArgs := []string{
 		"$SHELL",
 		"-lc",
-		nvimargs,
+		nvimCmdLine,
 	}
+
 	wslDist := ""
 	if editor.opts.Wsl != nil {
 		wslDist = *editor.opts.Wsl
@@ -330,37 +338,11 @@ func newWslProcess() (*nvim.Nvim, error) {
 		wslArgs = append([]string{"-d", wslDist}, wslArgs...)
 	}
 
-	cmd := exec.CommandContext(
-		ctx,
-		command,
-		wslArgs...,
+	return nvim.NewChildProcess(
+		nvim.ChildProcessCommand("wsl"),
+		nvim.ChildProcessArgs(wslArgs...),
+		nvim.ChildProcessContext(ctx),
 	)
-	util.PrepareRunProc(cmd)
-
-	// NOTE: cmd.String() was added in Go1.13, which cannot be used in MSVC builds based on Go1.10 builds.
-	// editor.putLog("exec command:", cmd.String())
-
-	inw, err := cmd.StdinPipe()
-	if err != nil {
-		editor.putLog("stdin pipe error:", err)
-		return nil, err
-	}
-
-	outr, err := cmd.StdoutPipe()
-	if err != nil {
-		inw.Close()
-		editor.putLog("stdin pipe error:", err)
-		return nil, err
-	}
-	cmd.Start()
-
-	v, err := nvim.New(outr, inw, inw, logf)
-	if err != nil {
-		editor.putLog("error:", err)
-		return nil, err
-	}
-
-	return v, nil
 }
 
 func attachUI(neovim *nvim.Nvim, cols, rows int) error {
