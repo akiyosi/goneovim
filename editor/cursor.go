@@ -240,13 +240,19 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 	// TODO
 	// Set bold, italic styles
 
-	pi.DrawText6(
-		core.NewQRectF4(
-			0,
-			0,
-			width,
-			float64(c.font.height),
-		), text, gui.NewQTextOption2(core.Qt__AlignVCenter),
+	// Although it looks like a too complex and wasteful formula, it is need
+	// to compute exactly the same character height with the other characters
+	// on the same line even when the floating-point rounding occurs.
+	// This first formula computes the baseline height of the normal text
+	// based on the actual starting Y position including lineSpace.
+	baselineNormalTextY := int(math.Ceil(float64(font.lineHeight) - (float64(font.height) - font.ascent) - float64(font.lineSpace)/2.0))
+	// Then, the baseline position of the cursor text cache can be calculated
+	// by shifting the cursor vertical offset.
+	baselineY := baselineNormalTextY - int(-float64(c.horizontalShift)+float64(font.lineSpace/2.0))
+
+	pi.DrawText3(
+		0, baselineY,
+		text,
 	)
 
 	pi.DestroyQPainter()
