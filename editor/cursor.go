@@ -483,9 +483,10 @@ func (c *Cursor) updateCursorShape() {
 			lineSpace = 0
 		}
 	}
-	width := int(math.Trunc(cellwidth))
+	singleWidth := int(math.Trunc(cellwidth))
+	width := singleWidth
 	if !c.normalWidth {
-		width = width * 2
+		width = singleWidth * 2
 	}
 
 	p := float64(c.cellPercentage) / float64(100)
@@ -501,7 +502,11 @@ func (c *Cursor) updateCursorShape() {
 		}
 	case "vertical":
 		c.isTextDraw = true
-		width = int(math.Ceil(float64(width) * p))
+		// Unlike other cursor styles, vertical cursor width should not
+		// changed by the current characters under cursor.
+		// Regardless of single width or double width, it should be calculated
+		// based on the single width. (issue #608)
+		width = int(math.Ceil(float64(singleWidth) * p))
 		c.horizontalShift = 0
 	default:
 		c.isTextDraw = true
