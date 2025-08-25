@@ -52,7 +52,7 @@ func checkWindowsVersion() bool {
 	return false
 }
 
-func setNativeTitleBarColor(window *frameless.QFramelessWindow, colorStr string) error {
+func setNativeTitlebarColor(window *frameless.QFramelessWindow, colorStr string) error {
 	if !checkWindowsVersion() {
 		return fmt.Errorf("unsupported Windows version")
 	}

@@ -89,8 +89,8 @@ type editorConfig struct {
 	IgnoreSaveConfirmationWithCloseButton   bool
 	UseWSL                                  bool
 	ShowDiffDialogOnDrop                    bool
-	NativeTitleBarBackgroundColor                    string
-	NativeTitleBarTextColor                          string
+	NativeTitlebarBackgroundColor                    string
+	NativeTitlebarTextColor                          string
 }
 
 type cursorConfig struct {
@@ -368,8 +368,8 @@ func (c *gonvimConfig) init() {
 	c.Editor.DesktopNotifications = false
 	c.Editor.ClickEffect = false
 
-	c.Editor.NativeTitleBarBackgroundColor = ""
-	c.Editor.NativeTitleBarTextColor = ""
+	c.Editor.NativeTitlebarBackgroundColor = ""
+	c.Editor.NativeTitlebarTextColor = ""
 
 	// replace diff color drawing pattern
 	c.Editor.DiffAddPattern = 1

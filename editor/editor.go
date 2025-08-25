@@ -301,7 +301,7 @@ func InitEditor(options Options, args []string) {
 	e.window.Show()
 
 	// Apply native title bar customization
-	e.applyNativeTitleBarCustomization()
+	e.applyNativeTitlebarCustomization()
 
 	// window layout
 	e.setWindowLayout()
@@ -1059,13 +1059,13 @@ func (e *Editor) updateGUIColor() {
 	e.putLog("finished updating GUI color")
 }
 
-func (e *Editor) applyNativeTitleBarCustomization() {
-	if e.config.Editor.NativeTitleBarBackgroundColor != "" {
-		setNativeTitleBarColor(e.window, e.config.Editor.NativeTitleBarBackgroundColor)
+func (e *Editor) applyNativeTitlebarCustomization() {
+	if e.config.Editor.NativeTitlebarBackgroundColor != "" {
+		setNativeTitlebarColor(e.window, e.config.Editor.NativeTitlebarBackgroundColor)
 	}
 
-	if e.config.Editor.NativeTitleBarTextColor != "" {
-		setNativeTitleTextColor(e.window, e.config.Editor.NativeTitleBarTextColor)
+	if e.config.Editor.NativeTitlebarTextColor != "" {
+		setNativeTitleTextColor(e.window, e.config.Editor.NativeTitlebarTextColor)
 	}
 }
 
