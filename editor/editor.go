@@ -159,7 +159,6 @@ type Editor struct {
 	isHideMouse            bool
 	isBindNvimSizeToAppwin bool
 	isUiPrepared           bool
-	isWindowMaximizing     bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -674,6 +673,7 @@ func (e *Editor) connectAppSignals() {
 
 	go e.toEmmitGeometrySignal()
 	go e.signal.ConnectGeometrySignal(func() {
+		fmt.Println("hoge")
 		e.AdjustSizeBasedOnFontmetrics(e.windowSize[0], e.windowSize[1])
 	})
 
@@ -753,7 +753,7 @@ func (e *Editor) resizeMainWindow() {
 }
 
 func (e *Editor) AdjustSizeBasedOnFontmetrics(windowWidth, windowHeight int) {
-	if e.window.WindowState() == core.Qt__WindowFullScreen || e.isWindowMaximizing {
+	if e.window.WindowState() == core.Qt__WindowFullScreen {
 		return
 	}
 
@@ -1159,18 +1159,6 @@ func (e *Editor) connectWindowEvents() {
 			} else if !e.window.IsActiveWindow() {
 				e.isWindowNowActivated = false
 				e.isWindowNowInactivated = true
-			}
-		case core.QEvent__WindowStateChange:
-			if e.window.WindowState() == core.Qt__WindowMaximized {
-				if !e.isWindowMaximizing {
-					e.isWindowMaximizing = true
-
-					if editor.config.Editor.WindowGeometryBasedOnFontmetrics {
-						go e.window.WindowMaximize()
-					}
-				}
-			} else {
-				e.isWindowMaximizing = false
 			}
 		default:
 		}
