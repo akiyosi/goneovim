@@ -41,70 +41,71 @@ type ShouldUpdate struct {
 
 // Workspace is an editor workspace
 type Workspace struct {
-	shouldUpdate       *ShouldUpdate
-	foreground         *RGBA
-	layout2            *widgets.QHBoxLayout
-	stop               chan struct{}
-	font               *Font
-	cursor             *Cursor
-	tabline            *Tabline
-	screen             *Screen
-	scrollBar          *ScrollBar
-	palette            *Palette
-	popup              *PopupMenu
-	cmdline            *Cmdline
-	message            *Message
-	minimap            *MiniMap
-	fontdialog         *widgets.QFontDialog
-	guiUpdates         chan []interface{}
-	redrawUpdates      chan [][]interface{}
-	flushCh            chan []interface{}
-	signal             *neovimSignal
-	nvim               *nvim.Nvim
-	widget             *widgets.QWidget
-	special            *RGBA
-	background         *RGBA
-	colorscheme        string
-	cwdlabel           string
-	escKeyInNormal     string
-	mode               string
-	cwdBase            string
-	cwd                string
-	escKeyInInsert     string
-	filepath           string
-	screenbg           string
-	mouseScroll        string
-	mouseScrollTemp    string
-	normalMappings     []*nvim.Mapping
-	modeInfo           []map[string]interface{}
-	insertMappings     []*nvim.Mapping
-	viewport           [5]int
-	oldViewport        [5]int
-	height             int
-	maxLine            int
-	rows               int
-	cols               int
-	showtabline        int
-	width              int
-	modeIdx            int
-	pb                 int
-	ts                 int
-	ph                 int
-	optionsetMutex     sync.RWMutex
-	viewportMutex      sync.RWMutex
-	stopOnce           sync.Once
-	fontMutex          sync.Mutex
-	hidden             bool
-	uiAttached         bool
-	uiRemoteAttached   bool
-	isMappingScrollKey bool
-	hasLazyUI          bool
-	cursorStyleEnabled bool
-	isDrawTabline      bool
-	isMouseEnabled     bool
-	isTerminalMode     bool
-	doGetSnapshot      bool
-	doneGetSnapshot    bool
+	shouldUpdate           *ShouldUpdate
+	foreground             *RGBA
+	layout2                *widgets.QHBoxLayout
+	stop                   chan struct{}
+	font                   *Font
+	cursor                 *Cursor
+	tabline                *Tabline
+	screen                 *Screen
+	scrollBar              *ScrollBar
+	palette                *Palette
+	popup                  *PopupMenu
+	cmdline                *Cmdline
+	message                *Message
+	minimap                *MiniMap
+	fontdialog             *widgets.QFontDialog
+	guiUpdates             chan []interface{}
+	redrawUpdates          chan [][]interface{}
+	flushCh                chan []interface{}
+	signal                 *neovimSignal
+	nvim                   *nvim.Nvim
+	widget                 *widgets.QWidget
+	special                *RGBA
+	background             *RGBA
+	colorscheme            string
+	cwdlabel               string
+	escKeyInNormal         string
+	mode                   string
+	cwdBase                string
+	cwd                    string
+	escKeyInInsert         string
+	filepath               string
+	screenbg               string
+	mouseScroll            string
+	mouseScrollTemp        string
+	normalMappings         []*nvim.Mapping
+	modeInfo               []map[string]interface{}
+	insertMappings         []*nvim.Mapping
+	viewport               [5]int
+	oldViewport            [5]int
+	height                 int
+	maxLine                int
+	rows                   int
+	cols                   int
+	cellMetricsAtTryResize CellMetrics
+	showtabline            int
+	width                  int
+	modeIdx                int
+	pb                     int
+	ts                     int
+	ph                     int
+	optionsetMutex         sync.RWMutex
+	viewportMutex          sync.RWMutex
+	stopOnce               sync.Once
+	fontMutex              sync.Mutex
+	hidden                 bool
+	uiAttached             bool
+	uiRemoteAttached       bool
+	isMappingScrollKey     bool
+	hasLazyUI              bool
+	cursorStyleEnabled     bool
+	isDrawTabline          bool
+	isMouseEnabled         bool
+	isTerminalMode         bool
+	doGetSnapshot          bool
+	doneGetSnapshot        bool
 }
 
 func newWorkspace() *Workspace {
@@ -2322,6 +2323,10 @@ func (ws *Workspace) guiLinespace(args interface{}) {
 	case int64:
 		lineSpace = int(arg)
 	default:
+		return
+	}
+
+	if ws.font.lineSpace == lineSpace {
 		return
 	}
 

@@ -183,6 +183,10 @@ func (s *Screen) uiTryResize(cols, rows int) {
 	done := make(chan error, 5)
 	var result error
 	go func() {
+		ws.cellMetricsAtTryResize = CellMetrics{
+			cellwidth:  ws.font.cellwidth,
+			lineHeight: ws.font.lineHeight,
+		}
 		result = ws.nvim.TryResizeUI(cols, rows)
 		done <- result
 	}()
@@ -721,6 +725,10 @@ func (s *Screen) gridResize(args []interface{}) {
 					continue
 				}
 				if !(s.ws.cols == cols && s.ws.rows == rows) {
+					if !(s.ws.cellMetricsAtTryResize.cellwidth == s.ws.font.cellwidth && s.ws.cellMetricsAtTryResize.lineHeight == s.ws.font.lineHeight) {
+						return
+					}
+
 					s.ws.cols = cols
 					s.ws.rows = rows
 					s.ws.updateApplicationWindowSize(cols, rows)
@@ -1857,7 +1865,7 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		// The real grid id should always be something else. But Neovim 0.11.3 sends an extra
 		// msg_set_pos with grid id 0.
 		if gridid == 0 {
-		    return
+			return
 		}
 
 		var win *Window
