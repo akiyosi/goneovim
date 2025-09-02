@@ -1169,6 +1169,7 @@ func (e *Editor) restoreWindow() {
 		// フレーム差分（frameless だと 0 になる想定）
 		deltaW := int(math.Max(0, float64(fg.Width()-g.Width())))
 		deltaH := int(math.Max(0, float64(fg.Height()-g.Height())))
+		fmt.Println("deltaW, deltaH:", deltaW, deltaH)
 
 		// 近似比較
 		almost := func(a, b, tol int) bool {
@@ -1181,7 +1182,7 @@ func (e *Editor) restoreWindow() {
 		}
 		tol := editor.config.Editor.Tol
 
-		fgX, fgY, fgW, fgH := fg.X(), fg.Y(), fg.Width(), fg.Height()
+		fgX, fgY, fgW, fgH := g.X(), g.Y(), g.Width(), g.Height()
 		agX, agY, agW, agH := ag.X(), ag.Y(), ag.Width(), ag.Height()
 
 		fmt.Println("frame geo:", fgX, fgY, fgW, fgH)
