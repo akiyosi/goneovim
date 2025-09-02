@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1151,7 +1152,82 @@ func (e *Editor) restoreWindow() {
 	// 	// isRestoreState = true
 	// }
 
+	{
+
+		if e.window.IsMaximized() || e.window.IsFullScreen() {
+			return
+		}
+
+		ag := availableAreaForWidget(e.window) // 作業領域（タスクバー除く）
+		if ag == nil {
+			return
+		}
+
+		fg := e.window.FrameGeometry() // フレーム込み
+		g := e.window.Geometry()       // クライアントのみ
+
+		// フレーム差分（frameless だと 0 になる想定）
+		deltaW := int(math.Max(0, float64(fg.Width()-g.Width())))
+		deltaH := int(math.Max(0, float64(fg.Height()-g.Height())))
+
+		// 近似比較
+		almost := func(a, b, tol int) bool {
+			d := a - b
+			if d < 0 {
+				d = -d
+			}
+			fmt.Println("almost:", a, b, d, tol)
+			return d <= tol
+		}
+		tol := editor.config.Editor.Tol
+
+		fgX, fgY, fgW, fgH := fg.X(), fg.Y(), fg.Width(), fg.Height()
+		agX, agY, agW, agH := ag.X(), ag.Y(), ag.Width(), ag.Height()
+
+		fmt.Println("frame geo:", fgX, fgY, fgW, fgH)
+		fmt.Println("available geo:", agX, agY, agW, agH)
+
+		fmt.Println("------------")
+
+		leftSnapped := almost(fgX, agX, tol) && almost(fgY, agY, tol) && almost(fgH, agH, tol) && almost(fgW, agW/2, tol)
+
+		fmt.Println("------------")
+
+		rightSnapped := almost(fgX, agX+agW/2, tol) && almost(fgY, agY, tol) && almost(fgH, agH, tol) && almost(fgW, agW/2, tol)
+
+		fmt.Println("------------")
+
+		if leftSnapped || rightSnapped {
+			fmt.Println("window is snapped")
+
+			targetX := agX
+			if rightSnapped {
+				targetX = agX + agW/2
+			}
+			targetY := agY
+			// SetGeometry はクライアント基準なのでフレーム分を引く
+			targetW := agW/2 - deltaW
+			targetH := agH - deltaH
+			e.window.SetGeometry2(targetX, targetY, targetW, targetH)
+			fmt.Printf("snap-fix applied: w=%d h=%d (deltaW=%d deltaH=%d)\n",
+				targetW, targetH, deltaW, deltaH)
+		}
+	}
+	fmt.Println("- - - - - - - -")
+
 	return
+}
+
+func availableAreaForWidget(w widgets.QWidget_ITF) *core.QRect {
+	if desk := widgets.QApplication_Desktop(); desk != nil {
+		if r := desk.AvailableGeometry2(w); r != nil { // QWidget版
+			return r
+		}
+	}
+	if sc := gui.QGuiApplication_PrimaryScreen(); sc != nil {
+		return sc.AvailableGeometry()
+	}
+	return nil
 }
 
 func (e *Editor) connectWindowEvents() {
