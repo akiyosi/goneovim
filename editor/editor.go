@@ -673,7 +673,6 @@ func (e *Editor) connectAppSignals() {
 
 	go e.toEmmitGeometrySignal()
 	go e.signal.ConnectGeometrySignal(func() {
-		fmt.Println("hoge")
 		e.AdjustSizeBasedOnFontmetrics(e.windowSize[0], e.windowSize[1])
 	})
 
@@ -1124,6 +1123,20 @@ func (e *Editor) restoreWindow() {
 	if geometryBA.Length() != 0 {
 		e.window.RestoreGeometry(geometryBA)
 	}
+
+	fg := e.window.FrameGeometry()
+	g := e.window.Geometry()
+
+	deltaH := fg.Height() - g.Height()
+	deltaW := fg.Width() - g.Width()
+
+	// デバッグ表示
+	fmt.Printf("frame delta: h=%d, w=%d\n", int(deltaH), int(deltaW))
+
+	// // 伸び対策（必要なときだけ）
+	// if deltaH > 0 {
+	//     e.window.Resize2(e.window.Width(), e.window.Height()-int(deltaH))
+	// }
 
 	// Restoring `windowState` causes problems when the previous session did
 	// something like “maximize → manual resize.” The maximize flag survives,
