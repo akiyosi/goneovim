@@ -1182,19 +1182,22 @@ func (e *Editor) restoreWindow() {
 		}
 		tol := editor.config.Editor.Tol
 
-		fgX, fgY, fgW, fgH := g.X(), g.Y(), g.Width(), g.Height()
+		fgX, fgY, fgW, fgH := fg.X(), fg.Y(), fg.Width(), fg.Height()
 		agX, agY, agW, agH := ag.X(), ag.Y(), ag.Width(), ag.Height()
+		winTitlebarHeight := e.app.Style().PixelMetric(widgets.QStyle__PM_TitleBarHeight, widgets.NewQStyleOptionTab(), e.window)
 
 		fmt.Println("frame geo:", fgX, fgY, fgW, fgH)
 		fmt.Println("available geo:", agX, agY, agW, agH)
 
-		fmt.Println("------------")
-
-		leftSnapped := almost(fgX, agX, tol) && almost(fgY, agY, tol) && almost(fgH, agH, tol) && almost(fgW, agW/2, tol)
+		fmt.Println("titlebar height:", winTitlebarHeight)
 
 		fmt.Println("------------")
 
-		rightSnapped := almost(fgX, agX+agW/2, tol) && almost(fgY, agY, tol) && almost(fgH, agH, tol) && almost(fgW, agW/2, tol)
+		leftSnapped := almost(fgX, agX, tol) && almost(fgY-winTitlebarHeight, agY, tol) && almost(fgH+winTitlebarHeight, agH, tol) && almost(fgW, agW/2, tol)
+
+		fmt.Println("------------")
+
+		rightSnapped := almost(fgX, agX+agW/2, tol) && almost(fgY-winTitlebarHeight, agY, tol) && almost(fgH+winTitlebarHeight, agH, tol) && almost(fgW, agW/2, tol)
 
 		fmt.Println("------------")
 
