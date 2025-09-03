@@ -1211,7 +1211,7 @@ func (e *Editor) restoreWindow() {
 			targetY := agY + winTitlebarHeight
 			// SetGeometry はクライアント基準なのでフレーム分を引く
 			targetW := agW/2 - deltaW
-			targetH := agH - deltaH
+			targetH := agH - deltaH - winTitlebarHeight
 			e.window.SetGeometry2(targetX, targetY, targetW, targetH)
 			fmt.Printf("snap-fix applied: w=%d h=%d (deltaW=%d deltaH=%d)\n",
 				targetW, targetH, deltaW, deltaH)
