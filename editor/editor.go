@@ -1208,7 +1208,7 @@ func (e *Editor) restoreWindow() {
 			if rightSnapped {
 				targetX = agX + agW/2
 			}
-			targetY := agY
+			targetY := agY + winTitlebarHeight
 			// SetGeometry はクライアント基準なのでフレーム分を引く
 			targetW := agW/2 - deltaW
 			targetH := agH - deltaH
