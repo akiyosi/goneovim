@@ -1180,11 +1180,14 @@ func (e *Editor) restoreWindow() {
 			fmt.Println("almost:", a, b, d, tol)
 			return d <= tol
 		}
-		tol := editor.config.Editor.Tol
+		tol := e.config.Editor.Tol
 
 		fgX, fgY, fgW, fgH := fg.X(), fg.Y(), fg.Width(), fg.Height()
 		agX, agY, agW, agH := ag.X(), ag.Y(), ag.Width(), ag.Height()
 		winTitlebarHeight := e.app.Style().PixelMetric(widgets.QStyle__PM_TitleBarHeight, widgets.NewQStyleOptionTab(), e.window)
+		if e.config.Editor.BorderlessWindow {
+			winTitlebarHeight = 0
+		}
 
 		fmt.Println("frame geo:", fgX, fgY, fgW, fgH)
 		fmt.Println("available geo:", agX, agY, agW, agH)

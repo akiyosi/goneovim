@@ -753,6 +753,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 
 	geometry := e.window.Geometry()
 	width := geometry.Width()
+	fmt.Println("geometry:", geometry.Width(), geometry.Height())
 
 	marginWidth := e.window.BorderSize()*4 + e.window.WindowGap()*2
 	sideWidth := 0
