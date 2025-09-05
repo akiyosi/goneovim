@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1122,107 +1121,114 @@ func (e *Editor) restoreWindow() {
 	geometry := settings.Value("geometry", core.NewQVariant13(core.NewQByteArray()))
 	geometryBA := geometry.ToByteArray()
 	if geometryBA.Length() != 0 {
-		e.window.RestoreGeometry(geometryBA)
-	}
-
-	fg := e.window.FrameGeometry()
-	g := e.window.Geometry()
-
-	deltaH := fg.Height() - g.Height()
-	deltaW := fg.Width() - g.Width()
-
-	// デバッグ表示
-	fmt.Printf("frame delta: h=%d, w=%d\n", int(deltaH), int(deltaW))
-
-	// // 伸び対策（必要なときだけ）
-	// if deltaH > 0 {
-	//     e.window.Resize2(e.window.Width(), e.window.Height()-int(deltaH))
-	// }
-
-	// Restoring `windowState` causes problems when the previous session did
-	// something like “maximize → manual resize.” The maximize flag survives,
-	// so on the next launch the window opens maximized and the original
-	// geometry is lost. Therefore, we restore only the geometry and skip
-	// `windowState`.
-
-	// state := settings.Value("windowState", core.NewQVariant13(core.NewQByteArray()))
-	// stateBA := state.ToByteArray()
-	// if stateBA.Length() != 0 {
-	// 	e.window.RestoreFramelessState(stateBA, 0)
-	// 	// isRestoreState = true
-	// }
-
-	{
-
-		if e.window.IsMaximized() || e.window.IsFullScreen() {
-			return
-		}
-
-		ag := availableAreaForWidget(e.window) // 作業領域（タスクバー除く）
-		if ag == nil {
-			return
-		}
-
-		fg := e.window.FrameGeometry() // フレーム込み
-		g := e.window.Geometry()       // クライアントのみ
-
-		// フレーム差分（frameless だと 0 になる想定）
-		deltaW := int(math.Max(0, float64(fg.Width()-g.Width())))
-		deltaH := int(math.Max(0, float64(fg.Height()-g.Height())))
-		fmt.Println("deltaW, deltaH:", deltaW, deltaH)
-
-		// 近似比較
-		almost := func(a, b, tol int) bool {
-			d := a - b
-			if d < 0 {
-				d = -d
-			}
-			fmt.Println("almost:", a, b, d, tol)
-			return d <= tol
-		}
-		tol := e.config.Editor.Tol
-
-		fgX, fgY, fgW, fgH := fg.X(), fg.Y(), fg.Width(), fg.Height()
-		agX, agY, agW, agH := ag.X(), ag.Y(), ag.Width(), ag.Height()
-		winTitlebarHeight := e.app.Style().PixelMetric(widgets.QStyle__PM_TitleBarHeight, widgets.NewQStyleOptionTab(), e.window)
-		if e.config.Editor.BorderlessWindow {
-			winTitlebarHeight = 0
-		}
-
-		fmt.Println("frame geo:", fgX, fgY, fgW, fgH)
-		fmt.Println("available geo:", agX, agY, agW, agH)
-
-		fmt.Println("titlebar height:", winTitlebarHeight)
-
-		fmt.Println("------------")
-
-		leftSnapped := almost(fgX, agX, tol) && almost(fgY-winTitlebarHeight, agY, tol) && almost(fgH+winTitlebarHeight, agH, tol) && almost(fgW, agW/2, tol)
-
-		fmt.Println("------------")
-
-		rightSnapped := almost(fgX, agX+agW/2, tol) && almost(fgY-winTitlebarHeight, agY, tol) && almost(fgH+winTitlebarHeight, agH, tol) && almost(fgW, agW/2, tol)
-
-		fmt.Println("------------")
-
-		if leftSnapped || rightSnapped {
-			fmt.Println("window is snapped")
-
-			targetX := agX
-			if rightSnapped {
-				targetX = agX + agW/2
-			}
-			targetY := agY + winTitlebarHeight
-			// SetGeometry はクライアント基準なのでフレーム分を引く
-			targetW := agW/2 - deltaW
-			targetH := agH - deltaH - winTitlebarHeight
-			time.Sleep((time.Duration)(e.config.Editor.RestoreWait) * time.Millisecond)
-			fmt.Println("SetGeometry:", targetX, targetY, targetW, targetH)
-			e.window.SetGeometry2(targetX, targetY, targetW, targetH)
-			fmt.Printf("snap-fix applied: w=%d h=%d (deltaW=%d deltaH=%d)\n",
-				targetW, targetH, deltaW, deltaH)
+		if runtime.GOOS != "windows" {
+			e.window.RestoreGeometry(geometryBA)
+		} else {
+			go func() {
+				time.Sleep((time.Duration)(e.config.Editor.RestoreWait) * time.Millisecond)
+				e.window.RestoreGeometry(geometryBA)
+			}()
 		}
 	}
-	fmt.Println("- - - - - - - -")
+
+	// fg := e.window.FrameGeometry()
+	// g := e.window.Geometry()
+
+	// deltaH := fg.Height() - g.Height()
+	// deltaW := fg.Width() - g.Width()
+
+	// // デバッグ表示
+	// fmt.Printf("frame delta: h=%d, w=%d\n", int(deltaH), int(deltaW))
+
+	// // // 伸び対策（必要なときだけ）
+	// // if deltaH > 0 {
+	// //     e.window.Resize2(e.window.Width(), e.window.Height()-int(deltaH))
+	// // }
+
+	// // Restoring `windowState` causes problems when the previous session did
+	// // something like “maximize → manual resize.” The maximize flag survives,
+	// // so on the next launch the window opens maximized and the original
+	// // geometry is lost. Therefore, we restore only the geometry and skip
+	// // `windowState`.
+
+	// // state := settings.Value("windowState", core.NewQVariant13(core.NewQByteArray()))
+	// // stateBA := state.ToByteArray()
+	// // if stateBA.Length() != 0 {
+	// // 	e.window.RestoreFramelessState(stateBA, 0)
+	// // 	// isRestoreState = true
+	// // }
+
+	// {
+
+	// 	if e.window.IsMaximized() || e.window.IsFullScreen() {
+	// 		return
+	// 	}
+
+	// 	ag := availableAreaForWidget(e.window) // 作業領域（タスクバー除く）
+	// 	if ag == nil {
+	// 		return
+	// 	}
+
+	// 	fg := e.window.FrameGeometry() // フレーム込み
+	// 	g := e.window.Geometry()       // クライアントのみ
+
+	// 	// フレーム差分（frameless だと 0 になる想定）
+	// 	deltaW := int(math.Max(0, float64(fg.Width()-g.Width())))
+	// 	deltaH := int(math.Max(0, float64(fg.Height()-g.Height())))
+	// 	fmt.Println("deltaW, deltaH:", deltaW, deltaH)
+
+	// 	// 近似比較
+	// 	almost := func(a, b, tol int) bool {
+	// 		d := a - b
+	// 		if d < 0 {
+	// 			d = -d
+	// 		}
+	// 		fmt.Println("almost:", a, b, d, tol)
+	// 		return d <= tol
+	// 	}
+	// 	tol := e.config.Editor.Tol
+
+	// 	fgX, fgY, fgW, fgH := fg.X(), fg.Y(), fg.Width(), fg.Height()
+	// 	agX, agY, agW, agH := ag.X(), ag.Y(), ag.Width(), ag.Height()
+	// 	winTitlebarHeight := e.app.Style().PixelMetric(widgets.QStyle__PM_TitleBarHeight, widgets.NewQStyleOptionTab(), e.window)
+	// 	if e.config.Editor.BorderlessWindow {
+	// 		winTitlebarHeight = 0
+	// 	}
+
+	// 	fmt.Println("frame geo:", fgX, fgY, fgW, fgH)
+	// 	fmt.Println("available geo:", agX, agY, agW, agH)
+
+	// 	fmt.Println("titlebar height:", winTitlebarHeight)
+
+	// 	fmt.Println("------------")
+
+	// 	leftSnapped := almost(fgX, agX, tol) && almost(fgY-winTitlebarHeight, agY, tol) && almost(fgH+winTitlebarHeight, agH, tol) && almost(fgW, agW/2, tol)
+
+	// 	fmt.Println("------------")
+
+	// 	rightSnapped := almost(fgX, agX+agW/2, tol) && almost(fgY-winTitlebarHeight, agY, tol) && almost(fgH+winTitlebarHeight, agH, tol) && almost(fgW, agW/2, tol)
+
+	// 	fmt.Println("------------")
+
+	// 	if leftSnapped || rightSnapped {
+	// 		fmt.Println("window is snapped")
+
+	// 		targetX := agX
+	// 		if rightSnapped {
+	// 			targetX = agX + agW/2
+	// 		}
+	// 		targetY := agY + winTitlebarHeight
+	// 		// SetGeometry はクライアント基準なのでフレーム分を引く
+	// 		targetW := agW/2 - deltaW
+	// 		targetH := agH - deltaH - winTitlebarHeight
+	// 		time.Sleep((time.Duration)(e.config.Editor.RestoreWait) * time.Millisecond)
+	// 		fmt.Println("SetGeometry:", targetX, targetY, targetW, targetH)
+	// 		e.window.SetGeometry2(targetX, targetY, targetW, targetH)
+	// 		fmt.Printf("snap-fix applied: w=%d h=%d (deltaW=%d deltaH=%d)\n",
+	// 			targetW, targetH, deltaW, deltaH)
+	// 	}
+	// }
+	// fmt.Println("- - - - - - - -")
 
 	return
 }
