@@ -43,6 +43,7 @@ type editorConfig struct {
 	Transparent                             float64
 	EnableBackgroundBlur                    bool
 	Tol                                     int
+	RestoreWait                             int
 	DiffDeletePattern                       int
 	DiffAddPattern                          int
 	LineToScroll                            int
@@ -304,6 +305,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.WindowGeometryBasedOnFontmetrics = false
 
 	c.Editor.Tol = 6
+	c.Editor.RestoreWait = 100
 
 	c.Editor.Width = 800
 	c.Editor.Height = 600
