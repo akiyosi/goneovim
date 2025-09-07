@@ -754,6 +754,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	geometry := e.window.Geometry()
 	width := geometry.Width()
 	fmt.Println("geometry:", geometry.Width(), geometry.Height())
+	fmt.Println("font:", ws.screen.font.family, ",", ws.screen.font.size, ",", ws.screen.font.lineSpace)
 
 	marginWidth := e.window.BorderSize()*4 + e.window.WindowGap()*2
 	sideWidth := 0
@@ -813,6 +814,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	if width != ws.width || height != ws.height {
 		ws.width = width
 		ws.height = height
+		fmt.Println("updateSize():: ws widget Resize2 ", width, height)
 		ws.widget.Resize2(width, height)
 		if !ws.hidden {
 			ws.hide()
@@ -824,6 +826,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	}
 
 	if ws.screen != nil {
+		fmt.Println("updateSize():: screen updateSize ", screenWidth, screenHeight)
 		ws.screen.width = screenWidth
 		ws.screen.height = screenHeight
 		ws.screen.updateSize()
@@ -843,6 +846,8 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	windowHeight = marginHeight + titlebarHeight + tablineHeight + ws.screen.height
 	cols = ws.cols
 	rows = ws.rows
+
+	fmt.Println("ws updateSize result::", windowWidth, windowHeight, cols, rows)
 
 	return
 }

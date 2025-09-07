@@ -457,6 +457,7 @@ func parseFont(families string, size int, weight string, stretch, linespace, let
 	}
 
 	for _, f := range strings.Split(families, ",") {
+		fmt.Println("parseFonr()::", strings.TrimSpace(f), float64(size), linespace, letterspace)
 		font := initFontNew(strings.TrimSpace(f), float64(size), fontWeight, stretch, linespace, letterspace)
 		fonts = append(fonts, font)
 
@@ -727,8 +728,10 @@ func (e *Editor) toEmmitGeometrySignal() {
 }
 
 func (e *Editor) resizeMainWindow() {
+	fmt.Println("resizeMainWindow()")
 	cws := e.workspaces[e.active]
 	windowWidth, windowHeight, _, _ := cws.updateSize()
+	fmt.Println("resizeMainWindow()::", windowWidth, windowHeight)
 	e.windowSize = [2]int{windowWidth, windowHeight}
 	e.relocateNotifications()
 
@@ -1121,14 +1124,7 @@ func (e *Editor) restoreWindow() {
 	geometry := settings.Value("geometry", core.NewQVariant13(core.NewQByteArray()))
 	geometryBA := geometry.ToByteArray()
 	if geometryBA.Length() != 0 {
-		if runtime.GOOS != "windows" {
-			e.window.RestoreGeometry(geometryBA)
-		} else {
-			go func() {
-				time.Sleep((time.Duration)(e.config.Editor.RestoreWait) * time.Millisecond)
-				e.window.RestoreGeometry(geometryBA)
-			}()
-		}
+		e.window.RestoreGeometry(geometryBA)
 	}
 
 	// fg := e.window.FrameGeometry()
