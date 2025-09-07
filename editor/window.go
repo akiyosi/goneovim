@@ -527,6 +527,7 @@ func (w *Window) drawScrollSnapshot(p *gui.QPainter) {
 
 func (w *Window) getFont() *Font {
 	if w.font == nil {
+
 		return w.s.font
 	}
 
@@ -2787,6 +2788,8 @@ func (w *Window) newTextCache(text string, hlkey HlKey, isNormalWidth bool) *gui
 			fontfallbacked = resolveFontFallback(w.font, w.fallbackfonts, text)
 		}
 	}
+
+	fmt.Println("paint():: family, size, linespace, letterspace:", font.family, font.size, font.lineSpace, font.letterSpace)
 
 	// Put debug log
 	if editor.opts.Debug != "" {

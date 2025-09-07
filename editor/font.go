@@ -47,6 +47,7 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 }
 
 func initFontNew(family string, size float64, weight gui.QFont__Weight, stretch, lineSpace, letterSpace int) *Font {
+	fmt.Println("initFontNew()::", family, size, lineSpace, letterSpace)
 	// font := gui.NewQFont2(family, size, int(gui.QFont__Normal), false)
 	font := gui.NewQFont()
 	if editor.config.Editor.ManualFontFallback {
