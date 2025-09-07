@@ -223,8 +223,6 @@ func (ws *Workspace) initUI() {
 
 func (ws *Workspace) initFont() {
 	ws.screen.font = editor.font
-	font := ws.screen.font
-	fmt.Println("ws initFont()::", font.family, font.size, font.lineSpace)
 	ws.screen.fallbackfonts = editor.fallbackfonts
 	ws.font = ws.screen.font
 	ws.screen.tooltip.setFont(editor.font)
@@ -759,12 +757,15 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 
 	marginWidth := e.window.BorderSize()*4 + e.window.WindowGap()*2
 	sideWidth := 0
-	if e.side != nil && e.side.widget.IsVisible() {
-		sideWidth = e.splitter.Sizes()[0] + e.splitter.HandleWidth()
+	if e.side != nil {
+		if e.side.widget.IsVisible() {
+			sideWidth = e.splitter.Sizes()[0] + e.splitter.HandleWidth()
+		}
 	}
 	width -= marginWidth + sideWidth
 
 	height := geometry.Height()
+
 	marginHeight := e.window.BorderSize() * 4
 	height -= marginHeight
 
@@ -777,48 +778,41 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	height -= titlebarHeight
 
 	tablineHeight := 0
-	if ws.isDrawTabline && ws.tabline != nil && ws.tabline.showtabline != -1 {
-		ws.tabline.height = ws.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
-		tablineHeight = ws.tabline.height
+	if ws.isDrawTabline && ws.tabline != nil {
+		if ws.tabline.showtabline != -1 {
+			ws.tabline.height = ws.tabline.Tabs[0].widget.Height() + (TABLINEMARGIN * 2)
+			tablineHeight = ws.tabline.height
+		}
 	}
 
 	scrollbarWidth := 0
 	if e.config.ScrollBar.Visible {
 		scrollbarWidth = e.config.ScrollBar.Width
 	}
+
 	minimapWidth := 0
-	if ws.minimap != nil && ws.minimap.visible {
-		minimapWidth = e.config.MiniMap.Width
+	if ws.minimap != nil {
+		if ws.minimap.visible {
+			minimapWidth = e.config.MiniMap.Width
+		}
 	}
 
-	// ---- 丸め【前】の screen サイズを確定（返却値/外形はこれを基準にする）----
-	screenWidth0 := (width - scrollbarWidth - minimapWidth)
-	screenHeight0 := (height - tablineHeight)
+	screenWidth := width - scrollbarWidth - minimapWidth
+	screenHeight := height - tablineHeight
 
 	if ws.screen.font == nil {
 		return
 	}
+	rw := screenWidth - int(math.Ceil(float64(int(float64(screenWidth)/ws.screen.font.cellwidth))*ws.screen.font.cellwidth))
+	rh := screenHeight % ws.screen.font.lineHeight
+	screenWidth -= rw
+	screenHeight -= rh
+	width -= rw
+	height -= rh
 
-	// ---- 丸め【値】だけ計算（screen 用）。width/height は変えない ----
-	cellW := ws.screen.font.cellwidth  // float64
-	lineH := ws.screen.font.lineHeight // int
-	// 横方向は従来式に倣ってセル幅に合わせる
-	colsF := math.Ceil(float64(int(float64(screenWidth0)/cellW)) * cellW) // used only for rw calc compatibility
-	rw := screenWidth0 - int(colsF)                                       // <= 0 or small negative? keep consistent with original
-	if rw > 0 {
-		// 念のため正方向のみ適用（元コード互換）
-	}
-	// 縦方向は行高に合わせる
-	rh := screenHeight0 % lineH
-
-	// ---- screen のみ丸め適用。外形(width/height)は変更しない ----
-	screenWidth := screenWidth0 - rw
-	screenHeight := screenHeight0 - rh
-
-	// ---- Widget/外形サイズの更新は【丸め前】基準の width/height で行う ----
 	if width != ws.width || height != ws.height {
-		ws.width = width   // ← 丸め前
-		ws.height = height // ← 丸め前
+		ws.width = width
+		ws.height = height
 		ws.widget.Resize2(width, height)
 		if !ws.hidden {
 			ws.hide()
@@ -829,7 +823,6 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 		}
 	}
 
-	// ---- screen / 他の子要素は丸め後で更新 ----
 	if ws.screen != nil {
 		ws.screen.width = screenWidth
 		ws.screen.height = screenHeight
@@ -846,11 +839,11 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 		ws.message.resize()
 	}
 
-	// ---- 返却値は【丸め前】で固定（＝lineSpace変更で不変）----
-	windowWidth = marginWidth + sideWidth + scrollbarWidth + minimapWidth + screenWidth0
-	windowHeight = marginHeight + titlebarHeight + tablineHeight + screenHeight0
+	windowWidth = marginWidth + sideWidth + scrollbarWidth + minimapWidth + ws.screen.width
+	windowHeight = marginHeight + titlebarHeight + tablineHeight + ws.screen.height
 	cols = ws.cols
 	rows = ws.rows
+
 	return
 }
 
@@ -2214,7 +2207,6 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 
 		if i == 0 {
 			if *font == nil {
-				fmt.Println("parseAndApplyFont()::", fontFamily, fontHeight, fontWeight, fontStretch, ws.screen.font.lineSpace, ws.screen.font.letterSpace)
 				*font = initFontNew(
 					fontFamily,
 					fontHeight,
@@ -2227,7 +2219,6 @@ func (ws *Workspace) parseAndApplyFont(str string, font *(*Font), fonts *([]*Fon
 				(*font).change(fontFamily, fontHeight, fontWeight, fontStretch)
 			}
 		} else {
-			fmt.Println("parseAndApplyFont()::", fontFamily, fontHeight, fontWeight, fontStretch, (*font).lineSpace, (*font).letterSpace)
 			ff := initFontNew(
 				fontFamily,
 				fontHeight,

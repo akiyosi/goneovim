@@ -457,7 +457,6 @@ func parseFont(families string, size int, weight string, stretch, linespace, let
 	}
 
 	for _, f := range strings.Split(families, ",") {
-		fmt.Println("parseFonr()::", strings.TrimSpace(f), float64(size), linespace, letterspace)
 		font := initFontNew(strings.TrimSpace(f), float64(size), fontWeight, stretch, linespace, letterspace)
 		fonts = append(fonts, font)
 
