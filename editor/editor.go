@@ -300,6 +300,9 @@ func InitEditor(options Options, args []string) {
 	isSetWindowState := e.initAppWindow()
 	e.window.Show()
 
+	// Apply native title bar customization
+	e.applyNativeTitlebarCustomization()
+
 	// window layout
 	e.setWindowLayout()
 
@@ -1054,6 +1057,16 @@ func (e *Editor) updateGUIColor() {
 
 	// e.window.SetWindowOpacity(1.0)
 	e.putLog("finished updating GUI color")
+}
+
+func (e *Editor) applyNativeTitlebarCustomization() {
+	if e.config.Editor.NativeTitlebarBackgroundColor != "" {
+		setNativeTitlebarColor(e.window, e.config.Editor.NativeTitlebarBackgroundColor)
+	}
+
+	if e.config.Editor.NativeTitlebarTextColor != "" {
+		setNativeTitleTextColor(e.window, e.config.Editor.NativeTitlebarTextColor)
+	}
 }
 
 func hexToRGBA(hex string) *RGBA {
