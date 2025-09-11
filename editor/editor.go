@@ -386,6 +386,10 @@ func (e *Editor) putLog(v ...interface{}) {
 
 func (e *Editor) bindResizeEvent() {
 	e.window.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		fmt.Println("--------------------")
+		fmt.Println("connect resize event")
+		fmt.Println("old size::", event.OldSize().Width(), event.OldSize().Height())
+		fmt.Println("new size::", event.Size().Width(), event.Size().Height())
 		if !editor.isBindNvimSizeToAppwin {
 			return
 		}
