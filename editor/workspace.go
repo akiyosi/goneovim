@@ -2347,6 +2347,8 @@ func (ws *Workspace) guiLinespace(args interface{}) {
 	}
 
 	ws.font = ws.screen.font
+	fmt.Println("-----")
+	fmt.Println("linepsace changed")
 	ws.updateSize()
 }
 
