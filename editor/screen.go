@@ -170,6 +170,7 @@ func (s *Screen) updateSize() {
 		return true
 	})
 
+	fmt.Println("screen ui try resize:", newCols, newRows)
 	s.uiTryResize(newCols, newRows)
 
 }
@@ -1857,7 +1858,7 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		// The real grid id should always be something else. But Neovim 0.11.3 sends an extra
 		// msg_set_pos with grid id 0.
 		if gridid == 0 {
-		    return
+			return
 		}
 
 		var win *Window
