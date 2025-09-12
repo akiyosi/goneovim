@@ -808,8 +808,8 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	rh := screenHeight % ws.screen.font.lineHeight
 	screenWidth -= rw
 	screenHeight -= rh
-	width -= rw
-	height -= rh
+	// width -= rw
+	// height -= rh
 
 	if width != ws.width || height != ws.height {
 		ws.width = width
