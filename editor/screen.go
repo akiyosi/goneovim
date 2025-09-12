@@ -189,6 +189,10 @@ func (s *Screen) uiTryResize(cols, rows int) {
 	done := make(chan error, 5)
 	var result error
 	go func() {
+		ws.cellMetricsAtTryResize = CellMetrics{
+			cellwidth:  ws.font.cellwidth,
+			lineHeight: ws.font.lineHeight,
+		}
 		result = ws.nvim.TryResizeUI(cols, rows)
 		done <- result
 	}()
@@ -727,6 +731,11 @@ func (s *Screen) gridResize(args []interface{}) {
 					continue
 				}
 				if !(s.ws.cols == cols && s.ws.rows == rows) {
+					fmt.Println("cellMetricsAtTryResize.cellwidth:", s.ws.cellMetricsAtTryResize.cellwidth, s.ws.font.cellwidth)
+					fmt.Println("cellMetricsAtTryResize.lineHeight:", s.ws.cellMetricsAtTryResize.lineHeight, s.ws.font.lineHeight)
+					if !(s.ws.cellMetricsAtTryResize.cellwidth == s.ws.font.cellwidth && s.ws.cellMetricsAtTryResize.lineHeight == s.ws.font.lineHeight) {
+						return
+					}
 
 					fmt.Println("grid_resize:: ws.cols:", s.ws.cols, "ws.rows:", s.ws.rows)
 					fmt.Println("grid_resize:: cols:", cols, "rows:", rows)
