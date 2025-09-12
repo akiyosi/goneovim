@@ -2332,6 +2332,10 @@ func (ws *Workspace) guiLinespace(args interface{}) {
 		return
 	}
 
+	if ws.font.lineSpace == lineSpace {
+		return
+	}
+
 	// #330: From a rendering architecture perspective, specifying negative values
 	// may not render screen content correctly, but there is a need to set negative values,
 	// so there is no restriction on setting negative values.
