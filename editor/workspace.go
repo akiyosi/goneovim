@@ -1007,6 +1007,7 @@ func (ws *Workspace) handleRedraw(updates [][]interface{}) {
 
 		// Grid Events
 		case "grid_resize":
+			fmt.Println(event, args)
 			ws.gridResize(args)
 		case "default_colors_set":
 			ws.defaultColorsSet(args)
