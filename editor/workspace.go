@@ -853,6 +853,7 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 }
 
 func (ws *Workspace) updateApplicationWindowSize(cols, rows int) {
+	fmt.Println("updateApplicationWindowSize():", cols, rows)
 	e := editor
 	font := ws.font
 
@@ -918,6 +919,10 @@ func (ws *Workspace) updateApplicationWindowSize(cols, rows int) {
 
 	e.putLog("update app win size::", appWinWidth, appWinHeight)
 
+	fmt.Println("updateApplicationWindowSize():",
+		appWinWidth,
+		appWinHeight,
+	)
 	e.window.Resize2(
 		appWinWidth,
 		appWinHeight,

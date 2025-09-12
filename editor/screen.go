@@ -727,6 +727,9 @@ func (s *Screen) gridResize(args []interface{}) {
 					continue
 				}
 				if !(s.ws.cols == cols && s.ws.rows == rows) {
+
+					fmt.Println("grid_resize:: ws.cols:", s.ws.cols, "ws.rows:", s.ws.rows)
+					fmt.Println("grid_resize:: cols:", cols, "rows:", rows)
 					s.ws.cols = cols
 					s.ws.rows = rows
 					s.ws.updateApplicationWindowSize(cols, rows)

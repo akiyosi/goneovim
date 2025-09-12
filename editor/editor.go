@@ -277,6 +277,14 @@ func InitEditor(options Options, args []string) {
 
 	e.fontCh = make(chan []*Font, 100)
 	go func() {
+		fmt.Println("parseFont():",
+			e.config.Editor.FontFamily,
+			e.config.Editor.FontSize,
+			e.config.Editor.FontWeight,
+			e.config.Editor.FontStretch,
+			e.config.Editor.Linespace,
+			e.config.Editor.Letterspace,
+		)
 		e.fontCh <- parseFont(
 			e.config.Editor.FontFamily,
 			e.config.Editor.FontSize,
