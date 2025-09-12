@@ -132,6 +132,9 @@ func (s *Screen) updateSize() {
 	newCols := int(float64(s.width) / s.font.cellwidth)
 	newRows := s.height / s.font.lineHeight
 
+	fmt.Println("screen updateSize():: width, height:", s.width, s.height)
+	fmt.Println("screen updateSize():: newCols, newRows:", newCols, newRows)
+
 	// Adjust the position of the message grid.
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
@@ -145,8 +148,10 @@ func (s *Screen) updateSize() {
 		return true
 	})
 
+	fmt.Println("screen updateSize():: ws.cols, ws.rows:", ws.cols, ws.rows)
 	isNeedTryResize := (newCols != ws.cols || newRows != ws.rows)
 	if !isNeedTryResize {
+		fmt.Println("screen updateSize():: isNeedTryResize is false")
 		return
 	}
 
@@ -170,7 +175,7 @@ func (s *Screen) updateSize() {
 		return true
 	})
 
-	fmt.Println("screen ui try resize:", newCols, newRows)
+	fmt.Println("screen updateSize()::ui try resize:", newCols, newRows)
 	s.uiTryResize(newCols, newRows)
 
 }
