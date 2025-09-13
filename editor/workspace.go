@@ -805,12 +805,12 @@ func (ws *Workspace) updateSize() (windowWidth, windowHeight, cols, rows int) {
 	if ws.screen.font == nil {
 		return
 	}
-	// rw := screenWidth - int(math.Ceil(float64(int(float64(screenWidth)/ws.screen.font.cellwidth))*ws.screen.font.cellwidth))
-	// rh := screenHeight % ws.screen.font.lineHeight
-	// screenWidth -= rw
-	// screenHeight -= rh
-	// width -= rw
-	// height -= rh
+	rw := screenWidth - int(math.Ceil(float64(int(float64(screenWidth)/ws.screen.font.cellwidth))*ws.screen.font.cellwidth))
+	rh := screenHeight % ws.screen.font.lineHeight
+	screenWidth -= rw
+	screenHeight -= rh
+	width -= rw
+	height -= rh
 
 	if width != ws.width || height != ws.height {
 		ws.width = width
