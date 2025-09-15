@@ -1887,6 +1887,8 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 		ws.toggleLigatures()
 	case "gonvim_mousescroll_unit":
 		ws.setMousescrollUnit(updates[1].(string))
+	case "gonvim_activate_win":
+		editor.focusWindow()
 	case "Font":
 		ws.guiFont(updates[1].(string))
 	case "Linespace":
