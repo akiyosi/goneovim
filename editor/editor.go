@@ -1161,7 +1161,6 @@ func (e *Editor) connectWindowEvents() {
 			}
 		default:
 		}
-
 		return e.window.QFramelessDefaultEventFilter(watched, event)
 	})
 }
@@ -1217,6 +1216,50 @@ func (e *Editor) setWindowLayout() {
 	l.AddWidget(e.splitter, 1, 0)
 
 	e.putLog("window content layout done")
+}
+
+func (e *Editor) focusWindow() {
+	w := e.window
+	if w == nil {
+		return
+	}
+
+	w.SetFocusPolicy(core.Qt__StrongFocus)
+
+	if (w.WindowState() & core.Qt__WindowMinimized) != 0 {
+		w.ShowNormal()
+	} else if !w.IsVisible() {
+		w.Show()
+	}
+
+	prevFlags := w.WindowFlags()
+	w.SetWindowFlag(core.Qt__WindowStaysOnTopHint, true)
+	w.Show()
+	w.Raise()
+
+	w.ActivateWindow()
+	if wh := w.WindowHandle(); wh != nil {
+		wh.RequestActivate()
+	}
+
+	ws := w.WindowState()
+	w.SetWindowState((ws & ^core.Qt__WindowMinimized) | core.Qt__WindowActive)
+	w.SetFocus2()
+
+	timer := core.NewQTimer(nil)
+	timer.SetSingleShot(true)
+	timer.ConnectTimeout(func() {
+		// ここにやりたい処理を書く
+		w.SetWindowFlags(prevFlags)
+		w.Show()
+		w.Raise()
+		if wh := w.WindowHandle(); wh != nil {
+			wh.RequestActivate()
+		}
+		timer.DeleteLater() // 後片付け
+	})
+	timer.Start(120)
+
 }
 
 func isFileExist(filename string) bool {
