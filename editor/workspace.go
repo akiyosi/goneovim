@@ -39,73 +39,121 @@ type ShouldUpdate struct {
 	globalgrid bool
 }
 
+type resizeRequest struct {
+	cols    int
+	rows    int
+	metrics CellMetrics
+	ts      time.Time
+}
+
+const maxResizeQueue = 20
+
 // Workspace is an editor workspace
 type Workspace struct {
-	shouldUpdate           *ShouldUpdate
-	foreground             *RGBA
-	layout2                *widgets.QHBoxLayout
-	stop                   chan struct{}
-	font                   *Font
-	cursor                 *Cursor
-	tabline                *Tabline
-	screen                 *Screen
-	scrollBar              *ScrollBar
-	palette                *Palette
-	popup                  *PopupMenu
-	cmdline                *Cmdline
-	message                *Message
-	minimap                *MiniMap
-	fontdialog             *widgets.QFontDialog
-	guiUpdates             chan []interface{}
-	redrawUpdates          chan [][]interface{}
-	flushCh                chan []interface{}
-	signal                 *neovimSignal
-	nvim                   *nvim.Nvim
-	widget                 *widgets.QWidget
-	special                *RGBA
-	background             *RGBA
-	colorscheme            string
-	cwdlabel               string
-	escKeyInNormal         string
-	mode                   string
-	cwdBase                string
-	cwd                    string
-	escKeyInInsert         string
-	filepath               string
-	screenbg               string
-	mouseScroll            string
-	mouseScrollTemp        string
-	normalMappings         []*nvim.Mapping
-	modeInfo               []map[string]interface{}
-	insertMappings         []*nvim.Mapping
-	viewport               [5]int
-	oldViewport            [5]int
-	height                 int
-	maxLine                int
-	rows                   int
-	cols                   int
-	cellMetricsAtTryResize CellMetrics
-	showtabline            int
-	width                  int
-	modeIdx                int
-	pb                     int
-	ts                     int
-	ph                     int
-	optionsetMutex         sync.RWMutex
-	viewportMutex          sync.RWMutex
-	stopOnce               sync.Once
-	fontMutex              sync.Mutex
-	hidden                 bool
-	uiAttached             bool
-	uiRemoteAttached       bool
-	isMappingScrollKey     bool
-	hasLazyUI              bool
-	cursorStyleEnabled     bool
-	isDrawTabline          bool
-	isMouseEnabled         bool
-	isTerminalMode         bool
-	doGetSnapshot          bool
-	doneGetSnapshot        bool
+	shouldUpdate       *ShouldUpdate
+	foreground         *RGBA
+	layout2            *widgets.QHBoxLayout
+	stop               chan struct{}
+	font               *Font
+	cursor             *Cursor
+	tabline            *Tabline
+	screen             *Screen
+	scrollBar          *ScrollBar
+	palette            *Palette
+	popup              *PopupMenu
+	cmdline            *Cmdline
+	message            *Message
+	minimap            *MiniMap
+	fontdialog         *widgets.QFontDialog
+	guiUpdates         chan []interface{}
+	redrawUpdates      chan [][]interface{}
+	flushCh            chan []interface{}
+	signal             *neovimSignal
+	nvim               *nvim.Nvim
+	widget             *widgets.QWidget
+	special            *RGBA
+	background         *RGBA
+	colorscheme        string
+	cwdlabel           string
+	escKeyInNormal     string
+	mode               string
+	cwdBase            string
+	cwd                string
+	escKeyInInsert     string
+	filepath           string
+	screenbg           string
+	mouseScroll        string
+	mouseScrollTemp    string
+	normalMappings     []*nvim.Mapping
+	modeInfo           []map[string]interface{}
+	insertMappings     []*nvim.Mapping
+	viewport           [5]int
+	oldViewport        [5]int
+	height             int
+	maxLine            int
+	rows               int
+	cols               int
+	resizeReqs         []resizeRequest
+	resizeReqsMu       sync.Mutex
+	showtabline        int
+	width              int
+	modeIdx            int
+	pb                 int
+	ts                 int
+	ph                 int
+	optionsetMutex     sync.RWMutex
+	viewportMutex      sync.RWMutex
+	stopOnce           sync.Once
+	fontMutex          sync.Mutex
+	hidden             bool
+	uiAttached         bool
+	uiRemoteAttached   bool
+	isMappingScrollKey bool
+	hasLazyUI          bool
+	cursorStyleEnabled bool
+	isDrawTabline      bool
+	isMouseEnabled     bool
+	isTerminalMode     bool
+	doGetSnapshot      bool
+	doneGetSnapshot    bool
+}
+
+func (ws *Workspace) enqueueResize(cols, rows int, m CellMetrics) {
+	ws.resizeReqsMu.Lock()
+	defer ws.resizeReqsMu.Unlock()
+	ws.resizeReqs = append(ws.resizeReqs, resizeRequest{
+		cols: cols, rows: rows, metrics: m, ts: time.Now(),
+	})
+	// trim head if over capacity
+	if len(ws.resizeReqs) > maxResizeQueue {
+		ws.resizeReqs = ws.resizeReqs[len(ws.resizeReqs)-maxResizeQueue:]
+	}
+}
+
+// matchAndPopFor finds the earliest request that matches (cols, rows).
+// It pops everything up to and including the matched one.
+func (ws *Workspace) matchAndPopFor(cols, rows int) (resizeRequest, bool) {
+	ws.resizeReqsMu.Lock()
+	defer ws.resizeReqsMu.Unlock()
+	for i, r := range ws.resizeReqs {
+		if r.cols == cols && r.rows == rows {
+			matched := r
+			// pop [0..i]
+			ws.resizeReqs = append([]resizeRequest(nil), ws.resizeReqs[i+1:]...)
+			return matched, true
+		}
+	}
+	// not found: optional cleanup (過去の古すぎるものを間引く)
+	cutoff := time.Now().Add(-2 * time.Second)
+	j := 0
+	for _, r := range ws.resizeReqs {
+		if r.ts.After(cutoff) {
+			ws.resizeReqs[j] = r
+			j++
+		}
+	}
+	ws.resizeReqs = ws.resizeReqs[:j]
+	return resizeRequest{}, false
 }
 
 func newWorkspace() *Workspace {

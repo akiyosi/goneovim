@@ -183,10 +183,9 @@ func (s *Screen) uiTryResize(cols, rows int) {
 	done := make(chan error, 5)
 	var result error
 	go func() {
-		ws.cellMetricsAtTryResize = CellMetrics{
-			cellwidth:  ws.font.cellwidth,
-			lineHeight: ws.font.lineHeight,
-		}
+		// snapshot metrics and enqueue before issuing the request
+		ws.enqueueResize(cols, rows, CellMetrics{cellwidth: ws.font.cellwidth, lineHeight: ws.font.lineHeight})
+
 		result = ws.nvim.TryResizeUI(cols, rows)
 		done <- result
 	}()
@@ -725,13 +724,26 @@ func (s *Screen) gridResize(args []interface{}) {
 					continue
 				}
 				if !(s.ws.cols == cols && s.ws.rows == rows) {
-					if !(s.ws.cellMetricsAtTryResize.cellwidth == s.ws.font.cellwidth && s.ws.cellMetricsAtTryResize.lineHeight == s.ws.font.lineHeight) {
-						return
+					// try to match with a queued request for the same (cols, rows)
+					if req, ok := s.ws.matchAndPopFor(cols, rows); ok {
+						// Only update OS window when the font metrics at request time
+						// still match the current metrics
+						fmt.Println("debug:: cellwidth:", req.metrics.cellwidth, s.ws.font.cellwidth)
+						fmt.Println("debug:: cellheight:", req.metrics.lineHeight, s.ws.font.lineHeight)
+						if req.metrics.cellwidth == s.ws.font.cellwidth && req.metrics.lineHeight == s.ws.font.lineHeight {
+							s.ws.cols = cols
+							s.ws.rows = rows
+							s.ws.updateApplicationWindowSize(cols, rows)
+						} else {
+							fmt.Println("skip resize application window")
+						}
+					} else {
+						// フォールバック：一致する要求が見つからない（Neovim 側で統合/外因による grid_resize）
+						// → 従来どおり合わせに行く（方針は好みで：抑止したいなら updateApplicationWindowSize を呼ばない）
+						s.ws.cols = cols
+						s.ws.rows = rows
+						s.ws.updateApplicationWindowSize(cols, rows)
 					}
-
-					s.ws.cols = cols
-					s.ws.rows = rows
-					s.ws.updateApplicationWindowSize(cols, rows)
 				}
 			}
 			if win.grid != 1 && !win.isMsgGrid {
