@@ -128,7 +128,6 @@ func (s *Screen) updateSize() {
 	defer s.ws.fontMutex.Unlock()
 
 	ws := s.ws
-
 	newCols := int(float64(s.width) / s.font.cellwidth)
 	newRows := s.height / s.font.lineHeight
 
@@ -180,15 +179,14 @@ func (s *Screen) uiTryResize(cols, rows int) {
 	}
 
 	ws := s.ws
-	done := make(chan error, 5)
-	var result error
-	go func() {
-		// snapshot metrics and enqueue before issuing the request
-		ws.enqueueResize(cols, rows, CellMetrics{cellwidth: ws.font.cellwidth, lineHeight: ws.font.lineHeight})
 
-		result = ws.nvim.TryResizeUI(cols, rows)
-		done <- result
+	done := make(chan error, 1)
+	go func() {
+		ws.enqueueResize(cols, rows, CellMetrics{cellwidth: ws.font.cellwidth, lineHeight: ws.font.lineHeight})
+		err := ws.nvim.TryResizeUI(cols, rows)
+		done <- err
 	}()
+
 	select {
 	case <-done:
 	case <-time.After(s.waitTime() * time.Millisecond):
@@ -720,29 +718,31 @@ func (s *Screen) gridResize(args []interface{}) {
 		// Determine to resize the application window
 		if s.name != "minimap" && s.ws.uiAttached {
 			if win.grid == 1 {
+
 				if !editor.isBindNvimSizeToAppwin {
 					continue
 				}
+
+				fmt.Println("debug:: s.ws.cols, s.ws.rows:", s.ws.cols, s.ws.rows)
+				fmt.Println("debug:: cols, rows:", cols, rows)
+
 				if !(s.ws.cols == cols && s.ws.rows == rows) {
-					// try to match with a queued request for the same (cols, rows)
 					if req, ok := s.ws.matchAndPopFor(cols, rows); ok {
-						// Only update OS window when the font metrics at request time
-						// still match the current metrics
-						fmt.Println("debug:: cellwidth:", req.metrics.cellwidth, s.ws.font.cellwidth)
-						fmt.Println("debug:: cellheight:", req.metrics.lineHeight, s.ws.font.lineHeight)
-						if req.metrics.cellwidth == s.ws.font.cellwidth && req.metrics.lineHeight == s.ws.font.lineHeight {
+
+						fmt.Println("debug:: cellwidth:", req.metrics.cellwidth, s.font.cellwidth)
+						fmt.Println("debug:: cellheight:", req.metrics.lineHeight, s.font.lineHeight)
+
+						if req.metrics.cellwidth == s.font.cellwidth && req.metrics.lineHeight == s.font.lineHeight {
 							s.ws.cols = cols
 							s.ws.rows = rows
 							s.ws.updateApplicationWindowSize(cols, rows)
-						} else {
-							fmt.Println("skip resize application window")
 						}
+
 					} else {
-						// フォールバック：一致する要求が見つからない（Neovim 側で統合/外因による grid_resize）
-						// → 従来どおり合わせに行く（方針は好みで：抑止したいなら updateApplicationWindowSize を呼ばない）
 						s.ws.cols = cols
 						s.ws.rows = rows
 						s.ws.updateApplicationWindowSize(cols, rows)
+						fmt.Println("debug 9:: cols, rows:", cols, rows)
 					}
 				}
 			}
