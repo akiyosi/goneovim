@@ -182,7 +182,7 @@ func (s *Screen) uiTryResize(cols, rows int) {
 
 	done := make(chan error, 1)
 	go func() {
-		ws.enqueueResize(cols, rows, CellMetrics{cellwidth: ws.font.cellwidth, lineHeight: ws.font.lineHeight})
+		ws.enqueueResize(cols, rows, CellMetrics{cellwidth: s.font.cellwidth, lineHeight: s.font.lineHeight})
 		err := ws.nvim.TryResizeUI(cols, rows)
 		done <- err
 	}()
@@ -718,20 +718,11 @@ func (s *Screen) gridResize(args []interface{}) {
 		// Determine to resize the application window
 		if s.name != "minimap" && s.ws.uiAttached {
 			if win.grid == 1 {
-
 				if !editor.isBindNvimSizeToAppwin {
 					continue
 				}
-
-				fmt.Println("debug:: s.ws.cols, s.ws.rows:", s.ws.cols, s.ws.rows)
-				fmt.Println("debug:: cols, rows:", cols, rows)
-
 				if !(s.ws.cols == cols && s.ws.rows == rows) {
 					if req, ok := s.ws.matchAndPopFor(cols, rows); ok {
-
-						fmt.Println("debug:: cellwidth:", req.metrics.cellwidth, s.font.cellwidth)
-						fmt.Println("debug:: cellheight:", req.metrics.lineHeight, s.font.lineHeight)
-
 						if req.metrics.cellwidth == s.font.cellwidth && req.metrics.lineHeight == s.font.lineHeight {
 							s.ws.cols = cols
 							s.ws.rows = rows
@@ -742,7 +733,6 @@ func (s *Screen) gridResize(args []interface{}) {
 						s.ws.cols = cols
 						s.ws.rows = rows
 						s.ws.updateApplicationWindowSize(cols, rows)
-						fmt.Println("debug 9:: cols, rows:", cols, rows)
 					}
 				}
 			}
