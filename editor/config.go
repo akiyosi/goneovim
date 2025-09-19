@@ -217,9 +217,8 @@ func newConfig(home string, skipConfigLoading bool) (string, gonvimConfig) {
 		config.Editor.FontSize = 12
 	}
 
-	if config.Editor.Linespace < 0 {
-		config.Editor.Linespace = 6
-	}
+	// The 'Linespace' config is a non-functional setting and has no effect.
+	config.Editor.Linespace = 0
 
 	if config.SideBar.Width == 0 {
 		config.SideBar.Width = 200
@@ -331,7 +330,7 @@ func (c *gonvimConfig) init() {
 	// Horizontal stretch ratio
 	c.Editor.FontStretch = 100
 	c.Editor.FontSize = 12
-	c.Editor.Linespace = 6
+	c.Editor.Linespace = 0
 
 	c.Editor.ExtCmdline = false
 	c.Editor.ExtPopupmenu = false

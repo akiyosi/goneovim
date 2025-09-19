@@ -159,7 +159,6 @@ type Editor struct {
 	isHideMouse            bool
 	isBindNvimSizeToAppwin bool
 	isUiPrepared           bool
-	isWindowMaximizing     bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -756,7 +755,7 @@ func (e *Editor) resizeMainWindow() {
 }
 
 func (e *Editor) AdjustSizeBasedOnFontmetrics(windowWidth, windowHeight int) {
-	if e.window.WindowState() == core.Qt__WindowFullScreen || e.isWindowMaximizing {
+	if e.window.WindowState() == core.Qt__WindowFullScreen {
 		return
 	}
 
@@ -1138,19 +1137,6 @@ func (e *Editor) restoreWindow() {
 		e.window.RestoreGeometry(geometryBA)
 	}
 
-	// Restoring `windowState` causes problems when the previous session did
-	// something like “maximize → manual resize.” The maximize flag survives,
-	// so on the next launch the window opens maximized and the original
-	// geometry is lost. Therefore, we restore only the geometry and skip
-	// `windowState`.
-
-	// state := settings.Value("windowState", core.NewQVariant13(core.NewQByteArray()))
-	// stateBA := state.ToByteArray()
-	// if stateBA.Length() != 0 {
-	// 	e.window.RestoreFramelessState(stateBA, 0)
-	// 	// isRestoreState = true
-	// }
-
 	return
 }
 
@@ -1172,18 +1158,6 @@ func (e *Editor) connectWindowEvents() {
 			} else if !e.window.IsActiveWindow() {
 				e.isWindowNowActivated = false
 				e.isWindowNowInactivated = true
-			}
-		case core.QEvent__WindowStateChange:
-			if e.window.WindowState() == core.Qt__WindowMaximized {
-				if !e.isWindowMaximizing {
-					e.isWindowMaximizing = true
-
-					if editor.config.Editor.WindowGeometryBasedOnFontmetrics {
-						go e.window.WindowMaximize()
-					}
-				}
-			} else {
-				e.isWindowMaximizing = false
 			}
 		default:
 		}
