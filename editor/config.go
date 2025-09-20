@@ -89,8 +89,8 @@ type editorConfig struct {
 	IgnoreSaveConfirmationWithCloseButton   bool
 	UseWSL                                  bool
 	ShowDiffDialogOnDrop                    bool
-	NativeTitlebarBackgroundColor                    string
-	NativeTitlebarTextColor                          string
+	NativeTitlebarBackgroundColor           string
+	NativeTitlebarTextColor                 string
 }
 
 type cursorConfig struct {
