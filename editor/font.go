@@ -7,6 +7,11 @@ import (
 	"github.com/akiyosi/qt/gui"
 )
 
+type CellMetrics struct {
+	cellwidth  float64
+	lineHeight int
+}
+
 // Font is
 type Font struct {
 	family  string

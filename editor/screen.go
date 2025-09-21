@@ -128,7 +128,6 @@ func (s *Screen) updateSize() {
 	defer s.ws.fontMutex.Unlock()
 
 	ws := s.ws
-
 	newCols := int(float64(s.width) / s.font.cellwidth)
 	newRows := s.height / s.font.lineHeight
 
@@ -180,12 +179,14 @@ func (s *Screen) uiTryResize(cols, rows int) {
 	}
 
 	ws := s.ws
-	done := make(chan error, 5)
-	var result error
+
+	done := make(chan error, 1)
 	go func() {
-		result = ws.nvim.TryResizeUI(cols, rows)
-		done <- result
+		ws.enqueueResize(cols, rows, CellMetrics{cellwidth: s.font.cellwidth, lineHeight: s.font.lineHeight})
+		err := ws.nvim.TryResizeUI(cols, rows)
+		done <- err
 	}()
+
 	select {
 	case <-done:
 	case <-time.After(s.waitTime() * time.Millisecond):
@@ -721,9 +722,18 @@ func (s *Screen) gridResize(args []interface{}) {
 					continue
 				}
 				if !(s.ws.cols == cols && s.ws.rows == rows) {
-					s.ws.cols = cols
-					s.ws.rows = rows
-					s.ws.updateApplicationWindowSize(cols, rows)
+					if req, ok := s.ws.matchAndPopFor(cols, rows); ok {
+						if req.metrics.cellwidth == s.font.cellwidth && req.metrics.lineHeight == s.font.lineHeight {
+							s.ws.cols = cols
+							s.ws.rows = rows
+							s.ws.updateApplicationWindowSize(cols, rows)
+						}
+
+					} else {
+						s.ws.cols = cols
+						s.ws.rows = rows
+						s.ws.updateApplicationWindowSize(cols, rows)
+					}
 				}
 			}
 			if win.grid != 1 && !win.isMsgGrid {
@@ -1857,7 +1867,7 @@ func (s *Screen) msgSetPos(args []interface{}) {
 		// The real grid id should always be something else. But Neovim 0.11.3 sends an extra
 		// msg_set_pos with grid id 0.
 		if gridid == 0 {
-		    return
+			return
 		}
 
 		var win *Window
