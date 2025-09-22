@@ -467,7 +467,6 @@ func setupGoneovimCommands(neovim *nvim.Nvim) {
 	command! GonvimSmoothScroll call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_smoothscroll")
 	command! GonvimSmoothCursor call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_smoothcursor")
 	command! GonvimIndentguide call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_indentguide")
-	command! GonvimFocus call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_activate_win")
 	command! -nargs=? GonvimMousescrollUnit call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_mousescroll_unit", <args>)
 	`
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
