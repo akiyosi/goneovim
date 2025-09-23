@@ -328,7 +328,7 @@ func (ws *Workspace) lazyLoadUI() {
 	editor.putLog("Finished preparing the deferred drawing UI.")
 }
 
-func (ws *Workspace) initLazyLoadUI() {
+func (ws *Workspace) initLazyLoad() {
 	editor.isWindowNowActivated = false
 
 	ws.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
@@ -379,6 +379,7 @@ func (ws *Workspace) registerSignal(signal *neovimSignal, redrawUpdates chan [][
 		editor.workspaceUpdate()
 		ws.hasLazyUI = true
 		ws.lazyLoadUI()
+		setupGoneovimCommands(ws.nvim)
 	})
 
 	ws.signal.ConnectStopSignal(func() {
@@ -467,7 +468,7 @@ func (ws *Workspace) bindNvim(nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bo
 	source(ws.nvim, file)
 
 	// Initialize lazy load UI
-	ws.initLazyLoadUI()
+	ws.initLazyLoad()
 }
 
 func (i *WorkspaceSideItem) copy(ii *WorkspaceSideItem) {

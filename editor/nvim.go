@@ -54,7 +54,6 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 		}
 		setVar(neovim)
 		setupGoneovim(neovim)
-		setupGoneovimCommands(neovim)
 		registerHandler(neovim, signal, redrawUpdates, guiUpdates)
 		attachUI(neovim, cols, rows)
 
@@ -472,6 +471,8 @@ func setupGoneovimCommands(neovim *nvim.Nvim) {
 	`
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	neovim.Command(registerScripts)
+
+	_ = neovim.Call("nvim_exec_autocmds", []interface{}{"User", map[string]interface{}{"pattern": "GoneovimCommandsReady"}})
 }
 
 func setupGoneovimClipBoard(neovim *nvim.Nvim) {
