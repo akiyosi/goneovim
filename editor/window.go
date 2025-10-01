@@ -3677,6 +3677,12 @@ func (w *Window) raise() {
 		},
 	)
 
+	// For each window object, set the pointer of closest window in the z-order
+	// that covers the target window on the region.
+	for i := 0; i < len(floatWins); i++ {
+		floatWins[i].Raise()
+	}
+
 	// handle cursor widget
 	w.setUIParent()
 }
