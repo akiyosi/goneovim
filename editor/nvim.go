@@ -54,7 +54,6 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 		}
 		setVar(neovim)
 		setupGoneovim(neovim)
-		setupGoneovimCommands(neovim)
 		registerHandler(neovim, signal, redrawUpdates, guiUpdates)
 		attachUI(neovim, cols, rows)
 
