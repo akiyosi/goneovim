@@ -53,9 +53,11 @@ func (m *Messages) msgShow(args []interface{}, bulkmsg bool) {
 	// countNewlines はメッセージの各チャンク内の改行の数を調べます
 	count := 0
 	for _, arg := range args {
+		fmt.Println("arg", arg)
 		count++
 		for _, c := range arg.([]interface{})[1].([]interface{}) {
 			tuple, _ := c.([]interface{})
+			fmt.Println("msgShow:: loop:", tuple)
 			_, textChunk := parseContent(tuple)
 			count += strings.Count(textChunk, "\n")
 		}
@@ -130,7 +132,7 @@ func (m *Messages) showInSplit(args []interface{}) {
 func (m *Messages) showInEcho(args []interface{}, bulkmsg bool) {
 	var msg *Message
 	for _, arg := range args {
-		fmt.Println(arg)
+		fmt.Println("show in echo:: arg:", arg, "bulkmsg:", bulkmsg)
 
 		// kind
 		var ok bool
@@ -172,11 +174,14 @@ func (m *Messages) showInEcho(args []interface{}, bulkmsg bool) {
 		}
 
 		// content
-		for _, c := range arg.([]interface{})[1].([]interface{}) {
+		content := arg.([]interface{})[1].([]interface{})
+		fmt.Println("show in echo:: content:", content)
+		for _, c := range content {
 			tuple, ok := c.([]interface{})
 			if !ok {
 				continue
 			}
+			fmt.Println("show in echo:: tuple:", tuple)
 
 			attrId, textChunk := parseContent(tuple)
 			hl, ok := msg.m.ws.screen.hlAttrDef[attrId]
@@ -222,7 +227,7 @@ func (m *Messages) msgHistoryShow(entries []interface{}) {
 }
 
 func parseContent(tuple []interface{}) (attrId int, textChunk string) {
-	if len(tuple) != 2 {
+	if len(tuple) != 3 {
 		return
 	}
 
@@ -230,6 +235,7 @@ func parseContent(tuple []interface{}) (attrId int, textChunk string) {
 
 	var ok bool
 	textChunk, ok = tuple[1].(string)
+	fmt.Println("tuple:", attrId, textChunk)
 	if !ok {
 		return
 	}
