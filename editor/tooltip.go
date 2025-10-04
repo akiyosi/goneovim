@@ -2,7 +2,6 @@ package editor
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 	"strings"
 
@@ -293,7 +292,6 @@ func (t *Tooltip) updateText(hl *Highlight, str string, letterspace float64, fon
 
 	// rune text
 	r := []rune(str)
-	fmt.Println(r)
 
 	var width float64
 	var maxWidth float64
