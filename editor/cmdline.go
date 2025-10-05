@@ -131,6 +131,8 @@ func (c *Cmdline) show(args []interface{}) {
 		palette.scrollCol.Hide()
 	}
 	palette.show()
+
+	c.ws.messages.CmdlineOnShow(content, firstc)
 }
 
 func (c *Cmdline) showAddition() {
@@ -209,6 +211,7 @@ func (c *Cmdline) hide() {
 		c.ws.cursor.y = c.ws.cursor.y + float64(c.ws.palette.widget.Pos().Y())
 	}
 
+	c.ws.messages.CmdlineOnHide()
 }
 
 func (c *Cmdline) functionShow() {
