@@ -1,16 +1,6 @@
 // editor/message2.go
-// Single-file, buildable MsgManager/Router/View pipeline for ext_messages in goneovim,
-// integrated with your Tooltip implementation for “short” messages.
-// 2025-10-04 修正版 (lazy attach & robust fallback + Println デバッグ + paint接続):
-//  - ensureManager(): ws があればその場で AttachDefaultManager して自己初期化
-//  - msg_show 単数/複数（バッチ）両対応
-//  - MiniTooltipView: hl フォールバック、親 QWidget 未準備時は PopupFloatView へフォールバック
-//  - Manager → MsgManager
-//  - Messages.msgs 互換フィールド
-//  - clamp 実装、Tooltip.emmit() 互換ラッパ
-//  - NewTooltip(parent, core.Qt__Widget)
-//  - dprintf() による Println ログ（[msg2] プレフィックス）
-//  - ★ Tooltip.ConnectPaintEvent を追加（描画されない問題の修正）
+// ext_messages -> MiniTooltip(トースト) / Split(下部スプリット)
+// パフォーマンス版（ビュー再利用 + set_hl/ハイライト一括適用 + デバッグ出力なし）
 
 package editor
 
@@ -19,30 +9,16 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/akiyosi/qt/core"
-	"github.com/akiyosi/qt/gui" // ★ 追加：paint コールバック用
+	"github.com/akiyosi/qt/gui"
 	"github.com/neovim/go-client/nvim"
 )
 
-//
-// ──────────────────────────────────────────────────────────────────────────────
-// DEBUG
-//
-
-var debugMsg = true
-
-func dprintf(format string, a ...interface{}) {
-	if debugMsg {
-		fmt.Println("[msg2] " + fmt.Sprintf(format, a...))
-	}
-}
-
-//
-// ──────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // Model
-//
 
 type MsgEvent string
 
@@ -72,16 +48,14 @@ type UIMessage struct {
 	Level       string
 }
 
-//
-// ──────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // Views
-//
 
 type ViewName string
 
 const (
 	ViewMiniTooltip ViewName = "mini_tooltip"
-	ViewPopupFloat  ViewName = "popup_float"
+	ViewSplit       ViewName = "split"
 )
 
 type View interface {
@@ -89,6 +63,7 @@ type View interface {
 	Show(m *UIMessage) (closeFn func(), err error)
 }
 
+// MiniTooltip（Qt トースト）
 const tooltipMargin = 10
 
 type MiniTooltipView struct {
@@ -99,29 +74,19 @@ type MiniTooltipView struct {
 func (v *MiniTooltipView) Name() ViewName { return ViewMiniTooltip }
 
 func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
-	dprintf("MiniTooltipView.Show: enter kind=%q lines=%d", m.Kind, len(m.Content))
-
-	// widget 未準備時はフロートへフォールバック
+	// ウィジェット未準備時は split にフォールバック
 	if v.ws == nil || v.ws.screen == nil || v.ws.screen.widget == nil || v.ws.screen.widget.Width() == 0 {
-		dprintf("MiniTooltipView.Show: FALLBACK -> PopupFloat (widget nil or width=0)")
-		alt := &PopupFloatView{ws: v.ws}
+		alt := &SplitView{ws: v.ws}
 		return alt.Show(m)
 	}
 
 	parent := v.ws.screen.widget
-	dprintf("MiniTooltipView.Show: parent widget dims: w=%d h=%d", parent.Width(), parent.Height())
-
-	// Tooltip 生成
 	tip := NewTooltip(parent, core.Qt__Widget)
-	// ★ paint イベント接続（ログ付きでラップ）
-	tip.ConnectPaintEvent(func(ev *gui.QPaintEvent) {
-		dprintf("MiniTooltipView.Show: tip.paint invoked")
-		tip.paint(ev)
-	})
+	tip.ConnectPaintEvent(func(ev *gui.QPaintEvent) { tip.paint(ev) })
 
 	tip.s = v.ws.screen
-	tip.setPadding(10, 5)
-	tip.setRadius(5, 5)
+	tip.setPadding(20, 10)
+	tip.setRadius(14, 10)
 	tip.maximumWidth = int(float64(parent.Width()) * 0.85)
 	tip.pathWidth = 2
 	tip.setBgColor(v.ws.background)
@@ -129,146 +94,325 @@ func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
 	tip.fallbackfonts = v.ws.screen.fallbackfonts
 
 	// Content → Tooltip
-	totalRunes := 0
 	for rowIdx, row := range m.Content {
 		if rowIdx > 0 {
 			attr := 0
 			if len(row) > 0 {
 				attr = row[0].AttrID
 			}
-			hl, ok := v.ws.screen.hlAttrDef[attr]
-			if !ok {
-				if def, ok2 := v.ws.screen.hlAttrDef[0]; ok2 {
-					hl, ok = def, true
-					dprintf("MiniTooltipView.Show: hl fallback for newline: attr=%d -> 0", attr)
-				} else {
-					dprintf("MiniTooltipView.Show: hl missing for newline and no fallback 0; skip newline")
-				}
+			hl := v.ws.screen.hlAttrDef[attr]
+			if hl == nil {
+				hl = v.ws.screen.hlAttrDef[0]
 			}
-			if ok {
+			if hl != nil {
 				tip.updateText(hl, "\n", 0, tip.font.qfont)
 			}
 		}
 		for _, ch := range row {
-			hl, ok := v.ws.screen.hlAttrDef[ch.AttrID]
-			if !ok {
-				if def, ok2 := v.ws.screen.hlAttrDef[0]; ok2 {
-					hl, ok = def, true
-					dprintf("MiniTooltipView.Show: hl fallback: attr=%d -> 0", ch.AttrID)
-				}
+			hl := v.ws.screen.hlAttrDef[ch.AttrID]
+			if hl == nil {
+				hl = v.ws.screen.hlAttrDef[0]
 			}
-			if !ok {
-				dprintf("MiniTooltipView.Show: hl not found and no fallback, skip chunk text=%q", ch.Text)
+			if hl == nil {
 				continue
 			}
-			runes := []rune(ch.Text)
-			totalRunes += len(runes)
 			qf := resolveFontFallback(v.ws.screen.font, v.ws.screen.fallbackfonts, ch.Text).qfont
 			tip.updateText(hl, ch.Text, float64(v.ws.screen.font.letterSpace), qf)
 		}
 	}
-	dprintf("MiniTooltipView.Show: content aggregated, total runes=%d, flatChunks=%d lines=%d",
-		totalRunes, len(flattenContentToLines(m.Content)), len(m.Content))
 
-	// 表示
 	tip.update()
-	dprintf("MiniTooltipView.Show: after tip.update size=%dx%d textWidth=%.1f msgHeight=%.1f maxW=%d",
-		tip.Width(), tip.Height(), tip.textWidth, tip.msgHeight, tip.maximumWidth)
-
 	tip.show()
-	dprintf("MiniTooltipView.Show: after tip.show visible=%v", tip.IsVisible())
 	tip.SetGraphicsEffect(util.DropShadow(-1, 16, 130, 180))
 
-	// 右上スタック配置
+	// 右上にスタック配置
 	stackedHeight := 0
 	for _, t := range v.stack {
 		if t.IsVisible() {
 			stackedHeight += t.Height() + tooltipMargin
 		}
 	}
-	targetX := parent.Width() - tip.Width() - tooltipMargin
-	targetY := stackedHeight
-	dprintf("MiniTooltipView.Show: Move2 to x=%d y=%d (stackedHeight=%d stackLen=%d)", targetX, targetY, stackedHeight, len(v.stack))
-	tip.Move2(targetX, targetY)
-
-	// スタック追加 + 互換配列更新
+	tip.Move2(parent.Width()-tip.Width()-tooltipMargin, stackedHeight)
 	v.stack = append(v.stack, tip)
 	if v.ws != nil && v.ws.messages != nil {
 		v.ws.messages.msgs = append(v.ws.messages.msgs, tip)
 	}
-	dprintf("MiniTooltipView.Show: stack now len=%d, msgs len=%d", len(v.stack), len(v.ws.messages.msgs))
-
-	closeFn := func() {
-		dprintf("MiniTooltipView.Show: closeFn called -> Hide()")
-		tip.Hide()
-	}
-	return closeFn, nil
+	return func() { tip.Hide() }, nil
 }
 
-type PopupFloatView struct{ ws *Workspace }
+// ─────────────────────────────────────────────────────────────
+// span（バイトオフセット & hl_id保持）
 
-func (v *PopupFloatView) Name() ViewName { return ViewPopupFloat }
+type span struct {
+	AttrID   int
+	HLID     int
+	ColStart int // byte offset (0-based)
+	ColEnd   int // byte offset (exclusive)
+}
 
-func (v *PopupFloatView) Show(m *UIMessage) (func(), error) {
-	dprintf("PopupFloatView.Show: enter kind=%q lines=%d", m.Kind, len(m.Content))
+// flattenWithSpansBytes: 1行ごとテキスト + 各チャンクの [byte cols]
+func flattenWithSpansBytes(blocks [][]MsgChunk) (lines []string, lineSpans [][]span) {
+	lines = []string{}
+	lineSpans = [][]span{}
+	for _, row := range blocks {
+		var b strings.Builder
+		colBytes := 0
+		rowSpans := []span{}
+		for _, ch := range row {
+			if ch.Text == "" {
+				continue
+			}
+			start := colBytes
+			b.WriteString(ch.Text)
+			l := len([]byte(ch.Text))
+			if !utf8.ValidString(ch.Text) {
+				runes := []rune(ch.Text)
+				l = len([]byte(string(runes)))
+			}
+			colBytes += l
+			rowSpans = append(rowSpans, span{
+				AttrID:   ch.AttrID,
+				HLID:     ch.HLID,
+				ColStart: start,
+				ColEnd:   colBytes,
+			})
+		}
+		lines = append(lines, b.String())
+		lineSpans = append(lineSpans, rowSpans)
+	}
+	if len(lines) == 0 {
+		lines = []string{""}
+		lineSpans = [][]span{{}}
+	}
+	return
+}
+
+// ─────────────────────────────────────────────────────────────
+// Split（ビュー再利用 + set_hl/ハイライト一括適用）
+
+type SplitView struct {
+	ws      *Workspace
+	win     nvim.Window
+	buf     nvim.Buffer
+	nsID    int
+	defined map[int]bool // attr_id -> defined
+}
+
+func (v *SplitView) Name() ViewName { return ViewSplit }
+
+func (v *SplitView) ensureWinBuf() error {
 	n := v.ws.nvim
 
+	// 24bit 色を 1 度だけ ON（安全のため毎回でも軽い）
+	_ = n.ExecLua(`vim.o.termguicolors = true`, nil, nil)
+
+	// 既存ウィンドウが有効なら再利用
+	if v.win != 0 {
+		var ok bool
+		_ = n.ExecLua(`return vim.api.nvim_win_is_valid(...)`, []interface{}{v.win}, &ok)
+		if ok {
+			// バッファも有効ならそのまま
+			if v.buf != 0 {
+				var bok bool
+				_ = n.ExecLua(`return vim.api.nvim_buf_is_valid(...)`, []interface{}{v.buf}, &bok)
+				if bok {
+					return nil
+				}
+			}
+			// バッファが無効なら作り直す
+			buf, err := n.CreateBuffer(false, true)
+			if err != nil {
+				return err
+			}
+			v.buf = buf
+			_ = n.ExecLua(`pcall(vim.api.nvim_win_set_buf, ..., ...)`, []interface{}{v.win, v.buf}, nil)
+			return nil
+		}
+		// 無効ならリセット
+		v.win = 0
+		v.buf = 0
+	}
+
+	// 新規: 下部スプリットを作成
+	if err := n.Command("botright new"); err != nil {
+		return err
+	}
+	win, err := n.CurrentWindow()
+	if err != nil {
+		return err
+	}
 	buf, err := n.CreateBuffer(false, true)
 	if err != nil {
-		dprintf("PopupFloatView.Show: CreateBuffer error: %v", err)
-		return nil, err
+		return err
 	}
+	_ = n.ExecLua(`pcall(vim.api.nvim_win_set_buf, ..., ...)`, []interface{}{win, buf}, nil)
 
-	lines := flattenContentToLines(m.Content)
-	data := toByteLines(lines)
-	height := clamp(len(lines), 3, 20)
-	dprintf("PopupFloatView.Show: open win height=%d cols=%d rows=%d", height, v.ws.cols, v.ws.rows)
+	// 見た目（初回のみ設定）
+	_ = n.SetWindowOption(win, "number", false)
+	_ = n.SetWindowOption(win, "relativenumber", false)
+	_ = n.SetWindowOption(win, "wrap", true)
+	_ = n.SetWindowOption(win, "cursorline", false)
+	_ = n.SetWindowOption(win, "signcolumn", "no")
+	_ = n.SetWindowOption(win, "winhighlight", "")
 
-	win, err := n.OpenWindow(buf, true, &nvim.WindowConfig{
-		Relative:  "editor",
-		Anchor:    "NW",
-		Width:     v.ws.cols,
-		Height:    height,
-		Row:       float64(v.ws.rows - height),
-		Col:       0,
-		Style:     "minimal",
-		ZIndex:    60,
-		Focusable: true,
-	})
-	if err != nil {
-		dprintf("PopupFloatView.Show: OpenWindow error: %v", err)
-		return nil, err
-	}
-
-	if err := n.SetBufferLines(buf, 0, -1, true, data); err != nil {
-		dprintf("PopupFloatView.Show: SetBufferLines error: %v", err)
-		return nil, err
-	}
-	dprintf("PopupFloatView.Show: buffer lines set: %d", len(data))
-
+	// バッファ設定（初回のみ）
 	_ = n.SetBufferOption(buf, "buftype", "nofile")
 	_ = n.SetBufferOption(buf, "bufhidden", "wipe")
 	_ = n.SetBufferOption(buf, "swapfile", false)
-	_ = n.SetBufferOption(buf, "modifiable", false)
-	_ = n.SetWindowOption(win, "wrap", true)
-	_ = n.SetWindowOption(win, "cursorline", false)
 
+	// 'q' で閉じる（重複定義でも害はない）
 	opts := map[string]bool{"noremap": true, "silent": true, "nowait": true}
-	if err := n.SetBufferKeyMap(buf, "n", "q", "<cmd>lua vim.api.nvim_win_close(0, true)<CR>", opts); err != nil {
-		dprintf("PopupFloatView.Show: map q error: %v", err)
+	_ = n.SetBufferKeyMap(buf, "n", "q", "<cmd>close<CR>", opts)
+
+	v.win = win
+	v.buf = buf
+	return nil
+}
+
+func (v *SplitView) ensureNS() {
+	if v.nsID != 0 {
+		return
+	}
+	const nsName = "goneo_messages_split_marks"
+	_ = v.ws.nvim.ExecLua(`return vim.api.nvim_create_namespace(...)`, []interface{}{nsName}, &v.nsID)
+}
+
+func (v *SplitView) Show(m *UIMessage) (func(), error) {
+	if err := v.ensureWinBuf(); err != nil {
+		return nil, err
+	}
+	v.ensureNS()
+	if v.defined == nil {
+		v.defined = make(map[int]bool)
 	}
 
+	n := v.ws.nvim
+
+	// 行 & スパン（UTF-8バイトオフセット）
+	linesFlat, spans := flattenWithSpansBytes(m.Content)
+
+	// 高さ調整（最少3/最多20）
+	height := clamp(len(linesFlat), 3, 20)
+	_ = n.Command(fmt.Sprintf("resize %d", height))
+
+	// 行更新
+	_ = n.SetCurrentBuffer(v.buf)
+	_ = n.SetBufferOption(v.buf, "modifiable", true)
+	_ = n.SetBufferLines(v.buf, 0, -1, true, toByteLines(linesFlat))
+
+	// 既存ハイライトを一括クリア
+	_ = n.ExecLua(fmt.Sprintf(`pcall(vim.api.nvim_buf_clear_namespace, %d, %d, 0, -1)`, int(v.buf), v.nsID), nil, nil)
+
+	// 1) 未定義 attr_id のみ set_hl をまとめて定義（Lua 1 回）
+	var needDefs []string
+	for _, spansOnLine := range spans {
+		for _, sp := range spansOnLine {
+			if v.defined[sp.AttrID] {
+				continue
+			}
+			hl := v.ws.screen.hlAttrDef[sp.AttrID]
+			if hl == nil {
+				hl = v.ws.screen.hlAttrDef[0]
+			}
+			if hl == nil {
+				continue
+			}
+			name := fmt.Sprintf("GoneoMsgA_%d", sp.AttrID)
+			var opts []string
+			if fg, ok := rgbaToNvimInt(hl.fg()); ok && fg != 0 {
+				opts = append(opts, fmt.Sprintf("opts.fg=%d", fg))
+			}
+			if bg, ok := rgbaToNvimInt(hl.bg()); ok && bg != 0 {
+				opts = append(opts, fmt.Sprintf("opts.bg=%d", bg))
+			}
+			if spc, ok := rgbaToNvimInt(hl.special); ok && spc != 0 {
+				opts = append(opts, fmt.Sprintf("opts.sp=%d", spc))
+			}
+			if hl.bold {
+				opts = append(opts, "opts.bold=true")
+			}
+			if hl.italic {
+				opts = append(opts, "opts.italic=true")
+			}
+			if hl.underline {
+				opts = append(opts, "opts.underline=true")
+			}
+			if hl.undercurl {
+				opts = append(opts, "opts.undercurl=true")
+			}
+			if hl.underdouble {
+				opts = append(opts, "opts.underdouble=true")
+			}
+			if hl.underdotted {
+				opts = append(opts, "opts.underdotted=true")
+			}
+			if hl.underdashed {
+				opts = append(opts, "opts.underdashed=true")
+			}
+			if hl.strikethrough {
+				opts = append(opts, "opts.strikethrough=true")
+			}
+			if hl.reverse {
+				opts = append(opts, "opts.reverse=true")
+			}
+			needDefs = append(needDefs, fmt.Sprintf(`
+        do local name=%q; local opts={}; %s; pcall(vim.api.nvim_set_hl,0,name,opts); end
+      `, name, strings.Join(opts, " ")))
+			v.defined[sp.AttrID] = true
+		}
+	}
+	if len(needDefs) > 0 {
+		lua := " " + strings.Join(needDefs, "\n")
+		_ = n.ExecLua(lua, nil, nil)
+	}
+
+	// 2) すべてのハイライトを 1 回の Lua で適用
+	var calls []string
+	for li, spansOnLine := range spans {
+		if len(spansOnLine) == 0 {
+			continue
+		}
+		lineLenBytes := len([]byte(linesFlat[li]))
+		for _, spn := range spansOnLine {
+			s := spn.ColStart
+			if s < 0 {
+				s = 0
+			}
+			if s > lineLenBytes {
+				s = lineLenBytes
+			}
+			e := spn.ColEnd
+			if e < 0 {
+				e = 0
+			}
+			if e > lineLenBytes {
+				e = lineLenBytes
+			}
+			if e <= s {
+				continue
+			}
+			name := fmt.Sprintf("GoneoMsgA_%d", spn.AttrID)
+			calls = append(calls, fmt.Sprintf(`pcall(vim.api.nvim_buf_add_highlight,%d,%d,%q,%d,%d,%d)`, int(v.buf), v.nsID, name, li, s, e))
+		}
+	}
+	if len(calls) > 0 {
+		lua := strings.Join(calls, "\n")
+		_ = n.ExecLua(lua, nil, nil)
+	}
+
+	_ = n.SetBufferOption(v.buf, "modifiable", false)
+
 	closeFn := func() {
-		dprintf("PopupFloatView.Show: closeFn -> nvim_win_close(%d)", win)
-		_ = n.ExecLua(`vim.api.nvim_win_close(..., true)`, []interface{}{win}, nil)
+		_ = n.ExecLua(`pcall(vim.api.nvim_win_close, ..., true)`, []interface{}{v.win}, nil)
+		// 破棄
+		v.win = 0
+		v.buf = 0
 	}
 	return closeFn, nil
 }
 
-//
-// ──────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // Router
-//
 
 type RouteFilter struct {
 	Event     MsgEvent
@@ -315,30 +459,8 @@ func (r *Router) Resolve(m *UIMessage, measure func(*UIMessage) (h, w int)) View
 	return ViewMiniTooltip
 }
 
-func contains(ss []string, s string) bool {
-	for _, x := range ss {
-		if x == s {
-			return true
-		}
-	}
-	return false
-}
-
-func joinText(m *UIMessage) string {
-	var b strings.Builder
-	for _, row := range m.Content {
-		for _, ch := range row {
-			b.WriteString(ch.Text)
-		}
-		b.WriteByte('\n')
-	}
-	return b.String()
-}
-
-//
-// ──────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // MsgManager
-//
 
 type MsgManager struct {
 	ws        *Workspace
@@ -348,13 +470,13 @@ type MsgManager struct {
 	lastStack []string
 }
 
-func NewMsgManager(ws *Workspace, r *Router, mini *MiniTooltipView, pop *PopupFloatView) *MsgManager {
+func NewMsgManager(ws *Workspace, r *Router, mini *MiniTooltipView, split *SplitView) *MsgManager {
 	return &MsgManager{
 		ws:     ws,
 		router: r,
 		views: map[ViewName]View{
 			ViewMiniTooltip: mini,
-			ViewPopupFloat:  pop,
+			ViewSplit:       split,
 		},
 		active:    map[string]func(){},
 		lastStack: []string{},
@@ -362,11 +484,8 @@ func NewMsgManager(ws *Workspace, r *Router, mini *MiniTooltipView, pop *PopupFl
 }
 
 func (mgr *MsgManager) Add(m *UIMessage) error {
-	dprintf("MsgManager.Add: kind=%q id=%q replace_last=%v lines=%d", m.Kind, m.MsgID, m.ReplaceLast, len(m.Content))
-
 	if m.ReplaceLast && len(mgr.lastStack) > 0 {
 		lastID := mgr.lastStack[len(mgr.lastStack)-1]
-		dprintf("MsgManager.Add: replace_last -> closing lastID=%q", lastID)
 		if closer, ok := mgr.active[lastID]; ok {
 			closer()
 			delete(mgr.active, lastID)
@@ -375,19 +494,16 @@ func (mgr *MsgManager) Add(m *UIMessage) error {
 	}
 	if m.MsgID != "" {
 		if closer, ok := mgr.active[m.MsgID]; ok {
-			dprintf("MsgManager.Add: same msg_id -> closing existing id=%q", m.MsgID)
 			closer()
 			delete(mgr.active, m.MsgID)
 		}
 	}
 
 	viewName := mgr.router.Resolve(m, mgr.measure)
-	dprintf("MsgManager.Add: resolved view=%s", viewName)
 	view := mgr.views[viewName]
 
 	closeFn, err := view.Show(m)
 	if err != nil {
-		dprintf("MsgManager.Add: view.Show error: %v", err)
 		return err
 	}
 
@@ -397,7 +513,6 @@ func (mgr *MsgManager) Add(m *UIMessage) error {
 	}
 	mgr.active[key] = closeFn
 	mgr.lastStack = append(mgr.lastStack, key)
-	dprintf("MsgManager.Add: active+1 key=%q active_len=%d lastStack_len=%d", key, len(mgr.active), len(mgr.lastStack))
 	return nil
 }
 
@@ -419,7 +534,7 @@ func (mgr *MsgManager) measure(m *UIMessage) (height, width int) {
 		parts := strings.Split(line, "\n")
 		for _, p := range parts {
 			h++
-			if l := visibleWidth(p); l > w {
+			if l := len([]rune(p)); l > w {
 				w = l
 			}
 		}
@@ -430,10 +545,8 @@ func (mgr *MsgManager) measure(m *UIMessage) (height, width int) {
 	return h, w
 }
 
-//
-// ──────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // Messages (ext_messages entrypoints)
-//
 
 type Messages struct {
 	ws      *Workspace
@@ -444,34 +557,30 @@ type Messages struct {
 func initMessages() *Messages { return &Messages{} }
 
 func (m *Messages) ensureManager() bool {
-	dprintf("ensureManager: manager=%v ws=%p", m.manager != nil, m.ws)
 	if m.manager != nil {
 		return true
 	}
 	if m.ws == nil {
-		dprintf("ensureManager: ws=nil -> cannot attach yet")
 		return false
 	}
 	mini := &MiniTooltipView{ws: m.ws}
-	pop := &PopupFloatView{ws: m.ws}
+	split := &SplitView{ws: m.ws}
 	router := &Router{
 		Routes: []Route{
-			{Filter: RouteFilter{Event: MsgHistoryShow}, View: ViewPopupFloat},
-			{Filter: RouteFilter{Event: MsgShow, MinHeight: 10}, View: ViewPopupFloat},
-			{Filter: RouteFilter{Event: MsgShow, KindIn: []string{"emsg", "echoerr", "lua_error", "rpc_error"}, MinWidth: 50}, View: ViewPopupFloat},
+			{Filter: RouteFilter{Event: MsgHistoryShow}, View: ViewSplit},                                                                       // 履歴は split
+			{Filter: RouteFilter{Event: MsgShow, MinHeight: 10}, View: ViewSplit},                                                               // 長文は split
+			{Filter: RouteFilter{Event: MsgShow, KindIn: []string{"emsg", "echoerr", "lua_error", "rpc_error"}, MinWidth: 50}, View: ViewSplit}, // 横長エラーも split
 		},
 	}
-	m.manager = NewMsgManager(m.ws, router, mini, pop)
-	dprintf("ensureManager: attached default manager")
+	m.manager = NewMsgManager(m.ws, router, mini, split)
 	return true
 }
 
 func (m *Messages) AttachDefaultManager() { m.ensureManager() }
-
 func (m *Messages) AttachManager(router *Router) {
 	mini := &MiniTooltipView{ws: m.ws}
-	pop := &PopupFloatView{ws: m.ws}
-	m.manager = NewMsgManager(m.ws, router, mini, pop)
+	split := &SplitView{ws: m.ws}
+	m.manager = NewMsgManager(m.ws, router, mini, split)
 }
 
 func (m *Messages) msgClear() {
@@ -488,37 +597,25 @@ func (m *Messages) msgClear() {
 }
 
 func (m *Messages) msgShow(args []interface{}, _bulk bool) {
-	dprintf("msgShow: enter len(args)=%d", len(args))
 	if !m.ensureManager() || len(args) == 0 {
-		dprintf("msgShow: early return (manager=%v len(args)=%d)", m.manager != nil, len(args))
 		return
 	}
 
-	// 単数形
+	// 単数
 	if _, isString := args[0].(string); isString {
-		dprintf("msgShow: single tuple path type(args[0])=%T", args[0])
 		if um := decodeMsgShow(args); um != nil {
-			dprintf("msgShow: decoded single: kind=%q lines=%d", um.Kind, len(um.Content))
 			_ = m.manager.Add(um)
-		} else {
-			dprintf("msgShow: decode returned nil (single)")
 		}
 		return
 	}
-
-	// 複数形
-	dprintf("msgShow: batch path items=%d", len(args))
-	for i, item := range args {
+	// 複数
+	for _, item := range args {
 		tuple, ok := item.([]interface{})
 		if !ok || len(tuple) == 0 {
-			dprintf("msgShow: batch[%d] skip (type=%T len=%d)", i, item, len(tuple))
 			continue
 		}
 		if um := decodeMsgShowOne(tuple); um != nil {
-			dprintf("msgShow: batch[%d] decoded: kind=%q lines=%d", i, um.Kind, len(um.Content))
 			_ = m.manager.Add(um)
-		} else {
-			dprintf("msgShow: batch[%d] decode returned nil", i)
 		}
 	}
 }
@@ -544,19 +641,15 @@ func (m *Messages) msgHistoryShow(entries []interface{}) {
 	_ = m.manager.Add(all)
 }
 
-//
-// ──────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // Decode & helpers
-//
 
 func decodeMsgShowOne(tuple []interface{}) *UIMessage {
 	if len(tuple) < 2 {
-		dprintf("decodeMsgShowOne: len(tuple)=%d < 2", len(tuple))
 		return nil
 	}
 	kind, _ := tuple[0].(string)
 	contentRaw, _ := tuple[1].([]interface{})
-	dprintf("decodeMsgShowOne: kind=%q rawLen=%d", kind, len(contentRaw))
 
 	msg := &UIMessage{Event: MsgShow, Kind: kind}
 
@@ -587,20 +680,16 @@ func decodeMsgShowOne(tuple []interface{}) *UIMessage {
 	}
 
 	rows := [][]MsgChunk{{}}
-	for idx, c := range contentRaw {
-		t, ok := c.([]interface{})
-		if !ok || len(t) == 0 {
-			dprintf("decodeMsgShowOne: content[%d] skip (type=%T len=%d)", idx, c, len(t))
-			continue
-		}
+	for _, c := range contentRaw {
+		t, _ := c.([]interface{})
 		attr := util.ReflectToInt(t[0])
 		text, _ := t[1].(string)
+
 		hl := 0
 		if len(t) >= 3 {
-			if id, ok := t[2].(int); ok {
-				hl = id
-			}
+			hl = util.ReflectToInt(t[2])
 		}
+
 		parts := strings.Split(text, "\n")
 		for i, part := range parts {
 			rows[len(rows)-1] = append(rows[len(rows)-1], MsgChunk{AttrID: attr, Text: part, HLID: hl})
@@ -610,7 +699,6 @@ func decodeMsgShowOne(tuple []interface{}) *UIMessage {
 		}
 	}
 	msg.Content = rows
-	dprintf("decodeMsgShowOne: built rows=%d", len(rows))
 
 	switch msg.Kind {
 	case "emsg", "echoerr", "lua_error", "rpc_error":
@@ -625,25 +713,6 @@ func decodeMsgShowOne(tuple []interface{}) *UIMessage {
 
 func decodeMsgShow(args []interface{}) *UIMessage { return decodeMsgShowOne(args) }
 
-func flattenContentToLines(blocks [][]MsgChunk) []string {
-	var out []string
-	for _, row := range blocks {
-		var b strings.Builder
-		for _, ch := range row {
-			b.WriteString(ch.Text)
-		}
-		out = append(out, b.String())
-	}
-	var flat []string
-	for _, l := range out {
-		flat = append(flat, strings.Split(l, "\n")...)
-	}
-	if len(flat) == 0 {
-		flat = []string{""}
-	}
-	return flat
-}
-
 func toByteLines(ss []string) [][]byte {
 	out := make([][]byte, len(ss))
 	for i, s := range ss {
@@ -652,7 +721,8 @@ func toByteLines(ss []string) [][]byte {
 	return out
 }
 
-func visibleWidth(s string) int { return len([]rune(s)) }
+// ─────────────────────────────────────────────────────────────
+// utils
 
 func clamp(x, lo, hi int) int {
 	if x < lo {
@@ -664,11 +734,34 @@ func clamp(x, lo, hi int) int {
 	return x
 }
 
-//
-// ──────────────────────────────────────────────────────────────────────────────
-// Compatibility shims
-//
+func contains(ss []string, s string) bool {
+	for _, x := range ss {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
 
+func joinText(m *UIMessage) string {
+	var b strings.Builder
+	for _, row := range m.Content {
+		for _, ch := range row {
+			b.WriteString(ch.Text)
+		}
+		b.WriteByte('\n')
+	}
+	return b.String()
+}
+
+// Neovim の nvim_set_hl 用: 0xRRGGBB の整数を返す
+func rgbaToNvimInt(c *RGBA) (int, bool) {
+	if c == nil {
+		return 0, false
+	}
+	return int(c.R)<<16 | int(c.G)<<8 | int(c.B), true
+}
+
+// 互換：フォント更新・emmit ダミー
 func (m *Messages) updateFont() {}
-
-func (t *Tooltip) emmit() { t.show() }
+func (t *Tooltip) emmit()       { t.show() }
