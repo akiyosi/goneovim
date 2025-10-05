@@ -203,7 +203,6 @@ func (v *SplitView) Name() ViewName { return ViewSplit }
 
 func (v *SplitView) ensureWinBuf() error {
 	n := v.ws.nvim
-	_ = n.ExecLua(`vim.o.termguicolors = true`, nil, nil)
 
 	// 再利用
 	if v.win != 0 {
@@ -749,24 +748,70 @@ func (m *Messages) msgShow(args []interface{}, _bulk bool) {
 	}
 }
 
-func (m *Messages) msgHistoryShow(entries []interface{}) {
+func (m *Messages) msgHistoryShow(args []interface{}) {
 	if !m.ensureManager() {
 		return
 	}
+	if len(args) == 0 {
+		return
+	}
+
+	// 仕様: ["msg_history_show", entries, prev_cmd]
+	// 呼び出し側によっては entries だけが渡されることもあるので両方に対応
+	var entries []interface{}
+	if a0, ok := args[0].([]interface{}); ok {
+		entries = a0
+	} else {
+		// フォールバック: 既存呼び出しが entries をそのまま渡してくる場合
+		entries = args
+	}
+
 	all := &UIMessage{Event: MsgHistoryShow, Kind: "history"}
+
 	for _, e := range entries {
-		t := e.([]interface{})
-		contentRaw, _ := t[1].([]interface{})
+		t, ok := e.([]interface{})
+		if !ok || len(t) == 0 {
+			continue
+		}
+
+		// entry は通常 [kind, content, append]。
+		// まれに [content] だけのケースにも耐える。
+		var contentRaw []interface{}
+		if len(t) >= 2 {
+			// t[0]=kind (string), t[1]=content ([]tuple)
+			if cr, ok := t[1].([]interface{}); ok {
+				contentRaw = cr
+			}
+		} else {
+			// フォールバック: t[0] がそのまま content の場合
+			if cr, ok := t[0].([]interface{}); ok {
+				contentRaw = cr
+			}
+		}
+		if contentRaw == nil {
+			continue
+		}
+
 		row := []MsgChunk{}
 		for _, c := range contentRaw {
-			cc := c.([]interface{})
+			cc, ok := c.([]interface{})
+			if !ok || len(cc) < 2 {
+				continue
+			}
 			attr := util.ReflectToInt(cc[0])
 			text, _ := cc[1].(string)
-			row = append(row, MsgChunk{AttrID: attr, Text: text})
+			hl := 0
+			if len(cc) >= 3 {
+				hl = util.ReflectToInt(cc[2])
+			}
+			row = append(row, MsgChunk{AttrID: attr, Text: text, HLID: hl})
 		}
+
+		// 行として追加。エントリ間は空行で区切る（既存挙動を踏襲）
 		all.Content = append(all.Content, row)
 		all.Content = append(all.Content, []MsgChunk{{Text: ""}})
 	}
+
 	_ = m.manager.Add(all)
 }
 
