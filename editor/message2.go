@@ -1,6 +1,10 @@
 // editor/message2.go
 // ext_messages -> MiniTooltip(トースト) / Split(下部スプリット)
-// ヘッダと本文の間を空けない & ヘッダ行に見やすいハイライトを適用（noice風）
+// - nvim typed API 未対応箇所は Nvim.Call でコアAPI直接呼び出し
+// - Splitの1行目に「実行日時 + コマンド」を表示（空行は挟まない）
+// - ヘッダは "GoneoMsgHeaderTime"(Commentリンク) / "GoneoMsgHeaderCmd"(Titleリンク)
+// - ハイライトは nvim_buf_add_highlight（RPC）で適用
+// - redraw中のLua実行を排除
 
 package editor
 
@@ -160,14 +164,12 @@ func flattenWithSpansBytes(blocks [][]MsgChunk) (lines []string, lineSpans [][]s
 		colBytes := 0
 		rowSpans := []span{}
 		for _, ch := range row {
-			if ch.Text == "" {
-				continue
-			}
 			start := colBytes
-			b.WriteString(ch.Text)
-			l := len([]byte(ch.Text))
-			if !utf8.ValidString(ch.Text) {
-				runes := []rune(ch.Text)
+			part := ch.Text
+			b.WriteString(part)
+			l := len([]byte(part))
+			if !utf8.ValidString(part) {
+				runes := []rune(part)
 				l = len([]byte(string(runes)))
 			}
 			colBytes += l
@@ -189,72 +191,104 @@ func flattenWithSpansBytes(blocks [][]MsgChunk) (lines []string, lineSpans [][]s
 }
 
 // ─────────────────────────────────────────────────────────────
-// Split（ビュー再利用 + set_hl/ハイライト一括適用 + ヘッダ行）
+// Split（ビュー再利用 + ハイライト一括適用 + ヘッダ行）
+
+// ヘッダ用“擬似”属性ID（負数を特別扱い）
+const (
+	attrHeaderTime = -1
+	attrHeaderCmd  = -2
+)
 
 type SplitView struct {
 	ws      *Workspace
 	win     nvim.Window
 	buf     nvim.Buffer
 	nsID    int
-	defined map[int]bool // attr_id -> defined
+	defined map[int]bool // attr_id -> defined (>=0 の通常属性のみ)
+	// ヘッダHLは別フラグ
+	headerHLDefined bool
 }
 
 func (v *SplitView) Name() ViewName { return ViewSplit }
 
+// Window/Buffer/Namespace の確保（typed未提供は Call で代替）
 func (v *SplitView) ensureWinBuf() error {
 	n := v.ws.nvim
 
-	// 再利用
+	// 既存ウィンドウ再利用
 	if v.win != 0 {
 		var ok bool
-		_ = n.ExecLua(`return vim.api.nvim_win_is_valid(...)`, []interface{}{v.win}, &ok)
+		_ = n.Call("nvim_win_is_valid", &ok, v.win)
 		if ok {
+			// バッファ有効性
 			if v.buf != 0 {
 				var bok bool
-				_ = n.ExecLua(`return vim.api.nvim_buf_is_valid(...)`, []interface{}{v.buf}, &bok)
+				_ = n.Call("nvim_buf_is_valid", &bok, v.buf)
 				if bok {
+					// そのまま利用
 					return nil
 				}
 			}
+			// 新規バッファに差し替え
 			buf, err := n.CreateBuffer(false, true)
 			if err != nil {
 				return err
 			}
 			v.buf = buf
-			_ = n.ExecLua(`pcall(vim.api.nvim_win_set_buf, ..., ...)`, []interface{}{v.win, v.buf}, nil)
+			_ = n.Call("nvim_win_set_buf", nil, v.win, v.buf)
 			return nil
 		}
+		// 破棄
 		v.win = 0
 		v.buf = 0
 	}
 
 	// 新規 split
-	if err := n.Command("botright new"); err != nil {
-		return err
+	c := make(chan error, 1)
+	var win nvim.Window
+	var buf nvim.Buffer
+	go func() {
+		err := n.Command("botright new")
+		if err != nil {
+			c <- err
+		}
+		win, err = n.CurrentWindow()
+		if err != nil {
+			c <- err
+		}
+		buf, err = n.CreateBuffer(false, true)
+		if err != nil {
+			c <- err
+		}
+		_ = n.Call("nvim_win_set_buf", nil, win, buf)
+
+		// window/buf options
+		_ = n.SetWindowOption(win, "number", false)
+		_ = n.SetWindowOption(win, "relativenumber", false)
+		_ = n.SetWindowOption(win, "wrap", true)
+		_ = n.SetWindowOption(win, "cursorline", false)
+		_ = n.SetWindowOption(win, "signcolumn", "no")
+		_ = n.SetWindowOption(win, "winhighlight", "")
+
+		_ = n.SetBufferOption(buf, "buftype", "nofile")
+		_ = n.SetBufferOption(buf, "bufhidden", "wipe")
+		_ = n.SetBufferOption(buf, "swapfile", false)
+
+		opts := map[string]bool{"noremap": true, "silent": true, "nowait": true}
+		_ = n.SetBufferKeyMap(buf, "n", "q", "<cmd>close<CR>", opts)
+
+		c <- err
+	}()
+
+	var err error
+	select {
+	case err = <-c:
+	case <-time.After(time.Duration(100) * time.Millisecond):
 	}
-	win, err := n.CurrentWindow()
+
 	if err != nil {
 		return err
 	}
-	buf, err := n.CreateBuffer(false, true)
-	if err != nil {
-		return err
-	}
-	_ = n.ExecLua(`pcall(vim.api.nvim_win_set_buf, ..., ...)`, []interface{}{win, buf}, nil)
-
-	_ = n.SetWindowOption(win, "number", false)
-	_ = n.SetWindowOption(win, "relativenumber", false)
-	_ = n.SetWindowOption(win, "wrap", true)
-	_ = n.SetWindowOption(win, "cursorline", false)
-	_ = n.SetWindowOption(win, "signcolumn", "no")
-	_ = n.SetWindowOption(win, "winhighlight", "")
-
-	_ = n.SetBufferOption(buf, "buftype", "nofile")
-	_ = n.SetBufferOption(buf, "bufhidden", "wipe")
-	_ = n.SetBufferOption(buf, "swapfile", false)
-
-	opts := map[string]bool{"noremap": true, "silent": true, "nowait": true}
-	_ = n.SetBufferKeyMap(buf, "n", "q", "<cmd>close<CR>", opts)
 
 	v.win = win
 	v.buf = buf
@@ -265,30 +299,38 @@ func (v *SplitView) ensureNS() {
 	if v.nsID != 0 {
 		return
 	}
-	const nsName = "goneo_messages_split_marks"
-	_ = v.ws.nvim.ExecLua(`return vim.api.nvim_create_namespace(...)`, []interface{}{nsName}, &v.nsID)
-}
 
-// ヘッダ用 highlight を（1度だけでも）定義
-func (v *SplitView) ensureHeaderHL() {
-	lua := `
-    pcall(vim.api.nvim_set_hl, 0, "GoneoMsgHdrTime", { link = "Title" })
-    pcall(vim.api.nvim_set_hl, 0, "GoneoMsgHdrMeta", { link = "Comment" })
-    pcall(vim.api.nvim_set_hl, 0, "GoneoMsgHdrIcon", { link = "Special" })
-    pcall(vim.api.nvim_set_hl, 0, "GoneoMsgHdrCmd",  { link = "Identifier" })
-  `
-	_ = v.ws.nvim.ExecLua(lua, nil, nil)
-}
+	c := make(chan bool, 1)
+	go func() {
+		_ = v.ws.nvim.Call("nvim_create_namespace", &v.nsID, "goneo_messages_split_marks")
+		c <- true
+	}()
 
-// HTMLタグを削る（cmdline由来の文字列対策）
-var reHTMLTag = regexp.MustCompile(`<[^>]*>`)
-
-func stripHTMLTags(s string) string {
-	if s == "" {
-		return s
+	select {
+	case <-c:
+	case <-time.After(time.Duration(100) * time.Millisecond):
 	}
-	// エンティティはここでは気にしない（palette 側は見た目用）
-	return reHTMLTag.ReplaceAllString(s, "")
+}
+
+func (v *SplitView) defineHeaderHLOnce() {
+	if v.headerHLDefined {
+		return
+	}
+
+	c := make(chan bool, 1)
+	go func() {
+		_ = v.ws.nvim.Call("nvim_set_hl", nil, 0, "GoneoMsgHeaderTime", map[string]interface{}{"link": "Comment"})
+		_ = v.ws.nvim.Call("nvim_set_hl", nil, 0, "GoneoMsgHeaderCmd", map[string]interface{}{"link": "Title"})
+
+		c <- true
+	}()
+
+	select {
+	case <-c:
+	case <-time.After(time.Duration(100) * time.Millisecond):
+	}
+
+	v.headerHLDefined = true
 }
 
 func (v *SplitView) Show(m *UIMessage) (func(), error) {
@@ -296,63 +338,51 @@ func (v *SplitView) Show(m *UIMessage) (func(), error) {
 		return nil, err
 	}
 	v.ensureNS()
-	v.ensureHeaderHL()
 	if v.defined == nil {
 		v.defined = make(map[int]bool)
 	}
+	v.defineHeaderHLOnce()
 
 	n := v.ws.nvim
 
 	// 行 & スパン（UTF-8バイトオフセット）
 	linesFlat, spans := flattenWithSpansBytes(m.Content)
 
-	// ==== ヘッダ生成（行を空けない） ====
-	if hdr, segs := v.buildHeaderLine(m); hdr != "" {
-		// 既存先頭が空行なら落として、間を詰める
-		if len(linesFlat) > 0 && strings.TrimSpace(strings.TrimRight(linesFlat[0], "\r")) == "" {
-			linesFlat = linesFlat[1:]
-			if len(spans) > 0 {
-				spans = spans[1:]
-			}
-		}
-		// 先頭にヘッダ行を追加（spans 側は空配列を1つ差し込む）
-		linesFlat = append([]string{hdr}, linesFlat...)
-		spans = append([][]span{{}}, spans...)
-
-		// 後で add_highlight するため、ヘッダセグメントを保持しておく
-		// セグメントはこの関数内のローカル扱いでOK。適用は buffer 書き込み後すぐ。
-		// 下で callsHeader に積んで一括実行する。
-		var callsHeader []string
-		for _, sg := range segs {
-			callsHeader = append(callsHeader,
-				fmt.Sprintf(`pcall(vim.api.nvim_buf_add_highlight,%d,%d,%q,%d,%d,%d)`, int(v.buf), v.nsID, sg.Group, 0, sg.ColStart, sg.ColEnd))
-		}
-
-		// ==== 行更新 & ヘッダHL適用 ====
-		height := clamp(len(linesFlat), 3, 20)
-		_ = n.Command(fmt.Sprintf("resize %d", height))
-		_ = n.SetCurrentBuffer(v.buf)
-		_ = n.SetBufferOption(v.buf, "modifiable", true)
-		_ = n.SetBufferLines(v.buf, 0, -1, true, toByteLines(linesFlat))
-		_ = n.ExecLua(fmt.Sprintf(`pcall(vim.api.nvim_buf_clear_namespace, %d, %d, 0, -1)`, int(v.buf), v.nsID), nil, nil)
-		if len(callsHeader) > 0 {
-			_ = n.ExecLua(strings.Join(callsHeader, "\n"), nil, nil)
-		}
-	} else {
-		// ヘッダなし通常パス：まず行更新
-		height := clamp(len(linesFlat), 3, 20)
-		_ = n.Command(fmt.Sprintf("resize %d", height))
-		_ = n.SetCurrentBuffer(v.buf)
-		_ = n.SetBufferOption(v.buf, "modifiable", true)
-		_ = n.SetBufferLines(v.buf, 0, -1, true, toByteLines(linesFlat))
-		_ = n.ExecLua(fmt.Sprintf(`pcall(vim.api.nvim_buf_clear_namespace, %d, %d, 0, -1)`, int(v.buf), v.nsID), nil, nil)
+	// 先頭に「実行日時 + コマンド」を差し込む（空行は挟まない）
+	if hdrLine, hdrSpans := v.consumeHeaderDecorated(); hdrLine != "" {
+		linesFlat = append([]string{hdrLine}, linesFlat...)
+		spans = append([][]span{hdrSpans}, spans...)
 	}
 
-	// ==== 本文ハイライト（spans）適用 ====
-	// 未定義 attr_id をまとめて定義
-	var needDefs []string
+	// 高さ調整
+	height := clamp(len(linesFlat), 3, 20)
+
+	c := make(chan bool, 1)
+	go func() {
+		_ = n.Command(fmt.Sprintf("resize %d", height))
+
+		// 行更新
+		_ = n.SetCurrentBuffer(v.buf)
+		_ = n.SetBufferOption(v.buf, "modifiable", true)
+		_ = n.SetBufferLines(v.buf, 0, -1, true, toByteLines(linesFlat))
+
+		// 既存ハイライトを一括クリア
+		_ = n.Call("nvim_buf_clear_namespace", nil, v.buf, v.nsID, 0, -1)
+
+		c <- true
+	}()
+
+	select {
+	case <-c:
+	case <-time.After(time.Duration(100) * time.Millisecond):
+	}
+
+	// 未定義 attr_id をまとめて定義（>=0のみ）
 	for _, spansOnLine := range spans {
 		for _, sp := range spansOnLine {
+			if sp.AttrID < 0 {
+				continue // ヘッダは別リンク名を使用
+			}
 			if v.defined[sp.AttrID] {
 				continue
 			}
@@ -364,55 +394,49 @@ func (v *SplitView) Show(m *UIMessage) (func(), error) {
 				continue
 			}
 			name := fmt.Sprintf("GoneoMsgA_%d", sp.AttrID)
-			var opts []string
+			opts := map[string]interface{}{}
 			if fg, ok := rgbaToNvimInt(hl.fg()); ok && fg != 0 {
-				opts = append(opts, fmt.Sprintf("opts.fg=%d", fg))
+				opts["fg"] = fg
 			}
 			if bg, ok := rgbaToNvimInt(hl.bg()); ok && bg != 0 {
-				opts = append(opts, fmt.Sprintf("opts.bg=%d", bg))
+				opts["bg"] = bg
 			}
 			if spc, ok := rgbaToNvimInt(hl.special); ok && spc != 0 {
-				opts = append(opts, fmt.Sprintf("opts.sp=%d", spc))
+				opts["sp"] = spc
 			}
 			if hl.bold {
-				opts = append(opts, "opts.bold=true")
+				opts["bold"] = true
 			}
 			if hl.italic {
-				opts = append(opts, "opts.italic=true")
+				opts["italic"] = true
 			}
 			if hl.underline {
-				opts = append(opts, "opts.underline=true")
+				opts["underline"] = true
 			}
 			if hl.undercurl {
-				opts = append(opts, "opts.undercurl=true")
+				opts["undercurl"] = true
 			}
 			if hl.underdouble {
-				opts = append(opts, "opts.underdouble=true")
+				opts["underdouble"] = true
 			}
 			if hl.underdotted {
-				opts = append(opts, "opts.underdotted=true")
+				opts["underdotted"] = true
 			}
 			if hl.underdashed {
-				opts = append(opts, "opts.underdashed=true")
+				opts["underdashed"] = true
 			}
 			if hl.strikethrough {
-				opts = append(opts, "opts.strikethrough=true")
+				opts["strikethrough"] = true
 			}
 			if hl.reverse {
-				opts = append(opts, "opts.reverse=true")
+				opts["reverse"] = true
 			}
-			needDefs = append(needDefs, fmt.Sprintf(`
-        do local name=%q; local opts={}; %s; pcall(vim.api.nvim_set_hl,0,name,opts); end
-      `, name, strings.Join(opts, " ")))
+			_ = n.Call("nvim_set_hl", nil, 0, name, opts)
 			v.defined[sp.AttrID] = true
 		}
 	}
-	if len(needDefs) > 0 {
-		_ = n.ExecLua(strings.Join(needDefs, "\n"), nil, nil)
-	}
 
 	// すべてのハイライトを一括適用
-	var calls []string
 	for li, spansOnLine := range spans {
 		if len(spansOnLine) == 0 {
 			continue
@@ -420,15 +444,15 @@ func (v *SplitView) Show(m *UIMessage) (func(), error) {
 		lineLenBytes := len([]byte(linesFlat[li]))
 		for _, spn := range spansOnLine {
 			s := spn.ColStart
+			e := spn.ColEnd
 			if s < 0 {
 				s = 0
 			}
-			if s > lineLenBytes {
-				s = lineLenBytes
-			}
-			e := spn.ColEnd
 			if e < 0 {
 				e = 0
+			}
+			if s > lineLenBytes {
+				s = lineLenBytes
 			}
 			if e > lineLenBytes {
 				e = lineLenBytes
@@ -436,81 +460,78 @@ func (v *SplitView) Show(m *UIMessage) (func(), error) {
 			if e <= s {
 				continue
 			}
-			name := fmt.Sprintf("GoneoMsgA_%d", spn.AttrID)
-			calls = append(calls, fmt.Sprintf(`pcall(vim.api.nvim_buf_add_highlight,%d,%d,%q,%d,%d,%d)`, int(v.buf), v.nsID, name, li, s, e))
+
+			group := ""
+			if spn.AttrID >= 0 {
+				group = fmt.Sprintf("GoneoMsgA_%d", spn.AttrID)
+			} else {
+				// ヘッダ用
+				if spn.AttrID == attrHeaderTime {
+					group = "GoneoMsgHeaderTime"
+				} else {
+					group = "GoneoMsgHeaderCmd"
+				}
+			}
+
+			c := make(chan bool, 1)
+			go func() {
+				_ = n.Call("nvim_buf_add_highlight", nil, v.buf, v.nsID, group, li, s, e)
+				c <- true
+			}()
+
+			select {
+			case <-c:
+			case <-time.After(time.Duration(100) * time.Millisecond):
+			}
 		}
 	}
-	if len(calls) > 0 {
-		_ = n.ExecLua(strings.Join(calls, "\n"), nil, nil)
+
+	result := make(chan bool, 1)
+	go func() {
+		_ = n.SetBufferOption(v.buf, "modifiable", false)
+		result <- true
+	}()
+
+	select {
+	case <-result:
+	case <-time.After(time.Duration(100) * time.Millisecond):
 	}
 
-	_ = n.SetBufferOption(v.buf, "modifiable", false)
-
 	closeFn := func() {
-		_ = n.ExecLua(`pcall(vim.api.nvim_win_close, ..., true)`, []interface{}{v.win}, nil)
+		_ = n.Call("nvim_win_close", nil, v.win, true)
 		v.win = 0
 		v.buf = 0
 	}
 	return closeFn, nil
 }
 
-// ヘッダ行を生成し、適用するハイライト範囲も返す
-type headerSeg struct {
-	Group    string
-	ColStart int
-	ColEnd   int
-}
-
-func (v *SplitView) buildHeaderLine(m *UIMessage) (string, []headerSeg) {
+// ヘッダを 1 回だけ消費して返す（行文字列 & spans）
+func (v *SplitView) consumeHeaderDecorated() (string, []span) {
 	ms := v.ws.messages
 	if ms == nil {
 		return "", nil
 	}
 	name := strings.TrimSpace(ms.pendingCmdName)
-	if name == "" || ms.pendingCmdTime.IsZero() {
+	if name == "" || ms.pendingCmdStart.IsZero() {
 		return "", nil
 	}
-	// 使ったらクリア（次回には出さない）
-	defer func() {
-		ms.pendingCmdName = ""
-		ms.pendingCmdTime = time.Time{}
-	}()
+	// 実行“日時”を表示（ローカルタイム）
+	tstamp := ms.pendingCmdStart.Local().Format("2006-01-02 15:04:05")
 
-	// プレーン化（paletteのHTML混入対策）
-	cmd := stripHTMLTags(name)
+	// 使ったらクリア
+	ms.pendingCmdName = ""
+	ms.pendingCmdStart = time.Time{}
 
-	// kind 表示（例: msg_show.list_cmd / msg_history_show）
-	src := "msg_show." + m.Kind
-	if m.Event == MsgHistoryShow {
-		src = "msg_history_show"
+	// 例: "2025-10-05 16:22:46  :digraphs"
+	line := fmt.Sprintf("%s  %s", tstamp, name)
+
+	// spans: [time] [spaces] [cmd]
+	timeBytes := len([]byte(tstamp))
+	spaceBytes := len([]byte("  "))
+	return line, []span{
+		{AttrID: attrHeaderTime, HLID: 0, ColStart: 0, ColEnd: timeBytes},
+		{AttrID: attrHeaderCmd, HLID: 0, ColStart: timeBytes + spaceBytes, ColEnd: len([]byte(line))},
 	}
-
-	// "HH:MM:SS  msg_show.kind   cmd"
-	clock := ms.pendingCmdTime.Local().Format("15:04:05")
-	icon := ""
-	sep := "  "
-
-	// 結合と各パートの byte offset 計算
-	var b strings.Builder
-	b.WriteString(clock)
-	b.WriteString(sep)
-	clockEnd := len([]byte(b.String()))
-	b.WriteString(src)
-	b.WriteString(sep)
-	srcEnd := len([]byte(b.String()))
-	b.WriteString(icon)
-	b.WriteString(" ")
-	iconEnd := len([]byte(b.String()))
-	b.WriteString(cmd)
-	line := b.String()
-
-	segs := []headerSeg{
-		{Group: "GoneoMsgHdrTime", ColStart: 0, ColEnd: clockEnd - len([]byte(sep))},      // clock 部分
-		{Group: "GoneoMsgHdrMeta", ColStart: clockEnd, ColEnd: srcEnd - len([]byte(sep))}, // src 部分
-		{Group: "GoneoMsgHdrIcon", ColStart: srcEnd, ColEnd: iconEnd - 1},                 // アイコンのみ
-		{Group: "GoneoMsgHdrCmd", ColStart: iconEnd, ColEnd: len([]byte(line))},           // コマンド名
-	}
-	return line, segs
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -656,9 +677,9 @@ type Messages struct {
 	manager *MsgManager
 
 	// cmdline 連携（次の split 出力に 1 回だけ載せる）
-	cmdlinePreview string    // 最新に見えている cmdline テキスト（:h ui-cmdline content から組み立て）
-	pendingCmdName string    // Enter 確定直後に確定されたコマンド名（次の split 出力に載せる）
-	pendingCmdTime time.Time // 実行した“日時”（cmdline_hide を受けた時刻）
+	cmdlinePreview  string    // 直近に見えている cmdline 文字列
+	pendingCmdName  string    // Enter確定直後のコマンド
+	pendingCmdStart time.Time // 実行開始時刻（cmdline_hide時）
 }
 
 func initMessages() *Messages { return &Messages{} }
@@ -703,9 +724,8 @@ func (m *Messages) msgClear() {
 	m.manager.ClearAll()
 }
 
-// ---- ui-cmdline 連携 ----
+// ---- ui-cmdline 連携（既存UI側から呼ぶ） ----
 
-// CmdlineOnShow : ["cmdline_show", content, pos, firstc, prompt, indent, level]
 func (m *Messages) CmdlineOnShow(content string, firstc string) {
 	var b strings.Builder
 	b.WriteString(firstc)
@@ -713,18 +733,17 @@ func (m *Messages) CmdlineOnShow(content string, firstc string) {
 	m.cmdlinePreview = b.String()
 }
 
-// CmdlineOnHide : ["cmdline_hide", level]（Enter 確定直後に飛ぶ）
-// ここで“実行した日時”を記録する
 func (m *Messages) CmdlineOnHide() {
 	if strings.TrimSpace(m.cmdlinePreview) == "" {
 		m.pendingCmdName = ""
-		m.pendingCmdTime = time.Time{}
+		m.pendingCmdStart = time.Time{}
 		return
 	}
 	m.pendingCmdName = m.cmdlinePreview
-	m.pendingCmdTime = time.Now()
+	m.pendingCmdStart = time.Now()
 }
 
+// ext_messages: msg_show
 func (m *Messages) msgShow(args []interface{}, _bulk bool) {
 	if !m.ensureManager() || len(args) == 0 {
 		return
@@ -748,6 +767,7 @@ func (m *Messages) msgShow(args []interface{}, _bulk bool) {
 	}
 }
 
+// ext_messages: msg_history_show（安全版）
 func (m *Messages) msgHistoryShow(args []interface{}) {
 	if !m.ensureManager() {
 		return
@@ -755,14 +775,11 @@ func (m *Messages) msgHistoryShow(args []interface{}) {
 	if len(args) == 0 {
 		return
 	}
-
 	// 仕様: ["msg_history_show", entries, prev_cmd]
-	// 呼び出し側によっては entries だけが渡されることもあるので両方に対応
 	var entries []interface{}
 	if a0, ok := args[0].([]interface{}); ok {
 		entries = a0
 	} else {
-		// フォールバック: 既存呼び出しが entries をそのまま渡してくる場合
 		entries = args
 	}
 
@@ -773,20 +790,14 @@ func (m *Messages) msgHistoryShow(args []interface{}) {
 		if !ok || len(t) == 0 {
 			continue
 		}
-
-		// entry は通常 [kind, content, append]。
-		// まれに [content] だけのケースにも耐える。
+		// [kind, content, append] or [content]
 		var contentRaw []interface{}
 		if len(t) >= 2 {
-			// t[0]=kind (string), t[1]=content ([]tuple)
 			if cr, ok := t[1].([]interface{}); ok {
 				contentRaw = cr
 			}
-		} else {
-			// フォールバック: t[0] がそのまま content の場合
-			if cr, ok := t[0].([]interface{}); ok {
-				contentRaw = cr
-			}
+		} else if cr, ok := t[0].([]interface{}); ok {
+			contentRaw = cr
 		}
 		if contentRaw == nil {
 			continue
@@ -806,10 +817,7 @@ func (m *Messages) msgHistoryShow(args []interface{}) {
 			}
 			row = append(row, MsgChunk{AttrID: attr, Text: text, HLID: hl})
 		}
-
-		// 行として追加。エントリ間は空行で区切る（既存挙動を踏襲）
 		all.Content = append(all.Content, row)
-		all.Content = append(all.Content, []MsgChunk{{Text: ""}})
 	}
 
 	_ = m.manager.Add(all)
