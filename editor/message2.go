@@ -99,7 +99,7 @@ func invokeQueued(obj core.QObject_ITF, method string) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MiniTooltip（Qt トースト）— TTL は Go の time.Timer, GUI 操作は invokeQueued
+// MiniTooltip（Qt トースト）— TTL は Go の time.AfterFunc, GUI 操作は invokeQueued
 
 const tooltipMargin = 10
 const defaultMiniTTLMs = 1800 // 1.8s
@@ -117,49 +117,60 @@ func (v *MiniTooltipView) Name() ViewName { return ViewMiniTooltip }
 
 func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
 	// ウィジェット未準備時は split にフォールバック
-	if v.ws == nil || v.ws.screen == nil || v.ws.screen.widget == nil || v.ws.screen.widget.Width() == 0 {
-		alt := &SplitView{ws: v.ws}
+	ws := v.ws
+	if ws == nil || ws.screen == nil || ws.screen.widget == nil || ws.screen.widget.Width() == 0 {
+		alt := &SplitView{ws: ws}
 		return alt.Show(m)
 	}
 
-	parent := v.ws.screen.widget
+	// closing は初回のみ確保
+	v.mu.Lock()
+	if v.closing == nil {
+		v.closing = make(map[*Tooltip]bool)
+	}
+	v.mu.Unlock()
+
+	parent := ws.screen.widget
 	tip := NewTooltip(parent, core.Qt__Widget)
 	tip.ConnectPaintEvent(func(ev *gui.QPaintEvent) { tip.paint(ev) })
 
-	tip.s = v.ws.screen
+	// 基本プロパティ
+	tip.s = ws.screen
 	tip.setPadding(10, 5)
 	tip.setRadius(7, 5)
 	tip.maximumWidth = int(float64(parent.Width()) * 0.85)
 	tip.pathWidth = 2
-	tip.setBgColor(v.ws.background)
-	tip.setFont(v.ws.font)
-	tip.fallbackfonts = v.ws.screen.fallbackfonts
+	tip.setBgColor(ws.background)
+	tip.setFont(ws.font)
+	tip.fallbackfonts = ws.screen.fallbackfonts
 
 	// Content → Tooltip
+	scr := ws.screen
+	font := scr.font
 	for rowIdx, row := range m.Content {
 		if rowIdx > 0 {
 			attr := 0
 			if len(row) > 0 {
 				attr = row[0].AttrID
 			}
-			hl := v.ws.screen.hlAttrDef[attr]
+			hl := scr.hlAttrDef[attr]
 			if hl == nil {
-				hl = v.ws.screen.hlAttrDef[0]
+				hl = scr.hlAttrDef[0]
 			}
 			if hl != nil {
 				tip.updateText(hl, "\n", 0, tip.font.qfont)
 			}
 		}
 		for _, ch := range row {
-			hl := v.ws.screen.hlAttrDef[ch.AttrID]
+			hl := scr.hlAttrDef[ch.AttrID]
 			if hl == nil {
-				hl = v.ws.screen.hlAttrDef[0]
+				hl = scr.hlAttrDef[0]
 			}
 			if hl == nil {
 				continue
 			}
-			qf := resolveFontFallback(v.ws.screen.font, v.ws.screen.fallbackfonts, ch.Text).qfont
-			tip.updateText(hl, ch.Text, float64(v.ws.screen.font.letterSpace), qf)
+			qf := resolveFontFallback(font, scr.fallbackfonts, ch.Text).qfont
+			tip.updateText(hl, ch.Text, float64(font.letterSpace), qf)
 		}
 	}
 
@@ -167,25 +178,19 @@ func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
 	tip.show()
 	tip.SetGraphicsEffect(util.DropShadow(-1, 16, 130, 180))
 
-	// 右上にスタック配置（closing中や不可視は高さ計算から除外＆ついでに圧縮）
+	// 右上にスタック配置（closing/不可視は除外しつつ圧縮）
 	v.mu.Lock()
-	if v.closing == nil {
-		v.closing = make(map[*Tooltip]bool)
-	}
 	stackedHeight := 0
-	compact := v.stack[:0]
+	write := 0
 	for _, t := range v.stack {
-		if t == nil {
-			continue
-		}
-		if v.closing[t] || !t.IsVisible() {
-			// 閉じ待ち/不可視はここでドロップ（圧縮）
+		if t == nil || v.closing[t] || !t.IsVisible() {
 			continue
 		}
 		stackedHeight += t.Height() + tooltipMargin
-		compact = append(compact, t)
+		v.stack[write] = t
+		write++
 	}
-	v.stack = compact
+	v.stack = v.stack[:write]
 	v.mu.Unlock()
 
 	tip.Move2(parent.Width()-tip.Width()-tooltipMargin, stackedHeight)
@@ -195,39 +200,36 @@ func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
 	v.stack = append(v.stack, tip)
 	v.mu.Unlock()
 
-	if v.ws != nil && v.ws.messages != nil {
-		v.ws.messages.msgs = append(v.ws.messages.msgs, tip)
+	// Messages 参照にも追加
+	if ws != nil && ws.messages != nil {
+		ws.messages.msgs = append(ws.messages.msgs, tip)
 	}
 
-	// TTL（Goタイマー）。GUI は invokeQueued で破棄。
+	// TTL（AfterFunc）。手動/破棄時に Stop して二重実行を抑止。
 	ttl := v.autoHideMs
 	if ttl <= 0 {
 		ttl = defaultMiniTTLMs
 	}
-	go func(tipRef *Tooltip, ms int) {
-		timer := time.NewTimer(time.Duration(ms) * time.Millisecond)
-		defer timer.Stop()
-		<-timer.C
+	var tmr *time.Timer
+	tmr = time.AfterFunc(time.Duration(ttl)*time.Millisecond, func() {
 		if uiQuitting.Load() {
 			return
 		}
-
-		// 閉じ始めをマーク（以降の配置から除外）
 		v.mu.Lock()
-		if v.closing == nil {
-			v.closing = make(map[*Tooltip]bool)
-		}
-		v.closing[tipRef] = true
+		v.closing[tip] = true // 以降のレイアウトから除外
 		v.mu.Unlock()
+		invokeQueued(tip, "hide")
+		invokeQueued(tip, "close")
+		invokeQueued(tip, "deleteLater")
+	})
 
-		invokeQueued(tipRef, "hide")
-		invokeQueued(tipRef, "close")
-		invokeQueued(tipRef, "deleteLater")
-	}(tip, ttl)
-
-	// 破棄時に stack と closing からも確実に除去
+	// 破棄時に stack/closing から確実に除去（→ ついでに再スタック）
 	tip.ConnectDestroyed(func(*core.QObject) {
+		if tmr != nil {
+			tmr.Stop()
+		}
 		v.mu.Lock()
+		// erase from stack
 		for i, it := range v.stack {
 			if it == tip {
 				v.stack = append(v.stack[:i], v.stack[i+1:]...)
@@ -235,11 +237,20 @@ func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
 			}
 		}
 		delete(v.closing, tip)
+		// 既存可視のみ再配置
+		stacked := 0
+		parentW := parent.Width()
+		for _, t := range v.stack {
+			if t != nil && t.IsVisible() && !v.closing[t] {
+				t.Move2(parentW-t.Width()-tooltipMargin, stacked)
+				stacked += t.Height() + tooltipMargin
+			}
+		}
 		v.mu.Unlock()
 
 		// Messages 側の参照も後片付け
-		if v.ws != nil && v.ws.messages != nil {
-			msgs := v.ws.messages
+		if ws != nil && ws.messages != nil {
+			msgs := ws.messages
 			for i, it := range msgs.msgs {
 				if it == tip {
 					msgs.msgs = append(msgs.msgs[:i], msgs.msgs[i+1:]...)
@@ -254,14 +265,12 @@ func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
 		if uiQuitting.Load() {
 			return
 		}
-		// 手動クローズでも即 closing マーク
-		v.mu.Lock()
-		if v.closing == nil {
-			v.closing = make(map[*Tooltip]bool)
+		if tmr != nil {
+			tmr.Stop()
 		}
+		v.mu.Lock()
 		v.closing[tip] = true
 		v.mu.Unlock()
-
 		invokeQueued(tip, "hide")
 		invokeQueued(tip, "close")
 		invokeQueued(tip, "deleteLater")
@@ -269,16 +278,18 @@ func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
 }
 
 func (v *MiniTooltipView) restack() {
-	if v.ws == nil || v.ws.screen == nil || v.ws.screen.widget == nil {
+	ws := v.ws
+	if ws == nil || ws.screen == nil || ws.screen.widget == nil {
 		return
 	}
-	parent := v.ws.screen.widget
+	parent := ws.screen.widget
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	stackedHeight := 0
+	parentW := parent.Width()
 	for _, t := range v.stack {
 		if t != nil && t.IsVisible() && !v.closing[t] {
-			t.Move2(parent.Width()-t.Width()-tooltipMargin, stackedHeight)
+			t.Move2(parentW-t.Width()-tooltipMargin, stackedHeight)
 			stackedHeight += t.Height() + tooltipMargin
 		}
 	}
@@ -295,12 +306,14 @@ type span struct {
 }
 
 func flattenWithSpansBytes(blocks [][]MsgChunk) (lines []string, lineSpans [][]span) {
-	lines = []string{}
-	lineSpans = [][]span{}
+	lines = make([]string, 0, len(blocks))
+	lineSpans = make([][]span, 0, len(blocks))
+
 	for _, row := range blocks {
 		var b strings.Builder
 		colBytes := 0
-		rowSpans := []span{}
+		rowSpans := make([]span, 0, len(row))
+
 		for _, ch := range row {
 			if ch.Text == "" {
 				continue
@@ -308,10 +321,9 @@ func flattenWithSpansBytes(blocks [][]MsgChunk) (lines []string, lineSpans [][]s
 			start := colBytes
 			part := ch.Text
 			b.WriteString(part)
-			l := len([]byte(part))
+			l := len(part) // バイト長
 			if !utf8.ValidString(part) {
-				runes := []rune(part)
-				l = len([]byte(string(runes)))
+				// 無効UTF-8 でも len はバイト数のため追加処理は不要
 			}
 			colBytes += l
 			rowSpans = append(rowSpans, span{
@@ -372,20 +384,20 @@ func (v *SplitView) consumeHeaderDecorated() (string, []span) {
 	// "YYYY-MM-DD HH:MM:SS  :cmd"
 	line := fmt.Sprintf("%s  %s", tstamp, name)
 
-	timeBytes := len([]byte(tstamp))
-	spaceBytes := len([]byte("  "))
+	timeBytes := len(tstamp)
+	spaceBytes := len("  ")
 	return line, []span{
 		{AttrID: attrHeaderTime, ColStart: 0, ColEnd: timeBytes},
-		{AttrID: attrHeaderCmd, ColStart: timeBytes + spaceBytes, ColEnd: len([]byte(line))},
+		{AttrID: attrHeaderCmd, ColStart: timeBytes + spaceBytes, ColEnd: len(line)},
 	}
 }
 
 func (v *SplitView) ensureMaps() {
 	v.mu.Lock()
-	defer v.mu.Unlock()
 	if v.defined == nil {
 		v.defined = make(map[int]bool)
 	}
+	v.mu.Unlock()
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -633,7 +645,7 @@ func (v *SplitView) Show(m *UIMessage) (func(), error) {
 			if len(spansOnLine) == 0 {
 				continue
 			}
-			lineLenBytes := len([]byte(linesFlat[li]))
+			lineLenBytes := len(linesFlat[li]) // バイト長
 			for _, spn := range spansOnLine {
 				s := spn.ColStart
 				e := spn.ColEnd
