@@ -3749,7 +3749,7 @@ func (w *Window) setUIParent() {
 	if w.s.ws.messages != nil {
 		for _, msg := range w.s.ws.messages.msgs {
 			if msg.IsVisible() {
-				msg.emmit()
+				msg.show()
 			}
 		}
 	}

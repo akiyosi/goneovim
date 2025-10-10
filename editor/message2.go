@@ -1,13 +1,3 @@
-// editor/message2.go
-// ext_messages -> MiniTooltip(トースト) / Split(下部スプリット)
-// - Neovim RPC は redraw スレッドから直接呼ばず、専用ワーカーに enqueue して逐次実行
-// - Split は 1 つの window/buffer/namespace を再利用（Mutex で保護）
-// - 先頭行に「実行日時 + コマンド」を表示（空行は挟まない）
-//   ヘッダ HL: GoneoMsgHeaderTime (link=Comment), GoneoMsgHeaderCmd (link=Title)
-// - ハイライトは nvim_set_hl(0, ...) + nvim_buf_add_highlight
-// - :resize は使わず nvim_win_set_height を用いる（msg_show を発生させない）
-// - msg_history_show はフォーマット揺れに耐性
-
 package editor
 
 import (
@@ -16,8 +6,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode/utf8"
+	"unsafe"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/akiyosi/qt/core"
@@ -57,6 +49,22 @@ type UIMessage struct {
 }
 
 // ─────────────────────────────────────────────────────────────
+// グローバル: アプリ終了検知
+
+var (
+	aboutOnce  sync.Once
+	uiQuitting atomic.Bool
+)
+
+func ensureAboutQuitHook() {
+	aboutOnce.Do(func() {
+		if app := core.QCoreApplication_Instance(); app != nil {
+			app.ConnectAboutToQuit(func() { uiQuitting.Store(true) })
+		}
+	})
+}
+
+// ─────────────────────────────────────────────────────────────
 // Views
 
 type ViewName string
@@ -71,13 +79,38 @@ type View interface {
 	Show(m *UIMessage) (closeFn func(), err error)
 }
 
-// MiniTooltip（Qt トースト）
+// ─────────────────────────────────────────────────────────────
+// GUI キュー投げ（引数なしメソッド専用）。QTimer は使わない。
+
+func invokeQueued(obj core.QObject_ITF, method string) {
+	if obj == nil || uiQuitting.Load() {
+		return
+	}
+	var null unsafe.Pointer
+	core.QMetaObject_InvokeMethod(
+		obj, method, core.Qt__QueuedConnection,
+		core.NewQGenericReturnArgument("", null), // return
+		core.NewQGenericArgument("", null), core.NewQGenericArgument("", null),
+		core.NewQGenericArgument("", null), core.NewQGenericArgument("", null),
+		core.NewQGenericArgument("", null), core.NewQGenericArgument("", null),
+		core.NewQGenericArgument("", null), core.NewQGenericArgument("", null),
+		core.NewQGenericArgument("", null), core.NewQGenericArgument("", null),
+	)
+}
+
+// ─────────────────────────────────────────────────────────────
+// MiniTooltip（Qt トースト）— TTL は Go の time.Timer, GUI 操作は invokeQueued
+
 const tooltipMargin = 10
+const defaultMiniTTLMs = 1800 // 1.8s
 
 type MiniTooltipView struct {
 	ws         *Workspace
 	stack      []*Tooltip
 	autoHideMs int
+
+	mu      sync.Mutex
+	closing map[*Tooltip]bool // まもなく閉じる=高さ計算から除外
 }
 
 func (v *MiniTooltipView) Name() ViewName { return ViewMiniTooltip }
@@ -94,8 +127,8 @@ func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
 	tip.ConnectPaintEvent(func(ev *gui.QPaintEvent) { tip.paint(ev) })
 
 	tip.s = v.ws.screen
-	tip.setPadding(20, 10)
-	tip.setRadius(14, 10)
+	tip.setPadding(10, 5)
+	tip.setRadius(7, 5)
 	tip.maximumWidth = int(float64(parent.Width()) * 0.85)
 	tip.pathWidth = 2
 	tip.setBgColor(v.ws.background)
@@ -134,26 +167,121 @@ func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
 	tip.show()
 	tip.SetGraphicsEffect(util.DropShadow(-1, 16, 130, 180))
 
-	// 右上にスタック配置
-	stackedHeight := 0
-	for _, t := range v.stack {
-		if t.IsVisible() {
-			stackedHeight += t.Height() + tooltipMargin
-		}
+	// 右上にスタック配置（closing中や不可視は高さ計算から除外＆ついでに圧縮）
+	v.mu.Lock()
+	if v.closing == nil {
+		v.closing = make(map[*Tooltip]bool)
 	}
+	stackedHeight := 0
+	compact := v.stack[:0]
+	for _, t := range v.stack {
+		if t == nil {
+			continue
+		}
+		if v.closing[t] || !t.IsVisible() {
+			// 閉じ待ち/不可視はここでドロップ（圧縮）
+			continue
+		}
+		stackedHeight += t.Height() + tooltipMargin
+		compact = append(compact, t)
+	}
+	v.stack = compact
+	v.mu.Unlock()
+
 	tip.Move2(parent.Width()-tip.Width()-tooltipMargin, stackedHeight)
+
+	// スタックに追加
+	v.mu.Lock()
 	v.stack = append(v.stack, tip)
+	v.mu.Unlock()
+
 	if v.ws != nil && v.ws.messages != nil {
 		v.ws.messages.msgs = append(v.ws.messages.msgs, tip)
 	}
 
-	ttl := defaultMiniTTLMs
+	// TTL（Goタイマー）。GUI は invokeQueued で破棄。
+	ttl := v.autoHideMs
+	if ttl <= 0 {
+		ttl = defaultMiniTTLMs
+	}
+	go func(tipRef *Tooltip, ms int) {
+		timer := time.NewTimer(time.Duration(ms) * time.Millisecond)
+		defer timer.Stop()
+		<-timer.C
+		if uiQuitting.Load() {
+			return
+		}
 
-	core.QTimer_SingleShot(ttl, tip, "1close()")           // 閉じる
-	core.QTimer_SingleShot(ttl+25, tip, "1hide()")         // 念のため hide（テーマの見え残り対策）
-	core.QTimer_SingleShot(ttl+100, tip, "1deleteLater()") // 後始末
+		// 閉じ始めをマーク（以降の配置から除外）
+		v.mu.Lock()
+		if v.closing == nil {
+			v.closing = make(map[*Tooltip]bool)
+		}
+		v.closing[tipRef] = true
+		v.mu.Unlock()
 
-	return func() { tip.Hide() }, nil
+		invokeQueued(tipRef, "hide")
+		invokeQueued(tipRef, "close")
+		invokeQueued(tipRef, "deleteLater")
+	}(tip, ttl)
+
+	// 破棄時に stack と closing からも確実に除去
+	tip.ConnectDestroyed(func(*core.QObject) {
+		v.mu.Lock()
+		for i, it := range v.stack {
+			if it == tip {
+				v.stack = append(v.stack[:i], v.stack[i+1:]...)
+				break
+			}
+		}
+		delete(v.closing, tip)
+		v.mu.Unlock()
+
+		// Messages 側の参照も後片付け
+		if v.ws != nil && v.ws.messages != nil {
+			msgs := v.ws.messages
+			for i, it := range msgs.msgs {
+				if it == tip {
+					msgs.msgs = append(msgs.msgs[:i], msgs.msgs[i+1:]...)
+					break
+				}
+			}
+		}
+	})
+
+	// 手動クローズ（GUIスレッドへQueued）
+	return func() {
+		if uiQuitting.Load() {
+			return
+		}
+		// 手動クローズでも即 closing マーク
+		v.mu.Lock()
+		if v.closing == nil {
+			v.closing = make(map[*Tooltip]bool)
+		}
+		v.closing[tip] = true
+		v.mu.Unlock()
+
+		invokeQueued(tip, "hide")
+		invokeQueued(tip, "close")
+		invokeQueued(tip, "deleteLater")
+	}, nil
+}
+
+func (v *MiniTooltipView) restack() {
+	if v.ws == nil || v.ws.screen == nil || v.ws.screen.widget == nil {
+		return
+	}
+	parent := v.ws.screen.widget
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	stackedHeight := 0
+	for _, t := range v.stack {
+		if t != nil && t.IsVisible() && !v.closing[t] {
+			t.Move2(parent.Width()-t.Width()-tooltipMargin, stackedHeight)
+			stackedHeight += t.Height() + tooltipMargin
+		}
+	}
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -260,19 +388,8 @@ func (v *SplitView) ensureMaps() {
 	}
 }
 
-// enqueue Neovim 操作用（ワーカーに投げる）
-func (m *Messages) enqueue(job func(n *nvim.Nvim)) {
-	m.ensureWorker()
-	select {
-	case m.rpcq <- job:
-	default:
-		// バッファフル時は落とさずブロックしても良いが、UI 側ブロックを避けるため別 goroutineで投入
-		go func() { m.rpcq <- job }()
-	}
-}
-
 // ─────────────────────────────────────────────────────────────
-// ワーカー（Neovim RPC を逐次実行してストール回避）
+// Messages（Neovim RPC ワーカー／ルータ／エントリポイント）
 
 type Messages struct {
 	ws      *Workspace
@@ -289,6 +406,8 @@ type Messages struct {
 	rpcq chan func(n *nvim.Nvim)
 }
 
+func initMessages() *Messages { return &Messages{} }
+
 func (m *Messages) ensureWorker() {
 	m.once.Do(func() {
 		m.rpcq = make(chan func(n *nvim.Nvim), 128)
@@ -301,6 +420,15 @@ func (m *Messages) ensureWorker() {
 			}
 		}()
 	})
+}
+
+func (m *Messages) enqueue(job func(n *nvim.Nvim)) {
+	m.ensureWorker()
+	select {
+	case m.rpcq <- job:
+	default:
+		go func() { m.rpcq <- job }()
+	}
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -695,10 +823,6 @@ func (mgr *MsgManager) measure(m *UIMessage) (height, width int) {
 // ─────────────────────────────────────────────────────────────
 // Messages (ext_messages entrypoints + cmdline 連携)
 
-func initMessages() *Messages { return &Messages{} }
-
-const defaultMiniTTLMs = 1800
-
 func (m *Messages) ensureManager() bool {
 	if m.manager != nil {
 		return true
@@ -706,12 +830,12 @@ func (m *Messages) ensureManager() bool {
 	if m.ws == nil {
 		return false
 	}
+	ensureAboutQuitHook()
 	m.ensureWorker()
 	mini := &MiniTooltipView{
 		ws:         m.ws,
 		autoHideMs: defaultMiniTTLMs,
 	}
-
 	split := &SplitView{ws: m.ws}
 	router := &Router{
 		Routes: []Route{
@@ -726,8 +850,9 @@ func (m *Messages) ensureManager() bool {
 
 func (m *Messages) AttachDefaultManager() { m.ensureManager() }
 func (m *Messages) AttachManager(router *Router) {
+	ensureAboutQuitHook()
 	m.ensureWorker()
-	mini := &MiniTooltipView{ws: m.ws}
+	mini := &MiniTooltipView{ws: m.ws, autoHideMs: defaultMiniTTLMs}
 	split := &SplitView{ws: m.ws}
 	m.manager = NewMsgManager(m.ws, router, mini, split)
 }
@@ -736,9 +861,12 @@ func (m *Messages) msgClear() {
 	if !m.ensureManager() {
 		return
 	}
+	// Tooltip は GUI スレッドで安全に破棄（Qt タイマーは使わない）
 	for _, t := range m.msgs {
 		if t != nil {
-			t.Hide()
+			invokeQueued(t, "hide")
+			invokeQueued(t, "close")
+			invokeQueued(t, "deleteLater")
 		}
 	}
 	m.msgs = nil
@@ -814,7 +942,6 @@ func (m *Messages) msgHistoryShow(entries []interface{}) {
 		if contentRaw == nil {
 			continue
 		}
-
 		row := []MsgChunk{}
 		for _, c := range contentRaw {
 			cc, ok := c.([]interface{})
@@ -951,6 +1078,7 @@ func joinText(m *UIMessage) string {
 	return b.String()
 }
 
+// Neovim の nvim_set_hl 用: 0xRRGGBB の整数を返す
 func rgbaToNvimInt(c *RGBA) (int, bool) {
 	if c == nil {
 		return 0, false
@@ -958,47 +1086,5 @@ func rgbaToNvimInt(c *RGBA) (int, bool) {
 	return int(c.R)<<16 | int(c.G)<<8 | int(c.B), true
 }
 
-// 旧コード互換：フォント更新フック（現実装では不要なので no-op）
+// 旧コード互換（現実装では no-op）
 func (m *Messages) updateFont() {}
-
-// 旧コード互換：Tooltip.emmit（歴史的な綴り）。実装は show へ委譲。
-func (t *Tooltip) emmit() {
-	if t == nil {
-		return
-	}
-	t.show()
-}
-
-func (v *MiniTooltipView) removeFromStack(t *Tooltip) {
-	// 自前スタックから除去
-	for i, it := range v.stack {
-		if it == t {
-			v.stack = append(v.stack[:i], v.stack[i+1:]...)
-			break
-		}
-	}
-	// Messages 側の参照からも除去（存在すれば）
-	if v.ws != nil && v.ws.messages != nil {
-		msgs := v.ws.messages
-		for i, it := range msgs.msgs {
-			if it == t {
-				msgs.msgs = append(msgs.msgs[:i], msgs.msgs[i+1:]...)
-				break
-			}
-		}
-	}
-}
-
-func (v *MiniTooltipView) restack() {
-	if v.ws == nil || v.ws.screen == nil || v.ws.screen.widget == nil {
-		return
-	}
-	parent := v.ws.screen.widget
-	stackedHeight := 0
-	for _, t := range v.stack {
-		if t != nil && t.IsVisible() {
-			t.Move2(parent.Width()-t.Width()-tooltipMargin, stackedHeight)
-			stackedHeight += t.Height() + tooltipMargin
-		}
-	}
-}

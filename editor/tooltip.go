@@ -337,12 +337,9 @@ func (t *Tooltip) updateText(hl *Highlight, str string, letterspace float64, fon
 }
 
 func (t *Tooltip) show() {
-	// if t.s != nil {
-	// 	t.SetAutoFillBackground(true)
-	// 	p := gui.NewQPalette()
-	// 	p.SetColor2(gui.QPalette__Background, t.s.ws.background.QColor())
-	// 	t.SetPalette(p)
-	// }
+	if t == nil {
+		return
+	}
 
 	t.Show()
 	t.Raise()
