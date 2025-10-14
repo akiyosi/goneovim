@@ -17,6 +17,17 @@ type ColorStr struct {
 	cellwidth float64
 }
 
+// ---- 尾の向き（内部用: 既存I/Fは不変） ----
+type tooltipTailPos int
+
+const (
+	tailNone tooltipTailPos = iota
+	tailTop
+	tailBottom
+	tailLeft
+	tailRight
+)
+
 // Tooltip is the tooltip
 type Tooltip struct {
 	widgets.QWidget
@@ -41,10 +52,15 @@ type Tooltip struct {
 	fixedWidth   bool
 
 	backgrond *RGBA
+
+	// 吹き出し尾（I/F不変: 全て非公開・デフォルトOFF）
+	tailPos    tooltipTailPos
+	tailWidth  float64
+	tailLength float64
+	tailOffset float64
 }
 
 func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
-
 	if t.text == nil {
 		return
 	}
@@ -63,43 +79,35 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 	var y float64 = float64(lineHeight-height) / 2
 
 	color := t.background
-	if color == nil {
-		if t.s != nil {
-			color = t.s.ws.background
-		}
+	if color == nil && t.s != nil {
+		color = t.s.ws.background
 	}
 
+	// アンチエイリアス
+	p.SetRenderHint(gui.QPainter__Antialiasing, true)
+
+	// 内容原点（Left/Top尾で押し出しに使う）
+	var contentOriginX float64
+	var contentOriginY float64
+
 	if t.xRadius == 0 && t.yRadius == 0 {
-		p.FillRect4(
-			core.NewQRectF4(
-				0,
-				0,
-				t.textWidth+t.xPadding*2.0,
-				t.msgHeight+t.yPadding*2.0,
-			),
-			color.QColor(),
-		)
-
+		// 角丸なしモードのときは従来どおり（尾は付けない）
+		p.FillRect4(core.NewQRectF4(
+			0, 0,
+			t.textWidth+t.xPadding*2.0,
+			t.msgHeight+t.yPadding*2.0,
+		), color.QColor())
 	} else {
-
+		// アウトライン色
 		outlineColor := warpColor(color, -20)
-		p.SetPen(
-			gui.NewQPen4(
-				gui.NewQBrush3(
-					gui.NewQColor3(
-						outlineColor.R,
-						outlineColor.G,
-						outlineColor.B,
-						255,
-					),
-					core.Qt__BrushStyle(1),
-				),
-				t.pathWidth,
-				core.Qt__SolidLine,
-				core.Qt__FlatCap,
-				core.Qt__MiterJoin,
-			),
+		pen := gui.NewQPen4(
+			gui.NewQBrush3(gui.NewQColor3(outlineColor.R, outlineColor.G, outlineColor.B, 255), core.Qt__BrushStyle(1)),
+			t.pathWidth,
+			core.Qt__SolidLine,
+			core.Qt__RoundCap,
+			core.Qt__RoundJoin,
 		)
+		p.SetPen(pen)
 
 		width := t.textWidth + t.xPadding*2.0
 		if width > float64(t.maximumWidth)-t.pathWidth*2 {
@@ -109,37 +117,38 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 			width = float64(t.maximumWidth) - t.pathWidth*2
 		}
 
-		path := gui.NewQPainterPath()
-		path.AddRoundedRect(
-			core.NewQRectF4(
-				t.pathWidth,
-				t.pathWidth,
-				width,
-				t.msgHeight+t.yPadding*2.0,
-			),
-			t.xRadius,
-			t.yRadius,
-			core.Qt__AbsoluteSize,
-		)
-		p.DrawPath(path)
+		// Left/Top 尾はベース矩形を押し出す
+		shiftX := 0.0
+		shiftY := 0.0
+		if t.tailPos != tailNone && t.tailWidth > 0 && t.tailLength > 0 {
+			if t.tailPos == tailLeft {
+				shiftX = t.tailLength
+			}
+			if t.tailPos == tailTop {
+				shiftY = t.tailLength
+			}
+		}
 
-		p.FillPath(
-			path,
-			gui.NewQBrush3(
-				gui.NewQColor3(
-					color.R,
-					color.G,
-					color.B,
-					255,
-				),
-				core.Qt__BrushStyle(1),
-			),
+		baseRect := core.NewQRectF4(
+			t.pathWidth+shiftX,
+			t.pathWidth+shiftY,
+			width,
+			t.msgHeight+t.yPadding*2.0,
 		)
 
+		// 吹き出し全体を1本のパスで構築（角丸＋尾込）
+		bubblePath := t.buildBalloonPath(baseRect)
+
+		// 塗り → ストローク（単一パスなので接合線は存在しない）
+		p.FillPath(bubblePath, gui.NewQBrush3(gui.NewQColor3(color.R, color.G, color.B, 255), core.Qt__BrushStyle(1)))
+		p.DrawPath(bubblePath)
+
+		contentOriginX = baseRect.X()
+		contentOriginY = baseRect.Y()
 	}
 
+	// ====== テキスト描画（content origin 補正） ======
 	for _, chunk := range t.text {
-
 		fg := chunk.hl.fg()
 		bg := chunk.hl.bg()
 		sp := chunk.hl.special
@@ -162,9 +171,7 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 				y += lineHeight
 			}
 
-			// set foreground color
 			p.SetPen2(fg.QColor())
-
 			r := []rune(s)
 
 			for _, rr := range r {
@@ -185,55 +192,48 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 					w += chunk.cellwidth
 				}
 
-				// draw background
+				// 背景
 				p.FillRect4(
 					core.NewQRectF4(
-						x+t.xPadding,
-						y+t.yPadding,
+						contentOriginX+x+t.xPadding,
+						contentOriginY+y+t.yPadding,
 						w,
 						height,
 					),
 					bg.QColor(),
 				)
 
-				// set italic, bold
+				// フォント装飾
 				font.SetItalic(italic)
 				font.SetBold(bold)
 
+				// 文字
 				p.DrawText(
 					core.NewQPointF3(
-						x+t.xPadding,
-						y+float64(shift)+t.yPadding,
+						contentOriginX+x+t.xPadding,
+						contentOriginY+y+float64(shift)+t.yPadding,
 					),
 					string(rr),
 				)
 
-				//
-				// set text decoration
-				//
-
+				// 装飾線（末尾は int 0,0 に固定）
 				if strikethrough {
-					drawStrikethrough(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+					drawStrikethrough(p, t.font, sp.QColor(), 0, contentOriginX+x, contentOriginX+x+chunk.width, 0, 0)
 				}
-
 				if underline {
-					drawUnderline(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+					drawUnderline(p, t.font, sp.QColor(), 0, contentOriginX+x, contentOriginX+x+chunk.width, 0, 0)
 				}
-
 				if undercurl {
-					drawUndercurl(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+					drawUndercurl(p, t.font, sp.QColor(), 0, contentOriginX+x, contentOriginX+x+chunk.width, 0, 0)
 				}
-
 				if underdouble {
-					drawUnderdouble(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+					drawUnderdouble(p, t.font, sp.QColor(), 0, contentOriginX+x, contentOriginX+x+chunk.width, 0, 0)
 				}
-
 				if underdotted {
-					drawUnderdotted(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+					drawUnderdotted(p, t.font, sp.QColor(), 0, contentOriginX+x, contentOriginX+x+chunk.width, 0, 0)
 				}
-
 				if underdashed {
-					drawUnderdashed(p, t.font, sp.QColor(), 0, x, x+chunk.width, 0, 0)
+					drawUnderdashed(p, t.font, sp.QColor(), 0, contentOriginX+x, contentOriginX+x+chunk.width, 0, 0)
 				}
 
 				x += w
@@ -266,9 +266,7 @@ func (t *Tooltip) setQpainterFont(p *gui.QPainter) {
 
 func (t *Tooltip) paint(event *gui.QPaintEvent) {
 	p := gui.NewQPainter2(t)
-
 	t.drawContent(p, t.getFont)
-
 	p.DestroyQPainter()
 }
 
@@ -281,7 +279,6 @@ func (t *Tooltip) clearText() {
 	t.text = newText
 }
 
-// func (t *Tooltip) updateText(hl *Highlight, str string, letterspace float64, font *gui.QFont) {
 func (t *Tooltip) updateText(hl *Highlight, str string, letterspace float64, font *gui.QFont) {
 	if t.font == nil {
 		return
@@ -333,14 +330,12 @@ func (t *Tooltip) updateText(hl *Highlight, str string, letterspace float64, fon
 		width:     maxWidth,
 		cellwidth: cellwidth,
 	})
-
 }
 
 func (t *Tooltip) show() {
 	if t == nil {
 		return
 	}
-
 	t.Show()
 	t.Raise()
 }
@@ -373,7 +368,7 @@ func (t *Tooltip) update() {
 				width = 0
 			}
 			r := []rune(s)
-			for k, _ := range r {
+			for k := range r {
 				if width > float64(t.maximumWidth)-t.xPadding*2-t.pathWidth*2 {
 					height = int(math.Floor(width)) / int(math.Ceil((float64(t.maximumWidth) - t.xPadding*2 - t.pathWidth*2)))
 					residue := int(math.Floor(width)) % int(math.Ceil((float64(t.maximumWidth) - t.xPadding*2 - t.pathWidth*2)))
@@ -387,11 +382,8 @@ func (t *Tooltip) update() {
 				if k == len(r)-1 && textWidth < width {
 					textWidth = width
 				}
-
 			}
-
 		}
-
 	}
 	if height > 0 {
 		msgHeight += float64(height * t.font.lineHeight)
@@ -411,15 +403,135 @@ func (t *Tooltip) update() {
 	}
 
 	tooltipheight := t.msgHeight + t.yPadding*2.0 + t.pathWidth*2
+
+	// 尾の張り出しぶんを加算
+	twExtra := 0.0
+	thExtra := 0.0
+	if t.tailPos != tailNone && t.tailWidth > 0 && t.tailLength > 0 {
+		switch t.tailPos {
+		case tailTop, tailBottom:
+			thExtra = t.tailLength
+		case tailLeft, tailRight:
+			twExtra = t.tailLength
+		}
+	}
+	tooltipwidth += twExtra
+	tooltipheight += thExtra
+
+	if tooltipwidth > float64(screenWidth) {
+		tooltipwidth = float64(screenWidth)
+	}
 	if tooltipheight > float64(screenHeight) {
 		tooltipheight = float64(screenHeight)
 	}
 
-	// update widget size
-	t.SetFixedSize2(
-		int(tooltipwidth),
-		int(tooltipheight),
-	)
-
+	t.SetFixedSize2(int(tooltipwidth), int(tooltipheight))
 	t.Update()
+}
+
+// ===== ここから：吹き出し形状の自前生成（1本パス） =====
+
+// 角丸 + 尾（任意辺）を1本の輪郭で作る
+func (t *Tooltip) buildBalloonPath(rect *core.QRectF) *gui.QPainterPath {
+	x := rect.X()
+	y := rect.Y()
+	w := rect.Width()
+	h := rect.Height()
+
+	rx := t.xRadius
+	ry := t.yRadius
+	if rx < 0 {
+		rx = 0
+	}
+	if ry < 0 {
+		ry = 0
+	}
+	// 半径クランプ
+	maxRx := w / 2
+	maxRy := h / 2
+	if rx > maxRx {
+		rx = maxRx
+	}
+	if ry > maxRy {
+		ry = maxRy
+	}
+
+	// 尾パラメータ
+	pos := t.tailPos
+	tw := t.tailWidth
+	tl := t.tailLength
+	toff := t.tailOffset
+	if tw < 0 {
+		tw = 0
+	}
+	if tl < 0 {
+		tl = 0
+	}
+
+	// 尾の位置のクランプ（角丸に食い込まない）
+	cx := x + w/2
+	cy := y + h/2
+	switch pos {
+	case tailTop, tailBottom:
+		minX := x + rx + tw/2 + 1
+		maxX := x + w - rx - tw/2 - 1
+		cx = clampF(cx+toff, minX, maxX)
+	case tailLeft, tailRight:
+		minY := y + ry + tw/2 + 1
+		maxY := y + h - ry - tw/2 - 1
+		cy = clampF(cy+toff, minY, maxY)
+	}
+
+	path := gui.NewQPainterPath()
+
+	// 開始点：上辺の左端内側（x+rx, y）
+	path.MoveTo2(x+rx, y)
+
+	// 上辺（尾が上の場合は張り出し）
+	if pos == tailTop && tw > 0 && tl > 0 {
+		path.LineTo2(cx-tw/2, y)
+		path.LineTo2(cx, y-tl)
+		path.LineTo2(cx+tw/2, y)
+	}
+	path.LineTo2(x+w-rx, y)         // 上辺右端手前
+	path.QuadTo2(x+w, y, x+w, y+ry) // 右上角
+	// 右辺（尾が右の場合は張り出し）
+	if pos == tailRight && tw > 0 && tl > 0 {
+		path.LineTo2(x+w, cy-tw/2)
+		path.LineTo2(x+w+tl, cy)
+		path.LineTo2(x+w, cy+tw/2)
+	}
+	path.LineTo2(x+w, y+h-ry)           // 右下角手前
+	path.QuadTo2(x+w, y+h, x+w-rx, y+h) // 右下角
+	// 下辺（尾が下の場合は張り出し）
+	if pos == tailBottom && tw > 0 && tl > 0 {
+		path.LineTo2(cx+tw/2, y+h)
+		path.LineTo2(cx, y+h+tl)
+		path.LineTo2(cx-tw/2, y+h)
+	}
+	path.LineTo2(x+rx, y+h)         // 下辺左端手前
+	path.QuadTo2(x, y+h, x, y+h-ry) // 左下角
+	// 左辺（尾が左の場合は張り出し）
+	if pos == tailLeft && tw > 0 && tl > 0 {
+		path.LineTo2(x, cy+tw/2)
+		path.LineTo2(x-tl, cy)
+		path.LineTo2(x, cy-tw/2)
+	}
+	path.LineTo2(x, y+ry)       // 左上角手前
+	path.QuadTo2(x, y, x+rx, y) // 左上角
+	path.CloseSubpath()
+	return path
+}
+
+// --- helpers ---
+
+// 名前衝突回避のため float64 版のクランプは clampF を使用
+func clampF(v, lo, hi float64) float64 {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
 }

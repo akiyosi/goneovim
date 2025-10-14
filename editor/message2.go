@@ -102,7 +102,7 @@ func invokeQueued(obj core.QObject_ITF, method string) {
 // MiniTooltip（Qt トースト）— TTL は Go の time.AfterFunc, GUI 操作は invokeQueued
 
 const tooltipMargin = 10
-const defaultMiniTTLMs = 1800 // 1.8s
+const defaultMiniTTLMs = 3800 // 1.8s
 
 type MiniTooltipView struct {
 	ws         *Workspace
@@ -138,6 +138,14 @@ func (v *MiniTooltipView) Show(m *UIMessage) (func(), error) {
 	tip.s = ws.screen
 	tip.setPadding(10, 5)
 	tip.setRadius(7, 5)
+
+	tip.tailPos = tailRight // tailTop/tailBottom/tailLeft/tailRight
+	tip.tailWidth = 10      // 尾の根本幅(px)
+	tip.tailLength = 8      // 張り出し長さ(px)
+	tip.tailOffset = 12     // 辺中心からのオフセット(px, +で右/下へ)
+	tip.setRadius(6, 6)
+	tip.pathWidth = 1.0
+
 	tip.maximumWidth = int(float64(parent.Width()) * 0.85)
 	tip.pathWidth = 2
 	tip.setBgColor(ws.background)
