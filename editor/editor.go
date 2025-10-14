@@ -486,6 +486,8 @@ func (e *Editor) showFontErrors() {
 		)
 	}
 
+	clear(e.fontErrors)
+	e.fontErrors = e.fontErrors[:0]
 }
 
 // setAppDirPath
