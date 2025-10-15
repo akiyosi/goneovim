@@ -52,7 +52,7 @@ jobs:
     - name: Build Qt
       if: ${{ steps.cache-qt-linux.outputs.cache-hit != 'true' }}
       run: |
-        curl -L -o qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz https://download.qt.io/official_releases/qt/5.15/${{ matrix.qtversion }}/single/qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+        curl -L -o qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz https://download.qt.io/archive/qt/5.15/${{ matrix.qtversion }}/single/qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
         tar Jxf qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
         rm qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
         mv qt-everywhere-src-${{ matrix.qtversion }} qt5
