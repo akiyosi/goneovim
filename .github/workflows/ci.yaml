@@ -63,7 +63,7 @@ jobs:
     - name: Build fcitx5
       env: 
         FILE: ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
-        CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake
+        CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/
         Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
       run: |
         git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
@@ -124,6 +124,130 @@ jobs:
       with:
         name: goneovim-linux
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux.tar.bz2
+
+
+  test-and-build-linux-arm:
+    strategy:
+      matrix:
+        go-version: [1.24.x]
+        platform: [ubuntu-22.04-arm]
+        qtversion: [5.15.16]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      QT_DIR: ${{ github.workspace }}/Qt
+      QT_VERSION: ${{ matrix.qtversion }}
+      QT_API: 5.13.0
+      QT_DEBUG: false
+      GO111MODULE: on
+      QT_STATIC: true
+      QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
+      CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
+    steps:
+    - name: Linux prerequisites 
+      run: |
+        sudo apt update
+        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake
+        sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
+        sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev libzstd-dev
+        sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
+        sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
+
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - uses: actions/cache@v4
+      id: cache-qt-linux-arm
+      with:
+        path: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
+        key: ${{ matrix.qtversion }}-qt-linux-arm-${{ env.cache-version }}
+
+    - name: Build Qt
+      if: ${{ steps.cache-qt-linux.outputs.cache-hit != 'true' }}
+      run: |
+        curl -L -o qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz https://download.qt.io/archive/qt/5.15/${{ matrix.qtversion }}/single/qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+        tar Jxf qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+        rm qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
+        mv qt-everywhere-src-${{ matrix.qtversion }} qt5
+        ls -l ${{ github.workspace }}/qt5
+        cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
+        if [ ! -f "${prefix}/lib/cmake/Qt5/Qt5Config.cmake" ]; then
+          echo "Qt5Config.cmake NOT FOUND under ${prefix}"
+          echo "==== qtbase/config.summary ===="
+          cat "${{ github.workspace }}/qt5/qtbase/config.summary" || true
+          echo "==== first errors from build logs (if any) ===="
+          # 代表的なlogをざっと表示
+          find "${{ github.workspace }}/qt5" -name config.log -o -name '*.log' | head -n 20 | sed 's/^/LOG: /'
+          exit 1
+        fi
+    
+        cd "${{ github.workspace }}"
+        rm -rf qt5
+
+    - name: Build fcitx5 (no sed)
+      env:
+        CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
+        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
+      run: |
+        set -euxo pipefail
+        git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
+        test -f "${CMAKE_PREFIX_PATH}/lib/cmake/Qt5/Qt5Config.cmake"
+        cmake -S fcitx-qt5/qt5/platforminputcontext -B build-fcitx5 -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" -DQt5_DIR="${Qt5_DIR}"
+        cmake --build build-fcitx5 -j"$(nproc)"
+
+    - name: Copy libfcitxplatforminputcontextplugin.a
+      run: |
+        cp -p ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/libfcitxplatforminputcontextplugin.a ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/plugins/platforminputcontexts/
+        rm -fr ${{ github.workspace }}/fcitx-qt5
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+
+    - name: Free disk space
+      run: |
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt clean
+        sudo rm -rf /usr/share/dotnet
+
+    - name: Get dependencies
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make deps
+
+    - name: Get Qt binding for Go
+      env: 
+        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make qt_bindings
+
+    - name: Test
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make test
+
+    - name: Build
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make app
+
+    - name: Archive
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv linux goneovim-linux-arm
+        tar -jcvf goneovim-linux-arm.tar.bz2 goneovim-linux-arm
+
+    - name: Upload for linux
+      uses: actions/upload-artifact@v4
+      with:
+        name: goneovim-linux-arm
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux-arm.tar.bz2
 
 
 #################################################################
