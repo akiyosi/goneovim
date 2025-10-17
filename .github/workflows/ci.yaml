@@ -175,6 +175,35 @@ jobs:
         cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
         rm -rf ${{ github.workspace }}/qt5
 
+
+    - name: locate Qt5 cmake
+      id: locate-qt
+      run: |
+        set -euxo pipefail
+        prefix="${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64"
+    
+        echo "== find Qt cmake under: $prefix =="
+        find "$prefix" -maxdepth 6 -type f -name '*Config.cmake' | sed 's/^/  /' || true
+    
+        if f="$(find "$prefix" -maxdepth 6 -type f -name Qt5Config.cmake | head -n1)"; then
+          echo "Qt5_DIR=$(dirname "$f")" >> "$GITHUB_OUTPUT"   # .../lib/cmake/Qt5
+          echo "CMAKE_PREFIX_PATH=$prefix" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+    
+        if f="$(find "$prefix" -maxdepth 6 -type f -name Qt5CoreConfig.cmake | head -n1)"; then
+          base="$(dirname "$f")"
+          guess="$(dirname "$base")/Qt5"
+          if [ -d "$guess" ]; then
+            echo "Qt5_DIR=$guess" >> "$GITHUB_OUTPUT"
+            echo "CMAKE_PREFIX_PATH=$prefix" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+        fi
+    
+        echo "::error::Qt5(umbrella) の CMakeConfig が見つかりません。上の一覧を確認してください。"
+        exit 1
+
     - name: check prefix
       run: |
         prefix="${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64"
