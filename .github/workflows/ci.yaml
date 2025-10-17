@@ -173,28 +173,22 @@ jobs:
         mv qt-everywhere-src-${{ matrix.qtversion }} qt5
         ls -l ${{ github.workspace }}/qt5
         cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
-        if [ ! -f "${prefix}/lib/cmake/Qt5/Qt5Config.cmake" ]; then
-          echo "Qt5Config.cmake NOT FOUND under ${prefix}"
-          echo "==== qtbase/config.summary ===="
-          cat "${{ github.workspace }}/qt5/qtbase/config.summary" || true
-          echo "==== first errors from build logs (if any) ===="
-          # 代表的なlogをざっと表示
-          find "${{ github.workspace }}/qt5" -name config.log -o -name '*.log' | head -n 20 | sed 's/^/LOG: /'
-          exit 1
-        fi
-    
-        cd "${{ github.workspace }}"
-        rm -rf qt5
+        rm -rf ${{ github.workspace }}/qt5
 
-    - name: Build fcitx5 (no sed)
+    - name: check prefix
+      run: |
+        prefix="${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64"
+        test -f "${prefix}/lib/cmake/Qt5/Qt5Config.cmake"
+
+    - name: Build fcitx5 (fixed, minimal change)
       env:
         CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
         Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
       run: |
         set -euxo pipefail
         git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
-        test -f "${CMAKE_PREFIX_PATH}/lib/cmake/Qt5/Qt5Config.cmake"
-        cmake -S fcitx-qt5/qt5/platforminputcontext -B build-fcitx5 -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" -DQt5_DIR="${Qt5_DIR}"
+        sed -i -E 's/\bMODULE\b/STATIC/g' fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
+        cmake -S fcitx-qt5 -B build-fcitx5 -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" -DQt5_DIR="${Qt5_DIR}" -DCMAKE_CXX_FLAGS="-DQT_STATICPLUGIN"
         cmake --build build-fcitx5 -j"$(nproc)"
 
     - name: Copy libfcitxplatforminputcontextplugin.a
