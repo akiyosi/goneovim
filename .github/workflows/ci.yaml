@@ -208,24 +208,33 @@ jobs:
         set -eux
         sudo apt-get update
         sudo apt-get -y install extra-cmake-modules
-    
-    - name: Build fcitx5 (fcitx5-only, static plugin)
+
+
+
+
+
+
+
+
+
+
+
+    - name: Build fcitx5 (platforminputcontext only, static)
       env:
-        CMAKE_PREFIX_PATH: ${{ env.QT_PREFIX }}
-        Qt5_DIR:           ${{ env.QT5_DIR }}
+        CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
+        Qt5_DIR:           ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
       run: |
         set -euxo pipefail
+        sudo apt-get update
+        sudo apt-get -y install extra-cmake-modules
         git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
         sed -i -E 's/\bMODULE\b/STATIC/g' fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
-        cmake -S fcitx-qt5 -B build-fcitx5 \
+        cmake -S fcitx-qt5/qt5/platforminputcontext -B build-fcitx5 \
           -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
           -DQt5_DIR="${Qt5_DIR}" \
           -DCMAKE_CXX_FLAGS="-DQT_STATICPLUGIN" \
-          -DENABLE_FCITX=OFF \
-          -DENABLE_FCITX5=ON
+          -DCMAKE_DISABLE_FIND_PACKAGE_Fcitx=ON
         cmake --build build-fcitx5 -j"$(nproc)"
-
-
 
 
 
