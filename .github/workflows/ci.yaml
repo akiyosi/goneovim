@@ -174,47 +174,45 @@ jobs:
         ls -l ${{ github.workspace }}/qt5
         cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
         rm -rf ${{ github.workspace }}/qt5
-
-
-
-    # ← qmake は使わない
-    - name: Locate Qt5 (no qmake)
-      id: locate-qt
-      run: |
-        set -euxo pipefail
-        root="${{ github.workspace }}/Qt/${{ matrix.qtversion }}"
-        # まずは想定のプレフィックス配下で探す（lib / lib64 両方）
-        f="$(find "$root" -maxdepth 5 -type f -path '*/lib*/cmake/Qt5/Qt5Config.cmake' | head -n1 || true)"
+        cd ..
+        f="$(find "$prefix" -maxdepth 6 -type f -path '*/lib*/cmake/Qt5/Qt5Config.cmake' | head -n1 || true)"
         if [ -z "$f" ]; then
-          # それでも見つからない時は、全体から Qt5CoreConfig で逆算
-          core="$(find "$root" -maxdepth 7 -type f -name 'Qt5CoreConfig.cmake' | head -n1 || true)"
-          if [ -n "$core" ]; then
-            base="$(dirname "$core")"                        # .../lib*/cmake/Qt5Core
-            guess="$(dirname "$base")/Qt5"                   # .../lib*/cmake/Qt5
-            if [ -f "$guess/Qt5Config.cmake" ]; then f="$guess/Qt5Config.cmake"; fi
-          fi
+          f="$(find "${{ github.workspace }}/Qt" -maxdepth 8 -type f -path '*/lib*/cmake/Qt5/Qt5Config.cmake' | head -n1 || true)"
         fi
-    
         if [ -z "$f" ]; then
-          echo "::error::Qt5Config.cmake が見つかりません。以下を確認します:"; echo "search root: $root"
-          find "$root" -maxdepth 7 -type f -name '*Config.cmake' | sed 's/^/  /' || true
+          echo "::error::Qt5Config.cmake が見つかりません。実配置を表示します："
+          find "${{ github.workspace }}/Qt" -maxdepth 8 -type f -name '*Config.cmake' | sed 's/^/  /' || true
           exit 1
         fi
     
-        Qt5_DIR="$(dirname "$f")"                            # .../lib*/cmake/Qt5
-        # CMAKE_PREFIX_PATH は .../lib or lib64 のさらに1階層上（= prefix）
-        cmakedir="$(dirname "$Qt5_DIR")"                     # .../lib*/cmake
-        libdir="$(dirname "$cmakedir")"                      # .../lib or lib64
-        prefix="$(dirname "$libdir")"                        # .../prefix
+        Qt5_DIR="$(dirname "$f")"                  # .../lib(64)/cmake/Qt5
+        cmakedir="$(dirname "$Qt5_DIR")"           # .../lib(64)/cmake
+        libdir="$(dirname "$cmakedir")"            # .../lib or lib64
+        real_prefix="$(dirname "$libdir")"         # .../<prefix>
     
-        echo "CMAKE_PREFIX_PATH=$prefix" >> "$GITHUB_OUTPUT"
-        echo "Qt5_DIR=$Qt5_DIR" >> "$GITHUB_OUTPUT"
+        echo "QT_PREFIX=$real_prefix" >> "$GITHUB_ENV"
+        echo "QT5_DIR=$Qt5_DIR"       >> "$GITHUB_ENV"
     
-    # ECM を入れて、fcitx5 の “fcitx4 切り” で最小依存にする
+        ls -l "$real_prefix"/bin || true
+    
+        rm -rf qt5
+
+
+
+
+
+
+    # ECM（FindXKBCommon 等で要求される）
+    - name: Prereqs for fcitx5
+      run: |
+        set -eux
+        sudo apt-get update
+        sudo apt-get -y install extra-cmake-modules
+    
     - name: Build fcitx5 (fcitx5-only, static plugin)
       env:
-        CMAKE_PREFIX_PATH: ${{ steps.locate-qt.outputs.CMAKE_PREFIX_PATH }}
-        Qt5_DIR:           ${{ steps.locate-qt.outputs.Qt5_DIR }}
+        CMAKE_PREFIX_PATH: ${{ env.QT_PREFIX }}
+        Qt5_DIR:           ${{ env.QT5_DIR }}
       run: |
         set -euxo pipefail
         git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
@@ -226,12 +224,6 @@ jobs:
           -DENABLE_FCITX=OFF \
           -DENABLE_FCITX5=ON
         cmake --build build-fcitx5 -j"$(nproc)"
-
-
-
-
-
-
 
 
 
