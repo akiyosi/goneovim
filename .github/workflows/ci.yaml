@@ -130,7 +130,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.24.x]
-        platform: [ubuntu-22.04-arm]
+        platform: [ubuntu-24.04-arm]
         qtversion: [5.15.16]
     runs-on: ${{ matrix.platform }}
     env:
