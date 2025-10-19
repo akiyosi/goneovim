@@ -1897,11 +1897,11 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int, isDra
 	line := w.content[y]
 	var bg *RGBA
 
-	// Set smooth scroll offset
-	var horScrollPixels, verScrollPixels int
+	//
+	// Simply paint the color into a rectangle
+	//
 
-	// isDrawDefaultBg := true
-	// // Simply paint the color into a rectangle
+	// font := w.getFont()
 	// for x := col; x <= col+cols; x++ {
 	// 	if x >= len(line) {
 	// 		continue
@@ -1913,29 +1913,36 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int, isDra
 	// 		highlight = line[x].highlight
 	// 	}
 	// 	if !bg.equals(w.s.ws.background) || isDrawDefaultBg {
-	// 		 // Set diff pattern
-	// 		 pattern, color, transparent := w.getFillpatternAndTransparent(highlight)
-	// 		 // Fill background with pattern
-	// 		 rectF := core.NewQRectF4(
-	// 				 float64(x)*font.cellwidth,
-	// 				 float64((y)*font.lineHeight),
-	// 				 font.cellwidth,
-	// 				 float64(font.lineHeight),
-	// 		 )
-	// 		 p.FillRect(
-	// 				 rectF,
-	// 				 gui.NewQBrush3(
-	// 						 gui.NewQColor3(
-	// 								 color.R,
-	// 								 color.G,
-	// 								 color.B,
-	// 								 transparent,
-	// 						 ),
-	// 						 pattern,
-	// 				 ),
-	// 		 )
+	// 		// Set diff pattern
+	// 		pattern, color, transparent := w.getFillpatternAndTransparent(highlight)
+	// 		// Fill background with pattern
+	// 		rectF := core.NewQRectF4(
+	// 			float64(x)*font.cellwidth,
+	// 			float64((y)*font.lineHeight),
+	// 			font.cellwidth,
+	// 			float64(font.lineHeight),
+	// 		)
+	// 		p.FillRect(
+	// 			rectF,
+	// 			gui.NewQBrush3(
+	// 				gui.NewQColor3(
+	// 					color.R,
+	// 					color.G,
+	// 					color.B,
+	// 					transparent,
+	// 				),
+	// 				pattern,
+	// 			),
+	// 		)
 	// 	}
 	// }
+
+	//
+	// Combine consecutive cells with the same background and paint them as a single rectangle
+	//
+
+	// Set smooth scroll offset
+	var horScrollPixels, verScrollPixels int
 
 	if y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1 {
 		verScrollPixels = 0
@@ -1987,9 +1994,10 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int, isDra
 
 		bg = highlight.bg()
 
-		bounds := col + cols
-		if col+cols > len(line) {
-			bounds = len(line)
+		bounds := col + cols - 1
+		maxIdx := len(line) - 1
+		if bounds > maxIdx {
+			bounds = maxIdx
 		}
 
 		if lastBg == nil {
@@ -2013,26 +2021,29 @@ func (w *Window) drawBackground(p *gui.QPainter, y int, col int, cols int, isDra
 				horScrollPixels = 0
 				w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
 
-				start = x
-				end = x
-
-				if x == bounds {
-					w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
+				if x == bounds && !lastBg.equals(bg) {
+					w.fillCellRect(p, highlight, bg, y, x, x,
+						horScrollPixels, verScrollPixels, isDrawDefaultBg)
 				}
 
 				continue
+
 			}
 			if !lastBg.equals(bg) || x == bounds {
 				w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
 
-				start = x
-				end = x
-				lastBg = bg
-				lastHighlight = highlight
-
 				if x == bounds {
-					w.fillCellRect(p, lastHighlight, lastBg, y, start, end, horScrollPixels, verScrollPixels, isDrawDefaultBg)
+					if !lastBg.equals(bg) {
+						w.fillCellRect(p, highlight, bg, y, x, x,
+							horScrollPixels, verScrollPixels, isDrawDefaultBg)
+					}
+				} else {
+					if !lastBg.equals(bg) {
+						start, end = x, x
+						lastBg, lastHighlight = bg, highlight
+					}
 				}
+
 			}
 		}
 	}
