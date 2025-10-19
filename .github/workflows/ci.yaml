@@ -147,7 +147,7 @@ jobs:
     - name: Linux prerequisites 
       run: |
         sudo apt update
-        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake extra-cmake-modules libxkbcommon-dev
+        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake extra-cmake-modules
         sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
         sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev libzstd-dev
         sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
@@ -206,6 +206,8 @@ jobs:
         Qt5_DIR:   ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
       run: |
         set -euxo pipefail
+        sudo apt-get update
+        sudo apt-get -y install libxkbcommon-dev
         git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
         sed -i -E 's/\bMODULE\b/STATIC/g' fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
         mkdir -p pic-wrapper
