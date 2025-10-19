@@ -165,7 +165,7 @@ jobs:
         key: ${{ matrix.qtversion }}-qt-linux-arm-${{ env.cache-version }}
 
     - name: Build Qt
-      if: ${{ steps.cache-qt-linux.outputs.cache-hit != 'true' }}
+      if: ${{ steps.cache-qt-linux-arm.outputs.cache-hit != 'true' }}
       run: |
         curl -L -o qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz https://download.qt.io/archive/qt/5.15/${{ matrix.qtversion }}/single/qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
         tar Jxf qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
@@ -173,77 +173,24 @@ jobs:
         mv qt-everywhere-src-${{ matrix.qtversion }} qt5
         ls -l ${{ github.workspace }}/qt5
         cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
-        rm -rf ${{ github.workspace }}/qt5
-        cd ..
-        f="$(find "$prefix" -maxdepth 6 -type f -path '*/lib*/cmake/Qt5/Qt5Config.cmake' | head -n1 || true)"
-        if [ -z "$f" ]; then
-          f="$(find "${{ github.workspace }}/Qt" -maxdepth 8 -type f -path '*/lib*/cmake/Qt5/Qt5Config.cmake' | head -n1 || true)"
-        fi
-        if [ -z "$f" ]; then
-          echo "::error::Qt5Config.cmake が見つかりません。実配置を表示します："
-          find "${{ github.workspace }}/Qt" -maxdepth 8 -type f -name '*Config.cmake' | sed 's/^/  /' || true
-          exit 1
-        fi
-    
-        Qt5_DIR="$(dirname "$f")"                  # .../lib(64)/cmake/Qt5
-        cmakedir="$(dirname "$Qt5_DIR")"           # .../lib(64)/cmake
-        libdir="$(dirname "$cmakedir")"            # .../lib or lib64
-        real_prefix="$(dirname "$libdir")"         # .../<prefix>
-    
-        echo "QT_PREFIX=$real_prefix" >> "$GITHUB_ENV"
-        echo "QT5_DIR=$Qt5_DIR"       >> "$GITHUB_ENV"
-    
-        ls -l "$real_prefix"/bin || true
-    
-        rm -rf qt5
+        rm -fr ${{ github.workspace }}/qt5
 
-
-
-
-    - name: Build fcitx5 (platforminputcontext only, wrapper CMake)
-      env:
-        QT_PREFIX: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
-        Qt5_DIR:   ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
+    - name: CHeck Qt
       run: |
-        set -euxo pipefail
-        sudo apt-get update
-        sudo apt-get -y install libxkbcommon-dev
+        ls -l ${{ github.workspace }}/Qt/${{ matrix.qtversion }}
+
+    - name: Build fcitx5
+      env: 
+        FILE: ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
+        CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/
+        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
+      run: |
         git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
-        sed -i -E 's/\bMODULE\b/STATIC/g' fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
-        mkdir -p pic-wrapper
-        cat > pic-wrapper/CMakeLists.txt <<'EOF'
-        cmake_minimum_required(VERSION 3.16)
-        project(fcitx5_pic_only LANGUAGES C CXX)
-        find_package(ECM REQUIRED NO_MODULE)
-        list(APPEND CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
-        foreach(d "/usr/share/ECM/cmake" "/usr/share/ECM/find-modules")
-          if (EXISTS "${d}")
-            list(APPEND CMAKE_MODULE_PATH "${d}")
-          endif()
-        endforeach()
-        find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus)
-        find_package(XKBCommon QUIET)
-        if (NOT XKBCommon_FOUND)
-          find_package(PkgConfig REQUIRED)
-          pkg_check_modules(XKBCOMMON REQUIRED xkbcommon)
-          add_library(XKBCommon::XKBCommon INTERFACE IMPORTED)
-          target_include_directories(XKBCommon::XKBCommon INTERFACE ${XKBCOMMON_INCLUDE_DIRS})
-          target_link_libraries(XKBCommon::XKBCommon INTERFACE ${XKBCOMMON_LIBRARIES})
-        endif()
-        add_definitions(-DQT_STATICPLUGIN)
-        add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../fcitx-qt5/qt5/platforminputcontext
-                         ${CMAKE_BINARY_DIR}/platforminputcontext-build)
-        EOF
-        cmake -S pic-wrapper -B build-fcitx5 \
-          -DCMAKE_PREFIX_PATH="${QT_PREFIX}" \
-          -DQt5_DIR="${Qt5_DIR}"
-        cmake --build build-fcitx5 -j"$(nproc)"
-
-
-
-
-
-
+        echo -e "ADD_DEFINITIONS(-DQT_STATICPLUGIN)\n$(cat $FILE)" > $FILE 
+        echo -e "find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus)\n$(cat $FILE)" > $FILE 
+        echo -e "$(head -n -5 $FILE)" > $FILE 
+        sed -i -e 's/ MODULE / STATIC /g' $FILE
+        cd fcitx-qt5/qt5/platforminputcontext && cmake . &&  make -j $(grep -c ^processor /proc/cpuinfo)
 
 
     - name: Copy libfcitxplatforminputcontextplugin.a
