@@ -147,11 +147,20 @@ jobs:
     - name: Linux prerequisites 
       run: |
         sudo apt update
-        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake extra-cmake-modules
-        sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
-        sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev libzstd-dev
-        sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
-        sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
+        sudo apt-get -y install \
+          build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev \
+          cmake extra-cmake-modules
+        sudo apt-get --no-install-recommends -qq -y install \
+          fontconfig libasound2t64 libegl1 libnss3 libpci3 \
+          libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
+        sudo apt-get --no-install-recommends -qq -y install \
+          libdbus-1-dev libssl-dev libzstd-dev
+        sudo apt-get -y install \
+          '^libxcb.*-dev' libx11-xcb-dev libxrender-dev libxi-dev \
+          libxkbcommon-dev libxkbcommon-x11-dev
+        sudo apt-get -y install \
+          libwayland-dev wayland-protocols libwayland-egl-backend-dev \
+          libwayland-egl++0 wayland-scanner++
 
     - name: Install Go
       uses: actions/setup-go@v5
