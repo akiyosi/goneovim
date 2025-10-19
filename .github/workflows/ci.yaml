@@ -147,7 +147,7 @@ jobs:
     - name: Linux prerequisites 
       run: |
         sudo apt update
-        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake extra-cmake-modules
+        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake extra-cmake-modules libxkbcommon-dev
         sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
         sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev libzstd-dev
         sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
@@ -200,9 +200,6 @@ jobs:
 
 
 
-
-
-
     - name: Build fcitx5 (platforminputcontext only, wrapper CMake)
       env:
         QT_PREFIX: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
@@ -215,21 +212,23 @@ jobs:
         cat > pic-wrapper/CMakeLists.txt <<'EOF'
         cmake_minimum_required(VERSION 3.16)
         project(fcitx5_pic_only LANGUAGES C CXX)
-        
-        # ECM を読み込んで、FindXKBCommon などのモジュールパスを展開
         find_package(ECM REQUIRED NO_MODULE)
         list(APPEND CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
-        
-        # Qt5 必須構成（DBus マクロを有効にする）
+        foreach(d "/usr/share/ECM/cmake" "/usr/share/ECM/find-modules")
+          if (EXISTS "${d}")
+            list(APPEND CMAKE_MODULE_PATH "${d}")
+          endif()
+        endforeach()
         find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus)
-        
-        # xkbcommon（fcitx5 PIC が使う）
-        find_package(XKBCommon REQUIRED)
-        
-        # 静的QtでPICを静的リンクしたい場合
+        find_package(XKBCommon QUIET)
+        if (NOT XKBCommon_FOUND)
+          find_package(PkgConfig REQUIRED)
+          pkg_check_modules(XKBCOMMON REQUIRED xkbcommon)
+          add_library(XKBCommon::XKBCommon INTERFACE IMPORTED)
+          target_include_directories(XKBCommon::XKBCommon INTERFACE ${XKBCOMMON_INCLUDE_DIRS})
+          target_link_libraries(XKBCommon::XKBCommon INTERFACE ${XKBCOMMON_LIBRARIES})
+        endif()
         add_definitions(-DQT_STATICPLUGIN)
-        
-        # fcitx-qt5 のサブディレクトリだけ追加（トップレベルは通さない）
         add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../fcitx-qt5/qt5/platforminputcontext
                          ${CMAKE_BINARY_DIR}/platforminputcontext-build)
         EOF
@@ -237,6 +236,11 @@ jobs:
           -DCMAKE_PREFIX_PATH="${QT_PREFIX}" \
           -DQt5_DIR="${Qt5_DIR}"
         cmake --build build-fcitx5 -j"$(nproc)"
+
+
+
+
+
 
 
 
