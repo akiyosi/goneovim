@@ -202,39 +202,41 @@ jobs:
 
 
 
-    # ECM（FindXKBCommon 等で要求される）
-    - name: Prereqs for fcitx5
-      run: |
-        set -eux
-        sudo apt-get update
-        sudo apt-get -y install extra-cmake-modules
 
-
-
-
-
-
-
-
-    - name: Build fcitx5 (top-level, fcitx5-only, static)
+    - name: Build fcitx5 (platforminputcontext only, wrapper CMake)
       env:
-        CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
-        Qt5_DIR:           ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
+        QT_PREFIX: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
+        Qt5_DIR:   ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
       run: |
         set -euxo pipefail
         git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
         sed -i -E 's/\bMODULE\b/STATIC/g' fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
-        cmake -S fcitx-qt5 -B build-fcitx5 \
-          -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
-          -DQt5_DIR="${Qt5_DIR}" \
-          -DCMAKE_CXX_FLAGS="-DQT_STATICPLUGIN" \
-          -DCMAKE_DISABLE_FIND_PACKAGE_Fcitx=ON \
-          -DENABLE_FCITX=OFF \
-          -DENABLE_FCITX5=ON
+        mkdir -p pic-wrapper
+        cat > pic-wrapper/CMakeLists.txt <<'EOF'
+        cmake_minimum_required(VERSION 3.16)
+        project(fcitx5_pic_only LANGUAGES C CXX)
+        
+        # ECM を読み込んで、FindXKBCommon などのモジュールパスを展開
+        find_package(ECM REQUIRED NO_MODULE)
+        list(APPEND CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
+        
+        # Qt5 必須構成（DBus マクロを有効にする）
+        find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus)
+        
+        # xkbcommon（fcitx5 PIC が使う）
+        find_package(XKBCommon REQUIRED)
+        
+        # 静的QtでPICを静的リンクしたい場合
+        add_definitions(-DQT_STATICPLUGIN)
+        
+        # fcitx-qt5 のサブディレクトリだけ追加（トップレベルは通さない）
+        add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../fcitx-qt5/qt5/platforminputcontext
+                         ${CMAKE_BINARY_DIR}/platforminputcontext-build)
+        EOF
+        cmake -S pic-wrapper -B build-fcitx5 \
+          -DCMAKE_PREFIX_PATH="${QT_PREFIX}" \
+          -DQt5_DIR="${Qt5_DIR}"
         cmake --build build-fcitx5 -j"$(nproc)"
-
-
-
 
 
 
