@@ -4,10 +4,16 @@ github.com/akiyosi/goqtframelesswindow v0.0.0-20240602061228-ca639595a315 h1:iHR
 github.com/akiyosi/goqtframelesswindow v0.0.0-20240602061228-ca639595a315/go.mod h1:739mXLJTAy19GBfA3Z2gitVRHX5NVqrVqygAMPVB21E=
 github.com/akiyosi/qt v0.0.0-20240304155940-b43fff373ad5 h1:N4bJmW4zbdcvd4goftNEn6qv1HbhkhdbGOE2c1i/VzQ=
 github.com/akiyosi/qt v0.0.0-20240304155940-b43fff373ad5/go.mod h1:nJwWSisbWIKcSPeWeiMzvNHnz6o+GIrh/pNyDIfDHQg=
+github.com/akiyosi/qt v0.0.0-20251021043539-c059a317d6ad h1:jYLlEkbbTe+BMmPMaXDv3lrXxFONYcd3hu/tFXSdS0M=
+github.com/akiyosi/qt v0.0.0-20251021043539-c059a317d6ad/go.mod h1:nJwWSisbWIKcSPeWeiMzvNHnz6o+GIrh/pNyDIfDHQg=
 github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20240304155940-b43fff373ad5 h1:Xsaemn/PJrY741TJNlz2AkmakEW+WPzxUbyLit1ECc8=
 github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20240304155940-b43fff373ad5/go.mod h1:o1Ta8fcOD7ED+UFh1S2sJGmMYyZgY/0Nhqkayiw9EOI=
+github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20251021043539-c059a317d6ad h1:RCYuZuZ6tZOdNEkWLUSAynVuYqqmSl0EbAjnTNcd+0Q=
+github.com/akiyosi/qt/internal/binding/files/docs/5.12.0 v0.0.0-20251021043539-c059a317d6ad/go.mod h1:o1Ta8fcOD7ED+UFh1S2sJGmMYyZgY/0Nhqkayiw9EOI=
 github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20240304155940-b43fff373ad5 h1:2kQxKmTSVhuxBlCa32qdRH0y8VszPll7ZTM7ySnuzb0=
 github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20240304155940-b43fff373ad5/go.mod h1:zr7ZzZXZ4UI9WpxGsiaq0S9OHCjo+H/7vU2Oyi6RRWw=
+github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20251021043539-c059a317d6ad h1:LNNpdoI/OyKFpPnAcu6UYkD6nz6XRMAIZa4zMYVuOvI=
+github.com/akiyosi/qt/internal/binding/files/docs/5.13.0 v0.0.0-20251021043539-c059a317d6ad/go.mod h1:zr7ZzZXZ4UI9WpxGsiaq0S9OHCjo+H/7vU2Oyi6RRWw=
 github.com/akiyosi/short_path v0.2.1 h1:1IiEQDNISfLOzs8A4+95vSgAN1Ch2IQY4wUpjZzWU/U=
 github.com/akiyosi/short_path v0.2.1/go.mod h1:9ZdnJCTktFi81KorFR9Zihrn8pmRD1UIx0HjASMCu1U=
 github.com/akiyosi/w32 v0.0.0-20240207145154-5d3ee780f6cb h1:3NzVmrKMtXEYNq4dsgNcqSh8wBAljNalVFIr9r/5+2E=
