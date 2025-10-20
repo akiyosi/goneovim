@@ -5,78 +5,54 @@ on: [push, pull_request]
 env:
   cache-version: v12
 
+permissions:
+  contents: read
+
 jobs:
 
 #################################################################
 # Linux
 #################################################################
 
-  test-and-build-linux:
+  test-and-build-linux-x86_64:
     strategy:
       matrix:
         go-version: [1.24.x]
-        platform: [ubuntu-22.04]
-        qtversion: [5.15.16]
+        platform: [ubuntu-24.04]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
-      QT_DIR: ${{ github.workspace }}/Qt
-      QT_VERSION: ${{ matrix.qtversion }}
+      #QT_DIR: ${{ github.workspace }}/Qt
+      #QT_VERSION: ${{ matrix.qtversion }}
       QT_API: 5.13.0
       QT_DEBUG: false
       GO111MODULE: on
-      QT_STATIC: true
-      QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
+      #QT_STATIC: true
+      #QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
+      QT_PKG_CONFIG: true
       CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
     steps:
     - name: Linux prerequisites 
       run: |
         sudo apt update
         sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake
-        sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2 libegl1-mesa libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
+        sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2t64 libegl1 libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
         sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev libzstd-dev
         sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
         sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
+        sudo apt-get --no-install-recommends install libqt*5-dev qt*5-dev qml-module-qtquick-* qt*5-doc-html
+        sudo apt install -y build-essential cmake qtbase5-dev qtbase5-dev-tools qtchooser qt5-qmake
+        sudo apt install -y \
+          qtdeclarative5-dev qml-module-qtquick-controls qml-module-qtquick-controls2 \
+          qml-module-qtgraphicaleffects \
+          qtmultimedia5-dev qml-module-qtmultimedia \
+          qttools5-dev qttools5-dev-tools 
+        sudo apt install -y libwayland-dev wayland-protocols
 
     - name: Install Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
-
-    - uses: actions/cache@v4
-      id: cache-qt-linux
-      with:
-        path: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64
-        key: ${{ matrix.qtversion }}-qt-linux-${{ env.cache-version }}
-
-    - name: Build Qt
-      if: ${{ steps.cache-qt-linux.outputs.cache-hit != 'true' }}
-      run: |
-        curl -L -o qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz https://download.qt.io/archive/qt/5.15/${{ matrix.qtversion }}/single/qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
-        tar Jxf qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
-        rm qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
-        mv qt-everywhere-src-${{ matrix.qtversion }} qt5
-        ls -l ${{ github.workspace }}/qt5
-        cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
-        rm -fr ${{ github.workspace }}/qt5
-
-    - name: Build fcitx5
-      env: 
-        FILE: ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
-        CMAKE_PREFIX_PATH: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake
-        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
-      run: |
-        git clone -q --depth 1 https://github.com/fcitx/fcitx-qt5.git
-        echo -e "ADD_DEFINITIONS(-DQT_STATICPLUGIN)\n$(cat $FILE)" > $FILE 
-        echo -e "find_package(Qt5 REQUIRED COMPONENTS Core Gui DBus)\n$(cat $FILE)" > $FILE 
-        echo -e "$(head -n -5 $FILE)" > $FILE 
-        sed -i -e 's/ MODULE / STATIC /g' $FILE
-        cd fcitx-qt5/qt5/platforminputcontext && cmake . &&  make -j $(grep -c ^processor /proc/cpuinfo)
-
-    - name: Copy libfcitxplatforminputcontextplugin.a
-      run: |
-        cp -p ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/libfcitxplatforminputcontextplugin.a ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/plugins/platforminputcontexts/
-        rm -fr ${{ github.workspace }}/fcitx-qt5
 
     - name: Checkout code
       uses: actions/checkout@v4
@@ -97,8 +73,6 @@ jobs:
         make deps
 
     - name: Get Qt binding for Go
-      env: 
-        Qt5_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/lib/cmake/Qt5
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
         make qt_bindings
@@ -116,14 +90,104 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux goneovim-linux
-        tar -jcvf goneovim-linux.tar.bz2 goneovim-linux
+        mv linux goneovim-linux-x86_64
+        tar -jcvf goneovim-linux-x86_64.tar.bz2 goneovim-linux-x86_64
 
     - name: Upload for linux
       uses: actions/upload-artifact@v4
       with:
-        name: goneovim-linux
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux.tar.bz2
+        name: goneovim-linux-x86_64
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux-x86_64.tar.bz2
+
+
+#################################################################
+# Linux ARM64
+#################################################################
+
+  test-and-build-linux-arm64:
+    strategy:
+      matrix:
+        go-version: [1.24.x]
+        platform: [ubuntu-24.04-arm]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      #QT_DIR: ${{ github.workspace }}/Qt
+      #QT_VERSION: ${{ matrix.qtversion }}
+      QT_API: 5.13.0
+      QT_DEBUG: false
+      GO111MODULE: on
+      #QT_STATIC: true
+      #QT_QMAKE_DIR: ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64/bin
+      QT_PKG_CONFIG: true
+      CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
+    steps:
+    - name: Linux prerequisites 
+      run: |
+        sudo apt update
+        sudo apt-get -y install build-essential libglu1-mesa-dev libpulse-dev libglib2.0-dev cmake
+        sudo apt-get --no-install-recommends -qq -y install fontconfig libasound2t64 libegl1 libnss3 libpci3 libxcomposite1 libxcursor1 libxi6 libxrandr2 libxtst6
+        sudo apt-get --no-install-recommends -qq -y install libdbus-1-dev libssl-dev libzstd-dev
+        sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
+        sudo apt-get install libwayland-dev libwayland-egl++ wayland-scanner++
+        sudo apt-get --no-install-recommends install libqt*5-dev qt*5-dev qml-module-qtquick-* qt*5-doc-html
+        sudo apt install -y build-essential cmake qtbase5-dev qtbase5-dev-tools qtchooser qt5-qmake
+        sudo apt install -y \
+          qtdeclarative5-dev qml-module-qtquick-controls qml-module-qtquick-controls2 \
+          qml-module-qtgraphicaleffects \
+          qtmultimedia5-dev qml-module-qtmultimedia \
+          qttools5-dev qttools5-dev-tools 
+        sudo apt install -y libwayland-dev wayland-protocols
+
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+
+    - name: Free disk space
+      run: |
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt clean
+        sudo rm -rf /usr/share/dotnet
+
+    - name: Get dependencies
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make deps
+
+    - name: Get Qt binding for Go
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make qt_bindings
+
+    - name: Test
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make test
+
+    - name: Build
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}
+        make app
+
+    - name: Archive
+      run: |
+        cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv linux goneovim-linux-arm64
+        tar -jcvf goneovim-linux-arm64.tar.bz2 goneovim-linux-arm64
+
+    - name: Upload for linux ARM
+      uses: actions/upload-artifact@v4
+      with:
+        name: goneovim-linux-arm64
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux-arm64.tar.bz2
 
 
 #################################################################
@@ -232,46 +296,6 @@ jobs:
       run: |
         go version
 
-    # - name: Install Qt for macOS
-    #   run: |
-    #     brew install qt@5
-
-
-    # - uses: actions/cache@v4
-    #   id: cache-qt-src
-    #   with:
-    #     path: ${{ github.workspace }}/qt5
-    #     key: ${{ matrix.qtversion }}-qt-src-macos-${{ env.cache-version }}
-
-    # - name: Download Qt src
-    #   if: ${{ steps.cache-qt-src.outputs.cache-hit != 'true' }}
-    #   run: |
-    #     curl -L -o qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz https://download.qt.io/official_releases/qt/5.15/${{ matrix.qtversion }}/single/qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
-    #     tar Jxf qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
-    #     rm qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
-    #     mv qt-everywhere-src-${{ matrix.qtversion }} qt5
-
-    # - uses: actions/cache@v4
-    #   id: cache-qt-macos
-    #   with:
-    #     path: ${{ github.workspace }}/Qt
-    #     key: ${{ matrix.qtversion }}-qt-macos-${{ env.cache-version }}
-
-    # - name: Build Qt
-    #   if: ${{ steps.cache-qt-macos.outputs.cache-hit != 'true' }}
-    #   run: |
-    #     cd ${{ github.workspace }}/qt5/qtbase
-    #     curl -L "https://codereview.qt-project.org/gitweb?p=qt/qtbase.git;a=patch;h=cdf64b0e47115cc473e1afd1472b4b09e130b2a5" -o cdf64b0.diff
-    #     patch -p1 < ./cdf64b0.diff
-    #     cd ..
-    #     ./configure -static -release -prefix ${{ github.workspace }}/Qt -platform macx-clang -skip qt3d -skip qtandroidextras -skip qtwayland -skip webengine -skip qtwinextras -skip qtx11extras -nomake tests -nomake examples -opensource -confirm-license -c++std c++17
-    #     sudo make -j 3
-    #     echo "!make done"
-    #     sudo make install -j 3
-    #     echo "!make install done"
-    #     rm -fr ${{ github.workspace }}/qt5
-
-
     - name: Download pre built Qt
       run: |
         curl -L -o qt-macos-static-${{ matrix.qtversion }}.tar.bz2 https://github.com/akiyosi/qt-static-builds/releases/download/qt-static-${{ matrix.qtversion }}/qt-macos-arm64-${{ matrix.qtversion }}.tar.bz2
@@ -321,9 +345,7 @@ jobs:
 # Windows
 #################################################################
 
-# test
-
-  test-windows-mingw:
+  test-and-build-windows-mingw:
     strategy:
       matrix:
         go-version: [1.24.0]
@@ -335,7 +357,8 @@ jobs:
       QT_MSYS2: true
       QT_MSYS2_DIR: C:\a\msys64\
       QT_MSVC: false
-      QT_DEBUG: false
+      QT_DEBUG: true
+      QT_DEBUG_CONSOLE: true
       GO111MODULE: on
       CGO_CFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS_ALLOW: ".*" 
@@ -343,7 +366,8 @@ jobs:
       CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
       # CGO_ENABLED: 1
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-      QT_BINDING_VER: "v0.0.0-20240304155940-b43fff373ad5"
+      # QT_BINDING_VER: "v0.0.0-20240304155940-b43fff373ad5"
+      QT_BINDING_VER: "v0.0.0-20251021043539-c059a317d6ad"
     steps:
 
     - name: Setup MSYS2 and install Qt5
@@ -351,12 +375,19 @@ jobs:
       with:
         update: true
         msystem: mingw64
-        install: mingw-w64-x86_64-toolchain
+        install: >
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-qt5
+          mingw-w64-x86_64-angleproject
+          mingw-w64-x86_64-md4c
+          mingw-w64-x86_64-zstd
+          mingw-w64-x86_64-brotli
+          mingw-w64-x86_64-pcre2
         location: C:\a\
 
     - shell: msys2 {0}
       run: |
-        pacman --noconfirm -S sed git make tree mingw-w64-x86_64-toolchain mingw-w64-x86_64-qt5 
+        pacman --noconfirm -S sed git make tree
 
     - name: Install Go
       uses: actions/setup-go@v5
@@ -399,10 +430,230 @@ jobs:
         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make test
 
+    - name: Build
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
+        cp -pR runtime cmd/goneovim/deploy/windows/
 
-# build
+    - name: Bundle specific DLLs
+      shell: msys2 {0}
+      run: |
+        set -e
+        DST=/d/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
+        cp -u /mingw64/bin/libmd4c.dll        "$DST" || true
+        cp -u /mingw64/bin/libzstd.dll        "$DST" || true
+        cp -u /mingw64/bin/libbrotlidec.dll   "$DST" || true
+        cp -u /mingw64/bin/libpcre2-8-0.dll   "$DST" || true
+        cp -u /mingw64/bin/libbrotlicommon.dll   "$DST" || true
 
-  build-windows-mingw:
+    - name: Rename
+      shell: msys2 {0}
+      run: |
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv windows goneovim-windows-x86_64
+
+    - name: Upload for windows
+      uses: actions/upload-artifact@v4
+      with:
+        name: goneovim-windows-x86_64
+        path: D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+
+
+
+
+#################################################################
+# Windows ARM
+#################################################################
+
+  test-and-build-windows-mingw-arm64:
+    strategy:
+      matrix:
+        go-version: [1.24.0]
+        platform: [windows-11-arm]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      QT_API: 5.13.0
+      QT_MSYS2: true
+      QT_MSYS2_ARCH: "arm64"
+      QT_MSYS2_DIR: /
+      QT_QMAKE_DIR: /clangarm64/bin
+      QT_MSVC: false
+      QT_DEBUG: true
+      QT_DEBUG_CONSOLE: true
+      GO111MODULE: on
+      CGO_CFLAGS:   "--target=aarch64-w64-mingw32 -O2"
+      CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -Wno-ignored-attributes -DQT_CORE_LIB -O2"
+      #CGO_LDFLAGS:  "--target=aarch64-w64-mingw32"
+      CGO_LDFLAGS: "--target=aarch64-w64-mingw32 -L/clangarm64/lib -lQt5Widgets -lQt5Gui -lQt5Core -lQt5Network -lQt5Svg -lQt5Multimedia -lQt5PrintSupport -lQt5Qml -lQt5Quick -lstdc++ -lole32 -luuid -lws2_32 -luser32 -lgdi32 -lopengl32 -lwinmm"
+      CPATH: "/clangarm64/include/QtScriptTools/5.15.17/QtScriptTools/private:/clangarm64/include/QtScriptTools:/clangarm64/include/QtScript/5.15.17/QtScript/private:/clangarm64/include/QtScript:/clangarm64/include/QtRemoteObjects/5.15.17/QtRemoteObjects/private:/clangarm64/include/QtRemoteObjects:/clangarm64/include/QtQuick/5.15.17/QtQuick/private:/clangarm64/include/QtQuick:/clangarm64/include/QtQml/5.15.17/QtQml/private:/clangarm64/include/QtQml:/clangarm64/include/QtDesigner/5.15.17/QtDesigner/private:/clangarm64/include/QtDesigner:/clangarm64/include/QtPrintSupport/5.15.17/QtPrintSupport/private:/clangarm64/include/QtPrintSupport:/clangarm64/include/QtOpenGL/5.15.17/QtOpenGL/private:/clangarm64/include/QtOpenGL:/clangarm64/include/QtSvg/5.15.17/QtSvg/private:/clangarm64/include/QtSvg:/clangarm64/include/QtMultimedia/5.15.17/QtMultimedia/private:/clangarm64/include/QtMultimedia:/clangarm64/include/QtDBus/5.15.17/QtDBus/private:/clangarm64/include/QtDBus:/clangarm64/include/QtNetwork/5.15.17/QtNetwork/private:/clangarm64/include/QtNetwork:/clangarm64/include/QtWidgets/5.15.17/QtWidgets/private:/clangarm64/include/QtWidgets:/clangarm64/include/QtGui/5.15.17/QtGui/private:/clangarm64/include/QtGui:/clangarm64/include/QtCore/5.15.17/QtCore/private:/clangarm64/include/QtCore:/clangarm64/include"
+      LIBRARY_PATH: /clangarm64/lib
+      CC:  "aarch64-w64-mingw32-clang"
+      CXX: "aarch64-w64-mingw32-clang++"
+      AR:  "llvm-ar"
+      RANLIB: "llvm-ranlib"
+      NM:  "llvm-nm"
+      #PKG_CONFIG: "aarch64-w64-mingw32-pkg-config"
+      PKG_CONFIG: "/clangarm64/bin/pkg-config"
+      PKG_CONFIG_PATH: "/clangarm64/lib/pkgconfig"
+      MSYSTEM: "CLANGARM64"
+      # CGO_ENABLED: 1
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+      #QT_BINDING_VER: "v0.0.0-20240304155940-b43fff373ad5"
+      QT_BINDING_VER: "v0.0.0-20251021043539-c059a317d6ad"
+
+    steps:
+    - name: Setup MSYS2 (ARM64) and install Qt5
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        msystem: clangarm64
+        install: >
+          mingw-w64-clang-aarch64-toolchain
+          mingw-w64-clang-aarch64-llvm
+          mingw-w64-clang-aarch64-pkgconf
+          mingw-w64-clang-aarch64-angleproject
+          mingw-w64-clang-aarch64-qt5-base
+          mingw-w64-clang-aarch64-qt5-multimedia
+          mingw-w64-clang-aarch64-qt5-svg
+          mingw-w64-clang-aarch64-qt5-imageformats
+          mingw-w64-clang-aarch64-qt5-tools
+          mingw-w64-clang-aarch64-qt5-declarative
+          mingw-w64-clang-aarch64-qt5-remoteobjects
+          mingw-w64-clang-aarch64-qt5-script
+          mingw-w64-clang-aarch64-qt5-quickcontrols2
+        location: C:\a\
+
+    - name: Setup tools
+      shell: msys2 {0}
+      run: |
+        pacman --noconfirm -S sed git make tree
+
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
+
+    - name: Get dependencies
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin/:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        make deps
+
+    - name: Get Qt binding for Go
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin/:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        go get github.com/akiyosi/qt@${{ env.QT_BINDING_VER }}
+        go get github.com/akiyosi/qt/internal/cmd@${{ env.QT_BINDING_VER }}
+        go get github.com/akiyosi/qt/internal/cmd/moc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtdeploy@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtminimal@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtmoc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@${{ env.QT_BINDING_VER }}
+        $(go env GOPATH)/bin/qtsetup -test=false
+        $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
+
+    - name: Test
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        make test
+
+    - name: Build ARM64 resource
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        /clangarm64/bin/llvm-windres -O coff -i cmd/goneovim/icon.rc -o cmd/goneovim/icon_windows_arm64.syso
+        rm cmd/goneovim/icon_windows.syso
+
+    - name: Build
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
+        cp -pR runtime cmd/goneovim/deploy/windows/
+
+
+    - name: Bundle specific DLLs (ARM64)
+      shell: msys2 {0}
+      run: |
+        DST="/c/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows"
+        cp -u /clangarm64/bin/libmd4c.dll        "$DST" || true
+        cp -u /clangarm64/bin/libzstd.dll        "$DST" || true
+        cp -u /clangarm64/bin/libbrotlidec.dll   "$DST" || true
+        cp -u /clangarm64/bin/libpcre2-8-0.dll   "$DST" || true
+        cp -u /clangarm64/bin/libbrotlicommon.dll   "$DST" || true
+
+
+    - name: install neovim
+      shell: msys2 {0}
+      run: |
+        pacman --noconfirm -S mingw-w64-clang-aarch64-neovim
+
+    - name: Headless smoke test (ARM64, MSYS2)
+      shell: C:\a\_temp\setup-msys2\msys2.CMD {0}  # setup-msys2 の既定シェル
+      env:
+        QT_QPA_PLATFORM: offscreen
+        QT_PLUGIN_PATH: /clangarm64/plugins
+        EXTRA_BIN_DIR: /c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows
+      run: |
+        set -euxo pipefail
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
+        BIN="/c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows/goneovim.exe"
+        if [ ! -f "$BIN" ]; then
+          echo "Not found: $BIN"
+          exit 1
+        fi
+        export PATH="/clangarm64/bin:${EXTRA_BIN_DIR}:${PATH}"
+        if "$BIN" --version >/dev/null 2>&1; then
+          echo "--version succeeded"
+        else
+          echo "--version not supported; doing timed run..."
+        fi
+    
+        set +e
+        timeout -k 2s 10s "$BIN" >/dev/null 2>&1
+        rc=$?
+        set -e
+    
+        if [ $rc -eq 0 ] || [ $rc -eq 124 ]; then
+          echo "Smoke test passed (rc=$rc)."
+          exit 0
+        else
+          echo "Smoke test failed (rc=$rc)."
+          exit $rc
+        fi
+
+    - name: Rename
+      shell: msys2 {0}
+      run: |
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv windows goneovim-windows-arm64
+
+    - name: Upload for windows ARM
+      uses: actions/upload-artifact@v4
+      with:
+        name: goneovim-windows-arm64
+        path: C:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-windows-arm64
+
+
+  build-windows-mingw-static:
     strategy:
       matrix:
         go-version: [1.24.0]
@@ -415,7 +666,7 @@ jobs:
       QT_MSYS2_DIR: C:\a\msys64\
       QT_MSYS2_STATIC: true
       QT_MSVC: false
-      QT_DEBUG_CONSOLE: true
+      QT_DEBUG_CONSOLE: false
       QT_DEBUG: false
       GO111MODULE: on
       CGO_CFLAGS_ALLOW: ".*" 
@@ -423,7 +674,7 @@ jobs:
       CGO_LDFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-      QT_BINDING_VER: "v0.0.0-20240304155940-b43fff373ad5"
+      QT_BINDING_VER: "v0.0.0-20251021043539-c059a317d6ad"
     steps:
 
     - name: Install Go
@@ -489,14 +740,216 @@ jobs:
       shell: msys2 {0}
       run: |
         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv windows goneovim-windows
-      # zip -r goneovim-windows.zip goneovim-windows
+        mv windows goneovim-windows-x86_64-static
 
     - name: Upload for windows
       uses: actions/upload-artifact@v4
       with:
-        name: goneovim-windows
+        name: goneovim-windows-x86_64-static
         path: D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+
+
+  build-windows-mingw-arm-static:
+    strategy:
+      matrix:
+        go-version: [1.24.0]
+        platform: [windows-11-arm]
+    runs-on: ${{ matrix.platform }}
+  
+    env:
+      GOPATH: ${{ github.workspace }}
+      QT_BINDING_VER: "v0.0.0-20251021043539-c059a317d6ad"
+      QT_API: 5.13.0
+      QT_MSYS2: true
+      QT_MSYS2_ARCH: "arm64"
+      QT_MSYS2_DIR: /
+      QT_QMAKE_DIR: /clangarm64/qt5-static/bin
+      QT_MSVC: false
+      QT_DEBUG: false
+      QT_DEBUG_CONSOLE: false
+      GO111MODULE: on
+      CPATH: "/clangarm64/qt5-static/include/QtScriptTools/5.15.17/QtScriptTools/private:/clangarm64/qt5-static/include/QtScriptTools:/clangarm64/qt5-static/include/QtScript/5.15.17/QtScript/private:/clangarm64/qt5-static/include/QtScript:/clangarm64/qt5-static/include/QtRemoteObjects/5.15.17/QtRemoteObjects/private:/clangarm64/qt5-static/include/QtRemoteObjects:/clangarm64/qt5-static/include/QtQuick/5.15.17/QtQuick/private:/clangarm64/qt5-static/include/QtQuick:/clangarm64/qt5-static/include/QtQml/5.15.17/QtQml/private:/clangarm64/qt5-static/include/QtQml:/clangarm64/qt5-static/include/QtDesigner/5.15.17/QtDesigner/private:/clangarm64/qt5-static/include/QtDesigner:/clangarm64/qt5-static/include/QtPrintSupport/5.15.17/QtPrintSupport/private:/clangarm64/qt5-static/include/QtPrintSupport:/clangarm64/qt5-static/include/QtOpenGL/5.15.17/QtOpenGL/private:/clangarm64/qt5-static/include/QtOpenGL:/clangarm64/qt5-static/include/QtSvg/5.15.17/QtSvg/private:/clangarm64/qt5-static/include/QtSvg:/clangarm64/qt5-static/include/QtMultimedia/5.15.17/QtMultimedia/private:/clangarm64/qt5-static/include/QtMultimedia:/clangarm64/qt5-static/include/QtDBus/5.15.17/QtDBus/private:/clangarm64/qt5-static/include/QtDBus:/clangarm64/qt5-static/include/QtNetwork/5.15.17/QtNetwork/private:/clangarm64/qt5-static/include/QtNetwork:/clangarm64/qt5-static/include/QtWidgets/5.15.17/QtWidgets/private:/clangarm64/qt5-static/include/QtWidgets:/clangarm64/qt5-static/include/QtGui/5.15.17/QtGui/private:/clangarm64/qt5-static/include/QtGui:/clangarm64/qt5-static/include/QtCore/5.15.17/QtCore/private:/clangarm64/qt5-static/include/QtCore:/clangarm64/qt5-static/include"
+      LIBRARY_PATH: /clangarm64/qt5-static/lib:/clangarm64/lib
+      CC:  "aarch64-w64-mingw32-clang"
+      CXX: "aarch64-w64-mingw32-clang++"
+      AR:  "llvm-ar"
+      RANLIB: "llvm-ranlib"
+      NM:  "llvm-nm"
+      CGO_CFLAGS:   "--target=aarch64-w64-mingw32 -O2"
+      CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -Wno-ignored-attributes -DQT_CORE_LIB -DQT_STATICPLUGIN -O2"
+      CGO_LDFLAGS:  "--target=aarch64-w64-mingw32 -static -static-libstdc++ -static-libgcc"
+      PKG_CONFIG: /clangarm64/bin/pkg-config
+      PKG_CONFIG_PATH: /clangarm64/qt5-static/lib/pkgconfig
+      PKG_CONFIG_LIBDIR: /clangarm64/qt5-static/lib/pkgconfig
+      MSYSTEM: "CLANGARM64"
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+      QT_MSYS2_STATIC: true
+
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Setup MSYS2 (ARM64, Clang)
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        msystem: clangarm64
+        install: >
+          mingw-w64-clang-aarch64-toolchain
+          mingw-w64-clang-aarch64-llvm
+          mingw-w64-clang-aarch64-pkgconf
+          mingw-w64-clang-aarch64-qt5-static
+          mingw-w64-clang-aarch64-zlib
+          mingw-w64-clang-aarch64-zstd
+          mingw-w64-clang-aarch64-openssl
+        location: C:\a\
+
+    - name: Base tools
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        pacman --noconfirm -S sed git make unzip zip tree
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
+
+    - name: Get dependencies
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        make deps
+
+    - name: Get Qt binding for Go
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        go get github.com/akiyosi/qt@${{ env.QT_BINDING_VER }}
+        go get github.com/akiyosi/qt/internal/cmd@${{ env.QT_BINDING_VER }}
+        go get github.com/akiyosi/qt/internal/cmd/moc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtdeploy@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtminimal@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtmoc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@${{ env.QT_BINDING_VER }}
+        $(go env GOPATH)/bin/qtsetup -test=false
+        $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
+
+    - name: Build ARM64 resource
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/qt5-static/bin:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        /clangarm64/bin/llvm-windres -O coff -i cmd/goneovim/icon.rc -o cmd/goneovim/icon_windows_arm64.syso
+        rm -f cmd/goneovim/icon_windows.syso || true
+
+
+    - name: Build
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        export PATH=/clangarm64/qt5-static/bin:/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:/usr/bin:$PATH
+        unset PKG_CONFIG_SYSTEM_INCLUDE_PATH PKG_CONFIG_SYSTEM_LIBRARY_PATH
+        QT_PCS="Qt5Widgets Qt5Gui Qt5Core Qt5Svg Qt5Network Qt5PrintSupport"
+        export CGO_CXXFLAGS="$CGO_CXXFLAGS $($PKG_CONFIG --cflags $QT_PCS)"
+        LIBS_RAW="$($PKG_CONFIG --static --libs $QT_PCS)"
+        LIBS_FIXED="$(echo "$LIBS_RAW" \
+          | sed -E 's/-l:libz(\s|$)/-l:libz.a\1/g; s/-l:libzstd(\s|$)/-l:libzstd.a\1/g; s/-l:libssl(\s|$)/-l:libssl.a\1/g; s/-l:libcrypto(\s|$)/-l:libcrypto.a\1/g')"
+        export CGO_LDFLAGS="--target=aarch64-w64-mingw32 -static -static-libstdc++ -static-libgcc -L/clangarm64/lib -L/clangarm64/qt5-static/lib $LIBS_FIXED"
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
+        cp -pR runtime cmd/goneovim/deploy/windows/
+
+    - name: install neovim
+      shell: msys2 {0}
+      run: |
+        pacman --noconfirm -S mingw-w64-clang-aarch64-neovim
+
+    - name: Headless smoke test (ARM64, MSYS2)
+      shell: C:\a\_temp\setup-msys2\msys2.CMD {0}  # setup-msys2 の既定シェル
+      env:
+        QT_QPA_PLATFORM: offscreen
+        QT_PLUGIN_PATH: /clangarm64/plugins
+        EXTRA_BIN_DIR: /c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows
+      run: |
+        set -euxo pipefail
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
+        BIN="/c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows/goneovim.exe"
+        if [ ! -f "$BIN" ]; then
+          echo "Not found: $BIN"
+          exit 1
+        fi
+        export PATH="/clangarm64/bin:${EXTRA_BIN_DIR}:${PATH}"
+        if "$BIN" --version >/dev/null 2>&1; then
+          echo "--version succeeded"
+        else
+          echo "--version not supported; doing timed run..."
+        fi
+    
+        set +e
+        timeout -k 2s 10s "$BIN" >/dev/null 2>&1
+        rc=$?
+        set -e
+    
+        if [ $rc -eq 0 ] || [ $rc -eq 124 ]; then
+          echo "Smoke test passed (rc=$rc)."
+          exit 0
+        else
+          echo "Smoke test failed (rc=$rc)."
+          exit $rc
+        fi
+
+    - name: Rename
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv windows goneovim-windows-arm64-static
+
+    - name: Upload artifact (ARM64)
+      uses: actions/upload-artifact@v4
+      with:
+        name: goneovim-windows-arm64-static
+        path: C:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   # test-and-build-windows-msvc:
