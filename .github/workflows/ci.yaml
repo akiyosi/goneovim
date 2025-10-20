@@ -186,10 +186,6 @@ jobs:
         ls -l ${{ github.workspace }}/Qt/
         ls -l ${{ github.workspace }}/Qt/${{ matrix.qtversion }}
 
-    - name: CHeck Qt
-      run: |
-        ls -l ${{ github.workspace }}/Qt/${{ matrix.qtversion }}
-
     - name: Build fcitx5
       env: 
         FILE: ${{ github.workspace }}/fcitx-qt5/qt5/platforminputcontext/CMakeLists.txt
