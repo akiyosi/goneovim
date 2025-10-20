@@ -182,6 +182,9 @@ jobs:
         ls -l ${{ github.workspace }}/qt5
         cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -skip qtlocation -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
         rm -fr ${{ github.workspace }}/qt5
+        ls -l ${{ github.workspace }}/
+        ls -l ${{ github.workspace }}/Qt/
+        ls -l ${{ github.workspace }}/Qt/${{ matrix.qtversion }}
 
     - name: CHeck Qt
       run: |
