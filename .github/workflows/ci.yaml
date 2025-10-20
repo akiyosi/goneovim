@@ -160,9 +160,6 @@ jobs:
           libxkbcommon-dev libxkbcommon-x11-dev
         sudo apt-get -y install libwayland-dev libwayland-egl-backend-dev \
           libwayland-egl++1 wayland-scanner++
-        sudo apt-get install -y \
-          libsqlite3-dev zlib1g-dev libpng-dev libjpeg-dev \
-          libproj-dev
 
     - name: Install Go
       uses: actions/setup-go@v5
@@ -183,7 +180,7 @@ jobs:
         rm qt-everywhere-opensource-src-${{ matrix.qtversion }}.tar.xz
         mv qt-everywhere-src-${{ matrix.qtversion }} qt5
         ls -l ${{ github.workspace }}/qt5
-        cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
+        cd ${{ github.workspace }}/qt5 && ./configure -prefix ${{ github.workspace }}/Qt/${{ matrix.qtversion }}/gcc_64 -no-icu -confirm-license -opensource -static -qt-zlib -qt-libpng -qt-libjpeg -xcb -xcb-xlib -bundled-xcb-xinput -sysconfdir /etc/xdg -dbus-runtime -openssl-runtime -opengl -optimize-size -skip qtwebengine -skip qtfeedback -skip qtpim -skip qtlocation -skip qtpositioning -feature-wayland-client -nomake tests -nomake examples && make -j $(grep -c ^processor /proc/cpuinfo) && make install -j $(grep -c ^processor /proc/cpuinfo)
         rm -fr ${{ github.workspace }}/qt5
 
     - name: CHeck Qt
