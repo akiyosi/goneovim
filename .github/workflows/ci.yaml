@@ -160,6 +160,9 @@ jobs:
           libxkbcommon-dev libxkbcommon-x11-dev
         sudo apt-get -y install libwayland-dev libwayland-egl-backend-dev \
           libwayland-egl++1 wayland-scanner++
+        sudo apt-get install -y \
+          libsqlite3-dev zlib1g-dev libpng-dev libjpeg-dev \
+          libproj-dev
 
     - name: Install Go
       uses: actions/setup-go@v5
