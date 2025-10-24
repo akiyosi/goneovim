@@ -583,55 +583,42 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime cmd/goneovim/deploy/windows/
 
-
-    - name: Install Neovim (portable)
-      shell: powershell
-      run: choco install neovim.portable --no-progress -y
-
-
+    - uses: rhysd/action-setup-vim@v1
+      with:
+        neovim: true
 
     - name: Headless smoke test (ARM64, MSYS2)
-      shell: C:\a\_temp\setup-msys2\msys2.CMD {0}
+      shell: C:\a\_temp\setup-msys2\msys2.CMD {0}  # setup-msys2 の既定シェル
       env:
-        QT_QPA_PLATFORM: minimal
-        QT_PLUGIN_PATH: /clangarm64/share/qt5/plugins
-        QT_QPA_PLATFORM_PLUGIN_PATH: /clangarm64/share/qt5/plugins/platforms
-        NVIM_DIR: /c/ProgramData/chocolatey/lib/neovim.portable/tools/neovim/bin
+        QT_QPA_PLATFORM: offscreen
+        QT_PLUGIN_PATH: /clangarm64/plugins
         EXTRA_BIN_DIR: /c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows
       run: |
         set -euxo pipefail
-    
         BIN="/c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows/goneovim.exe"
-        test -f "$BIN" || { echo "Not found: $BIN"; exit 1; }
-    
-        # Add nvim.exe into PATH
-        if [ -x "${NVIM_DIR}/nvim.exe" ]; then
-          export PATH="${NVIM_DIR}:${PATH}"
-        else
-          echo "nvim.exe not found in ${NVIM_DIR}"
+        if [ ! -f "$BIN" ]; then
+          echo "Not found: $BIN"
           exit 1
         fi
-    
         export PATH="/clangarm64/bin:${EXTRA_BIN_DIR}:${PATH}"
-        nvim --version | head -n1 || { echo "nvim not runnable"; exit 1; }
-        "$BIN" --version >/dev/null 2>&1 && echo "--version succeeded"
+        if "$BIN" --version >/dev/null 2>&1; then
+          echo "--version succeeded"
+        else
+          echo "--version not supported; doing timed run..."
+        fi
+    
         set +e
         timeout -k 2s 10s "$BIN" >/dev/null 2>&1
         rc=$?
         set -e
     
-        case "$rc" in
-          0|124)
-            echo "Smoke test passed (rc=$rc)."
-            ;;
-          1)
-            echo "Smoke test soft-pass (rc=1)."
-            ;;
-          *)
-            echo "Smoke test failed (rc=$rc)."
-            exit "$rc"
-            ;;
-        esac
+        if [ $rc -eq 0 ] || [ $rc -eq 124 ]; then
+          echo "Smoke test passed (rc=$rc)."
+          exit 0
+        else
+          echo "Smoke test failed (rc=$rc)."
+          exit $rc
+        fi
 
 
     - name: Rename
