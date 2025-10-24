@@ -388,7 +388,7 @@ jobs:
 # Windows
 #################################################################
 
-  windows:
+  windows-x86_64:
     needs: [check-new-commit]
     strategy:
       matrix:
@@ -475,11 +475,11 @@ jobs:
         cp -pR runtime cmd/goneovim/deploy/windows/
 
     - if: github.event_name == 'workflow_dispatch'
-      run: echo "ARCHIVE_NAME=goneovim-windows" >> $env:GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-windows-x86_64" >> $env:GITHUB_ENV
     - if: github.event_name == 'schedule'
-      run: echo "ARCHIVE_NAME=goneovim-windows" >> $env:GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-windows-x86_64" >> $env:GITHUB_ENV
     - if: github.event_name == 'push'
-      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-windows.outputs.GONEOVIM_VERSION }}-windows" >> $env:GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-windows.outputs.GONEOVIM_VERSION }}-windows-x86_64" >> $env:GITHUB_ENV
 
     - name: Archive
       shell: msys2 {0}
@@ -491,7 +491,7 @@ jobs:
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: goneovim-windows
+        name: goneovim-windows-x86_64
         path: D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.zip
 
 
@@ -722,7 +722,7 @@ jobs:
 
   publish:
     # needs: [linux, windows, macos, freebsd]
-    needs: [linux, windows, macos-x86_64, macos-arm64]
+    needs: [linux, windows-x86_64, windows-arm, macos-x86_64, macos-arm64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -766,6 +766,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create $TAG_NAME $PRERELEASE --title "$SUBJECT" --target $GITHUB_SHA /home/runner/work/goneovim/goneovim/goneovim-macos-x86_64/* /home/runner/work/goneovim/goneovim/goneovim-macos-arm64/* /home/runner/work/goneovim/goneovim/goneovim-linux/* /home/runner/work/goneovim/goneovim/goneovim-windows/*
+          gh release create $TAG_NAME $PRERELEASE --title "$SUBJECT" --target $GITHUB_SHA /home/runner/work/goneovim/goneovim/goneovim-macos-x86_64/* /home/runner/work/goneovim/goneovim/goneovim-macos-arm64/* /home/runner/work/goneovim/goneovim/goneovim-linux/* /home/runner/work/goneovim/goneovim/goneovim-windows-x86_64/* /home/runner/work/goneovim/goneovim/goneovim-windows-arm/*
 
 
