@@ -33,7 +33,7 @@ jobs:
 # Linux
 #################################################################
 
-  linux:
+  linux-x86_64:
     needs: [check-new-commit]
     strategy:
       matrix:
@@ -106,11 +106,11 @@ jobs:
         make app
 
     - if: github.event_name == 'workflow_dispatch'
-      run: echo "ARCHIVE_NAME=goneovim-linux" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-linux-x86_64" >> $GITHUB_ENV
     - if: github.event_name == 'schedule'
-      run: echo "ARCHIVE_NAME=goneovim-linux" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-linux-x86_64" >> $GITHUB_ENV
     - if: github.event_name == 'push'
-      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-linux" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-linux-x86_64" >> $GITHUB_ENV
 
     - name: Archive
       run: |
@@ -121,7 +121,7 @@ jobs:
     - name: Upload for linux
       uses: actions/upload-artifact@v4
       with:
-        name: goneovim-linux
+        name: goneovim-linux-x86_64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
 
 
@@ -130,7 +130,7 @@ jobs:
 # Linux ARM
 #################################################################
 
-  linux-arm:
+  linux-arm64:
     needs: [check-new-commit]
     strategy:
       matrix:
@@ -203,11 +203,11 @@ jobs:
         make app
 
     - if: github.event_name == 'workflow_dispatch'
-      run: echo "ARCHIVE_NAME=goneovim-linux-arm" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-linux-arm64" >> $GITHUB_ENV
     - if: github.event_name == 'schedule'
-      run: echo "ARCHIVE_NAME=goneovim-linux-arm" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-linux-arm64" >> $GITHUB_ENV
     - if: github.event_name == 'push'
-      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-linux-arm" >> $GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-linux.outputs.GONEOVIM_VERSION }}-linux-arm64" >> $GITHUB_ENV
 
     - name: Archive
       run: |
@@ -218,7 +218,7 @@ jobs:
     - name: Upload for linux
       uses: actions/upload-artifact@v4
       with:
-        name: goneovim-linux-arm
+        name: goneovim-linux-arm64
         path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.tar.bz2
 
 
@@ -500,7 +500,7 @@ jobs:
 # Windows ARM
 #################################################################
 
-  windows-arm:
+  windows-arm64:
     needs: [check-new-commit]
     strategy:
       matrix:
@@ -629,11 +629,11 @@ jobs:
         cp -pR runtime cmd/goneovim/deploy/windows/
 
     - if: github.event_name == 'workflow_dispatch'
-      run: echo "ARCHIVE_NAME=goneovim-windows-arm" >> $env:GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-windows-arm64" >> $env:GITHUB_ENV
     - if: github.event_name == 'schedule'
-      run: echo "ARCHIVE_NAME=goneovim-windows-arm" >> $env:GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-windows-arm64" >> $env:GITHUB_ENV
     - if: github.event_name == 'push'
-      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-windows.outputs.GONEOVIM_VERSION }}-windows-arm" >> $env:GITHUB_ENV
+      run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-windows.outputs.GONEOVIM_VERSION }}-windows-arm64" >> $env:GITHUB_ENV
 
     - name: Archive
       shell: msys2 {0}
@@ -645,7 +645,7 @@ jobs:
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: goneovim-windows-arm
+        name: goneovim-windows-arm64
         path: C:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/${{ env.ARCHIVE_NAME }}.zip
 
 
@@ -722,7 +722,7 @@ jobs:
 
   publish:
     # needs: [linux, windows, macos, freebsd]
-    needs: [linux, windows-x86_64, windows-arm, macos-x86_64, macos-arm64]
+    needs: [linux-x86_64, linux-arm64, windows-x86_64, windows-arm64, macos-x86_64, macos-arm64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -766,6 +766,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create $TAG_NAME $PRERELEASE --title "$SUBJECT" --target $GITHUB_SHA /home/runner/work/goneovim/goneovim/goneovim-macos-x86_64/* /home/runner/work/goneovim/goneovim/goneovim-macos-arm64/* /home/runner/work/goneovim/goneovim/goneovim-linux/* /home/runner/work/goneovim/goneovim/goneovim-windows-x86_64/* /home/runner/work/goneovim/goneovim/goneovim-windows-arm/*
+          gh release create $TAG_NAME $PRERELEASE --title "$SUBJECT" --target $GITHUB_SHA /home/runner/work/goneovim/goneovim/goneovim-macos-x86_64/* /home/runner/work/goneovim/goneovim/goneovim-macos-arm64/* /home/runner/work/goneovim/goneovim/goneovim-linux-x86_64/* /home/runner/work/goneovim/goneovim/goneovim-linux-arm64/* /home/runner/work/goneovim/goneovim/goneovim-windows-x86_64/* /home/runner/work/goneovim/goneovim/goneovim-windows-arm64/*
 
 

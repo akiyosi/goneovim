@@ -11,7 +11,7 @@ jobs:
 # Linux
 #################################################################
 
-  test-and-build-linux:
+  test-and-build-linux-x86_64:
     strategy:
       matrix:
         go-version: [1.24.x]
@@ -87,21 +87,21 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux goneovim-linux
-        tar -jcvf goneovim-linux.tar.bz2 goneovim-linux
+        mv linux goneovim-linux-x86_64
+        tar -jcvf goneovim-linux-x86_64.tar.bz2 goneovim-linux-x86_64
 
     - name: Upload for linux
       uses: actions/upload-artifact@v4
       with:
-        name: goneovim-linux
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux.tar.bz2
+        name: goneovim-linux-x86_64
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux-x86_64.tar.bz2
 
 
 #################################################################
 # Linux ARM64
 #################################################################
 
-  test-and-build-linux-arm:
+  test-and-build-linux-arm64:
     strategy:
       matrix:
         go-version: [1.24.x]
@@ -177,14 +177,14 @@ jobs:
     - name: Archive
       run: |
         cd ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv linux goneovim-linux-arm
-        tar -jcvf goneovim-linux-arm.tar.bz2 goneovim-linux-arm
+        mv linux goneovim-linux-arm64
+        tar -jcvf goneovim-linux-arm64.tar.bz2 goneovim-linux-arm64
 
     - name: Upload for linux ARM
       uses: actions/upload-artifact@v4
       with:
-        name: goneovim-linux-arm
-        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux-arm.tar.bz2
+        name: goneovim-linux-arm64
+        path: ${{ github.workspace }}/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-linux-arm64.tar.bz2
 
 
 #################################################################
@@ -436,12 +436,12 @@ jobs:
       shell: msys2 {0}
       run: |
         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv windows goneovim-windows
+        mv windows goneovim-windows-x86_64
 
     - name: Upload for windows
       uses: actions/upload-artifact@v4
       with:
-        name: goneovim-windows
+        name: goneovim-windows-x86_64
         path: D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
 
 
@@ -453,7 +453,7 @@ jobs:
 
 # test
 
-  test-and-build-windows-mingw-arm:
+  test-and-build-windows-mingw-arm64:
     strategy:
       matrix:
         go-version: [1.24.0]
@@ -617,18 +617,17 @@ jobs:
           exit $rc
         fi
 
-
     - name: Rename
       shell: msys2 {0}
       run: |
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-        mv windows goneovim-windows-arm
+        mv windows goneovim-windows-arm64
 
     - name: Upload for windows ARM
       uses: actions/upload-artifact@v4
       with:
-        name: goneovim-windows-arm
-        path: C:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-windows-arm
+        name: goneovim-windows-arm64
+        path: C:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/goneovim-windows-arm64
 
 
 
