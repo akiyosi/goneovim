@@ -583,6 +583,24 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime cmd/goneovim/deploy/windows/
 
+
+    - name: Headless smoke test (ARM64)
+      shell: pwsh
+      env:
+        QT_QPA_PLATFORM: offscreen
+      run: |
+        $bin = "C:\a\goneovim\goneovim\src\github.com\akiyosi\goneovim\cmd\goneovim\deploy\windows\goneovim.exe"
+        if (-not (Test-Path $bin)) {
+          Write-Error "Not found: $bin"
+          exit 1
+        }
+        $p = Start-Process -FilePath $bin -PassThru
+        Start-Sleep -Seconds 5
+        if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+        if ($p.ExitCode -ne 0 -and $p.ExitCode -ne $null) {
+          exit $p.ExitCode
+        }
+
     - name: Rename
       shell: msys2 {0}
       run: |
