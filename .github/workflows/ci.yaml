@@ -583,9 +583,10 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime cmd/goneovim/deploy/windows/
 
-    - uses: rhysd/action-setup-vim@v1
-      with:
-        neovim: true
+    - name: install neovim
+      shell: msys2 {0}
+      run: |
+        pacman --noconfirm -S mingw-w64-clang-aarch64-neovim
 
     - name: Headless smoke test (ARM64, MSYS2)
       shell: C:\a\_temp\setup-msys2\msys2.CMD {0}  # setup-msys2 の既定シェル
@@ -595,6 +596,7 @@ jobs:
         EXTRA_BIN_DIR: /c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows
       run: |
         set -euxo pipefail
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
         BIN="/c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows/goneovim.exe"
         if [ ! -f "$BIN" ]; then
           echo "Not found: $BIN"
