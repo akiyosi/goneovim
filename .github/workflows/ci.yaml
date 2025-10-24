@@ -584,22 +584,40 @@ jobs:
         cp -pR runtime cmd/goneovim/deploy/windows/
 
 
-    - name: Headless smoke test (ARM64)
-      shell: pwsh
+
+    - name: Headless smoke test (ARM64, MSYS2)
+      shell: C:\a\_temp\setup-msys2\msys2.CMD {0}  # setup-msys2 の既定シェル
       env:
         QT_QPA_PLATFORM: offscreen
+        QT_PLUGIN_PATH: /clangarm64/plugins
+        EXTRA_BIN_DIR: /c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows
       run: |
-        $bin = "C:\a\goneovim\goneovim\src\github.com\akiyosi\goneovim\cmd\goneovim\deploy\windows\goneovim.exe"
-        if (-not (Test-Path $bin)) {
-          Write-Error "Not found: $bin"
+        set -euxo pipefail
+        BIN="/c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows/goneovim.exe"
+        if [ ! -f "$BIN" ]; then
+          echo "Not found: $BIN"
           exit 1
-        }
-        $p = Start-Process -FilePath $bin -PassThru
-        Start-Sleep -Seconds 5
-        if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
-        if ($p.ExitCode -ne 0 -and $p.ExitCode -ne $null) {
-          exit $p.ExitCode
-        }
+        fi
+        export PATH="/clangarm64/bin:${EXTRA_BIN_DIR}:${PATH}"
+        if "$BIN" --version >/dev/null 2>&1; then
+          echo "--version succeeded"
+        else
+          echo "--version not supported; doing timed run..."
+        fi
+    
+        set +e
+        timeout -k 2s 10s "$BIN" >/dev/null 2>&1
+        rc=$?
+        set -e
+    
+        if [ $rc -eq 0 ] || [ $rc -eq 124 ]; then
+          echo "Smoke test passed (rc=$rc)."
+          exit 0
+        else
+          echo "Smoke test failed (rc=$rc)."
+          exit $rc
+        fi
+
 
     - name: Rename
       shell: msys2 {0}
