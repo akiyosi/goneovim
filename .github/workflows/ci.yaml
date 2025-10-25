@@ -739,7 +739,7 @@ jobs:
       QT_MSYS2: true
       QT_MSYS2_ARCH: "arm64"
       QT_MSYS2_DIR: /
-      QT_QMAKE_DIR: /clangarm64/bin
+      QT_QMAKE_DIR: /clangarm64/qt5-static/bin
       QT_MSVC: false
       QT_DEBUG: false
       QT_DEBUG_CONSOLE: false
@@ -817,7 +817,7 @@ jobs:
       shell: msys2 {0}
       run: |
         set -euxo pipefail
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/qt5-static/bin:$PATH
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         /clangarm64/bin/llvm-windres -O coff -i cmd/goneovim/icon.rc -o cmd/goneovim/icon_windows_arm64.syso
         rm -f cmd/goneovim/icon_windows.syso || true
@@ -825,7 +825,7 @@ jobs:
     - name: Build
       shell: msys2 {0}
       run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/qt5-static/bin:$PATH
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime cmd/goneovim/deploy/windows/
