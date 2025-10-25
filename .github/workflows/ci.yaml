@@ -755,7 +755,7 @@ jobs:
       CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -Wno-ignored-attributes -DQT_CORE_LIB -O2"
       CGO_LDFLAGS:  "--target=aarch64-w64-mingw32"
       PKG_CONFIG: "/clangarm64/bin/pkg-config"
-      PKG_CONFIG_PATH: "/clangarm64/lib/pkgconfig"
+      PKG_CONFIG_PATH: "/clangarm64/qt5-static/lib/pkgconfig:/clangarm64/lib/pkgconfig"
       MSYSTEM: "CLANGARM64"
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       QT_MSYS2_STATIC: true
