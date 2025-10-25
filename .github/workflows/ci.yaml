@@ -744,6 +744,8 @@ jobs:
       QT_DEBUG: false
       QT_DEBUG_CONSOLE: false
       GO111MODULE: on
+      CPATH: "/clangarm64/qt5-static/include/QtScriptTools/5.15.17/QtScriptTools/private:/clangarm64/include/QtScriptTools:/clangarm64/include/QtScript/5.15.17/QtScript/private:/clangarm64/include/QtScript:/clangarm64/include/QtRemoteObjects/5.15.17/QtRemoteObjects/private:/clangarm64/include/QtRemoteObjects:/clangarm64/include/QtQuick/5.15.17/QtQuick/private:/clangarm64/include/QtQuick:/clangarm64/include/QtQml/5.15.17/QtQml/private:/clangarm64/include/QtQml:/clangarm64/include/QtDesigner/5.15.17/QtDesigner/private:/clangarm64/include/QtDesigner:/clangarm64/include/QtPrintSupport/5.15.17/QtPrintSupport/private:/clangarm64/include/QtPrintSupport:/clangarm64/include/QtOpenGL/5.15.17/QtOpenGL/private:/clangarm64/include/QtOpenGL:/clangarm64/include/QtSvg/5.15.17/QtSvg/private:/clangarm64/include/QtSvg:/clangarm64/include/QtMultimedia/5.15.17/QtMultimedia/private:/clangarm64/include/QtMultimedia:/clangarm64/include/QtDBus/5.15.17/QtDBus/private:/clangarm64/include/QtDBus:/clangarm64/include/QtNetwork/5.15.17/QtNetwork/private:/clangarm64/include/QtNetwork:/clangarm64/include/QtWidgets/5.15.17/QtWidgets/private:/clangarm64/include/QtWidgets:/clangarm64/include/QtGui/5.15.17/QtGui/private:/clangarm64/include/QtGui:/clangarm64/include/QtCore/5.15.17/QtCore/private:/clangarm64/include/QtCore:/clangarm64/include"
+      LIBRARY_PATH: /clangarm64/lib
       CC:  "aarch64-w64-mingw32-clang"
       CXX: "aarch64-w64-mingw32-clang++"
       AR:  "llvm-ar"
