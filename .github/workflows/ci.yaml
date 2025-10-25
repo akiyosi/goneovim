@@ -828,15 +828,35 @@ jobs:
     - name: Build
       shell: msys2 {0}
       run: |
+        set -euxo pipefail
         export PATH=/clangarm64/qt5-static/bin:/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:/usr/bin:$PATH
+        export PKG_CONFIG=/clangarm64/bin/pkg-config
+        export PKG_CONFIG_PATH=/clangarm64/qt5-static/lib/pkgconfig
+        export PKG_CONFIG_LIBDIR=/clangarm64/qt5-static/lib/pkgconfig
+        unset PKG_CONFIG_SYSTEM_INCLUDE_PATH PKG_CONFIG_SYSTEM_LIBRARY_PATH
+        QT_PCS="Qt5Widgets Qt5Gui Qt5Core Qt5Svg Qt5Network Qt5PrintSupport"
+        export CGO_CXXFLAGS="$CGO_CXXFLAGS $($PKG_CONFIG --cflags $QT_PCS)"
+        export CGO_LDFLAGS="$CGO_LDFLAGS $($PKG_CONFIG --static --libs $QT_PCS)"
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-        echo "[dbg] CGO_CFLAGS=${CGO_CFLAGS}"
-        echo "[dbg] CGO_CXXFLAGS=${CGO_CXXFLAGS}"
-        echo "[dbg] CGO_LDFLAGS=${CGO_LDFLAGS}"
-        echo "[dbg] PATH=${PATH}"
-        echo "[dbg] pkg libs(core): $(pkg-config --static --libs Qt5Core)"
+        echo "[dbg] PATH=$PATH"
+        echo "[dbg] PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+        echo "[dbg] CGO_CXXFLAGS=$CGO_CXXFLAGS"
+        echo "[dbg] CGO_LDFLAGS=$CGO_LDFLAGS"
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime cmd/goneovim/deploy/windows/
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     - name: install neovim
       shell: msys2 {0}
