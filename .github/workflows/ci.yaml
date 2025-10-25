@@ -752,7 +752,7 @@ jobs:
       RANLIB: "llvm-ranlib"
       NM:  "llvm-nm"
       CGO_CFLAGS:   "--target=aarch64-w64-mingw32 -O2"
-      CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -Wno-ignored-attributes -DQT_CORE_LIB -O2"
+      CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -Wno-ignored-attributes -DQT_CORE_LIB -DQT_STATICPLUGIN -O2"
       CGO_LDFLAGS:  "--target=aarch64-w64-mingw32"
       PKG_CONFIG: "/clangarm64/bin/pkg-config"
       PKG_CONFIG_PATH: "/clangarm64/qt5-static/lib/pkgconfig:/clangarm64/lib/pkgconfig"
@@ -829,6 +829,11 @@ jobs:
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/qt5-static/bin:$PATH
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        echo "[dbg] CGO_CFLAGS=${CGO_CFLAGS}"
+        echo "[dbg] CGO_CXXFLAGS=${CGO_CXXFLAGS}"
+        echo "[dbg] CGO_LDFLAGS=${CGO_LDFLAGS}"
+        echo "[dbg] PATH=${PATH}"
+        echo "[dbg] pkg libs(core): $(pkg-config --static --libs Qt5Core)"
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime cmd/goneovim/deploy/windows/
 
