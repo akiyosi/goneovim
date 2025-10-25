@@ -828,7 +828,7 @@ jobs:
     - name: Build
       shell: msys2 {0}
       run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/qt5-static/bin:$PATH
+        export PATH=/clangarm64/qt5-static/bin:/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:/usr/bin:$PATH
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         echo "[dbg] CGO_CFLAGS=${CGO_CFLAGS}"
         echo "[dbg] CGO_CXXFLAGS=${CGO_CXXFLAGS}"
