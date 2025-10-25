@@ -745,7 +745,7 @@ jobs:
       QT_DEBUG_CONSOLE: false
       GO111MODULE: on
       CPATH: "/clangarm64/qt5-static/include/QtScriptTools/5.15.17/QtScriptTools/private:/clangarm64/qt5-static/include/QtScriptTools:/clangarm64/qt5-static/include/QtScript/5.15.17/QtScript/private:/clangarm64/qt5-static/include/QtScript:/clangarm64/qt5-static/include/QtRemoteObjects/5.15.17/QtRemoteObjects/private:/clangarm64/qt5-static/include/QtRemoteObjects:/clangarm64/qt5-static/include/QtQuick/5.15.17/QtQuick/private:/clangarm64/qt5-static/include/QtQuick:/clangarm64/qt5-static/include/QtQml/5.15.17/QtQml/private:/clangarm64/qt5-static/include/QtQml:/clangarm64/qt5-static/include/QtDesigner/5.15.17/QtDesigner/private:/clangarm64/qt5-static/include/QtDesigner:/clangarm64/qt5-static/include/QtPrintSupport/5.15.17/QtPrintSupport/private:/clangarm64/qt5-static/include/QtPrintSupport:/clangarm64/qt5-static/include/QtOpenGL/5.15.17/QtOpenGL/private:/clangarm64/qt5-static/include/QtOpenGL:/clangarm64/qt5-static/include/QtSvg/5.15.17/QtSvg/private:/clangarm64/qt5-static/include/QtSvg:/clangarm64/qt5-static/include/QtMultimedia/5.15.17/QtMultimedia/private:/clangarm64/qt5-static/include/QtMultimedia:/clangarm64/qt5-static/include/QtDBus/5.15.17/QtDBus/private:/clangarm64/qt5-static/include/QtDBus:/clangarm64/qt5-static/include/QtNetwork/5.15.17/QtNetwork/private:/clangarm64/qt5-static/include/QtNetwork:/clangarm64/qt5-static/include/QtWidgets/5.15.17/QtWidgets/private:/clangarm64/qt5-static/include/QtWidgets:/clangarm64/qt5-static/include/QtGui/5.15.17/QtGui/private:/clangarm64/qt5-static/include/QtGui:/clangarm64/qt5-static/include/QtCore/5.15.17/QtCore/private:/clangarm64/qt5-static/include/QtCore:/clangarm64/qt5-static/include"
-      LIBRARY_PATH: /clangarm64/lib
+      LIBRARY_PATH: /clangarm64/qt5-static/lib:/clangarm64/lib
       CC:  "aarch64-w64-mingw32-clang"
       CXX: "aarch64-w64-mingw32-clang++"
       AR:  "llvm-ar"
@@ -753,9 +753,10 @@ jobs:
       NM:  "llvm-nm"
       CGO_CFLAGS:   "--target=aarch64-w64-mingw32 -O2"
       CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -Wno-ignored-attributes -DQT_CORE_LIB -DQT_STATICPLUGIN -O2"
-      CGO_LDFLAGS:  "--target=aarch64-w64-mingw32"
-      PKG_CONFIG: "/clangarm64/bin/pkg-config"
-      PKG_CONFIG_PATH: "/clangarm64/qt5-static/lib/pkgconfig:/clangarm64/lib/pkgconfig"
+      CGO_LDFLAGS:  "--target=aarch64-w64-mingw32 -static -static-libstdc++ -static-libgcc"
+      PKG_CONFIG: /clangarm64/bin/pkg-config
+      PKG_CONFIG_PATH: /clangarm64/qt5-static/lib/pkgconfig
+      PKG_CONFIG_LIBDIR: /clangarm64/qt5-static/lib/pkgconfig
       MSYSTEM: "CLANGARM64"
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       QT_MSYS2_STATIC: true
