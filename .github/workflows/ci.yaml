@@ -832,35 +832,36 @@ jobs:
     - name: Build
       shell: msys2 {0}
       run: |
-        set -euxo pipefail
-        export PATH=/clangarm64/qt5-static/bin:/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:/usr/bin:$PATH
+
+        export PATH=/clangarm64/qt5-static/bin:/c/hostedtoolcache/windows/go/1.24.0/arm64/bin:/clangarm64/bin:/usr/bin:$PATH
         export PKG_CONFIG=/clangarm64/bin/pkg-config
         export PKG_CONFIG_PATH=/clangarm64/qt5-static/lib/pkgconfig
         export PKG_CONFIG_LIBDIR=/clangarm64/qt5-static/lib/pkgconfig
         unset PKG_CONFIG_SYSTEM_INCLUDE_PATH PKG_CONFIG_SYSTEM_LIBRARY_PATH
         QT_PCS="Qt5Widgets Qt5Gui Qt5Core Qt5Svg Qt5Network Qt5PrintSupport"
-        export CGO_CXXFLAGS="$CGO_CXXFLAGS $($PKG_CONFIG --cflags $QT_PCS)"
+        export CGO_CXXFLAGS="$($PKG_CONFIG --cflags $QT_PCS) --target=aarch64-w64-mingw32 -Wno-deprecated-declarations -Wno-ignored-attributes -DQT_CORE_LIB -DQT_STATICPLUGIN -O2"
         LIBS_RAW="$($PKG_CONFIG --static --libs $QT_PCS)"
         LIBS_FIXED="$(echo "$LIBS_RAW" \
-          | sed -E 's/-l:libz(\s|$)/-l:libz.a\1/g; s/-l:libzstd(\s|$)/-l:libzstd.a\1/g; s/-l:libssl(\s|$)/-l:libssl.a\1/g; s/-l:libcrypto(\s|$)/-l:libcrypto.a\1/g')"
-        export CGO_LDFLAGS="--target=aarch64-w64-mingw32 -static -static-libstdc++ -static-libgcc -L/clangarm64/lib -L/clangarm64/qt5-static/lib $LIBS_FIXED"
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-        echo "[dbg] PATH=$PATH"
+          | sed -E 's/-l:libz(\s|$)/-l:libz.a\1/g;
+                    s/-l:libzstd(\s|$)/-l:libzstd.a\1/g;
+                    s/-l:libssl(\s|$)/-l:libssl.a\1/g;
+                    s/-l:libcrypto(\s|$)/-l:libcrypto.a\1/g')"
+        if echo "$LIBS_FIXED" | grep -E -- '-l:libz($| )|-l:libzstd($| )'; then
+          echo "[err] normalization failed: still contains -l:libz / -l:libzstd"
+          echo "LIBS_RAW  = $LIBS_RAW"
+          echo "LIBS_FIXED= $LIBS_FIXED"
+          exit 2
+        fi
+        LSEARCH="-L/clangarm64/lib -L/clangarm64/qt5-static/lib"
+        export CGO_LDFLAGS="--target=aarch64-w64-mingw32 -static -static-libstdc++ -static-libgcc $LSEARCH $LIBS_FIXED"
+        export CGO_LDFLAGS="$CGO_LDFLAGS -L/clangarm64/lib -l:libz.a -l:libzstd.a -l:libssl.a -l:libcrypto.a"
         echo "[dbg] PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
-        echo "[dbg] CGO_CXXFLAGS=$CGO_CXXFLAGS"
         echo "[dbg] LIBS_RAW=$LIBS_RAW"
         echo "[dbg] LIBS_FIXED=$LIBS_FIXED"
         echo "[dbg] CGO_LDFLAGS=$CGO_LDFLAGS"
         ls -l /clangarm64/lib/libz.a /clangarm64/lib/libzstd.a /clangarm64/lib/libssl.a /clangarm64/lib/libcrypto.a
+        cd /c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
-        cp -pR runtime cmd/goneovim/deploy/windows/
-
-
-
-
-
-
-
 
     - name: install neovim
       shell: msys2 {0}
