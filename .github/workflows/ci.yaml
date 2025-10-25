@@ -356,7 +356,8 @@ jobs:
       QT_MSYS2: true
       QT_MSYS2_DIR: C:\a\msys64\
       QT_MSVC: false
-      QT_DEBUG: false
+      QT_DEBUG: true
+      QT_DEBUG_CONSOLE: true
       GO111MODULE: on
       CGO_CFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS_ALLOW: ".*" 
@@ -467,7 +468,8 @@ jobs:
       QT_MSYS2_DIR: /
       QT_QMAKE_DIR: /clangarm64/bin
       QT_MSVC: false
-      QT_DEBUG: false
+      QT_DEBUG: true
+      QT_DEBUG_CONSOLE: true
       GO111MODULE: on
       CGO_CFLAGS:   "--target=aarch64-w64-mingw32 -O2"
       CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -Wno-ignored-attributes -DQT_CORE_LIB -O2"
@@ -563,11 +565,6 @@ jobs:
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         /clangarm64/bin/llvm-windres -O coff -i cmd/goneovim/icon.rc -o cmd/goneovim/icon_windows_arm64.syso
-
-    - name: Strip incompatible .syso (amd64)
-      shell: msys2 {0}
-      run: |
-        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         rm cmd/goneovim/icon_windows.syso
 
     - name: Build
@@ -632,103 +629,293 @@ jobs:
 
 
 
-# # static build
-# 
-#   build-windows-mingw:
-#     strategy:
-#       matrix:
-#         go-version: [1.24.0]
-#         platform: [windows-latest]
-#     runs-on: ${{ matrix.platform }}
-#     env:
-#       GOPATH: ${{ github.workspace }}
-#       QT_API: 5.13.0
-#       QT_MSYS2: true
-#       QT_MSYS2_DIR: C:\a\msys64\
-#       QT_MSYS2_STATIC: true
-#       QT_MSVC: false
-#       QT_DEBUG_CONSOLE: true
-#       QT_DEBUG: false
-#       GO111MODULE: on
-#       CGO_CFLAGS_ALLOW: ".*" 
-#       CGO_CXXFLAGS_ALLOW: ".*" 
-#       CGO_LDFLAGS_ALLOW: ".*" 
-#       CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
-#       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-#       QT_BINDING_VER: "v0.0.0-20240304155940-b43fff373ad5"
-#     steps:
-# 
-#     - name: Install Go
-#       uses: actions/setup-go@v5
-#       with:
-#         go-version: ${{ matrix.go-version }}
-# 
-#     - name: Setup MSYS2 and install Qt5
-#       uses: msys2/setup-msys2@v2
-#       with:
-#         update: true
-#         msystem: mingw64
-#         install: mingw-w64-x86_64-toolchain
-#         location: C:\a\
-# 
-#     - name: Install Qt5
-#       shell: msys2 {0}
-#       run: |
-#         pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator
-#         pacman -Scc
-#         pacman -Sc
-#         curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
-#         pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
-# 
-#     - name: Checkout code
-#       uses: actions/checkout@v4
-#       with:
-#         fetch-depth: 0
-#         path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
-#     
-#     - name: Get dependencies
-#       shell: msys2 {0}
-#       run: |
-#         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-#         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-#         make deps
-# 
-#     - name: Get Qt binding for Go
-#       shell: msys2 {0}
-#       run: |
-#         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-#         cd /d/a/goneovim/goneovim//src/github.com/${{ github.repository }}
-#         go get github.com/akiyosi/qt@${{ env.QT_BINDING_VER }}
-#         go get github.com/akiyosi/qt/internal/cmd@${{ env.QT_BINDING_VER }}
-#         go get github.com/akiyosi/qt/internal/cmd/moc@${{ env.QT_BINDING_VER }}
-#         go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtdeploy@${{ env.QT_BINDING_VER }}
-#         go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtminimal@${{ env.QT_BINDING_VER }}
-#         go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtmoc@${{ env.QT_BINDING_VER }}
-#         go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@${{ env.QT_BINDING_VER }}
-#         go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@${{ env.QT_BINDING_VER }}
-#         $(go env GOPATH)/bin/qtsetup -test=false
-#         $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
-# 
-#     - name: Build
-#       shell: msys2 {0}
-#       run: |
-#         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-#         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-#         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
-#         cp -pR runtime cmd/goneovim/deploy/windows/
-# 
-#     - name: Rename
-#       shell: msys2 {0}
-#       run: |
-#         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
-#         mv windows goneovim-windows
-#       # zip -r goneovim-windows.zip goneovim-windows
-# 
-#     - name: Upload for windows
-#       uses: actions/upload-artifact@v4
-#       with:
-#         name: goneovim-windows
-#         path: D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+  build-windows-mingw:
+    strategy:
+      matrix:
+        go-version: [1.24.0]
+        platform: [windows-latest]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      QT_API: 5.13.0
+      QT_MSYS2: true
+      QT_MSYS2_DIR: C:\a\msys64\
+      QT_MSYS2_STATIC: true
+      QT_MSVC: false
+      QT_DEBUG_CONSOLE: false
+      QT_DEBUG: false
+      GO111MODULE: on
+      CGO_CFLAGS_ALLOW: ".*" 
+      CGO_CXXFLAGS_ALLOW: ".*" 
+      CGO_LDFLAGS_ALLOW: ".*" 
+      CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+      QT_BINDING_VER: "v0.0.0-20240304155940-b43fff373ad5"
+    steps:
+
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Setup MSYS2 and install Qt5
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        msystem: mingw64
+        install: mingw-w64-x86_64-toolchain
+        location: C:\a\
+
+    - name: Install Qt5
+      shell: msys2 {0}
+      run: |
+        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator
+        pacman -Scc
+        pacman -Sc
+        curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
+        pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
+    
+    - name: Get dependencies
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        make deps
+
+    - name: Get Qt binding for Go
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+        cd /d/a/goneovim/goneovim//src/github.com/${{ github.repository }}
+        go get github.com/akiyosi/qt@${{ env.QT_BINDING_VER }}
+        go get github.com/akiyosi/qt/internal/cmd@${{ env.QT_BINDING_VER }}
+        go get github.com/akiyosi/qt/internal/cmd/moc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtdeploy@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtminimal@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtmoc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@${{ env.QT_BINDING_VER }}
+        $(go env GOPATH)/bin/qtsetup -test=false
+        $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
+
+    - name: Build
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
+        cp -pR runtime cmd/goneovim/deploy/windows/
+
+    - name: Rename
+      shell: msys2 {0}
+      run: |
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv windows goneovim-windows-static
+
+    - name: Upload for windows
+      uses: actions/upload-artifact@v4
+      with:
+        name: goneovim-windows
+        path: D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+
+
+build-windows-mingw-arm-static:
+  strategy:
+    matrix:
+      go-version: [1.24.0]
+      platform: [windows-11-arm]
+  runs-on: ${{ matrix.platform }}
+
+  env:
+    GOPATH: ${{ github.workspace }}
+    QT_BINDING_VER: "v0.0.0-20251021043539-c059a317d6ad"
+    QT_API: 5.13.0
+    QT_MSYS2: true
+    QT_MSYS2_ARCH: "arm64"
+    QT_MSYS2_DIR: /
+    QT_QMAKE_DIR: /clangarm64/bin
+    QT_MSVC: false
+    QT_DEBUG: false
+    QT_DEBUG_CONSOLE: false
+    GO111MODULE: on
+    CC:  "aarch64-w64-mingw32-clang"
+    CXX: "aarch64-w64-mingw32-clang++"
+    AR:  "llvm-ar"
+    RANLIB: "llvm-ranlib"
+    NM:  "llvm-nm"
+    CGO_CFLAGS:   "--target=aarch64-w64-mingw32 -O2"
+    CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -O2"
+    CGO_LDFLAGS:  "--target=aarch64-w64-mingw32"
+    PKG_CONFIG: "/clangarm64/bin/pkg-config"
+    PKG_CONFIG_PATH: "/clangarm64/lib/pkgconfig"
+    MSYSTEM: "CLANGARM64"
+    ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+    QT_MSYS2_STATIC: true
+
+  steps:
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Setup MSYS2 (ARM64, Clang)
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        msystem: clangarm64
+        install: >
+          mingw-w64-clang-aarch64-toolchain
+          mingw-w64-clang-aarch64-llvm
+          mingw-w64-clang-aarch64-pkgconf
+          mingw-w64-clang-aarch64-qt5-static
+          mingw-w64-clang-aarch64-qt5-declarative-static
+          mingw-w64-clang-aarch64-qt5-quickcontrols2-static
+          mingw-w64-clang-aarch64-qt5-svg-static
+          mingw-w64-clang-aarch64-qt5-multimedia-static
+          mingw-w64-clang-aarch64-qt5-tools-static
+        location: C:\a\
+
+    - name: Base tools
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        pacman --noconfirm -S sed git make unzip zip tree
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        path: ${{ env.GOPATH }}\src\github.com\${{ github.repository }}
+
+    - name: Get dependencies
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        make deps
+
+    - name: Get Qt binding for Go
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        go get github.com/akiyosi/qt@${{ env.QT_BINDING_VER }}
+        go get github.com/akiyosi/qt/internal/cmd@${{ env.QT_BINDING_VER }}
+        go get github.com/akiyosi/qt/internal/cmd/moc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtdeploy@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtminimal@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtmoc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtrcc@${{ env.QT_BINDING_VER }}
+        go install -v -tags=no_env github.com/akiyosi/qt/cmd/qtsetup@${{ env.QT_BINDING_VER }}
+        $(go env GOPATH)/bin/qtsetup -test=false
+        $(go env GOPATH)/bin/qtmoc desktop ./cmd/goneovim
+
+    - name: Build ARM64 resource
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        /clangarm64/bin/llvm-windres -O coff -i cmd/goneovim/icon.rc -o cmd/goneovim/icon_windows_arm64.syso
+        rm -f cmd/goneovim/icon_windows.syso || true
+
+    - name: Build
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
+        cp -pR runtime cmd/goneovim/deploy/windows/
+
+    - name: install neovim
+      shell: msys2 {0}
+      run: |
+        pacman --noconfirm -S mingw-w64-clang-aarch64-neovim
+
+    - name: Headless smoke test (ARM64, MSYS2)
+      shell: C:\a\_temp\setup-msys2\msys2.CMD {0}  # setup-msys2 の既定シェル
+      env:
+        QT_QPA_PLATFORM: offscreen
+        QT_PLUGIN_PATH: /clangarm64/plugins
+        EXTRA_BIN_DIR: /c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows
+      run: |
+        set -euxo pipefail
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin:/clangarm64/bin:$PATH
+        BIN="/c/a/goneovim/goneovim/src/github.com/akiyosi/goneovim/cmd/goneovim/deploy/windows/goneovim.exe"
+        if [ ! -f "$BIN" ]; then
+          echo "Not found: $BIN"
+          exit 1
+        fi
+        export PATH="/clangarm64/bin:${EXTRA_BIN_DIR}:${PATH}"
+        if "$BIN" --version >/dev/null 2>&1; then
+          echo "--version succeeded"
+        else
+          echo "--version not supported; doing timed run..."
+        fi
+    
+        set +e
+        timeout -k 2s 10s "$BIN" >/dev/null 2>&1
+        rc=$?
+        set -e
+    
+        if [ $rc -eq 0 ] || [ $rc -eq 124 ]; then
+          echo "Smoke test passed (rc=$rc)."
+          exit 0
+        else
+          echo "Smoke test failed (rc=$rc)."
+          exit $rc
+        fi
+
+    - name: Rename
+      shell: msys2 {0}
+      run: |
+        set -euxo pipefail
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+        mv windows goneovim-windows-arm64-static
+
+    - name: Upload artifact (ARM64)
+      uses: actions/upload-artifact@v4
+      with:
+        name: goneovim-windows-arm64-static
+        path: C:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   # test-and-build-windows-msvc:
