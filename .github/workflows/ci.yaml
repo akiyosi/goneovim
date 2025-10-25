@@ -650,7 +650,7 @@ jobs:
       CGO_LDFLAGS_ALLOW: ".*" 
       CGO_CXXFLAGS: "-Wno-deprecated-declarations -O2"
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-      QT_BINDING_VER: "v0.0.0-20240304155940-b43fff373ad5"
+      QT_BINDING_VER: "v0.0.0-20251021043539-c059a317d6ad"
     steps:
 
     - name: Install Go
@@ -774,11 +774,6 @@ jobs:
           mingw-w64-clang-aarch64-llvm
           mingw-w64-clang-aarch64-pkgconf
           mingw-w64-clang-aarch64-qt5-static
-          mingw-w64-clang-aarch64-qt5-declarative-static
-          mingw-w64-clang-aarch64-qt5-quickcontrols2-static
-          mingw-w64-clang-aarch64-qt5-svg-static
-          mingw-w64-clang-aarch64-qt5-multimedia-static
-          mingw-w64-clang-aarch64-qt5-tools-static
         location: C:\a\
 
     - name: Base tools
