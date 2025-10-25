@@ -828,6 +828,7 @@ jobs:
         /clangarm64/bin/llvm-windres -O coff -i cmd/goneovim/icon.rc -o cmd/goneovim/icon_windows_arm64.syso
         rm -f cmd/goneovim/icon_windows.syso || true
 
+
     - name: Build
       shell: msys2 {0}
       run: |
@@ -839,17 +840,20 @@ jobs:
         unset PKG_CONFIG_SYSTEM_INCLUDE_PATH PKG_CONFIG_SYSTEM_LIBRARY_PATH
         QT_PCS="Qt5Widgets Qt5Gui Qt5Core Qt5Svg Qt5Network Qt5PrintSupport"
         export CGO_CXXFLAGS="$CGO_CXXFLAGS $($PKG_CONFIG --cflags $QT_PCS)"
-        export CGO_LDFLAGS="$CGO_LDFLAGS $($PKG_CONFIG --static --libs $QT_PCS)"
-        export CGO_LDFLAGS="$CGO_LDFLAGS -L/clangarm64/lib -l:libz.a -l:libzstd.a -l:libssl.a -l:libcrypto.a"
+        LIBS_RAW="$($PKG_CONFIG --static --libs $QT_PCS)"
+        LIBS_FIXED="$(echo "$LIBS_RAW" \
+          | sed -E 's/-l:libz(\s|$)/-l:libz.a\1/g; s/-l:libzstd(\s|$)/-l:libzstd.a\1/g; s/-l:libssl(\s|$)/-l:libssl.a\1/g; s/-l:libcrypto(\s|$)/-l:libcrypto.a\1/g')"
+        export CGO_LDFLAGS="--target=aarch64-w64-mingw32 -static -static-libstdc++ -static-libgcc -L/clangarm64/lib -L/clangarm64/qt5-static/lib $LIBS_FIXED"
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         echo "[dbg] PATH=$PATH"
         echo "[dbg] PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
         echo "[dbg] CGO_CXXFLAGS=$CGO_CXXFLAGS"
+        echo "[dbg] LIBS_RAW=$LIBS_RAW"
+        echo "[dbg] LIBS_FIXED=$LIBS_FIXED"
         echo "[dbg] CGO_LDFLAGS=$CGO_LDFLAGS"
+        ls -l /clangarm64/lib/libz.a /clangarm64/lib/libzstd.a /clangarm64/lib/libssl.a /clangarm64/lib/libcrypto.a
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime cmd/goneovim/deploy/windows/
-
-
 
 
 
