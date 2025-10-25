@@ -752,7 +752,7 @@ jobs:
       RANLIB: "llvm-ranlib"
       NM:  "llvm-nm"
       CGO_CFLAGS:   "--target=aarch64-w64-mingw32 -O2"
-      CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -O2"
+      CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -Wno-ignored-attributes -DQT_CORE_LIB -O2"
       CGO_LDFLAGS:  "--target=aarch64-w64-mingw32"
       PKG_CONFIG: "/clangarm64/bin/pkg-config"
       PKG_CONFIG_PATH: "/clangarm64/lib/pkgconfig"
