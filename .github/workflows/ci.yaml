@@ -777,6 +777,9 @@ jobs:
           mingw-w64-clang-aarch64-llvm
           mingw-w64-clang-aarch64-pkgconf
           mingw-w64-clang-aarch64-qt5-static
+          mingw-w64-clang-aarch64-zlib
+          mingw-w64-clang-aarch64-zstd
+          mingw-w64-clang-aarch64-openssl
         location: C:\a\
 
     - name: Base tools
@@ -837,6 +840,7 @@ jobs:
         QT_PCS="Qt5Widgets Qt5Gui Qt5Core Qt5Svg Qt5Network Qt5PrintSupport"
         export CGO_CXXFLAGS="$CGO_CXXFLAGS $($PKG_CONFIG --cflags $QT_PCS)"
         export CGO_LDFLAGS="$CGO_LDFLAGS $($PKG_CONFIG --static --libs $QT_PCS)"
+        export CGO_LDFLAGS="$CGO_LDFLAGS -L/clangarm64/lib -l:libz.a -l:libzstd.a -l:libssl.a -l:libcrypto.a"
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         echo "[dbg] PATH=$PATH"
         echo "[dbg] PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
@@ -844,10 +848,6 @@ jobs:
         echo "[dbg] CGO_LDFLAGS=$CGO_LDFLAGS"
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime cmd/goneovim/deploy/windows/
-
-
-
-
 
 
 
