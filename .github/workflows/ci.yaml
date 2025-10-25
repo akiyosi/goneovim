@@ -490,8 +490,8 @@ jobs:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       #QT_BINDING_VER: "v0.0.0-20240304155940-b43fff373ad5"
       QT_BINDING_VER: "v0.0.0-20251021043539-c059a317d6ad"
-    steps:
 
+    steps:
     - name: Setup MSYS2 (ARM64) and install Qt5
       uses: msys2/setup-msys2@v2
       with:
@@ -725,40 +725,40 @@ jobs:
         path: D:/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy
 
 
-build-windows-mingw-arm-static:
-  strategy:
-    matrix:
-      go-version: [1.24.0]
-      platform: [windows-11-arm]
-  runs-on: ${{ matrix.platform }}
+  build-windows-mingw-arm-static:
+    strategy:
+      matrix:
+        go-version: [1.24.0]
+        platform: [windows-11-arm]
+    runs-on: ${{ matrix.platform }}
+  
+    env:
+      GOPATH: ${{ github.workspace }}
+      QT_BINDING_VER: "v0.0.0-20251021043539-c059a317d6ad"
+      QT_API: 5.13.0
+      QT_MSYS2: true
+      QT_MSYS2_ARCH: "arm64"
+      QT_MSYS2_DIR: /
+      QT_QMAKE_DIR: /clangarm64/bin
+      QT_MSVC: false
+      QT_DEBUG: false
+      QT_DEBUG_CONSOLE: false
+      GO111MODULE: on
+      CC:  "aarch64-w64-mingw32-clang"
+      CXX: "aarch64-w64-mingw32-clang++"
+      AR:  "llvm-ar"
+      RANLIB: "llvm-ranlib"
+      NM:  "llvm-nm"
+      CGO_CFLAGS:   "--target=aarch64-w64-mingw32 -O2"
+      CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -O2"
+      CGO_LDFLAGS:  "--target=aarch64-w64-mingw32"
+      PKG_CONFIG: "/clangarm64/bin/pkg-config"
+      PKG_CONFIG_PATH: "/clangarm64/lib/pkgconfig"
+      MSYSTEM: "CLANGARM64"
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+      QT_MSYS2_STATIC: true
 
-  env:
-    GOPATH: ${{ github.workspace }}
-    QT_BINDING_VER: "v0.0.0-20251021043539-c059a317d6ad"
-    QT_API: 5.13.0
-    QT_MSYS2: true
-    QT_MSYS2_ARCH: "arm64"
-    QT_MSYS2_DIR: /
-    QT_QMAKE_DIR: /clangarm64/bin
-    QT_MSVC: false
-    QT_DEBUG: false
-    QT_DEBUG_CONSOLE: false
-    GO111MODULE: on
-    CC:  "aarch64-w64-mingw32-clang"
-    CXX: "aarch64-w64-mingw32-clang++"
-    AR:  "llvm-ar"
-    RANLIB: "llvm-ranlib"
-    NM:  "llvm-nm"
-    CGO_CFLAGS:   "--target=aarch64-w64-mingw32 -O2"
-    CGO_CXXFLAGS: "--target=aarch64-w64-mingw32 -Wno-deprecated-declarations -O2"
-    CGO_LDFLAGS:  "--target=aarch64-w64-mingw32"
-    PKG_CONFIG: "/clangarm64/bin/pkg-config"
-    PKG_CONFIG_PATH: "/clangarm64/lib/pkgconfig"
-    MSYSTEM: "CLANGARM64"
-    ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-    QT_MSYS2_STATIC: true
-
-  steps:
+    steps:
     - name: Install Go
       uses: actions/setup-go@v5
       with:
