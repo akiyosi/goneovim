@@ -474,6 +474,17 @@ jobs:
         $(go env GOPATH)/bin/qtdeploy build desktop ./cmd/goneovim
         cp -pR runtime cmd/goneovim/deploy/windows/
 
+    - name: Bundle specific DLLs
+      shell: msys2 {0}
+      run: |
+        set -e
+        DST=/d/a/goneovim/goneovim/src/github.com/${{ github.repository }}/cmd/goneovim/deploy/windows
+        cp -u /mingw64/bin/libmd4c.dll        "$DST" || true
+        cp -u /mingw64/bin/libzstd.dll        "$DST" || true
+        cp -u /mingw64/bin/libbrotlidec.dll   "$DST" || true
+        cp -u /mingw64/bin/libpcre2-8-0.dll   "$DST" || true
+        cp -u /mingw64/bin/libbrotlicommon.dll   "$DST" || true
+
     - if: github.event_name == 'workflow_dispatch'
       run: echo "ARCHIVE_NAME=goneovim-windows-x86_64" >> $env:GITHUB_ENV
     - if: github.event_name == 'schedule'
