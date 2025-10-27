@@ -10,7 +10,8 @@ DEPLOYMENT_DARWIN:=cmd/goneovim/deploy/darwin
 DEPLOYMENT_LINUX:=cmd/goneovim/deploy/linux
 DEPLOYMENT_FREEBSD:=cmd/goneovim/deploy/freebsd
 
-QT_VER := v0.0.0-20240304155940-b43fff373ad5
+#QT_VER := v0.0.0-20240304155940-b43fff373ad5
+QT_VER := v0.0.0-20251021043539-c059a317d6ad
 
 # runtime directory
 ifeq ($(OS),Windows_NT)
