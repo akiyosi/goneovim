@@ -686,6 +686,8 @@ func (c *Cursor) update() {
 	// update cursor pos on window
 	c.updateCursorPos(row, col, win)
 
+	editor.putLog("debug::<cursor paint>", "cursor width:", c.width, "font width", c.font.width)
+
 	// redraw cursor widget
 	c.redraw()
 }

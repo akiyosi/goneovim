@@ -48,6 +48,8 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	}
 	font.SetStyle(gui.QFont__StyleNormal)
 
+	editor.putLog("debug::<font metrics>", "font width:", width, "font height:", height)
+
 	return width, height, ascent, italicWidth
 }
 

@@ -2798,6 +2798,7 @@ func (w *Window) newTextCache(text string, hlkey HlKey, isNormalWidth bool) *gui
 			fontfallbacked = resolveFontFallback(w.font, w.fallbackfonts, text)
 		}
 	}
+	editor.putLog("debug::<paint text>", "font width:", fontfallbacked.width, "font height:", fontfallbacked.height)
 
 	// Put debug log
 	if editor.opts.Debug != "" {
