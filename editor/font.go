@@ -48,7 +48,7 @@ func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
 	}
 	font.SetStyle(gui.QFont__StyleNormal)
 
-	editor.putLog("debug::<font metrics>", "font width:", width, "font height:", height)
+	editor.putLog("debug::<font metrics>", "font width:", width, "font family:", font.Family())
 
 	return width, height, ascent, italicWidth
 }
@@ -71,6 +71,8 @@ func initFontNew(family string, size float64, weight gui.QFont__Weight, stretch,
 	font.SetKerning(false)
 
 	width, height, ascent, italicWidth := fontSizeNew(font)
+
+	editor.putLog("debug::<new font>", "font width:", width, "cell width:", width+float64(letterSpace), "font family:", font.Family())
 
 	return &Font{
 		family:      family,
@@ -114,6 +116,7 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	width, height, ascent, italicWidth := fontSizeNew(f.qfont)
 
 	f.fontMetrics = gui.NewQFontMetricsF(f.qfont)
+	f.width = width
 	f.cellwidth = width + float64(f.letterSpace)
 	// f.letterSpace is no change
 	f.height = height
@@ -126,6 +129,8 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	f.size = size
 	f.weight = weight
 	f.stretch = stretch
+
+	editor.putLog("debug::<change font>", "font width:", width, "cell width:", width+float64(f.letterSpace), "font family:", f.qfont.Family())
 
 	// f.putDebugLog()
 }

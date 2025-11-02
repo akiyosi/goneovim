@@ -485,6 +485,11 @@ func (c *Cursor) updateCursorShape() {
 	}
 	singleWidth := int(math.Trunc(cellwidth))
 	width := singleWidth
+
+	if c.font != nil {
+		editor.putLog("debug::<cursor shape>", "width:", c.font.width, "cellwidth:", c.font.cellwidth, "family:", c.font.family)
+	}
+
 	if !c.normalWidth {
 		width = singleWidth * 2
 	}
@@ -686,7 +691,7 @@ func (c *Cursor) update() {
 	// update cursor pos on window
 	c.updateCursorPos(row, col, win)
 
-	editor.putLog("debug::<cursor paint>", "cursor width:", c.width, "font width", c.font.width)
+	editor.putLog("debug::<cursor paint>", "cursor width:", c.width, "font width:", c.font.width, "font family:", c.font.family)
 
 	// redraw cursor widget
 	c.redraw()
