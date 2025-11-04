@@ -91,6 +91,7 @@ type editorConfig struct {
 	ShowDiffDialogOnDrop                    bool
 	NativeTitlebarBackgroundColor           string
 	NativeTitlebarTextColor                 string
+	NoGuiCommand                            bool
 }
 
 type cursorConfig struct {

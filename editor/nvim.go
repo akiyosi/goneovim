@@ -436,6 +436,9 @@ func setupGoneovim(neovim *nvim.Nvim) {
 }
 
 func setupGoneovimCommands(neovim *nvim.Nvim) {
+	if editor.config.Editor.NoGuiCommand {
+		return
+	}
 	// Definition of the commands that goneovim provides
 	gonvimCommands := fmt.Sprintf(`
 	command! -nargs=1 GonvimResize call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_resize", <args>)
