@@ -22,8 +22,8 @@ var globalOrder int
 
 // Screen is the main editor area
 type Screen struct {
-	cache             Cache
-	bgcache           Cache
+	cache             *Cache
+	bgcache           *Cache
 	tooltip           *IMETooltip
 	font              *Font
 	fallbackfonts     []*Font
@@ -57,7 +57,7 @@ func newScreen() *Screen {
 		windows:        sync.Map{},
 		cursor:         [2]int{0, 0},
 		highlightGroup: make(map[string]int),
-		cache:          newCache(),
+		cache:          newCache(editor.config.Editor.CacheSize),
 		bgcache:        newBrushCache(),
 	}
 
@@ -320,14 +320,19 @@ func (s *Screen) gridFont(update interface{}) {
 	newRows := oldHeight / win.font.lineHeight
 
 	// Cache
-	cache := win.cache
-	if cache == (Cache{}) {
-		cache := newCache()
-		win.cache = cache
+	if win.cache == nil {
+		win.cache = newCache(editor.config.Editor.CacheSize)
 	} else {
 		win.paintMutex.Lock()
 		win.cache.purge()
 		win.paintMutex.Unlock()
+	}
+	if win.cursorCache == nil {
+		win.cursorCache = newCache(editor.config.Editor.CacheSize)
+	} else {
+		win.s.ws.cursor.paintMutex.Lock()
+		win.cursorCache.purge()
+		win.s.ws.cursor.paintMutex.Unlock()
 	}
 
 	_ = s.ws.nvim.TryResizeUIGrid(win.grid, newCols, newRows)
@@ -346,24 +351,34 @@ func (s *Screen) purgeTextCacheForWins() {
 	if !editor.config.Editor.CachedDrawing {
 		return
 	}
-	s.cache.purge()
+
+	s.ws.cursor.paintMutex.Lock()
+	defer s.ws.cursor.paintMutex.Unlock()
+
 	s.windows.Range(func(_, winITF interface{}) bool {
 		win := winITF.(*Window)
-		if win == nil {
+		if win == nil || win.font == nil {
 			return true
 		}
-		if win.font == nil {
-			return true
-		}
-		cache := win.cache
-		if cache == (Cache{}) {
-			return true
-		}
+
 		win.paintMutex.Lock()
-		win.cache.purge()
+		if win.cache != nil {
+			win.cache.purge()
+		}
+		if win.cursorCache != nil {
+			win.cursorCache.purge()
+		}
 		win.paintMutex.Unlock()
 		return true
 	})
+
+	if s.cache != nil {
+		s.cache.purge()
+	}
+
+	if s.ws.cursor.cursorCache != nil {
+		s.ws.cursor.cursorCache.purge()
+	}
 }
 
 func (s *Screen) bottomWindowPos() int {

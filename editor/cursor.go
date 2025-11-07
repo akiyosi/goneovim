@@ -2,6 +2,7 @@ package editor
 
 import (
 	"math"
+	"sync"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/akiyosi/qt/core"
@@ -15,7 +16,7 @@ type Cursor struct {
 
 	row, col             int
 	smoothMoveAnimation  *core.QPropertyAnimation
-	charCache            *Cache
+	cursorCache          *Cache
 	font                 *Font
 	fallbackfonts        []*Font
 	fontwide             *Font
@@ -23,6 +24,7 @@ type Cursor struct {
 	bg                   *RGBA
 	fg                   *RGBA
 	ws                   *Workspace
+	win                  *Window
 	timer                *core.QTimer
 	cursorShape          string
 	desttext             string
@@ -62,9 +64,10 @@ type Cursor struct {
 	hasSmoothMove        bool
 	doAnimate            bool
 	normalWidth          bool
+	paintMutex           sync.RWMutex
 }
 
-func initCursorNew() *Cursor {
+func initCursor() *Cursor {
 	c := NewCursor(nil, 0)
 
 	c.SetContentsMargins(0, 0, 0, 0)
@@ -76,6 +79,7 @@ func initCursorNew() *Cursor {
 	c.ConnectPaintEvent(c.paintEvent)
 	c.hasSmoothMove = editor.config.Cursor.SmoothMove
 	c.cellPercentage = 100
+	c.cursorCache = newCache(256)
 
 	return c
 }
@@ -85,7 +89,7 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 		return
 	}
 
-	if c.charCache == nil {
+	if c.cursorCache == nil {
 		return
 	}
 
@@ -98,6 +102,8 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 		return
 	}
 
+	c.paintMutex.Lock()
+
 	p := gui.NewQPainter2(c)
 
 	c.drawBackground(p)
@@ -108,6 +114,7 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 
 	if c.sourcetext == "" || c.devicePixelRatio == 0 || c.width < int(font.cellwidth/2.0) {
 		p.DestroyQPainter()
+		c.paintMutex.Unlock()
 		return
 	}
 
@@ -123,6 +130,7 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 
 	if c.desttext == "" {
 		p.DestroyQPainter()
+		c.paintMutex.Unlock()
 		return
 	}
 
@@ -130,6 +138,8 @@ func (c *Cursor) paintEvent(event *gui.QPaintEvent) {
 	c.drawForeground(p, X, Y, X2, Y2, c.desttext)
 
 	p.DestroyQPainter()
+
+	c.paintMutex.Unlock()
 }
 
 func (c *Cursor) drawBackground(p *gui.QPainter) {
@@ -154,22 +164,28 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 	if font == nil {
 		return
 	}
+	if c.cursorCache == nil {
+		return
+	}
+	if c.win == nil {
+		return
+	}
 
-	shift := font.ascent
+	ascent := font.ascent
 
 	// Paint target cell text
 	if editor.config.Editor.CachedDrawing {
 		var image *gui.QImage
-		charCache := *c.charCache
-		imagev, err := charCache.get(HlTextKey{
+		cursorCache := c.win.getCursorCache()
+		imagev, err := cursorCache.get(HlTextKey{
 			text:   text,
 			fg:     *(c.fg),
 			italic: false,
 			bold:   false,
 		})
 		if err != nil {
-			image = c.newCharCache(text, c.fg, c.normalWidth)
-			c.setCharCache(text, c.fg, image)
+			image = c.newCursorCacheImage(text, c.fg, c.normalWidth)
+			c.setCursorCache(text, c.fg, image)
 		} else {
 			image = imagev.(*gui.QImage)
 		}
@@ -189,14 +205,14 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 		if !c.normalWidth && c.fontwide != nil {
 			p.SetFont(resolveFontFallback(c.fontwide, c.fallbackfontwides, text).qfont)
 			if c.fontwide.lineHeight > font.lineHeight {
-				shift += c.fontwide.ascent - font.ascent
+				ascent += c.fontwide.ascent - font.ascent
 			}
 		} else {
 			p.SetFont(resolveFontFallback(c.font, c.fallbackfonts, text).qfont)
 		}
 		p.SetPen2(c.fg.QColor())
 
-		yy := dy - sy + shift - float64(c.horizontalShift)
+		yy := dy - sy + ascent - float64(c.horizontalShift)
 		if c.font.lineSpace < 0 {
 			yy += float64(font.lineSpace) / 2.0
 		}
@@ -208,7 +224,7 @@ func (c *Cursor) drawForeground(p *gui.QPainter, sx, sy, dx, dy float64, text st
 	}
 }
 
-func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QImage {
+func (c *Cursor) newCursorCacheImage(text string, fg *RGBA, isNormalWidth bool) *gui.QImage {
 	font := c.font
 
 	if !isNormalWidth && c.fontwide != nil {
@@ -267,8 +283,9 @@ func (c *Cursor) newCharCache(text string, fg *RGBA, isNormalWidth bool) *gui.QI
 	return image
 }
 
-func (c *Cursor) setCharCache(text string, fg *RGBA, image *gui.QImage) {
-	c.charCache.set(
+func (c *Cursor) setCursorCache(text string, fg *RGBA, image *gui.QImage) {
+	cursorCache := c.win.getCursorCache()
+	cursorCache.set(
 		HlTextKey{
 			text:   text,
 			fg:     *(c.fg),
@@ -541,7 +558,8 @@ func (c *Cursor) getRowAndColFromScreen() (row, col int) {
 	return
 }
 
-func (c *Cursor) updateCursorPos(row, col int, win *Window) {
+func (c *Cursor) updateCursorPos(row, col int) {
+	win := c.win
 	// Get the current font applied to the cursor.
 	// If the cursor is on a window that has its own font setting,
 	// get its own font.
@@ -620,7 +638,8 @@ func (c *Cursor) updateCursorPos(row, col int, win *Window) {
 	c.animateMove()
 }
 
-func (c *Cursor) updateCursorText(row, col int, win *Window) {
+func (c *Cursor) updateCursorText(row, col int) {
+	win := c.win
 
 	if row >= len(win.content) ||
 		col >= len(win.content[row]) ||
@@ -658,17 +677,16 @@ func (c *Cursor) update() {
 	if !ok {
 		return
 	}
+	c.win = win
 
 	// Set Window-specific properties
-	charCache := win.getCache()
-	c.charCache = &charCache
 	c.devicePixelRatio = win.devicePixelRatio
 
 	// Get row, col from screen
 	row, col := c.getRowAndColFromScreen()
 
 	// update cursor text
-	c.updateCursorText(row, col, win)
+	c.updateCursorText(row, col)
 
 	// update cursor shape
 	c.updateCursorShape()
@@ -684,7 +702,7 @@ func (c *Cursor) update() {
 	}
 
 	// update cursor pos on window
-	c.updateCursorPos(row, col, win)
+	c.updateCursorPos(row, col)
 
 	// redraw cursor widget
 	c.redraw()
