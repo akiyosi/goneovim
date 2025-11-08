@@ -665,6 +665,7 @@ jobs:
       QT_MSYS2: true
       QT_MSYS2_DIR: C:\a\msys64\
       QT_MSYS2_STATIC: true
+      QT_QMAKE_DIR: /mingw64/qt5-static/bin
       QT_MSVC: false
       QT_DEBUG_CONSOLE: false
       QT_DEBUG: false
@@ -687,17 +688,15 @@ jobs:
       with:
         update: true
         msystem: mingw64
-        install: mingw-w64-x86_64-toolchain
+        install: >
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-qt5-static
         location: C:\a\
 
     - name: Install Qt5
       shell: msys2 {0}
       run: |
-        pacman --noconfirm -S sed git make unzip zip mingw-w64-x86_64-qt-creator
-        pacman -Scc
-        pacman -Sc
-        curl -sL --retry 10 --retry-delay 60 -O  https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
-        pacman -U --noconfirm mingw-w64-x86_64-qt5-static-5.15.13-1-any.pkg.tar.zst
+        pacman --noconfirm -S sed git make unzip zip
 
     - name: Checkout code
       uses: actions/checkout@v4
@@ -809,7 +808,6 @@ jobs:
     - name: Base tools
       shell: msys2 {0}
       run: |
-        set -euxo pipefail
         pacman --noconfirm -S sed git make unzip zip tree
 
     - name: Checkout code
