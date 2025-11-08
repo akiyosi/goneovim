@@ -185,7 +185,7 @@ func (ws *Workspace) initUI() {
 	ws.screen.initInputMethodWidget()
 
 	// cursor
-	ws.cursor = initCursorNew()
+	ws.cursor = initCursor()
 	ws.cursor.SetParent(ws.widget)
 	ws.cursor.ws = ws
 	// ws.cursor.setBypassScreenEvent()

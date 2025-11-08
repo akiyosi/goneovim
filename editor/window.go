@@ -123,7 +123,8 @@ type zindex struct {
 
 // Window is
 type Window struct {
-	cache Cache
+	cache       *Cache
+	cursorCache *Cache
 	widgets.QWidget
 	smoothScrollAnimation  *core.QPropertyAnimation
 	snapshot               *gui.QPixmap
@@ -205,20 +206,20 @@ func purgeQBrush(key, value interface{}) {
 	brush.DestroyQBrush()
 }
 
-func newCache() Cache {
-	g := gcache.New(editor.config.Editor.CacheSize).LRU().
+func newCache(cachesize int) *Cache {
+	g := gcache.New(cachesize).LRU().
 		EvictedFunc(purgeQimage).
 		PurgeVisitorFunc(purgeQimage).
 		Build()
-	return *(*Cache)(unsafe.Pointer(&g))
+	return (*Cache)(unsafe.Pointer(&g))
 }
 
-func newBrushCache() Cache {
+func newBrushCache() *Cache {
 	g := gcache.New(64).LRU().
 		EvictedFunc(purgeQBrush).
 		PurgeVisitorFunc(purgeQBrush).
 		Build()
-	return *(*Cache)(unsafe.Pointer(&g))
+	return (*Cache)(unsafe.Pointer(&g))
 }
 
 func (c *Cache) set(key, value interface{}) error {
@@ -3350,12 +3351,20 @@ func (w *Window) setResizableForExtWin() {
 	}
 }
 
-func (w *Window) getCache() Cache {
+func (w *Window) getCache() *Cache {
 	if w.font != nil {
 		return w.cache
 	}
 
 	return w.s.cache
+}
+
+func (w *Window) getCursorCache() *Cache {
+	if w.font != nil {
+		return w.cursorCache
+	}
+
+	return w.s.ws.cursor.cursorCache
 }
 
 func newWindow() *Window {
