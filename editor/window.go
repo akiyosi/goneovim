@@ -2573,7 +2573,7 @@ func (w *Window) drawTextInPos(p *gui.QPainter, x, y int, text string, hlkey HlK
 		w.drawTextInPosWithNoCache(
 			p,
 			x, //+horScrollPixels,
-			y+wsfont.shift,
+			y+wsfont.baselineOffset,
 			text,
 			hlkey,
 			isNormalWidth,
@@ -2874,7 +2874,7 @@ func (w *Window) newTextCache(text string, hlkey HlKey, isNormalWidth bool) *gui
 	// 		float64(font.lineHeight),
 	// 	), text, textOptionAlignVCenter,
 	// )
-	baselineY := int(math.Ceil(float64(font.lineHeight) - (float64(font.height) - font.ascent) - float64(font.lineSpace)/2.0))
+	baselineY := int(math.Ceil(float64(font.lineHeight) - (font.descent) - float64(font.lineSpace)/2.0))
 	w.imagePainter.DrawText3(
 		0, baselineY,
 		text,
@@ -3041,7 +3041,6 @@ func drawStrikethrough(p *gui.QPainter, font *Font, color *gui.QColor, row int, 
 	if space2 < -1 {
 		space2 = float64(font.lineSpace) / 2.0
 	}
-	// descent := float64(font.height) - font.ascent
 
 	weight := int(math.Ceil(float64(font.height) / 16.0))
 	if weight < 1 {
@@ -3073,14 +3072,13 @@ func drawUnderline(p *gui.QPainter, font *Font, color *gui.QColor, row int, star
 	if space2 < -1 {
 		space2 = float64(font.lineSpace) / 2.0
 	}
-	descent := float64(font.height) - font.ascent
 
 	weight := int(math.Ceil(float64(font.height) / 18.0))
 	if weight < 1 {
 		weight = 1
 	}
 
-	Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
+	Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + font.descent*0.5 + float64(font.lineSpace/2) + space
 
 	width := int(end - start)
 	if width < 0 {
@@ -3105,21 +3103,20 @@ func drawUndercurl(p *gui.QPainter, font *Font, color *gui.QColor, row int, star
 	if space2 < -1 {
 		space2 = float64(font.lineSpace) / 2.0
 	}
-	descent := float64(font.height) - font.ascent
 
 	weight := int(math.Ceil(float64(font.height) / 16.0))
 	if weight < 1 {
 		weight = 1
 	}
 
-	amplitude := descent*0.65 + float64(space2)
+	amplitude := font.descent*0.65 + float64(space2)
 	maxAmplitude := font.ascent / 8.0
 	if amplitude >= maxAmplitude {
 		amplitude = maxAmplitude
 	}
 	freq := 1.0
 	phase := 0.0
-	Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent+descent*0.3) + float64(space2/2) + space
+	Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent+font.descent*0.3) + float64(space2/2) + space
 	Y2 := Y + amplitude*math.Sin(0)
 	point := core.NewQPointF3(start+float64(horScrollPixels), Y2)
 	path := gui.NewQPainterPath2(point)
@@ -3139,15 +3136,14 @@ func drawUnderdouble(p *gui.QPainter, font *Font, color *gui.QColor, row int, st
 	if space2 < -1 {
 		space2 = float64(font.lineSpace) / 2.0
 	}
-	descent := float64(font.height) - font.ascent
 
 	weight := int(math.Ceil(float64(font.height) / 16.0))
 	if weight < 1 {
 		weight = 1
 	}
 
-	Y1 := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.1 + float64(font.lineSpace/2) + space
-	Y2 := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.8 + float64(font.lineSpace/2) + space
+	Y1 := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + font.descent*0.1 + float64(font.lineSpace/2) + space
+	Y2 := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + font.descent*0.8 + float64(font.lineSpace/2) + space
 
 	width := int(end - start)
 	if width < 0 {
@@ -3181,7 +3177,6 @@ func drawUnderdotted(p *gui.QPainter, font *Font, color *gui.QColor, row int, st
 	if space2 < -1 {
 		space2 = float64(font.lineSpace) / 2.0
 	}
-	descent := float64(font.height) - font.ascent
 
 	weight := int(math.Ceil(float64(font.height) / 16.0))
 	if weight < 1 {
@@ -3196,7 +3191,7 @@ func drawUnderdotted(p *gui.QPainter, font *Font, color *gui.QColor, row int, st
 	pen.SetColor(color)
 	pen.SetStyle(core.Qt__DotLine)
 	p.SetPen(pen)
-	Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
+	Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + font.descent*0.5 + float64(font.lineSpace/2) + space
 
 	p.DrawLine3(
 		int(start)+horScrollPixels,
@@ -3215,7 +3210,6 @@ func drawUnderdashed(p *gui.QPainter, font *Font, color *gui.QColor, row int, st
 	if space2 < -1 {
 		space2 = float64(font.lineSpace) / 2.0
 	}
-	descent := float64(font.height) - font.ascent
 
 	weight := int(math.Ceil(float64(font.height) / 16.0))
 	if weight < 1 {
@@ -3227,7 +3221,7 @@ func drawUnderdashed(p *gui.QPainter, font *Font, color *gui.QColor, row int, st
 		width = 0
 	}
 
-	Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + descent*0.5 + float64(font.lineSpace/2) + space
+	Y := float64(row*font.lineHeight+verScrollPixels) + float64(font.ascent) + font.descent*0.5 + float64(font.lineSpace/2) + space
 
 	p.FillRect5(
 		int(start)+int(math.Ceil(font.cellwidth*0.25))+horScrollPixels,

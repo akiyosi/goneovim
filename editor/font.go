@@ -19,18 +19,19 @@ type Font struct {
 	weight  gui.QFont__Weight
 	stretch int
 
-	ws          *Workspace
-	qfont       *gui.QFont
-	fontMetrics *gui.QFontMetricsF
-	width       float64
-	cellwidth   float64
-	italicWidth float64
-	ascent      float64
-	height      int
-	lineHeight  int
-	lineSpace   int
-	letterSpace int
-	shift       int
+	ws             *Workspace
+	qfont          *gui.QFont
+	fontMetrics    *gui.QFontMetricsF
+	width          float64
+	cellwidth      float64
+	italicWidth    float64
+	ascent         float64
+	descent        float64
+	height         int
+	lineHeight     int
+	lineSpace      int
+	letterSpace    int
+	baselineOffset int
 }
 
 func fontSizeNew(font *gui.QFont) (float64, int, float64, float64) {
@@ -71,21 +72,22 @@ func initFontNew(family string, size float64, weight gui.QFont__Weight, stretch,
 	width, height, ascent, italicWidth := fontSizeNew(font)
 
 	return &Font{
-		family:      family,
-		size:        size,
-		weight:      weight,
-		stretch:     stretch,
-		qfont:       font,
-		fontMetrics: gui.NewQFontMetricsF(font),
-		width:       width,
-		cellwidth:   width + float64(letterSpace),
-		letterSpace: letterSpace,
-		height:      height,
-		lineHeight:  height + lineSpace,
-		lineSpace:   lineSpace,
-		shift:       int(float64(lineSpace)/2 + ascent),
-		ascent:      ascent,
-		italicWidth: italicWidth,
+		family:         family,
+		size:           size,
+		weight:         weight,
+		stretch:        stretch,
+		qfont:          font,
+		fontMetrics:    gui.NewQFontMetricsF(font),
+		width:          width,
+		cellwidth:      width + float64(letterSpace),
+		letterSpace:    letterSpace,
+		height:         height,
+		lineHeight:     height + lineSpace,
+		lineSpace:      lineSpace,
+		baselineOffset: int(math.Ceil(float64(height+lineSpace) - (float64(height) - ascent) - float64(lineSpace)/2.0)),
+		ascent:         ascent,
+		descent:        float64(height) - ascent,
+		italicWidth:    italicWidth,
 	}
 }
 
@@ -112,12 +114,15 @@ func (f *Font) change(family string, size float64, weight gui.QFont__Weight, str
 	width, height, ascent, italicWidth := fontSizeNew(f.qfont)
 
 	f.fontMetrics = gui.NewQFontMetricsF(f.qfont)
+	f.width = width
 	f.cellwidth = width + float64(f.letterSpace)
 	// f.letterSpace is no change
 	f.height = height
 	f.lineHeight = height + f.lineSpace
+	// f.lineSpace is no change
+	f.baselineOffset = int(math.Ceil(float64(height+f.lineSpace) - (float64(height) - ascent) - float64(f.lineSpace)/2.0))
 	f.ascent = ascent
-	f.shift = int(float64(f.lineSpace)/2 + ascent)
+	f.descent = float64(height) - ascent
 	f.italicWidth = italicWidth
 
 	f.family = family
@@ -176,7 +181,7 @@ func (f *Font) putDebugLog() {
 func (f *Font) changeLineSpace(lineSpace int) {
 	f.lineSpace = lineSpace
 	f.lineHeight = f.height + lineSpace
-	f.shift = int(float64(lineSpace)/2 + f.ascent)
+	f.baselineOffset = int(math.Ceil(float64(f.height+lineSpace) - (float64(f.height) - f.ascent) - float64(lineSpace)/2.0))
 
 	if f.ws == nil {
 		return

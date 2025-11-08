@@ -55,7 +55,6 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 	if height > float64(lineHeight) {
 		height = float64(lineHeight)
 	}
-	shift := t.font.shift
 	var x float64
 	var y float64 = float64(lineHeight-height) / 2
 
@@ -103,7 +102,7 @@ func (t *Tooltip) drawContent(p *gui.QPainter, getFont func() *Font) {
 			p.DrawText(
 				core.NewQPointF3(
 					float64(x),
-					float64(shift),
+					float64(t.font.baselineOffset),
 				),
 				string(rr),
 			)
