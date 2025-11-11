@@ -230,13 +230,8 @@ func (i *IMETooltip) parsePreeditString(preeditStr string) {
 			return
 		}
 
-		if i.s.ws.screenbg == "light" {
-			currConvHl.foreground = warpColor(i.s.ws.background, -30)
-			currConvHl.background = warpColor(i.s.ws.foreground, -30)
-		} else {
-			currConvHl.foreground = warpColor(i.s.ws.foreground, 30)
-			currConvHl.background = warpColor(i.s.ws.background, 30)
-		}
+		currConvHl.foreground = warpColor(i.s.ws.background, -30)
+		currConvHl.background = warpColor(i.s.ws.foreground, -30)
 		currConvHl.underline = true
 	}
 

@@ -127,6 +127,14 @@ type Editor struct {
 	font                   *Font
 	fallbackfonts          []*Font
 	fontCh                 chan []*Font
+	nvimErr                error
+	nvimSignal             *neovimSignal
+	redrawUpdates          chan [][]interface{}
+	guiUpdates             chan []interface{}
+	nvimCh                 chan *nvim.Nvim
+	uiRemoteAttachedCh     chan bool
+	nvimErrCh              chan error
+	qAppStartedCh          chan bool
 	fontErrors             []string
 	notifications          []*Notification
 	workspaces             []*Workspace
@@ -146,6 +154,7 @@ type Editor struct {
 	doRestoreSessions      bool
 	initialColumns         int
 	initialLines           int
+	isSetWindowState       bool
 	isSetColumns           bool
 	isSetLines             bool
 	isSetGuiColor          bool
@@ -217,8 +226,12 @@ func InitEditor(options Options, args []string) {
 		notify:       make(chan *Notify, 10),
 		cbChan:       make(chan *string, 240),
 		chUiPrepared: make(chan bool, 1),
+		nvimErrCh:    make(chan error, 1),
 	}
 	e := editor
+	if runtime.GOOS == "darwin" {
+		e.qAppStartedCh = make(chan bool, 1)
+	}
 
 	// Prepare debug log
 	e.setDebuglog()
@@ -246,36 +259,35 @@ func InitEditor(options Options, args []string) {
 	// set application working directory path
 	e.setAppDirPath(e.homeDir)
 
-	// create qapplication
-	e.putLog("start    generating the application")
-	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
-	e.app = widgets.NewQApplication(len(os.Args), os.Args)
-	setMyApplicationDelegate()
-
-	e.app.SetDoubleClickInterval(0)
-	e.putLog("finished generating the application")
-
-	e.initNotifications()
-
 	var cerr, lerr error
 	e.initialColumns, cerr, e.initialLines, lerr = parseLinesAndColumns(args)
-	if cerr == nil {
-		editor.isSetColumns = true
-	}
-	if lerr == nil {
-		editor.isSetLines = true
-	}
+	editor.isSetColumns, editor.isSetLines = cerr == nil, lerr == nil
 
 	// new nvim instance
-	signal, redrawUpdates, guiUpdates, nvimCh, uiRCh, errCh := newNvim(
+	e.nvimSignal, e.redrawUpdates, e.guiUpdates, e.nvimCh, e.uiRemoteAttachedCh, e.nvimErrCh = newNvim(
 		e.initialColumns,
 		e.initialLines,
 		e.ctx,
 	)
 
-	// e.setAppDirPath(home)
+	// create qapplication
+	e.putLog("start    generating the application")
 
-	e.fontCh = make(chan []*Font, 100)
+	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
+
+	e.app = widgets.NewQApplication(len(os.Args), os.Args)
+	if runtime.GOOS == "darwin" {
+		e.qAppStartedCh <- e.app != nil
+	}
+
+	setMyApplicationDelegate()
+	e.putLog("finished generating the application")
+
+	e.app.SetDoubleClickInterval(0)
+
+	e.initNotifications()
+
+	e.fontCh = make(chan []*Font, 1)
 	go func() {
 		e.fontCh <- parseFont(
 			e.config.Editor.FontFamily,
@@ -296,26 +308,12 @@ func InitEditor(options Options, args []string) {
 	e.initSpecialKeys()
 
 	// application main window
-	isSetWindowState := e.initAppWindow()
+	e.isSetWindowState = e.initAppWindow()
+	e.setWindowLayout()
 	e.window.Show()
 
 	// Apply native title bar customization
 	e.applyNativeTitlebarCustomization()
-
-	// window layout
-	e.setWindowLayout()
-
-	// neovim workspaces
-
-	nvimErr := <-errCh
-	if nvimErr != nil {
-		fmt.Println(nvimErr)
-		os.Exit(1)
-	}
-
-	e.initWorkspaces(e.ctx, signal, redrawUpdates, guiUpdates, nvimCh, uiRCh, isSetWindowState)
-
-	e.connectAppSignals()
 
 	// go e.exitEditor(cancel, f, g)
 	// go e.exitEditor(cancel, f, fgprofStop)
@@ -603,6 +601,12 @@ func (e *Editor) initWorkspaces(ctx context.Context, signal *neovimSignal, redra
 
 		ws.initFont()
 		e.initAppFont()
+
+		e.nvimErr = <-e.nvimErrCh
+		if e.nvimErr != nil {
+			fmt.Println(e.nvimErr)
+			os.Exit(1)
+		}
 		ws.registerSignal(signal, redrawUpdates, guiUpdates)
 		ws.updateSize()
 
@@ -1148,6 +1152,8 @@ func (e *Editor) connectWindowEvents() {
 	e.bindResizeEvent()
 	e.window.ConnectShowEvent(func(event *gui.QShowEvent) {
 		editor.putLog("show application window")
+		e.initWorkspaces(e.ctx, e.nvimSignal, e.redrawUpdates, e.guiUpdates, e.nvimCh, e.uiRemoteAttachedCh, e.isSetWindowState)
+		e.connectAppSignals()
 	})
 
 	e.window.InstallEventFilter(e.window)
