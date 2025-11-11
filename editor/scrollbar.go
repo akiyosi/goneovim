@@ -47,17 +47,11 @@ func newScrollBar() *ScrollBar {
 }
 
 func (s *ScrollBar) thumbEnter(e *core.QEvent) {
-	shift := -40
-	if s.ws.screenbg == "light" {
-		shift = 40
-	}
-	color := warpColor(s.fg, shift)
-	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", color))
+	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", s.fg.OverlayAccent(0.5)))
 }
 
 func (s *ScrollBar) thumbLeave(e *core.QEvent) {
-	color := s.fg
-	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", color))
+	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", s.fg.OverlayAccent(0.25)))
 }
 
 func (s *ScrollBar) thumbPress(e *gui.QMouseEvent) {
@@ -156,7 +150,7 @@ func (s *ScrollBar) setColor() {
 	if editor.config.ScrollBar.Color != "" {
 		s.fg = hexToRGBA(editor.config.ScrollBar.Color)
 	}
-	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", s.fg.String()))
+	s.thumb.SetStyleSheet(fmt.Sprintf(" * { background: %s;}", s.fg.OverlayAccent(0.25)))
 	s.widget.SetStyleSheet(" * { background: rgba(0, 0, 0, 0);}")
 }
 

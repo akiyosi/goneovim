@@ -288,8 +288,19 @@ func (ws *Workspace) initFont() {
 func (ws *Workspace) lazyLoad() {
 	editor.putLog("Starting preparation for deferred operations")
 
-	// set GUI clipboard
-	go setGoneovimClipBoard(ws.nvim)
+	go func() {
+		// set GUI clipboard
+		setGoneovimClipBoard(ws.nvim)
+
+		// Load goneovim's neovim settings
+		loadHelpDoc(ws.nvim)
+
+		// load ginitvim
+		loadGinitVim(ws.nvim)
+	}()
+
+	ws.getKeymaps()
+	ws.getMousescroll()
 
 	editor.putLog("preparing scrollbar")
 	// scrollbar
@@ -460,18 +471,12 @@ func (ws *Workspace) bindNvim(nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bo
 	ws.nvim = <-nvimCh
 	ws.uiRemoteAttached = <-uiRemoteAttachedCh
 
-	// Get nvim options
-	ws.getGlobalOptions()
-
 	// Adjust nvim geometry to fit application window size
 	ws.uiAttached = true
 	if len(editor.workspaces) == 1 {
 		editor.chUiPrepared <- true
 	}
 
-	// Load goneovim's neovim settings
-	loadHelpDoc(ws.nvim)
-	loadGinitVim(ws.nvim)
 	source(ws.nvim, file)
 
 	// Initialize lazy load UI
@@ -507,13 +512,6 @@ func (ws *Workspace) show() {
 	ws.widget.Show()
 	ws.widget.SetFocus2Default()
 	ws.cursor.update()
-}
-
-func (ws *Workspace) getGlobalOptions() {
-	// ws.getColorscheme()
-	ws.getBG()
-	ws.getKeymaps()
-	ws.getMousescroll()
 }
 
 func (ws *Workspace) getMousescroll() {
@@ -1412,10 +1410,7 @@ func (ws *Workspace) setDefaultColorsSet(args []interface{}) {
 	}
 
 	editor.colors.update()
-	if !(ws.colorscheme == "" && fg == -1 && bg == -1 && ws.screenbg == "dark") {
-		editor.putLog(ws.colorscheme, fg, bg, ws.screenbg)
-		editor.updateGUIColor()
-	}
+	editor.updateGUIColor()
 	editor.isSetGuiColor = true
 }
 
@@ -1504,12 +1499,6 @@ func (ws *Workspace) optionSet(args []interface{}) {
 		// case "ext_termcolors":
 		default:
 		}
-	}
-
-	// Set Transparent blue effect
-	if runtime.GOOS == "darwin" && editor.config.Editor.EnableBackgroundBlur {
-		isLight := ws.screenbg == "light"
-		editor.window.SetBlurEffectForMacOS(isLight)
 	}
 }
 

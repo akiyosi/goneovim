@@ -45,6 +45,15 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 	// }()
 
 	go func() {
+		if runtime.GOOS == "darwin" {
+			select {
+			case qAppStarted := <-editor.qAppStartedCh:
+				if !qAppStarted {
+					return
+				}
+			}
+		}
+
 		neovim, uiRemoteAttached, err = startNvim(signal, ctx)
 		if err != nil {
 			errCh <- err
@@ -52,7 +61,7 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 		} else {
 			errCh <- nil
 		}
-		setVar(neovim)
+		setChannelID(neovim)
 		setGoneovim(neovim)
 		setGoneovimCommands(neovim)
 		registerHandler(neovim, signal, redrawUpdates, guiUpdates)
@@ -62,9 +71,6 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 		uiRemoteAttachedCh <- uiRemoteAttached
 	}()
 
-	// // Suppress the problem that cmd.Start() hangs on MacOS.
-	// time.Sleep(3 * time.Millisecond)
-
 	return
 }
 
@@ -72,8 +78,7 @@ func startNvim(signal *neovimSignal, ctx context.Context) (neovim *nvim.Nvim, ui
 	editor.putLog("starting nvim")
 
 	option := []string{
-		"--cmd",
-		"let g:goneovim=1",
+		"--cmd", "let g:goneovim=1",
 		"--embed",
 	}
 
@@ -129,8 +134,10 @@ func startNvim(signal *neovimSignal, ctx context.Context) (neovim *nvim.Nvim, ui
 }
 
 func registerHandler(neovim *nvim.Nvim, signal *neovimSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}) {
+	editor.putLog("start registerHandler()")
 	handleRequest(neovim)
 	handleNotification(neovim, signal, redrawUpdates, guiUpdates)
+	editor.putLog("done registerHandler()")
 }
 
 func handleRequest(neovim *nvim.Nvim) {
@@ -226,8 +233,6 @@ func handleNotification(neovim *nvim.Nvim, signal *neovimSignal, redrawUpdates c
 		redrawUpdates <- updates
 		signal.RedrawSignal()
 	})
-
-	neovim.Subscribe("Gui")
 	neovim.RegisterHandler("Gui", func(updates ...interface{}) {
 		if !editor.isUiPrepared {
 			select {
@@ -435,9 +440,11 @@ func setGoneovim(neovim *nvim.Nvim) {
 	}
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
 	neovim.Command(registerScripts)
+	editor.putLog("done setGoneovim()")
 }
 
 func setGoneovimCommands(neovim *nvim.Nvim) {
+	editor.putLog("start setGoneovimCommands()")
 	// Definition of the commands that goneovim provides
 	gonvimCommands := fmt.Sprintf(`
 	command! -nargs=1 GonvimResize call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_resize", <args>)
@@ -474,6 +481,7 @@ func setGoneovimCommands(neovim *nvim.Nvim) {
 	`
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	neovim.Command(registerScripts)
+	editor.putLog("done setGoneovimCommands()")
 }
 
 func setGoneovimClipBoard(neovim *nvim.Nvim) {
@@ -513,8 +521,10 @@ func setGoneovimClipBoard(neovim *nvim.Nvim) {
 	}
 }
 
-func setVar(neovim *nvim.Nvim) {
-	go neovim.SetVar("goneovim_channel_id", neovim.ChannelID())
+func setChannelID(neovim *nvim.Nvim) {
+	editor.putLog("starting to set goneovim_channel_id")
+	neovim.SetVar("goneovim_channel_id", neovim.ChannelID())
+	editor.putLog("done setting goneovim_channel_id")
 }
 
 func source(neovim *nvim.Nvim, file string) {
