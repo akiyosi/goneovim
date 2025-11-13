@@ -45,6 +45,15 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 	// }()
 
 	go func() {
+		if runtime.GOOS == "darwin" {
+			select {
+			case qAppStarted := <-editor.qAppStartedCh:
+				if !qAppStarted {
+					return
+				}
+			}
+		}
+
 		neovim, uiRemoteAttached, err = startNvim(signal, ctx)
 		if err != nil {
 			errCh <- err
@@ -61,9 +70,6 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 		nvimCh <- neovim
 		uiRemoteAttachedCh <- uiRemoteAttached
 	}()
-
-	// // Suppress the problem that cmd.Start() hangs on MacOS.
-	// time.Sleep(3 * time.Millisecond)
 
 	return
 }

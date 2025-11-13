@@ -134,6 +134,7 @@ type Editor struct {
 	nvimCh                 chan *nvim.Nvim
 	uiRemoteAttachedCh     chan bool
 	nvimErrCh              chan error
+	qAppStartedCh          chan bool
 	fontErrors             []string
 	notifications          []*Notification
 	workspaces             []*Workspace
@@ -228,6 +229,9 @@ func InitEditor(options Options, args []string) {
 		nvimErrCh:    make(chan error, 1),
 	}
 	e := editor
+	if runtime.GOOS == "darwin" {
+		e.qAppStartedCh = make(chan bool, 1)
+	}
 
 	// Prepare debug log
 	e.setDebuglog()
@@ -255,17 +259,6 @@ func InitEditor(options Options, args []string) {
 	// set application working directory path
 	e.setAppDirPath(e.homeDir)
 
-	// create qapplication
-	e.putLog("start    generating the application")
-	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
-	e.app = widgets.NewQApplication(len(os.Args), os.Args)
-	setMyApplicationDelegate()
-	e.putLog("finished generating the application")
-
-	e.app.SetDoubleClickInterval(0)
-
-	e.initNotifications()
-
 	var cerr, lerr error
 	e.initialColumns, cerr, e.initialLines, lerr = parseLinesAndColumns(args)
 	editor.isSetColumns, editor.isSetLines = cerr == nil, lerr == nil
@@ -277,7 +270,22 @@ func InitEditor(options Options, args []string) {
 		e.ctx,
 	)
 
-	// e.setAppDirPath(home)
+	// create qapplication
+	e.putLog("start    generating the application")
+
+	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
+
+	e.app = widgets.NewQApplication(len(os.Args), os.Args)
+	if runtime.GOOS == "darwin" {
+		e.qAppStartedCh <- e.app != nil
+	}
+
+	setMyApplicationDelegate()
+	e.putLog("finished generating the application")
+
+	e.app.SetDoubleClickInterval(0)
+
+	e.initNotifications()
 
 	e.fontCh = make(chan []*Font, 1)
 	go func() {
