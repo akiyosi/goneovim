@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/akiyosi/goneovim/util"
 	"github.com/akiyosi/qt/core"
@@ -207,31 +206,42 @@ func purgeQBrush(key, value interface{}) {
 }
 
 func newCache(cachesize int) *Cache {
-	g := gcache.New(cachesize).LRU().
+	g := gcache.New(cachesize).
+		LRU().
 		EvictedFunc(purgeQimage).
 		PurgeVisitorFunc(purgeQimage).
 		Build()
-	return (*Cache)(unsafe.Pointer(&g))
+	return &Cache{Cache: g}
 }
 
 func newBrushCache() *Cache {
-	g := gcache.New(64).LRU().
+	g := gcache.New(64).
+		LRU().
 		EvictedFunc(purgeQBrush).
 		PurgeVisitorFunc(purgeQBrush).
 		Build()
-	return (*Cache)(unsafe.Pointer(&g))
+	return &Cache{Cache: g}
 }
 
 func (c *Cache) set(key, value interface{}) error {
-	return c.Set(key, value)
+	if c == nil || c.Cache == nil {
+		return fmt.Errorf("cache not initialized")
+	}
+	return c.Cache.Set(key, value)
 }
 
 func (c *Cache) get(key interface{}) (interface{}, error) {
-	return c.Get(key)
+	if c == nil || c.Cache == nil {
+		return nil, gcache.KeyNotFoundError
+	}
+	return c.Cache.Get(key)
 }
 
 func (c *Cache) purge() {
-	c.Purge()
+	if c == nil || c.Cache == nil {
+		return
+	}
+	c.Cache.Purge()
 }
 
 func (w *Window) dropScreenSnapshot() {
