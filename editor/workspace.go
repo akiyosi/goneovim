@@ -502,7 +502,7 @@ func (ws *Workspace) show() {
 }
 
 func (ws *Workspace) getGlobalOptions() {
-	ws.getColorscheme()
+	// ws.getColorscheme()
 	ws.getBG()
 	ws.getKeymaps()
 	ws.getMousescroll()
@@ -2006,6 +2006,9 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 	case "gonvim_minimap_toggle":
 		ws.minimap.toggle()
 	case "gonvim_colorscheme":
+		if len(updates) >= 2 {
+			ws.colorscheme = updates[1].(string)
+		}
 		if ws.minimap != nil {
 			ws.minimap.isSetColorscheme = false
 			ws.minimap.setColorscheme()
