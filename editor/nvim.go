@@ -73,11 +73,7 @@ func startNvim(signal *neovimSignal, ctx context.Context) (neovim *nvim.Nvim, ui
 
 	option := []string{
 		"--cmd",
-		"let g:gonvim_running=1",
-		"--cmd",
 		"let g:goneovim=1",
-		"--cmd",
-		"set termguicolors",
 		"--embed",
 	}
 
@@ -257,7 +253,7 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 	var err error
 	hostname, portno, err = net.SplitHostPort(editor.opts.Ssh)
 
-	nvimargs := `"nvim --cmd 'let g:gonvim_running=1' --cmd 'let g:goneovim=1' --cmd 'set termguicolors' --embed `
+	nvimargs := `"nvim --cmd 'let g:goneovim=1' --embed `
 	for _, s := range editor.args {
 		nvimargs += s + " "
 	}
@@ -309,9 +305,7 @@ func newWslProcess() (*nvim.Nvim, error) {
 
 	nvimArgs := []string{
 		nvimCmd,
-		"--cmd", "let g:gonvim_running=1",
 		"--cmd", "let g:goneovim=1",
-		"--cmd", "set termguicolors",
 		"--embed",
 	}
 	nvimArgs = append(nvimArgs, editor.args...)
