@@ -41,7 +41,6 @@ type MiniMap struct {
 	visible            bool
 	uiAttached         bool
 	isProcessSync      bool
-	isSetColorscheme   bool
 	scrollPixelsDeltaY int
 }
 
@@ -160,7 +159,6 @@ func (m *MiniMap) startMinimapProc(ctx context.Context) {
 	      parser_install_dir = %q .. "/site",
 	      highlight = { enable = true, additional_vim_regex_highlighting = false },
 	    })
-	    -- 重要：parser_install_dir を rtp にも追加（queries解決の一助）
 	    local site = %q .. "/site"
 	    if vim.fn.isdirectory(site) == 1 then
 	      vim.opt.runtimepath:append(site)
@@ -172,6 +170,9 @@ func (m *MiniMap) startMinimapProc(ctx context.Context) {
 	ppCount, _ := m.nvim.CommandOutput(`echo len(split(&packpath, ","))`)
 	editor.putLog("[minimap] &rtp set from WS, len=", strings.TrimSpace(rtpCount))
 	editor.putLog("[minimap] &pp  set from WS, len=", strings.TrimSpace(ppCount))
+
+	_ = m.nvim.Command("silent! set nowrap")
+	_ = m.nvim.Command("silent! syntax on")
 }
 
 func (m *MiniMap) exit() { go m.nvim.Command(":q!") }
@@ -223,9 +224,6 @@ func (m *MiniMap) bufUpdate() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if strings.Contains(m.ws.filepath, "[denite]") {
-		return
-	}
 	if !m.visible {
 		m.widget.Hide()
 		return
@@ -233,7 +231,6 @@ func (m *MiniMap) bufUpdate() {
 	if m.ws.nvim == nil || m.nvim == nil {
 		return
 	}
-
 	m.setColorscheme()
 	m.widget.Show()
 
@@ -256,14 +253,14 @@ func (m *MiniMap) bufUpdate() {
 }
 
 func (m *MiniMap) setColorscheme() {
-	if m.isSetColorscheme {
-		return
+	if m.ws.colorscheme == "" {
+		m.ws.getColorscheme()
 	}
 	colo := m.ws.colorscheme
 
 	_ = m.nvim.Command("silent! colorscheme " + colo)
+	editor.putLog("[minimap] coloscheme is ", colo)
 	m.colorscheme = colo
-	m.isSetColorscheme = true
 }
 
 func (m *MiniMap) attachTreesitterForCurrentBuffer() {
