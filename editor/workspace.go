@@ -2010,7 +2010,6 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 			ws.colorscheme = updates[1].(string)
 		}
 		if ws.minimap != nil {
-			ws.minimap.isSetColorscheme = false
 			ws.minimap.setColorscheme()
 		}
 
