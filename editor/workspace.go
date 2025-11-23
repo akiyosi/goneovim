@@ -89,6 +89,8 @@ type Workspace struct {
 	insertMappings     []*nvim.Mapping
 	viewport           [5]int
 	oldViewport        [5]int
+	viewportByGrid     map[int][5]int
+	oldViewportByGrid  map[int][5]int
 	height             int
 	maxLine            int
 	rows               int
@@ -159,12 +161,14 @@ func (ws *Workspace) matchAndPopFor(cols, rows int) (resizeRequest, bool) {
 func newWorkspace() *Workspace {
 	editor.putLog("initialize workspace")
 	ws := &Workspace{
-		stop:         make(chan struct{}),
-		flushCh:      newFlushCh(),
-		foreground:   newRGBA(255, 255, 255, 1),
-		background:   newRGBA(0, 0, 0, 1),
-		special:      newRGBA(255, 255, 255, 1),
-		shouldUpdate: &ShouldUpdate{},
+		stop:              make(chan struct{}),
+		flushCh:           newFlushCh(),
+		foreground:        newRGBA(255, 255, 255, 1),
+		background:        newRGBA(0, 0, 0, 1),
+		special:           newRGBA(255, 255, 255, 1),
+		shouldUpdate:      &ShouldUpdate{},
+		viewportByGrid:    make(map[int][5]int),
+		oldViewportByGrid: make(map[int][5]int),
 	}
 
 	return ws
@@ -1747,10 +1751,6 @@ func (ws *Workspace) winViewport(args []interface{}) {
 			grid,
 		}
 
-		// fmt.Println(
-		// 	fmt.Sprintf("top:%d, bottom:%d", top, bottom),
-		// )
-
 		maxLine := 0
 		if len(arg) >= 7 {
 			maxLine = util.ReflectToInt(arg[6])
@@ -1761,27 +1761,29 @@ func (ws *Workspace) winViewport(args []interface{}) {
 			delta = util.ReflectToInt(arg[7])
 		}
 
-		// Only the viewport of the buffer where the cursor is located is used internally.
+		ws.viewportMutex.Lock()
+
+		prevViewport, ok := ws.viewportByGrid[grid]
+		if !ok {
+			prevViewport = viewport
+		}
+
+		ws.oldViewportByGrid[grid] = prevViewport
+		ws.viewportByGrid[grid] = viewport
+
 		if grid == ws.cursor.gridid {
-			ws.viewportMutex.Lock()
-			ws.oldViewport = ws.viewport
+			ws.oldViewport = prevViewport
 			ws.viewport = viewport
-			ws.viewportMutex.Unlock()
 			ws.maxLine = maxLine
 		}
+
+		ws.viewportMutex.Unlock()
 
 		if delta == 0 {
 			continue
 		}
 
-		// // do not scroll smoothly when the maximum line is less than buffer rows
-		// if ws.maxLine < ws.rows {
-		// 	continue
-		// }
-
-		// Does not scroll smoothly if the size of the grid is increased without
-		// changing the position of the top
-		if top == ws.oldViewport[0] && bottom != ws.oldViewport[1] {
+		if top == prevViewport[0] && bottom != prevViewport[1] {
 			continue
 		}
 

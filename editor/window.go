@@ -2330,6 +2330,21 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 
 	// Set smooth scroll offset
 	var horScrollPixels, verScrollPixels int
+	if w.s.ws.mouseScroll != "" {
+		horScrollPixels = w.scrollPixels[0]
+	}
+	if w.lastScrollphase != core.Qt__NoScrollPhase {
+		verScrollPixels = w.scrollPixels2
+	}
+	if editor.config.Editor.LineToScroll == 1 {
+		verScrollPixels += w.scrollPixels[1]
+	}
+	if y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1 {
+		verScrollPixels = 0
+		horScrollPixels = 0
+	}
+	origHorSP := horScrollPixels
+	origVerSP := verScrollPixels
 
 	for x := col; x <= col+cols; x++ {
 		if x >= len(line) {
@@ -2356,28 +2371,16 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 		// If the ligature setting is disabled,
 		// we will draw the characters on the screen one by one.
 		if cellBasedDrawing {
-
 			if line[x].covered && w.grid == 1 {
 				continue
 			}
 
-			if w.s.ws.mouseScroll != "" {
-				horScrollPixels = w.scrollPixels[0]
-			}
-			if w.lastScrollphase != core.Qt__NoScrollPhase {
-				verScrollPixels = w.scrollPixels2
-			}
-			if editor.config.Editor.LineToScroll == 1 {
-				verScrollPixels += w.scrollPixels[1]
-			}
+			horScrollPixels = origHorSP
+			verScrollPixels = origVerSP
 			if line[x].highlight.isSignColumn() {
 				horScrollPixels = 0
 			}
 			if x < w.viewportMargins[2] || x > w.cols-w.viewportMargins[3]-1 {
-				horScrollPixels = 0
-				verScrollPixels = 0
-			}
-			if y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1 {
 				horScrollPixels = 0
 				verScrollPixels = 0
 			}
@@ -2396,8 +2399,7 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				line[x].scaled,
 			)
 
-		} else {
-			// Prepare to draw a group of identical highlight units.
+		} else { // !cellBasedDrawing
 			highlight := line[x].highlight
 			if x < w.viewportMargins[2] || x > w.cols-w.viewportMargins[3]-1 {
 				highlight.special = highlight.special.copy()
@@ -2429,27 +2431,13 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 			isIndentationWhiteSpace := true
 			pos := col
 
-			horScrollPixels := 0
-			verScrollPixels := 0
-			if w.s.ws.mouseScroll != "" {
-				horScrollPixels = w.scrollPixels[0]
-			}
-			if w.lastScrollphase != core.Qt__NoScrollPhase {
-				verScrollPixels = w.scrollPixels2
-			}
-			if editor.config.Editor.LineToScroll == 1 {
-				verScrollPixels += w.scrollPixels[1]
-			}
-
 			for x := col; x <= col+cols; x++ {
+				horScrollPixels = origHorSP
+				verScrollPixels = origVerSP
 				if line[x].highlight.isSignColumn() {
 					horScrollPixels = 0
 				}
 				if x < w.viewportMargins[2] || x > w.cols-w.viewportMargins[3]-1 {
-					horScrollPixels = 0
-					verScrollPixels = 0
-				}
-				if y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1 {
 					horScrollPixels = 0
 					verScrollPixels = 0
 				}
@@ -2530,23 +2518,12 @@ func (w *Window) drawText(p *gui.QPainter, y int, col int, cols int) {
 				continue
 			}
 
-			if w.s.ws.mouseScroll != "" {
-				horScrollPixels = w.scrollPixels[0]
-			}
-			if w.lastScrollphase != core.Qt__NoScrollPhase {
-				verScrollPixels = w.scrollPixels2
-			}
-			if editor.config.Editor.LineToScroll == 1 {
-				verScrollPixels += w.scrollPixels[1]
-			}
+			horScrollPixels = origHorSP
+			verScrollPixels = origVerSP
 			if line[x].highlight.isSignColumn() {
 				horScrollPixels = 0
 			}
 			if x < w.viewportMargins[2] || x > w.cols-w.viewportMargins[3]-1 {
-				horScrollPixels = 0
-				verScrollPixels = 0
-			}
-			if y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1 {
 				horScrollPixels = 0
 				verScrollPixels = 0
 			}
@@ -2947,6 +2924,12 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 	if editor.config.Editor.LineToScroll == 1 {
 		verScrollPixels += w.scrollPixels[1]
 	}
+	if y < w.viewportMargins[0] || y > w.rows-w.viewportMargins[1]-1 {
+		verScrollPixels = 0
+		horScrollPixels = 0
+	}
+	origHorSP := horScrollPixels
+	origVerSP := verScrollPixels
 
 	for x := col; x <= col+cols; x++ {
 		if x >= len(line) {
@@ -2954,6 +2937,15 @@ func (w *Window) drawTextDecoration(p *gui.QPainter, y int, col int, cols int) {
 		}
 		if line[x] == nil {
 			continue
+		}
+		horScrollPixels = origHorSP
+		verScrollPixels = origVerSP
+		if line[x].highlight.isSignColumn() {
+			horScrollPixels = 0
+		}
+		if x < w.viewportMargins[2] || x > w.cols-w.viewportMargins[3]-1 {
+			horScrollPixels = 0
+			verScrollPixels = 0
 		}
 
 		highlight := line[x].highlight
