@@ -1843,7 +1843,7 @@ func (s *Screen) windowExternalPosition(args []interface{}) {
 					win.pos[0] = int(float64(pos.X()-gPos.X()) / font.cellwidth)
 					win.pos[1] = int(float64(pos.Y()-gPos.Y()) / float64(font.lineHeight))
 				})
-				width := int(math.Ceil(float64(win.cols) * font.cellwidth))
+				width := int(float64(win.cols) * font.cellwidth)
 				height := win.rows * font.lineHeight
 				win.setGridGeometry(width, height)
 				win.setResizableForExtWin()

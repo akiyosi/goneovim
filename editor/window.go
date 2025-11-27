@@ -3337,7 +3337,7 @@ func (w *Window) setResizableForExtWin() {
 		w.extwin.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 			height := w.extwin.Height() - EXTWINBORDERSIZE*2
 			width := w.extwin.Width() - EXTWINBORDERSIZE*2
-			cols := int(math.Ceil((float64(width) / w.getFont().cellwidth)))
+			cols := int((float64(width) / w.getFont().cellwidth))
 			rows := height / w.getFont().lineHeight
 			w.extwinResized = true
 			w.extwinManualResized = true
