@@ -1650,8 +1650,8 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.isFloatWin = false
 		if win.isExternal {
 			win.isExternal = false
-			win.deleteExternalWin()
 			win.SetParent(s.widget)
+			win.deleteExternalWin()
 			win.raise()
 		}
 
@@ -1734,11 +1734,6 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			shouldStackPerZIndex = shouldStackPerZIndex || true
 		}
 
-		if win.isExternal {
-			win.deleteExternalWin()
-			win.isExternal = false
-		}
-
 		anchorwin, ok := s.getWindow(win.anchorGrid)
 		if !ok {
 			continue
@@ -1746,6 +1741,13 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		win.anchorwin = anchorwin
 		win.setOptions()
+
+		if win.isExternal {
+			win.isExternal = false
+			win.SetParent(s.widget)
+			win.deleteExternalWin()
+			win.raise()
+		}
 
 		anchorwinIsExternal := win.anchorwin.isExternal
 

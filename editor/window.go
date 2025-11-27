@@ -3344,7 +3344,6 @@ func (w *Window) setResizableForExtWin() {
 			if cols == w.cols && rows == w.rows {
 				return
 			}
-			w.cols, w.rows = cols, rows
 			_ = w.s.ws.nvim.TryResizeUIGrid(w.grid, cols, rows)
 		})
 		w.extwinConnectResizable = true
