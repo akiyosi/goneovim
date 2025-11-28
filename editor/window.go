@@ -1054,7 +1054,7 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 	// faster move in darwin
 	if runtime.GOOS == "darwin" {
 		v = v * 2
-		h = h * 2
+		h = h * 4
 	}
 
 	phase := event.Phase()
