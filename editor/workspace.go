@@ -695,6 +695,21 @@ func (ws *Workspace) changeCwd(args []interface{}) {
 		cwd := (arg.([]interface{}))[0].(string)
 		ws.setCwd(cwd)
 	}
+
+	// filer update
+	if editor.side == nil {
+		return
+	}
+	if editor.side.scrollarea == nil {
+		return
+	}
+	if !editor.side.scrollarea.IsVisible() {
+		return
+	}
+	if editor.side.items[editor.active].isContentHide {
+		return
+	}
+	go ws.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
 }
 
 // func (ws *Workspace) handleChangeCwd(cwdinfo map[string]interface{}) {
@@ -1969,13 +1984,6 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 	case "side_toggle":
 		editor.side.toggle()
 		ws.updateSize()
-	case "filer_update":
-		if !editor.side.scrollarea.IsVisible() {
-			return
-		}
-		if !editor.side.items[editor.active].isContentHide {
-			go ws.nvim.Call("rpcnotify", nil, 0, "GonvimFiler", "redraw")
-		}
 	case "filer_open":
 		editor.side.items[ws.getNum()].isContentHide = false
 		editor.side.items[ws.getNum()].openContent()

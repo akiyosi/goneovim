@@ -29,8 +29,6 @@ func RegisterPlugin(nvim *nvim.Nvim, openCmd string) {
 		go f.handle(args...)
 	})
 	finderFunction := `
-	aug GonvimAuFiler | au! | aug END
-	    au GonvimAuFiler DirChanged * call rpcnotify(0, "Gui", "filer_update")
 	command! GonvimFilerOpen call Gonvim_filer_run()
 	function! Gonvim_filer_run() abort
 	    call rpcnotify(0, "GonvimFiler", "open")
