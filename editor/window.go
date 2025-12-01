@@ -325,6 +325,9 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	row := int(math.Trunc(float64(rect.Top()) / float64(font.lineHeight)))
 
 	cols := int(math.Ceil(float64(rect.Width()) / font.cellwidth))
+	if w.s.name == "minimap" {
+		cols = int(math.Ceil(float64(rect.Width()) / minimapScaleValue / font.cellwidth))
+	}
 	if rect.Width()%int(math.Trunc(font.cellwidth)) > 0 || rect.Left()%int(math.Trunc(font.cellwidth)) > 0 {
 		cols++
 	}

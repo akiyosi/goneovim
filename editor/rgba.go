@@ -352,3 +352,84 @@ func (hsv *HSV) RGB() *RGBA {
 		A: 1.0,
 	}
 }
+
+func clamp01(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
+}
+
+func (rgba *RGBA) OverlayAccent(alpha float64) *RGBA {
+	if rgba == nil {
+		return &RGBA{R: 0, G: 200, B: 200, A: alpha}
+	}
+
+	hsv := rgba.HSV()
+	if hsv == nil {
+		return &RGBA{R: 0, G: 200, B: 200, A: alpha}
+	}
+
+	h := hsv.H
+	s := hsv.S
+	v := hsv.V
+
+	isColorful := s > 0.8
+
+	var accentHSV *HSV
+
+	if isColorful {
+		hComp := math.Mod(h+0.5, 1.0)
+
+		var vAccent float64
+		if v < 0.45 {
+			vAccent = 0.95
+		} else if v > 0.7 {
+			vAccent = 0.15
+		} else {
+			vAccent = 0.9
+		}
+
+		sAccent := 0.9
+		accentHSV = &HSV{
+			H: hComp,
+			S: sAccent,
+			V: vAccent,
+		}
+	} else {
+		hAccent := h
+		sAccent := clamp01(s*0.4 + 0.10)
+
+		var vAccent float64
+		if v < 0.4 {
+			vAccent = clamp01(v + 0.3)
+		} else if v > 0.7 {
+			vAccent = clamp01(v - 0.3)
+		} else {
+			vAccent = clamp01(1.0 - v)
+		}
+
+		accentHSV = &HSV{
+			H: hAccent,
+			S: sAccent,
+			V: vAccent,
+		}
+	}
+
+	accent := accentHSV.RGB()
+	if accent == nil {
+		return &RGBA{R: 0, G: 200, B: 200, A: alpha}
+	}
+	accent.A = alpha
+
+	if rgba.diff(accent) < 0.4 {
+		inv := invertColor(rgba)
+		accent = rgba.brend(inv, 0.7)
+		accent.A = alpha
+	}
+
+	return accent
+}

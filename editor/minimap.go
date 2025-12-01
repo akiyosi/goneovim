@@ -22,6 +22,8 @@ type miniMapSignal struct {
 	_ func() `signal:"redrawSignal"`
 }
 
+var minimapScaleValue float64 = 0.7 // scale value
+
 // MiniMap is
 type MiniMap struct {
 	signal        *miniMapSignal
@@ -87,6 +89,28 @@ func newMiniMap() *MiniMap {
 	return m
 }
 
+func (m *MiniMap) asyncMiniNvim(f func(n *nvim.Nvim)) {
+	go func() {
+		m.mu.Lock()
+		n := m.nvim
+		m.mu.Unlock()
+		if n == nil {
+			return
+		}
+		f(n)
+	}()
+}
+
+func (m *MiniMap) asyncWSNvim(f func(n *nvim.Nvim)) {
+	go func() {
+		ws := m.ws
+		if ws == nil || ws.nvim == nil {
+			return
+		}
+		f(ws.nvim)
+	}()
+}
+
 func (m *MiniMap) startMinimapProc(ctx context.Context) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -117,7 +141,10 @@ func (m *MiniMap) startMinimapProc(ctx context.Context) {
 	}
 	m.nvim = neovim
 	m.nvim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		m.redrawUpdates <- updates
+		select {
+		case m.redrawUpdates <- updates:
+		default:
+		}
 		m.signal.RedrawSignal()
 	})
 
@@ -131,28 +158,34 @@ func (m *MiniMap) startMinimapProc(ctx context.Context) {
 
 	go func() { _ = m.nvim.Serve() }()
 
-	// Attach UI
 	if err := m.nvim.AttachUI(m.cols, m.rows, m.attachUIOption()); err != nil {
 		editor.putLog("[minimap] AttachUI error:", err)
 	}
 	m.uiAttached = true
 	m.updateSize()
 
-	wsRtp, _ := m.ws.nvim.CommandOutput(`echo &runtimepath`)
-	wsPp, _ := m.ws.nvim.CommandOutput(`echo &packpath`)
-	wsData, _ := m.ws.nvim.CommandOutput(`echo stdpath('data')`)
-	wsRtp = strings.TrimSpace(wsRtp)
-	wsPp = strings.TrimSpace(wsPp)
-	wsData = strings.TrimSpace(wsData)
+	ws := m.ws
+	mini := m.nvim
+	go func(ws *Workspace, mini *nvim.Nvim) {
+		if ws == nil || ws.nvim == nil || mini == nil {
+			return
+		}
 
-	if wsRtp != "" {
-		_ = m.nvim.Command(fmt.Sprintf(`lua do local v=%q; local t=vim.split(v,","); vim.opt.runtimepath = t end`, wsRtp))
-	}
-	if wsPp != "" {
-		_ = m.nvim.Command(fmt.Sprintf(`lua do local v=%q; local t=vim.split(v,","); vim.opt.packpath = t end`, wsPp))
-	}
+		wsRtp, _ := ws.nvim.CommandOutput(`echo &runtimepath`)
+		wsPp, _ := ws.nvim.CommandOutput(`echo &packpath`)
+		wsData, _ := ws.nvim.CommandOutput(`echo stdpath('data')`)
+		wsRtp = strings.TrimSpace(wsRtp)
+		wsPp = strings.TrimSpace(wsPp)
+		wsData = strings.TrimSpace(wsData)
 
-	_ = m.nvim.Command(fmt.Sprintf(`silent! lua pcall(function()
+		if wsRtp != "" {
+			_ = mini.Command(fmt.Sprintf(`lua do local v=%q; local t=vim.split(v,","); vim.opt.runtimepath = t end`, wsRtp))
+		}
+		if wsPp != "" {
+			_ = mini.Command(fmt.Sprintf(`lua do local v=%q; local t=vim.split(v,","); vim.opt.packpath = t end`, wsPp))
+		}
+
+		_ = mini.Command(fmt.Sprintf(`silent! lua pcall(function()
 	  local ok, cfg = pcall(require, 'nvim-treesitter.configs')
 	  if ok and cfg and cfg.setup then
 	    cfg.setup({
@@ -166,13 +199,17 @@ func (m *MiniMap) startMinimapProc(ctx context.Context) {
 	  end
 	end)`, wsData, wsData))
 
-	rtpCount, _ := m.nvim.CommandOutput(`echo len(split(&runtimepath, ","))`)
-	ppCount, _ := m.nvim.CommandOutput(`echo len(split(&packpath, ","))`)
-	editor.putLog("[minimap] &rtp set from WS, len=", strings.TrimSpace(rtpCount))
-	editor.putLog("[minimap] &pp  set from WS, len=", strings.TrimSpace(ppCount))
+		rtpCount, _ := mini.CommandOutput(`echo len(split(&runtimepath, ","))`)
+		ppCount, _ := mini.CommandOutput(`echo len(split(&packpath, ","))`)
+		editor.putLog("[minimap] &rtp set from WS, len=", strings.TrimSpace(rtpCount))
+		editor.putLog("[minimap] &pp  set from WS, len=", strings.TrimSpace(ppCount))
 
-	_ = m.nvim.Command("silent! set nowrap")
-	_ = m.nvim.Command("silent! syntax on")
+		_ = mini.Command("silent! set nowrap")
+		_ = mini.Command("silent! syntax on")
+		_ = mini.Command("silent! set laststatus=0")
+		_ = mini.Command("silent! set noshowmode")
+		_ = mini.Command("silent! set noruler")
+	}(ws, mini)
 }
 
 func (m *MiniMap) exit() { go m.nvim.Command(":q!") }
@@ -208,7 +245,7 @@ func (m *MiniMap) updateCols() bool {
 	if fontWidth == 0 {
 		return false
 	}
-	cols := int(float64(m.width) / fontWidth)
+	cols := int(float64(m.width) / minimapScaleValue / fontWidth)
 	changed := cols != m.cols
 	m.cols = cols
 	return changed
@@ -222,33 +259,106 @@ func (m *MiniMap) updateSize() {
 
 func (m *MiniMap) bufUpdate() {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 
 	if !m.visible {
 		m.widget.Hide()
+		m.mu.Unlock()
 		return
 	}
-	if m.ws.nvim == nil || m.nvim == nil {
+	if m.ws == nil || m.ws.nvim == nil || m.nvim == nil {
+		m.mu.Unlock()
 		return
 	}
+
 	m.setColorscheme()
 	m.widget.Show()
 
-	if m.currBuf == m.ws.filepath {
+	ws := m.ws
+	wsNvim := ws.nvim
+	wsPath := ws.filepath
+
+	var (
+		newKey   string
+		filetype string
+	)
+
+	if wsPath == "" {
+		if buf, err := wsNvim.CurrentBuffer(); err == nil {
+			newKey = fmt.Sprintf("__unnamed__:%d", int(buf))
+		} else {
+			m.mu.Unlock()
+			m.mapScroll()
+			return
+		}
+		if out, err := wsNvim.CommandOutput("echo &filetype"); err == nil {
+			filetype = strings.TrimSpace(out)
+		}
+	} else {
+		newKey = wsPath
+	}
+
+	if newKey == "" {
+		m.mu.Unlock()
+		m.mapScroll()
 		return
 	}
-	m.currBuf = m.ws.filepath
-	if m.currBuf == "" {
+
+	changed := (newKey != m.currBuf)
+	m.currBuf = newKey
+	m.mu.Unlock()
+
+	if !changed {
+		m.mapScroll()
 		return
 	}
 
-	m.nvim.Command(":e! " + m.currBuf)
+	if wsPath == "" {
+		ft := filetype
+		m.asyncMiniNvim(func(n *nvim.Nvim) {
+			_ = n.Command("enew!")
+			_ = n.Command("silent! filetype plugin indent on")
+			if ft != "" {
+				_ = n.Command("silent! setlocal filetype=" + ft)
+			}
 
-	_ = m.nvim.Command("silent! filetype plugin indent on")
-	_ = m.nvim.Command("silent! filetype detect")
+			// tree-sitter attach
+			_ = n.Command(`silent! lua pcall(function()
+			  local ft = vim.bo.filetype or ''
+			  if ft == '' then return end
+			  local okP, parsers = pcall(require, 'nvim-treesitter.parsers')
+			  local okTS, ts = pcall(require, 'vim.treesitter')
+			  if not okTS or not ts or not ts.start then return end
+			  local lang = ft
+			  if okP and parsers and parsers.ft_to_lang then
+			    lang = parsers.ft_to_lang(ft)
+			  end
+			  pcall(ts.start, 0, lang)
+			end)`)
+		})
+	} else {
+		currBuf := wsPath
+		m.asyncMiniNvim(func(n *nvim.Nvim) {
+			_ = n.Command(":e! " + currBuf)
+			_ = n.Command("silent! filetype plugin indent on")
+			_ = n.Command("silent! filetype detect")
 
-	m.attachTreesitterForCurrentBuffer()
+			// tree-sitter attach
+			_ = n.Command(`silent! lua pcall(function()
+			  local ft = vim.bo.filetype or ''
+			  if ft == '' then return end
+			  local okP, parsers = pcall(require, 'nvim-treesitter.parsers')
+			  local okTS, ts = pcall(require, 'vim.treesitter')
+			  if not okTS or not ts or not ts.start then return end
+			  local lang = ft
+			  if okP and parsers and parsers.ft_to_lang then
+			    lang = parsers.ft_to_lang(ft)
+			  end
+			  pcall(ts.start, 0, lang)
+			end)`)
+		})
+	}
 
+	m.bufSync()
 	m.mapScroll()
 }
 
@@ -257,14 +367,22 @@ func (m *MiniMap) setColorscheme() {
 		m.ws.getColorscheme()
 	}
 	colo := m.ws.colorscheme
-
-	_ = m.nvim.Command("silent! colorscheme " + colo)
-	editor.putLog("[minimap] coloscheme is ", colo)
 	m.colorscheme = colo
+
+	m.asyncMiniNvim(func(n *nvim.Nvim) {
+		_ = n.Command("silent! colorscheme " + colo)
+		editor.putLog("[minimap] coloscheme is ", colo)
+	})
+
+	if mmWin, ok := m.getWindow(1); ok {
+		mmWin.refreshUpdateArea(1)
+		mmWin.update()
+	}
 }
 
 func (m *MiniMap) attachTreesitterForCurrentBuffer() {
-	_ = m.nvim.Command(`silent! lua pcall(function()
+	m.asyncMiniNvim(func(n *nvim.Nvim) {
+		_ = n.Command(`silent! lua pcall(function()
 	  local ft = vim.bo.filetype or ''
 	  if ft == '' then return end
 	  local okP, parsers = pcall(require, 'nvim-treesitter.parsers')
@@ -276,6 +394,7 @@ func (m *MiniMap) attachTreesitterForCurrentBuffer() {
 	  end
 	  pcall(ts.start, 0, lang)
 	end)`)
+	})
 }
 
 func (m *MiniMap) mapScroll() {
@@ -312,71 +431,127 @@ func (m *MiniMap) mapScroll() {
 		return
 	}
 
+	oldTop := oldPos
+	oldBottom := oldPos + oldHeight
+	newTop := m.curPos
+	newBottom := m.curPos + m.curHeight
+
+	if oldHeight == 0 {
+		oldTop = newTop
+		oldBottom = newBottom
+	}
+
+	top := oldTop
+	if newTop < top {
+		top = newTop
+	}
+	bottom := oldBottom
+	if newBottom > bottom {
+		bottom = newBottom
+	}
+
+	padLines := 1
+	pad := padLines * m.font.lineHeight
+
+	top -= pad
+	if top < 0 {
+		top = 0
+	}
+	widgetHeight := m.widget.Height()
+	bottom += pad
+	if bottom > widgetHeight {
+		bottom = widgetHeight
+	}
+
+	height := bottom - top
+	if height < 0 {
+		height = 0
+	}
+
 	mmWin.refreshUpdateArea(1)
+
 	width := m.widget.Width()
-	mmWin.Update2(0, oldPos, width, oldHeight)
-	mmWin.Update2(0, m.curPos, width, m.curHeight)
+	mmWin.Update2(0, top, width, height)
 }
 
 func (m *MiniMap) bufSync() {
 	m.mu.Lock()
-	defer func() { m.isProcessSync = false; m.mu.Unlock() }()
 	if m.isProcessSync {
+		m.mu.Unlock()
 		return
 	}
 	m.isProcessSync = true
 
-	if !m.visible {
+	visible := m.visible
+	wsNvim := m.ws.nvim
+	miniNvim := m.nvim
+	m.mu.Unlock()
+
+	if !visible {
 		m.widget.Hide()
+		m.mu.Lock()
+		m.isProcessSync = false
+		m.mu.Unlock()
 		return
 	}
-	if m.ws.nvim == nil || m.nvim == nil {
-		return
-	}
-
-	win, err := m.ws.nvim.CurrentWindow()
-	if err != nil {
-		return
-	}
-	config, err := m.ws.nvim.WindowConfig(win)
-	if err != nil {
-		return
-	}
-	if isWindowFloatForConfig(config) {
+	if wsNvim == nil || miniNvim == nil {
+		m.mu.Lock()
+		m.isProcessSync = false
+		m.mu.Unlock()
 		return
 	}
 
-	buf, err := m.ws.nvim.CurrentBuffer()
-	if err != nil {
-		return
-	}
+	go func(wsNvim, miniNvim *nvim.Nvim) {
+		defer func() {
+			m.mu.Lock()
+			m.isProcessSync = false
+			m.mu.Unlock()
+		}()
 
-	start := 0
-	end := 0
-	var pos [4]int
-	m.ws.nvim.Eval("getpos('$')", &pos)
-	var minimapPos [4]int
-	m.nvim.Eval("getpos('$')", &minimapPos)
-	if pos[1] > minimapPos[1] {
-		end = pos[1] + 1
-	} else {
-		end = minimapPos[1] + 1
-	}
+		win, err := wsNvim.CurrentWindow()
+		if err != nil {
+			return
+		}
+		config, err := wsNvim.WindowConfig(win)
+		if err != nil {
+			return
+		}
+		if isWindowFloatForConfig(config) {
+			return
+		}
 
-	replacement, err := m.ws.nvim.BufferLines(buf, start, end, false)
-	if err != nil {
-		return
-	}
-	if len(replacement) < 1 {
-		return
-	}
+		buf, err := wsNvim.CurrentBuffer()
+		if err != nil {
+			return
+		}
 
-	minimapBuf, err := m.nvim.CurrentBuffer()
-	if err != nil {
-		return
-	}
+		start := 0
+		end := 0
+		var pos [4]int
+		wsNvim.Eval("getpos('$')", &pos)
+		var minimapPos [4]int
+		miniNvim.Eval("getpos('$')", &minimapPos)
+		if pos[1] > minimapPos[1] {
+			end = pos[1] + 1
+		} else {
+			end = minimapPos[1] + 1
+		}
 
-	m.nvim.SetBufferLines(minimapBuf, start, end, false, replacement)
+		replacement, err := wsNvim.BufferLines(buf, start, end, false)
+		if err != nil {
+			return
+		}
+		if len(replacement) < 1 {
+			return
+		}
+
+		minimapBuf, err := miniNvim.CurrentBuffer()
+		if err != nil {
+			return
+		}
+
+		_ = miniNvim.SetBufferLines(minimapBuf, start, end, false, replacement)
+	}(wsNvim, miniNvim)
 }
 
 func isWindowFloatForConfig(wc *nvim.WindowConfig) bool {
@@ -484,11 +659,20 @@ func (m *MiniMap) wheelEvent(event *gui.QWheelEvent) {
 		return
 	}
 
-	if vert > 0 {
-		m.nvim.Input(fmt.Sprintf("%v<C-y>", accel))
-	} else if vert < 0 {
-		m.nvim.Input(fmt.Sprintf("%v<C-e>", accel))
-	}
+	delta := vert
+	acc := accel
+	n := m.nvim
+
+	go func(delta, accel int, n *nvim.Nvim) {
+		if n == nil {
+			return
+		}
+		if delta > 0 {
+			_, _ = n.Input(fmt.Sprintf("%v<C-y>", accel))
+		} else if delta < 0 {
+			_, _ = n.Input(fmt.Sprintf("%v<C-e>", accel))
+		}
+	}(delta, acc, n)
 
 	event.Accept()
 }
@@ -497,21 +681,27 @@ func (m *MiniMap) mouseEvent(event *gui.QMouseEvent) {
 	font := m.font
 	y := int(float64(event.Y()) / float64(font.lineHeight))
 	targetPos := m.viewport[0] + y
-	go m.ws.nvim.Command(fmt.Sprintf("%d", targetPos))
 
-	mappings, err := m.ws.nvim.KeyMap("normal")
-	if err != nil {
-		return
-	}
-	var isThereZzMap bool
-	for _, mapping := range mappings {
-		if mapping.LHS == "zz" {
-			isThereZzMap = true
+	m.asyncWSNvim(func(n *nvim.Nvim) {
+		_ = n.Command(fmt.Sprintf("%d", targetPos))
+	})
+
+	m.asyncWSNvim(func(n *nvim.Nvim) {
+		mappings, err := n.KeyMap("normal")
+		if err != nil {
+			return
 		}
-	}
-	if !isThereZzMap {
-		m.ws.nvim.Input("zz")
-	}
+		var isThereZzMap bool
+		for _, mapping := range mappings {
+			if mapping.LHS == "zz" {
+				isThereZzMap = true
+				break
+			}
+		}
+		if !isThereZzMap {
+			_, _ = n.Input("zz")
+		}
+	})
 }
 
 func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
@@ -572,20 +762,25 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 				p.SetPen2(fg.QColor())
 			}
 
+			runStart := -1
 			width := 0
+
 			for i, c := range text {
-				if string(c) == "@" {
+				if c == '@' {
+					if width == 0 {
+						runStart = i
+					}
 					width++
 				}
-				if string(c) == " " || i == len(text)-1 {
+				if c == ' ' || i == len(text)-1 {
 					if width > 0 {
-						k := 0.8
+						startCol := col + runStart
 						path := gui.NewQPainterPath()
 						path.AddRoundedRect2(
-							float64(col+i-width)*wsfont.cellwidth*k,
+							float64(startCol)*wsfont.cellwidth*minimapScaleValue,
 							float64(y*wsfont.lineHeight+wsfont.baselineOffset),
-							float64(width)*wsfont.cellwidth*k,
-							float64(wsfont.lineHeight)*k,
+							float64(width)*wsfont.cellwidth*minimapScaleValue,
+							float64(wsfont.lineHeight)*minimapScaleValue,
 							2, 2, core.Qt__AbsoluteSize,
 						)
 						p.FillPath(path, gui.NewQBrush3(fg.QColor(), core.Qt__SolidPattern))
@@ -593,23 +788,43 @@ func (w *Window) drawMinimap(p *gui.QPainter, y int, col int, cols int) {
 					}
 				}
 			}
+
 		}
 	}
 }
 
 func (m *MiniMap) updateCurrentRegion(p *gui.QPainter) {
+	col := m.currentRegionColor()
+	if col == nil {
+		return
+	}
+
 	curRegionRect := core.NewQRectF4(
-		float64(0),
+		0,
 		float64(m.curPos),
 		float64(m.widget.Width()),
 		float64(m.curHeight),
 	)
-	color := editor.colors.fg
+
 	p.FillRect(
 		curRegionRect,
 		gui.NewQBrush3(
-			gui.NewQColor3(color.R, color.G, color.B, 25),
-			1,
+			col.QColor(),
+			core.Qt__SolidPattern,
 		),
 	)
+}
+
+func (m *MiniMap) currentRegionColor() *RGBA {
+	alpha := 0.25
+	if m.ws != nil && m.ws.background != nil {
+		return m.ws.background.OverlayAccent(alpha)
+	}
+
+	if editor.colors.bg != nil {
+		return editor.colors.bg.OverlayAccent(alpha)
+	}
+
+	// どちらも取れない場合の保険
+	return &RGBA{R: 128, G: 128, B: 128, A: alpha}
 }
