@@ -414,14 +414,14 @@ func setupGoneovim(neovim *nvim.Nvim) {
 	au GoneovimCore UIEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_uienter")
 	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
 	au GoneovimCore BufEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_bufenter", win_getid())
-	aug Goneovim | au! | aug END
-	au Goneovim BufEnter,TabEnter,TermOpen,TermClose * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_filepath", expand("%:p"))
 	`
 	if editor.opts.Server == "" && !editor.config.MiniMap.Disable {
 		gonvimAutoCmds = gonvimAutoCmds + `
-		au Goneovim BufEnter,BufWrite * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_minimap_update")
-		au Goneovim TextChanged,TextChangedI * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_minimap_sync")
-		au Goneovim ColorScheme * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_colorscheme", expand("<amatch>"))
+		aug Goneovim | au! | aug END
+		au Goneovim BufEnter,TabEnter,TermOpen,TermClose * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_filepath", expand("%:p"))
+		au Goneovim BufEnter,BufWrite * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_minimap_update")
+		au Goneovim TextChanged,TextChangedI * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_minimap_sync")
+		au Goneovim ColorScheme * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_colorscheme", expand("<amatch>"))
 		`
 	}
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
