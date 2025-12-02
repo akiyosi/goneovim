@@ -115,7 +115,6 @@ type Workspace struct {
 	cursorStyleEnabled bool
 	isDrawTabline      bool
 	isMouseEnabled     bool
-	isTerminalMode     bool
 	doGetSnapshot      bool
 	doneGetSnapshot    bool
 }
@@ -1336,12 +1335,6 @@ func (ws *Workspace) modeEnablingIME(mode string) {
 	if len(editor.config.Editor.ModeEnablingIME) == 0 {
 		return
 	}
-	// if ws.mode == mode {
-	// 	return
-	// }
-	if ws.isTerminalMode {
-		mode = "terminal"
-	}
 	doEnable := false
 
 	for _, m := range editor.config.Editor.ModeEnablingIME {
@@ -1729,8 +1722,8 @@ func (ws *Workspace) mouseOff() {
 
 func (ws *Workspace) modeChange(args []interface{}) {
 	arg := args[0].([]interface{})
-	ws.modeEnablingIME(arg[0].(string))
 	ws.mode = arg[0].(string)
+	ws.modeEnablingIME(ws.mode)
 	ws.modeIdx = util.ReflectToInt(arg[1])
 	if ws.cursor.modeIdx != ws.modeIdx {
 		ws.cursor.modeIdx = ws.modeIdx
@@ -1824,7 +1817,7 @@ func (ws *Workspace) winViewport(args []interface{}) {
 
 		// If the mouse is off in terminal mode and the cursor column is 0,
 		// it is assumed that tig, lazygit, or other proprietary UI has been executed.
-		if ws.isTerminalMode && ws.cursor.isBusy && curCol == 1 {
+		if ws.mode == "terminal" && ws.cursor.isBusy && curCol == 1 {
 			win.dropScreenSnapshot()
 			continue
 		}
@@ -2043,12 +2036,6 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 			ws.filepath = updates[1].(string)
 			ws.minimap.mu.Unlock()
 		}
-	case "gonvim_termenter":
-		ws.isTerminalMode = true
-		ws.modeEnablingIME(ws.mode)
-	case "gonvim_termleave":
-		ws.isTerminalMode = false
-		ws.modeEnablingIME(ws.mode)
 	case "gonvim_bufenter":
 		wid := (nvim.Window)(util.ReflectToInt(updates[1]))
 

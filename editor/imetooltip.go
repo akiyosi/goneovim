@@ -83,7 +83,7 @@ func (i *IMETooltip) pos() (int, int, int, int) {
 		i.setFont(font)
 		row := s.cursor[0]
 		col := s.cursor[1]
-		if i.s.ws.isTerminalMode {
+		if i.s.ws.mode == "terminal" {
 			if row < len(win.content) {
 				if col < len(win.content[row]) {
 					if win.content[row][col].normalWidth {

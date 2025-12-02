@@ -1107,9 +1107,9 @@ func (w *Window) wheelEvent(event *gui.QWheelEvent) {
 		h = 0
 	}
 
-	if (v == 0 || h == 0) && emitScrollEnd && !doAngleScroll && !w.s.ws.isTerminalMode {
+	if (v == 0 || h == 0) && emitScrollEnd && !doAngleScroll && w.s.ws.mode != "terminal" {
 		vert, horiz = w.smoothUpdate(v, h, emitScrollEnd)
-	} else if (v != 0 || h != 0) && phase != core.Qt__NoScrollPhase && !doAngleScroll && !w.s.ws.isTerminalMode {
+	} else if (v != 0 || h != 0) && phase != core.Qt__NoScrollPhase && !doAngleScroll && w.s.ws.mode != "terminal" {
 		// If Scrolling has ended, reset the displacement of the line
 		vert, horiz = w.smoothUpdate(v, h, emitScrollEnd)
 	} else {

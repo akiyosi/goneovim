@@ -414,8 +414,6 @@ func setupGoneovim(neovim *nvim.Nvim) {
 	au GoneovimCore UIEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_uienter")
 	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
 	au GoneovimCore BufEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_bufenter", win_getid())
-	au GoneovimCore TermEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_termenter")
-	au GoneovimCore TermLeave * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_termleave")
 	aug Goneovim | au! | aug END
 	au Goneovim BufEnter,TabEnter,TermOpen,TermClose * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_filepath", expand("%:p"))
 	`
