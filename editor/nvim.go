@@ -413,7 +413,6 @@ func setupGoneovim(neovim *nvim.Nvim) {
 	au GoneovimCore VimEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_vimenter")
 	au GoneovimCore UIEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_uienter")
 	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
-	au GoneovimCore BufEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_bufenter", win_getid())
 	`
 	if editor.opts.Server == "" && !editor.config.MiniMap.Disable {
 		gonvimAutoCmds = gonvimAutoCmds + `

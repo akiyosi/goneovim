@@ -3774,6 +3774,10 @@ func (w *Window) show() {
 	w.fill()
 	w.Show()
 
+	if !editor.config.Editor.IndentGuide {
+		return
+	}
+
 	// set buffer local ts value
 	if w.s.ws.ts != w.ts {
 		w.s.ws.optionsetMutex.Lock()
@@ -4002,6 +4006,31 @@ func (w *Window) repositioningFloatwindow(pos ...[2]int) (int, int) {
 	}
 
 	return winx, winy
+}
+
+func (w *Window) getFiletype() {
+	if !editor.config.Editor.IndentGuide {
+		return
+	}
+
+	// get filetype
+	ftITF := w.s.ws.getBufferOption(NVIMCALLTIMEOUT, "filetype", w.id)
+	ft, ok := ftITF.(string)
+	if !ok {
+		return
+	}
+	w.ft = ft
+}
+
+func (w *Window) getTabstop() {
+	if !editor.config.Editor.IndentGuide {
+		return
+	}
+
+	// get tabstop
+	w.ts = util.ReflectToInt(
+		w.s.ws.getBufferOption(NVIMCALLTIMEOUT, editor.config.Editor.OptionsToUseGuideWidth, w.id),
+	)
 }
 
 func (w *Window) layoutExternalWindow(x, y int) {

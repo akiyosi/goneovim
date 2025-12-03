@@ -219,14 +219,24 @@ func (s *Screen) getGrid(wid nvim.Window) (grid *Window, ok bool) {
 	return grid, ok
 }
 
-func (s *Screen) getWindow(grid int) (*Window, bool) {
-	winITF, ok := s.windows.Load(grid)
-	if !ok {
+func (s *Screen) getWindow(grid int) (win *Window, isValid bool) {
+	// TODO: We may need to handle grid 0 (which might become a special grid
+	//       used for mouse detection).
+	if grid == 0 {
 		return nil, false
 	}
-	win := winITF.(*Window)
-	if win == nil {
-		return nil, false
+
+	winITF, ok := s.windows.Load(grid)
+	if ok {
+		win, ok = winITF.(*Window)
+		if !ok {
+			return nil, false
+		}
+	} else {
+		win = s.newWindowGrid(grid)
+		if s.ws.cursor != nil {
+			s.ws.cursor.raise()
+		}
 	}
 
 	return win, true
@@ -771,12 +781,13 @@ func (s *Screen) gridResize(args []interface{}) {
 }
 
 func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
-	win, _ := s.getWindow(gridid)
+	win, ok := s.getWindow(gridid)
+	if !ok {
+		return
+	}
 
-	if win != nil {
-		if win.cols == cols && win.rows == rows {
-			return
-		}
+	if win.cols == cols && win.rows == rows {
+		return
 	}
 
 	if win != nil && win.snapshot != nil {
@@ -831,10 +842,6 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		}
 	}
 
-	if win == nil {
-		win = s.newWindowGird(gridid)
-	}
-
 	win.redrawMutex.Lock()
 
 	// winOldCols := win.cols
@@ -853,7 +860,6 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	// s.resizeIndependentFontGrid(win, winOldCols, winOldRows)
 
 	font := win.getFont()
-
 	width := int(math.Ceil(float64(cols) * font.cellwidth))
 	height := rows * font.lineHeight
 
@@ -865,7 +871,7 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 	win.queueRedrawAll()
 }
 
-func (s *Screen) newWindowGird(gridid int) (win *Window) {
+func (s *Screen) newWindowGrid(gridid int) (win *Window) {
 	win = newWindow()
 
 	win.s = s
@@ -879,8 +885,6 @@ func (s *Screen) newWindowGird(gridid int) (win *Window) {
 	if s.name != "minimap" {
 		win.ConnectWheelEvent(win.wheelEvent)
 	}
-
-	s.ws.cursor.raise()
 
 	return
 }
@@ -1658,6 +1662,8 @@ func (s *Screen) windowPosition(args []interface{}) {
 		win.updateMutex.Unlock()
 
 		win.move(col, row)
+		win.getFiletype()
+		win.getTabstop()
 		win.show()
 	}
 }
@@ -1734,12 +1740,9 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			shouldStackPerZIndex = shouldStackPerZIndex || true
 		}
 
-		anchorwin, ok := s.getWindow(win.anchorGrid)
-		if !ok {
-			continue
-		}
-
+		anchorwin, _ := s.getWindow(win.anchorGrid)
 		win.anchorwin = anchorwin
+
 		win.setOptions()
 
 		if win.isExternal {
@@ -1753,7 +1756,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 
 		win.updateMutex.Unlock()
 
-		if anchorwinIsExternal {
+		if anchorwin != nil && anchorwinIsExternal {
 			win.SetParent(anchorwin)
 		}
 
@@ -1766,95 +1769,97 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 		}
 
 		win.setShadow()
+		win.getFiletype()
+		win.getTabstop()
 		win.show()
 
 		// Redraw anchor window.Because shadows leave dust before and after float window drawing.
-		anchorwin.queueRedrawAll()
+		if anchorwin != nil {
+			anchorwin.queueRedrawAll()
+		}
 	}
 }
 
 func (s *Screen) windowExternalPosition(args []interface{}) {
 	for _, arg := range args {
 		gridid := util.ReflectToInt(arg.([]interface{})[0])
-		// winid := arg.([]interface{})[1].(nvim.Window)
+		if isSkipGlobalId(gridid) {
+			continue
+		}
 
-		s.windows.Range(func(_, winITF interface{}) bool {
-			win := winITF.(*Window)
-			if win == nil {
-				return true
+		win, ok := s.getWindow(gridid)
+		if !ok {
+			continue
+		}
+
+		if win.isExternal {
+			continue
+		}
+
+		win.id = arg.([]interface{})[1].(nvim.Window)
+		win.isExternal = true
+
+		extwin := createExternalWin()
+		win.SetParent(extwin)
+		extwin.ConnectKeyPressEvent(editor.keyPress)
+		extwin.ConnectKeyReleaseEvent(editor.keyRelease)
+		extwin.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
+		extwin.ConnectInputMethodEvent(s.ws.InputMethodEvent)
+		extwin.ConnectInputMethodQuery(s.ws.InputMethodQuery)
+		extwin.ConnectMousePressEvent(win.mouseEvent)
+		extwin.ConnectMouseReleaseEvent(win.mouseEvent)
+
+		extwin.InstallEventFilter(extwin)
+		extwin.ConnectEventFilter(func(watched *core.QObject, event *core.QEvent) bool {
+			switch event.Type() {
+			case core.QEvent__ActivationChange:
+				if extwin.IsActiveWindow() {
+					editor.isExtWinNowActivated = true
+					editor.isExtWinNowInactivated = false
+				} else if !extwin.IsActiveWindow() {
+					editor.isExtWinNowActivated = false
+					editor.isExtWinNowInactivated = true
+				}
+			default:
 			}
-			if win.grid == 1 {
-				return true
-			}
-			if win.isMsgGrid {
-				return true
-			}
-
-			if win.grid == gridid && !win.isExternal {
-				win.isExternal = true
-
-				extwin := createExternalWin()
-				win.SetParent(extwin)
-				extwin.ConnectKeyPressEvent(editor.keyPress)
-				extwin.ConnectKeyReleaseEvent(editor.keyRelease)
-				extwin.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-				extwin.ConnectInputMethodEvent(s.ws.InputMethodEvent)
-				extwin.ConnectInputMethodQuery(s.ws.InputMethodQuery)
-				extwin.ConnectMousePressEvent(win.mouseEvent)
-				extwin.ConnectMouseReleaseEvent(win.mouseEvent)
-
-				extwin.InstallEventFilter(extwin)
-				extwin.ConnectEventFilter(func(watched *core.QObject, event *core.QEvent) bool {
-					switch event.Type() {
-					case core.QEvent__ActivationChange:
-						if extwin.IsActiveWindow() {
-							editor.isExtWinNowActivated = true
-							editor.isExtWinNowInactivated = false
-						} else if !extwin.IsActiveWindow() {
-							editor.isExtWinNowActivated = false
-							editor.isExtWinNowInactivated = true
-						}
-					default:
-					}
-					return extwin.EventFilterDefault(watched, event)
-				})
-
-				win.background = s.ws.background.copy()
-				extwin.SetAutoFillBackground(true)
-				p := gui.NewQPalette()
-				p.SetColor2(gui.QPalette__Background, s.ws.background.QColor())
-				extwin.SetPalette(p)
-
-				extwin.Show()
-				win.extwin = extwin
-				font := win.getFont()
-				win.extwin.ConnectMoveEvent(func(ev *gui.QMoveEvent) {
-					if win.extwin == nil {
-						return
-					}
-					if ev == nil {
-						return
-					}
-					pos := ev.Pos()
-					if pos == nil {
-						return
-					}
-					gPos := editor.window.Pos()
-					win.pos[0] = int(float64(pos.X()-gPos.X()) / font.cellwidth)
-					win.pos[1] = int(float64(pos.Y()-gPos.Y()) / float64(font.lineHeight))
-				})
-				width := int(math.Ceil(float64(win.cols) * font.cellwidth))
-				height := win.rows * font.lineHeight
-				win.setGridGeometry(width, height)
-				win.setResizableForExtWin()
-				win.move(win.pos[0], win.pos[1])
-				win.setOptions()
-				win.raise()
-			}
-
-			return true
+			return extwin.EventFilterDefault(watched, event)
 		})
 
+		win.background = s.ws.background.copy()
+		extwin.SetAutoFillBackground(true)
+		p := gui.NewQPalette()
+		p.SetColor2(gui.QPalette__Background, s.ws.background.QColor())
+		extwin.SetPalette(p)
+
+		win.extwin = extwin
+		font := win.getFont()
+		win.extwin.ConnectMoveEvent(func(ev *gui.QMoveEvent) {
+			if win.extwin == nil {
+				return
+			}
+			if ev == nil {
+				return
+			}
+			pos := ev.Pos()
+			if pos == nil {
+				return
+			}
+			gPos := editor.window.Pos()
+			win.pos[0] = int(float64(pos.X()-gPos.X()) / font.cellwidth)
+			win.pos[1] = int(float64(pos.Y()-gPos.Y()) / float64(font.lineHeight))
+		})
+		width := int(math.Ceil(float64(win.cols) * font.cellwidth))
+		height := win.rows * font.lineHeight
+		win.setGridGeometry(width, height)
+		win.setResizableForExtWin()
+		win.move(win.pos[0], win.pos[1])
+		win.setOptions()
+		win.raise()
+		win.getFiletype()
+		win.getTabstop()
+
+		win.show()
+		extwin.Show()
 	}
 }
 

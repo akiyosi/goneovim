@@ -1797,7 +1797,7 @@ func (ws *Workspace) winViewport(args []interface{}) {
 
 		win, ok := ws.screen.getWindow(grid)
 		if !ok {
-			win = ws.screen.newWindowGird(grid)
+			continue
 		}
 
 		// if grid is message grid or global grid
@@ -1847,7 +1847,7 @@ func (ws *Workspace) winViewportMargins(args []interface{}) {
 
 		win, ok := ws.screen.getWindow(grid)
 		if !ok {
-			win = ws.screen.newWindowGird(grid)
+			continue
 		}
 
 		win.viewportMargins = [4]int{top, bottom, left, right}
@@ -2035,28 +2035,6 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 			ws.minimap.mu.Lock()
 			ws.filepath = updates[1].(string)
 			ws.minimap.mu.Unlock()
-		}
-	case "gonvim_bufenter":
-		wid := (nvim.Window)(util.ReflectToInt(updates[1]))
-
-		win, ok := ws.screen.getGrid(wid)
-		if !ok {
-			return
-		}
-
-		if editor.config.Editor.IndentGuide {
-			// get tabstop
-			win.ts = util.ReflectToInt(
-				ws.getBufferOption(NVIMCALLTIMEOUT, editor.config.Editor.OptionsToUseGuideWidth, wid),
-			)
-
-			// get filetype
-			ftITF := ws.getBufferOption(NVIMCALLTIMEOUT, "filetype", wid)
-			ft, ok := ftITF.(string)
-			if !ok {
-				return
-			}
-			win.ft = ft
 		}
 
 	case "gonvim_optionset":
