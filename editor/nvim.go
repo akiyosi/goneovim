@@ -53,8 +53,8 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 			errCh <- nil
 		}
 		setVar(neovim)
-		setupGoneovim(neovim)
-		setupGoneovimCommands(neovim)
+		setGoneovim(neovim)
+		setGoneovimCommands(neovim)
 		registerHandler(neovim, signal, redrawUpdates, guiUpdates)
 		attachUI(neovim, cols, rows)
 
@@ -406,28 +406,38 @@ func attachUIOption(nvim *nvim.Nvim) (int, map[string]interface{}) {
 	return channel, o
 }
 
-func setupGoneovim(neovim *nvim.Nvim) {
-	// autocmds that goneovim uses
-	gonvimAutoCmds := `
-	aug GoneovimCore | au! | aug END
-	au GoneovimCore VimEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_vimenter")
-	au GoneovimCore UIEnter * call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_uienter")
-	au GoneovimCore OptionSet * if &ro != 1 | silent! call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
-	`
-	if editor.opts.Server == "" && !editor.config.MiniMap.Disable {
+func setGoneovim(neovim *nvim.Nvim) {
+	var gonvimAutoCmds string
+
+	if (editor.opts.Server == "" && !editor.config.MiniMap.Disable) || (editor.config.Editor.IndentGuide) {
 		gonvimAutoCmds = gonvimAutoCmds + `
 		aug Goneovim | au! | aug END
+		`
+	}
+
+	if editor.config.Editor.IndentGuide {
+		gonvimAutoCmds = gonvimAutoCmds + `
+		au Goneovim OptionSet * if &ro != 1 | silent! call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_optionset", expand("<amatch>"), v:option_new, v:option_old, win_getid()) | endif
+		`
+	}
+
+	if editor.opts.Server == "" && !editor.config.MiniMap.Disable {
+		gonvimAutoCmds = gonvimAutoCmds + `
 		au Goneovim BufEnter,TabEnter,TermOpen,TermClose * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_workspace_filepath", expand("%:p"))
 		au Goneovim BufEnter,BufWrite * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_minimap_update")
 		au Goneovim TextChanged,TextChangedI * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_minimap_sync")
 		au Goneovim ColorScheme * silent call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_colorscheme", expand("<amatch>"))
 		`
 	}
+
+	if gonvimAutoCmds == "" {
+		return
+	}
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
 	neovim.Command(registerScripts)
 }
 
-func setupGoneovimCommands(neovim *nvim.Nvim) {
+func setGoneovimCommands(neovim *nvim.Nvim) {
 	// Definition of the commands that goneovim provides
 	gonvimCommands := fmt.Sprintf(`
 	command! -nargs=1 GonvimResize call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_resize", <args>)
@@ -466,7 +476,8 @@ func setupGoneovimCommands(neovim *nvim.Nvim) {
 	neovim.Command(registerScripts)
 }
 
-func setupGoneovimClipBoard(neovim *nvim.Nvim) {
+func setGoneovimClipBoard(neovim *nvim.Nvim) {
+	editor.putLog("set clipboard")
 	code := `
     local function set_clipboard(register)
         return function(lines, regtype)

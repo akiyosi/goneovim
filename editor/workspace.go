@@ -111,7 +111,7 @@ type Workspace struct {
 	uiAttached         bool
 	uiRemoteAttached   bool
 	isMappingScrollKey bool
-	hasLazyUI          bool
+	doneLazyload       bool
 	cursorStyleEnabled bool
 	isDrawTabline      bool
 	isMouseEnabled     bool
@@ -285,8 +285,11 @@ func (ws *Workspace) initFont() {
 	}
 }
 
-func (ws *Workspace) lazyLoadUI() {
-	editor.putLog("Start    preparing for deferred drawing UI")
+func (ws *Workspace) lazyLoad() {
+	editor.putLog("Starting preparation for deferred operations")
+
+	// set GUI clipboard
+	go setGoneovimClipBoard(ws.nvim)
 
 	editor.putLog("preparing scrollbar")
 	// scrollbar
@@ -328,10 +331,10 @@ func (ws *Workspace) lazyLoadUI() {
 		}
 	}
 
-	editor.putLog("Finished preparing the deferred drawing UI.")
+	editor.putLog("Finished preparation for deferred operations")
 }
 
-func (ws *Workspace) initLazyLoadUI() {
+func (ws *Workspace) initLazyLoad() {
 	editor.isWindowNowActivated = false
 
 	ws.widget.ConnectFocusInEvent(func(event *gui.QFocusEvent) {
@@ -341,6 +344,7 @@ func (ws *Workspace) initLazyLoadUI() {
 		go ws.nvim.SetFocusUI(false)
 	})
 
+	editor.putLog("Received GUI event from neovim")
 	go func() {
 		if !editor.doRestoreSessions {
 			time.Sleep(time.Millisecond * 500)
@@ -373,15 +377,16 @@ func (ws *Workspace) registerSignal(signal *neovimSignal, redrawUpdates chan [][
 		ws.handleGui(updates)
 	})
 	ws.signal.ConnectLazyLoadSignal(func() {
-		if ws.hasLazyUI {
+		if ws.doneLazyload {
 			return
 		}
+		ws.doneLazyload = true
+
 		if editor.config.Editor.ExtTabline {
 			ws.tabline.initTab()
 		}
 		editor.workspaceUpdate()
-		ws.hasLazyUI = true
-		ws.lazyLoadUI()
+		ws.lazyLoad()
 	})
 
 	ws.signal.ConnectStopSignal(func() {
@@ -470,7 +475,7 @@ func (ws *Workspace) bindNvim(nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bo
 	source(ws.nvim, file)
 
 	// Initialize lazy load UI
-	ws.initLazyLoadUI()
+	ws.initLazyLoad()
 }
 
 func (i *WorkspaceSideItem) copy(ii *WorkspaceSideItem) {
@@ -1880,9 +1885,8 @@ func (ws *Workspace) scrollMinimap() {
 func (ws *Workspace) handleGui(updates []interface{}) {
 	event := updates[0].(string)
 	switch event {
-	case "gonvim_vimenter":
-		go setupGoneovimClipBoard(ws.nvim)
-	case "gonvim_uienter":
+	// case "gonvim_vimenter":
+	// case "gonvim_uienter":
 	case "gonvim_resize":
 		arg, ok := updates[1].(string)
 		if ok {
@@ -2678,14 +2682,41 @@ func (ws *Workspace) toggleLigatures() {
 
 func (ws *Workspace) toggleIndentguide() {
 	editor.config.mu.Lock()
-	if editor.config.Editor.IndentGuide {
-		editor.config.Editor.IndentGuide = false
-	} else {
-		editor.config.Editor.IndentGuide = true
-	}
+	editor.config.Editor.IndentGuide = !editor.config.Editor.IndentGuide
 	editor.config.mu.Unlock()
+
 	ws.screen.refresh()
-	go ws.nvim.Command("doautocmd <nomodeline> WinEnter")
+
+	go func() {
+		const ensureAutocmd = `
+if !exists('#Goneovim#OptionSet')
+  augroup Goneovim
+	autocmd! OptionSet
+    autocmd OptionSet * if &ro != 1 |
+          \ silent! call rpcnotify(g:goneovim_channel_id,
+          \                       'Gui', 'gonvim_optionset',
+          \                       expand('<amatch>'),
+          \                       v:option_new,
+          \                       v:option_old,
+          \                       win_getid()) |
+          \ endif
+  augroup END
+endif
+`
+		// autocmd が無ければ定義
+		ws.nvim.Exec(ensureAutocmd, nil)
+
+		// 既存の処理
+		ws.nvim.Command("doautocmd <nomodeline> WinEnter")
+
+		time.Sleep(100 * time.Millisecond)
+		win, ok := ws.screen.getWindow(ws.cursor.gridid)
+		if !ok {
+			return
+		}
+		win.getFiletype()
+		win.getTabstop()
+	}()
 }
 
 // WorkspaceSide is
