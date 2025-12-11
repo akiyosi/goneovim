@@ -65,7 +65,7 @@ type editorConfig struct {
 	StartFullscreen                         bool
 	SkipGlobalId                            bool
 	IndentGuide                             bool
-	DisableImeInNormal                      bool
+	ForceImeOffOnModeChange                 bool
 	CachedDrawing                           bool
 	Clipboard                               bool
 	ReversingScrollDirection                bool
@@ -343,7 +343,7 @@ func (c *gonvimConfig) init() {
 	c.Editor.DisableLigatures = false
 	c.Editor.Clipboard = true
 	c.Editor.Macmeta = false
-	c.Editor.DisableImeInNormal = false
+	c.Editor.ForceImeOffOnModeChange = false
 
 	c.Editor.DrawWindowSeparator = false
 	c.Editor.WindowSeparatorTheme = "dark"
