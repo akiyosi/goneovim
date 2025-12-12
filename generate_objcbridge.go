@@ -10,9 +10,19 @@ import (
 	"text/template"
 )
 
-const objcbridgeH = `void SetMyApplicationDelegate();`
+const objcbridgeH = `#ifndef EDITOR_OBJC_BRIDGE_H
+#define EDITOR_OBJC_BRIDGE_H
+
+void SetMyApplicationDelegate(void);
+
+void EditorSetIMEOff(void);
+
+#endif // EDITOR_OBJC_BRIDGE_H
+`
 
 const objcbridgeM = `#import <Cocoa/Cocoa.h>
+#import <Carbon/Carbon.h>
+#include <stdlib.h>
 
 // Forward declaration of the Go function to be called from C
 extern void GetOpeningFilepath(char* str);
@@ -39,7 +49,30 @@ void SetMyApplicationDelegate() {
     NSApplication *app = [NSApplication sharedApplication];
     app.delegate = [[MyApplicationDelegate alloc] init];
     [app activateIgnoringOtherApps:YES]; // make application foreground
-}`
+}
+
+
+void EditorSetIMEOff(void) {
+    NSDictionary *filter = @{
+        (__bridge NSString *)kTISPropertyInputSourceCategory:
+            (__bridge NSString *)kTISCategoryKeyboardInputSource,
+        (__bridge NSString *)kTISPropertyInputSourceIsASCIICapable: @YES,
+    };
+
+    CFArrayRef list = TISCreateInputSourceList((__bridge CFDictionaryRef)filter, false);
+    if (!list) {
+        return;
+    }
+    if (CFArrayGetCount(list) == 0) {
+        CFRelease(list);
+        return;
+    }
+
+    TISInputSourceRef src = (TISInputSourceRef)CFArrayGetValueAtIndex(list, 0);
+    TISSelectInputSource(src);
+    CFRelease(list);
+}
+`
 
 func main() {
 	if runtime.GOOS != "darwin" {

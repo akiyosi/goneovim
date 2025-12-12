@@ -9,11 +9,16 @@ import (
 	"unsafe"
 
 	frameless "github.com/akiyosi/goqtframelesswindow"
+	"github.com/akiyosi/qt/widgets"
 )
 
 var (
 	dwmapi                = syscall.NewLazyDLL("dwmapi.dll")
 	dwmSetWindowAttribute = dwmapi.NewProc("DwmSetWindowAttribute")
+	imm32                 = syscall.NewLazyDLL("imm32.dll")
+	procImmGetContext     = imm32.NewProc("ImmGetContext")
+	procImmSetOpenStatus  = imm32.NewProc("ImmSetOpenStatus")
+	procImmReleaseContext = imm32.NewProc("ImmReleaseContext")
 )
 
 const (
@@ -134,4 +139,16 @@ func parseColor(colorStr string) (uint32, error) {
 
 	// Convert to Windows COLORREF format
 	return uint32(b<<16 | g<<8 | r), nil
+}
+
+func setIMEOff(w *widgets.QWidget) {
+	hwnd := uintptr(w.WinId())
+
+	himc, _, _ := procImmGetContext.Call(hwnd)
+	if himc != 0 {
+		procImmSetOpenStatus.Call(himc, 0)
+		procImmReleaseContext.Call(hwnd, himc)
+	} else {
+		editor.putLog("[Disable IME]:Cannot get HIMC")
+	}
 }

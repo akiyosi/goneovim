@@ -2,15 +2,17 @@ package editor
 
 /*
 #cgo CFLAGS: -x objective-c
-#cgo LDFLAGS: -framework Cocoa
+#cgo LDFLAGS: -framework Cocoa -framework Carbon
 #include "objcbridge.h"
 #include <stdlib.h>
 */
 import "C"
+
 import (
 	"unsafe"
 
 	frameless "github.com/akiyosi/goqtframelesswindow"
+	"github.com/akiyosi/qt/widgets"
 )
 
 //export GetOpeningFilepath
@@ -36,4 +38,8 @@ func setNativeTitlebarColor(window *frameless.QFramelessWindow, colorStr string)
 func setNativeTitleTextColor(window *frameless.QFramelessWindow, colorStr string) error {
 	// Not implemented (yet)
 	return nil
+}
+
+func setIMEOff(_ *widgets.QWidget) {
+	C.EditorSetIMEOff()
 }

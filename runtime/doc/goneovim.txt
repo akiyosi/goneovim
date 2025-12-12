@@ -308,6 +308,49 @@ e.g.
     vim.api.nvim_set_hl(0, "GuiImeCurrentConversionText", { fg = "#ffffff", bg = "#333333", sp = "#ffffff", bold = true, underdouble = true })
 <
 
+
+================================================================================
+IME control from Goneovim                                   *goneovim-ime-control*
+
+Goneovim provides options for controlling the state of the operating system’s
+input method (IME). This is useful when you want the IME to be automatically
+disabled in Normal mode, or explicitly disabled at specific times using Vim
+autocommands.
+
+1. Automatic IME OFF on mode change~
+If the following setting is enabled in Goneovim’s configuration:
+
+>
+    Editor.ForceImeOffOnModeChange = true
+<
+
+Goneovim will automatically turn the IME off whenever Neovim changes editing
+mode (e.g. entering Normal mode).
+This mirrors the behavior of some modal editors that keep IME disabled outside
+Insert mode.
+
+2. Manually forcing IME OFF via rpcnotify~
+Goneovim exposes a GUI RPC event `"gonvim_imeoff"` that triggers the same IME
+OFF behavior as the automatic mode-change handling.
+This allows users to customize their preferred IME-toggling logic entirely from
+their Neovim configuration.
+
+Example: turn IME OFF every time Insert mode is exited:
+
+>
+    autocmd InsertLeave * \
+        call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_imeoff")
+<
+
+This works even when `ForceImeOffOnModeChange` is disabled, allowing advanced
+users to fully personalize IME control behavior.
+
+3. Platform notes~
+- On Windows, IME is disabled using the system IME context (Imm32 API).
+- On macOS, IME OFF is emulated by switching to an ASCII-capable input source
+  (such as “ABC”) at the OS level.
+
+
 ================================================================================
 WSL integration                                                     *goneovim-wsl*
 
@@ -485,20 +528,32 @@ All Options are follows:
         ## This setting is equivalent to Macmeta in MacVim.
         # Macmeta = false
         
-        ## The input method editor will be automatically disabled when the mode is changed to normal mode.
-        ## It may be useful for users who use the input method editor (e.g. East Asian users).
-        ## This option is deprecated. Use `ModeEnablingIME`
-        # DisableImeInNormal = false
-        
-        ## This option specifies a list of modes in which the IME is to be enabled, and goneovim will enable
-        ## the IME only in those modes.
-        ## It may be useful for users who use the input method editor (e.g. East Asian users).
-        ## e.g. 
-        ## ModeEnablingIME = ["insert", "cmdline_normal"]
-        ## The available mode strings:
+        ## The input method editor (IME) will be forcibly turned off whenever the mode changes.
+        ## This actually changes the OS-level IME state to "off" (supported on Windows and macOS).
+        ## On Linux, this option is currently not supported because there is no unified 
+        ## OS-level API for controlling IME state across input method frameworks.
+        ##
+        ## Useful for users who never want IME enabled in Normal/Visual modes,
+        ## and prefer to manually turn it on when entering Insert mode.
+        # ForceImeOffOnModeChange = false
+
+        ## This option specifies a list of modes in which IME *input* is allowed.
+        ## goneovim will enable or disable Qt's IME acceptance based on the current mode,
+        ## but it does NOT change the actual OS-level IME state.
+        ##
+        ## Important:
+        ##   - If the IME is already ON at the OS level, you can immediately type with IME
+        ##     when entering an IME-enabled mode (e.g. Insert), without manually turning it on.
+        ##   - If the IME is OFF at the OS level, this option does not turn it on; the user must
+        ##     switch IME on manually.
+        ##
+        ## Example:
+        ##   ModeEnablingIME = ["insert", "cmdline_normal"]
+        ##
+        ## Available mode strings:
         ##   "normal", "insert", "replace", "visual", "visual_select",
-        ##    "cmdline_normal", "cmdline_insert", "cmdline_replace",
-        ##    "terminal"
+        ##   "cmdline_normal", "cmdline_insert", "cmdline_replace",
+        ##   "terminal"
         # ModeEnablingIME = []
         
         ## This option allows you to hide the mouse cursor in the gooneovim window 

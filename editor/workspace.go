@@ -1258,19 +1258,12 @@ func (ws *Workspace) updateMinimap() {
 	}
 }
 
-func (ws *Workspace) disableImeInNormal() {
-	if !editor.config.Editor.DisableImeInNormal {
+func (ws *Workspace) forceImeOff() {
+	if !editor.config.Editor.ForceImeOffOnModeChange {
 		return
 	}
-	switch ws.mode {
-	case "insert":
-		ws.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	case "cmdline_normal":
-		ws.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-		editor.widget.SetAttribute(core.Qt__WA_InputMethodEnabled, true)
-	default:
-	}
+
+	setIMEOff(ws.widget)
 }
 
 func (ws *Workspace) shouldGetSnapshot(updates [][]interface{}) bool {
@@ -1733,7 +1726,7 @@ func (ws *Workspace) modeChange(args []interface{}) {
 	if ws.cursor.modeIdx != ws.modeIdx {
 		ws.cursor.modeIdx = ws.modeIdx
 	}
-	ws.disableImeInNormal()
+	ws.forceImeOff()
 	ws.shouldUpdate.cursor = true
 }
 
@@ -1956,6 +1949,9 @@ func (ws *Workspace) handleGui(updates []interface{}) {
 		ws.guiFont(updates[1].(string))
 	case "Linespace":
 		ws.guiLinespace(updates[1])
+	case "gonvim_imeoff":
+		setIMEOff(ws.widget)
+
 	// case "finder_pattern":
 	// 	ws.finder.showPattern(updates[1:])
 	// case "finder_pattern_pos":
