@@ -308,6 +308,49 @@ e.g.
     vim.api.nvim_set_hl(0, "GuiImeCurrentConversionText", { fg = "#ffffff", bg = "#333333", sp = "#ffffff", bold = true, underdouble = true })
 <
 
+
+================================================================================
+IME control from Goneovim                                   *goneovim-ime-control*
+
+Goneovim provides options for controlling the state of the operating system’s
+input method (IME). This is useful when you want the IME to be automatically
+disabled in Normal mode, or explicitly disabled at specific times using Vim
+autocommands.
+
+1. Automatic IME OFF on mode change~
+If the following setting is enabled in Goneovim’s configuration:
+
+>
+    Editor.ForceImeOffOnModeChange = true
+<
+
+Goneovim will automatically turn the IME off whenever Neovim changes editing
+mode (e.g. entering Normal mode).
+This mirrors the behavior of some modal editors that keep IME disabled outside
+Insert mode.
+
+2. Manually forcing IME OFF via rpcnotify~
+Goneovim exposes a GUI RPC event `"gonvim_imeoff"` that triggers the same IME
+OFF behavior as the automatic mode-change handling.
+This allows users to customize their preferred IME-toggling logic entirely from
+their Neovim configuration.
+
+Example: turn IME OFF every time Insert mode is exited:
+
+>
+    autocmd InsertLeave * \
+        call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_imeoff")
+<
+
+This works even when `ForceImeOffOnModeChange` is disabled, allowing advanced
+users to fully personalize IME control behavior.
+
+3. Platform notes~
+- On Windows, IME is disabled using the system IME context (Imm32 API).
+- On macOS, IME OFF is emulated by switching to an ASCII-capable input source
+  (such as “ABC”) at the OS level.
+
+
 ================================================================================
 WSL integration                                                     *goneovim-wsl*
 
