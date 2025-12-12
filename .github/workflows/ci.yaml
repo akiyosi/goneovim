@@ -198,7 +198,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.24.x]
-        platform: [macos-13]
+        platform: [macos-15-intel]
     runs-on: ${{ matrix.platform }}
     env:
       GOPATH: ${{ github.workspace }}
