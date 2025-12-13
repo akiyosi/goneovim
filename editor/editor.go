@@ -1066,7 +1066,10 @@ func (e *Editor) updateGUIColor() {
 		e.window.SetupTitleColor((uint16)(e.colors.fg.R), (uint16)(e.colors.fg.G), (uint16)(e.colors.fg.B))
 	}
 
-	// e.window.SetWindowOpacity(1.0)
+	if !e.firstPaintDone {
+		e.firstPaintDone = true
+		e.window.SetWindowOpacity(1.0)
+	}
 	e.putLog("finished updating GUI color")
 }
 
