@@ -1165,6 +1165,7 @@ func (e *Editor) connectWindowEvents() {
 		if runtime.GOOS == "darwin" && editor.config.Editor.EnableBackgroundBlur {
 			if e.blurUpdateNeeded {
 				e.blurUpdateNeeded = false
+				ws := e.workspaces[e.active]
 				ws.getBG()
 				isLight := ws.screenbg == "light"
 				editor.window.SetBlurEffectForMacOS(isLight)
