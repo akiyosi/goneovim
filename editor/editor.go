@@ -168,6 +168,8 @@ type Editor struct {
 	isHideMouse            bool
 	isBindNvimSizeToAppwin bool
 	isUiPrepared           bool
+	firstPaintDone         bool
+	blurUpdateNeeded       bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -231,6 +233,9 @@ func InitEditor(options Options, args []string) {
 	e := editor
 	if runtime.GOOS == "darwin" {
 		e.qAppStartedCh = make(chan bool, 1)
+	}
+	if runtime.GOOS == "darwin" && editor.config.Editor.EnableBackgroundBlur {
+		e.blurUpdateNeeded = true
 	}
 
 	// Prepare debug log
@@ -310,6 +315,7 @@ func InitEditor(options Options, args []string) {
 	// application main window
 	e.isSetWindowState = e.initAppWindow()
 	e.setWindowLayout()
+	e.window.SetWindowOpacity(0.0)
 	e.window.Show()
 
 	// Apply native title bar customization
@@ -1154,6 +1160,16 @@ func (e *Editor) connectWindowEvents() {
 		editor.putLog("show application window")
 		e.initWorkspaces(e.ctx, e.nvimSignal, e.redrawUpdates, e.guiUpdates, e.nvimCh, e.uiRemoteAttachedCh, e.isSetWindowState)
 		e.connectAppSignals()
+
+		// Set Transparent blue effect
+		if runtime.GOOS == "darwin" && editor.config.Editor.EnableBackgroundBlur {
+			if e.blurUpdateNeeded {
+				e.blurUpdateNeeded = false
+				ws.getBG()
+				isLight := ws.screenbg == "light"
+				editor.window.SetBlurEffectForMacOS(isLight)
+			}
+		}
 	})
 
 	e.window.InstallEventFilter(e.window)

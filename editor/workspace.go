@@ -471,10 +471,6 @@ func (ws *Workspace) bindNvim(nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bo
 	ws.nvim = <-nvimCh
 	ws.uiRemoteAttached = <-uiRemoteAttachedCh
 
-	if runtime.GOOS == "darwin" {
-		ws.getBG()
-	}
-
 	// Adjust nvim geometry to fit application window size
 	ws.uiAttached = true
 	if len(editor.workspaces) == 1 {
@@ -1503,12 +1499,6 @@ func (ws *Workspace) optionSet(args []interface{}) {
 		// case "ext_termcolors":
 		default:
 		}
-	}
-
-	// Set Transparent blue effect
-	if runtime.GOOS == "darwin" && editor.config.Editor.EnableBackgroundBlur {
-		isLight := ws.screenbg == "light"
-		editor.window.SetBlurEffectForMacOS(isLight)
 	}
 }
 

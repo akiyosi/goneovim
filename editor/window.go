@@ -452,6 +452,11 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 	w.adjustSmoothScrollAmount()
 	p.DestroyQPainter()
 	w.paintMutex.Unlock()
+
+	if !editor.firstPaintDone {
+		editor.firstPaintDone = true
+		editor.window.SetWindowOpacity(1.0)
+	}
 }
 
 func (w *Window) adjustSmoothScrollAmount() {
