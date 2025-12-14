@@ -306,9 +306,6 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 		return
 	}
 
-	// Set RenderHint
-	p.SetRenderHint(gui.QPainter__SmoothPixmapTransform, true)
-
 	// Set font
 	font := w.getFont()
 
@@ -2640,6 +2637,9 @@ func (w *Window) drawTextInPosWithCache(p *gui.QPainter, x, y int, text string, 
 	// Scale specific characters to full line height
 	yOffset := 0
 	if scaled {
+		// Set RenderHint
+		p.SetRenderHint(gui.QPainter__SmoothPixmapTransform, true)
+
 		font := w.getFont()
 		ratio := (float64(font.lineHeight) / float64(font.height))
 		if ratio != 1.0 {
