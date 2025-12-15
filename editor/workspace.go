@@ -1411,6 +1411,7 @@ func (ws *Workspace) setDefaultColorsSet(args []interface{}) {
 
 	editor.colors.update()
 	editor.updateGUIColor()
+
 	editor.isSetGuiColor = true
 }
 

@@ -347,19 +347,18 @@ func (w *Window) paint(event *gui.QPaintEvent) {
 
 	if editor.config.Editor.EnableBackgroundBlur ||
 		editor.config.Editor.Transparent < 1.0 {
-		if !w.isExternal {
-			if w.isFloatWin {
-				isDrawDefaultBg = true
-			}
-		}
-	} else {
-		if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
-			isDrawDefaultBg = true
-		} else if w.isPopupmenu && w.s.ws.pb > 0 {
-			isDrawDefaultBg = true
-		} else if w.isFloatWin && w.wb > 0 {
+		if w.isFloatWin && !w.isExternal {
 			isDrawDefaultBg = true
 		}
+	}
+	if w.isMsgGrid && editor.config.Message.Transparent < 1.0 {
+		isDrawDefaultBg = true
+	}
+	if w.isPopupmenu && w.s.ws.pb > 0 {
+		isDrawDefaultBg = true
+	}
+	if w.isFloatWin && w.wb > 0 {
+		isDrawDefaultBg = true
 	}
 
 	// In transparent mode and float windows, there is no need to automatically draw the

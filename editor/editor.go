@@ -170,6 +170,7 @@ type Editor struct {
 	isUiPrepared           bool
 	firstPaintDone         bool
 	blurUpdateNeeded       bool
+	doneEditorInitialize   bool
 }
 
 func (hl *Highlight) copy() Highlight {
@@ -1161,8 +1162,12 @@ func (e *Editor) connectWindowEvents() {
 	e.bindResizeEvent()
 	e.window.ConnectShowEvent(func(event *gui.QShowEvent) {
 		editor.putLog("show application window")
-		e.initWorkspaces(e.ctx, e.nvimSignal, e.redrawUpdates, e.guiUpdates, e.nvimCh, e.uiRemoteAttachedCh, e.isSetWindowState)
-		e.connectAppSignals()
+
+		if !e.doneEditorInitialize {
+			e.doneEditorInitialize = true
+			e.initWorkspaces(e.ctx, e.nvimSignal, e.redrawUpdates, e.guiUpdates, e.nvimCh, e.uiRemoteAttachedCh, e.isSetWindowState)
+			e.connectAppSignals()
+		}
 
 		// Set Transparent blue effect
 		if runtime.GOOS == "darwin" && editor.config.Editor.EnableBackgroundBlur {
