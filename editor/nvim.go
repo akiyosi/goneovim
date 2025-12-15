@@ -75,7 +75,7 @@ func newNvim(cols, rows int, ctx context.Context) (signal *neovimSignal, redrawU
 }
 
 func startNvim(signal *neovimSignal, ctx context.Context) (neovim *nvim.Nvim, uiRemoteAttached bool, err error) {
-	editor.putLog("starting nvim")
+	editor.putLog(`nvim:: starting nvim`)
 
 	option := []string{
 		"--cmd", "let g:goneovim=1",
@@ -128,28 +128,21 @@ func startNvim(signal *neovimSignal, ctx context.Context) (neovim *nvim.Nvim, ui
 		signal.StopSignal()
 	}()
 
-	editor.putLog("done starting nvim")
+	editor.putLog(`nvim:: finish starting nvim`)
 
 	return neovim, uiRemoteAttached, nil
 }
 
 func registerHandler(neovim *nvim.Nvim, signal *neovimSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}) {
-	editor.putLog("start registerHandler()")
+	editor.putLog(`nvim:: start registerHandler()`)
 	handleRequest(neovim)
 	handleNotification(neovim, signal, redrawUpdates, guiUpdates)
-	editor.putLog("done registerHandler()")
+	editor.putLog(`nvim:: finish registerHandler()`)
 }
 
 func handleRequest(neovim *nvim.Nvim) {
 	neovim.RegisterHandler("goneovim.set_clipboard", func(args interface{}) {
-		if !editor.isUiPrepared {
-			select {
-			case <-editor.chUiPrepared:
-				editor.isUiPrepared = true
-			}
-		}
-
-		editor.putLog("goneovim.set_clipboard:: start")
+		editor.putLog(`goneovim.set_clipboard:: start`)
 
 		var endline string
 		if runtime.GOOS == "windows" {
@@ -169,17 +162,10 @@ func handleRequest(neovim *nvim.Nvim) {
 		} else {
 			clipboard.WriteAll(str)
 		}
-		editor.putLog("goneovim.set_clipboard:: finished")
+		editor.putLog(`goneovim.set_clipboard:: finished`)
 	})
 
 	neovim.RegisterHandler("goneovim.get_clipboard", func(args interface{}) ([]interface{}, error) {
-		if !editor.isUiPrepared {
-			select {
-			case <-editor.chUiPrepared:
-				editor.isUiPrepared = true
-			}
-		}
-
 		text := editor.app.Clipboard().Text(gui.QClipboard__Clipboard)
 
 		str := strings.Replace(text, "\r", "", -1)
@@ -223,22 +209,16 @@ func handleRequest(neovim *nvim.Nvim) {
 
 func handleNotification(neovim *nvim.Nvim, signal *neovimSignal, redrawUpdates chan [][]interface{}, guiUpdates chan []interface{}) {
 	neovim.RegisterHandler("redraw", func(updates ...[]interface{}) {
-		if !editor.isUiPrepared {
-			select {
-			case <-editor.chUiPrepared:
-				editor.isUiPrepared = true
-			}
+		if !editor.uiPrepared.Load() {
+			return
 		}
 
 		redrawUpdates <- updates
 		signal.RedrawSignal()
 	})
 	neovim.RegisterHandler("Gui", func(updates ...interface{}) {
-		if !editor.isUiPrepared {
-			select {
-			case <-editor.chUiPrepared:
-				editor.isUiPrepared = true
-			}
+		if !editor.uiPrepared.Load() {
+			return
 		}
 		guiUpdates <- updates
 		signal.GuiSignal()
@@ -299,7 +279,7 @@ func newRemoteChildProcess() (*nvim.Nvim, error) {
 }
 
 func newWslProcess() (*nvim.Nvim, error) {
-	editor.putLog("Attaching nvim on wsl")
+	editor.putLog(`Attaching nvim on wsl`)
 
 	ctx := context.Background()
 
@@ -345,7 +325,7 @@ func newWslProcess() (*nvim.Nvim, error) {
 }
 
 func attachUI(neovim *nvim.Nvim, cols, rows int) error {
-	editor.putLog("attaching UI")
+	editor.putLog(`nvim:: attaching UI`)
 
 	_, o := attachUIOption(neovim)
 	err := neovim.AttachUI(cols, rows, o)
@@ -353,7 +333,7 @@ func attachUI(neovim *nvim.Nvim, cols, rows int) error {
 		return err
 	}
 
-	editor.putLog("done attaching UI")
+	editor.putLog(`nvim:: done attaching UI`)
 
 	return nil
 }
@@ -412,6 +392,7 @@ func attachUIOption(nvim *nvim.Nvim) (int, map[string]interface{}) {
 }
 
 func setGoneovim(neovim *nvim.Nvim) {
+	editor.putLog(`nvim:: start setGoneovim()`)
 	var gonvimAutoCmds string
 
 	if (editor.opts.Server == "" && !editor.config.MiniMap.Disable) || (editor.config.Editor.IndentGuide) {
@@ -440,11 +421,11 @@ func setGoneovim(neovim *nvim.Nvim) {
 	}
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimAutoCmds))
 	neovim.Command(registerScripts)
-	editor.putLog("done setGoneovim()")
+	editor.putLog(`nvim:: finish setGoneovim()`)
 }
 
 func setGoneovimCommands(neovim *nvim.Nvim) {
-	editor.putLog("start setGoneovimCommands()")
+	editor.putLog(`nvim:: start setGoneovimCommands()`)
 	// Definition of the commands that goneovim provides
 	gonvimCommands := fmt.Sprintf(`
 	command! -nargs=1 GonvimResize call rpcnotify(g:goneovim_channel_id, "Gui", "gonvim_resize", <args>)
@@ -481,11 +462,11 @@ func setGoneovimCommands(neovim *nvim.Nvim) {
 	`
 	registerScripts := fmt.Sprintf(`call execute(%s)`, util.SplitVimscript(gonvimCommands))
 	neovim.Command(registerScripts)
-	editor.putLog("done setGoneovimCommands()")
+	editor.putLog(`nvim:: finish setGoneovimCommands()`)
 }
 
 func setGoneovimClipBoard(neovim *nvim.Nvim) {
-	editor.putLog("set clipboard")
+	editor.putLog(`nvim:: start setGoneovimClipBoard()`)
 	code := `
     local function set_clipboard(register)
         return function(lines, regtype)
@@ -519,12 +500,13 @@ func setGoneovimClipBoard(neovim *nvim.Nvim) {
 			args,
 		)
 	}
+	editor.putLog(`nvim:: finish setGoneovimClipBoard()`)
 }
 
 func setChannelID(neovim *nvim.Nvim) {
-	editor.putLog("starting to set goneovim_channel_id")
+	editor.putLog(`nvim:: starting to set goneovim_channel_id`)
 	neovim.SetVar("goneovim_channel_id", neovim.ChannelID())
-	editor.putLog("done setting goneovim_channel_id")
+	editor.putLog(`nvim:: done setting goneovim_channel_id`)
 }
 
 func source(neovim *nvim.Nvim, file string) {

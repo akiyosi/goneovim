@@ -467,6 +467,13 @@ func (ws *Workspace) registerSignal(signal *neovimSignal, redrawUpdates chan [][
 	})
 }
 
+func (e *Editor) markUiPrepared() {
+	if e.uiPrepared.Swap(true) {
+		return
+	}
+	close(e.chUiPrepared)
+}
+
 func (ws *Workspace) bindNvim(nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bool, isSetWindowState, isLazyBind bool, file string) {
 	ws.nvim = <-nvimCh
 	ws.uiRemoteAttached = <-uiRemoteAttachedCh
@@ -474,7 +481,8 @@ func (ws *Workspace) bindNvim(nvimCh chan *nvim.Nvim, uiRemoteAttachedCh chan bo
 	// Adjust nvim geometry to fit application window size
 	ws.uiAttached = true
 	if len(editor.workspaces) == 1 {
-		editor.chUiPrepared <- true
+		// editor.chUiPrepared <- true
+		editor.markUiPrepared()
 	}
 
 	source(ws.nvim, file)

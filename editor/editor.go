@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/akiyosi/goneovim/util"
@@ -112,7 +113,7 @@ type Editor struct {
 	colors                 *ColorPalette
 	notify                 chan *Notify
 	cbChan                 chan *string
-	chUiPrepared           chan bool
+	chUiPrepared           chan struct{}
 	openingFileCh          chan string
 	geometryUpdateTimer    *time.Timer
 	sysTray                *widgets.QSystemTrayIcon
@@ -167,7 +168,7 @@ type Editor struct {
 	isExtWinNowInactivated bool
 	isHideMouse            bool
 	isBindNvimSizeToAppwin bool
-	isUiPrepared           bool
+	uiPrepared             atomic.Bool
 	firstPaintDone         bool
 	blurUpdateNeeded       bool
 	doneEditorInitialize   bool
@@ -228,7 +229,7 @@ func InitEditor(options Options, args []string) {
 		stop:         make(chan int),
 		notify:       make(chan *Notify, 10),
 		cbChan:       make(chan *string, 240),
-		chUiPrepared: make(chan bool, 1),
+		chUiPrepared: make(chan struct{}),
 		nvimErrCh:    make(chan error, 1),
 	}
 	e := editor
@@ -281,13 +282,14 @@ func InitEditor(options Options, args []string) {
 
 	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 
+	e.putLog("finished generating the application")
+
 	e.app = widgets.NewQApplication(len(os.Args), os.Args)
 	if runtime.GOOS == "darwin" {
 		e.qAppStartedCh <- e.app != nil
 	}
 
 	setMyApplicationDelegate()
-	e.putLog("finished generating the application")
 
 	e.app.SetDoubleClickInterval(0)
 
