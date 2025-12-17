@@ -2474,6 +2474,8 @@ func (ws *Workspace) setOption(optionName string, wid nvim.Window) {
 	}
 
 	ws.optionsetMutex.Lock()
+	defer ws.optionsetMutex.Unlock()
+
 	switch optionName {
 	case editor.config.Editor.OptionsToUseGuideWidth:
 		win.ts = util.ReflectToInt(
@@ -2487,7 +2489,6 @@ func (ws *Workspace) setOption(optionName string, wid nvim.Window) {
 		}
 		win.ft = ft
 	}
-	ws.optionsetMutex.Unlock()
 }
 
 // InputMethodEvent is
