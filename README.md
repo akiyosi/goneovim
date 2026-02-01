@@ -3,14 +3,22 @@ goneovim
 
 ![CI](https://github.com/akiyosi/goneovim/workflows/CI/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/akiyosi/goneovim)](https://goreportcard.com/report/github.com/akiyosi/goneovim)
-![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.6.16/total)
+![GitHub Releases](https://img.shields.io/github/downloads/akiyosi/goneovim/v0.6.17/total)
 [![Join the chat at https://gitter.im/goneovim/community](https://badges.gitter.im/goneovim/community.svg)](https://gitter.im/goneovim/community)
 
 goneovim (pronounced like "go-neovim") is a Neovim GUI written in Go, using a [Qt binding for Go](https://github.com/therecipe/qt).
 This repository forked from the original [Gonvim](https://github.com/dzhou121/gonvim) for the purpose of maintenance and enhancement.
 
-![](https://raw.githubusercontent.com/wiki/akiyosi/goneovim/screenshots/goneovim.png)
 
+<br>
+
+## ⚠️ IMPORTANT
+**Project Status Update**
+
+* Due to Qt 5.15 reaching end-of-life, active development of goneovim has been discontinued. Only critical bug fixes and security updates will be addressed going forward.
+* The author has started developing [Zonvie](https://github.com/akiyosi/zonvie), a new Neovim GUI built with Zig and native frontends, empowered by generative AI. Future efforts will be focused there. If you're interested, please give it a try!
+
+<br>
 
 ## Why Neovim GUI
 
