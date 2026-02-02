@@ -407,6 +407,14 @@ jobs:
         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
+    - name: Copy Qt tools (keep both names)
+      run: |
+        Get-ChildItem -Path "C:\a\msys64\mingw64\bin\" -Filter "*-qt5.exe" | ForEach-Object {
+          $newName = $_.Name -replace "-qt5\.exe$", ".exe"
+          Copy-Item $_.FullName -Destination (Join-Path $_.Directory $newName)
+        }
+      shell: pwsh
+
     - name: Get Qt binding for Go
       shell: msys2 {0}
       run: |
@@ -549,6 +557,14 @@ jobs:
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin/:$PATH
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
+
+    - name: Copy Qt tools (keep both names)
+      run: |
+        Get-ChildItem -Path "C:\a\msys64\clangarm64\bin\" -Filter "*-qt5.exe" | ForEach-Object {
+          $newName = $_.Name -replace "-qt5\.exe$", ".exe"
+          Copy-Item $_.FullName -Destination (Join-Path $_.Directory $newName)
+        }
+      shell: pwsh
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
