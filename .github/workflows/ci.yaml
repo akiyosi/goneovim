@@ -412,6 +412,13 @@ jobs:
       run: |
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        tree /c/a/msys64/mingw64
+
+    - name: Get Qt binding for Go
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
+        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         go get github.com/akiyosi/qt@${{ env.QT_BINDING_VER }}
         go get github.com/akiyosi/qt/internal/cmd@${{ env.QT_BINDING_VER }}
         go get github.com/akiyosi/qt/internal/cmd/moc@${{ env.QT_BINDING_VER }}
@@ -549,6 +556,13 @@ jobs:
         export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin/:$PATH
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
+
+    - name: Get Qt binding for Go
+      shell: msys2 {0}
+      run: |
+        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/arm64/bin/:$PATH
+        cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
+        tree /clangarm64
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
