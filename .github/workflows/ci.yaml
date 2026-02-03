@@ -407,13 +407,6 @@ jobs:
         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
-    - name: Get Qt binding for Go
-      shell: msys2 {0}
-      run: |
-        export PATH=/c/hostedtoolcache/windows/go/${{ matrix.go-version }}/x64/bin/:$PATH
-        cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
-        tree /c/a/msys64/mingw64
-
     - name: Rename qmake
       run: |
         dir C:\\a\\msys64\\mingw64\\bin
@@ -563,7 +556,7 @@ jobs:
 
     - name: Rename qmake
       run: |
-        dir C:\\a\\
+        dir C:\\a\\msys64\\clangarm64
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
