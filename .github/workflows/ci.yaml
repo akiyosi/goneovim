@@ -407,11 +407,11 @@ jobs:
         cd /d/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
-    - name: Rename qmake
+    - name: Copy Qt tools (keep both names)
       run: |
         Get-ChildItem -Path "C:\a\msys64\mingw64\bin\" -Filter "*-qt5.exe" | ForEach-Object {
           $newName = $_.Name -replace "-qt5\.exe$", ".exe"
-          Rename-Item $_.FullName -NewName $newName
+          Copy-Item $_.FullName -Destination (Join-Path $_.Directory $newName)
         }
       shell: pwsh
 
@@ -558,11 +558,11 @@ jobs:
         cd /c/a/goneovim/goneovim/src/github.com/${{ github.repository }}
         make deps
 
-    - name: Rename qmake
+    - name: Copy Qt tools (keep both names)
       run: |
         Get-ChildItem -Path "C:\a\msys64\clangarm64\bin\" -Filter "*-qt5.exe" | ForEach-Object {
           $newName = $_.Name -replace "-qt5\.exe$", ".exe"
-          Rename-Item $_.FullName -NewName $newName
+          Copy-Item $_.FullName -Destination (Join-Path $_.Directory $newName)
         }
       shell: pwsh
 
