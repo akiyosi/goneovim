@@ -409,9 +409,11 @@ jobs:
 
     - name: Rename qmake
       run: |
-        cd C:\\a\\msys64\\mingw64\\bin\\
-        ren qmake-qt5.exe qmake.exe
-        ren windeployqt-qt5.exe windeployqt.exe
+        Get-ChildItem -Path "C:\a\msys64\mingw64\bin\" -Filter "*-qt5.exe" | ForEach-Object {
+          $newName = $_.Name -replace "-qt5\.exe$", ".exe"
+          Rename-Item $_.FullName -NewName $newName
+        }
+      shell: pwsh
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
@@ -558,9 +560,11 @@ jobs:
 
     - name: Rename qmake
       run: |
-        cd C:\\a\\msys64\\clangarm64\\bin\\
-        ren qmake-qt5.exe qmake.exe
-        ren windeployqt-qt5.exe windeployqt.exe
+        Get-ChildItem -Path "C:\a\msys64\clangarm64\bin\" -Filter "*-qt5.exe" | ForEach-Object {
+          $newName = $_.Name -replace "-qt5\.exe$", ".exe"
+          Rename-Item $_.FullName -NewName $newName
+        }
+      shell: pwsh
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
