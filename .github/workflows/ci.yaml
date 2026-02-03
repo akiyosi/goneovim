@@ -411,6 +411,7 @@ jobs:
       run: |
         cd C:\\a\\msys64\\mingw64\\bin\\
         ren qmake-qt5.exe qmake.exe
+        ren windeployqt-qt5.exe windeployqt.exe
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
@@ -559,6 +560,7 @@ jobs:
       run: |
         cd C:\\a\\msys64\\clangarm64\\bin\\
         ren qmake-qt5.exe qmake.exe
+        ren windeployqt-qt5.exe windeployqt.exe
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
