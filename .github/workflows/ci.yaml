@@ -409,7 +409,8 @@ jobs:
 
     - name: Rename qmake
       run: |
-        dir C:\\a\\msys64\\mingw64\\bin
+        cd C:\\a\\msys64\\mingw64\\bin\\
+        ren qmake-qt5.exe qmake.exe
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
@@ -556,7 +557,8 @@ jobs:
 
     - name: Rename qmake
       run: |
-        dir C:\\a\\msys64\\clangarm64
+        cd C:\\a\\msys64\\clangarm64\\bin\\
+        ren qmake-qt5.exe qmake.exe
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
