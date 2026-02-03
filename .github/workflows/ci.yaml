@@ -563,7 +563,7 @@ jobs:
 
     - name: Rename qmake
       run: |
-        dir C:\\a\\clangarm64\\bin
+        dir C:\\a\\
 
     - name: Get Qt binding for Go
       shell: msys2 {0}
