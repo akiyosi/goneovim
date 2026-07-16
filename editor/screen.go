@@ -220,23 +220,16 @@ func (s *Screen) getGrid(wid nvim.Window) (grid *Window, ok bool) {
 }
 
 func (s *Screen) getWindow(grid int) (win *Window, isValid bool) {
-	// TODO: We may need to handle grid 0 (which might become a special grid
-	//       used for mouse detection).
-	if grid == 0 {
+	// getWindow is a reference-only lookup: it never creates a window as a
+	// side effect. Window creation happens explicitly in resizeWindow (on the
+	// grid_resize event), where a new grid first appears.
+	winITF, ok := s.windows.Load(grid)
+	if !ok {
 		return nil, false
 	}
-
-	winITF, ok := s.windows.Load(grid)
-	if ok {
-		win, ok = winITF.(*Window)
-		if !ok {
-			return nil, false
-		}
-	} else {
-		win = s.newWindowGrid(grid)
-		if s.ws.cursor != nil {
-			s.ws.cursor.raise()
-		}
+	win, ok = winITF.(*Window)
+	if !ok || win == nil {
+		return nil, false
 	}
 
 	return win, true
@@ -781,13 +774,12 @@ func (s *Screen) gridResize(args []interface{}) {
 }
 
 func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
-	win, ok := s.getWindow(gridid)
-	if !ok {
-		return
-	}
+	win, _ := s.getWindow(gridid)
 
-	if win.cols == cols && win.rows == rows {
-		return
+	if win != nil {
+		if win.cols == cols && win.rows == rows {
+			return
+		}
 	}
 
 	if win != nil && win.snapshot != nil {
@@ -842,6 +834,10 @@ func (s *Screen) resizeWindow(gridid gridId, cols int, rows int) {
 		}
 	}
 
+	if win == nil {
+		win = s.newWindowGrid(gridid)
+	}
+
 	win.redrawMutex.Lock()
 
 	// winOldCols := win.cols
@@ -884,6 +880,10 @@ func (s *Screen) newWindowGrid(gridid int) (win *Window) {
 	// set scroll
 	if s.name != "minimap" {
 		win.ConnectWheelEvent(win.wheelEvent)
+	}
+
+	if s.ws.cursor != nil {
+		s.ws.cursor.raise()
 	}
 
 	return
@@ -1752,7 +1752,7 @@ func (s *Screen) windowFloatPosition(args []interface{}) {
 			win.raise()
 		}
 
-		anchorwinIsExternal := win.anchorwin.isExternal
+		anchorwinIsExternal := win.anchorwin != nil && win.anchorwin.isExternal
 
 		win.updateMutex.Unlock()
 
